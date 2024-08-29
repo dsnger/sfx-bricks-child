@@ -1,0 +1,288 @@
+* {
+  margin: 0
+}
+
+a {
+  color: #4682b4
+}
+
+#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,#adminmenu li.current a.menu-top,.folded #adminmenu li.wp-has-current-submenu,.folded #adminmenu li.current.menu-top,#adminmenu .wp-menu-arrow,#adminmenu .wp-has-current-submenu .wp-submenu .wp-submenu-head,#adminmenu .wp-menu-arrow div {
+  background: #E72371;
+  color: #fff
+}
+
+#adminmenu a:hover,#adminmenu li.menu-top>a:focus,#adminmenu .wp-submenu a:hover,#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top {
+  color: #e72371
+}
+
+#adminmenu li>a.menu-top:focus,#adminmenu .wp-submenu a:focus {
+  color: #fff
+}
+
+#adminmenu li:hover div.wp-menu-image:before,#adminmenu li a:focus div.wp-menu-image:before,#adminmenu li.opensub div.wp-menu-image:before {
+  color: #e72371
+}
+
+#wp-auth-check-wrap #wp-auth-check {
+  background: #1D1D1F!important
+}
+
+.acf-field.acf-accordion .acf-accordion-content>.acf-fields {
+  background-color: #fafafa
+}
+
+.acf-accordion .acf-accordion-title {
+  margin: 0;
+  padding: 14px!important;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+  font-size: 15px;
+  line-height: 1.4em;
+  background: #006499;
+  color: #fff
+}
+
+.acf-accordion .acf-accordion-title:hover,.acf-accordion.-open .acf-accordion-title {
+  background: #0086cc!important
+}
+
+.acf-accordion .acf-accordion-title label {
+  font-size: 15px;
+  line-height: 1.4em
+}
+
+.acf-fields>.acf-field {
+  padding: 20px 22px
+}
+
+.acf-field .acf-label label {
+  font-weight: 500!important;
+  font-size: 15px
+}
+
+.acf-tab-group,.acfe-modal.-open .acfe-modal-footer {
+  background-color: #002133!important
+}
+
+.acfe-modal-footer .button-primary {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 32px;
+  height: 36px;
+  margin: 0;
+  padding: 0 24px 1px;
+  cursor: pointer;
+  border-width: 1px;
+  border-style: solid;
+  -webkit-appearance: none;
+  border-radius: 3px;
+  white-space: nowrap;
+  box-sizing: border-box
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group {
+  border: none;
+  margin-bottom: 0!important
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group {
+  padding: 10px 10px 0
+}
+
+.acf-fields .acf-field-settings-tab-bar li,.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li {
+  margin-right: .5em!important
+}
+
+.acf-tab-wrap:not(.-left) .acf-tab-group li a,.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li a {
+  padding: 10px 14px!important;
+  display: flex;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+  border: none;
+  border-bottom: 0 none;
+  text-decoration: none;
+  background: #aaa;
+  transition: none;
+  text-transform: uppercase;
+  border-radius: 4px 4px 0 0
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li a,.acf-postbox.seamless>.acf-fields .acf-tab-wrap .acf-tab-group li a {
+  background: #00a7ff!important;
+  border-color: #00a7ff!important
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li a:hover,.acf-postbox.seamless>.acf-fields .acf-tab-wrap .acf-tab-group li a:hover {
+  background: #008cd6!important;
+  border-color: #008cd6!important;
+  color: #fff
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li.active a,.acf-postbox.seamless>.acf-fields .acf-tab-wrap .acf-tab-group li.active a {
+  border-color: #444;
+  color: #444;
+  background: #ffffff!important;
+  border-color: #fff!important
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li.active a:hover,.acf-postbox.seamless>.acf-fields .acf-tab-wrap .acf-tab-group li.active a:hover {
+  background: #ffffff;
+  border-color: #fff;
+  color: #444
+}
+
+.acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li.active a,.acf-fields .acf-tab-wrap .acf-tab-group li.active a:hover {
+  padding-bottom: 10px;
+  color: #444;
+  border-color: #444;
+  background: #ffffff!important
+}
+
+body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .acf-tab-group li.active a {
+  background: #ffffff!important
+}
+
+.acf-field input[type=text],.acf-field input[type=password],.acf-field input[type=date],.acf-field input[type=datetime],.acf-field input[type=datetime-local],.acf-field input[type=email],.acf-field input[type=month],.acf-field input[type=number],.acf-field input[type=search],.acf-field input[type=tel],.acf-field input[type=time],.acf-field input[type=url],.acf-field input[type=week],.acf-field textarea,.acf-field select,.acf-field input .select2 {
+  width: 100%;
+  padding: 8px!important;
+  resize: none;
+  margin: 0;
+  box-sizing: border-box;
+  font-size: 14px!important;
+  line-height: 1.4;
+  border-radius: 4px;
+  border-color: #7e8993!important;
+  border-width: 1px!important;
+  min-height: 40px!important
+}
+
+.acf-field select {
+  padding: 8px!important
+}
+
+.select2-container.-acf .select2-selection--multiple .select2-search__field {
+  min-height: 30px
+}
+
+.acf-field .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  float: right;
+  margin-left: 1px;
+  margin-right: 0;
+  line-height: 1;
+  font-size: 15px;
+  vertical-align: text-top
+}
+
+.acf-button.button,.acf-actions .button {
+  color: #fff;
+  background-color: #00a7ff!important;
+  border-color: #00a7ff!important
+}
+
+.acf-button.button:hover,.acf-actions .button:hover {
+  color: #fff;
+  background-color: #0086cc!important;
+  border-color: #0086cc!important
+}
+
+.acf-button.button:active,.acf-actions .button:active {
+  transform: scale(.95)
+}
+
+.acf-actions .button:not(.acf-button) {
+  padding-left: 10px!important;
+  padding-right: 10px!important;
+  padding-top: .5em;
+  padding-bottom: .5em
+}
+
+.acf-button.button {
+  padding: .5em 2em
+}
+
+.acf-repeater .acf-row-handle.order,.acf-repeater .acf-row-handle.order:hover {
+  background: #0086cc!important;
+  color: #fff!important;
+  text-shadow: #fff 0 1px 0!important
+}
+
+.acf-input-prepend,.acf-input-append {
+  padding: 8px!important;
+  min-height: 40px
+}
+
+.acf-fields [data-name=flexcol_comps] {
+  background: lightgray!important
+}
+
+.acf-field .ds-text-black,.acf-field .ds-text-black-light {
+  color: #1d1d1f!important
+}
+
+.acf-field .ds-text-white,.acf-field .ds-text-white-light {
+  color: #fff!important
+}
+
+.acf-field .ds-text-muted,.acf-field .ds-text-muted-light {
+  color: #bbb!important
+}
+
+.acf-field .ds-text-primary,.acf-field .ds-text-primary-light {
+  color: #e72371!important
+}
+
+.acf-field .ds-text-secondary,.acf-field .ds-text-secondary-light {
+  color: #4a79bc!important
+}
+
+.acf-field .ds-text-tertiary,.acf-field .ds-text-tertiary-light {
+  color: #7bc9ce!important
+}
+
+.acf-field .ds-text-quartinary,.acf-field .ds-text-quartinary-light {
+  color: #fbbb10!important
+}
+
+.acf-field .ds-text-qinary,.acf-field .ds-text-qinary-light {
+  color: #ea591b!important
+}
+
+.acf-field .ds-background-black {
+  background-color: #1d1d1f
+}
+
+.acf-field .ds-background-white {
+  background-color: #fff
+}
+
+.acf-field .ds-background-muted {
+  background-color: #bbb
+}
+
+.acf-field .ds-background-primary {
+  background-color: #e72371
+}
+
+.acf-field .ds-background-secondary {
+  background-color: #4a79bc
+}
+
+.acf-field .ds-background-tertiary {
+  background-color: #7bc9ce
+}
+
+.acf-field .ds-background-quartinary {
+  background-color: #fbbb10
+}
+
+.acf-field .ds-background-qinary {
+  background-color: #ea591b
+}
+
+.fixed .column-categories,.fixed .column-rel,.fixed .column-response,.fixed .column-role,.fixed .column-tags {
+  width: auto!important
+}
