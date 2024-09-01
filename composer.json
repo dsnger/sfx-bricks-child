@@ -1,0 +1,13 @@
+{
+  "name": "sfxdev/sfx-theme",
+  "description": "SFX Bricks Child Theme",
+  "type": "wordpress-theme",
+  "require": {
+      "php": ">=7.5"
+  },
+  "autoload": {
+      "psr-4": {
+       "SFX\\": "inc/"
+      }
+  }
+}
