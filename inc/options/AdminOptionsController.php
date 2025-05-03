@@ -295,7 +295,6 @@ class AdminOptionsController
   }
 
 
-
   private function enqueue_custom_scripts()
   {
     add_action('wp_enqueue_scripts', function () {
@@ -304,11 +303,62 @@ class AdminOptionsController
     });
   }
 
+
   private function enqueue_preset_scripts()
   {
     add_action('wp_enqueue_scripts', function () {
       // Example of enqueuing a preset script
       wp_enqueue_script('preset-script', get_template_directory_uri() . '/assets/js/preset-script.js', [], '1.0.0', true);
     });
+  }
+
+
+  private function disable_bricks_js(): void
+  {
+    add_action('wp_enqueue_scripts', function () {
+      // Check if in Bricks Builder context
+      if (function_exists('bricks_is_builder') && bricks_is_builder()) {
+        return;
+      }
+      // Use ACF option via class method
+      $disable_bricks_js = $this->get_acf_option('disable_bricks_js', false);
+      if ($disable_bricks_js) {
+        wp_dequeue_script('bricks-scripts');
+        wp_deregister_script('bricks-scripts');
+      }
+    }, 100);
+  }
+
+
+  private function disable_bricks_styles(): void
+  {
+    add_action('wp_enqueue_scripts', function () {
+      // Use ACF option via class method
+      $disable_bricks_css = $this->get_acf_option('disable_bricks_css', false);
+      if ($disable_bricks_css && !(function_exists('bricks_is_builder') && bricks_is_builder())) {
+        $style_handles = [
+          'bricks-frontend',
+          // 'bricks-builder',
+          'bricks-default-content',
+          'bricks-element-posts',
+          'bricks-isotope',
+          'bricks-element-post-author',
+          'bricks-element-post-comments',
+          'bricks-element-post-navigation',
+          'bricks-element-post-sharing',
+          'bricks-element-post-taxonomy',
+          'bricks-element-related-posts',
+          'bricks-404',
+          'wp-block-library',
+          'classic-theme-styles',
+          'global-styles',
+          'bricks-admin',
+        ];
+        foreach ($style_handles as $handle) {
+          wp_dequeue_style($handle);
+          wp_deregister_style($handle);
+        }
+      }
+    }, 100);
   }
 }

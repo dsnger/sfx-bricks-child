@@ -652,7 +652,6 @@ class WPOptimizerController
     }
 
 
-
     private function disable_application_passwords()
     {
         /**

@@ -60,7 +60,7 @@ class OptionsGeneral
 					array(
 						'key' => 'field_66cdf40363573',
 						'label' => __('Bricks Styling deaktivieren', 'sfxtheme'),
-						'name' => 'disable_bricks_css',
+						'name' => 'disable_bricks_styles',
 						'aria-label' => '',
 						'type' => 'true_false',
 						'instructions' => __('Remove all default Bricks styling.', 'sfxtheme'),
