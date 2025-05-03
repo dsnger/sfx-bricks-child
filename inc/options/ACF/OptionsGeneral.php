@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsGeneral
+class OptionsGeneral
 {
 	public function __construct()
 	{
@@ -19,11 +19,11 @@ class ACFOptionsGeneral
 				'fields' => array(
 					array(
 						'key' => 'field_66cdd1b58b67f',
-						'label' => __('JQuery deaktivieren', 'sfx'),
-						'name' => 'jquery',
+						'label' => __('JQuery deaktivieren', 'sfxtheme'),
+						'name' => 'disable_jquery',
 						'aria-label' => '',
 						'type' => 'true_false',
-						'instructions' => __('Remove default JQuery for enhanced performance if not necessary for plugins.', 'sfx'),
+						'instructions' => __('Remove default JQuery for enhanced performance if not necessary for plugins.', 'sfxtheme'),
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array(
@@ -39,11 +39,11 @@ class ACFOptionsGeneral
 					),
 					array(
 						'key' => 'field_66cdf27fd8e7e',
-						'label' => __('Bricks JS deaktivieren', 'sfx'),
-						'name' => 'bricks_js',
+						'label' => __('Bricks JS deaktivieren', 'sfxtheme'),
+						'name' => 'disable_bricks_js',
 						'aria-label' => '',
 						'type' => 'true_false',
-						'instructions' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfx'),
+						'instructions' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array(
@@ -59,11 +59,11 @@ class ACFOptionsGeneral
 					),
 					array(
 						'key' => 'field_66cdf40363573',
-						'label' => __('Bricks Styling deaktivieren', 'sfx'),
-						'name' => 'bricks_css',
+						'label' => __('Bricks Styling deaktivieren', 'sfxtheme'),
+						'name' => 'disable_bricks_css',
 						'aria-label' => '',
 						'type' => 'true_false',
-						'instructions' => __('Remove all default Bricks styling.', 'sfx'),
+						'instructions' => __('Remove all default Bricks styling.', 'sfxtheme'),
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array(

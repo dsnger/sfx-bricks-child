@@ -22,7 +22,6 @@ class ComposerStaticInite6a51f320e34ce75a24cd5d94bd916d9
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'SFX\\SFXBricksChildTheme' => __DIR__ . '/../..' . '/inc/SFXBricksChildTheme.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

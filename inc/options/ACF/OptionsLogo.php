@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsLogo
+class OptionsLogo
 {
 	public function __construct()
 	{
@@ -17,10 +17,10 @@ class ACFOptionsLogo
 		if (function_exists('acf_add_options_page')) {
 
 			acf_add_options_sub_page(array(
-				'page_title'    => __('Logo', 'sfx'),
-				'menu_title'    => __('Logo', 'sfx'),
+				'page_title'    => __('Logo', 'sfxtheme'),
+				'menu_title'    => __('Logo', 'sfxtheme'),
 				'menu_slug'     => 'sfx-logo-settings',
-				'parent_slug'   => AdminOptionPages::$menu_slug,
+				'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
 			));
 		}
 	}

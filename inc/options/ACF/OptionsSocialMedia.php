@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsSocialMedia
+class OptionsSocialMedia
 {
 	public function __construct()
 	{
@@ -17,9 +17,9 @@ class ACFOptionsSocialMedia
     if (function_exists('acf_add_options_page')) {
 
       acf_add_options_sub_page(array(
-        'page_title'   => __('Social Media', 'sfx'),
-        'menu_title'   => __('Social Media Profile', 'sfx'),
-        'parent_slug'  => ACFOptionsContact::$menu_slug,
+        'page_title'   => __('Social Media', 'sfxtheme'),
+        'menu_title'   => __('Social Media Profile', 'sfxtheme'),
+        'parent_slug'  => OptionsContact::$menu_slug,
         'autoload'     => false
       ));
 
@@ -140,10 +140,6 @@ class ACFOptionsSocialMedia
 				'active' => true,
 				'description' => '',
 				'show_in_rest' => 0,
-				'acfe_autosync' => array(
-					0 => 'php',
-					1 => 'json',
-				),
 				'acfe_form' => 0,
 				'acfe_display_title' => '',
 				'acfe_permissions' => '',

@@ -2,31 +2,6 @@
   margin: 0
 }
 
-a {
-  color: #4682b4
-}
-
-#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,#adminmenu li.current a.menu-top,.folded #adminmenu li.wp-has-current-submenu,.folded #adminmenu li.current.menu-top,#adminmenu .wp-menu-arrow,#adminmenu .wp-has-current-submenu .wp-submenu .wp-submenu-head,#adminmenu .wp-menu-arrow div {
-  background: #E72371;
-  color: #fff
-}
-
-#adminmenu a:hover,#adminmenu li.menu-top>a:focus,#adminmenu .wp-submenu a:hover,#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top {
-  color: #e72371
-}
-
-#adminmenu li>a.menu-top:focus,#adminmenu .wp-submenu a:focus {
-  color: #fff
-}
-
-#adminmenu li:hover div.wp-menu-image:before,#adminmenu li a:focus div.wp-menu-image:before,#adminmenu li.opensub div.wp-menu-image:before {
-  color: #e72371
-}
-
-#wp-auth-check-wrap #wp-auth-check {
-  background: #1D1D1F!important
-}
-
 .acf-field.acf-accordion .acf-accordion-content>.acf-fields {
   background-color: #fafafa
 }

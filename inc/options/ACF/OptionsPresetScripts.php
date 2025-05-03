@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsPresetScripts
+class OptionsPresetScripts
 {
     public function __construct()
     {
@@ -11,21 +11,21 @@ class ACFOptionsPresetScripts
     }
 
     public function add_acf_options_pages()
-	{
+    {
 
-		// Make sure ACF is active
-		if (function_exists('acf_add_options_page')) {
+        // Make sure ACF is active
+        if (function_exists('acf_add_options_page')) {
 
             acf_add_options_sub_page(array(
-                'page_title'    => __('Preset Scripts', 'sfx'),
-                'menu_title'    => __('Preset Scripts', 'sfx'),
-                'parent_slug'   => AdminOptionPages::$menu_slug,
+                'page_title'    => __('Preset Scripts', 'sfxtheme'),
+                'menu_title'    => __('Preset Scripts', 'sfxtheme'),
+                'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
                 'post_content'  => __('
                 <p>It´s is recommanded to disable default Bricks JS, when not using the default elements.</p>
-              ', 'sfx'),
-              ));
-		}
-	}
+              ', 'sfxtheme'),
+            ));
+        }
+    }
 
     public function register_fields()
     {
@@ -33,14 +33,14 @@ class ACFOptionsPresetScripts
         if (function_exists('acf_add_local_field_group')) {
             acf_add_local_field_group(array(
                 'key' => 'group_64a1b2c3d4e5f',
-                'title' => __('Scripts Presets', 'sfx'),
+                'title' => __('Scripts Presets', 'sfxtheme'),
                 'fields' => array(
                     array(
                         'key' => 'field_iconify',
-                        'label' => __('Enable Iconify', 'sfx'),
-                        'name' => 'iconify',
+                        'label' => __('Enable Iconify', 'sfxtheme'),
+                        'name' => 'enable_iconify',
                         'type' => 'true_false',
-                        'instructions' => __('Enabling this setting will enqueue the Iconify script on your website.', 'sfx'),
+                        'instructions' => __('Enabling this setting will enqueue the Iconify script on your website.', 'sfxtheme'),
                         'required' => 0,
                         'conditional_logic' => 0,
                         'wrapper' => array(
@@ -54,7 +54,7 @@ class ACFOptionsPresetScripts
                     ),
                     array(
                         'key' => 'field_iconify_information',
-                        'label' => __('Iconify Information', 'sfx'),
+                        'label' => __('Iconify Information', 'sfxtheme'),
                         'name' => 'iconify_information',
                         'type' => 'message',
                         'instructions' => '',
@@ -94,7 +94,7 @@ class ACFOptionsPresetScripts
                     array(
                         'key' => 'field_64a1b2c3d4e60',
                         'label' => 'Enable Alpine JS',
-                        'name' => 'alpine',
+                        'name' => 'enable_alpine',
                         'type' => 'true_false',
                         'instructions' => 'Enabling this setting will enqueue Alpine JS on your website.',
                         'required' => 0,
@@ -130,6 +130,11 @@ class ACFOptionsPresetScripts
                             'id' => '',
                         ),
                         'layout' => 'row',
+                        'acfe_seamless_style' => 0,
+                        'acfe_group_modal' => 0,
+                        'acfe_group_modal_close' => 0,
+                        'acfe_group_modal_button' => '',
+                        'acfe_group_modal_size' => 'large',
                         'sub_fields' => array(
                             array(
                                 'key' => 'field_64a1b2c3d4e62',
@@ -284,7 +289,7 @@ class ACFOptionsPresetScripts
                     array(
                         'key' => 'field_64a1b2c3d4e71',
                         'label' => 'GSAP',
-                        'name' => 'gsap',
+                        'name' => 'enable_gsap',
                         'type' => 'true_false',
                         'instructions' => 'GSAP is a powerful JavaScript animation library that allows you to create complex and interactive animations.',
                         'required' => 0,
@@ -354,7 +359,7 @@ stagger: Stagger delay between characters (e.g., stagger: 0.05).
                     array(
                         'key' => 'field_64a1b2c3d4e75',
                         'label' => 'Enable Locomotive Scroll',
-                        'name' => 'locomotive_scroll',
+                        'name' => 'enable_locomotive_scroll',
                         'type' => 'true_false',
                         'instructions' => 'Enabling this setting will enqueue the Locomotive Scroll library on your website.',
                         'required' => 0,
@@ -427,7 +432,7 @@ smooth: true
                     array(
                         'key' => 'field_64a1b2c3d4e73',
                         'label' => 'Enable AOS (Animate On Scroll)',
-                        'name' => 'aos',
+                        'name' => 'enable_aos',
                         'type' => 'true_false',
                         'instructions' => 'Enabling this setting will enqueue the AOS library on your website.',
                         'required' => 0,

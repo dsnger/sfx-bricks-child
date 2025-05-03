@@ -20,9 +20,9 @@ class AdminOptionPages
 
       // ACF options parent page setup
       acf_add_options_page(array(
-        'page_title'    => __('Global Settings', 'sfx'),
-        'menu_title'    => __('Global Settings', 'sfx'),
-        'menu_slug'     => 'sfx-theme-settings',
+        'page_title'    => __('Global Theme Settings', 'sfxtheme'),
+        'menu_title'    => __('Global Theme Settings', 'sfxtheme'),
+        'menu_slug'     => self::$menu_slug,
         'capability'    => 'manage_options',
         'redirect'      => false,
         'position'      => '99'

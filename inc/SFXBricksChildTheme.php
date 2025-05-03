@@ -13,7 +13,7 @@ class SFXBricksChildTheme
   {
 
     $this->INC_DIR = get_stylesheet_directory() . '/inc/';
-    $this->ASSET_DIR = get_stylesheet_directory() . '/assets/';
+    $this->ASSET_DIR = get_stylesheet_directory_uri() . '/assets/';
   }
 
 
@@ -26,7 +26,7 @@ class SFXBricksChildTheme
     // Load text domains
     add_action('after_setup_theme', [$this, 'load_textdomains']);
 
-    $this->load_setting_pages();
+    $this->load_dependencies();
 
     // Register custom elements
     add_action('init', [$this, 'register_custom_elements'], 11);
@@ -38,22 +38,41 @@ class SFXBricksChildTheme
 
   public function load_textdomains()
   {
-    load_child_theme_textdomain('sfx', get_stylesheet_directory() . '/languages');
+    load_child_theme_textdomain('sfxtheme', get_stylesheet_directory() . '/languages');
     load_theme_textdomain('parent-theme', get_template_directory() . '/languages');
   }
 
 
-  private function load_setting_pages()
+  private function load_dependencies()
   {
-    new \SFX\Options\AdminOptionPages();
-    new \SFX\Options\ACFOptionsContact();
-    new \SFX\Options\ACFOptionsSocialMedia();
-    new \SFX\Options\ACFOptionsGeneral();
-    new \SFX\Options\ACFOptionsLogo();
-    new \SFX\Options\ACFOptionsCustomScripts();
-    new \SFX\Options\ACFOptionsPresetScripts();
-    new \SFX\Options\ACFOptionsHeader();
-    new \SFX\Options\ACFOptionsFooter();
+    $this->init_admin_options();
+    // $this->init_shortcodes();
+    $this->init_wp_optimizer();
+  }
+
+  /**
+   * Initialize admin options
+   */
+  private function init_admin_options()
+  {
+    new \SFX\Options\AdminOptionsController();
+  }
+
+  /**
+   * Initialize shortcodes
+   */
+  private function init_shortcodes()
+  {
+    // Initialize shortcode controller using autoloading
+    new \SFX\Shortcodes\ShortcodeController();
+  }
+
+  /**
+   * Initialize WP Optimizer
+   */
+  private function init_wp_optimizer()
+  {
+    new \SFX\WPOptimizer\WPOptimizerController();
   }
 
 
@@ -61,6 +80,10 @@ class SFXBricksChildTheme
   {
     if (!bricks_is_builder_main()) {
       wp_enqueue_style('bricks-child', get_stylesheet_uri(), ['bricks-frontend'], filemtime(get_stylesheet_directory() . '/style.css'));
+      wp_enqueue_style('sfx-frontend', $this->ASSET_DIR . 'css/frontend.css', ['bricks-child'], filemtime(get_stylesheet_directory() . '/assets/css/frontend.css'));
+    } else {
+      // Load builder-specific styles
+      wp_enqueue_style('sfx-builder-styles', $this->ASSET_DIR . 'css/builder/styles.css', ['bricks-builder'], filemtime(get_stylesheet_directory() . '/assets/css/builder/styles.css'));
     }
   }
 
@@ -68,10 +91,10 @@ class SFXBricksChildTheme
   public function enqueue_admin_scripts()
   {
     wp_enqueue_style(
-      'child-theme-admin-styles',
-      $this->ASSET_DIR . '/css/admin-styles.css',
+      'sfx-bricks-child-admin-styles',
+      $this->ASSET_DIR . 'css/backend.css',
       array(),
-      filemtime($this->ASSET_DIR . '/css/admin-styles.css')
+      filemtime(get_stylesheet_directory() . '/assets/css/backend.css')
     );
   }
 

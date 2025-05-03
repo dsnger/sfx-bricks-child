@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsCustomScripts
+class OptionsCustomScripts
 {
     public function __construct()
     {
@@ -18,9 +18,9 @@ class ACFOptionsCustomScripts
 		if (function_exists('acf_add_options_page')) {
 
             acf_add_options_sub_page(array(
-                'page_title'    => __('Custom Scripts', 'sfx'),
-                'menu_title'    => __('Custom Scripts', 'sfx'),
-                'parent_slug'   => AdminOptionPages::$menu_slug,
+                'page_title'    => __('Custom Scripts', 'sfxtheme'),
+                'menu_title'    => __('Custom Scripts', 'sfxtheme'),
+                'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
               ));
 		}
 	}
@@ -32,11 +32,11 @@ class ACFOptionsCustomScripts
             acf_add_local_field_group(array(
 
                 'key' => 'group_script_configuration',
-                'title' => __('Custom Scripts', 'sfx'),
+                'title' => __('Custom Scripts', 'sfxtheme'),
                 'fields' => array(
                     array(
                         'key' => 'field_custom_scripts',
-                        'label' => __('Add Custom Scripts', 'sfx'),
+                        'label' => __('Add Custom Scripts', 'sfxtheme'),
                         'name' => 'custom_scripts',
                         'type' => 'repeater',
                         'layout' => 'row',
@@ -56,7 +56,7 @@ class ACFOptionsCustomScripts
                             ),
                             array(
                                 'key' => 'field_script_type',
-                                'label' => __('Script Type', 'sfx'),
+                                'label' => __('Script Type', 'sfxtheme'),
                                 'name' => 'script_type',
                                 'type' => 'select',
                                 'choices' => array(
@@ -68,7 +68,7 @@ class ACFOptionsCustomScripts
                             ),
                             array(
                                 'key' => 'field_location',
-                                'label' => __('Location', 'sfx'),
+                                'label' => __('Location', 'sfxtheme'),
                                 'name' => 'location',
                                 'type' => 'select',
                                 'choices' => array(
@@ -79,7 +79,7 @@ class ACFOptionsCustomScripts
                             ),
                             array(
                                 'key' => 'field_include_type',
-                                'label' => __('Include Type', 'sfx'),
+                                'label' => __('Include Type', 'sfxtheme'),
                                 'name' => 'include_type',
                                 'type' => 'select',
                                 'choices' => array(
@@ -90,7 +90,7 @@ class ACFOptionsCustomScripts
                             ),
                             array(
                                 'key' => 'field_frontend_only',
-                                'label' => __('Frontend Only', 'sfx'),
+                                'label' => __('Frontend Only', 'sfxtheme'),
                                 'name' => 'frontend_only',
                                 'type' => 'true_false',
                                 'ui' => 1,
@@ -103,6 +103,7 @@ class ACFOptionsCustomScripts
                                 'choices' => array(
                                     'file' => 'Upload File',
                                     'cdn' => 'CDN Link',
+                                    'cdn_file' => 'Upload from CDN',
                                 ),
                                 'layout' => 'horizontal',
                             ),

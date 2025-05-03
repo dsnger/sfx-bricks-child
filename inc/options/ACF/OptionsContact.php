@@ -1,8 +1,9 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsContact
+
+class OptionsContact
 {
 
 	public static $menu_slug = 'sfx-contact-settings';
@@ -21,8 +22,8 @@ class ACFOptionsContact
     if (function_exists('acf_add_options_page')) {
 
       $option_contact = acf_add_options_page(array(
-        'page_title'  => __('Contact details', 'sfx'),
-        'menu_title'  => __('Contact details', 'sfx'),
+        'page_title'  => __('Contact details', 'sfxtheme'),
+        'menu_title'  => __('Contact details', 'sfxtheme'),
         'menu_slug'   => self::$menu_slug,
         'capability'  => 'edit_posts',
         'autoload'    => true,
@@ -30,8 +31,8 @@ class ACFOptionsContact
       ));
 
       acf_add_options_sub_page(array(
-        'page_title'   => __('Contact', 'sfx'),
-        'menu_title'   => __('Contact', 'sfx'),
+        'page_title'   => __('Contact', 'sfxtheme'),
+        'menu_title'   => __('Contact', 'sfxtheme'),
         'parent_slug'  => self::$menu_slug,
         'autoload'     => false
       ));
@@ -117,7 +118,7 @@ class ACFOptionsContact
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array(
-							'width' => '50',
+							'width' => '25',
 							'class' => '',
 							'id' => '',
 						),
@@ -160,6 +161,27 @@ class ACFOptionsContact
 						'conditional_logic' => 0,
 						'wrapper' => array(
 							'width' => '30',
+							'class' => '',
+							'id' => '',
+						),
+						'acfe_save_meta' => 1,
+						'default_value' => '',
+						'maxlength' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+					),
+					array(
+						'key' => 'field_680b5223c5b35',
+						'label' => 'Land',
+						'name' => 'country',
+						'aria-label' => '',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '25',
 							'class' => '',
 							'id' => '',
 						),
@@ -544,7 +566,7 @@ class ACFOptionsContact
 								'required' => 0,
 								'conditional_logic' => 0,
 								'wrapper' => array(
-									'width' => '50',
+									'width' => '25',
 									'class' => '',
 									'id' => '',
 								),
@@ -582,6 +604,27 @@ class ACFOptionsContact
 								'key' => 'field_62a5d1883d624',
 								'label' => 'Stadt',
 								'name' => 'branch_city',
+								'aria-label' => '',
+								'type' => 'text',
+								'instructions' => '',
+								'required' => 0,
+								'conditional_logic' => 0,
+								'wrapper' => array(
+									'width' => '25',
+									'class' => '',
+									'id' => '',
+								),
+								'default_value' => '',
+								'placeholder' => '',
+								'prepend' => '',
+								'append' => '',
+								'maxlength' => '',
+								'parent_repeater' => 'field_5e469db7bd139',
+							),
+							array(
+								'key' => 'field_680b531b7f1bc',
+								'label' => 'Land',
+								'name' => 'branch_country',
 								'aria-label' => '',
 								'type' => 'text',
 								'instructions' => '',
@@ -812,11 +855,11 @@ class ACFOptionsContact
 								),
 								'acfe_save_meta' => 1,
 								'layout' => 'block',
-								'acfe_seamless_style' => 0,
-								'acfe_group_modal' => 0,
-								'acfe_group_modal_close' => 0,
-								'acfe_group_modal_button' => '',
-								'acfe_group_modal_size' => 'large',
+								// 'acfe_seamless_style' => 0,
+								// 'acfe_group_modal' => 0,
+								// 'acfe_group_modal_close' => 0,
+								// 'acfe_group_modal_button' => '',
+								// 'acfe_group_modal_size' => 'large',
 								'parent_repeater' => 'field_5e469db7bd139',
 								'sub_fields' => array(
 									array(

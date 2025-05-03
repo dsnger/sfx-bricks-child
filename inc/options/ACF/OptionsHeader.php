@@ -1,8 +1,8 @@
 <?php
 
-namespace SFX\Options;
+namespace SFX\Options\ACF;
 
-class ACFOptionsFooter
+class OptionsHeader
 {
   public function __construct()
   {
@@ -19,9 +19,9 @@ class ACFOptionsFooter
     if (function_exists('acf_add_options_page')) {
 
       acf_add_options_sub_page(array(
-        'page_title'    => __('Footer Settings', 'sfx'),
-        'menu_title'    => __('Footer Settings', 'sfx'),
-        'parent_slug'   => AdminOptionPages::$menu_slug,
+        'page_title'    => __('Header Settings', 'sfxtheme'),
+        'menu_title'    => __('Header Settings', 'sfxtheme'),
+        'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
       ));
     }
   }
@@ -32,15 +32,15 @@ class ACFOptionsFooter
     // Your ACF field registration code here
     if (function_exists('acf_add_local_field_group')) {
       acf_add_local_field_group(array(
-        'key' => 'group_66d43fe4a0ce8',
-        'title' => __('Custom HTML for WP Footer', 'sfx'),
+        'key' => 'group_66d4407c674a4',
+        'title' => __('Custom HTML for WP Head', 'sfxtheme'),
         'fields' => array(
           array(
-            'key' => 'field_66d44008bd432',
-            'label' => __('Custom HTML for WP Footer (Frontend Only)', 'sfx'),
-            'name' => 'custom_footer_html',
+            'key' => 'field_66d4408620f39',
+            'label' => __('Custom HTML for WP Head (Frontend Only)', 'sfxtheme'),
+            'name' => 'custom_head_html_frontend',
             'type' => 'acfe_code_editor',
-            'instructions' => __('Enter custom HTML (including scripts or styles) for the front-end. This HTML will be output directly in the footer section.', 'sfx'),
+            'instructions' => __('Enter custom HTML for the front-end. This HTML will be applied site-wide and will appear in the head section. <br><a href="https://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=Hello%20World" target="_blank">Text to ASCI ART</a>. If you want to add this ASCII art, don\'t forget to comment it like this: <code>&lt;!-- ASCII art --&gt;</code>.', 'sfxtheme'),
             'required' => 0,
             'wrapper' => array(
               'width' => '',
@@ -65,11 +65,11 @@ class ACFOptionsFooter
             array(
               'param' => 'options_page',
               'operator' => '==',
-              'value' => 'acf-options-footer-settings',
+              'value' => 'acf-options-header-settings',
             ),
           ),
         ),
-        'menu_order' => 1,
+        'menu_order' => 0,
         'position' => 'normal',
         'style' => 'seamless',
         'label_placement' => 'top',
