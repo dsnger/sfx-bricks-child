@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD024 -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -22,7 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2024-06-XX
 
 ### Added
+
 - Logo shortcode implementation and registration via ShortcodeController.
 
 ### Changed
+
 - Enabled shortcode initialization in SFXBricksChildTheme.
