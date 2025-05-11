@@ -24,6 +24,17 @@ class PixRefinerController
         AssetManager::register();
         // Register upload conversion filter
         add_filter('wp_handle_upload', [self::class, 'handle_upload_convert_to_format'], 10, 1);
+        // Register .htaccess/MIME type update on theme activation and option change
+        add_action('after_switch_theme', [self::class, 'ensure_mime_types']);
+        add_action('update_option_webp_use_avif', [self::class, 'ensure_mime_types']);
+        // Register attachment deletion cleanup
+        add_action('wp_delete_attachment', [self::class, 'delete_attachment_files'], 10, 1);
+        // Register custom srcset filter
+        add_filter('wp_calculate_image_srcset', [self::class, 'custom_srcset'], 10, 5);
+        // Disable big image scaling
+        add_filter('big_image_size_threshold', '__return_false', 999);
+        // Register custom metadata filter
+        add_filter('wp_generate_attachment_metadata', [self::class, 'fix_format_metadata'], 10, 2);
     }
 
     /**
@@ -182,5 +193,241 @@ class PixRefinerController
         }
         update_option('webp_conversion_log', array_slice((array)$log, -500));
         return $upload;
+    }
+
+    /**
+     * Ensure WebP/AVIF MIME types in .htaccess (Apache only)
+     */
+    public static function ensure_mime_types(): void
+    {
+        $htaccess_file = ABSPATH . '.htaccess';
+        if (!file_exists($htaccess_file) || !is_writable($htaccess_file)) {
+            return;
+        }
+        $content = file_get_contents($htaccess_file);
+        $webp_mime = "AddType image/webp .webp";
+        $avif_mime = "AddType image/avif .avif";
+        if (strpos($content, $webp_mime) === false || strpos($content, $avif_mime) === false) {
+            $new_content = "# BEGIN WebP Converter MIME Types\n";
+            if (strpos($content, $webp_mime) === false) {
+                $new_content .= "$webp_mime\n";
+            }
+            if (strpos($content, $avif_mime) === false) {
+                $new_content .= "$avif_mime\n";
+            }
+            $new_content .= "# END WebP Converter MIME Types\n";
+            $content .= "\n" . $new_content;
+            file_put_contents($htaccess_file, $content);
+        }
+    }
+
+    /**
+     * Clean up all related files on attachment deletion
+     */
+    public static function delete_attachment_files(int $attachment_id): void
+    {
+        $excluded = Settings::get_excluded_images();
+        if (in_array($attachment_id, $excluded, true)) return;
+        $file = get_attached_file($attachment_id);
+        if ($file && file_exists($file)) @unlink($file);
+        $metadata = wp_get_attachment_metadata($attachment_id);
+        if ($metadata && isset($metadata['sizes'])) {
+            $upload_dir = wp_upload_dir()['basedir'];
+            foreach ($metadata['sizes'] as $size) {
+                $size_file = $upload_dir . '/' . dirname($metadata['file']) . '/' . $size['file'];
+                if (file_exists($size_file)) @unlink($size_file);
+            }
+        }
+    }
+
+    /**
+     * Custom srcset to include all sizes in current format
+     */
+    public static function custom_srcset($sources, $size_array, $image_src, $image_meta, $attachment_id)
+    {
+        if (in_array($attachment_id, Settings::get_excluded_images(), true)) {
+            return $sources;
+        }
+        $use_avif = Settings::get_use_avif();
+        $extension = $use_avif ? '.avif' : '.webp';
+        $mode = Settings::get_resize_mode();
+        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $upload_dir = wp_upload_dir();
+        $base_path = $upload_dir['basedir'] . '/' . dirname($image_meta['file']);
+        $base_name = pathinfo($image_meta['file'], PATHINFO_FILENAME);
+        $base_url = $upload_dir['baseurl'] . '/' . dirname($image_meta['file']);
+        foreach ($max_values as $index => $dimension) {
+            if ($index === 0) continue;
+            $file = "$base_path/$base_name-$dimension$extension";
+            if (file_exists($file)) {
+                $size_key = "custom-$dimension";
+                $width = ($mode === 'width') ? $dimension : (isset($image_meta['sizes'][$size_key]['width']) ? $image_meta['sizes'][$size_key]['width'] : 0);
+                $sources[$width] = [
+                    'url' => "$base_url/$base_name-$dimension$extension",
+                    'descriptor' => 'w',
+                    'value' => $width
+                ];
+            }
+        }
+        $thumbnail_file = "$base_path/$base_name-150x150$extension";
+        if (file_exists($thumbnail_file)) {
+            $sources[150] = [
+                'url' => "$base_url/$base_name-150x150$extension",
+                'descriptor' => 'w',
+                'value' => 150
+            ];
+        }
+        return $sources;
+    }
+
+    /**
+     * Custom metadata for converted images
+     */
+    public static function fix_format_metadata($metadata, $attachment_id)
+    {
+        $use_avif = Settings::get_use_avif();
+        $extension = $use_avif ? 'avif' : 'webp';
+        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $file = get_attached_file($attachment_id);
+        if (pathinfo($file, PATHINFO_EXTENSION) !== $extension) {
+            return $metadata;
+        }
+        $uploads = wp_upload_dir();
+        $file_path = $file;
+        $file_name = basename($file_path);
+        $dirname = dirname($file_path);
+        $base_name = pathinfo($file_name, PATHINFO_FILENAME);
+        $mode = Settings::get_resize_mode();
+        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $metadata['file'] = str_replace($uploads['basedir'] . '/', '', $file_path);
+        $metadata['mime_type'] = $format;
+        foreach ($max_values as $index => $dimension) {
+            if ($index === 0) continue;
+            $size_file = "$dirname/$base_name-$dimension.$extension";
+            if (file_exists($size_file)) {
+                $metadata['sizes']["custom-$dimension"] = [
+                    'file' => "$base_name-$dimension.$extension",
+                    'width' => ($mode === 'width') ? $dimension : (isset($metadata['sizes']["custom-$dimension"]['width']) ? $metadata['sizes']["custom-$dimension"]['width'] : 0),
+                    'height' => ($mode === 'height') ? $dimension : (isset($metadata['sizes']["custom-$dimension"]['height']) ? $metadata['sizes']["custom-$dimension"]['height'] : 0),
+                    'mime-type' => $format
+                ];
+            }
+        }
+        $thumbnail_file = "$dirname/$base_name-150x150.$extension";
+        if (file_exists($thumbnail_file)) {
+            $metadata['sizes']['thumbnail'] = [
+                'file' => "$base_name-150x150.$extension",
+                'width' => 150,
+                'height' => 150,
+                'mime-type' => $format
+            ];
+        }
+        return $metadata;
+    }
+
+    /**
+     * Recursively clean up leftover originals and alternate formats
+     */
+    public static function cleanup_leftover_originals(): void
+    {
+        $log = get_option('webp_conversion_log', []);
+        $uploads_dir = wp_upload_dir()['basedir'];
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($uploads_dir));
+        $deleted = 0;
+        $failed = 0;
+        $preserve_originals = Settings::get_preserve_originals();
+        $use_avif = Settings::get_use_avif();
+        $current_extension = $use_avif ? 'avif' : 'webp';
+        $alternate_extension = $use_avif ? 'webp' : 'avif';
+        $attachments = get_posts([
+            'post_type' => 'attachment',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+        ]);
+        $active_files = [];
+        $mode = Settings::get_resize_mode();
+        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $excluded_images = Settings::get_excluded_images();
+        foreach ($attachments as $attachment_id) {
+            $file = get_attached_file($attachment_id);
+            $metadata = wp_get_attachment_metadata($attachment_id);
+            $dirname = dirname($file);
+            $base_name = pathinfo($file, PATHINFO_FILENAME);
+            if (in_array($attachment_id, $excluded_images, true)) {
+                if ($file && file_exists($file)) $active_files[$file] = true;
+                $possible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+                foreach ($possible_extensions as $ext) {
+                    $potential_file = "$dirname/$base_name.$ext";
+                    if (file_exists($potential_file)) $active_files[$potential_file] = true;
+                }
+                foreach ($max_values as $index => $dimension) {
+                    $suffix = ($index === 0) ? '' : "-{$dimension}";
+                    foreach (['webp', 'avif'] as $ext) {
+                        $file_path = "$dirname/$base_name$suffix.$ext";
+                        if (file_exists($file_path)) $active_files[$file_path] = true;
+                    }
+                }
+                $thumbnail_files = ["$dirname/$base_name-150x150.webp", "$dirname/$base_name-150x150.avif"];
+                foreach ($thumbnail_files as $thumbnail_file) {
+                    if (file_exists($thumbnail_file)) $active_files[$thumbnail_file] = true;
+                }
+                if ($metadata && isset($metadata['sizes'])) {
+                    foreach ($metadata['sizes'] as $size_data) {
+                        $size_file = "$dirname/" . $size_data['file'];
+                        if (file_exists($size_file)) $active_files[$size_file] = true;
+                    }
+                }
+                continue;
+            }
+            if ($file && file_exists($file)) {
+                $active_files[$file] = true;
+                foreach ($max_values as $index => $dimension) {
+                    $suffix = ($index === 0) ? '' : "-{$dimension}";
+                    $current_file = "$dirname/$base_name$suffix.$current_extension";
+                    if (file_exists($current_file)) $active_files[$current_file] = true;
+                }
+                $thumbnail_file = "$dirname/$base_name-150x150.$current_extension";
+                if (file_exists($thumbnail_file)) $active_files[$thumbnail_file] = true;
+            }
+        }
+        if (!$preserve_originals) {
+            foreach ($files as $file) {
+                if ($file->isDir()) continue;
+                $file_path = $file->getPathname();
+                $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+                if (!in_array($extension, ['webp', 'avif', 'jpg', 'jpeg', 'png'])) continue;
+                $relative_path = str_replace($uploads_dir . '/', '', $file_path);
+                $path_parts = explode('/', $relative_path);
+                $is_valid_path = (count($path_parts) === 1) || (count($path_parts) === 3 && is_numeric($path_parts[0]) && is_numeric($path_parts[1]));
+                if (!$is_valid_path || isset($active_files[$file_path])) continue;
+                if (in_array($extension, ['jpg', 'jpeg', 'png']) || $extension === $alternate_extension) {
+                    $attempts = 0;
+                    while ($attempts < 5 && file_exists($file_path)) {
+                        if (!is_writable($file_path)) {
+                            @chmod($file_path, 0644);
+                            if (!is_writable($file_path)) {
+                                $log[] = sprintf(__('Error: Cannot make %s writable - skipping deletion', 'wpturbo'), basename($file_path));
+                                $failed++;
+                                break;
+                            }
+                        }
+                        if (@unlink($file_path)) {
+                            $log[] = sprintf(__('Cleanup: Deleted %s', 'wpturbo'), basename($file_path));
+                            $deleted++;
+                            break;
+                        }
+                        $attempts++;
+                        sleep(1);
+                    }
+                    if (file_exists($file_path)) {
+                        $log[] = sprintf(__('Cleanup: Failed to delete %s', 'wpturbo'), basename($file_path));
+                        $failed++;
+                    }
+                }
+            }
+        }
+        $log[] = "<span style='font-weight: bold; color: #281E5D;'>" . __('Cleanup Complete', 'wpturbo') . "</span>: " . sprintf(__('Deleted %d files, %d failed', 'wpturbo'), $deleted, $failed);
+        update_option('webp_conversion_log', array_slice((array)$log, -500));
     }
 }
