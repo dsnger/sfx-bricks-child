@@ -18,3 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Bug: Fixed mobile menu toggle
+
+## [0.2.0] - 2024-06-XX
+
+### Added
+- Logo shortcode implementation and registration via ShortcodeController.
+
+### Changed
+- Enabled shortcode initialization in SFXBricksChildTheme.
