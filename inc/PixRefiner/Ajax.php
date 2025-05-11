@@ -12,6 +12,7 @@ class Ajax
         add_action('wp_ajax_webp_convert_single', [self::class, 'convert_single_image']);
         add_action('wp_ajax_webp_export_media_zip', [self::class, 'export_media_zip']);
         add_action('wp_ajax_webp_cleanup_originals', [self::class, 'cleanup_originals']);
+        add_action('wp_ajax_webp_cleanup_optimized', [self::class, 'cleanup_optimized']);
         add_action('wp_ajax_webp_fix_post_image_urls', [self::class, 'fix_post_image_urls']);
         add_action('wp_ajax_webp_set_max_widths', [self::class, 'set_max_widths']);
         add_action('wp_ajax_webp_set_max_heights', [self::class, 'set_max_heights']);
@@ -508,5 +509,92 @@ class Ajax
         $log[] = sprintf(__('Min size for conversion set to %d KB.', 'wpturbo'), $min_size);
         update_option('webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => sprintf(__('Min size for conversion set to %d KB.', 'wpturbo'), $min_size)]);
+    }
+
+    /**
+     * Memory-optimized cleanup of leftover files with batch processing
+     */
+    public static function cleanup_optimized(): void
+    {
+        // Debug info
+        $debug_info = [];
+        $debug_info['ajax_called'] = true;
+        
+        // Verify nonce with detailed error if it fails
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'webp_converter_nonce')) {
+            $debug_info['nonce_error'] = true;
+            $debug_info['provided_nonce'] = isset($_POST['nonce']) ? substr($_POST['nonce'], 0, 5) . '...' : 'missing';
+            wp_send_json_error([
+                'message' => __('Security verification failed. Try refreshing the page.', 'wpturbo'),
+                'debug' => $debug_info
+            ]);
+            return;
+        }
+        
+        // Verify capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            return;
+        }
+        
+        wp_raise_memory_limit('admin');
+        set_time_limit(300); // 5 minutes timeout
+        
+        // Start time to track execution
+        $start_time = microtime(true);
+        
+        // Log start message
+        $log = get_option('webp_conversion_log', []);
+        $log[] = sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'wpturbo'), date('Y-m-d H:i:s'));
+        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        
+        // Default batch size - can be adjusted via POST
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 1000;
+        $batch_size = min(5000, max(100, $batch_size)); // Between 100 and 5000
+        
+        try {
+            // Run the optimized cleanup
+            $results = PixRefinerController::cleanup_leftover_originals($batch_size);
+            
+            // Calculate execution time
+            $execution_time = round(microtime(true) - $start_time, 2);
+            
+            // Format response
+            $response = [
+                'deleted' => $results['deleted'],
+                'failed' => $results['failed'],
+                'processed' => $results['processed'],
+                'file_count' => $results['file_count'] ?? 0,
+                'memory_warnings' => $results['memory_warnings'],
+                'completed' => $results['completed'],
+                'execution_time' => $execution_time,
+                'message' => sprintf(
+                    __('Cleanup completed in %s seconds. Deleted: %d, Failed: %d, Processed: %d files, Memory warnings: %d', 'wpturbo'),
+                    $execution_time,
+                    $results['deleted'],
+                    $results['failed'],
+                    $results['file_count'] ?? 0,
+                    $results['memory_warnings']
+                )
+            ];
+            
+            // Add next batch info if needed
+            if (!$results['completed']) {
+                $response['need_next_batch'] = true;
+                $response['message'] .= ' ' . __('More files need processing. Please run again.', 'wpturbo');
+            }
+            
+            wp_send_json_success($response);
+        } catch (\Throwable $e) {
+            // Log and handle any exceptions
+            $log[] = sprintf(__('Error during optimized cleanup: %s', 'wpturbo'), $e->getMessage());
+            update_option('webp_conversion_log', array_slice((array)$log, -500));
+            
+            wp_send_json_error([
+                'message' => sprintf(__('Error: %s', 'wpturbo'), $e->getMessage()),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+        }
     }
 } 

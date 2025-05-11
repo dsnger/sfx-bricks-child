@@ -16,8 +16,13 @@ class AssetManager
         if ($hook !== 'sfx-theme-settings_page_webp-converter' && $hook !== 'toplevel_page_webp-converter') {
             return;
         }
+        
+        // Ensure wp-api is loaded (needed for media library interaction)
+        wp_enqueue_media();
+        
         $assets_url = get_stylesheet_directory_uri() . '/inc/PixRefiner/assets/';
         $assets_dir = get_stylesheet_directory() . '/inc/PixRefiner/assets/';
+        
         // Enqueue JS
         if (file_exists($assets_dir . 'admin-script.js')) {
             wp_enqueue_script(
@@ -27,13 +32,22 @@ class AssetManager
                 filemtime($assets_dir . 'admin-script.js'),
                 true
             );
+            
             // Localize script for AJAX and nonce
             wp_localize_script('pixrefiner-admin', 'PixRefinerAjax', [
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce'    => wp_create_nonce('webp_converter_nonce'),
                 'excluded_images' => \SFX\PixRefiner\Settings::get_excluded_images(),
+                'debug_info' => [
+                    'hook' => $hook,
+                    'time' => time()
+                ]
             ]);
+        } else {
+            // Log error if script is missing
+            error_log('PixRefiner: admin-script.js not found at ' . $assets_dir);
         }
+        
         // Enqueue CSS
         if (file_exists($assets_dir . 'admin-styles.css')) {
             wp_enqueue_style(

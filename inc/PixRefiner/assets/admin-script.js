@@ -37,6 +37,71 @@ jQuery(function($){
             logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
         });
     });
+    
+    // Optimized Cleanup (Memory-safe)
+    $('#optimized-cleanup').on('click', function(){
+        var $btn = $(this);
+        if (!confirm('Run memory-optimized cleanup?\n\nThis process will scan your uploads directory and remove unused image files while efficiently managing memory usage.')) {
+            return;
+        }
+        
+        // Debug check for AJAX data
+        if (!PixRefinerAjax || !PixRefinerAjax.ajax_url || !PixRefinerAjax.nonce) {
+            logMessage('Error: PixRefiner AJAX data is missing. Trying to debug:');
+            logMessage('PixRefinerAjax exists: ' + (typeof PixRefinerAjax !== 'undefined'));
+            if (typeof PixRefinerAjax !== 'undefined') {
+                logMessage('ajax_url exists: ' + (typeof PixRefinerAjax.ajax_url !== 'undefined'));
+                logMessage('nonce exists: ' + (typeof PixRefinerAjax.nonce !== 'undefined'));
+            }
+            return;
+        }
+        
+        logMessage('Starting memory-optimized cleanup...');
+        logMessage('Debug - Using Ajax URL: ' + PixRefinerAjax.ajax_url);
+        
+        // Disable all action buttons
+        var $buttons = $('#start-conversion, #cleanup-originals, #convert-post-images, #run-all, #optimized-cleanup, #export-media-zip');
+        $buttons.prop('disabled', true);
+        $btn.text('Processing...');
+        
+        $.ajax({
+            url: PixRefinerAjax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'webp_cleanup_optimized',
+                nonce: PixRefinerAjax.nonce,
+                batch_size: 1000 // Default batch size
+            },
+            success: function(response) {
+                $buttons.prop('disabled', false);
+                $btn.text('Optimized Cleanup');
+                
+                if (response.success && response.data) {
+                    logMessage(response.data.message || 'Cleanup completed');
+                    
+                    // If more processing is needed
+                    if (response.data.need_next_batch) {
+                        if (confirm('There are more files to process. Continue with next batch?')) {
+                            runOptimizedCleanup($btn);
+                        }
+                    }
+                } else {
+                    logMessage('Error: ' + (response.data ? response.data : 'Unknown error during cleanup'));
+                }
+            },
+            error: function(xhr, status, error) {
+                $buttons.prop('disabled', false);
+                $btn.text('Optimized Cleanup');
+                logMessage('AJAX error: ' + status + ' - ' + error);
+                logMessage('Response Text: ' + xhr.responseText);
+            }
+        });
+    });
+
+    // Keep the runOptimizedCleanup function for compatibility
+    function runOptimizedCleanup($btn) {
+        $('#optimized-cleanup').trigger('click');
+    }
 
     // 3. Fix URLs
     $('#convert-post-images').on('click', function(){

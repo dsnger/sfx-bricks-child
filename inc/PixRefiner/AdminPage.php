@@ -65,16 +65,17 @@ class AdminPage
                             <label><input type="checkbox" id="disable-auto-conversion" <?php echo Settings::get_disable_auto_conversion() ? 'checked' : ''; ?>> Disable Auto-Conversion on Upload</label>
                         </div>
                         <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                            <button id="start-conversion" class="button">1. Convert/Scale</button>
-                            <button id="cleanup-originals" class="button">2. Cleanup Images</button>
-                            <button id="convert-post-images" class="button">3. Fix URLs</button>
-                            <button id="run-all" class="button button-primary">Run All (1-3)</button>
-                            <button id="stop-conversion" class="button" style="display: none;">Stop</button>
+                            <button id="start-conversion" class="button"><?php _e('1. Convert/Scale', 'wpturbo'); ?></button>
+                            <button id="cleanup-originals" class="button"><?php _e('2. Cleanup Images', 'wpturbo'); ?></button>
+                            <button id="convert-post-images" class="button"><?php _e('3. Fix URLs', 'wpturbo'); ?></button>
+                            <button id="run-all" class="button button-primary"><?php _e('Run All (1-3)', 'wpturbo'); ?></button>
+                            <button id="stop-conversion" class="button" style="display: none;"><?php _e('Stop', 'wpturbo'); ?></button>
                         </div>
                         <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                            <button id="clear-log" class="button">Clear Log</button>
-                            <button id="reset-defaults" class="button">Reset Defaults</button>
-                            <button id="export-media-zip" class="button">Export Media as ZIP</button>
+                            <button id="clear-log" class="button"><?php _e('Clear Log', 'wpturbo'); ?></button>
+                            <button id="reset-defaults" class="button"><?php _e('Reset Defaults', 'wpturbo'); ?></button>
+                            <button id="export-media-zip" class="button"><?php _e('Export Media as ZIP', 'wpturbo'); ?></button>
+                            <button id="optimized-cleanup" class="button button-secondary" title="<?php _e('Memory-optimized file cleanup (better for large sites)', 'wpturbo'); ?>"><?php _e('Optimized Cleanup', 'wpturbo'); ?></button>
                         </div>
                     </div>
                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
