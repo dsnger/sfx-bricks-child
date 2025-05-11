@@ -46,7 +46,7 @@ class SFXBricksChildTheme
   private function load_dependencies()
   {
     $this->init_admin_options();
-    // $this->init_shortcodes();
+    $this->init_shortcodes();
     $this->init_wp_optimizer();
   }
 

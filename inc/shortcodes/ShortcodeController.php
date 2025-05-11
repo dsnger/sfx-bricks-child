@@ -42,6 +42,7 @@ class ShortcodeController
             // Class name => dependencies check method (optional)
             \SFX\Shortcodes\IconifyIcon::class => 'check_iconify_enabled',
             \SFX\Shortcodes\ContactInfos::class => null,
+            \SFX\Shortcodes\Logo::class => null,
             // Add other shortcode classes here
         ];
     }
