@@ -351,6 +351,48 @@ jQuery(function($){
         });
     });
 
+    // Handle checkbox changes for use-avif
+    $('#use-avif').on('change', function(){
+        var useAvif = $(this).is(':checked');
+        $.post(PixRefinerAjax.ajax_url, {
+            action: 'webp_set_use_avif',
+            nonce: PixRefinerAjax.nonce,
+            use_avif: useAvif ? 1 : 0
+        }, function(response){
+            logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'AVIF setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating AVIF setting'));
+        }).fail(function(xhr){
+            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+        });
+    });
+
+    // Handle checkbox changes for preserve-originals
+    $('#preserve-originals').on('change', function(){
+        var preserveOriginals = $(this).is(':checked');
+        $.post(PixRefinerAjax.ajax_url, {
+            action: 'webp_set_preserve_originals',
+            nonce: PixRefinerAjax.nonce,
+            preserve_originals: preserveOriginals ? 1 : 0
+        }, function(response){
+            logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Preserve originals setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating preserve originals setting'));
+        }).fail(function(xhr){
+            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+        });
+    });
+
+    // Handle checkbox changes for disable-auto-conversion
+    $('#disable-auto-conversion').on('change', function(){
+        var disableAutoConversion = $(this).is(':checked');
+        $.post(PixRefinerAjax.ajax_url, {
+            action: 'webp_set_disable_auto_conversion',
+            nonce: PixRefinerAjax.nonce,
+            disable_auto_conversion: disableAutoConversion ? 1 : 0
+        }, function(response){
+            logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Auto conversion setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating auto conversion setting'));
+        }).fail(function(xhr){
+            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+        });
+    });
+
     // Initial load: always fetch from server
     refreshExcludedImages();
 }); 

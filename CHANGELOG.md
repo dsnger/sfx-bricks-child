@@ -10,11 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial setup of changelog.
 
-## [0.1.1] - 2025-05-11
+## [0.2.2] - 2025-05-18
 
-### Added
+### Fixed
 
-- Logo shortcode implementation and registration via ShortcodeController.
+- PixRefiner image optimization:
+  - Fixed issue where checkbox settings (AVIF Conversion, Preserve Original Files, Disable Auto-Conversion on Upload) had no save buttons
+  - Added automatic saving functionality for checkbox options via AJAX
+  - Implemented event handlers in JavaScript for immediate settings update
+  - Added corresponding server-side handlers for these settings
+  - Improved user feedback with log messages for setting changes
 
 ## [0.2.1] - 2025-05-11
 
@@ -39,3 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Enabled shortcode initialization in SFXBricksChildTheme.
+
+## [0.1.1] - 2025-05-11
+
+### Added
+
+- Logo shortcode implementation and registration via ShortcodeController.
+

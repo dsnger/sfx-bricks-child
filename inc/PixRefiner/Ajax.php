@@ -20,6 +20,9 @@ class Ajax
         add_action('wp_ajax_webp_reset_defaults', [self::class, 'reset_defaults']);
         add_action('wp_ajax_webp_get_excluded_images', [self::class, 'get_excluded_images']);
         add_action('wp_ajax_webp_set_min_size_kb', [self::class, 'set_min_size_kb']);
+        add_action('wp_ajax_webp_set_use_avif', [self::class, 'set_use_avif']);
+        add_action('wp_ajax_webp_set_preserve_originals', [self::class, 'set_preserve_originals']);
+        add_action('wp_ajax_webp_set_disable_auto_conversion', [self::class, 'set_disable_auto_conversion']);
         // Add other AJAX handlers as needed
     }
 
@@ -506,9 +509,55 @@ class Ajax
         $min_size = isset($_POST['min_size_kb']) ? absint($_POST['min_size_kb']) : 0;
         update_option('webp_min_size_kb', $min_size);
         $log = get_option('webp_conversion_log', []);
-        $log[] = sprintf(__('Min size for conversion set to %d KB.', 'wpturbo'), $min_size);
+        $log_message = sprintf(__('Min size set to: %dKB', 'wpturbo'), $min_size);
+        $log[] = $log_message;
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => sprintf(__('Min size for conversion set to %d KB.', 'wpturbo'), $min_size)]);
+        wp_send_json_success(['message' => $log_message]);
+    }
+
+    public static function set_use_avif(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'wpturbo'));
+        }
+        $use_avif = isset($_POST['use_avif']) ? (bool)$_POST['use_avif'] : false;
+        update_option('webp_use_avif', $use_avif);
+        $log = get_option('webp_conversion_log', []);
+        $log_message = sprintf(__('Use AVIF set to: %s', 'wpturbo'), $use_avif ? 'Yes' : 'No');
+        $log[] = $log_message;
+        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        wp_send_json_success(['message' => $log_message]);
+    }
+
+    public static function set_preserve_originals(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'wpturbo'));
+        }
+        $preserve_originals = isset($_POST['preserve_originals']) ? (bool)$_POST['preserve_originals'] : false;
+        update_option('webp_preserve_originals', $preserve_originals);
+        $log = get_option('webp_conversion_log', []);
+        $log_message = sprintf(__('Preserve originals set to: %s', 'wpturbo'), $preserve_originals ? 'Yes' : 'No');
+        $log[] = $log_message;
+        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        wp_send_json_success(['message' => $log_message]);
+    }
+
+    public static function set_disable_auto_conversion(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'wpturbo'));
+        }
+        $disable_auto_conversion = isset($_POST['disable_auto_conversion']) ? (bool)$_POST['disable_auto_conversion'] : false;
+        update_option('webp_disable_auto_conversion', $disable_auto_conversion);
+        $log = get_option('webp_conversion_log', []);
+        $log_message = sprintf(__('Auto-conversion on upload set to: %s', 'wpturbo'), $disable_auto_conversion ? 'Disabled' : 'Enabled');
+        $log[] = $log_message;
+        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        wp_send_json_success(['message' => $log_message]);
     }
 
     /**
