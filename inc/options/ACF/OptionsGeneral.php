@@ -6,8 +6,24 @@ class OptionsGeneral
 {
 	public function __construct()
 	{
+		add_action('acf/init', [$this, 'add_acf_options_pages']);
 		add_action('acf/init', [$this, 'register_fields']);
 	}
+
+	public function add_acf_options_pages()
+  {
+
+    // Make sure ACF is active
+    if (function_exists('acf_add_options_page')) {
+
+      acf_add_options_sub_page(array(
+        'page_title'    => __('General Options', 'sfxtheme'),
+        'menu_title'    => __('General Options', 'sfxtheme'),
+        'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+				'position' => 1,
+      ));
+    }
+  }
 
 	public function register_fields()
 	{
@@ -83,7 +99,7 @@ class OptionsGeneral
 						array(
 							'param' => 'options_page',
 							'operator' => '==',
-							'value' => 'sfx-theme-settings',
+							'value' => 'acf-options-general-options',
 						),
 					),
 				),

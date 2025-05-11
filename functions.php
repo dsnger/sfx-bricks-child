@@ -59,6 +59,14 @@ if (class_exists('\\SFX\\SFXBricksChildTheme')) {
     $sfx_theme->init();
 }
 
+// Initialize PixRefiner feature (modular, separate namespace)
+if (class_exists('SFX\\PixRefiner\\PixRefiner')) {
+    $pixrefiner = new \SFX\PixRefiner\PixRefiner();
+}
+if (class_exists('SFX\\PixRefiner\\PixRefinerOptions')) {
+    new \SFX\PixRefiner\PixRefinerOptions();
+}
+
 // Ensure ACF is active before initializing the theme
 add_action('after_setup_theme', function () {
     if (!class_exists('ACF')) {
@@ -69,3 +77,6 @@ add_action('after_setup_theme', function () {
         return;
     }
 });
+
+
+

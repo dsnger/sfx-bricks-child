@@ -45,45 +45,40 @@ class SFXBricksChildTheme
 
   private function load_dependencies()
   {
-    $this->init_admin_options();
-    $this->init_shortcodes();
-    $this->init_wp_optimizer();
-  }
-
-  /**
-   * Initialize admin options
-   */
-  private function init_admin_options()
-  {
-    if (class_exists('\SFX\Options\AdminOptionsController')) {
-      new \SFX\Options\AdminOptionsController();
+    $dependencies = [
+      [
+        'class' => '\SFX\Options\AdminOptionsController',
+        'error' => 'Missing AdminOptionsController class in theme',
+      ],
+      [
+        'class' => '\SFX\WPOptimizer\WPOptimizerController',
+        'error' => 'Missing WPOptimizerController class in theme',
+      ],
+    ];
+    foreach ($dependencies as $dep) {
+      if (class_exists($dep['class'])) {
+        new $dep['class']();
+      } elseif (!empty($dep['error'])) {
+        error_log($dep['error']);
+      }
+    }
+    // PixRefinerController: call static init() if class exists
+    if (class_exists('SFX\\PixRefiner\\PixRefinerController')) {
+      \SFX\PixRefiner\PixRefinerController::init();
     } else {
-      error_log('Missing AdminOptionsController class in theme');
+      error_log('Missing PixRefinerController class in theme');
     }
-  }
-
-  /**
-   * Initialize shortcodes
-   */
-  private function init_shortcodes()
-  {
-    // Initialize shortcode controller using autoloading
+    // Delay ShortcodeController until 'init' to ensure ACF is loaded
     if (class_exists('\SFX\Shortcodes\ShortcodeController')) {
-      new \SFX\Shortcodes\ShortcodeController();
+      add_action('init', function () {
+        new \SFX\Shortcodes\ShortcodeController();
+      });
+    } else {
+      error_log('Missing ShortcodeController class in theme');
     }
   }
 
-  /**
-   * Initialize WP Optimizer
-   */
-  private function init_wp_optimizer()
-  {
-    if (class_exists('\SFX\WPOptimizer\WPOptimizerController')) {
-      new \SFX\WPOptimizer\WPOptimizerController();
-    }
-  }
-
-
+  
   public function enqueue_scripts()
   {
     if (!bricks_is_builder_main()) {
@@ -117,6 +112,7 @@ class SFXBricksChildTheme
       \Bricks\Elements::register_element($file);
     }
   }
+
 
   public function add_builder_text_strings($i18n)
   {

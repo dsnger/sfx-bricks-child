@@ -261,3 +261,31 @@ body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .a
 .fixed .column-categories,.fixed .column-rel,.fixed .column-response,.fixed .column-role,.fixed .column-tags {
   width: auto!important
 }
+
+.button.button-primary {
+  background: #1cb1ab;
+  color: #fff;
+  padding: 2px 10px;
+  height: 30px;
+  line-height: 26px;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+}
+.button.button-primary:hover {
+  background: #085957;
+}
+.button:not(.button-primary) {
+  background: #dbe2e9;
+  color: #085957;
+  padding: 2px 10px;
+  height: 30px;
+  line-height: 26px;
+  transition: all 0.2s;
+  border: none;
+}
+.button:not(.button-primary):hover {
+  background: #085957;
+  color: #FFF;
+}
