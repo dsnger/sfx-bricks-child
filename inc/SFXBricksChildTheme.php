@@ -55,7 +55,11 @@ class SFXBricksChildTheme
    */
   private function init_admin_options()
   {
-    new \SFX\Options\AdminOptionsController();
+    if (class_exists('\SFX\Options\AdminOptionsController')) {
+      new \SFX\Options\AdminOptionsController();
+    } else {
+      error_log('Missing AdminOptionsController class in theme');
+    }
   }
 
   /**
@@ -64,7 +68,9 @@ class SFXBricksChildTheme
   private function init_shortcodes()
   {
     // Initialize shortcode controller using autoloading
-    new \SFX\Shortcodes\ShortcodeController();
+    if (class_exists('\SFX\Shortcodes\ShortcodeController')) {
+      new \SFX\Shortcodes\ShortcodeController();
+    }
   }
 
   /**
@@ -72,7 +78,9 @@ class SFXBricksChildTheme
    */
   private function init_wp_optimizer()
   {
-    new \SFX\WPOptimizer\WPOptimizerController();
+    if (class_exists('\SFX\WPOptimizer\WPOptimizerController')) {
+      new \SFX\WPOptimizer\WPOptimizerController();
+    }
   }
 
 
