@@ -368,6 +368,24 @@ class PixRefinerController
                 if (file_exists($size_file)) @unlink($size_file);
             }
         }
+
+        // --- CUSTOM LOGIC TO DELETE PRESERVED ORIGINALS ---
+        // Only run if "Preserve Originals" is enabled
+        if (Settings::get_preserve_originals()) {
+            // Try to find and delete the original file (jpg, jpeg, png)
+            if ($file) {
+                $dir = dirname($file);
+                $base = pathinfo($file, PATHINFO_FILENAME);
+                $possible_exts = ['jpg', 'jpeg', 'png'];
+                foreach ($possible_exts as $ext) {
+                    $original = "$dir/$base.$ext";
+                    // Only delete if it exists and is not the current file
+                    if (file_exists($original) && realpath($original) !== realpath($file)) {
+                        @unlink($original);
+                    }
+                }
+            }
+        }
     }
 
     /**

@@ -78,7 +78,7 @@ class SFXBricksChildTheme
     }
   }
 
-  
+
   public function enqueue_scripts()
   {
     if (!bricks_is_builder_main()) {
