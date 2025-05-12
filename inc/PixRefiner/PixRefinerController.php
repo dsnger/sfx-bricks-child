@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace SFX\PixRefiner;
@@ -18,14 +19,14 @@ class PixRefinerController
      * @var array
      */
     private static $file_cache = [];
-    
+
     /**
      * Memory usage threshold (percentage of limit)
      * 
      * @var float
      */
     private static $memory_threshold = 0.85; // 85% of memory_limit
-    
+
     /**
      * Initialize the controller by registering all hooks
      */
@@ -45,7 +46,7 @@ class PixRefinerController
         add_action('after_switch_theme', [self::class, 'ensure_mime_types']);
         add_action('update_option_webp_use_avif', [self::class, 'ensure_mime_types']);
         // Register attachment deletion cleanup
-        add_action('wp_delete_attachment', [self::class, 'delete_attachment_files'], 10, 1);
+        add_action('delete_attachment', [self::class, 'delete_attachment_files'], 10, 1);
         // Register custom srcset filter
         add_filter('wp_calculate_image_srcset', [self::class, 'custom_srcset'], 10, 5);
         // Disable big image scaling
@@ -53,7 +54,7 @@ class PixRefinerController
         // Register custom metadata filter
         add_filter('wp_generate_attachment_metadata', [self::class, 'fix_format_metadata'], 10, 2);
     }
-    
+
     /**
      * Check if a file exists, using cache if available
      * 
@@ -67,7 +68,7 @@ class PixRefinerController
         }
         return self::$file_cache[$file_path];
     }
-    
+
     /**
      * Clear the file existence cache
      */
@@ -75,7 +76,7 @@ class PixRefinerController
     {
         self::$file_cache = [];
     }
-    
+
     /**
      * Check if available memory is sufficient for continued processing
      * 
@@ -90,25 +91,25 @@ class PixRefinerController
             // No memory limit set
             return false;
         }
-        
+
         // Check current usage against threshold
         $current_usage = memory_get_usage(true);
         $threshold = $memory_limit * self::$memory_threshold;
-        
+
         if ($current_usage < $threshold) {
             // Memory usage is below threshold
             return false;
         }
-        
+
         // If batch size is provided, reduce it
         if ($batch_size !== null && $batch_size > 1) {
             $batch_size = max(1, (int)($batch_size / 2));
             return $batch_size;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Get PHP memory limit in bytes
      * 
@@ -120,11 +121,11 @@ class PixRefinerController
         if ($memory_limit === '-1') {
             return -1; // No limit
         }
-        
+
         // Convert to bytes
         $unit = strtolower(substr($memory_limit, -1));
         $value = (int)$memory_limit;
-        
+
         switch ($unit) {
             case 'g':
                 $value *= 1024;
@@ -135,7 +136,7 @@ class PixRefinerController
             case 'k':
                 $value *= 1024;
         }
-        
+
         return $value;
     }
 
@@ -158,10 +159,10 @@ class PixRefinerController
         $file_path = $upload['file'];
         $uploads_dir = dirname($file_path);
         $log = get_option('webp_conversion_log', []);
-        
+
         // Clear file cache before starting
         self::clear_file_cache();
-        
+
         if (!is_writable($uploads_dir)) {
             $log[] = sprintf(__('Error: Uploads directory %s is not writable', 'wpturbo'), $uploads_dir);
             update_option('webp_conversion_log', array_slice((array)$log, -500));
@@ -179,10 +180,10 @@ class PixRefinerController
         $attachment_id = function_exists('attachment_url_to_postid') ? attachment_url_to_postid($upload['url']) : null;
         $new_files = [];
         $success = true;
-        
+
         // Check memory usage before processing
         self::check_memory_usage();
-        
+
         foreach ($max_values as $index => $dimension) {
             $suffix = ($index === 0) ? '' : "-{$dimension}";
             $new_file_path = \SFX\PixRefiner\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
@@ -199,7 +200,7 @@ class PixRefinerController
                 $success = false;
                 break;
             }
-            
+
             // Check memory after each dimension
             if (self::check_memory_usage()) {
                 // Force garbage collection if available
@@ -369,20 +370,18 @@ class PixRefinerController
             }
         }
 
-        // --- CUSTOM LOGIC TO DELETE PRESERVED ORIGINALS ---
-        // Only run if "Preserve Originals" is enabled
-        if (Settings::get_preserve_originals()) {
-            // Try to find and delete the original file (jpg, jpeg, png)
-            if ($file) {
-                $dir = dirname($file);
-                $base = pathinfo($file, PATHINFO_FILENAME);
-                $possible_exts = ['jpg', 'jpeg', 'png'];
-                foreach ($possible_exts as $ext) {
-                    $original = "$dir/$base.$ext";
-                    // Only delete if it exists and is not the current file
-                    if (file_exists($original) && realpath($original) !== realpath($file)) {
-                        @unlink($original);
-                    }
+        // --- DEBUG LOGGING FOR ORIGINAL FILE DELETION ---
+        if ($file) {
+            $dir = dirname($file);
+            $base = pathinfo($file, PATHINFO_FILENAME);
+            $possible_exts = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+            foreach ($possible_exts as $ext) {
+                $original = "$dir/$base.$ext";
+                if (file_exists($original)) {
+                    error_log('Deleting original: ' . $original);
+                    @unlink($original);
+                } else {
+                    error_log('File does not exist: ' . $original);
                 }
             }
         }
@@ -480,37 +479,37 @@ class PixRefinerController
     {
         $log = get_option('webp_conversion_log', []);
         $uploads_dir = wp_upload_dir()['basedir'];
-        
+
         // Clear file cache before starting
         self::clear_file_cache();
-        
+
         // Initialize counters
         $deleted = 0;
         $failed = 0;
         $processed = 0;
         $memory_warnings = 0;
-        
+
         $preserve_originals = Settings::get_preserve_originals();
         $use_avif = Settings::get_use_avif();
         $current_extension = $use_avif ? 'avif' : 'webp';
         $alternate_extension = $use_avif ? 'webp' : 'avif';
-        
+
         // Build a list of active files first
         $log[] = __('Building list of active files...', 'wpturbo');
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        
+
         $attachments = get_posts([
             'post_type' => 'attachment',
             'posts_per_page' => -1,
             'fields' => 'ids',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
         ]);
-        
+
         $active_files = [];
         $mode = Settings::get_resize_mode();
         $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
         $excluded_images = Settings::get_excluded_images();
-        
+
         // Process attachments to build active files list
         foreach ($attachments as $attachment_id) {
             // Check memory usage periodically
@@ -524,7 +523,7 @@ class PixRefinerController
                     }
                     $log[] = sprintf(__('Memory usage high, garbage collection triggered (%d times)', 'wpturbo'), $memory_warnings);
                     update_option('webp_conversion_log', array_slice((array)$log, -500));
-                    
+
                     // If warnings are excessive, break to avoid crashes
                     if ($memory_warnings > 5) {
                         $log[] = __('Too many memory warnings, stopping process to avoid crash', 'wpturbo');
@@ -539,22 +538,22 @@ class PixRefinerController
                     }
                 }
             }
-            
+
             $processed++;
             $file = get_attached_file($attachment_id);
-            
+
             if (!$file || !self::file_exists_cached($file)) {
                 continue;
             }
-            
+
             $metadata = wp_get_attachment_metadata($attachment_id);
             $dirname = dirname($file);
             $base_name = pathinfo($file, PATHINFO_FILENAME);
-            
+
             if (in_array($attachment_id, $excluded_images, true)) {
                 // Add all possible versions of excluded images to active files
                 $active_files[$file] = true;
-                
+
                 $possible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
                 foreach ($possible_extensions as $ext) {
                     $potential_file = "$dirname/$base_name.$ext";
@@ -562,7 +561,7 @@ class PixRefinerController
                         $active_files[$potential_file] = true;
                     }
                 }
-                
+
                 foreach ($max_values as $index => $dimension) {
                     $suffix = ($index === 0) ? '' : "-{$dimension}";
                     foreach (['webp', 'avif'] as $ext) {
@@ -572,14 +571,14 @@ class PixRefinerController
                         }
                     }
                 }
-                
+
                 $thumbnail_files = ["$dirname/$base_name-150x150.webp", "$dirname/$base_name-150x150.avif"];
                 foreach ($thumbnail_files as $thumbnail_file) {
                     if (self::file_exists_cached($thumbnail_file)) {
                         $active_files[$thumbnail_file] = true;
                     }
                 }
-                
+
                 if ($metadata && isset($metadata['sizes'])) {
                     foreach ($metadata['sizes'] as $size_data) {
                         $size_file = "$dirname/" . $size_data['file'];
@@ -590,10 +589,10 @@ class PixRefinerController
                 }
                 continue;
             }
-            
+
             // Regular (non-excluded) image - mark current format versions as active
             $active_files[$file] = true;
-            
+
             foreach ($max_values as $index => $dimension) {
                 $suffix = ($index === 0) ? '' : "-{$dimension}";
                 $current_file = "$dirname/$base_name$suffix.$current_extension";
@@ -601,34 +600,34 @@ class PixRefinerController
                     $active_files[$current_file] = true;
                 }
             }
-            
+
             $thumbnail_file = "$dirname/$base_name-150x150.$current_extension";
             if (self::file_exists_cached($thumbnail_file)) {
                 $active_files[$thumbnail_file] = true;
             }
         }
-        
+
         $log[] = sprintf(__('Found %d active files to preserve', 'wpturbo'), count($active_files));
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        
+
         // Only proceed with deletion if we're not preserving originals
         if (!$preserve_originals) {
             $files = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($uploads_dir, \RecursiveDirectoryIterator::SKIP_DOTS)
             );
-            
+
             $file_count = 0;
             $max_files = $batch_limit;
-            
+
             foreach ($files as $file) {
                 $file_count++;
-                
+
                 // Process in batches to manage memory
                 if ($file_count > $max_files) {
                     $log[] = sprintf(__('Batch limit reached (%d files). Run cleanup again for remaining files.', 'wpturbo'), $max_files);
                     break;
                 }
-                
+
                 // Check memory usage periodically
                 if ($file_count % 100 === 0) {
                     $memory_status = self::check_memory_usage();
@@ -638,7 +637,7 @@ class PixRefinerController
                         if (function_exists('gc_collect_cycles')) {
                             gc_collect_cycles();
                         }
-                        
+
                         // If warnings are excessive, break to avoid crashes
                         if ($memory_warnings > 5) {
                             $log[] = __('Too many memory warnings, stopping process to avoid crash', 'wpturbo');
@@ -654,35 +653,35 @@ class PixRefinerController
                         }
                     }
                 }
-                
+
                 if ($file->isDir()) {
                     continue;
                 }
-                
+
                 $file_path = $file->getPathname();
                 $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-                
+
                 // Only process image files
                 if (!in_array($extension, ['webp', 'avif', 'jpg', 'jpeg', 'png'])) {
                     continue;
                 }
-                
+
                 $relative_path = str_replace($uploads_dir . '/', '', $file_path);
                 $path_parts = explode('/', $relative_path);
-                
+
                 // Check if this is in a valid uploads path structure
-                $is_valid_path = (count($path_parts) === 1) || 
-                                 (count($path_parts) === 3 && is_numeric($path_parts[0]) && is_numeric($path_parts[1]));
-                
+                $is_valid_path = (count($path_parts) === 1) ||
+                    (count($path_parts) === 3 && is_numeric($path_parts[0]) && is_numeric($path_parts[1]));
+
                 if (!$is_valid_path || isset($active_files[$file_path])) {
                     continue;
                 }
-                
+
                 // Delete if it's original format or alternate format
                 if (in_array($extension, ['jpg', 'jpeg', 'png']) || $extension === $alternate_extension) {
                     $attempts = 0;
                     $chmod_failed = false;
-                    
+
                     while ($attempts < 5 && self::file_exists_cached($file_path)) {
                         if (!is_writable($file_path)) {
                             @chmod($file_path, 0644);
@@ -695,7 +694,7 @@ class PixRefinerController
                                 $chmod_failed = true;
                             }
                         }
-                        
+
                         if (@unlink($file_path)) {
                             $log[] = sprintf(__('Cleanup: Deleted %s', 'wpturbo'), basename($file_path));
                             $deleted++;
@@ -703,11 +702,11 @@ class PixRefinerController
                             self::$file_cache[$file_path] = false;
                             break;
                         }
-                        
+
                         $attempts++;
                         sleep(1);
                     }
-                    
+
                     if (self::file_exists_cached($file_path)) {
                         $log[] = sprintf(__('Cleanup: Failed to delete %s', 'wpturbo'), basename($file_path));
                         $failed++;
@@ -715,18 +714,22 @@ class PixRefinerController
                 }
             }
         }
-        
-        $summary = "<span style='font-weight: bold; color: #281E5D;'>" . __('Cleanup Complete', 'wpturbo') . "</span>: " . 
-                   sprintf(__('Deleted %d files, %d failed, %d memory warnings', 'wpturbo'), 
-                          $deleted, $failed, $memory_warnings);
-        
+
+        $summary = "<span style='font-weight: bold; color: #281E5D;'>" . __('Cleanup Complete', 'wpturbo') . "</span>: " .
+            sprintf(
+                __('Deleted %d files, %d failed, %d memory warnings', 'wpturbo'),
+                $deleted,
+                $failed,
+                $memory_warnings
+            );
+
         if ($file_count >= $batch_limit) {
             $summary .= ' ' . __('(batch limit reached, more files may need processing)', 'wpturbo');
         }
-        
+
         $log[] = $summary;
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        
+
         return [
             'deleted' => $deleted,
             'failed' => $failed,

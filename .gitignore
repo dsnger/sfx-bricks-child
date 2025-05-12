@@ -1,0 +1,50 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Composer dependencies
+/vendor/
+/composer.lock
+
+# Node dependencies and build artifacts
+/node_modules/
+/npm-debug.log
+/yarn-error.log
+/dist/
+/build/
+
+# Log files
+*.log
+
+# WordPress core files (never commit core)
+/wp-admin/
+/wp-includes/
+
+# Environment files
+.env
+.env.*
+
+# Backup and temp files
+*.bak
+*.tmp
+*.swp
+
+# Ignore uploads (optional, comment out if you want to track uploads)
+# /wp-content/uploads/
+
+# Ignore database exports
+*.sql
+*.sql.gz
+
+# Ignore custom cache or cache plugins
+/wp-content/cache/
+
+# Allow theme and plugin files
+!wp-content/themes/sfx-bricks-child/**
+!wp-content/plugins/** 
