@@ -201,19 +201,43 @@ class GitHubThemeUpdater
     if (!isset($hook_extra['theme']) || $hook_extra['theme'] !== $this->theme_slug) {
       return $response;
     }
-    
+
+    $theme_root = get_theme_root($this->theme_slug);
+    $install_directory = $theme_root . '/' . $this->theme_slug;
+    $extracted_folder = $result['destination'];
+
     if ($this->debug) {
       error_log('Theme Updater: After install process for ' . $this->theme_slug);
+      error_log('Theme Updater: Extracted folder: ' . $extracted_folder);
+      error_log('Theme Updater: Target install directory: ' . $install_directory);
     }
-    
-    $install_directory = get_theme_root($this->theme_slug) . '/' . $this->theme_slug;
-    $wp_filesystem->move($result['destination'], $install_directory);
+
+    // Remove the old theme folder if it exists
+    if ($wp_filesystem->exists($install_directory)) {
+      if ($this->debug) {
+        error_log('Theme Updater: Removing old theme directory: ' . $install_directory);
+      }
+      $wp_filesystem->delete($install_directory, true);
+    }
+
+    // Move/rename the extracted folder to the correct theme folder
+    if ($extracted_folder !== $install_directory) {
+      if ($this->debug) {
+        error_log('Theme Updater: Moving extracted folder to theme directory.');
+      }
+      $wp_filesystem->move($extracted_folder, $install_directory);
+    } else {
+      if ($this->debug) {
+        error_log('Theme Updater: Extracted folder already matches theme directory.');
+      }
+    }
+
     $result['destination'] = $install_directory;
-    
+
     if ($this->debug) {
       error_log('Theme Updater: Theme installed to ' . $install_directory);
     }
-    
+
     return $result;
   }
 }
