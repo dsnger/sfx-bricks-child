@@ -14,7 +14,7 @@ namespace SFX\Shortcodes;
 
 defined('ABSPATH') || exit;
 
-class ShortcodeController
+class Controller
 {
     /**
      * Shortcode classes to initialize
@@ -40,9 +40,9 @@ class ShortcodeController
         // Register shortcode classes - add new shortcodes here
         $this->shortcodes = [
             // Class name => dependencies check method (optional)
-            \SFX\Shortcodes\IconifyIcon::class => 'check_iconify_enabled',
-            \SFX\Shortcodes\ContactInfos::class => null,
-            \SFX\Shortcodes\Logo::class => null,
+            \SFX\Shortcodes\SC_IconifyIcon::class => 'check_iconify_enabled',
+            \SFX\Shortcodes\SC_ContactInfos::class => null,
+            \SFX\Shortcodes\SC_Logo::class => null,
             // Add other shortcode classes here
         ];
     }

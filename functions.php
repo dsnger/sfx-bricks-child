@@ -3,11 +3,14 @@
 /**
  * SFX Bricks Child Theme functions and definitions
  * 
- * @version 0.1.0
+ * @version 0.2.7
  * @package SFX\BricksChild
  */
 
 defined('ABSPATH') || exit;
+
+
+define('SFX_THEME_VERSION', '0.2.7');
 
 // Include Composer Autoloader
 $composer_autoload = __DIR__ . '/vendor/autoload.php';
@@ -59,13 +62,6 @@ if (class_exists('\\SFX\\SFXBricksChildTheme')) {
     $sfx_theme->init();
 }
 
-// Initialize PixRefiner feature (modular, separate namespace)
-if (class_exists('SFX\\PixRefiner\\PixRefiner')) {
-    $pixrefiner = new \SFX\PixRefiner\PixRefiner();
-}
-if (class_exists('SFX\\PixRefiner\\PixRefinerOptions')) {
-    new \SFX\PixRefiner\PixRefinerOptions();
-}
 
 // Ensure ACF is active before initializing the theme
 add_action('after_setup_theme', function () {

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace SFX\PixRefiner;
+namespace SFX\ImageOptimizer;
 
 class Settings
 {

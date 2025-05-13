@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: false
 ---
-//PixRefiner v3.1
+//ImageOptimizer v3.1
 // Helper function for formatting file sizes
 function formatBytes($bytes, $precision = 2) {
     $units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -1365,8 +1365,8 @@ function wpturbo_custom_srcset($sources, $size_array, $image_src, $image_meta, $
 // Admin interface
 add_action('admin_menu', function() {
     add_media_page(
-        __('PixRefiner', 'wpturbo'),
-        __('PixRefiner', 'wpturbo'),
+        __('ImageOptimizer', 'wpturbo'),
+        __('ImageOptimizer', 'wpturbo'),
         'manage_options',
         'webp-converter',
         'wpturbo_webp_converter_page'
@@ -1404,7 +1404,7 @@ function wpturbo_webp_converter_page() {
             <div style="width: 45%; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Pane 1: Controls -->
                 <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h1 style="font-size: 20px; font-weight: bold; color: #333; margin: -5px 0 15px 0;"><?php _e('PixRefiner - Image Optimization - v3.1', 'wpturbo'); ?></h1>
+                    <h1 style="font-size: 20px; font-weight: bold; color: #333; margin: -5px 0 15px 0;"><?php _e('ImageOptimizer - Image Optimization - v3.1', 'wpturbo'); ?></h1>
 
                     <?php if (!$has_image_library): ?>
                         <div class="notice notice-error" style="margin-bottom: 20px;">

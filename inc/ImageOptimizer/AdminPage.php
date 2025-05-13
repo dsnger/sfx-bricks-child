@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace SFX\PixRefiner;
+namespace SFX\ImageOptimizer;
 
 class AdminPage
 {
@@ -14,8 +14,8 @@ class AdminPage
     {
         add_submenu_page(
             'sfx-theme-settings',
-            __('PixRefiner', 'wpturbo'),
-            __('PixRefiner', 'wpturbo'),
+            __('ImageOptimizer', 'wpturbo'),
+            __('ImageOptimizer', 'wpturbo'),
             'manage_options',
             'webp-converter',
             [self::class, 'render_page']
@@ -31,7 +31,7 @@ class AdminPage
                 <div style="width: 45%; display: flex; flex-direction: column; gap: 10px;">
                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <h1 style="font-size: 20px; font-weight: bold; color: #333; margin: -5px 0 15px 0;">
-                            <?php _e('PixRefiner - Image Optimization', 'wpturbo'); ?>
+                            <?php _e('Image Optimizer - Size and Format Optimizer', 'wpturbo'); ?>
                         </h1>
                         <div style="margin-bottom: 20px;">
                             <label for="resize-mode" style="font-weight: bold;">Resize Mode:</label><br>
@@ -121,11 +121,12 @@ class AdminPage
                         </p>
                     </div>
                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 10px;">
-                        <div style="margin-bottom: 10px; display: flex; justify-content: flex-start;">
-                            <a href="https://www.paypal.com/paypalme/iamimransiddiq" target="_blank" class="button" style="border: none;" rel="noopener">Support Imran</a>
-                        </div>
+                        
                         <div style="font-size: 13px; color: #888; text-align: left;">
-                            PixRefiner code by <a href="https://learn.websquadron.co.uk/codes/#pixrefiner" target="_blank" rel="noopener" style="color: #0073aa; text-decoration: underline;">Imran Siddiq / Web Squadron</a>
+                            The code for this feature is based and inspired by <a href="https://learn.websquadron.co.uk/codes/#ImageOptimizer" target="_blank" rel="noopener" style="color: #0073aa; text-decoration: underline;">Imran Siddiq / Web Squadron</a>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; justify-content: flex-start;">
+                            <a href="https://www.paypal.com/paypalme/iamimransiddiq" target="_blank" class="button" style="border: none;" rel="noopener">Support Imran</a>
                         </div>
                     </div>
                 </div>

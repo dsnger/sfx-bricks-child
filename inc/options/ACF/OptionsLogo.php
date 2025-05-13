@@ -17,8 +17,8 @@ class OptionsLogo
 		if (function_exists('acf_add_options_page')) {
 
 			acf_add_options_sub_page(array(
-				'page_title'    => __('Logo', 'sfxtheme'),
-				'menu_title'    => __('Logo', 'sfxtheme'),
+				'page_title'    => __('Company Logo', 'sfxtheme'),
+				'menu_title'    => __('Company Logo', 'sfxtheme'),
 				'menu_slug'     => 'sfx-logo-settings',
 				'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
 			));

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace SFX\PixRefiner;
+namespace SFX\ImageOptimizer;
 
 class Ajax
 {
@@ -485,9 +485,9 @@ class Ajax
         update_option('webp_use_avif', false);
         update_option('webp_excluded_images', []);
         $log = get_option('webp_conversion_log', []);
-        $log[] = __('PixRefiner settings reset to defaults.', 'wpturbo');
+        $log[] = __('ImageOptimizer settings reset to defaults.', 'wpturbo');
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => __('PixRefiner settings reset to defaults.', 'wpturbo')]);
+        wp_send_json_success(['message' => __('ImageOptimizer settings reset to defaults.', 'wpturbo')]);
     }
 
     public static function get_excluded_images(): void
@@ -603,7 +603,7 @@ class Ajax
         
         try {
             // Run the optimized cleanup
-            $results = PixRefinerController::cleanup_leftover_originals($batch_size);
+            $results = ImageOptimizerController::cleanup_leftover_originals($batch_size);
             
             // Calculate execution time
             $execution_time = round(microtime(true) - $start_time, 2);

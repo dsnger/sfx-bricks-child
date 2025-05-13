@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace SFX\PixRefiner;
+namespace SFX\ImageOptimizer;
 
 
 /** 
- * PixRefiner v3.1
+ * ImageOptimizer v3.1
  * Helper function for formatting file sizes
  */
 
 
-class PixRefinerController
+class Controller
 {
     /**
      * Static file existence cache to prevent redundant filesystem checks
@@ -30,7 +30,7 @@ class PixRefinerController
     /**
      * Initialize the controller by registering all hooks
      */
-    public static function init(): void
+    public function __construct()
     {
         // Register image size and conversion hooks
         add_filter('intermediate_image_sizes_advanced', [Settings::class, 'limit_image_sizes']);
@@ -186,7 +186,7 @@ class PixRefinerController
 
         foreach ($max_values as $index => $dimension) {
             $suffix = ($index === 0) ? '' : "-{$dimension}";
-            $new_file_path = \SFX\PixRefiner\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
+            $new_file_path = \SFX\ImageOptimizer\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
             if ($new_file_path) {
                 if ($index === 0) {
                     $upload['file'] = $new_file_path;

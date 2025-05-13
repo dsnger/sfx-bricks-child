@@ -25,7 +25,7 @@ use function __;
 
 defined('ABSPATH') || exit;
 
-class Logo
+class SC_Logo
 {
     /**
      * Shortcode tag

@@ -7,9 +7,9 @@ jQuery(function($){
     $('#start-conversion').on('click', function(){
         var $btn = $(this);
         $btn.prop('disabled', true).text('Converting...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_convert_single',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             offset: 0
         }, function(response){
             $btn.prop('disabled', false).text('1. Convert/Scale');
@@ -27,9 +27,9 @@ jQuery(function($){
     $('#cleanup-originals').on('click', function(){
         var $btn = $(this);
         $btn.prop('disabled', true).text('Cleaning...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_cleanup_originals',
-            nonce: PixRefinerAjax.nonce
+            nonce: ImageOptimizerAjax.nonce
         }, function(response){
             $btn.prop('disabled', false).text('2. Cleanup Images');
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Success') : (response.data && response.data.message ? response.data.message : 'Error'));
@@ -46,18 +46,18 @@ jQuery(function($){
         }
         
         // Debug check for AJAX data
-        if (!PixRefinerAjax || !PixRefinerAjax.ajax_url || !PixRefinerAjax.nonce) {
-            logMessage('Error: PixRefiner AJAX data is missing. Trying to debug:');
-            logMessage('PixRefinerAjax exists: ' + (typeof PixRefinerAjax !== 'undefined'));
-            if (typeof PixRefinerAjax !== 'undefined') {
-                logMessage('ajax_url exists: ' + (typeof PixRefinerAjax.ajax_url !== 'undefined'));
-                logMessage('nonce exists: ' + (typeof PixRefinerAjax.nonce !== 'undefined'));
+        if (!ImageOptimizerAjax || !ImageOptimizerAjax.ajax_url || !ImageOptimizerAjax.nonce) {
+            logMessage('Error: ImageOptimizer AJAX data is missing. Trying to debug:');
+            logMessage('ImageOptimizerAjax exists: ' + (typeof ImageOptimizerAjax !== 'undefined'));
+            if (typeof ImageOptimizerAjax !== 'undefined') {
+                logMessage('ajax_url exists: ' + (typeof ImageOptimizerAjax.ajax_url !== 'undefined'));
+                logMessage('nonce exists: ' + (typeof ImageOptimizerAjax.nonce !== 'undefined'));
             }
             return;
         }
         
         logMessage('Starting memory-optimized cleanup...');
-        logMessage('Debug - Using Ajax URL: ' + PixRefinerAjax.ajax_url);
+        logMessage('Debug - Using Ajax URL: ' + ImageOptimizerAjax.ajax_url);
         
         // Disable all action buttons
         var $buttons = $('#start-conversion, #cleanup-originals, #convert-post-images, #run-all, #optimized-cleanup, #export-media-zip');
@@ -65,11 +65,11 @@ jQuery(function($){
         $btn.text('Processing...');
         
         $.ajax({
-            url: PixRefinerAjax.ajax_url,
+            url: ImageOptimizerAjax.ajax_url,
             type: 'POST',
             data: {
                 action: 'webp_cleanup_optimized',
-                nonce: PixRefinerAjax.nonce,
+                nonce: ImageOptimizerAjax.nonce,
                 batch_size: 1000 // Default batch size
             },
             success: function(response) {
@@ -107,9 +107,9 @@ jQuery(function($){
     $('#convert-post-images').on('click', function(){
         var $btn = $(this);
         $btn.prop('disabled', true).text('Fixing...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_fix_post_image_urls',
-            nonce: PixRefinerAjax.nonce
+            nonce: ImageOptimizerAjax.nonce
         }, function(response){
             $btn.prop('disabled', false).text('3. Fix URLs');
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Success') : (response.data && response.data.message ? response.data.message : 'Error'));
@@ -130,9 +130,9 @@ jQuery(function($){
         var $btn = $(this);
         var widths = $('#max-width-input').val();
         $btn.prop('disabled', true).text('Saving...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_max_widths',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             widths: widths
         }, function(response){
             $btn.prop('disabled', false).text('Set Widths');
@@ -148,9 +148,9 @@ jQuery(function($){
         var $btn = $(this);
         var heights = $('#max-height-input').val();
         $btn.prop('disabled', true).text('Saving...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_max_heights',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             heights: heights
         }, function(response){
             $btn.prop('disabled', false).text('Set Heights');
@@ -165,9 +165,9 @@ jQuery(function($){
     $('#clear-log').on('click', function(){
         var $btn = $(this);
         $btn.prop('disabled', true).text('Clearing...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_clear_log',
-            nonce: PixRefinerAjax.nonce
+            nonce: ImageOptimizerAjax.nonce
         }, function(response){
             $btn.prop('disabled', false).text('Clear Log');
             if(response.success) {
@@ -186,9 +186,9 @@ jQuery(function($){
     $('#reset-defaults').on('click', function(){
         var $btn = $(this);
         $btn.prop('disabled', true).text('Resetting...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_reset_defaults',
-            nonce: PixRefinerAjax.nonce
+            nonce: ImageOptimizerAjax.nonce
         }, function(response){
             $btn.prop('disabled', false).text('Reset Defaults');
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Defaults reset') : (response.data && response.data.message ? response.data.message : 'Error resetting defaults'));
@@ -201,16 +201,16 @@ jQuery(function($){
     // Export Media as ZIP
     $('#export-media-zip').on('click', function(){
         logMessage('Exporting media as ZIP...');
-        window.open(PixRefinerAjax.ajax_url + '?action=webp_export_media_zip&nonce=' + PixRefinerAjax.nonce, '_blank');
+        window.open(ImageOptimizerAjax.ajax_url + '?action=webp_export_media_zip&nonce=' + ImageOptimizerAjax.nonce, '_blank');
     });
 
     // Utility: fetch excluded image IDs from server, then fetch and render details
     function refreshExcludedImages() {
         var $list = $('#excluded-images-list');
         $list.html('<li>Loading...</li>');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_get_excluded_images',
-            nonce: PixRefinerAjax.nonce
+            nonce: ImageOptimizerAjax.nonce
         }, function(resp){
             var ids = (resp.success && resp.data && Array.isArray(resp.data)) ? resp.data : [];
             if (ids.length === 0) {
@@ -270,9 +270,9 @@ jQuery(function($){
         var id = $li.data('id');
         var $btn = $li.find('button');
         $btn.prop('disabled', true).text('Removing...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_remove_excluded_image',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             attachment_id: id
         }, function(response){
             if(response.success) {
@@ -312,9 +312,9 @@ jQuery(function($){
             }
             var pending = idsToAdd.length;
             idsToAdd.forEach(function(id){
-                $.post(PixRefinerAjax.ajax_url, {
+                $.post(ImageOptimizerAjax.ajax_url, {
                     action: 'webp_add_excluded_image',
-                    nonce: PixRefinerAjax.nonce,
+                    nonce: ImageOptimizerAjax.nonce,
                     attachment_id: id
                 }, function(response){
                     if(response.success) {
@@ -338,9 +338,9 @@ jQuery(function($){
         var $btn = $(this);
         var minSize = $('#min-size-kb').val();
         $btn.prop('disabled', true).text('Saving...');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_min_size_kb',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             min_size_kb: minSize
         }, function(response){
             $btn.prop('disabled', false).text('Set Min Size');
@@ -354,9 +354,9 @@ jQuery(function($){
     // Handle checkbox changes for use-avif
     $('#use-avif').on('change', function(){
         var useAvif = $(this).is(':checked');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_use_avif',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             use_avif: useAvif ? 1 : 0
         }, function(response){
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'AVIF setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating AVIF setting'));
@@ -368,9 +368,9 @@ jQuery(function($){
     // Handle checkbox changes for preserve-originals
     $('#preserve-originals').on('change', function(){
         var preserveOriginals = $(this).is(':checked');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_preserve_originals',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             preserve_originals: preserveOriginals ? 1 : 0
         }, function(response){
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Preserve originals setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating preserve originals setting'));
@@ -382,9 +382,9 @@ jQuery(function($){
     // Handle checkbox changes for disable-auto-conversion
     $('#disable-auto-conversion').on('change', function(){
         var disableAutoConversion = $(this).is(':checked');
-        $.post(PixRefinerAjax.ajax_url, {
+        $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_set_disable_auto_conversion',
-            nonce: PixRefinerAjax.nonce,
+            nonce: ImageOptimizerAjax.nonce,
             disable_auto_conversion: disableAutoConversion ? 1 : 0
         }, function(response){
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Auto conversion setting updated') : (response.data && response.data.message ? response.data.message : 'Error updating auto conversion setting'));

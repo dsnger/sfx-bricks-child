@@ -15,7 +15,7 @@ namespace SFX\Shortcodes;
 
 defined('ABSPATH') || exit;
 
-class ContactInfos
+class SC_ContactInfos
 {
     /**
      * Class constructor

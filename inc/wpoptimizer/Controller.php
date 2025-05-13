@@ -14,10 +14,10 @@ use SFX\WPOptimizer\ACF\WPOptimizerOptions;
 use WP_Error;
 
 /**
- * Beispielklasse, die alle Optimierungen zusammenführt und
- * über ein assoziatives Array steuern lässt.
+ * Beispielklasse, that combines all optimizations and
+ * controls them via an associative array.
  */
-class WPOptimizerController
+class Controller
 {
     /**
      * Welche Optimierungen aktiv/inaktiv sind.

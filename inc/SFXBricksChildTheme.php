@@ -45,36 +45,67 @@ class SFXBricksChildTheme
 
   private function load_dependencies()
   {
+      
+      // Example for a dependency with a custom callback:
+      // [
+      //   'class' => '\Vendor\SpecialClass',
+      //   'error' => 'Missing SpecialClass',
+      //   'hook'  => 'init',
+      //   'callback' => function ($class) { $instance = new $class('foo'); $instance->init(); },
+      // ],
+
     $dependencies = [
       [
         'class' => '\SFX\Options\AdminOptionsController',
         'error' => 'Missing AdminOptionsController class in theme',
+        'hook'  => null, // load immediately
+        // 'callback' => function ($class) { new $class('arg1', 'arg2'); }, // Example custom callback
       ],
       [
-        'class' => '\SFX\WPOptimizer\WPOptimizerController',
-        'error' => 'Missing WPOptimizerController class in theme',
+        'class' => '\SFX\ImageOptimizer\Controller',
+        'error' => 'Missing ImageOptimizerController class in theme',
+        'hook'  => null, // load immediately
       ],
+      [
+        'class' => '\SFX\Shortcodes\Controller',
+        'error' => 'Missing ShortcodeController class in theme',
+        'hook'  => 'acf/init', // load after ACF is ready
+      ],
+      [
+        'class' => '\SFX\SecurityHeader\Controller',
+        'error' => 'Missing SecurityHeaderController class in theme',
+        'hook'  => null, // load immediately
+      ],
+      [
+        'class' => '\SFX\WPOptimizer\Controller',
+        'error' => 'Missing WPOptimizerController class in theme',
+        'hook'  => null, // load immediately
+      ],
+
     ];
+
     foreach ($dependencies as $dep) {
-      if (class_exists($dep['class'])) {
-        new $dep['class']();
-      } elseif (!empty($dep['error'])) {
-        error_log($dep['error']);
+      if (!class_exists($dep['class'])) {
+        if (!empty($dep['error'])) {
+          error_log($dep['error']);
+        }
+        continue;
       }
-    }
-    // PixRefinerController: call static init() if class exists
-    if (class_exists('SFX\\PixRefiner\\PixRefinerController')) {
-      \SFX\PixRefiner\PixRefinerController::init();
-    } else {
-      error_log('Missing PixRefinerController class in theme');
-    }
-    // Delay ShortcodeController until 'init' to ensure ACF is loaded
-    if (class_exists('\SFX\Shortcodes\ShortcodeController')) {
-      add_action('init', function () {
-        new \SFX\Shortcodes\ShortcodeController();
-      });
-    } else {
-      error_log('Missing ShortcodeController class in theme');
+
+      $callback = $dep['callback'] ?? null;
+      $loader = function () use ($dep, $callback) {
+        if ($callback && is_callable($callback)) {
+          $callback($dep['class']);
+        } else {
+          new $dep['class']();
+        }
+      };
+
+      if (!empty($dep['hook'])) {
+        add_action($dep['hook'], $loader);
+      } else {
+        $loader();
+      }
     }
   }
 

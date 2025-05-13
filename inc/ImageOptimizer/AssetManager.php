@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace SFX\PixRefiner;
+namespace SFX\ImageOptimizer;
 
 class AssetManager
 {
@@ -12,7 +12,7 @@ class AssetManager
 
     public static function enqueue_admin_assets($hook): void
     {
-        // Only load on PixRefiner admin page
+        // Only load on ImageOptimizer admin page
         if ($hook !== 'sfx-theme-settings_page_webp-converter' && $hook !== 'toplevel_page_webp-converter') {
             return;
         }
@@ -20,13 +20,13 @@ class AssetManager
         // Ensure wp-api is loaded (needed for media library interaction)
         wp_enqueue_media();
         
-        $assets_url = get_stylesheet_directory_uri() . '/inc/PixRefiner/assets/';
-        $assets_dir = get_stylesheet_directory() . '/inc/PixRefiner/assets/';
+        $assets_url = get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/';
+        $assets_dir = get_stylesheet_directory() . '/inc/ImageOptimizer/assets/';
         
         // Enqueue JS
         if (file_exists($assets_dir . 'admin-script.js')) {
             wp_enqueue_script(
-                'pixrefiner-admin',
+                'ImageOptimizer-admin',
                 $assets_url . 'admin-script.js',
                 ['jquery'],
                 filemtime($assets_dir . 'admin-script.js'),
@@ -34,10 +34,10 @@ class AssetManager
             );
             
             // Localize script for AJAX and nonce
-            wp_localize_script('pixrefiner-admin', 'PixRefinerAjax', [
+            wp_localize_script('ImageOptimizer-admin', 'ImageOptimizerAjax', [
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce'    => wp_create_nonce('webp_converter_nonce'),
-                'excluded_images' => \SFX\PixRefiner\Settings::get_excluded_images(),
+                'excluded_images' => \SFX\ImageOptimizer\Settings::get_excluded_images(),
                 'debug_info' => [
                     'hook' => $hook,
                     'time' => time()
@@ -45,13 +45,13 @@ class AssetManager
             ]);
         } else {
             // Log error if script is missing
-            error_log('PixRefiner: admin-script.js not found at ' . $assets_dir);
+            error_log('ImageOptimizer: admin-script.js not found at ' . $assets_dir);
         }
         
         // Enqueue CSS
         if (file_exists($assets_dir . 'admin-styles.css')) {
             wp_enqueue_style(
-                'pixrefiner-admin-style',
+                'ImageOptimizer-admin-style',
                 $assets_url . 'admin-styles.css',
                 [],
                 filemtime($assets_dir . 'admin-styles.css')

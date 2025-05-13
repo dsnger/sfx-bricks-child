@@ -14,7 +14,7 @@ namespace SFX\Shortcodes;
 
 defined('ABSPATH') || exit;
 
-class IconifyIcon
+class SC_IconifyIcon
 {
     /**
      * Class constructor

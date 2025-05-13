@@ -6,6 +6,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2025-05-13
+
+### Added
+
+- Security Header:
+  - Added Security Header settings page.
+  - Added Security Header settings to the theme settings page.
+
+### Changed
+
+- PixRefiner:
+  - Rename PixRefiner to ImageOptimizer throughout the codebase, and adjust related hooks and functionality for improved performance and clarity.
+
+- Changed file names inside the features. E.g. removed the "Controller" feature name prefix.
+- Changed the way load_dependencies() works.
+- Changed the way the shortcodes are initialized.
+- Renamed shortcode classes to be more descriptive.
+
 ## [0.2.6] - 2025-05-12
 
 ### Added
@@ -17,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Hook for Pixrefiner: When an attachment is deleted, this hook will also look for any preserved original files and delete them.
+- Hook for ImageOptimizer: When an attachment is deleted, this hook will also look for any preserved original files and delete them.
 
 ## [0.2.4] - 2025-05-12
 
@@ -41,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- PixRefiner image optimization:
+- ImageOptimizer image optimization:
   - Fixed issue where checkbox settings (AVIF Conversion, Preserve Original Files, Disable Auto-Conversion on Upload) had no save buttons
   - Added automatic saving functionality for checkbox options via AJAX
   - Implemented event handlers in JavaScript for immediate settings update
@@ -53,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Theme Settings Page with infos and shortlinks to theme settings.
-- Enhanced PixRefiner image optimization with:
+- Enhanced ImageOptimizer image optimization with:
   - Auto-conversion of uploaded images to WebP/AVIF formats
   - .htaccess/MIME type handling for proper format display
   - Attachment deletion cleanup to remove converted images
