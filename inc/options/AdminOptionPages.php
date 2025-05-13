@@ -41,7 +41,7 @@ class AdminOptionPages
         'slug'  => 'acf-options-general-options',
       ],
       [
-        'title' => __('Logo', 'sfxtheme'),
+        'title' => __('Company Logo', 'sfxtheme'),
         'desc'  => __("Upload and manage your site's logo in different variants (regular, inverted, small, etc.).", 'sfxtheme'),
         'slug'  => 'sfx-logo-settings',
       ],
@@ -54,16 +54,6 @@ class AdminOptionPages
         'title' => __('Social Media', 'sfxtheme'),
         'desc'  => __('Add and manage links to your social media profiles, including custom icons.', 'sfxtheme'),
         'slug'  => 'acf-options-social-media-profile',
-      ],
-      [
-        'title' => __('Header Settings', 'sfxtheme'),
-        'desc'  => __('Add custom HTML to the <head> of your site, e.g., for meta tags, analytics, or ASCII art.', 'sfxtheme'),
-        'slug'  => 'acf-options-header-settings',
-      ],
-      [
-        'title' => __('Footer Settings', 'sfxtheme'),
-        'desc'  => __("Add custom HTML, scripts, or styles to the site's footer.", 'sfxtheme'),
-        'slug'  => 'acf-options-footer-settings',
       ],
       [
         'title' => __('Custom Scripts', 'sfxtheme'),
@@ -79,6 +69,26 @@ class AdminOptionPages
         'title' => __('WP Enhancements', 'sfxtheme'),
         'desc'  => __('Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.', 'sfxtheme'),
         'slug'  => 'acf-options-wp-enhancements',
+      ],
+      [
+        'title' => __('Security Headers', 'sfxtheme'),
+        'desc'  => __('Configure and manage HTTP security headers to improve website security against XSS, clickjacking, and other attacks. Set HSTS, CSP, and other security policies.', 'sfxtheme'),
+        'slug'  => 'security-header',
+      ],
+      [
+        'title' => __('Image Optimizer', 'sfxtheme'),
+        'desc'  => __('Optimize your images by converting them to modern formats (WebP, AVIF) and resizing them for improved page load speed and better Core Web Vitals scores.', 'sfxtheme'),
+        'slug'  => 'webp-converter',
+      ],
+      [
+        'title' => __('Header Settings', 'sfxtheme'),
+        'desc'  => __('Add custom HTML to the <head> of your site, e.g., for meta tags, analytics, or ASCII art.', 'sfxtheme'),
+        'slug'  => 'acf-options-header-settings',
+      ],
+      [
+        'title' => __('Footer Settings', 'sfxtheme'),
+        'desc'  => __("Add custom HTML, scripts, or styles to the site's footer.", 'sfxtheme'),
+        'slug'  => 'acf-options-footer-settings',
       ],
     ];
 

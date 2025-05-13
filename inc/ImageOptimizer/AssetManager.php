@@ -13,16 +13,16 @@ class AssetManager
     public static function enqueue_admin_assets($hook): void
     {
         // Only load on ImageOptimizer admin page
-        if ($hook !== 'sfx-theme-settings_page_webp-converter' && $hook !== 'toplevel_page_webp-converter') {
+        if ($hook !== 'toplevel_page_webp-converter' && $hook !== 'global-theme-settings_page_webp-converter') {
             return;
         }
-        
-        // Ensure wp-api is loaded (needed for media library interaction)
-        wp_enqueue_media();
-        
+
+        // Optionally enqueue media if needed for UI
+        // wp_enqueue_media();
+
         $assets_url = get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/';
         $assets_dir = get_stylesheet_directory() . '/inc/ImageOptimizer/assets/';
-        
+
         // Enqueue JS
         if (file_exists($assets_dir . 'admin-script.js')) {
             wp_enqueue_script(
@@ -44,7 +44,6 @@ class AssetManager
                 ]
             ]);
         } else {
-            // Log error if script is missing
             error_log('ImageOptimizer: admin-script.js not found at ' . $assets_dir);
         }
         
@@ -56,6 +55,8 @@ class AssetManager
                 [],
                 filemtime($assets_dir . 'admin-styles.css')
             );
+        } else {
+            error_log('ImageOptimizer: admin-styles.css not found at ' . $assets_dir);
         }
     }
 } 

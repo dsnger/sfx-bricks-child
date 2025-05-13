@@ -289,3 +289,114 @@ body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .a
   background: #085957;
   color: #FFF;
 }
+
+/* Common Admin UI Components */
+/* Use these classes for all admin pages in the theme */
+
+/* Card layout */
+.sfx-card {
+  background: #fff;
+  padding: 24px 24px 16px 24px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  margin-bottom: 18px;
+}
+
+/* Typography */
+.sfx-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 10px;
+}
+.sfx-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #333;
+}
+.sfx-description {
+  color: #555;
+  font-size: 14px;
+  margin: 6px 0 0 0;
+  line-height: 1.6;
+}
+.sfx-description em {
+  color: #888;
+  font-style: italic;
+}
+
+/* Form Elements */
+.sfx-form-table {
+  width: 100%;
+  border-spacing: 0 10px;
+}
+.sfx-form-table th {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px 10px 8px 0;
+  font-weight: 600;
+  color: #222;
+  width: 180px;
+}
+.sfx-form-table td {
+  padding: 8px 0;
+}
+.sfx-form-table input[type="text"],
+.sfx-form-table input[type="number"],
+.sfx-form-table textarea,
+.sfx-form-table select {
+  width: 320px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #ccd0d4;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #f9f9f9;
+  margin-bottom: 4px;
+}
+.sfx-form-table input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Lists */
+.sfx-tips-list {
+  font-size: 15px;
+  color: #444;
+  line-height: 1.7;
+  padding-left: 22px;
+  list-style-type: disc;
+}
+.sfx-tips-list li {
+  margin-bottom: 7px;
+}
+
+/* Misc Elements */
+.sfx-hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 18px 0;
+}
+
+/* Layout */
+.sfx-flex {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.sfx-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sfx-flex {
+    flex-direction: column;
+  }
+  .sfx-col {
+    width: 100% !important;
+    min-height: unset !important;
+  }
+}

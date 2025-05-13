@@ -1,0 +1,14 @@
+/* SecurityHeader Admin Styles */
+
+/* 
+ * We're now using the common admin UI classes from backend.css
+ * All common UI components (cards, typography, form tables, etc.) are using the global classes with 'sfx-' prefix
+ * 
+ * These global classes include:
+ * - .sfx-card, .sfx-title, .sfx-section-title, .sfx-description
+ * - .sfx-form-table and related form styling
+ * - .sfx-tips-list, .sfx-hr
+ * - .sfx-flex, .sfx-col for layout 
+ */
+
+/* Only add SecurityHeader-specific styles below if needed */
