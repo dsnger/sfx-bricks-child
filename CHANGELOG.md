@@ -11,31 +11,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Security Header:
-  - Added Security Header settings page.
+  - Implement Security Header feature with settings management and UI enhancements
+  - Introduced SecurityHeader module with a dedicated settings page for configuring HTTP security headers, including HSTS, CSP, and X-Frame-Options
+  - Added asset management for admin styles and scripts, ensuring proper loading on the Security Header admin page
   - Added Security Header settings to the theme settings page.
 
 ### Changed
 
 - PixRefiner:
-  - Rename PixRefiner to ImageOptimizer throughout the codebase, and adjust related hooks and functionality for improved performance and clarity.
-
-- Changed file names inside the features. E.g. removed the "Controller" feature name prefix.
-- Changed the way load_dependencies() works.
-- Changed the way the shortcodes are initialized.
-- Renamed shortcode classes to be more descriptive.
+  - Rename PixRefiner to ImageOptimizer throughout the codebase, and adjust related hooks and functionality for improved performance and clarity
+- Changed file names inside the features. E.g. removed the "Controller" feature name prefix
+- Changed the way load_dependencies() works
+- Changed the way the shortcodes are initialized
+- Renamed shortcode classes to be more descriptive
+- Updated backend CSS to include common UI components for a consistent admin interface
 
 ## [0.2.6] - 2025-05-12
 
 ### Added
 
 - Original file deletion:
-  - When an attachment is deleted, this hook will also look for any preserved original files and delete them.
+  - When an attachment is deleted, this hook will also look for any preserved original files and delete them
 
 ## [0.2.5] - 2025-05-12
 
 ### Added
 
-- Hook for ImageOptimizer: When an attachment is deleted, this hook will also look for any preserved original files and delete them.
+- Hook for ImageOptimizer: When an attachment is deleted, this hook will also look for any preserved original files and delete them
 
 ## [0.2.4] - 2025-05-12
 
