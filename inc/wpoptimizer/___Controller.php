@@ -9,6 +9,7 @@ namespace SFX\WPOptimizer;
 
 defined('ABSPATH') or die('Pet a cat!');
 
+use SFX\WPOptimizer\ACF\WPOptimizerOptions;
 
 use WP_Error;
 
@@ -18,46 +19,135 @@ use WP_Error;
  */
 class Controller
 {
+    /**
+     * Welche Optimierungen aktiv/inaktiv sind.
+     * Der Key ist zugleich der Name der entsprechenden Methode.
+     *
+     * @var array
+     */
+    private $optimizations = [];
 
-    private $fields = [];
-    public const OPTION_NAME = 'sfx_wpoptimizer_options';
+    /**
+     * Für deferCss() werden hier die gefundenen Styles gesammelt.
+     *
+     * @var array
+     */
+    private $styles = [];
 
     /**
      * Konstruktor: Definiert Defaults und parst übergebenes Array.
      */
-    public function __construct()
+    public function __construct(array $opts = [])
     {
-        Settings::register(self::OPTION_NAME);
-        AdminPage::register();
-        add_action('init', [$this, 'init_fields']);
 
-        // Initialize the theme only after ACF is confirmed to be active
-        add_action('init', [$this, 'handle_options']);
-        add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
+        $defaults = [
+            'remove_thumbnail_dimensions'   => true,
+            'remove_nav_menu_container'     => true,
+            'remove_caption_width'          => true,
+            'handle_shortcode_formatting'   => true,
+            'remove_archive_title_prefix'   => true,
+            'add_slug_to_body_class'        => true,
+            'block_external_http'           => false,
+            'defer_css'                     => false,
+            'defer_js'                      => false,
+            'disable_comments'              => false,
+            'disable_search'                => false,
+            'add_json_mime_types'           => true,
+            'add_font_mime_types'           => true,
+            'remove_menus_appearance_patterns' => true,
+            'remove_jquery_migrate'         => true,
+            'disable_block_styling'         => false,
+            'disable_embed'                 => false,
+            'disable_emoji'                 => true,
+            'disable_feeds'                 => false,
+            'disable_heartbeat'             => false,
+            'disable_jquery'                => true,
+            'disable_jquery_migrate'        => true,
+            'disable_rest_api'              => false,
+            'disable_rsd'                   => true,
+            'disable_shortlinks'            => true,
+            'disable_theme_editor'          => true,
+            'disable_version_numbers'       => true,
+            'disable_wlw_manifest'          => true,
+            'disable_wp_version'            => true,
+            'disable_xmlrpc'                => true,
+            'jquery_to_footer'              => true,
+            'limit_revisions'               => true,
+            'remove_comments_style'         => true,
+            'slow_heartbeat'                => true,
+            'remove_dns_prefetch'           => true,
+            'disable_application_passwords' => true,
+            'remove_wp_embed'               => true,
+            'remove_global_styles_and_svg_filters' => true,
+            'respect_acf_disable_optimizer' => true,
 
+        ];
+
+        $this->load_setting_pages();
+        $this->optimizations = wp_parse_args($opts, $defaults);
+        $this->init_from_acf();
     }
 
-    public function init_fields(): void
+
+
+    private function load_setting_pages()
     {
-        $this->fields = Settings::get_fields();
+        new \SFX\WPOptimizer\ACF\WPOptimizerOptions();
     }
 
-    public function handle_options(): void
+    public function init_from_acf(): void
     {
-        if (empty($this->fields) || !is_array($this->fields) || $this->is_option_enabled('disable_wp_optimizer')) {
+
+        add_action('acf/init', function () {
+            if (function_exists('get_field')) {
+                $acfValues = get_field('wpoptimizer', 'option');
+                // Prüfen, ob überhaupt Werte vorliegen
+                if (!$acfValues || !is_array($acfValues)) {
+                    $this->apply_optimizations();
+                    return;
+                }
+                $this->optimizations = array_merge($this->optimizations, $acfValues);
+                // error_log(print_r($this->optimizations, true));
+                $this->apply_optimizations();
+            }
+        });
+
+        add_action('acf/save_post', function ($post_id) {
+            if ($post_id !== 'options') {
+                return;
+            }
+            $acfValues = get_field('wpoptimizer', 'option');
+            if (!$acfValues || !is_array($acfValues)) {
+                return;
+            }
+            $this->optimizations = array_merge($this->optimizations, $acfValues);
+            // error_log(print_r($this->optimizations, true));
+            $this->apply_optimizations();
+        });
+    }
+
+    private function is_optimizer_disabled(): bool
+    {
+        if (!$this->optimizations['respect_acf_disable_optimizer']) {
+            return false;
+        }
+
+        return function_exists('get_field') && get_field('disable_wordpress_optimizer', 'option');
+    }
+
+
+    private function apply_optimizations(): void
+    {
+        if ($this->is_optimizer_disabled()) {
             return;
         }
-        foreach ($this->fields as $field) {
-            if ($this->is_option_enabled($field['id']) && method_exists($this, $field['id'])) {
-                $this->{$field['id']}();
+
+        foreach ($this->optimizations as $methodName => $enabled) {
+            if ($enabled && method_exists($this, $methodName)) {
+                // error_log('Applying ' . $methodName);
+                $this->$methodName();
             }
         }
-    }
-
-    private function is_option_enabled(string $option_key): bool
-    {
-        $options = get_option(self::OPTION_NAME, []);
-        return !empty($options[$option_key]);
     }
 
 

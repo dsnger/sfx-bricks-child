@@ -1,3 +1,10 @@
+:root {
+  --sfx-primary-color: #1cb1ab;
+  --sfx-primary-color-dark: #085957;
+  --sfx-toggle-width: 42px;
+  --sfx-toggle-height: 24px;
+}
+
 * {
   margin: 0
 }
@@ -263,10 +270,10 @@ body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .a
 }
 
 .button.button-primary {
-  background: #1cb1ab;
+  background: var(--sfx-primary-color);
   color: #fff;
-  padding: 2px 10px;
-  height: 30px;
+  padding: 4px 12px;
+  height: 32px;
   line-height: 26px;
   transition: all 0.2s;
   font-size: 14px;
@@ -274,19 +281,19 @@ body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .a
   border: none;
 }
 .button.button-primary:hover {
-  background: #085957;
+  background: var(--sfx-primary-color-dark);
 }
 .button:not(.button-primary) {
   background: #dbe2e9;
-  color: #085957;
-  padding: 2px 10px;
-  height: 30px;
+  color: var(--sfx-primary-color-dark);
+  padding: 4px 12px;
+  height: 32px;
   line-height: 26px;
   transition: all 0.2s;
   border: none;
 }
 .button:not(.button-primary):hover {
-  background: #085957;
+  background: var(--sfx-primary-color-dark);
   color: #FFF;
 }
 
@@ -399,4 +406,69 @@ body:not(.acf-admin-single-field-group) .acf-fields .acf-tab-wrap:not(.-left) .a
     width: 100% !important;
     min-height: unset !important;
   }
+}
+
+/**
+ * Toggle Checkbox UI for WordPress Admin
+ */
+input[type="checkbox"].sfx-toggle {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    width: 42px;
+    height: 24px;
+    vertical-align: middle;
+    position: relative;
+    border: 0;
+    outline: 0;
+    cursor: pointer;
+    margin: 0 4px;
+    background: none;
+    box-shadow: none;
+}
+input[type="checkbox"].sfx-toggle:focus {
+    box-shadow: none;
+}
+input[type="checkbox"].sfx-toggle:after {
+    content: '';
+    font-size: 8px;
+    font-weight: 400;
+    line-height: 18px;
+    text-indent: -20px;
+    color: #ffffff;
+    width: 42px;
+    height: 24px;
+    display: inline-block;
+    background-color: #a7aaad;
+    border-radius: 72px;
+    box-shadow: 0 0 10px rgb(0 0 0 / 20%) inset;
+}
+input[type="checkbox"].sfx-toggle:before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    display: block;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    margin: 0;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 0 3px rgb(0 0 0 / 50%);
+}
+input[type="checkbox"].sfx-toggle:checked:before {
+    left: 20px;
+    margin: 0;
+    background-color: #ffffff;
+}
+input[type="checkbox"].sfx-toggle,
+input[type="checkbox"].sfx-toggle:before,
+input[type="checkbox"].sfx-toggle:after,
+input[type="checkbox"].sfx-toggle:checked:before,
+input[type="checkbox"].sfx-toggle:checked:after {
+    transition: ease .15s;
+}
+input[type="checkbox"].sfx-toggle:checked:after {
+    background-color: var(--sfx-primary-color);
 }

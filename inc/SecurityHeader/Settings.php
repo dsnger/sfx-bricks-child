@@ -91,4 +91,30 @@ class Settings
     {
         return get_option($option, $default);
     }
+
+    /**
+     * Delete all options created by the SecurityHeader feature.
+     *
+     * @return void
+     */
+    public static function delete_all_options(): void
+    {
+        $options = [
+            'sfx_hsts_max_age',
+            'sfx_hsts_include_subdomains',
+            'sfx_hsts_preload',
+            'sfx_csp',
+            'sfx_csp_report_uri',
+            'sfx_permissions_policy',
+            'sfx_x_frame_options',
+            'sfx_x_frame_options_allow_from_url',
+            'sfx_disable_hsts_header',
+            'sfx_disable_csp_header',
+            'sfx_disable_x_content_type_options_header',
+            'sfx_disable_x_frame_options_header',
+        ];
+        foreach ($options as $option) {
+            delete_option($option);
+        }
+    }
 }

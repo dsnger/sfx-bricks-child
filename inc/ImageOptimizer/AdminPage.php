@@ -13,7 +13,7 @@ class AdminPage
     public static function add_submenu_page(): void
     {
         add_submenu_page(
-            'sfx-theme-settings',
+            \SFX\Options\AdminOptionPages::$menu_slug,
             __('ImageOptimizer', 'wpturbo'),
             __('ImageOptimizer', 'wpturbo'),
             'manage_options',

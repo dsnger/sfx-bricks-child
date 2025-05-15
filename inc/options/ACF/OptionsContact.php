@@ -855,11 +855,6 @@ class OptionsContact
 								),
 								'acfe_save_meta' => 1,
 								'layout' => 'block',
-								// 'acfe_seamless_style' => 0,
-								// 'acfe_group_modal' => 0,
-								// 'acfe_group_modal_close' => 0,
-								// 'acfe_group_modal_button' => '',
-								// 'acfe_group_modal_size' => 'large',
 								'parent_repeater' => 'field_5e469db7bd139',
 								'sub_fields' => array(
 									array(

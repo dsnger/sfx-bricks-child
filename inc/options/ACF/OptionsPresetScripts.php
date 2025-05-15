@@ -130,11 +130,6 @@ class OptionsPresetScripts
                             'id' => '',
                         ),
                         'layout' => 'row',
-                        'acfe_seamless_style' => 0,
-                        'acfe_group_modal' => 0,
-                        'acfe_group_modal_close' => 0,
-                        'acfe_group_modal_button' => '',
-                        'acfe_group_modal_size' => 'large',
                         'sub_fields' => array(
                             array(
                                 'key' => 'field_64a1b2c3d4e62',

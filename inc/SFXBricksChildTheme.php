@@ -45,16 +45,18 @@ class SFXBricksChildTheme
 
   private function load_dependencies()
   {
-      
+
       // Example for a dependency with a custom callback:
       // [
       //   'class' => '\Vendor\SpecialClass',
       //   'error' => 'Missing SpecialClass',
+      //   'option_key' => 'special_option',
       //   'hook'  => 'init',
       //   'callback' => function ($class) { $instance = new $class('foo'); $instance->init(); },
       // ],
 
     $dependencies = [
+
       [
         'class' => '\SFX\Options\AdminOptionsController',
         'error' => 'Missing AdminOptionsController class in theme',
@@ -62,8 +64,8 @@ class SFXBricksChildTheme
         // 'callback' => function ($class) { new $class('arg1', 'arg2'); }, // Example custom callback
       ],
       [
-        'class' => '\SFX\ImageOptimizer\Controller',
-        'error' => 'Missing ImageOptimizerController class in theme',
+        'class' => '\SFX\GeneralThemeOptions\Controller',
+        'error' => 'Missing GeneralThemeOptionsController class in theme',
         'hook'  => null, // load immediately
       ],
       [
@@ -72,8 +74,17 @@ class SFXBricksChildTheme
         'hook'  => 'acf/init', // load after ACF is ready
       ],
       [
+        'class' => '\SFX\ImageOptimizer\Controller',
+        'error' => 'Missing ImageOptimizerController class in theme',
+        'option_name' => 'sfx_general_options',
+        'option_key' => 'enable_image_optimizer',
+        'hook'  => null, // load immediately
+      ],
+      [
         'class' => '\SFX\SecurityHeader\Controller',
         'error' => 'Missing SecurityHeaderController class in theme',
+        'option_name' => 'sfx_general_options',
+        'option_key' => 'enable_security_header',
         'hook'  => null, // load immediately
       ],
       [
@@ -90,6 +101,12 @@ class SFXBricksChildTheme
           error_log($dep['error']);
         }
         continue;
+      }
+
+      if (!empty($dep['option_key'])) {
+        if (!$this->is_option_enabled($dep['option_name'], $dep['option_key'])) {
+          continue;
+        }
       }
 
       $callback = $dep['callback'] ?? null;
@@ -122,13 +139,22 @@ class SFXBricksChildTheme
   }
 
 
-  public function enqueue_admin_scripts()
+  public function enqueue_admin_scripts($hook_suffix)
   {
+    // Only load on Global Theme Settings pages and subpages
+    if (strpos($hook_suffix, 'global-theme-settings') === false && strpos($hook_suffix, 'sfx-theme-settings') === false && strpos($hook_suffix, 'wp-optimizer-options') === false) {
+        return;
+    }
     wp_enqueue_style(
       'sfx-bricks-child-admin-styles',
       $this->ASSET_DIR . 'css/backend.css',
       array(),
       filemtime(get_stylesheet_directory() . '/assets/css/backend.css')
+    );
+    // Enqueue JS to add sfx-toggle class to all checkboxes in admin
+    wp_add_inline_script(
+      'jquery-core',
+      "jQuery(function($){ $('input[type=checkbox]').addClass('sfx-toggle'); });"
     );
   }
 
@@ -150,4 +176,13 @@ class SFXBricksChildTheme
     $i18n['custom'] = esc_html__('Custom', 'bricks');
     return $i18n;
   }
+
+
+
+  private function is_option_enabled(string $option_name, string $option_key): bool
+  {
+    $options = get_option($option_name, []);
+    return !empty($options[$option_key]);
+  }
+
 }
