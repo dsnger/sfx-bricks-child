@@ -17,14 +17,14 @@ class AdminPage
             __('ImageOptimizer', 'wpturbo'),
             __('ImageOptimizer', 'wpturbo'),
             'manage_options',
-            'webp-converter',
+            'sfx-image-optimizer',
             [self::class, 'render_page']
         );
     }
 
     public static function render_page(): void
     {
-        AssetManager::enqueue_admin_assets('sfx-theme-settings_page_webp-converter');
+        AssetManager::enqueue_admin_assets('sfx-theme-settings_page_sfx-image-optimizer');
         ?>
         <div class="wrap" style="padding: 0; font-size: 14px;">
             <div style="display: flex; gap: 10px; align-items: flex-start;">

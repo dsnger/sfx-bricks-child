@@ -18,7 +18,7 @@ class AdminPage
             __('Security Header', 'sfxtheme'),
             __('Security Header', 'sfxtheme'),
             'manage_options',
-            'security-header',
+            'sfx-security-header',
             [self::class, 'render_page']
         );
     }

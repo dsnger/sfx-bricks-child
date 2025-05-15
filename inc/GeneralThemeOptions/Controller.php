@@ -39,7 +39,6 @@ class Controller
   }
 
 
-
   public function handle_image_optimizer(): void {
 
     if (!$this->is_option_enabled('enable_image_optimizer')) {
@@ -52,6 +51,14 @@ class Controller
 
     if (!$this->is_option_enabled('enable_security_header')) {
       \SFX\SecurityHeader\Settings::delete_all_options();
+    }
+
+  }
+
+  public function handle_wp_optimizer(): void {
+
+    if (!$this->is_option_enabled('enable_wp_optimizer')) {
+      \SFX\WPOptimizer\Settings::delete_all_options();
     }
 
   }

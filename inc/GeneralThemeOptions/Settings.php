@@ -18,6 +18,27 @@ class Settings
     public static function get_fields(): array {
         return [
             [
+                'id'          => 'enable_wp_optimizer',
+                'label'       => __('Enable WP Optimizer', 'sfxtheme'),
+                'description' => __('Enable WP Optimizer to manage some WordPress features for better performance and security.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+            ],
+            [
+                'id'          => 'enable_image_optimizer',
+                'label'       => __('Enable Image Optimizer', 'sfxtheme'),
+                'description' => __('Enable Image Optimizer to optimize images for better performance.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+            ],
+            [
+                'id'          => 'enable_security_header',
+                'label'       => __('Enable Security Header', 'sfxtheme'),
+                'description' => __('Enable Security Header to protect your website against common security threats.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),
@@ -31,20 +52,7 @@ class Settings
                 'type'        => 'checkbox',
                 'default'     => 0,
             ],
-            [
-                'id'          => 'enable_image_optimizer',
-                'label'       => __('Enable Image Optimizer', 'sfxtheme'),
-                'description' => __('Enable Image Optimizer to optimize images for better performance and SEO.', 'sfxtheme'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-            ],
-            [
-                'id'          => 'enable_security_header',
-                'label'       => __('Enable Security Header', 'sfxtheme'),
-                'description' => __('Enable Security Header to protect your website against common security threats.', 'sfxtheme'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-            ],
+            
         ];
     }
 

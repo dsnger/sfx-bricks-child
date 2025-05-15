@@ -29,6 +29,7 @@ class Controller
     {
         Settings::register(self::OPTION_NAME);
         AdminPage::register();
+        AssetManager::register();
         add_action('init', [$this, 'init_fields']);
 
         // Initialize the theme only after ACF is confirmed to be active
@@ -587,5 +588,90 @@ class Controller
             remove_action('wp_enqueue_scripts', 'wp_enqueue_global_styles');
             remove_action('wp_body_open', 'wp_global_styles_render_svg_filters');
         });
+    }
+
+    private function disable_xml_sitemaps()
+    {
+        add_filter('wp_sitemaps_enabled', '__return_false');
+    }
+
+    private function disable_self_pingbacks()
+    {
+        add_action('pre_ping', function (&$links) {
+            $home = get_option('home');
+            foreach ($links as $l => $link) {
+                if (0 === strpos($link, $home)) {
+                    unset($links[$l]);
+                }
+            }
+        });
+    }
+
+    private function disable_dashicons_frontend()
+    {
+        add_action('wp_enqueue_scripts', function () {
+            if (!is_user_logged_in()) {
+                wp_deregister_style('dashicons');
+            }
+        });
+    }
+
+    private function limit_autosave_interval()
+    {
+        add_filter('autosave_interval', function () {
+            return 300; // 5 minutes
+        });
+    }
+
+    private function disable_author_archives()
+    {
+        add_action('template_redirect', function () {
+            if (is_author()) {
+                wp_redirect(home_url(), 301);
+                exit;
+            }
+        });
+    }
+
+    private function disable_attachment_pages()
+    {
+        add_action('template_redirect', function () {
+            if (is_attachment()) {
+                global $post;
+                if ($post && $post->post_parent) {
+                    wp_redirect(get_permalink($post->post_parent), 301);
+                    exit;
+                } else {
+                    wp_redirect(home_url(), 301);
+                    exit;
+                }
+            }
+        });
+    }
+
+    private function disable_comment_rss_feeds()
+    {
+        add_filter('feed_links_show_comments_feed', '__return_false');
+    }
+
+    private function disable_rest_api_non_authenticated()
+    {
+        add_filter('rest_authentication_errors', function ($result) {
+            if (!is_user_logged_in()) {
+                return new WP_Error('rest_cannot_access', __('REST API restricted to authenticated users.'), array('status' => 401));
+            }
+            return $result;
+        });
+    }
+
+    private function disable_comments_on_attachments()
+    {
+        add_filter('comments_open', function ($open, $post_id) {
+            $post = get_post($post_id);
+            if ('attachment' === $post->post_type) {
+                return false;
+            }
+            return $open;
+        }, 10, 2);
     }
 }

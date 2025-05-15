@@ -66,19 +66,19 @@ class AdminOptionPages
         'slug'  => 'acf-options-preset-scripts',
       ],
       [
-        'title' => __('WP Enhancements', 'sfxtheme'),
+        'title' => __('WP Optimizer', 'sfxtheme'),
         'desc'  => __('Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.', 'sfxtheme'),
-        'slug'  => 'acf-options-wp-enhancements',
+        'slug'  => 'sfx-wp-optimizer',
       ],
       [
         'title' => __('Security Headers', 'sfxtheme'),
         'desc'  => __('Configure and manage HTTP security headers to improve website security against XSS, clickjacking, and other attacks. Set HSTS, CSP, and other security policies.', 'sfxtheme'),
-        'slug'  => 'security-header',
+        'slug'  => 'sfx-security-header',
       ],
       [
         'title' => __('Image Optimizer', 'sfxtheme'),
         'desc'  => __('Optimize your images by converting them to modern formats (WebP, AVIF) and resizing them for improved page load speed and better Core Web Vitals scores.', 'sfxtheme'),
-        'slug'  => 'webp-converter',
+        'slug'  => 'sfx-image-optimizer',
       ],
       [
         'title' => __('Header Settings', 'sfxtheme'),
