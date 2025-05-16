@@ -5,6 +5,11 @@ namespace SFX\ImageOptimizer;
 
 class AdminPage
 {
+
+    public static $menu_slug = 'sfx-image-optimizer';
+    public static $page_title = 'Image Optimizer';
+    public static $description = 'Optimize your images by converting them to modern formats (WebP, AVIF) and resizing them for improved page load speed and better Core Web Vitals scores.';
+
     public static function register(): void
     {
         add_action('admin_menu', [self::class, 'add_submenu_page']);
@@ -13,11 +18,11 @@ class AdminPage
     public static function add_submenu_page(): void
     {
         add_submenu_page(
-            \SFX\Options\AdminOptionPages::$menu_slug,
-            __('ImageOptimizer', 'wpturbo'),
-            __('ImageOptimizer', 'wpturbo'),
+            \SFX\SFXBricksChildAdmin::$menu_slug,
+            self::$page_title,
+            self::$page_title,
             'manage_options',
-            'sfx-image-optimizer',
+            self::$menu_slug,
             [self::class, 'render_page']
         );
     }

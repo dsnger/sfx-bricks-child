@@ -739,4 +739,18 @@ class Controller
             'completed' => ($file_count < $batch_limit)
         ];
     }
+
+    public static function get_feature_config(): array
+    {
+        return [
+            'class' => self::class,
+            'menu_slug' => AdminPage::$menu_slug,
+            'page_title' => AdminPage::$page_title,
+            'description' => AdminPage::$description,
+            'activation_option_name' => 'sfx_general_options',
+            'activation_option_key' => 'enable_image_optimizer',
+            'hook' => null,
+            'error' => 'Missing ImageOptimizerController class in theme',
+        ];
+    }
 }

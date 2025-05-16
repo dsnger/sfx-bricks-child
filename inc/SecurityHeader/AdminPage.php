@@ -6,6 +6,11 @@ namespace SFX\SecurityHeader;
 
 class AdminPage
 {
+
+    public static $menu_slug = 'sfx-security-header';
+    public static $page_title = 'Security Header';
+    public static $description = 'Configure and manage HTTP security headers to improve website security against XSS, clickjacking, and other attacks. Set HSTS, CSP, and other security policies.';
+
     public static function register(): void
     {
         add_action('admin_menu', [self::class, 'add_submenu_page']);
@@ -15,10 +20,10 @@ class AdminPage
     {
         add_submenu_page(
             'sfx-theme-settings',
-            __('Security Header', 'sfxtheme'),
-            __('Security Header', 'sfxtheme'),
+            self::$page_title,
+            self::$page_title,
             'manage_options',
-            'sfx-security-header',
+            self::$menu_slug,
             [self::class, 'render_page']
         );
     }

@@ -13,7 +13,7 @@ class AssetManager
     public static function enqueue_admin_assets($hook): void
     {
         // Only load on ImageOptimizer admin page
-        if ($hook !== 'toplevel_page_webp-converter' && $hook !== 'global-theme-settings_page_webp-converter') {
+        if ($hook !== 'toplevel_page_sfx-image-optimizer' && $hook !== 'global-theme-settings_page_sfx-image-optimizer') {
             return;
         }
 

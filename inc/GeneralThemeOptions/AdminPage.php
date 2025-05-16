@@ -5,6 +5,11 @@ namespace SFX\GeneralThemeOptions;
 class AdminPage
 {
 
+  public static $menu_slug = 'sfx-general-theme-options';
+  public static $page_title = 'General Theme Options';
+  public static $description = 'Enable or disable core scripts and styles (like jQuery, Bricks JS, Bricks styling) for performance and customization.';
+
+
   public static function register()
   {
     add_action('admin_menu', [self::class, 'add_submenu_page']);
@@ -13,11 +18,11 @@ class AdminPage
   public static function add_submenu_page(): void
   {
     add_submenu_page(
-      \SFX\Options\AdminOptionPages::$menu_slug,
-      __('General Options', 'sfxtheme'),
-      __('General Options', 'sfxtheme'),
+      \SFX\SFXBricksChildAdmin::$menu_slug,
+      self::$page_title,
+      self::$page_title,
       'manage_options',
-      'general-theme-options',
+      self::$menu_slug,
       [self::class, 'render_page']
     );
   }

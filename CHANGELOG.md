@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.8] - 2025-05-15
+
+### Added
+
+- WP Optimizer:
+  - Refactored WP Optimizer feature with settings management and UI enhancements
+  - Introduced WP Optimizer module with a dedicated settings page for configuring WordPress optimizations, including performance, security, and frontend cleanup
+  - Added asset management for admin styles and scripts, ensuring proper loading on the WP Optimizer admin page
+  - Added WP Optimizer settings to the theme settings page.
+- Feature registration:
+  - Refactored feature registration to use a more flexible and maintainable approach
+  - Added feature configuration for each feature, including option name, key, value, hook, and error message
+  - Implemented feature discovery and registration in the SFXBricksChildTheme class
+  - Updated the load_dependencies() method to use the new feature configuration
+  - Added feature configuration for each feature, including option name, key, value, hook, and error message
+  - Implemented feature discovery and registration in the SFXBricksChildTheme class
+- Feature Overview page refactored
+  - Uses data from the feature configuration to display the feature overview
+
+
 ## [0.2.7] - 2025-05-13
 
 ### Added

@@ -3,14 +3,11 @@
 /**
  * SFX Bricks Child Theme functions and definitions
  * 
- * @version 0.2.7
+ * @version 0.2.8
  * @package SFX\BricksChild
  */
 
 defined('ABSPATH') || exit;
-
-
-define('SFX_THEME_VERSION', '0.2.7');
 
 // Include Composer Autoloader
 $composer_autoload = __DIR__ . '/vendor/autoload.php';

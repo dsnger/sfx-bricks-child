@@ -116,4 +116,19 @@ class Controller
         }
         return $x_frame ?: 'SAMEORIGIN';
     }
+
+    public static function get_feature_config(): array
+    {
+        return [
+            'class' => self::class,
+            'menu_slug' => AdminPage::$menu_slug,
+            'page_title' => AdminPage::$page_title,
+            'description' => AdminPage::$description,
+            'activation_option_name' => 'sfx_general_options',
+            'activation_option_key' => 'enable_security_header',
+            'option_value' => true,
+            'hook' => null,
+            'error' => 'Missing SecurityHeaderController class in theme',
+        ];
+    }
 }

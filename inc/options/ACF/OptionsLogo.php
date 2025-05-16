@@ -20,7 +20,7 @@ class OptionsLogo
 				'page_title'    => __('Company Logo', 'sfxtheme'),
 				'menu_title'    => __('Company Logo', 'sfxtheme'),
 				'menu_slug'     => 'sfx-logo-settings',
-				'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+				'parent_slug'   => \SFX\SFXBricksChildAdmin::$menu_slug,
 			));
 		}
 	}

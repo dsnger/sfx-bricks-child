@@ -88,4 +88,18 @@ class Controller
         // Get the iconify setting from ACF options
         return get_field('enable_iconify', 'option') === true;
     }
+
+    public static function get_feature_config(): array
+    {
+        return [
+            'class' => self::class,
+            'menu_slug' => null,
+            'page_title' => null,
+            'activation_option_name' => null,
+            'activation_option_key' => null,
+            'option_value' => null,
+            'hook' => 'acf/init',
+            'error' => 'Missing ShortcodesController class in theme',
+        ];
+    }
 } 

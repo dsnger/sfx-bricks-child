@@ -4,8 +4,10 @@ namespace SFX\Options;
 
 defined('ABSPATH') or die('Pet a cat!');
 
-class AdminOptionsController
+class Controller
 {
+
+
   public function __construct()
   {
     // Initialize ACF option pages
@@ -21,7 +23,7 @@ class AdminOptionsController
    */
   private function load_setting_pages()
   {
-    new \SFX\Options\AdminOptionPages();
+    // new \SFX\Options\AdminOptionPages();
     new \SFX\Options\ACF\OptionsContact();
     new \SFX\Options\ACF\OptionsSocialMedia();
     // new \SFX\Options\ACF\OptionsGeneral();
@@ -310,6 +312,18 @@ class AdminOptionsController
       // Example of enqueuing a preset script
       wp_enqueue_script('preset-script', get_template_directory_uri() . '/assets/js/preset-script.js', [], '1.0.0', true);
     });
+  }
+
+  public static function get_feature_config(): array
+  {
+    return [
+      'class' => self::class,
+      'activation_option_name' => 'options_admin',
+      'activation_option_key' => null,
+      'option_value' => null,
+      'hook' => null,
+      'error' => 'Missing AdminOptionsController class in theme',
+    ];
   }
 
 }

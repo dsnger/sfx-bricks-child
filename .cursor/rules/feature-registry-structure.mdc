@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+// Example for a dependency with a custom callback:
+      // [
+      //   'class' => '\Vendor\SpecialClass',
+      //   'error' => 'Missing SpecialClass',
+      //   'activation_option_key' => 'special_option',
+      //   'hook'  => 'init',
+      //   'callback' => function ($class) { $instance = new $class('foo'); $instance->init(); },
+      // ],
+
+    $dependencies = [
+
+      [
+        'class' => '\SFX\Options\AdminOptionsController',
+        'error' => 'Missing AdminOptionsController class in theme',
+        'hook'  => null, // load immediately
+        // 'callback' => function ($class) { new $class('arg1', 'arg2'); }, // Example custom callback
+      ],
+      [
+        'class' => '\SFX\GeneralThemeOptions\Controller',
+        'error' => 'Missing GeneralThemeOptionsController class in theme',
+        'hook'  => null, // load immediately
+      ],
+      [
+        'class' => '\SFX\Shortcodes\Controller',
+        'error' => 'Missing ShortcodeController class in theme',
+        'hook'  => 'acf/init', // load after ACF is ready
+      ],
+      [
+        'class' => '\SFX\ImageOptimizer\Controller',
+        'error' => 'Missing ImageOptimizerController class in theme',
+        'activation_option_name' => 'sfx_general_options',
+        'activation_option_key' => 'enable_image_optimizer',
+        'hook'  => null, // load immediately
+      ],
+      [
+        'class' => '\SFX\SecurityHeader\Controller',
+        'error' => 'Missing SecurityHeaderController class in theme',
+        'activation_option_name' => 'sfx_general_options',
+        'activation_option_key' => 'enable_security_header',
+        'hook'  => null, // load immediately
+      ],
+      [
+        'class' => '\SFX\WPOptimizer\Controller',
+        'error' => 'Missing WPOptimizerController class in theme',
+        'activation_option_name' => 'sfx_general_options',
+        'activation_option_key' => 'enable_wp_optimizer',
+        'hook'  => null, // load immediately
+      ],
+
+    ];

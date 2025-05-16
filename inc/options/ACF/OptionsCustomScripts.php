@@ -20,7 +20,7 @@ class OptionsCustomScripts
             acf_add_options_sub_page(array(
                 'page_title'    => __('Custom Scripts', 'sfxtheme'),
                 'menu_title'    => __('Custom Scripts', 'sfxtheme'),
-                'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+                'parent_slug'   => \SFX\SFXBricksChildAdmin::$menu_slug,
               ));
 		}
 	}

@@ -6,6 +6,10 @@ namespace SFX\WPOptimizer;
 
 class AdminPage
 {
+    public static $menu_slug = 'sfx-wp-optimizer';
+    public static $page_title = 'WP Optimizer';
+    public static $description = 'Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.';
+
     public static function register(): void
     {
         add_action('admin_menu', [self::class, 'add_submenu_page']);
@@ -14,11 +18,11 @@ class AdminPage
     public static function add_submenu_page(): void
     {
         add_submenu_page(
-            \SFX\Options\AdminOptionPages::$menu_slug,
-            __('WP Optimizer', 'sfxtheme'),
-            __('WP Optimizer', 'sfxtheme'),
+            \SFX\SFXBricksChildAdmin::$menu_slug,
+            self::$page_title,
+            self::$page_title,
             'manage_options',
-            'sfx-wp-optimizer',
+            self::$menu_slug,
             [self::class, 'render_page']
         );
     }

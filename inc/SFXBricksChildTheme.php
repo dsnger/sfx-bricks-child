@@ -8,6 +8,34 @@ class SFXBricksChildTheme
   private $INC_DIR;
   private $ASSET_DIR;
 
+  /**
+   * Global feature registry for controllers to register themselves.
+   *
+   * @var array<string, array>
+   */
+  private static array $feature_registry = [];
+
+  /**
+   * Register a feature/controller with the global registry.
+   *
+   * @param string $feature_key
+   * @param array  $feature_data
+   * @return void
+   */
+  public static function register_feature(string $feature_key, array $feature_data): void
+  {
+    self::$feature_registry[$feature_key] = $feature_data;
+  }
+
+  /**
+   * Get all registered features.
+   *
+   * @return array<string, array>
+   */
+  public static function get_registered_features(): array
+  {
+    return self::$feature_registry;
+  }
 
   public function __construct()
   {
@@ -20,6 +48,8 @@ class SFXBricksChildTheme
   public function init()
   {
 
+    $this->auto_register_features();
+    
     add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
     add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
 
@@ -46,82 +76,37 @@ class SFXBricksChildTheme
   private function load_dependencies()
   {
 
-      // Example for a dependency with a custom callback:
-      // [
-      //   'class' => '\Vendor\SpecialClass',
-      //   'error' => 'Missing SpecialClass',
-      //   'option_key' => 'special_option',
-      //   'hook'  => 'init',
-      //   'callback' => function ($class) { $instance = new $class('foo'); $instance->init(); },
-      // ],
+    // Initialize the main admin menu page
+    new \SFX\SFXBricksChildAdmin();
 
-    $dependencies = [
+    $features = self::get_registered_features();
 
-      [
-        'class' => '\SFX\Options\AdminOptionsController',
-        'error' => 'Missing AdminOptionsController class in theme',
-        'hook'  => null, // load immediately
-        // 'callback' => function ($class) { new $class('arg1', 'arg2'); }, // Example custom callback
-      ],
-      [
-        'class' => '\SFX\GeneralThemeOptions\Controller',
-        'error' => 'Missing GeneralThemeOptionsController class in theme',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\Shortcodes\Controller',
-        'error' => 'Missing ShortcodeController class in theme',
-        'hook'  => 'acf/init', // load after ACF is ready
-      ],
-      [
-        'class' => '\SFX\ImageOptimizer\Controller',
-        'error' => 'Missing ImageOptimizerController class in theme',
-        'option_name' => 'sfx_general_options',
-        'option_key' => 'enable_image_optimizer',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\SecurityHeader\Controller',
-        'error' => 'Missing SecurityHeaderController class in theme',
-        'option_name' => 'sfx_general_options',
-        'option_key' => 'enable_security_header',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\WPOptimizer\Controller',
-        'error' => 'Missing WPOptimizerController class in theme',
-        'option_name' => 'sfx_general_options',
-        'option_key' => 'enable_wp_optimizer',
-        'hook'  => null, // load immediately
-      ],
-
-    ];
-
-    foreach ($dependencies as $dep) {
-      if (!class_exists($dep['class'])) {
-        if (!empty($dep['error'])) {
-          error_log($dep['error']);
+    foreach ($features as $feature) {
+      if (!class_exists($feature['class'])) {
+        if (!empty($feature['error'])) {
+          error_log($feature['error']);
         }
         continue;
       }
 
-      if (!empty($dep['option_key'])) {
-        if (!$this->is_option_enabled($dep['option_name'], $dep['option_key'])) {
+      if (!empty($feature['activation_option_key'])) {
+        $option_enabled = $this->is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
+        if (!$option_enabled) {
           continue;
         }
       }
 
-      $callback = $dep['callback'] ?? null;
-      $loader = function () use ($dep, $callback) {
+      $callback = $feature['callback'] ?? null;
+      $loader = function () use ($feature, $callback) {
         if ($callback && is_callable($callback)) {
-          $callback($dep['class']);
+          $callback($feature['class']);
         } else {
-          new $dep['class']();
+          new $feature['class']();
         }
       };
 
-      if (!empty($dep['hook'])) {
-        add_action($dep['hook'], $loader);
+      if (!empty($feature['hook'])) {
+        add_action($feature['hook'], $loader);
       } else {
         $loader();
       }
@@ -185,6 +170,29 @@ class SFXBricksChildTheme
   {
     $options = get_option($option_name, []);
     return !empty($options[$option_key]);
+  }
+
+  /**
+   * Automatically discover and register all feature controllers in inc
+   */
+  private function auto_register_features(): void
+  {
+    $controller_files = glob($this->INC_DIR . '*/Controller.php');
+    foreach ($controller_files as $file) {
+        $relative_path = str_replace($this->INC_DIR, '', $file);
+        $parts = explode('/', $relative_path);
+        if (count($parts) !== 2) {
+            continue;
+        }
+        $namespace = 'SFX\\' . $parts[0];
+        $class = $namespace . '\\Controller';
+
+        if (class_exists($class, true) && method_exists($class, 'get_feature_config')) {
+            $config = $class::get_feature_config();
+            $feature_key = strtolower($parts[0]);
+            self::register_feature($feature_key, $config);
+        }
+    }
   }
 
 }

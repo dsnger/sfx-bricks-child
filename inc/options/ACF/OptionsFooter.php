@@ -21,7 +21,7 @@ class OptionsFooter
       acf_add_options_sub_page(array(
         'page_title'    => __('Footer Settings', 'sfxtheme'),
         'menu_title'    => __('Footer Settings', 'sfxtheme'),
-        'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+        'parent_slug'   => \SFX\SFXBricksChildAdmin::$menu_slug,
       ));
     }
   }

@@ -21,7 +21,7 @@ class OptionsHeader
       acf_add_options_sub_page(array(
         'page_title'    => __('Header Settings', 'sfxtheme'),
         'menu_title'    => __('Header Settings', 'sfxtheme'),
-        'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+        'parent_slug'   => \SFX\SFXBricksChildAdmin::$menu_slug,
       ));
     }
   }

@@ -19,7 +19,7 @@ class OptionsPresetScripts
             acf_add_options_sub_page(array(
                 'page_title'    => __('Preset Scripts', 'sfxtheme'),
                 'menu_title'    => __('Preset Scripts', 'sfxtheme'),
-                'parent_slug'   => \SFX\Options\AdminOptionPages::$menu_slug,
+                'parent_slug'   => \SFX\SFXBricksChildAdmin::$menu_slug,
                 'post_content'  => __('
                 <p>It´s is recommanded to disable default Bricks JS, when not using the default elements.</p>
               ', 'sfxtheme'),
