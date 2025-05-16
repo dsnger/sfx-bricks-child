@@ -12,9 +12,12 @@ class Settings
      */
     public static function register($option_key): void
     {
-
-        self::$OPTION_GROUP = $option_key.'_group';
+        self::$OPTION_GROUP = $option_key . '_group';
         self::$OPTION_NAME = $option_key;
+
+        // Ensure defaults are set before anything else
+        \SFX\GeneralThemeOptions\Controller::maybe_set_default_options();
+
         add_action('admin_init', [self::class, 'register_settings']);
     }
 

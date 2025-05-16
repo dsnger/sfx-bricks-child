@@ -131,4 +131,14 @@ class Controller
     ];
   }
 
+  public static function maybe_set_default_options(): void {
+    if (false === get_option(self::OPTION_NAME, false)) {
+        $defaults = [];
+        foreach (Settings::get_fields() as $field) {
+            $defaults[$field['id']] = $field['default'];
+        }
+        add_option(self::OPTION_NAME, $defaults);
+    }
+  }
+
 }
