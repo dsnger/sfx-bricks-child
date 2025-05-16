@@ -1,23 +1,10 @@
 <?php
-/**
- * ------------------------------------------------------------------------
- * Theme's Logo Shortcode
- * ------------------------------------------------------------------------
- *
- * Provides a shortcode function
- *
- * @package WordPress
- * @subpackage dsgtheme
- * @version 1.0.9
- *
- */
 
 declare(strict_types=1);
 
-namespace SFX\Shortcodes;
+namespace SFX\CompanyLogo\Shortcode;
 
 use function add_shortcode;
-use function get_field;
 use function get_bloginfo;
 use function esc_attr;
 use function sanitize_url;
@@ -33,20 +20,28 @@ class SC_Logo
     private const SHORTCODE = 'logo';
 
     /**
-     * Logo ACF field map
+     * Logo settings field map
      */
     private const LOGO_FIELDS = [
-        'default'     => 'logo',
-        'tiny'        => 'logo_tiny',
-        'invert'      => 'logo_inverted',
-        'invert-tiny' => 'logo_inverted_tiny',
+        'default'     => 'company_logo',
+        'tiny'        => 'company_logo_tiny',
+        'invert'      => 'company_logo_inverted',
+        'invert-tiny' => 'company_logo_inverted_tiny',
     ];
 
     /**
-     * Constructor: Register the shortcode
+     * Option name for logo settings
+     * @var string
      */
-    public function __construct()
+    private string $option_name;
+
+    /**
+     * Constructor: Register the shortcode
+     * @param string $option_name
+     */
+    public function __construct(string $option_name)
     {
+        $this->option_name = $option_name;
         add_shortcode(self::SHORTCODE, [$this, 'render_logo']);
     }
 
@@ -116,16 +111,17 @@ class SC_Logo
         }
 
         $type = $atts['type'] ?? 'default';
+        $options = get_option($this->option_name, []);
         if (isset(self::LOGO_FIELDS[$type])) {
             $field = self::LOGO_FIELDS[$type];
-            $logo_url = get_field($field, 'option');
+            $logo_url = $options[$field] ?? '';
             if (!empty($logo_url)) {
                 return $logo_url;
             }
         }
 
         // Fallback: try default logo
-        $default_logo = get_field(self::LOGO_FIELDS['default'], 'option');
+        $default_logo = $options[self::LOGO_FIELDS['default']] ?? '';
         return !empty($default_logo) ? $default_logo : null;
     }
 }

@@ -41,8 +41,7 @@ class Controller
         $this->shortcodes = [
             // Class name => dependencies check method (optional)
             \SFX\Shortcodes\SC_IconifyIcon::class => 'check_iconify_enabled',
-            \SFX\Shortcodes\SC_ContactInfos::class => null,
-            \SFX\Shortcodes\SC_Logo::class => null,
+        
             // Add other shortcode classes here
         ];
     }
@@ -73,7 +72,7 @@ class Controller
         }
     }
     
-    /**
+    /**å
      * Check if iconify is enabled in theme options
      * 
      * @return bool True if iconify is enabled, false otherwise

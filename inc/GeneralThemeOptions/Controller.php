@@ -10,8 +10,6 @@ class Controller
 
   public const OPTION_NAME = 'sfx_general_options';
 
-
-
   public function __construct()
   {
     Settings::register(self::OPTION_NAME);

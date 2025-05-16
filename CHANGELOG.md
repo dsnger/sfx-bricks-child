@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented feature discovery and registration in the SFXBricksChildTheme class
 - Feature Overview page refactored
   - Uses data from the feature configuration to display the feature overview
+- Refactored ContactInfos feature:
+  - Added a new settings page for the ContactInfos feature
+  - Added a new shortcode for the ContactInfos feature
+  - Added a new admin page for the ContactInfos feature
+  - Added a new settings page for the ContactInfos feature
+- Refactored CompanyLogo feature:
+  - Added a new settings page for the CompanyLogo feature
+  - Added a new shortcode for the CompanyLogo feature
+  - Added a new admin page for the CompanyLogo feature
+  - Added a new settings page for the CompanyLogo feature
 
 
 ## [0.2.7] - 2025-05-13

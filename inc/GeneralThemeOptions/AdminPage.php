@@ -23,7 +23,8 @@ class AdminPage
       self::$page_title,
       'manage_options',
       self::$menu_slug,
-      [self::class, 'render_page']
+      [self::class, 'render_page'],
+      1
     );
   }
 

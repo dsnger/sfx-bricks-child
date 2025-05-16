@@ -1,11 +1,13 @@
 <?php
 
-namespace SFX\Shortcodes;
+namespace SFX\ContactInfos\Shortcode;
+
+use SFX\ContactInfos\Settings;
 
 /**
  * Contact Infos Shortcode
  * 
- * Provides a shortcode to display contact information from ACF fields
+ * Provides a shortcode to display contact information from settings
  *
  * @package WordPress
  * @subpackage sfxtheme
@@ -18,16 +20,34 @@ defined('ABSPATH') || exit;
 class SC_ContactInfos
 {
     /**
+     * Option name for storing contact settings
+     */
+    private string $option_name;
+
+    /**
+     * Contact settings data
+     */
+    private array $contact_data;
+
+    /**
      * Class constructor
      * Register the shortcode
      */
     public function __construct()
     {
         add_shortcode('contact-info', [$this, 'render_contact_info']);
+        
+        // Get the option name from Settings class if available, otherwise default
+        $this->option_name = defined('SFX\ContactInfos\Settings::$OPTION_NAME') 
+            ? Settings::$OPTION_NAME 
+            : 'contact_info_settings';
+            
+        // Get the contact data
+        $this->contact_data = get_option($this->option_name, []);
     }
 
     /**
-     * Contact Info Fields from ACF Option Page "Contact Infos"
+     * Contact Info Fields from Settings
      * 
      * @param array $atts Shortcode attributes
      * @return string HTML output
@@ -39,14 +59,13 @@ class SC_ContactInfos
         // Attributes
         $atts = shortcode_atts(
             [
-                'field'      => null,
-                'id'         => 'option',
-                'location'   => null,
-                'icon'       => null,
-                'icon_class' => null,
-                'text'       => null,
-                'class'      => null,
-                'link'       => 'true',
+                'field'      => null,     // Field name to display
+                'location'   => null,     // Index of branch location (starts at 0)
+                'icon'       => null,     // Icon to display before the field
+                'icon_class' => null,     // CSS classes for the icon
+                'text'       => null,     // Custom text instead of the field value
+                'class'      => null,     // CSS classes for the wrapper
+                'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
             ],
             $atts,
             'contact-info'
@@ -59,7 +78,6 @@ class SC_ContactInfos
 
         // Set up variables
         $location = $atts['location'];
-        $field_prefix = isset($atts['id']) && $atts['id'] !== 'option' ? 'branch' : 'contact_info';
         
         // Process classes
         $classes = $this->process_classes($atts['class']);
@@ -70,7 +88,7 @@ class SC_ContactInfos
         $text = !empty($atts['text']) ? $atts['text'] : null;
 
         // Get field value
-        $value = $this->get_field_value($atts['field'], $atts['id'], $location, $field_prefix);
+        $value = $this->get_field_value($atts['field'], $location);
         
         // Return empty if no value found
         if (empty($value)) {
@@ -89,7 +107,7 @@ class SC_ContactInfos
                 return $this->render_phone_field($value, $atts, $icon, $has_link);
                 
             case 'address':
-                return $this->render_address_field($value, $atts, $icon, $location, $field_prefix);
+                return $this->render_address_field($value, $atts, $icon, $location);
                 
             case 'maplink':
                 return $this->render_maplink_field($value, $atts, $icon);
@@ -117,25 +135,29 @@ class SC_ContactInfos
     }
     
     /**
-     * Get field value based on field name, ID and location
+     * Get field value based on field name and location
      * 
      * @param string $field Field name
-     * @param string $id Field ID
      * @param string|null $location Location index
-     * @param string $field_prefix Field prefix
      * @return mixed Field value
      */
-    private function get_field_value($field, $id, $location, $field_prefix)
+    private function get_field_value($field, $location = null)
     {
-        $value = get_field($field_prefix . '_' . $field, $id);
-        
+        // Get data from branches if location is specified
         if ($location !== null) {
             $location = (int) $location;
-            $branches = get_field('contact_info', 'option');
-            $value = isset($branches[$location]['branch_' . $field]) ? $branches[$location]['branch_' . $field] : null;
+            
+            if (isset($this->contact_data['branches']) && 
+                isset($this->contact_data['branches'][$location]) &&
+                isset($this->contact_data['branches'][$location]['branch_' . $field])) {
+                return $this->contact_data['branches'][$location]['branch_' . $field];
+            }
+            
+            return null;
         }
         
-        return $value;
+        // Get data from main settings
+        return isset($this->contact_data[$field]) ? $this->contact_data[$field] : null;
     }
     
     /**
@@ -198,25 +220,23 @@ class SC_ContactInfos
     /**
      * Render address field
      */
-    private function render_address_field($value, $atts, $icon, $location, $field_prefix)
+    private function render_address_field($value, $atts, $icon, $location)
     {
         $address = $value;
         $trimmed_address = $address ? trim($address) : null;
         
         if (empty($trimmed_address)) {
-            $branches = null;
-            
+            // If no formatted address, attempt to build from components
             if ($location === null) {
-                $street = get_field($field_prefix . '_street', $atts['id']);
-                $zip = get_field($field_prefix . '_zip', $atts['id']);
-                $city = get_field($field_prefix . '_city', $atts['id']);
+                $street = $this->get_field_value('street');
+                $zip = $this->get_field_value('zip');
+                $city = $this->get_field_value('city');
             } else {
-                $branches = get_field('contact_info', 'option');
                 $location = (int) $location;
                 
-                $street = isset($branches[$location]['branch_street']) ? $branches[$location]['branch_street'] : '';
-                $zip = isset($branches[$location]['branch_zip']) ? $branches[$location]['branch_zip'] : '';
-                $city = isset($branches[$location]['branch_city']) ? $branches[$location]['branch_city'] : '';
+                $street = $this->get_field_value('street', $location);
+                $zip = $this->get_field_value('zip', $location);
+                $city = $this->get_field_value('city', $location);
             }
             
             if (empty($street) && empty($city)) {
@@ -225,15 +245,16 @@ class SC_ContactInfos
             
             $address = sprintf(
                 '<span class="uk-text-nowrap">%s</span><br /><span class="uk-text-nowrap">%s %s</span>',
-                $street,
-                $zip,
-                $city
+                esc_html($street),
+                esc_html($zip),
+                esc_html($city)
             );
             
             return $icon . $address;
         }
         
-        return $icon . str_replace(['<p>', '</p>'], '', $address);
+        // Allow HTML in formatted address
+        return $icon . wp_kses_post($address);
     }
     
     /**
@@ -241,19 +262,20 @@ class SC_ContactInfos
      */
     private function render_maplink_field($value, $atts, $icon)
     {
-        if (!$value || empty($value['url'])) {
+        if (empty($value)) {
             return '';
         }
         
-        $text = !empty($value['title']) ? $value['title'] : __('Google Maps', 'sfxtheme');
+        $url = $value;
+        $text = !empty($atts['text']) ? $atts['text'] : __('Google Maps', 'sfxtheme');
         $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
         
         return sprintf(
             '<a class="%s" href="%s" target="_blank">%s%s</a>',
             $class,
-            $value['url'],
+            esc_url($url),
             $icon,
-            $text
+            esc_html($text)
         );
     }
     
@@ -264,11 +286,22 @@ class SC_ContactInfos
     {
         $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
         
+        // Allow HTML in opening hours field
+        if ($atts['field'] === 'opening') {
+            return sprintf(
+                '<span class="%s">%s%s</span>',
+                $class,
+                $icon,
+                wp_kses_post($value)
+            );
+        }
+        
+        // Default handling for other fields
         return sprintf(
             '<span class="%s">%s%s</span>',
             $class,
             $icon,
-            $value
+            esc_html($value)
         );
     }
-} 
+}

@@ -5,13 +5,16 @@ namespace SFX\GeneralThemeOptions;
 class Settings
 {
     public static $OPTION_GROUP;
+    public static $OPTION_NAME;
 
     /**
      * Register all settings for security headers.
      */
     public static function register($option_key): void
     {
+
         self::$OPTION_GROUP = $option_key.'_group';
+        self::$OPTION_NAME = $option_key;
         add_action('admin_init', [self::class, 'register_settings']);
     }
 
@@ -58,14 +61,14 @@ class Settings
 
     public static function register_settings(): void
     {
-        register_setting(self::$OPTION_GROUP, 'sfx_general_options', [
+        register_setting(self::$OPTION_GROUP, self::$OPTION_NAME, [
             'type' => 'array',
             'sanitize_callback' => [self::class, 'sanitize_options'],
             'default' => [],
         ]);
 
         add_settings_section(
-            'sfx_general_options_section',
+            self::$OPTION_NAME.'_section',
             __('General Options', 'sfxtheme'),
             [self::class, 'render_section'],
             self::$OPTION_GROUP
@@ -77,7 +80,7 @@ class Settings
                 $field['label'],
                 [self::class, 'render_field'],
                 self::$OPTION_GROUP,
-                'sfx_general_options_section',
+                self::$OPTION_NAME.'_section',
                 $field
             );
         }
@@ -85,7 +88,7 @@ class Settings
 
     public static function render_section(): void
     {
-      echo '<p>General Options</p>';
+      echo '<p>Set up your theme options here Selectively enable or disable features which you want to use.</p>';
     }
 
     public static function render_field(array $args): void
