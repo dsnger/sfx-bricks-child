@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added a new shortcode for the CompanyLogo feature
   - Added a new admin page for the CompanyLogo feature
   - Added a new settings page for the CompanyLogo feature
+- Refactored Github Theme Updater feature:
+  - Added environment.php file to avoid the theme updater to check for updates during development
+  - Avoids the theme updater to check for updates during development using the .env.local file
 
 ## [0.2.7] - 2025-05-13
 
