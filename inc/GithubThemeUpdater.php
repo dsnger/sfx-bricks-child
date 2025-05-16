@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace SFX\BricksChild;
 
-use Parsedown;
-
 if (!defined('ABSPATH')) {
   exit;
 }
@@ -21,6 +19,7 @@ class GitHubThemeUpdater
   private ?string $github_repo = null;
   private ?string $authorize_token = null;
   private bool $debug = false; // Enable debugging
+  private bool $dev_mode = false; // Development mode flag
 
   public function __construct()
   {
@@ -33,6 +32,15 @@ class GitHubThemeUpdater
     $this->theme_version = $theme->get('Version');
     $this->theme_name = $theme->get('Name');
 
+    // Check if we're in development mode
+    if (class_exists(Environment::class)) {
+      $this->dev_mode = Environment::is_dev_mode();
+      
+      if ($this->debug && $this->dev_mode) {
+        error_log('Theme Updater: Development mode is active, updates are disabled');
+      }
+    }
+
     if ($this->debug) {
       error_log('Theme Updater: Initialized for ' . $this->theme_name . ' (v' . $this->theme_version . ')');
     }
@@ -40,6 +48,14 @@ class GitHubThemeUpdater
 
   private function get_repository_info(): void
   {
+    // Skip if dev mode is active
+    if ($this->dev_mode) {
+      if ($this->debug) {
+        error_log('Theme Updater: Skipping repository check in development mode');
+      }
+      return;
+    }
+
     if (is_null($this->github_response)) {
       $request_uri = sprintf('https://api.github.com/repos/%s/%s/releases/latest', $this->github_username, $this->github_repo);
       $args = [
@@ -77,6 +93,14 @@ class GitHubThemeUpdater
 
   public function initialize(): void
   {
+    // Skip initialization if in development mode
+    if ($this->dev_mode) {
+      if ($this->debug) {
+        error_log('Theme Updater: Skipping initialization in development mode');
+      }
+      return;
+    }
+
     add_filter('pre_set_site_transient_update_themes', [$this, 'modify_transient'], 10, 1);
     add_filter('themes_api', [$this, 'theme_popup'], 10, 3);
     add_filter('upgrader_post_install', [$this, 'after_install'], 10, 3);
@@ -172,8 +196,8 @@ class GitHubThemeUpdater
     $release_body = $this->github_response->body;
 
     // If Parsedown class exists, convert markdown to HTML
-    if (class_exists('Parsedown')) {
-      $parsedown = new Parsedown();
+    if (class_exists('\Parsedown')) {
+      $parsedown = new \Parsedown();
       $release_body = $parsedown->text($release_body);
     }
 

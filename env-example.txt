@@ -1,0 +1,9 @@
+# SFX Bricks Child Theme Environment Configuration
+# Copy this file to .env.local and customize for your local development
+
+# Set to 'true' to disable GitHub theme updates during development
+SFX_THEME_DEV_MODE=true
+
+# Other environment variables can be added here
+# DEBUG_MODE=true
+# CUSTOM_VARIABLE=value 

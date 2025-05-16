@@ -1,12 +1,5 @@
 <?php
 
-/**
- * SFX Bricks Child Theme functions and definitions
- * 
- * @version 0.2.8
- * @package SFX\BricksChild
- */
-
 defined('ABSPATH') || exit;
 
 // Include Composer Autoloader
@@ -14,9 +7,6 @@ $composer_autoload = __DIR__ . '/vendor/autoload.php';
 if (file_exists($composer_autoload)) {
     require_once $composer_autoload;
 } else {
-    // Fallback if composer autoload file doesn't exist
-    include_once __DIR__ . '/inc/SFXBricksChildTheme.php';
-
     // Simple namespace-based autoloader as fallback
     spl_autoload_register(function ($class) {
         // Only handle our own namespaces
@@ -42,21 +32,21 @@ if (file_exists($composer_autoload)) {
     });
 }
 
-// Initialize GitHub Updater
-require_once __DIR__ . '/inc/GithubThemeUpdater.php';
-if (is_admin()) {
+
+// Load environment handler
+require_once get_stylesheet_directory() . '/inc/environment.php';
+
+// Load theme functionality
+require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
+
+$sfx_child_theme = new \SFX\SFXBricksChildTheme();
+$sfx_child_theme->init();
+
+// Initialize theme updater if not in development mode
+if (!\SFX\BricksChild\Environment::is_dev_mode()) {
+    require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
     $updater = new \SFX\BricksChild\GitHubThemeUpdater();
     $updater->initialize();
-}
-
-if (!defined('ABSPATH')) {
-    exit;
-}
-
-// Initialize the theme
-if (class_exists('\\SFX\\SFXBricksChildTheme')) {
-    $sfx_theme = new \SFX\SFXBricksChildTheme();
-    $sfx_theme->init();
 }
 
 

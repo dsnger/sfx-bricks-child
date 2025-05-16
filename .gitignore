@@ -47,4 +47,7 @@ Thumbs.db
 
 # Allow theme and plugin files
 !wp-content/themes/sfx-bricks-child/**
-!wp-content/plugins/** 
+!wp-content/plugins/**
+
+# Ignore .env.local file (for development environments)
+.sh

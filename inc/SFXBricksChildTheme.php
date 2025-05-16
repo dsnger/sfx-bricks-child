@@ -2,6 +2,8 @@
 
 namespace SFX;
 
+use Bricks\Elements;
+
 class SFXBricksChildTheme
 {
 
