@@ -35,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added a new admin page for the CompanyLogo feature
   - Added a new settings page for the CompanyLogo feature
 
-
 ## [0.2.7] - 2025-05-13
 
 ### Added
