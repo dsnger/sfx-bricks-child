@@ -15,6 +15,9 @@ class Settings
     {
         self::$OPTION_GROUP = $option_key . '_group';
         add_action('admin_init', [self::class, 'register_settings']);
+
+        // Ensure defaults are set before anything else
+        \SFX\WPOptimizer\Controller::maybe_set_default_options();
     }
 
     /**
@@ -23,13 +26,6 @@ class Settings
     public static function get_fields(): array
     {
         return [
-            // [
-            //     'id'          => 'disable_wp_optimizer',
-            //     'label'       => __('Disable Theme Wordpress Optimizer', 'sfxtheme'),
-            //     'description' => __('Temporarily disables all theme optimization features. Use for troubleshooting if you suspect optimizer is causing issues. Recommended only for debugging.', 'sfxtheme'),
-            //     'type'        => 'checkbox',
-            //     'default'     => 0,
-            // ],
             [
                 'id'          => 'disable_search',
                 'label'       => __('Disable Search', 'sfxtheme'),

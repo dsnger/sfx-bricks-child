@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Github Theme Updater:
   - Enhanced folder handling for the theme updater
+- WP Optimizer:
+  - Added default options if none are set
 
 ## [0.3.1] - 2025-05-16
 
