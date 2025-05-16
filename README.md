@@ -9,7 +9,8 @@ This theme supports a development mode that disables GitHub updates during local
 ### Setup
 
 1. Create a `.env.local` file in the theme root directory:
-   ```
+
+   ```bash
    # Set to 'true' to disable GitHub theme updates during development
    SFX_THEME_DEV_MODE=true
    ```
@@ -32,14 +33,16 @@ To create a production-ready zip file of the theme:
 
 1. Make sure you're in the theme root directory
 2. Run the build script:
+
    ```bash
    ./build-theme.sh
    ```
 
 This will:
+
 - Extract the current version from style.css
 - Create a zip file named `sfx-bricks-child-v{VERSION}.zip`
 - Exclude development files (.git, node_modules, .env, etc.)
 - Place the zip file in the theme root directory
 
-## Other Documentation 
+## Other Documentation
