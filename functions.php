@@ -34,7 +34,7 @@ if (file_exists($composer_autoload)) {
 
 
 // Load environment handler
-require_once get_stylesheet_directory() . '/inc/environment.php';
+require_once get_stylesheet_directory() . '/inc/Environment.php';
 
 // Load theme functionality
 require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
@@ -43,7 +43,7 @@ $sfx_child_theme = new \SFX\SFXBricksChildTheme();
 $sfx_child_theme->init();
 
 // Initialize theme updater if not in development mode
-if (!\SFX\BricksChild\Environment::is_dev_mode()) {
+if (!\SFX\Environment::is_dev_mode()) {
     require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
     $updater = new \SFX\BricksChild\GitHubThemeUpdater();
     $updater->initialize();

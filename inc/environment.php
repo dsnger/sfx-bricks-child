@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SFX\BricksChild;
+namespace SFX;
 
 if (!defined('ABSPATH')) {
   exit;
