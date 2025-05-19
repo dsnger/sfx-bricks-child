@@ -131,7 +131,7 @@ class SFXBricksChildTheme
   public function enqueue_admin_scripts($hook_suffix)
   {
     // Only load on Global Theme Settings pages and subpages
-    if (strpos($hook_suffix, 'global-theme-settings') === false && strpos($hook_suffix, 'sfx-theme-settings') === false && strpos($hook_suffix, 'sfx-wp-optimizer') === false) {
+    if (strpos($hook_suffix, 'global-theme-settings') === false && strpos($hook_suffix, 'sfx-theme-settings') === false && strpos($hook_suffix, 'sfx-wp-optimizer') === false ) {
         return;
     }
     wp_enqueue_style(

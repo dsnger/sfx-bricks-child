@@ -1,0 +1,154 @@
+/* Logo-specific styles only */
+.sfx-logo-preview {
+    display: block;
+    margin: 12px 0;
+    max-height: 80px;
+    max-width: 150px;
+    border: 1px solid #eee;
+    padding: 4px;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+.sfx-logo-upload-btn,
+.sfx-logo-remove-btn {
+    margin-right: 8px;
+}
+
+/* Fix for media uploader with WordPress media modal */
+.media-modal-content {
+    min-height: 400px;
+}
+
+/* Two-column layout for admin page */
+.sfx-logo-admin-columns {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 20px -15px;
+}
+
+.sfx-logo-admin-column {
+    padding: 0 15px;
+    box-sizing: border-box;
+}
+
+.sfx-logo-settings-column {
+    flex: 0 0 450px;
+}
+
+.sfx-logo-instructions-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+.sfx-logo-admin-box {
+    max-width: 720px;
+    width: 100%;
+}
+
+.sfx-logo-admin-box h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.sfx-logo-admin-box h3 {
+    margin: 25px 0 15px;
+    font-size: 16px;
+}
+
+/* Attribute list styling */
+.sfx-logo-attribute-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sfx-logo-attribute-list li {
+    padding: 8px 0;
+    margin: 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.sfx-logo-attribute-list li:last-child {
+    border-bottom: none;
+}
+
+.sfx-logo-attribute-list code {
+    background: #f1f1f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    margin-right: 10px;
+    display: inline-block;
+    min-width: 90px;
+}
+
+.sfx-logo-attribute-desc {
+    color: #666;
+    font-size: 13px;
+}
+
+/* Examples styling */
+.sfx-logo-example {
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    border-radius: 3px;
+    border-left: 4px solid #0073aa;
+}
+
+.sfx-logo-example code {
+    background: #fff;
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 13px;
+    margin-right: 10px;
+}
+
+.sfx-logo-example-desc {
+    color: #666;
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+    .sfx-logo-admin-columns {
+        flex-direction: column;
+    }
+    
+    .sfx-logo-settings-column,
+    .sfx-logo-instructions-column {
+        flex: 0 0 100%;
+        width: 100%;
+    }
+}
+
+/* Form table styling (overrides for settings form) */
+form .form-table {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Hide the default label cell in settings table */
+form .form-table th {
+    display: none !important;
+}
+
+/* Make the field cell full width and remove table look */
+form .form-table td {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+}
+
+form .form-table tr {
+    display: block;
+    margin-bottom: 24px;
+    border: none;
+    background: none;
+}
