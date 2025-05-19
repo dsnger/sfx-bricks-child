@@ -84,29 +84,40 @@ class Controller
 
   /**
    * Render the custom tag output for Bricks.
-   * Supports {contact_info:field} and {contact_info:field:location}.
+   * Supports {contact_info:field} and {contact_info:field:location} with optional attributes.
    */
   public static function render_bricks_dynamic_tag(string $tag, $post, string $context): string
   {
     if (strpos($tag, '{contact_info:') !== 0) {
       return $tag;
     }
-    // Match {contact_info:field} or {contact_info:field:location}
-    if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?\}/', $tag, $m)) {
+    // Match {contact_info:field} or {contact_info:field:location} with optional attributes
+    if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?(?:\|([^}]+))?\}/', $tag, $m)) {
       return '';
     }
     $field = $m[1];
     $location = isset($m[2]) ? $m[2] : null;
+    $attributes = isset($m[3]) ? $m[3] : '';
+
+    // Parse attributes
+    $atts = ['field' => $field, 'location' => $location];
+    if (!empty($attributes)) {
+      $attr_pairs = explode('|', $attributes);
+      foreach ($attr_pairs as $pair) {
+        if (strpos($pair, '=') !== false) {
+          list($key, $value) = explode('=', $pair);
+          $atts[$key] = $value;
+        }
+      }
+    }
+
     // Use the SC_ContactInfos class to render the field
     if (!class_exists('SFX\\ContactInfos\\Shortcode\\SC_ContactInfos')) {
       return '';
     }
     $sc = new \SFX\ContactInfos\Shortcode\SC_ContactInfos();
     // Render using the same logic as the shortcode
-    return $sc->render_contact_info([
-      'field' => $field,
-      'location' => $location,
-    ]);
+    return $sc->render_contact_info($atts);
   }
 
   /**

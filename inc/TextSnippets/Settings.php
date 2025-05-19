@@ -23,16 +23,7 @@ class Settings
      */
     public static function get_fields(): array
     {
-        return [
-            [
-                'id'          => 'text_snippet',
-                'label'       => __('Text Snippet', 'sfxtheme'),
-                'description' => __('Upload or select the main text snippet.', 'sfxtheme'),
-                'type'        => 'image',
-                'default'     => '',
-            ],
-
-        ];
+        return [];
     }
 
     /**

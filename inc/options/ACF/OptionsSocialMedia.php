@@ -16,12 +16,12 @@ class OptionsSocialMedia
     // Make sure ACF is active
     if (function_exists('acf_add_options_page')) {
 
-      acf_add_options_sub_page(array(
-        'page_title'   => __('Social Media', 'sfxtheme'),
-        'menu_title'   => __('Social Media Profile', 'sfxtheme'),
-        'parent_slug'  => OptionsContact::$menu_slug,
-        'autoload'     => false
-      ));
+      // acf_add_options_sub_page(array(
+      //   'page_title'   => __('Social Media', 'sfxtheme'),
+      //   'menu_title'   => __('Social Media Profile', 'sfxtheme'),
+      //   'parent_slug'  => OptionsContact::$menu_slug,
+      //   'autoload'     => false
+      // ));
 
 		}
 	}

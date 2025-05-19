@@ -24,9 +24,7 @@ class Controller
   private function load_setting_pages()
   {
     // new \SFX\Options\AdminOptionPages();
-    new \SFX\Options\ACF\OptionsContact();
     new \SFX\Options\ACF\OptionsSocialMedia();
-  
     new \SFX\Options\ACF\OptionsCustomScripts();
     new \SFX\Options\ACF\OptionsPresetScripts();
     new \SFX\Options\ACF\OptionsHeader();

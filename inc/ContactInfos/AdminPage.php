@@ -58,32 +58,219 @@ class AdminPage
 
       <div class="sfx-contact-admin-sidebar">
         <div class="sfx-card">
+          <h2><?php esc_html_e('Dynamic Tag Usage', 'sfxtheme'); ?></h2>
+          <p><?php esc_html_e('Use these dynamic tags in Bricks Builder to display contact information:', 'sfxtheme'); ?></p>
+          
+          <div class="sfx-shortcode-tabs">
+            <div class="sfx-shortcode-nav">
+              <a href="#dt-basic" class="active"><?php esc_html_e('Basic Usage', 'sfxtheme'); ?></a>
+              <a href="#dt-company"><?php esc_html_e('Company', 'sfxtheme'); ?></a>
+              <a href="#dt-address"><?php esc_html_e('Address', 'sfxtheme'); ?></a>
+              <a href="#dt-contact"><?php esc_html_e('Contact', 'sfxtheme'); ?></a>
+              <a href="#dt-business"><?php esc_html_e('Business', 'sfxtheme'); ?></a>
+              <a href="#dt-branch"><?php esc_html_e('Branches', 'sfxtheme'); ?></a>
+            </div>
+            
+            <div class="sfx-shortcode-content">
+              <div id="dt-basic" class="sfx-shortcode-panel active">
+                <h3><?php esc_html_e('Basic Usage', 'sfxtheme'); ?></h3>
+                <div class="sfx-shortcode-example">
+                  <code class="shortcode-copy">{contact_info:company}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:company}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                <p class="description"><?php esc_html_e('The basic dynamic tag format uses {contact_info:field} to specify which information to display.', 'sfxtheme'); ?></p>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('With Icon', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:phone|icon=phone}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:phone|icon=phone}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Custom Text', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:email|text=Contact Us}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:email|text=Contact Us}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Without Link', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:email|link=false}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:email|link=false}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Custom CSS Class', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:phone|class=my-custom-class}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:phone|class=my-custom-class}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Multiple Attributes', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:phone|icon=phone|class=my-custom-class|link=false}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:phone|icon=phone|class=my-custom-class|link=false}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+              </div>
+              
+              <div id="dt-company" class="sfx-shortcode-panel">
+                <h3><?php esc_html_e('Company Information', 'sfxtheme'); ?></h3>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Company Name', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:company}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:company}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Managing Director', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:director}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:director}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+              </div>
+              
+              <div id="dt-address" class="sfx-shortcode-panel">
+                <h3><?php esc_html_e('Address Information', 'sfxtheme'); ?></h3>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Full Address', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:address}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:address}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Street', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:street}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:street}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('ZIP Code', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:zip}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:zip}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('City', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:city}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:city}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+              </div>
+              
+              <div id="dt-contact" class="sfx-shortcode-panel">
+                <h3><?php esc_html_e('Contact Details', 'sfxtheme'); ?></h3>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Phone', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:phone}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:phone}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Email', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:email}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:email}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+              </div>
+              
+              <div id="dt-business" class="sfx-shortcode-panel">
+                <h3><?php esc_html_e('Business Information', 'sfxtheme'); ?></h3>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('VAT ID', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:vat}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:vat}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Company Registration No.', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:hrb}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:hrb}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+              </div>
+              
+              <div id="dt-branch" class="sfx-shortcode-panel">
+                <h3><?php esc_html_e('Branch Information', 'sfxtheme'); ?></h3>
+                <p><?php esc_html_e('Use the location parameter to specify which branch to display (starting from 0):', 'sfxtheme'); ?></p>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Branch Name', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:title:0}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:title:0}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Branch Address', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:address:0}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:address:0}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Branch Phone', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">{contact_info:phone:0}</code>
+                  <button class="copy-button" data-clipboard-text="{contact_info:phone:0}"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <p><?php esc_html_e('You can change "0" to any branch index (0, 1, 2, etc.)', 'sfxtheme'); ?></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sfx-card">
           <h2><?php esc_html_e('Shortcode Usage', 'sfxtheme'); ?></h2>
           <p><?php esc_html_e('Use these shortcodes to display contact information:', 'sfxtheme'); ?></p>
           
           <div class="sfx-shortcode-tabs">
             <div class="sfx-shortcode-nav">
-              <a href="#basic-usage" class="active"><?php esc_html_e('Basic Usage', 'sfxtheme'); ?></a>
-              <a href="#company-fields"><?php esc_html_e('Company', 'sfxtheme'); ?></a>
-              <a href="#address-fields"><?php esc_html_e('Address', 'sfxtheme'); ?></a>
-              <a href="#contact-fields"><?php esc_html_e('Contact', 'sfxtheme'); ?></a>
-              <a href="#business-fields"><?php esc_html_e('Business', 'sfxtheme'); ?></a>
-              <a href="#additional-fields"><?php esc_html_e('Additional', 'sfxtheme'); ?></a>
-              <a href="#branch-fields"><?php esc_html_e('Branches', 'sfxtheme'); ?></a>
-              <a href="#advanced-usage"><?php esc_html_e('Advanced', 'sfxtheme'); ?></a>
+              <a href="#sc-basic-usage" class="active"><?php esc_html_e('Basic Usage', 'sfxtheme'); ?></a>
+              <a href="#sc-company-fields"><?php esc_html_e('Company', 'sfxtheme'); ?></a>
+              <a href="#sc-address-fields"><?php esc_html_e('Address', 'sfxtheme'); ?></a>
+              <a href="#sc-contact-fields"><?php esc_html_e('Contact', 'sfxtheme'); ?></a>
+              <a href="#sc-business-fields"><?php esc_html_e('Business', 'sfxtheme'); ?></a>
+              <a href="#sc-additional-fields"><?php esc_html_e('Additional', 'sfxtheme'); ?></a>
+              <a href="#sc-branch-fields"><?php esc_html_e('Branches', 'sfxtheme'); ?></a>
+              <a href="#sc-advanced-usage"><?php esc_html_e('Advanced', 'sfxtheme'); ?></a>
             </div>
             
             <div class="sfx-shortcode-content">
-              <div id="basic-usage" class="sfx-shortcode-panel active">
+              <div id="sc-basic-usage" class="sfx-shortcode-panel active">
                 <h3><?php esc_html_e('Basic Usage', 'sfxtheme'); ?></h3>
                 <div class="sfx-shortcode-example">
                   <code class="shortcode-copy">[contact-info field="company"]</code>
                   <button class="copy-button" data-clipboard-text="[contact-info field=&quot;company&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
                 </div>
                 <p class="description"><?php esc_html_e('The basic shortcode format uses the field parameter to specify which information to display.', 'sfxtheme'); ?></p>
+
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('With Icon', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">[contact-info field="phone" icon="phone"]</code>
+                  <button class="copy-button" data-clipboard-text="[contact-info field=&quot;phone&quot; icon=&quot;phone&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Custom Text', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">[contact-info field="email" text="Contact Us"]</code>
+                  <button class="copy-button" data-clipboard-text="[contact-info field=&quot;email&quot; text=&quot;Contact Us&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Without Link', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">[contact-info field="email" link="false"]</code>
+                  <button class="copy-button" data-clipboard-text="[contact-info field=&quot;email&quot; link=&quot;false&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Custom CSS Class', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">[contact-info field="phone" class="my-custom-class"]</code>
+                  <button class="copy-button" data-clipboard-text="[contact-info field=&quot;phone&quot; class=&quot;my-custom-class&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
+                
+                <div class="sfx-shortcode-example">
+                  <h4><?php esc_html_e('Multiple Attributes', 'sfxtheme'); ?></h4>
+                  <code class="shortcode-copy">[contact-info field="phone" icon="phone" class="my-custom-class" link="false"]</code>
+                  <button class="copy-button" data-clipboard-text="[contact-info field=&quot;phone&quot; icon=&quot;phone&quot; class=&quot;my-custom-class&quot; link=&quot;false&quot;]"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                </div>
               </div>
               
-              <div id="company-fields" class="sfx-shortcode-panel">
+              <div id="sc-company-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Company Information', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -99,7 +286,7 @@ class AdminPage
                 </div>
               </div>
               
-              <div id="address-fields" class="sfx-shortcode-panel">
+              <div id="sc-address-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Address Information', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -133,7 +320,7 @@ class AdminPage
                 </div>
               </div>
               
-              <div id="contact-fields" class="sfx-shortcode-panel">
+              <div id="sc-contact-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Contact Details', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -161,7 +348,7 @@ class AdminPage
                 </div>
               </div>
               
-              <div id="business-fields" class="sfx-shortcode-panel">
+              <div id="sc-business-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Business Information', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -195,7 +382,7 @@ class AdminPage
                 </div>
               </div>
               
-              <div id="additional-fields" class="sfx-shortcode-panel">
+              <div id="sc-additional-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Additional Information', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -211,7 +398,7 @@ class AdminPage
                 </div>
               </div>
               
-              <div id="branch-fields" class="sfx-shortcode-panel">
+              <div id="sc-branch-fields" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Branch Information', 'sfxtheme'); ?></h3>
                 <p><?php esc_html_e('Use the location parameter to specify which branch to display (starting from 0):', 'sfxtheme'); ?></p>
                 
@@ -242,7 +429,7 @@ class AdminPage
                 <p><?php esc_html_e('You can change "0" to any branch index (0, 1, 2, etc.)', 'sfxtheme'); ?></p>
               </div>
               
-              <div id="advanced-usage" class="sfx-shortcode-panel">
+              <div id="sc-advanced-usage" class="sfx-shortcode-panel">
                 <h3><?php esc_html_e('Advanced Usage', 'sfxtheme'); ?></h3>
                 
                 <div class="sfx-shortcode-example">
@@ -370,18 +557,24 @@ class AdminPage
 
     <script>
       jQuery(document).ready(function($) {
-        // Tab functionality
-        $('.sfx-shortcode-nav a').on('click', function(e) {
-          e.preventDefault();
-          var target = $(this).attr('href');
+        // Tab functionality for both panels
+        $('.sfx-shortcode-tabs').each(function() {
+          var $tabs = $(this);
           
-          // Update active state
-          $('.sfx-shortcode-nav a').removeClass('active');
-          $(this).addClass('active');
-          
-          // Show target panel
-          $('.sfx-shortcode-panel').removeClass('active');
-          $(target).addClass('active');
+          // Tab switching
+          $tabs.find('.sfx-shortcode-nav a').on('click', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            var target = $this.attr('href');
+            
+            // Update active state within this panel only
+            $tabs.find('.sfx-shortcode-nav a').removeClass('active');
+            $this.addClass('active');
+            
+            // Show target panel within this panel only
+            $tabs.find('.sfx-shortcode-panel').removeClass('active');
+            $tabs.find(target).addClass('active');
+          });
         });
         
         // Copy functionality
