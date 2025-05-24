@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace SFX\BricksChild;
+namespace SFX;
+
+use Parsedown;
 
 if (!defined('ABSPATH')) {
   exit;
