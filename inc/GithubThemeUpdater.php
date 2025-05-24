@@ -20,7 +20,7 @@ class GitHubThemeUpdater
   private ?string $github_username = null;
   private ?string $github_repo = null;
   private ?string $authorize_token = null;
-  private bool $debug = false; // Enable debugging
+  private bool $debug = true; // Enable debugging by default
 
   public function __construct()
   {
@@ -68,6 +68,11 @@ class GitHubThemeUpdater
       }
       $this->github_response = json_decode(wp_remote_retrieve_body($response));
 
+      if (empty($this->github_response->tag_name)) {
+        error_log('GitHub Theme Updater Error: tag_name missing in GitHub response. Full response: ' . print_r($this->github_response, true));
+        return;
+      }
+
       if ($this->debug) {
         error_log('Theme Updater: GitHub response received. Tag: ' .
           ($this->github_response ? $this->github_response->tag_name : 'unknown'));
@@ -79,7 +84,6 @@ class GitHubThemeUpdater
   {
     add_filter('pre_set_site_transient_update_themes', [$this, 'modify_transient'], 10, 1);
     add_filter('themes_api', [$this, 'theme_popup'], 10, 3);
-    add_filter('upgrader_post_install', [$this, 'after_install'], 10, 3);
 
     // Add action to force check for updates (useful for debugging)
     add_action('admin_init', [$this, 'force_check']);
@@ -103,6 +107,14 @@ class GitHubThemeUpdater
   public function modify_transient($transient)
   {
     if (!isset($transient->checked)) {
+      if ($this->debug) {
+        error_log('Theme Updater: No checked themes in transient.');
+      }
+      return $transient;
+    }
+
+    if (!isset($transient->checked[$this->theme_slug])) {
+      error_log('GitHub Theme Updater Error: Theme slug ' . $this->theme_slug . ' not found in checked themes.');
       return $transient;
     }
 
@@ -132,6 +144,15 @@ class GitHubThemeUpdater
       }
 
       $package = $this->github_response->zipball_url;
+      // Use custom release asset (zip) if available
+      if (!empty($this->github_response->assets) && is_array($this->github_response->assets)) {
+        foreach ($this->github_response->assets as $asset) {
+          if (isset($asset->name) && str_ends_with($asset->name, '.zip') && isset($asset->browser_download_url)) {
+            $package = $asset->browser_download_url;
+            break;
+          }
+        }
+      }
       if ($this->authorize_token) {
         $package = add_query_arg(['access_token' => $this->authorize_token], $package);
       }
@@ -194,41 +215,5 @@ class GitHubThemeUpdater
       'tested' => '6.7.1',
     ];
     return (object) $info;
-  }
-
-  public function after_install($response, $hook_extra, $result)
-  {
-    global $wp_filesystem;
-    if (!isset($hook_extra['theme']) || $hook_extra['theme'] !== $this->theme_slug) {
-      return $response;
-    }
-
-    $theme_root = get_theme_root($this->theme_slug);
-    $install_directory = $theme_root . '/' . $this->theme_slug;
-    $extracted_folder = $result['destination'];
-
-    // Remove the old theme folder if it exists
-    if ($wp_filesystem->exists($install_directory)) {
-      if (!$wp_filesystem->delete($install_directory, true)) {
-        error_log('Theme Updater: Failed to delete old theme directory: ' . $install_directory);
-        return $response;
-      }
-    }
-
-    // Move/rename the extracted folder to the correct theme folder
-    if ($extracted_folder !== $install_directory) {
-      if (!$wp_filesystem->move($extracted_folder, $install_directory)) {
-        // Fallback: recursively copy then delete
-        if (!copy_dir($extracted_folder, $install_directory)) {
-          error_log('Theme Updater: Failed to copy extracted folder to theme directory.');
-          return $response;
-        }
-        $wp_filesystem->delete($extracted_folder, true);
-      }
-    }
-
-    $result['destination'] = $install_directory;
-
-    return $result;
   }
 }
