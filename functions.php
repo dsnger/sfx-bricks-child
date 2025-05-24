@@ -45,7 +45,7 @@ $sfx_child_theme->init();
 // Initialize theme updater if not in development mode
 if (!\SFX\Environment::is_dev_mode()) {
     require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
-    $updater = new \SFX\BricksChild\GitHubThemeUpdater();
+    $updater = new \SFX\GitHubThemeUpdater();
     $updater->initialize();
 }
 
