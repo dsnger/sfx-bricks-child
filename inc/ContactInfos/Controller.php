@@ -15,7 +15,7 @@ class Controller
     Settings::register(self::OPTION_NAME);
     AdminPage::register();
     AssetManager::register();
-    new Shortcode\SC_ContactInfos(self::OPTION_NAME);
+    new Shortcode\SC_ContactInfos();
 
     // Initialize the theme only after ACF is confirmed to be active
     add_action('init', [$this,'handle_options']);

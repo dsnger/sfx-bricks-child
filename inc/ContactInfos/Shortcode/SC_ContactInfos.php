@@ -33,16 +33,11 @@ class SC_ContactInfos
      * Class constructor
      * Register the shortcode
      */
-    public function __construct()
+    public function __construct(?string $option_name = null)
     {
-        add_shortcode('contact-info', [$this, 'render_contact_info']);
-
-        // Get the option name from Settings class if available, otherwise default
-        $this->option_name = defined('SFX\ContactInfos\Settings::$OPTION_NAME')
-            ? Settings::$OPTION_NAME
-            : 'contact_info_settings';
-
-        // Get the contact data
+        add_shortcode('contact_info', [$this, 'render_contact_info']);
+        $this->option_name = $option_name
+            ?? (isset(Settings::$OPTION_NAME) && Settings::$OPTION_NAME ? Settings::$OPTION_NAME : 'contact_info_settings');
         $this->contact_data = get_option($this->option_name, []);
     }
 
