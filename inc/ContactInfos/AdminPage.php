@@ -6,7 +6,7 @@ namespace SFX\ContactInfos;
 
 class AdminPage
 {
-  public static string $menu_slug = 'sfx-contact_infos';
+  public static string $menu_slug = 'sfx-contact-infos';
   public static string $page_title = 'Contact Infos';
   public static string $description = 'Configure and manage the contact infos which can be used everywhere in pages or posts via shortcode.';
 

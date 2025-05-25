@@ -9,13 +9,15 @@ class Controller
 
 
   public const OPTION_NAME = 'sfx_contact_infos_options';
+  
+  private static $shortcode_instance;
 
   public function __construct()
   {
     Settings::register(self::OPTION_NAME);
     AdminPage::register();
     AssetManager::register();
-    new Shortcode\SC_ContactInfos();
+    self::$shortcode_instance = new Shortcode\SC_ContactInfos(self::OPTION_NAME);
 
     // Initialize the theme only after ACF is confirmed to be active
     add_action('init', [$this,'handle_options']);
@@ -66,7 +68,7 @@ class Controller
     add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
     add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_bricks_dynamic_tag'], 20, 3);
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
-    add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_dynamic_content'], 20, 2);
+    add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
   }
 
   /**
@@ -91,22 +93,44 @@ class Controller
     if (strpos($tag, '{contact_info:') !== 0) {
       return $tag;
     }
-    // Match {contact_info:field} or {contact_info:field:location} with optional attributes
-    if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?(?:\|([^}]+))?\}/', $tag, $m)) {
+    
+    // More flexible regex pattern to handle various attribute formats
+    // Matches: {contact_info:field}, {contact_info:field:location}, {contact_info:field@attr:value}, etc.
+    if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?(?:\s*[@\|]\s*([^}]+))?\}/', $tag, $m)) {
       return '';
     }
+    
     $field = $m[1];
-    $location = isset($m[2]) ? $m[2] : null;
+    $location = isset($m[2]) && $m[2] !== '' ? $m[2] : null;
     $attributes = isset($m[3]) ? $m[3] : '';
 
     // Parse attributes
-    $atts = ['field' => $field, 'location' => $location];
+    $atts = ['field' => $field];
+    
+    // Only add location if it's not null
+    if ($location !== null) {
+      $atts['location'] = $location;
+    }
+    
     if (!empty($attributes)) {
-      $attr_pairs = explode('|', $attributes);
+      // Handle both pipe and @ separated attributes
+      $attr_pairs = preg_split('/[\|@]/', $attributes);
       foreach ($attr_pairs as $pair) {
+        $pair = trim($pair);
+        if (empty($pair)) {
+          continue;
+        }
+        
         if (strpos($pair, '=') !== false) {
-          list($key, $value) = explode('=', $pair);
-          $atts[$key] = $value;
+          list($key, $value) = explode('=', $pair, 2);
+          $atts[trim($key)] = trim($value, '"\'');
+        } elseif (strpos($pair, ':') !== false) {
+          // Handle colon-separated key:value pairs (e.g., link:false)
+          list($key, $value) = explode(':', $pair, 2);
+          $atts[trim($key)] = trim($value, '"\'');
+        } elseif (!empty($pair)) {
+          // Handle boolean attributes without values
+          $atts[trim($pair)] = true;
         }
       }
     }
@@ -115,26 +139,61 @@ class Controller
     if (!class_exists('SFX\\ContactInfos\\Shortcode\\SC_ContactInfos')) {
       return '';
     }
-    $sc = new \SFX\ContactInfos\Shortcode\SC_ContactInfos();
+    $sc = self::$shortcode_instance;
     // Render using the same logic as the shortcode
     return $sc->render_contact_info($atts);
   }
 
   /**
    * Replace all occurrences of the dynamic tag in content.
+   * For bricks/dynamic_data/render_content (3 params)
    */
   public static function render_bricks_dynamic_content($content, $post = null, $context = 'text')
+  {
+    return self::process_dynamic_tags_in_content($content, $post, $context);
+  }
+
+  /**
+   * Replace all occurrences of the dynamic tag in content.
+   * For bricks/frontend/render_data (2 params)
+   */
+  public static function render_bricks_frontend_data($content, $post = null)
+  {
+    return self::process_dynamic_tags_in_content($content, $post, 'text');
+  }
+
+  /**
+   * Process dynamic tags in content - shared logic
+   */
+  private static function process_dynamic_tags_in_content($content, $post = null, $context = 'text')
   {
     if (strpos($content, '{contact_info:') === false) {
       return $content;
     }
-    if (!preg_match_all('/\{contact_info:[^}]+\}/', $content, $matches)) {
+    
+    // Regex to match contact_info: tag with any arguments
+    if (!preg_match_all('/\{(contact_info:[^}]+)\}/', $content, $matches)) {
       return $content;
     }
-    foreach ($matches[0] as $tag) {
-      $replacement = self::render_bricks_dynamic_tag($tag, $post, $context);
-      $content = str_replace($tag, $replacement, $content);
+    
+    // Nothing grouped in the regex, return the original content
+    if (empty($matches[0])) {
+      return $content;
     }
+    
+    foreach ($matches[1] as $key => $match) {
+      $tag = $matches[0][$key]; // Full tag with braces
+      $tag_content = $matches[1][$key]; // Tag content without braces
+      
+      // Get the dynamic data value using the tag content without braces
+      $value = self::render_bricks_dynamic_tag('{' . $tag_content . '}', $post, $context);
+      
+      // Replace the tag with the transformed value
+      $content = str_replace($tag, $value, $content);
+    }
+    
     return $content;
   }
+
+
 }

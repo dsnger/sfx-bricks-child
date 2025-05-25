@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.35] - 2025-05-25
+
+### Fixed
+
+- Bricks Dynamic Tags:
+  - Fixed parameter mismatch issue in Bricks dynamic tag filters for ContactInfos, CompanyLogo, and TextSnippets
+  - Corrected `bricks/frontend/render_data` filter to use 2 parameters instead of 3
+  - Improved regex patterns for better dynamic tag content processing
+  - Enhanced attribute parsing to support colon-separated key:value pairs (e.g., `@link:false`)
+  - Fixed `{contact_info:email @link:false}` syntax not working properly
+  - Applied consistent fixes across all three dynamic tag implementations
+
+### Changed
+
+- Code cleanup:
+  - Removed all debug logging from ContactInfos shortcode and controller
+  - Cleaned up test methods and debug functions for production readiness
+
+## [0.4.34] - 2025-05-25
+
+### Changed
+
+- ContactInfos shortcode:
+  - Enhance ContactInfos shortcode attribute parsing by allowing multiple attributes and fixing regex pattern for better matching. This improves the flexibility of the shortcode usage.
+
 ## [0.4.33] - 2025-05-25
 
 ### Fixed

@@ -47,7 +47,7 @@ class SC_ContactInfos
      * @param array $atts Shortcode attributes
      * @return string HTML output
      * 
-     * Usage: [contact-info field="fieldname" location="1"]
+     * Usage: [contact_info field="fieldname" location="1"]
      */
     public function render_contact_info($atts)
     {
@@ -63,7 +63,7 @@ class SC_ContactInfos
                 'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
             ],
             $atts,
-            'contact-info'
+            'contact_info'
         );
 
         // Go back if no field
@@ -85,7 +85,8 @@ class SC_ContactInfos
         // Get field value
         $value = $this->get_field_value($atts['field'], $location);
 
-        $has_link = in_array($atts['link'], ['true', '1', 1, true], true);
+        // Handle link attribute properly - check for 'false' string
+        $has_link = !in_array(strtolower($atts['link']), ['false', '0', 'no', 'off'], true);
 
         // Process different field types
         switch ($atts['field']) {
@@ -182,17 +183,19 @@ class SC_ContactInfos
                 $email,
                 $tooltip,
                 $icon,
-                $text
+                esc_html($text)
             );
         }
 
-        return sprintf(
+        $output = sprintf(
             '<span class="%s" %s>%s%s</span>',
             $class,
             $tooltip,
             $icon,
-            $text
+            esc_html($text)
         );
+
+        return $output;
     }
 
     /**

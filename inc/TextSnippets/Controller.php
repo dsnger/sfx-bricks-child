@@ -39,7 +39,7 @@ class Controller
     add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
     add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_bricks_dynamic_tag'], 20, 3);
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
-    add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_dynamic_content'], 20, 2);
+    add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
   }
 
   /**
@@ -76,19 +76,52 @@ class Controller
 
   /**
    * Replace all occurrences of the dynamic tag in content.
+   * For bricks/dynamic_data/render_content (3 params)
    */
   public static function render_bricks_dynamic_content($content, $post = null, $context = 'text')
+  {
+    return self::process_dynamic_tags_in_content($content, $post, $context);
+  }
+
+  /**
+   * Replace all occurrences of the dynamic tag in content.
+   * For bricks/frontend/render_data (2 params)
+   */
+  public static function render_bricks_frontend_data($content, $post = null)
+  {
+    return self::process_dynamic_tags_in_content($content, $post, 'text');
+  }
+
+  /**
+   * Process dynamic tags in content - shared logic
+   */
+  private static function process_dynamic_tags_in_content($content, $post = null, $context = 'text')
   {
     if (strpos($content, '{snippet_content:') === false) {
       return $content;
     }
-    if (!preg_match_all('/\{snippet_content:[^}]+\}/', $content, $matches)) {
+    
+    // Regex to match snippet_content: tag with any arguments
+    if (!preg_match_all('/\{(snippet_content:[^}]+)\}/', $content, $matches)) {
       return $content;
     }
-    foreach ($matches[0] as $tag) {
-      $replacement = self::render_bricks_dynamic_tag($tag, $post, $context);
-      $content = str_replace($tag, $replacement, $content);
+    
+    // Nothing grouped in the regex, return the original content
+    if (empty($matches[0])) {
+      return $content;
     }
+    
+    foreach ($matches[1] as $key => $match) {
+      $tag = $matches[0][$key]; // Full tag with braces
+      $tag_content = $matches[1][$key]; // Tag content without braces
+      
+      // Get the dynamic data value using the tag content without braces
+      $value = self::render_bricks_dynamic_tag('{' . $tag_content . '}', $post, $context);
+      
+      // Replace the tag with the transformed value
+      $content = str_replace($tag, $value, $content);
+    }
+    
     return $content;
   }
 
