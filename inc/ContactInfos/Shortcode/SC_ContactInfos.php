@@ -85,29 +85,37 @@ class SC_ContactInfos
         // Get field value
         $value = $this->get_field_value($atts['field'], $location);
 
-        // Return empty if no value found
-        if (empty($value)) {
-            return '';
-        }
-
         $has_link = in_array($atts['link'], ['true', '1', 1, true], true);
 
         // Process different field types
         switch ($atts['field']) {
             case 'email':
+                if (empty($value)) {
+                    return '';
+                }
                 return $this->render_email_field($value, $atts, $icon, $text, $has_link);
 
             case 'mobile':
             case 'phone':
+                if (empty($value)) {
+                    return '';
+                }
                 return $this->render_phone_field($value, $atts, $icon, $has_link);
 
             case 'address':
+                // Always call, even if $value is empty
                 return $this->render_address_field($value, $atts, $icon, $location);
 
             case 'maplink':
+                if (empty($value)) {
+                    return '';
+                }
                 return $this->render_maplink_field($value, $atts, $icon);
 
             default:
+                if (empty($value)) {
+                    return '';
+                }
                 return $this->render_default_field($value, $atts, $icon);
         }
     }
@@ -222,36 +230,37 @@ class SC_ContactInfos
         $address = $value;
         $trimmed_address = $address ? trim($address) : null;
 
-        if (empty($trimmed_address)) {
-            // If no formatted address, attempt to build from components
-            if ($location === null) {
-                $street = $this->get_field_value('street');
-                $zip = $this->get_field_value('zip');
-                $city = $this->get_field_value('city');
-            } else {
-                $location = (int) $location;
-
-                $street = $this->get_field_value('street', $location);
-                $zip = $this->get_field_value('zip', $location);
-                $city = $this->get_field_value('city', $location);
-            }
-
-            if (empty($street) && empty($city)) {
-                return '';
-            }
-
-            $address = sprintf(
-                '<span class="uk-text-nowrap">%s</span><br /><span class="uk-text-nowrap">%s %s</span>',
-                esc_html($street),
-                esc_html($zip),
-                esc_html($city)
-            );
-
-            return $icon . $address;
+        // If formatted address is present, render it
+        if (!empty($trimmed_address)) {
+            return $icon . wp_kses_post($address);
         }
 
-        // Allow HTML in formatted address
-        return $icon . wp_kses_post($address);
+        // Try to build address from components
+        if ($location === null) {
+            $street = $this->get_field_value('street');
+            $zip = $this->get_field_value('zip');
+            $city = $this->get_field_value('city');
+        } else {
+            $location = (int) $location;
+            $street = $this->get_field_value('street', $location);
+            $zip = $this->get_field_value('zip', $location);
+            $city = $this->get_field_value('city', $location);
+        }
+
+        // Only render if at least one component is present
+        if (empty($street) && empty($zip) && empty($city)) {
+            return '';
+        }
+
+        $address_html = '';
+        if (!empty($street)) {
+            $address_html .= '<span class="uk-text-nowrap">' . esc_html($street) . '</span><br />';
+        }
+        if (!empty($zip) || !empty($city)) {
+            $address_html .= '<span class="uk-text-nowrap">' . esc_html(trim($zip . ' ' . $city)) . '</span>';
+        }
+
+        return $icon . $address_html;
     }
 
     /**
