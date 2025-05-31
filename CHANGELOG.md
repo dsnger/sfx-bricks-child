@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.36] - 2024-06-09
+
+### Added
+
+- ImageOptimizer: Added a robust, high-priority filter to globally limit image sizes to thumbnail only (150x150 crop) when auto-conversion is enabled. This filter is defensive and only applies if the thumbnail size is present.
+
+### Changed
+
+- ImageOptimizer: Improved upload conversion logic to prevent upscaling. In width mode, only generates image sizes that are less than or equal to the original image width (except always including the first/original size). This reduces unnecessary file creation and saves disk space.
+
 ## [0.4.35] - 2025-05-25
 
 ### Fixed

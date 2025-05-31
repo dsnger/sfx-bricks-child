@@ -34,6 +34,14 @@ class Controller
     {
         // Register image size and conversion hooks
         add_filter('intermediate_image_sizes_advanced', [Settings::class, 'limit_image_sizes']);
+        // --- Robust, high-priority thumbnail-only override (defensive) ---
+        add_filter('intermediate_image_sizes_advanced', function($sizes) {
+            if (Settings::get_disable_auto_conversion()) {
+                return $sizes;
+            }
+            // Defensive: only override if thumbnail is present
+            return isset($sizes['thumbnail']) ? ['thumbnail' => $sizes['thumbnail']] : $sizes;
+        }, 99);
         add_action('admin_init', [Settings::class, 'set_thumbnail_size']);
         add_action('after_setup_theme', [Settings::class, 'register_custom_sizes']);
         // Register admin page, AJAX, and asset hooks
@@ -184,7 +192,19 @@ class Controller
         // Check memory usage before processing
         self::check_memory_usage();
 
-        foreach ($max_values as $index => $dimension) {
+        // --- v3.6 improvement: avoid upscaling in width mode ---
+        $valid_max_values = $max_values;
+        if ($mode === 'width') {
+            $editor = wp_get_image_editor($file_path);
+            if (!is_wp_error($editor)) {
+                $dimensions = $editor->get_size();
+                $original_width = $dimensions['width'];
+                $valid_max_values = array_filter($max_values, function($width, $index) use ($original_width) {
+                    return $index === 0 || $width <= $original_width;
+                }, ARRAY_FILTER_USE_BOTH);
+            }
+        }
+        foreach ($valid_max_values as $index => $dimension) {
             $suffix = ($index === 0) ? '' : "-{$dimension}";
             $new_file_path = \SFX\ImageOptimizer\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
             if ($new_file_path) {
