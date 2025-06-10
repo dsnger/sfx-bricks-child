@@ -48,15 +48,15 @@ class AssetManager
         }
         
         // Enqueue CSS
-        if (file_exists($assets_dir . 'admin-styles.css')) {
+        if (file_exists($assets_dir . 'admin-style.css')) {
             wp_enqueue_style(
                 'ImageOptimizer-admin-style',
-                $assets_url . 'admin-styles.css',
+                $assets_url . 'admin-style.css',
                 [],
-                filemtime($assets_dir . 'admin-styles.css')
+                filemtime($assets_dir . 'admin-style.css')
             );
         } else {
-            error_log('ImageOptimizer: admin-styles.css not found at ' . $assets_dir);
+            error_log('ImageOptimizer: admin-style.css not found at ' . $assets_dir);
         }
     }
 } 

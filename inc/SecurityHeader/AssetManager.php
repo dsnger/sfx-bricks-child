@@ -37,15 +37,15 @@ class AssetManager
         }
 
         // Then enqueue module-specific styles
-        if (file_exists($assets_dir . 'admin-styles.css')) {
+        if (file_exists($assets_dir . 'admin-style.css')) {
             wp_enqueue_style(
                 'SecurityHeader-admin-style',
-                $assets_url . 'admin-styles.css',
+                $assets_url . 'admin-style.css',
                 ['sfx-global-admin-style'],  // Depend on global styles
-                filemtime($assets_dir . 'admin-styles.css')
+                filemtime($assets_dir . 'admin-style.css')
             );
         } else {
-            error_log('SecurityHeader: admin-styles.css not found at ' . $assets_dir);
+            error_log('SecurityHeader: admin-style.css not found at ' . $assets_dir);
         }
 
         // Enqueue JS
