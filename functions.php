@@ -42,10 +42,23 @@ require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
 $sfx_child_theme = new \SFX\SFXBricksChildTheme();
 $sfx_child_theme->init();
 
-// Initialize theme updater if not in development mode
-if (!\SFX\Environment::is_dev_mode()) {
-    require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
-    $updater = new \SFX\GitHubThemeUpdater();
+// Initialize theme updater
+require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
+$updater = new \SFX\GitHubThemeUpdater();
+
+// Debug: Show development mode status
+if (is_admin() && current_user_can('manage_options')) {
+    add_action('admin_notices', function() {
+        $dev_mode = \SFX\Environment::is_dev_mode();
+        echo '<div class="notice notice-info"><p>';
+        echo '<strong>SFX Theme Updater Status:</strong> ';
+        echo $dev_mode ? 'Development Mode (updater disabled unless ?debug_updater=1)' : 'Production Mode (updater active)';
+        echo '</p></div>';
+    });
+}
+
+// Only initialize in production OR when specifically debugging the updater
+if (!\SFX\Environment::is_dev_mode() || (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_updater']))) {
     $updater->initialize();
 }
 

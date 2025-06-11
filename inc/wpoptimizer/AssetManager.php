@@ -25,15 +25,15 @@ class AssetManager
         $assets_dir = $theme_dir . '/inc/WPOptimizer/assets/';
 
         // Enqueue CSS
-        if (file_exists($assets_dir . 'admin-style.css')) {
+        if (file_exists($assets_dir . 'admin-styles.css')) {
             wp_enqueue_style(
-                'WPOptimizer-admin-style',
-                $assets_url . 'admin-style.css',
+                'WPOptimizer-admin-styles',
+                $assets_url . 'admin-styles.css',
                 [],
-                filemtime($assets_dir . 'admin-style.css')
+                filemtime($assets_dir . 'admin-styles.css')
             );
         } else {
-            error_log('WPOptimizer: admin-style.css not found at ' . $assets_dir);
+            error_log('WPOptimizer: admin-styles.css not found at ' . $assets_dir);
         }
 
         // Enqueue JS
