@@ -68,7 +68,7 @@ jQuery(document).ready(function($) {
 
     // Handle conditional logic for script source type
     function toggleConditionalFields() {
-        console.log('toggleConditionalFields called');
+        //console.log('toggleConditionalFields called');
         $('.sfx-settings-card').each(function() {
             const card = $(this);
             const sourceType = card.find('input[name*="[script_source_type]"]:checked').val();
