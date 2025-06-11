@@ -217,18 +217,6 @@ class Controller
         });
     }
 
-    private function remove_jquery_migrate()
-    {
-        add_filter('wp_default_scripts', function ($scripts) {
-            if (!empty($scripts->registered['jquery'])) {
-                $scripts->registered['jquery']->deps = array_diff(
-                    $scripts->registered['jquery']->deps,
-                    ['jquery-migrate']
-                );
-            }
-        });
-    }
-
     // --- Beispiele aus WPOptimizer (2. Datei, ebenfalls umbenannt) ---
 
     private function block_external_http()
@@ -400,16 +388,21 @@ class Controller
         }
     }
 
-    private function disable_jquery_migrate()
+        private function disable_jquery_migrate()
     {
-        add_filter('wp_default_scripts', function ($scripts) {
-            if (!empty($scripts->registered['jquery'])) {
-                $scripts->registered['jquery']->deps = array_diff(
-                    $scripts->registered['jquery']->deps,
+        // Remove jQuery Migrate from frontend only to avoid breaking admin
+        add_action('wp_enqueue_scripts', function () {
+            // Remove jquery-migrate from jquery dependencies on frontend
+            global $wp_scripts;
+            if (isset($wp_scripts->registered['jquery'])) {
+                $wp_scripts->registered['jquery']->deps = array_diff(
+                    $wp_scripts->registered['jquery']->deps,
                     ['jquery-migrate']
                 );
             }
-        });
+            // Deregister the script entirely
+            wp_deregister_script('jquery-migrate');
+        }, 1); // Early priority to catch before other scripts
     }
 
     private function disable_rest_api()

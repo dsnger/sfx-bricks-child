@@ -1,0 +1,8 @@
+/* Custom Scripts Manager Specific Styles */
+/* Only styles unique to CustomScriptsManager that aren't in global backend.css */
+/* Shared .sfx-settings-* styles are now in /assets/css/backend.css */
+
+/* Radio button label spacing - unique to CustomScriptsManager radio button layout */
+.sfx-settings-field label input[type="radio"] + span {
+    margin-left: 4px;
+} 

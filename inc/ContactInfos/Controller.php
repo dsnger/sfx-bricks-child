@@ -9,7 +9,7 @@ class Controller
 
 
   public const OPTION_NAME = 'sfx_contact_infos_options';
-  
+
   private static $shortcode_instance;
 
   public function __construct()
@@ -20,7 +20,7 @@ class Controller
     self::$shortcode_instance = new Shortcode\SC_ContactInfos(self::OPTION_NAME);
 
     // Initialize the theme only after ACF is confirmed to be active
-    add_action('init', [$this,'handle_options']);
+    add_action('init', [$this, 'handle_options']);
     add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
 
     // Register Bricks dynamic data tag for contact infos
@@ -28,9 +28,9 @@ class Controller
   }
 
 
-  public function handle_options():void
+  public function handle_options(): void
   {
-  //
+    //
 
   }
 
@@ -38,7 +38,7 @@ class Controller
   public function handle_company_logo($company_logo)
   {
     // Handle the company logo
-  } 
+  }
 
 
   private function is_option_enabled(string $option_key): bool
@@ -93,25 +93,25 @@ class Controller
     if (strpos($tag, '{contact_info:') !== 0) {
       return $tag;
     }
-    
+
     // More flexible regex pattern to handle various attribute formats
     // Matches: {contact_info:field}, {contact_info:field:location}, {contact_info:field@attr:value}, etc.
     if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?(?:\s*[@\|]\s*([^}]+))?\}/', $tag, $m)) {
       return '';
     }
-    
+
     $field = $m[1];
     $location = isset($m[2]) && $m[2] !== '' ? $m[2] : null;
     $attributes = isset($m[3]) ? $m[3] : '';
 
     // Parse attributes
     $atts = ['field' => $field];
-    
+
     // Only add location if it's not null
     if ($location !== null) {
       $atts['location'] = $location;
     }
-    
+
     if (!empty($attributes)) {
       // Handle both pipe and @ separated attributes
       $attr_pairs = preg_split('/[\|@]/', $attributes);
@@ -120,7 +120,7 @@ class Controller
         if (empty($pair)) {
           continue;
         }
-        
+
         if (strpos($pair, '=') !== false) {
           list($key, $value) = explode('=', $pair, 2);
           $atts[trim($key)] = trim($value, '"\'');
@@ -170,30 +170,28 @@ class Controller
     if (strpos($content, '{contact_info:') === false) {
       return $content;
     }
-    
+
     // Regex to match contact_info: tag with any arguments
     if (!preg_match_all('/\{(contact_info:[^}]+)\}/', $content, $matches)) {
       return $content;
     }
-    
+
     // Nothing grouped in the regex, return the original content
     if (empty($matches[0])) {
       return $content;
     }
-    
+
     foreach ($matches[1] as $key => $match) {
       $tag = $matches[0][$key]; // Full tag with braces
       $tag_content = $matches[1][$key]; // Tag content without braces
-      
+
       // Get the dynamic data value using the tag content without braces
       $value = self::render_bricks_dynamic_tag('{' . $tag_content . '}', $post, $context);
-      
+
       // Replace the tag with the transformed value
       $content = str_replace($tag, $value, $content);
     }
-    
+
     return $content;
   }
-
-
 }

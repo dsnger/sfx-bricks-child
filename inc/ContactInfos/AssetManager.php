@@ -11,11 +11,12 @@ class AssetManager
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
     }
 
-    public static function enqueue_admin_assets($hook): void
+    public static function enqueue_admin_assets(string $hook): void
     {
-
-        // More flexible hook check - will match any page containing wp-optimizer-options
-        if (strpos($hook, 'sfx-contact-infos') === false) {
+        // Check for contact infos settings pages
+        if (strpos($hook, 'sfx-contact-infos') === false && 
+            strpos($hook, 'settings_page') === false && 
+            strpos($hook, 'options') === false) {
             return;
         }
 
@@ -26,29 +27,35 @@ class AssetManager
         $assets_url = $theme_url . '/inc/ContactInfos/assets/';
         $assets_dir = $theme_dir . '/inc/ContactInfos/assets/';
 
-        // Enqueue CSS
+        // Enqueue ContactInfos specific CSS (legacy branch styles)
+        // Note: Shared .sfx-settings-* styles are now in global backend.css
         if (file_exists($assets_dir . 'admin-style.css')) {
             wp_enqueue_style(
-                'companylogo-admin-style',
+                'sfx-contact-settings',
                 $assets_url . 'admin-style.css',
-                [],
+                [], // No dependencies - global backend.css is loaded by theme
                 filemtime($assets_dir . 'admin-style.css')
             );
         } else {
-            error_log('CompanyLogo: admin-style.css not found at ' . $assets_dir);
+            error_log('SFX ContactInfos: admin-style.css not found at ' . $assets_dir);
         }
 
         // Enqueue JS
         if (file_exists($assets_dir . 'admin-script.js')) {
             wp_enqueue_script(
-                'companylogo-admin-script',
+                'sfx-contact-settings-js',
                 $assets_url . 'admin-script.js',
                 ['jquery'],
                 filemtime($assets_dir . 'admin-script.js'),
                 true
             );
+
+            // Add localized data
+            wp_localize_script('sfx-contact-settings-js', 'sfxContactSettings', [
+                'confirmDelete' => __('Are you sure you want to delete this branch?', 'sfxtheme'),
+            ]);
         } else {
-            error_log('CompanyLogo: admin-script.js not found at ' . $assets_dir);
+            error_log('SFX ContactInfos: admin-script.js not found at ' . $assets_dir);
         }
     }
 } 

@@ -25,7 +25,6 @@ class Controller
   {
     // new \SFX\Options\AdminOptionPages();
     new \SFX\Options\ACF\OptionsSocialMedia();
-    new \SFX\Options\ACF\OptionsCustomScripts();
     new \SFX\Options\ACF\OptionsPresetScripts();
     new \SFX\Options\ACF\OptionsHeader();
     new \SFX\Options\ACF\OptionsFooter();
@@ -196,72 +195,74 @@ class Controller
     }
   }
 
-  private function handle_custom_scripts($script)
-  {
-    $script_type = $script['script_type'];
-    $location = $script['location'];
-    $include_type = $script['include_type'];
-    $frontend_only = $script['frontend_only'];
-    $source_type = $script['script_source_type'];
-    $handle = sanitize_title($script['script_name']);
+  // private function handle_custom_scripts($script)
+  // {
+  //   $script_type = $script['script_type'];
+  //   $location = $script['location'];
+  //   $include_type = $script['include_type'];
+  //   $frontend_only = $script['frontend_only'];
+  //   $source_type = $script['script_source_type'];
+  //   $handle = sanitize_title($script['script_name']);
 
-    // Determine the script source URL based on the selected source type
-    if ($source_type === 'file') {
-      $src = $script['script_file'];
-    } elseif ($source_type === 'cdn') {
-      $src = $script['script_cdn']; // Use the CDN link directly
-    } elseif ($source_type === 'cdn_file') {
-      // Download the script from the CDN and serve it locally
-      $src = ControllerHelper::download_cdn_script($script['script_cdn'], $handle);
-    } else {
-      return; // Exit if the source type is unrecognized
-    }
+  //   // Determine the script source URL based on the selected source type
+  //   if ($source_type === 'file') {
+  //     $src = $script['script_file'];
+  //   } elseif ($source_type === 'cdn') {
+  //     $src = $script['script_cdn']; // Use the CDN link directly
+  //   } elseif ($source_type === 'cdn_file') {
+  //     // Download the script from the CDN and serve it locally
+  //     $src = ControllerHelper::download_cdn_script($script['script_cdn'], $handle);
+  //   } else {
+  //     return; // Exit if the source type is unrecognized
+  //   }
 
-    $in_footer = ($location === 'footer');
+  //   $in_footer = ($location === 'footer');
 
-    if ($frontend_only && !is_admin()) {
-      return;
-    }
+  //   if ($frontend_only && !is_admin()) {
+  //     return;
+  //   }
 
-    if ($script_type === 'javascript') {
-      if ($include_type === 'enqueue') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
-          wp_enqueue_script($handle, $src, [], null, $in_footer);
-        });
-      } elseif ($include_type === 'register') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
-          wp_register_script($handle, $src, [], null, $in_footer);
-        });
-      }
-    } elseif ($script_type === 'CSS') {
-      if ($include_type === 'enqueue') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src) {
-          wp_enqueue_style($handle, $src);
-        });
-      } elseif ($include_type === 'register') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src) {
-          wp_register_style($handle, $src);
-        });
-      }
-    }
-  }
+  //   if ($script_type === 'javascript') {
+  //     if ($include_type === 'enqueue') {
+  //       add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
+  //         wp_enqueue_script($handle, $src, [], null, $in_footer);
+  //       });
+  //     } elseif ($include_type === 'register') {
+  //       add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
+  //         wp_register_script($handle, $src, [], null, $in_footer);
+  //       });
+  //     }
+  //   } elseif ($script_type === 'CSS') {
+  //     if ($include_type === 'enqueue') {
+  //       add_action('wp_enqueue_scripts', function () use ($handle, $src) {
+  //         wp_enqueue_style($handle, $src);
+  //       });
+  //     } elseif ($include_type === 'register') {
+  //       add_action('wp_enqueue_scripts', function () use ($handle, $src) {
+  //         wp_register_style($handle, $src);
+  //       });
+  //     }
+  //   }
+  // }
 
-  private function delete_custom_scripts()
-  {
-    $scripts = $this->get_acf_option('custom_scripts');
 
-    if ($scripts) {
-      foreach ($scripts as $script) {
-        $handle = sanitize_title($script['script_name']);
-        $source_type = $script['script_source_type'];
 
-        if ($source_type === 'cdn_file' || $source_type === 'file') {
-          // Delete the downloaded script file
-          ControllerHelper::delete_script_file($handle, 'custom-scripts');
-        }
-      }
-    }
-  }
+  // private function delete_custom_scripts()
+  // {
+  //   $scripts = $this->get_acf_option('custom_scripts');
+
+  //   if ($scripts) {
+  //     foreach ($scripts as $script) {
+  //       $handle = sanitize_title($script['script_name']);
+  //       $source_type = $script['script_source_type'];
+
+  //       if ($source_type === 'cdn_file' || $source_type === 'file') {
+  //         // Delete the downloaded script file
+  //         ControllerHelper::delete_script_file($handle, 'custom-scripts');
+  //       }
+  //     }
+  //   }
+  // }
 
 
   public function execute_custom_head_html_frontend()

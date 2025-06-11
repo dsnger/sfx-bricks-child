@@ -16,35 +16,9 @@ class Settings
         self::$OPTION_GROUP = $option_key . '_group';
         self::$OPTION_NAME = $option_key;
         add_action('admin_init', [self::class, 'register_settings']);
-        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
     }
 
-    /**
-     * Enqueue admin styles and scripts for the settings page.
-     */
-    public static function enqueue_admin_assets(string $hook): void
-    {
-        // Only enqueue on settings pages
-        if (strpos($hook, 'settings_page') === false && strpos($hook, 'options') === false) {
-            return;
-        }
 
-        // Register and enqueue styles
-        $style_path = get_stylesheet_directory_uri() . '/inc/ContactInfos/assets/admin-styles.css';
-        wp_register_style('sfx-contact-settings', $style_path, [], '1.0.0');
-        wp_enqueue_style('sfx-contact-settings');
-        
-        // Register and enqueue scripts
-        $script_path = get_stylesheet_directory_uri() . '/inc/ContactInfos/assets/admin-script.js';
-        wp_register_script('sfx-contact-settings-js', $script_path, ['jquery'], '1.0.0', true);
-        
-        // Add localized data
-        wp_localize_script('sfx-contact-settings-js', 'sfxContactSettings', [
-            'confirmDelete' => __('Are you sure you want to delete this branch?', 'sfxtheme'),
-        ]);
-        
-        wp_enqueue_script('sfx-contact-settings-js');
-    }
 
     /**
      * Get field groups for the settings page.
