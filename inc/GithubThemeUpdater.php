@@ -20,7 +20,7 @@ class GitHubThemeUpdater
   private ?string $github_username = null;
   private ?string $github_repo = null;
   private ?string $authorize_token = null;
-  private bool $debug = true;
+  private bool $debug = false;
 
   public function __construct()
   {

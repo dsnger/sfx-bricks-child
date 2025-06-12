@@ -47,12 +47,11 @@ require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
 $updater = new \SFX\GitHubThemeUpdater();
 
 // Debug: Show development mode status
-if (is_admin() && current_user_can('manage_options')) {
+if (is_admin() && current_user_can('manage_options') && \SFX\Environment::is_dev_mode()) {
     add_action('admin_notices', function() {
-        $dev_mode = \SFX\Environment::is_dev_mode();
         echo '<div class="notice notice-info"><p>';
         echo '<strong>SFX Theme Updater Status:</strong> ';
-        echo $dev_mode ? 'Development Mode (updater disabled unless ?debug_updater=1)' : 'Production Mode (updater active)';
+        echo 'Development Mode (updater disabled unless ?debug_updater=1)';
         echo '</p></div>';
     });
 }
