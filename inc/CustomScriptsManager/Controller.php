@@ -16,6 +16,32 @@ class Controller
 
     // Register hooks through consolidated system
     add_action('sfx_init_advanced_features', [$this, 'execute_custom_scripts']);
+    
+    // Clear caches when custom scripts are updated
+    add_action('save_post_sfx_custom_script', [$this, 'clear_custom_script_caches']);
+    add_action('delete_post', [$this, 'clear_custom_script_caches']);
+  }
+
+  /**
+   * Clear custom script caches when posts are updated
+   * 
+   * @param int $post_id
+   */
+  public function clear_custom_script_caches(int $post_id): void
+  {
+    $post_type = get_post_type($post_id);
+    if ($post_type !== 'sfx_custom_script') {
+      return;
+    }
+    
+    // Clear all custom script caches
+    global $wpdb;
+    $wpdb->query(
+      $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+        '_transient_sfx_custom_scripts_%'
+      )
+    );
   }
 
   /**
@@ -54,10 +80,28 @@ class Controller
   }
 
   /**
-   * Enqueue or register custom scripts/styles from post type.
+   * Enqueue or register custom scripts/styles from post type with caching.
    */
   public function execute_custom_scripts()
   {
+    // Create cache key based on current page context
+    $cache_key = 'sfx_custom_scripts_' . md5(serialize([
+      'post_id' => get_the_ID(),
+      'page_type' => self::get_current_page_type(),
+      'is_admin' => is_admin(),
+      'is_frontend' => !is_admin()
+    ]));
+    
+    $cached_scripts = get_transient($cache_key);
+    
+    if ($cached_scripts !== false) {
+      // Execute cached script configurations
+      foreach ($cached_scripts as $script_config) {
+        $this->handle_cached_script($script_config);
+      }
+      return;
+    }
+
     // Get all published custom scripts
     $scripts = get_posts([
       'post_type' => 'sfx_custom_script',
@@ -68,10 +112,108 @@ class Controller
       'order' => 'ASC'
     ]);
 
+    $script_configs = [];
+    
     foreach ($scripts as $script_post) {
       // Check if script should be loaded based on conditional settings
       if (self::should_load_script($script_post->ID)) {
-        $this->handle_custom_script($script_post);
+        $script_config = $this->build_script_config($script_post);
+        if ($script_config) {
+          $script_configs[] = $script_config;
+          $this->handle_custom_script($script_post);
+        }
+      }
+    }
+    
+    // Cache the script configurations for 30 minutes
+    set_transient($cache_key, $script_configs, 30 * MINUTE_IN_SECONDS);
+  }
+
+  /**
+   * Build script configuration for caching
+   * 
+   * @param \WP_Post $script_post
+   * @return array|null
+   */
+  private function build_script_config(\WP_Post $script_post): ?array
+  {
+    $script_type = self::get_custom_script_config($script_post->ID, 'script_type') ?: 'javascript';
+    $location = self::get_custom_script_config($script_post->ID, 'location') ?: 'footer';
+    $include_type = self::get_custom_script_config($script_post->ID, 'include_type') ?: 'enqueue';
+    $frontend_only = self::get_custom_script_config($script_post->ID, 'frontend_only') ?: '1';
+    $source_type = self::get_custom_script_config($script_post->ID, 'script_source_type') ?: 'file';
+    $dependencies = self::get_custom_script_config($script_post->ID, 'dependencies') ?: '';
+    $priority = self::get_custom_script_config($script_post->ID, 'priority') ?: 10;
+    $handle = sanitize_title($script_post->post_title);
+
+    // Determine the script source URL
+    $src = '';
+    if ($source_type === 'file') {
+      $src = self::get_custom_script_config($script_post->ID, 'script_file') ?: '';
+    } elseif ($source_type === 'cdn') {
+      $src = self::get_custom_script_config($script_post->ID, 'script_cdn') ?: '';
+    } elseif ($source_type === 'cdn_file') {
+      $src = $this->download_cdn_script(
+        self::get_custom_script_config($script_post->ID, 'script_cdn') ?: '',
+        $handle,
+        $script_type
+      );
+      if (!$src) return null;
+    } elseif ($source_type === 'inline') {
+      $src = self::get_custom_script_config($script_post->ID, 'script_content') ?: '';
+    }
+
+    if (empty($src)) {
+      return null;
+    }
+
+    return [
+      'handle' => $handle,
+      'src' => $src,
+      'script_type' => $script_type,
+      'location' => $location,
+      'include_type' => $include_type,
+      'frontend_only' => $frontend_only,
+      'dependencies' => $dependencies,
+      'priority' => $priority,
+      'source_type' => $source_type
+    ];
+  }
+
+  /**
+   * Handle cached script configuration
+   * 
+   * @param array $script_config
+   */
+  private function handle_cached_script(array $script_config): void
+  {
+    $in_footer = ($script_config['location'] === 'footer');
+    $deps = !empty($script_config['dependencies']) ? array_map('trim', explode(',', $script_config['dependencies'])) : [];
+
+    // Only enqueue on frontend if frontend_only is set
+    if ($script_config['frontend_only'] === '1' && is_admin()) {
+      return;
+    }
+
+    if ($script_config['script_type'] === 'javascript') {
+      if ($script_config['include_type'] === 'enqueue') {
+        add_action('wp_enqueue_scripts', function () use ($script_config, $deps, $in_footer) {
+          wp_enqueue_script($script_config['handle'], $script_config['src'], $deps, null, $in_footer);
+        }, $script_config['priority']);
+      } elseif ($script_config['include_type'] === 'register') {
+        add_action('wp_enqueue_scripts', function () use ($script_config, $deps, $in_footer) {
+          wp_register_script($script_config['handle'], $script_config['src'], $deps, null, $in_footer);
+        }, $script_config['priority']);
+      }
+    } elseif (strtolower($script_config['script_type']) === 'css') {
+      if ($script_config['include_type'] === 'enqueue') {
+        add_action('wp_enqueue_scripts', function () use ($script_config, $deps) {
+          wp_enqueue_style($script_config['handle'], $script_config['src'], $deps);
+        }, $script_config['priority']);
+      } elseif ($script_config['include_type'] === 'register') {
+        add_action('wp_enqueue_scripts', function () use ($script_config, $deps) {
+          wp_register_style($script_config['handle'], $script_config['src'], $deps);
+        }, $script_config['priority']);
       }
     }
   }

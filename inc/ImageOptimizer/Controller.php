@@ -28,6 +28,52 @@ class Controller
     private static $memory_threshold = 0.85; // 85% of memory_limit
 
     /**
+     * Check if file exists with caching
+     * 
+     * @param string $file_path
+     * @return bool
+     */
+    private static function cached_file_exists(string $file_path): bool
+    {
+        $cache_key = 'sfx_image_optimizer_file_exists_' . md5($file_path);
+        $cached_result = get_transient($cache_key);
+        
+        if ($cached_result !== false) {
+            return (bool) $cached_result;
+        }
+        
+        $exists = file_exists($file_path);
+        
+        // Cache for 1 hour
+        set_transient($cache_key, $exists, HOUR_IN_SECONDS);
+        
+        return $exists;
+    }
+
+    /**
+     * Get image format with caching
+     * 
+     * @param string $file_path
+     * @return string|null
+     */
+    private static function get_cached_image_format(string $file_path): ?string
+    {
+        $cache_key = 'sfx_image_optimizer_format_' . md5($file_path);
+        $cached_format = get_transient($cache_key);
+        
+        if ($cached_format !== false) {
+            return $cached_format;
+        }
+        
+        $format = self::get_image_format($file_path);
+        
+        // Cache for 1 hour
+        set_transient($cache_key, $format, HOUR_IN_SECONDS);
+        
+        return $format;
+    }
+
+    /**
      * Initialize the controller by registering all hooks
      */
     public function __construct()

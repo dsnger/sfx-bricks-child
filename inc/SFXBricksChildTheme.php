@@ -71,6 +71,46 @@ class SFXBricksChildTheme
 
     // Exclude private post types from sitemaps
     $this->exclude_private_post_types_from_sitemaps();
+
+    // Initialize global cache management
+    $this->init_cache_management();
+  }
+
+  /**
+   * Initialize global cache management
+   */
+  private function init_cache_management(): void
+  {
+    // Clear all theme caches on plugin/theme updates
+    add_action('upgrader_process_complete', [$this, 'clear_all_theme_caches']);
+    add_action('switch_theme', [$this, 'clear_all_theme_caches']);
+    
+    // Clear caches on WordPress core updates
+    add_action('_core_updated_successfully', [$this, 'clear_all_theme_caches']);
+  }
+
+  /**
+   * Clear all theme-related caches
+   */
+  public function clear_all_theme_caches(): void
+  {
+    global $wpdb;
+    
+    // Clear all transients that start with our theme prefix
+    $wpdb->query(
+      $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+        '_transient_sfx_%'
+      )
+    );
+    
+    // Clear all transients that start with our theme prefix (expired)
+    $wpdb->query(
+      $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+        '_transient_timeout_sfx_%'
+      )
+    );
   }
 
   /**

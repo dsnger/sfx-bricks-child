@@ -23,19 +23,30 @@ class Controller
     public const OPTION_NAME = 'sfx_wpoptimizer_options';
 
     /**
-     * Konstruktor: Definiert Defaults und parst übergebenes Array.
+     * Initialize the controller
      */
     public function __construct()
     {
-        Settings::register(self::OPTION_NAME);
+        // Register components
         AdminPage::register();
         AssetManager::register();
-        add_action('init', [$this, 'init_fields']);
+        Settings::register();
 
-        // Initialize the theme only after ACF is confirmed to be active
-        add_action('init', [$this, 'handle_options']);
-        add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
+        // Register hooks through consolidated system
+        add_action('sfx_init_settings', [$this, 'handle_options']);
 
+        // Clear caches when settings are updated
+        add_action('update_option_sfx_wpoptimizer_options', [$this, 'clear_optimizer_caches']);
+        add_action('delete_option_sfx_wpoptimizer_options', [$this, 'clear_optimizer_caches']);
+    }
+
+    /**
+     * Clear optimizer caches when settings are updated
+     */
+    public function clear_optimizer_caches(): void
+    {
+        delete_transient('sfx_wp_optimizer_enabled');
+        delete_transient('sfx_wp_optimizer_settings');
     }
 
     public function init_fields(): void
@@ -692,4 +703,48 @@ class Controller
             add_option(self::OPTION_NAME, $defaults);
         }
       }
+
+    /**
+     * Check if optimization is enabled with caching
+     * 
+     * @return bool
+     */
+    public static function is_optimization_enabled(): bool
+    {
+        $cache_key = 'sfx_wp_optimizer_enabled';
+        $cached_result = get_transient($cache_key);
+        
+        if ($cached_result !== false) {
+            return (bool) $cached_result;
+        }
+        
+        $enabled = Settings::get('enable_wp_optimizer', 1);
+        
+        // Cache for 30 minutes
+        set_transient($cache_key, $enabled, 30 * MINUTE_IN_SECONDS);
+        
+        return (bool) $enabled;
+    }
+
+    /**
+     * Get optimization settings with caching
+     * 
+     * @return array
+     */
+    public static function get_cached_settings(): array
+    {
+        $cache_key = 'sfx_wp_optimizer_settings';
+        $cached_settings = get_transient($cache_key);
+        
+        if ($cached_settings !== false) {
+            return $cached_settings;
+        }
+        
+        $settings = Settings::get_all();
+        
+        // Cache for 1 hour
+        set_transient($cache_key, $settings, HOUR_IN_SECONDS);
+        
+        return $settings;
+    }
 }
