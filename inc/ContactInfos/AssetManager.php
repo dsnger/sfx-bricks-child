@@ -55,8 +55,7 @@ class AssetManager
                 'postType' => 'sfx_contact_info',
                 'scriptLoaded' => true,
             ]);
-            
-            error_log('SFX ContactInfos: admin-script.js enqueued successfully');
+
         } else {
             error_log('SFX ContactInfos: admin-script.js not found at ' . $assets_dir);
         }
