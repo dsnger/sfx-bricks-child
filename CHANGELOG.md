@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.51] - 2025-07-31
+
+### Fixed
+
+- **ContactInfos Controller**: Fixed fatal error `Call to a member function render_contact_info() on null` in Bricks dynamic tags
+  - **Issue**: `self::$shortcode_instance` was null because it was never properly initialized
+  - **Fix**: Properly initialize shortcode instance in constructor and add safety check in render method
+  - **Impact**: ContactInfos dynamic tags now work correctly in Bricks builder
+
 ## [0.4.50] - 2025-07-31
 
 ### Added

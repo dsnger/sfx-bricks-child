@@ -31,11 +31,11 @@ class PostType
         // Register post type and taxonomy through consolidated system
         add_action('sfx_init_post_types', [self::class, 'register_post_type']);
         add_action('sfx_init_post_types', [self::class, 'register_taxonomy']);
-        
+
         // Register meta boxes and save operations (these need to be on their specific hooks)
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
-        
+
         // Register admin columns
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_script_type_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_script_type_column'], 10, 2);
@@ -87,7 +87,7 @@ class PostType
         ];
 
         register_post_type(self::$post_type, $args);
-        
+
         // Register meta fields
         self::register_meta_fields();
     }
@@ -98,14 +98,24 @@ class PostType
     private static function register_meta_fields(): void
     {
         $fields = [
-            'script_type', 'location', 'include_type', 'frontend_only',
-            'script_source_type', 'dependencies', 'priority', 'script_file',
-            'script_cdn', 'script_content', 'include_posts', 'include_pages',
-            'exclude_posts', 'exclude_pages'
+            'script_type',
+            'location',
+            'include_type',
+            'frontend_only',
+            'script_source_type',
+            'dependencies',
+            'priority',
+            'script_file',
+            'script_cdn',
+            'script_content',
+            'include_posts',
+            'include_pages',
+            'exclude_posts',
+            'exclude_pages'
         ];
-        
+
         \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
-        
+
         // Add validation and cleanup hooks
         add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
         add_action('delete_post', [self::class, 'cleanup_meta_fields']);
@@ -119,15 +129,15 @@ class PostType
     public static function validate_meta_fields(int $post_id): void
     {
         $validation_rules = [
-            '_script_type' => function($value) {
+            '_script_type' => function ($value) {
                 return in_array($value, ['javascript', 'css']) ? $value : 'javascript';
             },
-            '_location' => function($value) {
+            '_location' => function ($value) {
                 return in_array($value, ['header', 'footer']) ? $value : 'footer';
             },
             '_priority' => 'absint'
         ];
-        
+
         \SFX\MetaFieldManager::validate_fields($post_id, self::$post_type, $validation_rules);
     }
 
@@ -142,14 +152,24 @@ class PostType
         if ($post_type !== self::$post_type) {
             return;
         }
-        
+
         $expected_fields = [
-            '_script_type', '_location', '_include_type', '_frontend_only',
-            '_script_source_type', '_dependencies', '_priority', '_script_file',
-            '_script_cdn', '_script_content', '_include_posts', '_include_pages',
-            '_exclude_posts', '_exclude_pages'
+            '_script_type',
+            '_location',
+            '_include_type',
+            '_frontend_only',
+            '_script_source_type',
+            '_dependencies',
+            '_priority',
+            '_script_file',
+            '_script_cdn',
+            '_script_content',
+            '_include_posts',
+            '_include_pages',
+            '_exclude_posts',
+            '_exclude_pages'
         ];
-        
+
         \SFX\MetaFieldManager::cleanup_fields($post_id, self::$post_type, $expected_fields);
     }
 
@@ -211,7 +231,7 @@ class PostType
     public static function render_meta_box($post): void
     {
         wp_nonce_field('sfx_custom_script_config_nonce', 'sfx_custom_script_config_nonce');
-        
+
         // Get saved values
         $script_type = get_post_meta($post->ID, '_script_type', true) ?: 'javascript';
         $location = get_post_meta($post->ID, '_location', true) ?: 'footer';
@@ -223,14 +243,14 @@ class PostType
         $script_content = get_post_meta($post->ID, '_script_content', true) ?: '';
         $dependencies = get_post_meta($post->ID, '_dependencies', true) ?: '';
         $priority = get_post_meta($post->ID, '_priority', true) ?: '10';
-        
+
         // Conditional loading fields
         $include_posts = get_post_meta($post->ID, '_include_posts', true) ?: [];
         $include_pages = get_post_meta($post->ID, '_include_pages', true) ?: [];
         $exclude_posts = get_post_meta($post->ID, '_exclude_posts', true) ?: [];
         $exclude_pages = get_post_meta($post->ID, '_exclude_pages', true) ?: [];
-        ?>
-        
+?>
+
         <table class="form-table">
             <tr>
                 <th scope="row">
@@ -243,7 +263,7 @@ class PostType
                     </select>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="location"><?php esc_html_e('Location', 'sfx-bricks-child'); ?></label>
@@ -255,7 +275,7 @@ class PostType
                     </select>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="include_type"><?php esc_html_e('Include Type', 'sfx-bricks-child'); ?></label>
@@ -267,17 +287,17 @@ class PostType
                     </select>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="frontend_only"><?php esc_html_e('Frontend Only', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
-                    <input type="checkbox" name="frontend_only" id="frontend_only" value="1" <?php checked($frontend_only, '1'); ?> class="sfx-toggle"/>
+                    <input type="checkbox" name="frontend_only" id="frontend_only" value="1" <?php checked($frontend_only, '1'); ?> class="sfx-toggle" />
                     <span class="description"><?php esc_html_e('Only load on frontend (not in admin)', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="script_source_type"><?php esc_html_e('Script Source Type', 'sfx-bricks-child'); ?></label>
@@ -291,7 +311,7 @@ class PostType
                     </select>
                 </td>
             </tr>
-            
+
             <tr class="script-file-row" style="<?php echo $script_source_type === 'file' ? '' : 'display: none;'; ?>">
                 <th scope="row">
                     <label for="script_file"><?php esc_html_e('Script File', 'sfx-bricks-child'); ?></label>
@@ -301,7 +321,7 @@ class PostType
                     <button type="button" class="button" id="upload_script_file"><?php esc_html_e('Upload File', 'sfx-bricks-child'); ?></button>
                 </td>
             </tr>
-            
+
             <tr class="script-cdn-row" style="<?php echo in_array($script_source_type, ['cdn', 'cdn_file']) ? '' : 'display: none;'; ?>">
                 <th scope="row">
                     <label for="script_cdn"><?php esc_html_e('CDN URL', 'sfx-bricks-child'); ?></label>
@@ -310,7 +330,7 @@ class PostType
                     <input type="url" name="script_cdn" id="script_cdn" value="<?php echo esc_url($script_cdn); ?>" class="regular-text" />
                 </td>
             </tr>
-            
+
             <tr class="script-content-row" style="<?php echo $script_source_type === 'inline' ? '' : 'display: none;'; ?>">
                 <th scope="row">
                     <label for="script_content"><?php esc_html_e('Script Content', 'sfx-bricks-child'); ?></label>
@@ -319,7 +339,7 @@ class PostType
                     <textarea name="script_content" id="script_content" rows="10" class="large-text code"><?php echo esc_textarea($script_content); ?></textarea>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="dependencies"><?php esc_html_e('Dependencies', 'sfx-bricks-child'); ?></label>
@@ -329,7 +349,7 @@ class PostType
                     <span class="description"><?php esc_html_e('Comma-separated list of script handles (e.g., jquery, wp-util)', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
                     <label for="priority"><?php esc_html_e('Priority', 'sfx-bricks-child'); ?></label>
@@ -339,19 +359,19 @@ class PostType
                     <span class="description"><?php esc_html_e('Loading priority (1 = highest, 999 = lowest). Lower numbers load first.', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
 
-            
+
+
             <tr>
                 <th scope="row" colspan="2">
                     <h3><?php esc_html_e('Conditional Loading', 'sfx-bricks-child'); ?></h3>
                     <p class="description"><?php esc_html_e('Control when this script should be loaded based on specific pages or page types.', 'sfx-bricks-child'); ?></p>
                 </th>
             </tr>
-            
+
             <tr>
                 <th scope="row">
-                    <label for="include_posts"><?php esc_html_e('Nur für bestimmte Beiträge einbinden', 'sfx-bricks-child'); ?></label>
+                    <label for="include_posts"><?php esc_html_e('Include only for specific posts', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
                     <select name="include_posts[]" id="include_posts" class="sfx-select2" multiple="multiple" style="width: 100%;">
@@ -363,7 +383,7 @@ class PostType
                             'orderby' => 'title',
                             'order' => 'ASC'
                         ]);
-                        
+
                         // Group posts by post type
                         $grouped_posts = [];
                         foreach ($posts as $post_item) {
@@ -371,7 +391,7 @@ class PostType
                             $post_type_label = $post_type_obj ? $post_type_obj->labels->name : ucfirst($post_item->post_type);
                             $grouped_posts[$post_type_label][] = $post_item;
                         }
-                        
+
                         foreach ($grouped_posts as $group_label => $group_posts) {
                             echo '<optgroup label="' . esc_attr($group_label) . '">';
                             foreach ($group_posts as $post_item) {
@@ -385,10 +405,10 @@ class PostType
                     <span class="description"><?php esc_html_e('Select specific posts/pages where this script should be loaded. Leave empty to load on all pages.', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
-                    <label for="include_pages"><?php esc_html_e('Nur bestimmten Seitentypen einbinden', 'sfx-bricks-child'); ?></label>
+                    <label for="include_pages"><?php esc_html_e('Include only for specific page types', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
                     <select name="include_pages[]" id="include_pages" class="sfx-select2" multiple="multiple" style="width: 100%;">
@@ -403,7 +423,7 @@ class PostType
                             'search' => __('Search Results', 'sfx-bricks-child'),
                             '404' => __('404 Page', 'sfx-bricks-child'),
                         ];
-                        
+
                         // Group by category
                         echo '<optgroup label="' . esc_attr__('Standard Pages', 'sfx-bricks-child') . '">';
                         foreach ($standard_page_types as $value => $label) {
@@ -411,7 +431,7 @@ class PostType
                             echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
                         }
                         echo '</optgroup>';
-                        
+
                         // Custom post types - create separate group for each post type
                         $post_types = get_post_types(['public' => true], 'objects');
                         foreach ($post_types as $post_type) {
@@ -427,10 +447,10 @@ class PostType
                     <span class="description"><?php esc_html_e('Select page types where this script should be loaded. Leave empty to load on all page types.', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
-                    <label for="exclude_posts"><?php esc_html_e('Für bestimmte Beiträge ausschließen', 'sfx-bricks-child'); ?></label>
+                    <label for="exclude_posts"><?php esc_html_e('Exclude for specific posts', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
                     <select name="exclude_posts[]" id="exclude_posts" class="sfx-select2" multiple="multiple" style="width: 100%;">
@@ -442,7 +462,7 @@ class PostType
                             $post_type_label = $post_type_obj ? $post_type_obj->labels->name : ucfirst($post_item->post_type);
                             $grouped_posts[$post_type_label][] = $post_item;
                         }
-                        
+
                         foreach ($grouped_posts as $group_label => $group_posts) {
                             echo '<optgroup label="' . esc_attr($group_label) . '">';
                             foreach ($group_posts as $post_item) {
@@ -456,10 +476,10 @@ class PostType
                     <span class="description"><?php esc_html_e('Select specific posts/pages where this script should NOT be loaded.', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
-            
+
             <tr>
                 <th scope="row">
-                    <label for="exclude_pages"><?php esc_html_e('Für bestimmte Seitentypen ausschließen', 'sfx-bricks-child'); ?></label>
+                    <label for="exclude_pages"><?php esc_html_e('Exclude for specific page types', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
                     <select name="exclude_pages[]" id="exclude_pages" class="sfx-select2" multiple="multiple" style="width: 100%;">
@@ -474,7 +494,7 @@ class PostType
                             'search' => __('Search Results', 'sfx-bricks-child'),
                             '404' => __('404 Page', 'sfx-bricks-child'),
                         ];
-                        
+
                         // Group by category
                         echo '<optgroup label="' . esc_attr__('Standard Pages', 'sfx-bricks-child') . '">';
                         foreach ($standard_page_types as $value => $label) {
@@ -482,7 +502,7 @@ class PostType
                             echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
                         }
                         echo '</optgroup>';
-                        
+
                         // Custom post types - create separate group for each post type
                         $post_types = get_post_types(['public' => true], 'objects');
                         foreach ($post_types as $post_type) {
@@ -499,52 +519,52 @@ class PostType
                 </td>
             </tr>
         </table>
-        
+
         <script>
-        jQuery(document).ready(function($) {
-            // Initialize Select2 for conditional loading fields
-            $('.sfx-select2').select2({
-                placeholder: '<?php esc_html_e('Select options...', 'sfx-bricks-child'); ?>',
-                allowClear: true,
-                width: '100%'
-            });
-            
-            $('#script_source_type').on('change', function() {
-                var sourceType = $(this).val();
-                $('.script-file-row, .script-cdn-row, .script-content-row').hide();
-                
-                if (sourceType === 'file') {
-                    $('.script-file-row').show();
-                } else if (sourceType === 'cdn' || sourceType === 'cdn_file') {
-                    $('.script-cdn-row').show();
-                } else if (sourceType === 'inline') {
-                    $('.script-content-row').show();
-                }
-            });
-            
-            $('#upload_script_file').on('click', function(e) {
-                e.preventDefault();
-                var button = $(this);
-                var fileInput = $('#script_file');
-                
-                var frame = wp.media({
-                    title: '<?php esc_html_e('Select Script File', 'sfx-bricks-child'); ?>',
-                    button: {
-                        text: '<?php esc_html_e('Use this file', 'sfx-bricks-child'); ?>'
-                    },
-                    multiple: false
+            jQuery(document).ready(function($) {
+                // Initialize Select2 for conditional loading fields
+                $('.sfx-select2').select2({
+                    placeholder: '<?php esc_html_e('Select options...', 'sfx-bricks-child'); ?>',
+                    allowClear: true,
+                    width: '100%'
                 });
-                
-                frame.on('select', function() {
-                    var attachment = frame.state().get('selection').first().toJSON();
-                    fileInput.val(attachment.url);
+
+                $('#script_source_type').on('change', function() {
+                    var sourceType = $(this).val();
+                    $('.script-file-row, .script-cdn-row, .script-content-row').hide();
+
+                    if (sourceType === 'file') {
+                        $('.script-file-row').show();
+                    } else if (sourceType === 'cdn' || sourceType === 'cdn_file') {
+                        $('.script-cdn-row').show();
+                    } else if (sourceType === 'inline') {
+                        $('.script-content-row').show();
+                    }
                 });
-                
-                frame.open();
+
+                $('#upload_script_file').on('click', function(e) {
+                    e.preventDefault();
+                    var button = $(this);
+                    var fileInput = $('#script_file');
+
+                    var frame = wp.media({
+                        title: '<?php esc_html_e('Select Script File', 'sfx-bricks-child'); ?>',
+                        button: {
+                            text: '<?php esc_html_e('Use this file', 'sfx-bricks-child'); ?>'
+                        },
+                        multiple: false
+                    });
+
+                    frame.on('select', function() {
+                        var attachment = frame.state().get('selection').first().toJSON();
+                        fileInput.val(attachment.url);
+                    });
+
+                    frame.open();
+                });
             });
-        });
         </script>
-        <?php
+<?php
     }
 
     /**
@@ -718,7 +738,7 @@ class PostType
         if ($column === 'priority') {
             $priority = get_post_meta($post_id, '_priority', true) ?: '10';
             $priority_class = 'priority-' . $priority;
-            
+
             // Color coding based on priority
             if ($priority <= 5) {
                 $priority_class .= ' priority-high';
@@ -727,7 +747,7 @@ class PostType
             } else {
                 $priority_class .= ' priority-low';
             }
-            
+
             echo '<span class="' . esc_attr($priority_class) . '">' . esc_html($priority) . '</span>';
         }
     }
@@ -769,15 +789,15 @@ class PostType
             $include_pages = get_post_meta($post_id, '_include_pages', true) ?: [];
             $exclude_posts = get_post_meta($post_id, '_exclude_posts', true) ?: [];
             $exclude_pages = get_post_meta($post_id, '_exclude_pages', true) ?: [];
-            
+
             $conditions = [];
-            
+
             // Check if any conditions are set
             if (empty($include_posts) && empty($include_pages) && empty($exclude_posts) && empty($exclude_pages)) {
                 echo '<span class="conditions-none">' . esc_html__('All Pages', 'sfx-bricks-child') . '</span>';
                 return;
             }
-            
+
             // Include conditions
             if (!empty($include_posts)) {
                 $conditions[] = sprintf(
@@ -785,14 +805,14 @@ class PostType
                     count($include_posts)
                 );
             }
-            
+
             if (!empty($include_pages)) {
                 $conditions[] = sprintf(
                     __('Include: %d page types', 'sfx-bricks-child'),
                     count($include_pages)
                 );
             }
-            
+
             // Exclude conditions
             if (!empty($exclude_posts)) {
                 $conditions[] = sprintf(
@@ -800,14 +820,14 @@ class PostType
                     count($exclude_posts)
                 );
             }
-            
+
             if (!empty($exclude_pages)) {
                 $conditions[] = sprintf(
                     __('Exclude: %d page types', 'sfx-bricks-child'),
                     count($exclude_pages)
                 );
             }
-            
+
             if (!empty($conditions)) {
                 echo '<div class="conditions-summary">';
                 foreach ($conditions as $condition) {

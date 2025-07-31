@@ -16,7 +16,9 @@ class Controller
     AdminPage::register();
     AssetManager::register();
     PostType::init();
-    new Shortcode\SC_ContactInfos();
+    
+    // Initialize shortcode instance and store it
+    self::$shortcode_instance = new Shortcode\SC_ContactInfos();
 
     // Register hooks through consolidated system
     add_action('sfx_init_advanced_features', [$this, 'register_bricks_dynamic_tag']);
@@ -120,6 +122,12 @@ class Controller
     if (!class_exists('SFX\\ContactInfos\\Shortcode\\SC_ContactInfos')) {
       return '';
     }
+    
+    // Ensure shortcode instance exists
+    if (self::$shortcode_instance === null) {
+      self::$shortcode_instance = new Shortcode\SC_ContactInfos();
+    }
+    
     $sc = self::$shortcode_instance;
     // Render using the same logic as the shortcode
     return $sc->render_contact_info($atts);
