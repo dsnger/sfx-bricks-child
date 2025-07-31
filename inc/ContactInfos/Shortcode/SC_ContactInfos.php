@@ -1,13 +1,13 @@
 <?php
 
-namespace SFX\ContactInfos\Shortcode;
+declare(strict_types=1);
 
-use SFX\ContactInfos\Settings;
+namespace SFX\ContactInfos\Shortcode;
 
 /**
  * Contact Infos Shortcode
  * 
- * Provides a shortcode to display contact information from settings
+ * Provides a shortcode to display contact information from post types
  *
  * @package WordPress
  * @subpackage sfxtheme
@@ -20,34 +20,21 @@ defined('ABSPATH') || exit;
 class SC_ContactInfos
 {
     /**
-     * Option name for storing contact settings
-     */
-    private string $option_name;
-
-    /**
-     * Contact settings data
-     */
-    private array $contact_data;
-
-    /**
      * Class constructor
      * Register the shortcode
      */
-    public function __construct(?string $option_name = null)
+    public function __construct()
     {
         add_shortcode('contact_info', [$this, 'render_contact_info']);
-        $this->option_name = $option_name
-            ?? (isset(Settings::$OPTION_NAME) && Settings::$OPTION_NAME ? Settings::$OPTION_NAME : 'contact_info_settings');
-        $this->contact_data = get_option($this->option_name, []);
     }
 
     /**
-     * Contact Info Fields from Settings
+     * Contact Info Fields from Post Types
      * 
      * @param array $atts Shortcode attributes
      * @return string HTML output
      * 
-     * Usage: [contact_info field="fieldname" location="1"]
+     * Usage: [contact_info field="fieldname" contact_id="123"]
      */
     public function render_contact_info($atts)
     {
@@ -55,7 +42,8 @@ class SC_ContactInfos
         $atts = shortcode_atts(
             [
                 'field'      => null,     // Field name to display
-                'location'   => null,     // Index of branch location (starts at 0)
+                'contact_id' => null,     // Specific contact post ID
+                'type'       => 'main',   // Contact type: main or branch
                 'icon'       => null,     // Icon to display before the field
                 'icon_class' => null,     // CSS classes for the icon
                 'text'       => null,     // Custom text instead of the field value
@@ -71,9 +59,6 @@ class SC_ContactInfos
             return '';
         }
 
-        // Set up variables
-        $location = $atts['location'];
-
         // Process classes
         $classes = $this->process_classes($atts['class']);
         $icon_classes = $this->process_classes($atts['icon_class']);
@@ -83,7 +68,7 @@ class SC_ContactInfos
         $text = !empty($atts['text']) ? $atts['text'] : null;
 
         // Get field value
-        $value = $this->get_field_value($atts['field'], $location);
+        $value = $this->get_field_value($atts['field'], $atts['contact_id'], $atts['type']);
 
         // Handle link attribute properly - check for 'false' string
         $has_link = !in_array(strtolower($atts['link']), ['false', '0', 'no', 'off'], true);
@@ -104,8 +89,7 @@ class SC_ContactInfos
                 return $this->render_phone_field($value, $atts, $icon, $has_link);
 
             case 'address':
-                // Always call, even if $value is empty
-                return $this->render_address_field($value, $atts, $icon, $location);
+                return $this->render_address_field($value, $atts, $icon, $atts['contact_id']);
 
             case 'maplink':
                 if (empty($value)) {
@@ -122,195 +106,233 @@ class SC_ContactInfos
     }
 
     /**
-     * Process CSS classes
+     * Process CSS classes string into array
      * 
-     * @param string $classes_string Space-separated class string
-     * @return string Sanitized class string
+     * @param string|null $classes_string
+     * @return array
      */
-    private function process_classes($classes_string)
+    private function process_classes($classes_string): array
     {
         if (empty($classes_string)) {
-            return '';
+            return [];
         }
 
         $classes = explode(' ', $classes_string);
-        $classes = array_map('sanitize_html_class', $classes);
-        return implode(' ', $classes);
+        $classes = array_map('trim', $classes);
+        $classes = array_filter($classes);
+
+        return $classes;
     }
 
     /**
-     * Get field value based on field name and location
+     * Get field value from post type
      * 
-     * @param string $field Field name
-     * @param string|null $location Location index
-     * @return mixed Field value
+     * @param string $field
+     * @param int|null $contact_id
+     * @param string $type
+     * @return string
      */
-    private function get_field_value($field, $location = null)
+    private function get_field_value(string $field, ?int $contact_id = null, string $type = 'main'): string
     {
-        // Get data from branches if location is specified
-        if ($location !== null) {
-            $location = (int) $location;
-
-            if (
-                isset($this->contact_data['branches']) &&
-                isset($this->contact_data['branches'][$location]) &&
-                isset($this->contact_data['branches'][$location]['branch_' . $field])
-            ) {
-                return $this->contact_data['branches'][$location]['branch_' . $field];
+        // If specific contact ID is provided
+        if ($contact_id) {
+            $post = get_post($contact_id);
+            if ($post && $post->post_type === 'sfx_contact_info') {
+                return \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field);
             }
-
-            return null;
         }
 
-        // Get data from main settings
-        return isset($this->contact_data[$field]) ? $this->contact_data[$field] : null;
+        // Get contact info by type
+        $args = [
+            'post_type' => 'sfx_contact_info',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'meta_query' => [
+                [
+                    'key' => '_contact_type',
+                    'value' => $type,
+                    'compare' => '='
+                ]
+            ]
+        ];
+
+        $query = new \WP_Query($args);
+        
+        if ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+            $value = \SFX\ContactInfos\PostType::get_translated_field($post_id, $field);
+            wp_reset_postdata();
+            return $value;
+        }
+
+        return '';
     }
 
     /**
-     * Render email field
+     * Render email field with link
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @param string|null $text
+     * @param bool $has_link
+     * @return string
      */
-    private function render_email_field($value, $atts, $icon, $text, $has_link)
+    private function render_email_field(string $value, array $atts, string $icon, ?string $text, bool $has_link): string
     {
-        $email = antispambot($value);
-        $tooltip = !empty($text) ? 'uk-tooltip="' . $email . '"' : '';
-        $text = !empty($text) ? $text : $email;
-        $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
+        $classes = $this->process_classes($atts['class']);
+        $classes[] = 'contact-info-email';
+
+        $display_text = $text ?: $value;
+        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        if ($icon) {
+            $output .= $icon;
+        }
 
         if ($has_link) {
-            return sprintf(
-                '<a class="%s" href="mailto:%s" %s>%s%s</a>',
-                $class,
-                $email,
-                $tooltip,
-                $icon,
-                esc_html($text)
-            );
+            $output .= '<a href="mailto:' . esc_attr($value) . '">' . esc_html($display_text) . '</a>';
+        } else {
+            $output .= esc_html($display_text);
         }
 
-        $output = sprintf(
-            '<span class="%s" %s>%s%s</span>',
-            $class,
-            $tooltip,
-            $icon,
-            esc_html($text)
-        );
+        $output .= '</span>';
 
         return $output;
     }
 
     /**
-     * Render phone field
+     * Render phone field with link
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @param bool $has_link
+     * @return string
      */
-    private function render_phone_field($value, $atts, $icon, $has_link)
+    private function render_phone_field(string $value, array $atts, string $icon, bool $has_link): string
     {
-        $phone_string = $value;
-        $phone_nr = !empty($phone_string) ? preg_replace('/[^\d+]/', '', $phone_string) : '';
-        $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
+        $classes = $this->process_classes($atts['class']);
+        $classes[] = 'contact-info-phone';
 
-        if ($has_link) {
-            return sprintf(
-                '<a class="%s" href="tel:%s">%s%s</a>',
-                $class,
-                $phone_nr,
-                $icon,
-                $phone_string
-            );
+        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        if ($icon) {
+            $output .= $icon;
         }
 
-        return sprintf(
-            '<span class="%s">%s%s</span>',
-            $class,
-            $icon,
-            $phone_string
-        );
+        if ($has_link) {
+            $output .= '<a href="tel:' . esc_attr($value) . '">' . esc_html($value) . '</a>';
+        } else {
+            $output .= esc_html($value);
+        }
+
+        $output .= '</span>';
+
+        return $output;
     }
 
     /**
      * Render address field
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @param int|null $contact_id
+     * @return string
      */
-    private function render_address_field($value, $atts, $icon, $location)
+    private function render_address_field(string $value, array $atts, string $icon, ?int $contact_id): string
     {
-        $address = $value;
-        $trimmed_address = $address ? trim($address) : null;
+        $classes = $this->process_classes($atts['class']);
+        $classes[] = 'contact-info-address';
 
-        // If formatted address is present, render it
-        if (!empty($trimmed_address)) {
-            return $icon . wp_kses_post($address);
+        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        if ($icon) {
+            $output .= $icon;
         }
 
-        // Try to build address from components
-        if ($location === null) {
-            $street = $this->get_field_value('street');
-            $zip = $this->get_field_value('zip');
-            $city = $this->get_field_value('city');
+        // If we have a formatted address, use it
+        if (!empty($value)) {
+            $output .= nl2br(esc_html($value));
         } else {
-            $location = (int) $location;
-            $street = $this->get_field_value('street', $location);
-            $zip = $this->get_field_value('zip', $location);
-            $city = $this->get_field_value('city', $location);
+            // Build address from individual fields
+            $address_parts = [];
+            
+            if ($contact_id) {
+                $street = get_post_meta($contact_id, '_street', true);
+                $zip = get_post_meta($contact_id, '_zip', true);
+                $city = get_post_meta($contact_id, '_city', true);
+                $country = get_post_meta($contact_id, '_country', true);
+                
+                if ($street) $address_parts[] = $street;
+                if ($zip && $city) {
+                    $address_parts[] = $zip . ' ' . $city;
+                } elseif ($city) {
+                    $address_parts[] = $city;
+                }
+                if ($country) $address_parts[] = $country;
+            }
+            
+            $output .= implode('<br>', array_map('esc_html', $address_parts));
         }
 
-        // Only render if at least one component is present
-        if (empty($street) && empty($zip) && empty($city)) {
-            return '';
-        }
+        $output .= '</span>';
 
-        $address_html = '';
-        if (!empty($street)) {
-            $address_html .= '<span class="uk-text-nowrap">' . esc_html($street) . '</span><br />';
-        }
-        if (!empty($zip) || !empty($city)) {
-            $address_html .= '<span class="uk-text-nowrap">' . esc_html(trim($zip . ' ' . $city)) . '</span>';
-        }
-
-        return $icon . $address_html;
+        return $output;
     }
 
     /**
-     * Render maplink field
+     * Render map link field
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @return string
      */
-    private function render_maplink_field($value, $atts, $icon)
+    private function render_maplink_field(string $value, array $atts, string $icon): string
     {
-        if (empty($value)) {
-            return '';
+        $classes = $this->process_classes($atts['class']);
+        $classes[] = 'contact-info-maplink';
+
+        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        if ($icon) {
+            $output .= $icon;
         }
 
-        $url = $value;
-        $text = !empty($atts['text']) ? $atts['text'] : __('Google Maps', 'sfxtheme');
-        $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
+        $output .= '<a href="' . esc_url($value) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View on Map', 'sfx-bricks-child') . '</a>';
 
-        return sprintf(
-            '<a class="%s" href="%s" target="_blank">%s%s</a>',
-            $class,
-            esc_url($url),
-            $icon,
-            esc_html($text)
-        );
+        $output .= '</span>';
+
+        return $output;
     }
 
     /**
      * Render default field
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @return string
      */
-    private function render_default_field($value, $atts, $icon)
+    private function render_default_field(string $value, array $atts, string $icon): string
     {
-        $class = 'contact_info_' . $atts['field'] . ' ' . $atts['class'];
+        $classes = $this->process_classes($atts['class']);
+        $classes[] = 'contact-info-field';
 
-        // Allow HTML in opening hours field
-        if ($atts['field'] === 'opening') {
-            return sprintf(
-                '<span class="%s">%s%s</span>',
-                $class,
-                $icon,
-                wp_kses_post($value)
-            );
+        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+
+        if ($icon) {
+            $output .= $icon;
         }
 
-        // Default handling for other fields
-        return sprintf(
-            '<span class="%s">%s%s</span>',
-            $class,
-            $icon,
-            esc_html($value)
-        );
+        $output .= esc_html($value);
+
+        $output .= '</span>';
+
+        return $output;
     }
+
 }

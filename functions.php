@@ -67,7 +67,8 @@ if (is_admin() && current_user_can('manage_options') && \SFX\Environment::is_dev
             'theme-settings_page_sfx-contact-infos',
             'theme-settings_page_sfx-wp-optimizer',
             'theme-settings_page_sfx-image-optimizer',
-            'theme-settings_page_sfx-social-media-accounts',
+                          'theme-settings_page_sfx-social-media-accounts',
+              'edit-sfx_contact_info',
             'theme-settings_page_theme-updater-debug'
         ];
         

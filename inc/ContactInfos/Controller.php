@@ -8,43 +8,19 @@ class Controller
 {
 
 
-  public const OPTION_NAME = 'sfx_contact_infos_options';
-
   private static $shortcode_instance;
 
   public function __construct()
   {
-    Settings::register(self::OPTION_NAME);
     AdminPage::register();
     AssetManager::register();
-    self::$shortcode_instance = new Shortcode\SC_ContactInfos(self::OPTION_NAME);
-
-    // Initialize the theme only after ACF is confirmed to be active
-    add_action('init', [$this, 'handle_options']);
-    add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
+    PostType::init();
+    
+    // Initialize shortcodes
+    self::$shortcode_instance = new Shortcode\SC_ContactInfos();
 
     // Register Bricks dynamic data tag for contact infos
     self::register_bricks_dynamic_tag();
-  }
-
-
-  public function handle_options(): void
-  {
-    //
-
-  }
-
-
-  public function handle_company_logo($company_logo)
-  {
-    // Handle the company logo
-  }
-
-
-  private function is_option_enabled(string $option_key): bool
-  {
-    $options = get_option(self::OPTION_NAME, []);
-    return !empty($options[$option_key]);
   }
 
 
@@ -55,7 +31,7 @@ class Controller
       'menu_slug' => AdminPage::$menu_slug,
       'page_title' => AdminPage::$page_title,
       'description' => AdminPage::$description,
-      'error' => 'Missing CompanyLogoController class in theme',
+      'error' => 'Missing ContactInfosController class in theme',
       'hook'  => null,
     ];
   }
@@ -107,9 +83,15 @@ class Controller
     // Parse attributes
     $atts = ['field' => $field];
 
-    // Only add location if it's not null
+    // Convert old location parameter to contact_id or type
     if ($location !== null) {
-      $atts['location'] = $location;
+      // If it's a numeric location, treat as contact_id
+      if (is_numeric($location)) {
+        $atts['contact_id'] = (int) $location;
+      } else {
+        // Otherwise treat as type (main/branch)
+        $atts['type'] = $location;
+      }
     }
 
     if (!empty($attributes)) {

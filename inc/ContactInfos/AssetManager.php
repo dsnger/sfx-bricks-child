@@ -13,10 +13,9 @@ class AssetManager
 
     public static function enqueue_admin_assets(string $hook): void
     {
-        // Check for contact infos settings pages
-        if (strpos($hook, 'sfx-contact-infos') === false && 
-            strpos($hook, 'settings_page') === false && 
-            strpos($hook, 'options') === false) {
+        // Check if we're on the correct post type pages
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'sfx_contact_info') {
             return;
         }
 
@@ -50,10 +49,14 @@ class AssetManager
                 true
             );
 
-            // Add localized data
+            // Add localized data for debugging
             wp_localize_script('sfx-contact-settings-js', 'sfxContactSettings', [
-                'confirmDelete' => __('Are you sure you want to delete this branch?', 'sfxtheme'),
+                'debug' => true,
+                'postType' => 'sfx_contact_info',
+                'scriptLoaded' => true,
             ]);
+            
+            error_log('SFX ContactInfos: admin-script.js enqueued successfully');
         } else {
             error_log('SFX ContactInfos: admin-script.js not found at ' . $assets_dir);
         }

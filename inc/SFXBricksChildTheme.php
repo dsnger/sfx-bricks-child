@@ -130,12 +130,13 @@ class SFXBricksChildTheme
 
   public function enqueue_admin_scripts($hook_suffix)
   {
-    // Only load on Global Theme Settings pages and subpages, and custom script post type pages
+    // Only load on Global Theme Settings pages and subpages, and custom post type pages
     if (strpos($hook_suffix, 'global-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-wp-optimizer') === false &&
         strpos($hook_suffix, 'sfx_custom_script') === false &&
         strpos($hook_suffix, 'sfx_social_account') === false &&
+        strpos($hook_suffix, 'sfx_contact_info') === false &&
         strpos($hook_suffix, 'security-header') === false) {
         return;
     }

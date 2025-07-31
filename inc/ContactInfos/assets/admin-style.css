@@ -1,54 +1,54 @@
-/* ContactInfos Specific Styles */
-/* Only styles unique to ContactInfos that aren't in global styles.css */
-/* Shared .sfx-settings-* styles are now in /assets/css/backend/styles.css */
+/**
+ * Contact Information Admin Styles
+ * Only ContactInfos-specific styles - global styles are in /assets/css/backend/styles.css
+ */
 
-/* Legacy branch-specific classes - used only by ContactInfos branches repeater */
-.sfx-branch-fields {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
+/* Conditional field transitions */
+.conditional-field {
+    transition: opacity 0.3s ease, height 0.3s ease;
 }
 
-.sfx-branches-container {
-    margin-bottom: 20px;
-}
-
-.sfx-branch-item {
-    border: 1px solid #ccd0d4;
-    background: #fff;
-    margin-bottom: 10px;
-    border-radius: 4px;
+.conditional-field.hidden {
+    opacity: 0;
+    height: 0;
     overflow: hidden;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
 }
 
-.sfx-branch-title {
-    padding: 10px 15px;
-    margin: 0;
-    background: #f5f5f5;
-    border-bottom: 1px solid #ccd0d4;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Contact type badges - specific to ContactInfos */
+.contact-type-main {
+    background: #0073aa;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
 }
 
-.sfx-branch-title button {
-    margin-left: 10px;
+.contact-type-branch {
+    background: #46b450;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
 }
 
-.sfx-branch-field label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
+/* Contact info admin list specific styles */
+.contact-address {
+    font-weight: 500;
+    color: #23282d;
 }
 
-.sfx-branch-field input,
-.sfx-branch-field textarea {
-    width: 100%;
-    margin-top: 5px;
+.contact-details {
+    line-height: 1.4;
 }
 
-.sfx-add-branch {
-    margin-top: 10px;
+.contact-details strong {
+    color: #0073aa;
+}
+
+.no-address,
+.no-contact {
+    color: #999;
+    font-style: italic;
 } 
