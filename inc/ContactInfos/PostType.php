@@ -80,6 +80,68 @@ class PostType
         ];
 
         register_post_type(self::$post_type, $args);
+        
+        // Register meta fields
+        self::register_meta_fields();
+    }
+
+    /**
+     * Register meta fields for contact info
+     */
+    private static function register_meta_fields(): void
+    {
+        $fields = [
+            'company', 'director', 'street', 'zip', 'city', 'country',
+            'address', 'phone', 'mobile', 'fax', 'email', 'tax_id', 
+            'vat', 'hrb', 'court', 'dsb', 'opening', 'maplink', 'contact_type'
+        ];
+        
+        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
+        
+        // Add validation and cleanup hooks
+        add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
+        add_action('delete_post', [self::class, 'cleanup_meta_fields']);
+    }
+
+    /**
+     * Validate contact info meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function validate_meta_fields(int $post_id): void
+    {
+        $validation_rules = [
+            '_email' => 'is_email',
+            '_phone' => 'sanitize_text_field',
+            '_mobile' => 'sanitize_text_field',
+            '_fax' => 'sanitize_text_field',
+            '_contact_type' => function($value) {
+                return in_array($value, ['main', 'branch']) ? $value : 'main';
+            }
+        ];
+        
+        \SFX\MetaFieldManager::validate_fields($post_id, self::$post_type, $validation_rules);
+    }
+
+    /**
+     * Cleanup contact info meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function cleanup_meta_fields(int $post_id): void
+    {
+        $post_type = get_post_type($post_id);
+        if ($post_type !== self::$post_type) {
+            return;
+        }
+        
+        $expected_fields = [
+            '_company', '_director', '_street', '_zip', '_city', '_country',
+            '_address', '_phone', '_mobile', '_fax', '_email', '_tax_id', 
+            '_vat', '_hrb', '_court', '_dsb', '_opening', '_maplink', '_contact_type'
+        ];
+        
+        \SFX\MetaFieldManager::cleanup_fields($post_id, self::$post_type, $expected_fields);
     }
 
     /**

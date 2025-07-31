@@ -45,7 +45,7 @@ class PostType
     {
         $labels = [
             'name'                  => __('Social Media Accounts', 'sfx-bricks-child'),
-            'singular_name'         => __('Social Media Account', 'sfx-bricks-child'),
+            'singular_name'         => __('Social Account', 'sfx-bricks-child'),
             'add_new'               => __('Add New', 'sfx-bricks-child'),
             'add_new_item'          => __('Add New Social Account', 'sfx-bricks-child'),
             'edit_item'             => __('Edit Social Account', 'sfx-bricks-child'),
@@ -77,6 +77,57 @@ class PostType
         ];
 
         register_post_type(self::$post_type, $args);
+        
+        // Register meta fields
+        self::register_meta_fields();
+    }
+
+    /**
+     * Register meta fields for social accounts
+     */
+    private static function register_meta_fields(): void
+    {
+        $fields = ['icon_image', 'link_url', 'link_title', 'link_target'];
+        
+        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
+        
+        // Add validation and cleanup hooks
+        add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
+        add_action('delete_post', [self::class, 'cleanup_meta_fields']);
+    }
+
+    /**
+     * Validate social account meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function validate_meta_fields(int $post_id): void
+    {
+        $validation_rules = [
+            '_link_url' => 'esc_url_raw',
+            '_link_target' => function($value) {
+                return in_array($value, ['_blank', '_self']) ? $value : '_blank';
+            }
+        ];
+        
+        \SFX\MetaFieldManager::validate_fields($post_id, self::$post_type, $validation_rules);
+    }
+
+    /**
+     * Cleanup social account meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function cleanup_meta_fields(int $post_id): void
+    {
+        $post_type = get_post_type($post_id);
+        if ($post_type !== self::$post_type) {
+            return;
+        }
+        
+        $expected_fields = ['_icon_image', '_link_url', '_link_title', '_link_target'];
+        
+        \SFX\MetaFieldManager::cleanup_fields($post_id, self::$post_type, $expected_fields);
     }
 
     /**

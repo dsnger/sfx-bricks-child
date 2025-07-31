@@ -30,10 +30,31 @@ class SC_SocialAccounts
     {
         add_shortcode(self::SHORTCODE, [$this, 'render_social_accounts']);
         add_shortcode('social_account', [$this, 'render_single_account']);
+        
+        // Clear caches when social account posts are updated
+        add_action('save_post_sfx_social_account', [$this, 'clear_social_account_caches']);
+        add_action('delete_post', [$this, 'clear_social_account_caches']);
+    }
+    
+    /**
+     * Clear social account caches when posts are updated
+     * 
+     * @param int $post_id
+     */
+    public function clear_social_account_caches(int $post_id): void
+    {
+        // Clear all social account caches (simple approach for now)
+        global $wpdb;
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                '_transient_sfx_social_account_%'
+            )
+        );
     }
 
     /**
-     * Render all social accounts
+     * Render all social accounts with caching
      * 
      * @param array $atts Shortcode attributes
      * @return string HTML output
@@ -46,6 +67,14 @@ class SC_SocialAccounts
             'size' => 'medium', // small, medium, large
             'target' => '_blank',
         ], $atts, self::SHORTCODE);
+
+        // Create cache key based on attributes
+        $cache_key = 'sfx_social_accounts_' . md5(serialize($atts));
+        $cached_output = get_transient($cache_key);
+        
+        if ($cached_output !== false) {
+            return $cached_output;
+        }
 
         // Get all published social accounts
         $accounts = get_posts([
@@ -68,11 +97,14 @@ class SC_SocialAccounts
         
         $output .= '</div>';
 
+        // Cache the result for 1 hour
+        set_transient($cache_key, $output, HOUR_IN_SECONDS);
+
         return $output;
     }
 
     /**
-     * Render a single social account
+     * Render a single social account with caching
      * 
      * @param array $atts Shortcode attributes
      * @return string HTML output
@@ -90,16 +122,29 @@ class SC_SocialAccounts
             return '';
         }
 
+        // Create cache key
+        $cache_key = 'sfx_social_account_' . $atts['id'] . '_' . md5(serialize($atts));
+        $cached_output = get_transient($cache_key);
+        
+        if ($cached_output !== false) {
+            return $cached_output;
+        }
+
         $account = get_post($atts['id']);
         if (!$account || $account->post_type !== 'sfx_social_account' || $account->post_status !== 'publish') {
             return '';
         }
 
-        return $this->render_single_account_html($account, $atts);
+        $output = $this->render_single_account_html($account, $atts);
+        
+        // Cache the result for 1 hour
+        set_transient($cache_key, $output, HOUR_IN_SECONDS);
+
+        return $output;
     }
 
     /**
-     * Render single account HTML
+     * Render single account HTML with optimized batch meta retrieval
      * 
      * @param \WP_Post $account Account post object
      * @param array $atts Attributes
@@ -107,10 +152,15 @@ class SC_SocialAccounts
      */
     private function render_single_account_html($account, $atts)
     {
-        $icon_image = get_post_meta($account->ID, '_icon_image', true);
-        $link_url = get_post_meta($account->ID, '_link_url', true);
-        $link_title = get_post_meta($account->ID, '_link_title', true);
-        $link_target = get_post_meta($account->ID, '_link_target', true) ?: $atts['target'];
+        // Batch retrieve all meta values in one query
+        $meta_keys = ['_icon_image', '_link_url', '_link_title', '_link_target'];
+        $all_meta = get_post_meta($account->ID, '', true);
+        $account_data = array_intersect_key($all_meta, array_flip($meta_keys));
+        
+        $icon_image = $account_data['_icon_image'] ?? '';
+        $link_url = $account_data['_link_url'] ?? '';
+        $link_title = $account_data['_link_title'] ?? '';
+        $link_target = $account_data['_link_target'] ?? $atts['target'];
 
         if (empty($link_url)) {
             return '';

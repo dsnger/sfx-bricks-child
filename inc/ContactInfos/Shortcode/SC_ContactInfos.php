@@ -21,11 +21,34 @@ class SC_ContactInfos
 {
     /**
      * Class constructor
-     * Register the shortcode
+     * Register the shortcode and cache invalidation hooks
      */
     public function __construct()
     {
         add_shortcode('contact_info', [$this, 'render_contact_info']);
+        
+        // Clear caches when contact info posts are updated
+        add_action('save_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
+        add_action('delete_post', [$this, 'clear_contact_info_caches']);
+    }
+    
+    /**
+     * Clear contact info caches when posts are updated
+     * 
+     * @param int $post_id
+     */
+    public function clear_contact_info_caches(int $post_id): void
+    {
+        // Clear type-based caches
+        delete_transient('sfx_contact_info_type_main');
+        delete_transient('sfx_contact_info_type_branch');
+        
+        // Clear field-specific caches for this post
+        $meta_keys = ['company', 'director', 'street', 'zip', 'city', 'country', 'address', 'phone', 'mobile', 'fax', 'email', 'tax_id', 'vat', 'hrb', 'court', 'dsb', 'opening', 'maplink'];
+        
+        foreach ($meta_keys as $field) {
+            delete_transient('sfx_contact_info_' . $post_id . '_' . $field);
+        }
     }
 
     /**
@@ -125,7 +148,7 @@ class SC_ContactInfos
     }
 
     /**
-     * Get field value with optimized batch meta retrieval
+     * Get field value with optimized batch meta retrieval and caching
      * 
      * @param string $field
      * @param int|null $contact_id
@@ -134,27 +157,42 @@ class SC_ContactInfos
      */
     private function get_field_value(string $field, ?int $contact_id = null, string $type = 'main'): string
     {
+        // Create cache key
+        $cache_key = 'sfx_contact_info_' . ($contact_id ?? 'type_' . $type) . '_' . $field;
+        $cached_value = get_transient($cache_key);
+        
+        if ($cached_value !== false) {
+            return $cached_value;
+        }
+        
         // If no specific contact ID, try to find by type
         if (!$contact_id) {
-            $args = [
-                'post_type' => 'sfx_contact_info',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'meta_query' => [
-                    [
-                        'key' => '_contact_type',
-                        'value' => $type,
-                        'compare' => '='
+            $type_cache_key = 'sfx_contact_info_type_' . $type;
+            $contact_id = get_transient($type_cache_key);
+            
+            if ($contact_id === false) {
+                $args = [
+                    'post_type' => 'sfx_contact_info',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    'meta_query' => [
+                        [
+                            'key' => '_contact_type',
+                            'value' => $type,
+                            'compare' => '='
+                        ]
                     ]
-                ]
-            ];
-            
-            $query = new \WP_Query($args);
-            
-            if ($query->have_posts()) {
-                $contact_id = $query->posts[0]->ID;
-            } else {
-                return '';
+                ];
+                
+                $query = new \WP_Query($args);
+                
+                if ($query->have_posts()) {
+                    $contact_id = $query->posts[0]->ID;
+                    // Cache the contact ID for this type for 1 hour
+                    set_transient($type_cache_key, $contact_id, HOUR_IN_SECONDS);
+                } else {
+                    return '';
+                }
             }
         }
         
@@ -176,6 +214,9 @@ class SC_ContactInfos
         if (!empty($value)) {
             $value = \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $value);
         }
+        
+        // Cache the result for 30 minutes
+        set_transient($cache_key, $value, 30 * MINUTE_IN_SECONDS);
         
         return $value;
     }

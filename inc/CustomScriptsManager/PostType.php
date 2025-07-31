@@ -87,6 +87,70 @@ class PostType
         ];
 
         register_post_type(self::$post_type, $args);
+        
+        // Register meta fields
+        self::register_meta_fields();
+    }
+
+    /**
+     * Register meta fields for custom scripts
+     */
+    private static function register_meta_fields(): void
+    {
+        $fields = [
+            'script_type', 'location', 'include_type', 'frontend_only',
+            'script_source_type', 'dependencies', 'priority', 'script_file',
+            'script_cdn', 'script_content', 'include_posts', 'include_pages',
+            'exclude_posts', 'exclude_pages'
+        ];
+        
+        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
+        
+        // Add validation and cleanup hooks
+        add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
+        add_action('delete_post', [self::class, 'cleanup_meta_fields']);
+    }
+
+    /**
+     * Validate custom script meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function validate_meta_fields(int $post_id): void
+    {
+        $validation_rules = [
+            '_script_type' => function($value) {
+                return in_array($value, ['javascript', 'css']) ? $value : 'javascript';
+            },
+            '_location' => function($value) {
+                return in_array($value, ['header', 'footer']) ? $value : 'footer';
+            },
+            '_priority' => 'absint'
+        ];
+        
+        \SFX\MetaFieldManager::validate_fields($post_id, self::$post_type, $validation_rules);
+    }
+
+    /**
+     * Cleanup custom script meta fields
+     * 
+     * @param int $post_id
+     */
+    public static function cleanup_meta_fields(int $post_id): void
+    {
+        $post_type = get_post_type($post_id);
+        if ($post_type !== self::$post_type) {
+            return;
+        }
+        
+        $expected_fields = [
+            '_script_type', '_location', '_include_type', '_frontend_only',
+            '_script_source_type', '_dependencies', '_priority', '_script_file',
+            '_script_cdn', '_script_content', '_include_posts', '_include_pages',
+            '_exclude_posts', '_exclude_pages'
+        ];
+        
+        \SFX\MetaFieldManager::cleanup_fields($post_id, self::$post_type, $expected_fields);
     }
 
     /**
