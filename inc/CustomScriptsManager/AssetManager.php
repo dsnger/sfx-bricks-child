@@ -11,85 +11,44 @@ class AssetManager
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets'], 20);
     }
 
-    public static function enqueue_admin_assets(string $hook): void
+    /**
+     * Check if assets should be loaded for current screen
+     * 
+     * @return bool
+     */
+    private static function should_load_assets(): bool
     {
-        // Check if we're on the correct post type pages
         $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'sfx_custom_script') {
+        return $screen && $screen->post_type === 'sfx_custom_script';
+    }
+
+    /**
+     * Enqueue admin assets with conditional loading
+     */
+    public static function enqueue_admin_assets(): void
+    {
+        // Only load assets on sfx_custom_script post type pages
+        if (!self::should_load_assets()) {
             return;
         }
 
-        // Enqueue media for file upload
-        wp_enqueue_media();
-
         // Enqueue local Select2
-        $theme_url = get_stylesheet_directory_uri();
-        $theme_dir = get_stylesheet_directory();
+        wp_enqueue_style('select2', get_stylesheet_directory_uri() . '/assets/css/backend/select2.min.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/select2.min.css'));
+        wp_enqueue_script('select2', get_stylesheet_directory_uri() . '/assets/js/backend/select2.min.js', ['jquery'], filemtime(get_stylesheet_directory() . '/assets/js/backend/select2.min.js'), true);
 
-        // Select2 CSS
-        $select2_css_path = $theme_dir . '/assets/css/backend/select2.min.css';
-        if (file_exists($select2_css_path)) {
-            wp_enqueue_style(
-                'sfx-select2',
-                $theme_url . '/assets/css/backend/select2.min.css',
-                [],
-                filemtime($select2_css_path)
-            );
+        // Enqueue global backend styles
+        wp_enqueue_style('sfx-backend-styles', get_stylesheet_directory_uri() . '/assets/css/backend/styles.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css'));
+
+        // Enqueue feature-specific styles and scripts
+        $css_file = get_stylesheet_directory() . '/inc/CustomScriptsManager/assets/admin-style.css';
+        $js_file = get_stylesheet_directory() . '/inc/CustomScriptsManager/assets/admin-script.js';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style('sfx-custom-scripts-admin', get_stylesheet_directory_uri() . '/inc/CustomScriptsManager/assets/admin-style.css', [], filemtime($css_file));
         }
 
-        // Select2 JS
-        $select2_js_path = $theme_dir . '/assets/js/backend/select2.min.js';
-        if (file_exists($select2_js_path)) {
-            wp_enqueue_script(
-                'select2',
-                $theme_url . '/assets/js/backend/select2.min.js',
-                ['jquery'],
-                filemtime($select2_js_path),
-                true
-            );
-        }
-
-        // Load global backend styles
-        $global_css_path = $theme_dir . '/assets/css/backend/styles.css';
-        if (file_exists($global_css_path)) {
-            wp_enqueue_style(
-                'sfx-backend-styles',
-                $theme_url . '/assets/css/backend/styles.css',
-                [],
-                filemtime($global_css_path)
-            );
-        }
-
-        // Load custom scripts specific CSS
-        $assets_url = $theme_url . '/inc/CustomScriptsManager/assets/';
-        $assets_dir = $theme_dir . '/inc/CustomScriptsManager/assets/';
-
-        if (file_exists($assets_dir . 'admin-style.css')) {
-            wp_enqueue_style(
-                'sfx-custom-scripts-settings',
-                $assets_url . 'admin-style.css',
-                ['sfx-select2', 'sfx-backend-styles'], // Depend on select2 and global styles
-                filemtime($assets_dir . 'admin-style.css')
-            );
-        }
-
-        // Enqueue JS for file upload and dynamic functionality
-        if (file_exists($assets_dir . 'admin-script.js')) {
-            wp_enqueue_script(
-                'sfx-custom-scripts-js',
-                $assets_url . 'admin-script.js',
-                ['jquery', 'media-upload', 'thickbox', 'select2'],
-                filemtime($assets_dir . 'admin-script.js'),
-                true
-            );
-
-            wp_localize_script('sfx-custom-scripts-js', 'sfxCustomScripts', [
-                'confirmDelete' => __('Are you sure you want to remove this script?', 'sfxtheme'),
-                'mediaUploadTitle' => __('Select Script File', 'sfxtheme'),
-                'mediaUploadButton' => __('Use this file', 'sfxtheme'),
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('sfx_custom_scripts_nonce'),
-            ]);
+        if (file_exists($js_file)) {
+            wp_enqueue_script('sfx-custom-scripts-admin', get_stylesheet_directory_uri() . '/inc/CustomScriptsManager/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
         }
     }
 }

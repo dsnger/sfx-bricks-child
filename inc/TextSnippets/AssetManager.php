@@ -8,47 +8,47 @@ class AssetManager
 {
     public static function register(): void
     {
-        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets'], 20);
     }
 
-    public static function enqueue_admin_assets($hook): void
+    /**
+     * Check if assets should be loaded for current screen
+     * 
+     * @return bool
+     */
+    private static function should_load_assets(): bool
     {
+        $screen = get_current_screen();
+        return $screen && $screen->post_type === 'sfx_text_snippet';
+    }
 
-        // More flexible hook check - will match any page containing wp-optimizer-options
-        if (strpos($hook, 'sfx-text-snippets') === false) {
+    /**
+     * Enqueue admin assets with conditional loading
+     */
+    public static function enqueue_admin_assets(): void
+    {
+        // Only load assets on sfx_text_snippet post type pages
+        if (!self::should_load_assets()) {
             return;
         }
 
-        wp_enqueue_media();
+        // Enqueue local Select2
+        wp_enqueue_style('select2', get_stylesheet_directory_uri() . '/assets/css/backend/select2.min.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/select2.min.css'));
+        wp_enqueue_script('select2', get_stylesheet_directory_uri() . '/assets/js/backend/select2.min.js', ['jquery'], filemtime(get_stylesheet_directory() . '/assets/js/backend/select2.min.js'), true);
 
-        $theme_url = get_stylesheet_directory_uri();
-        $theme_dir = get_stylesheet_directory();
-        $assets_url = $theme_url . '/inc/CompanyLogo/assets/';
-        $assets_dir = $theme_dir . '/inc/CompanyLogo/assets/';
+        // Enqueue global backend styles
+        wp_enqueue_style('sfx-backend-styles', get_stylesheet_directory_uri() . '/assets/css/backend/styles.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css'));
 
-        // Enqueue CSS
-        if (file_exists($assets_dir . 'admin-style.css')) {
-            wp_enqueue_style(
-                'companylogo-admin-style',
-                $assets_url . 'admin-style.css',
-                [],
-                filemtime($assets_dir . 'admin-style.css')
-            );
-        } else {
-            error_log('CompanyLogo: admin-style.css not found at ' . $assets_dir);
+        // Enqueue feature-specific styles and scripts
+        $css_file = get_stylesheet_directory() . '/inc/TextSnippets/assets/admin-style.css';
+        $js_file = get_stylesheet_directory() . '/inc/TextSnippets/assets/admin-script.js';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style('sfx-text-snippets-admin', get_stylesheet_directory_uri() . '/inc/TextSnippets/assets/admin-style.css', [], filemtime($css_file));
         }
 
-        // Enqueue JS
-        if (file_exists($assets_dir . 'admin-script.js')) {
-            wp_enqueue_script(
-                'companylogo-admin-script',
-                $assets_url . 'admin-script.js',
-                ['jquery'],
-                filemtime($assets_dir . 'admin-script.js'),
-                true
-            );
-        } else {
-            error_log('CompanyLogo: admin-script.js not found at ' . $assets_dir);
+        if (file_exists($js_file)) {
+            wp_enqueue_script('sfx-text-snippets-admin', get_stylesheet_directory_uri() . '/inc/TextSnippets/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
         }
     }
 } 

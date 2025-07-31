@@ -8,47 +8,47 @@ class AssetManager
 {
     public static function register(): void
     {
-        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets'], 20);
     }
 
-    public static function enqueue_admin_assets($hook): void
+    /**
+     * Check if assets should be loaded for current screen
+     * 
+     * @return bool
+     */
+    private static function should_load_assets(): bool
     {
-        // Only load on SecurityHeader admin page
-        if ($hook !== 'toplevel_page_security-header' && $hook !== 'global-theme-settings_page_security-header') {
+        $screen = get_current_screen();
+        return $screen && strpos($screen->id, 'sfx-security-header') !== false;
+    }
+
+    /**
+     * Enqueue admin assets with conditional loading
+     */
+    public static function enqueue_admin_assets(): void
+    {
+        // Only load assets on security header pages
+        if (!self::should_load_assets()) {
             return;
         }
 
-        // Optionally enqueue media if needed for UI
-        // wp_enqueue_media();
+        // Enqueue local Select2
+        wp_enqueue_style('select2', get_stylesheet_directory_uri() . '/assets/css/backend/select2.min.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/select2.min.css'));
+        wp_enqueue_script('select2', get_stylesheet_directory_uri() . '/assets/js/backend/select2.min.js', ['jquery'], filemtime(get_stylesheet_directory() . '/assets/js/backend/select2.min.js'), true);
 
-        $theme_url = get_stylesheet_directory_uri();
-        $theme_dir = get_stylesheet_directory();
-        $assets_url = $theme_url . '/inc/SecurityHeader/assets/';
-        $assets_dir = $theme_dir . '/inc/SecurityHeader/assets/';
+        // Enqueue global backend styles
+        wp_enqueue_style('sfx-backend-styles', get_stylesheet_directory_uri() . '/assets/css/backend/styles.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css'));
 
-        // Then enqueue module-specific styles
-        if (file_exists($assets_dir . 'admin-style.css')) {
-            wp_enqueue_style(
-                'SecurityHeader-admin-style',
-                $assets_url . 'admin-style.css',
-                ['sfx-global-admin-style'],  // Depend on global styles
-                filemtime($assets_dir . 'admin-style.css')
-            );
-        } else {
-            error_log('SecurityHeader: admin-style.css not found at ' . $assets_dir);
+        // Enqueue feature-specific styles and scripts
+        $css_file = get_stylesheet_directory() . '/inc/SecurityHeader/assets/admin-style.css';
+        $js_file = get_stylesheet_directory() . '/inc/SecurityHeader/assets/admin-script.js';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style('sfx-security-header-admin', get_stylesheet_directory_uri() . '/inc/SecurityHeader/assets/admin-style.css', [], filemtime($css_file));
         }
 
-        // Enqueue JS
-        if (file_exists($assets_dir . 'admin-script.js')) {
-            wp_enqueue_script(
-                'SecurityHeader-admin',
-                $assets_url . 'admin-script.js',
-                ['jquery'],
-                filemtime($assets_dir . 'admin-script.js'),
-                true
-            );
-        } else {
-            error_log('SecurityHeader: admin-script.js not found at ' . $assets_dir);
+        if (file_exists($js_file)) {
+            wp_enqueue_script('sfx-security-header-admin', get_stylesheet_directory_uri() . '/inc/SecurityHeader/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
         }
     }
 } 

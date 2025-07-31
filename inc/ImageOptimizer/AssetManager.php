@@ -7,56 +7,47 @@ class AssetManager
 {
     public static function register(): void
     {
-        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets'], 20);
     }
 
-    public static function enqueue_admin_assets($hook): void
+    /**
+     * Check if assets should be loaded for current screen
+     * 
+     * @return bool
+     */
+    private static function should_load_assets(): bool
     {
-        // Only load on ImageOptimizer admin page
-        if ($hook !== 'toplevel_page_sfx-image-optimizer' && $hook !== 'global-theme-settings_page_sfx-image-optimizer') {
+        $screen = get_current_screen();
+        return $screen && strpos($screen->id, 'sfx-image-optimizer') !== false;
+    }
+
+    /**
+     * Enqueue admin assets with conditional loading
+     */
+    public static function enqueue_admin_assets(): void
+    {
+        // Only load assets on image optimizer pages
+        if (!self::should_load_assets()) {
             return;
         }
 
-        // Optionally enqueue media if needed for UI
-        // wp_enqueue_media();
+        // Enqueue local Select2
+        wp_enqueue_style('select2', get_stylesheet_directory_uri() . '/assets/css/backend/select2.min.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/select2.min.css'));
+        wp_enqueue_script('select2', get_stylesheet_directory_uri() . '/assets/js/backend/select2.min.js', ['jquery'], filemtime(get_stylesheet_directory() . '/assets/js/backend/select2.min.js'), true);
 
-        $assets_url = get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/';
-        $assets_dir = get_stylesheet_directory() . '/inc/ImageOptimizer/assets/';
+        // Enqueue global backend styles
+        wp_enqueue_style('sfx-backend-styles', get_stylesheet_directory_uri() . '/assets/css/backend/styles.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css'));
 
-        // Enqueue JS
-        if (file_exists($assets_dir . 'admin-script.js')) {
-            wp_enqueue_script(
-                'ImageOptimizer-admin',
-                $assets_url . 'admin-script.js',
-                ['jquery'],
-                filemtime($assets_dir . 'admin-script.js'),
-                true
-            );
-            
-            // Localize script for AJAX and nonce
-            wp_localize_script('ImageOptimizer-admin', 'ImageOptimizerAjax', [
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce'    => wp_create_nonce('webp_converter_nonce'),
-                'excluded_images' => \SFX\ImageOptimizer\Settings::get_excluded_images(),
-                'debug_info' => [
-                    'hook' => $hook,
-                    'time' => time()
-                ]
-            ]);
-        } else {
-            error_log('ImageOptimizer: admin-script.js not found at ' . $assets_dir);
+        // Enqueue feature-specific styles and scripts
+        $css_file = get_stylesheet_directory() . '/inc/ImageOptimizer/assets/admin-style.css';
+        $js_file = get_stylesheet_directory() . '/inc/ImageOptimizer/assets/admin-script.js';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style('sfx-image-optimizer-admin', get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/admin-style.css', [], filemtime($css_file));
         }
-        
-        // Enqueue CSS
-        if (file_exists($assets_dir . 'admin-style.css')) {
-            wp_enqueue_style(
-                'ImageOptimizer-admin-style',
-                $assets_url . 'admin-style.css',
-                [],
-                filemtime($assets_dir . 'admin-style.css')
-            );
-        } else {
-            error_log('ImageOptimizer: admin-style.css not found at ' . $assets_dir);
+
+        if (file_exists($js_file)) {
+            wp_enqueue_script('sfx-image-optimizer-admin', get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
         }
     }
 } 

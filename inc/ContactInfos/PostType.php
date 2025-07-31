@@ -101,26 +101,36 @@ class PostType
     {
         wp_nonce_field('sfx_contact_info_config_nonce', 'sfx_contact_info_config_nonce');
         
-        // Get saved values
-        $contact_type = get_post_meta($post->ID, '_contact_type', true) ?: 'main';
-        $company = get_post_meta($post->ID, '_company', true) ?: '';
-        $director = get_post_meta($post->ID, '_director', true) ?: '';
-        $street = get_post_meta($post->ID, '_street', true) ?: '';
-        $zip = get_post_meta($post->ID, '_zip', true) ?: '';
-        $city = get_post_meta($post->ID, '_city', true) ?: '';
-        $country = get_post_meta($post->ID, '_country', true) ?: '';
-        $address = get_post_meta($post->ID, '_address', true) ?: '';
-        $phone = get_post_meta($post->ID, '_phone', true) ?: '';
-        $mobile = get_post_meta($post->ID, '_mobile', true) ?: '';
-        $fax = get_post_meta($post->ID, '_fax', true) ?: '';
-        $email = get_post_meta($post->ID, '_email', true) ?: '';
-        $tax_id = get_post_meta($post->ID, '_tax_id', true) ?: '';
-        $vat = get_post_meta($post->ID, '_vat', true) ?: '';
-        $hrb = get_post_meta($post->ID, '_hrb', true) ?: '';
-        $court = get_post_meta($post->ID, '_court', true) ?: '';
-        $dsb = get_post_meta($post->ID, '_dsb', true) ?: '';
-        $opening = get_post_meta($post->ID, '_opening', true) ?: '';
-        $maplink = get_post_meta($post->ID, '_maplink', true) ?: '';
+        // Batch retrieve all meta values in one query instead of 20+ individual calls
+        $meta_keys = [
+            '_contact_type', '_company', '_director', '_street', '_zip', '_city', '_country',
+            '_address', '_phone', '_mobile', '_fax', '_email', '_tax_id', '_vat', '_hrb',
+            '_court', '_dsb', '_opening', '_maplink'
+        ];
+        
+        $all_meta = get_post_meta($post->ID, '', true);
+        $contact_data = array_intersect_key($all_meta, array_flip($meta_keys));
+        
+        // Extract values with defaults
+        $contact_type = $contact_data['_contact_type'] ?? 'main';
+        $company = $contact_data['_company'] ?? '';
+        $director = $contact_data['_director'] ?? '';
+        $street = $contact_data['_street'] ?? '';
+        $zip = $contact_data['_zip'] ?? '';
+        $city = $contact_data['_city'] ?? '';
+        $country = $contact_data['_country'] ?? '';
+        $address = $contact_data['_address'] ?? '';
+        $phone = $contact_data['_phone'] ?? '';
+        $mobile = $contact_data['_mobile'] ?? '';
+        $fax = $contact_data['_fax'] ?? '';
+        $email = $contact_data['_email'] ?? '';
+        $tax_id = $contact_data['_tax_id'] ?? '';
+        $vat = $contact_data['_vat'] ?? '';
+        $hrb = $contact_data['_hrb'] ?? '';
+        $court = $contact_data['_court'] ?? '';
+        $dsb = $contact_data['_dsb'] ?? '';
+        $opening = $contact_data['_opening'] ?? '';
+        $maplink = $contact_data['_maplink'] ?? '';
         ?>
         
         <table class="form-table">
@@ -513,18 +523,24 @@ class PostType
     }
 
     /**
-     * Render the address column content.
-     *
+     * Render address column with optimized batch meta retrieval
+     * 
      * @param string $column
-     * @param int    $post_id
+     * @param int $post_id
+     * @return void
      */
     public static function render_address_column(string $column, int $post_id): void
     {
         if ($column === 'address') {
-            $street = self::get_translated_field($post_id, 'street');
-            $zip = self::get_translated_field($post_id, 'zip');
-            $city = self::get_translated_field($post_id, 'city');
-            $country = self::get_translated_field($post_id, 'country');
+            // Batch retrieve address-related meta fields
+            $address_meta_keys = ['_street', '_zip', '_city', '_country'];
+            $all_meta = get_post_meta($post_id, '', true);
+            $address_data = array_intersect_key($all_meta, array_flip($address_meta_keys));
+            
+            $street = self::get_translated_field($post_id, 'street', $address_data['_street'] ?? '');
+            $zip = self::get_translated_field($post_id, 'zip', $address_data['_zip'] ?? '');
+            $city = self::get_translated_field($post_id, 'city', $address_data['_city'] ?? '');
+            $country = self::get_translated_field($post_id, 'country', $address_data['_country'] ?? '');
             
             $address_parts = [];
             if ($street) $address_parts[] = $street;
@@ -537,36 +553,49 @@ class PostType
             
             if (!empty($address_parts)) {
                 echo '<div class="contact-address">';
-                echo '<strong>' . esc_html(implode(', ', $address_parts)) . '</strong>';
+                echo '<strong>' . esc_html__('Address:', 'sfx-bricks-child') . '</strong><br>';
+                echo esc_html(implode(', ', $address_parts));
                 echo '</div>';
             } else {
-                echo '<span class="no-address">' . esc_html__('No address', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-data">' . esc_html__('No address data', 'sfx-bricks-child') . '</span>';
             }
         }
     }
 
     /**
-     * Render the contact column content.
-     *
+     * Render contact column with optimized batch meta retrieval
+     * 
      * @param string $column
-     * @param int    $post_id
+     * @param int $post_id
+     * @return void
      */
     public static function render_contact_column(string $column, int $post_id): void
     {
         if ($column === 'contact') {
-            $phone = self::get_translated_field($post_id, 'phone');
-            $email = self::get_translated_field($post_id, 'email');
+            // Batch retrieve contact-related meta fields
+            $contact_meta_keys = ['_phone', '_email'];
+            $all_meta = get_post_meta($post_id, '', true);
+            $contact_data = array_intersect_key($all_meta, array_flip($contact_meta_keys));
+            
+            $phone = self::get_translated_field($post_id, 'phone', $contact_data['_phone'] ?? '');
+            $email = self::get_translated_field($post_id, 'email', $contact_data['_email'] ?? '');
             
             $contact_parts = [];
-            if ($phone) $contact_parts[] = '<strong>📞</strong> ' . esc_html($phone);
-            if ($email) $contact_parts[] = '<strong>✉️</strong> ' . esc_html($email);
+            
+            if ($phone) {
+                $contact_parts[] = '<span class="contact-phone">📞 ' . esc_html($phone) . '</span>';
+            }
+            
+            if ($email) {
+                $contact_parts[] = '<span class="contact-email">✉️ ' . esc_html($email) . '</span>';
+            }
             
             if (!empty($contact_parts)) {
                 echo '<div class="contact-details">';
                 echo implode('<br>', $contact_parts);
                 echo '</div>';
             } else {
-                echo '<span class="no-contact">' . esc_html__('No contact info', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-data">' . esc_html__('No contact data', 'sfx-bricks-child') . '</span>';
             }
         }
     }
@@ -680,8 +709,8 @@ class PostType
     }
 
     /**
-     * Get translated field value.
-     *
+     * Get translated field value with optional default
+     * 
      * @param int $post_id
      * @param string $field
      * @param string $default
@@ -689,21 +718,30 @@ class PostType
      */
     public static function get_translated_field(int $post_id, string $field, string $default = ''): string
     {
-        $value = get_post_meta($post_id, '_' . $field, true) ?: $default;
+        // If no default provided, get from database
+        if (empty($default)) {
+            $value = get_post_meta($post_id, '_' . $field, true) ?: '';
+        } else {
+            $value = $default;
+        }
         
-        // Polylang translation
-        if (function_exists('pll__') && !empty($value)) {
-            $translated = pll__($value);
-            if ($translated !== $value) {
-                return $translated;
+        if (empty($value)) {
+            return '';
+        }
+        
+        // Polylang support
+        if (function_exists('pll__')) {
+            $translated_value = pll__($value);
+            if ($translated_value !== $value) {
+                return $translated_value;
             }
         }
         
-        // WPML translation
-        if (function_exists('icl_t') && !empty($value)) {
-            $translated = icl_t('Contact Information', 'contact_info_' . $field . '_' . $post_id, $value);
-            if ($translated !== $value) {
-                return $translated;
+        // WPML support
+        if (defined('ICL_SITEPRESS_VERSION')) {
+            $translated_value = icl_t('sfx_contact_info', $field . '_' . $post_id, $value);
+            if ($translated_value !== $value) {
+                return $translated_value;
             }
         }
         

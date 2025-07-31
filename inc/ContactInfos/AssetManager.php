@@ -8,56 +8,60 @@ class AssetManager
 {
     public static function register(): void
     {
-        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_admin_assets'], 20);
     }
 
-    public static function enqueue_admin_assets(string $hook): void
+    /**
+     * Check if assets should be loaded for current screen
+     * 
+     * @return bool
+     */
+    private static function should_load_assets(): bool
     {
-        // Check if we're on the correct post type pages
         $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'sfx_contact_info') {
+        return $screen && $screen->post_type === 'sfx_contact_info';
+    }
+
+    /**
+     * Enqueue admin assets with conditional loading
+     */
+    public static function enqueue_admin_assets(): void
+    {
+        // Only load assets on sfx_contact_info post type pages
+        if (!self::should_load_assets()) {
             return;
         }
 
-        wp_enqueue_media();
+        // Enqueue local Select2
+        wp_enqueue_style('select2', get_stylesheet_directory_uri() . '/assets/css/backend/select2.min.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/select2.min.css'));
+        wp_enqueue_script('select2', get_stylesheet_directory_uri() . '/assets/js/backend/select2.min.js', ['jquery'], filemtime(get_stylesheet_directory() . '/assets/js/backend/select2.min.js'), true);
 
-        $theme_url = get_stylesheet_directory_uri();
-        $theme_dir = get_stylesheet_directory();
-        $assets_url = $theme_url . '/inc/ContactInfos/assets/';
-        $assets_dir = $theme_dir . '/inc/ContactInfos/assets/';
+        // Enqueue global backend styles
+        wp_enqueue_style('sfx-backend-styles', get_stylesheet_directory_uri() . '/assets/css/backend/styles.css', [], filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css'));
 
-        // Enqueue ContactInfos specific CSS (legacy branch styles)
-        // Note: Shared .sfx-settings-* styles are now in global styles.css
-        if (file_exists($assets_dir . 'admin-style.css')) {
-            wp_enqueue_style(
-                'sfx-contact-settings',
-                $assets_url . 'admin-style.css',
-                [], // No dependencies - global styles.css is loaded by theme
-                filemtime($assets_dir . 'admin-style.css')
-            );
-        } else {
-            error_log('SFX ContactInfos: admin-style.css not found at ' . $assets_dir);
+        // Enqueue feature-specific styles and scripts
+        $css_file = get_stylesheet_directory() . '/inc/ContactInfos/assets/admin-style.css';
+        $js_file = get_stylesheet_directory() . '/inc/ContactInfos/assets/admin-script.js';
+
+        if (file_exists($css_file)) {
+            wp_enqueue_style('sfx-contact-infos-admin', get_stylesheet_directory_uri() . '/inc/ContactInfos/assets/admin-style.css', [], filemtime($css_file));
         }
 
-        // Enqueue JS
-        if (file_exists($assets_dir . 'admin-script.js')) {
-            wp_enqueue_script(
-                'sfx-contact-settings-js',
-                $assets_url . 'admin-script.js',
-                ['jquery'],
-                filemtime($assets_dir . 'admin-script.js'),
-                true
-            );
-
-            // Add localized data for debugging
-            wp_localize_script('sfx-contact-settings-js', 'sfxContactSettings', [
-                'debug' => true,
-                'postType' => 'sfx_contact_info',
-                'scriptLoaded' => true,
+        if (file_exists($js_file)) {
+            wp_enqueue_script('sfx-contact-infos-admin', get_stylesheet_directory_uri() . '/inc/ContactInfos/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
+            
+            // Localize script with debug data
+            wp_localize_script('sfx-contact-infos-admin', 'sfxContactInfos', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('sfx_contact_infos_nonce'),
+                'debug' => [
+                    'screen' => get_current_screen() ? get_current_screen()->id : 'unknown',
+                    'postType' => get_current_screen() ? get_current_screen()->post_type : 'unknown',
+                    'shouldLoad' => self::should_load_assets()
+                ]
             ]);
-
-        } else {
-            error_log('SFX ContactInfos: admin-script.js not found at ' . $assets_dir);
         }
+
+        error_log('SFX ContactInfos: Assets enqueued successfully for screen: ' . (get_current_screen() ? get_current_screen()->id : 'unknown'));
     }
 } 

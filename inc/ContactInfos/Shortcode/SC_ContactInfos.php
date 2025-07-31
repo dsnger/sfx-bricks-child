@@ -125,7 +125,7 @@ class SC_ContactInfos
     }
 
     /**
-     * Get field value from post type
+     * Get field value with optimized batch meta retrieval
      * 
      * @param string $field
      * @param int|null $contact_id
@@ -134,39 +134,50 @@ class SC_ContactInfos
      */
     private function get_field_value(string $field, ?int $contact_id = null, string $type = 'main'): string
     {
-        // If specific contact ID is provided
-        if ($contact_id) {
-            $post = get_post($contact_id);
-            if ($post && $post->post_type === 'sfx_contact_info') {
-                return \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field);
+        // If no specific contact ID, try to find by type
+        if (!$contact_id) {
+            $args = [
+                'post_type' => 'sfx_contact_info',
+                'post_status' => 'publish',
+                'posts_per_page' => 1,
+                'meta_query' => [
+                    [
+                        'key' => '_contact_type',
+                        'value' => $type,
+                        'compare' => '='
+                    ]
+                ]
+            ];
+            
+            $query = new \WP_Query($args);
+            
+            if ($query->have_posts()) {
+                $contact_id = $query->posts[0]->ID;
+            } else {
+                return '';
             }
         }
-
-        // Get contact info by type
-        $args = [
-            'post_type' => 'sfx_contact_info',
-            'post_status' => 'publish',
-            'posts_per_page' => 1,
-            'meta_query' => [
-                [
-                    'key' => '_contact_type',
-                    'value' => $type,
-                    'compare' => '='
-                ]
-            ]
-        ];
-
-        $query = new \WP_Query($args);
         
-        if ($query->have_posts()) {
-            $query->the_post();
-            $post_id = get_the_ID();
-            $value = \SFX\ContactInfos\PostType::get_translated_field($post_id, $field);
-            wp_reset_postdata();
-            return $value;
+        // Batch retrieve all meta values for this contact in one query
+        $meta_keys = [
+            '_company', '_director', '_street', '_zip', '_city', '_country',
+            '_address', '_phone', '_mobile', '_fax', '_email', '_tax_id', '_vat', '_hrb',
+            '_court', '_dsb', '_opening', '_maplink'
+        ];
+        
+        $all_meta = get_post_meta($contact_id, '', true);
+        $contact_data = array_intersect_key($all_meta, array_flip($meta_keys));
+        
+        // Get the specific field value with translation support
+        $meta_key = '_' . $field;
+        $value = $contact_data[$meta_key] ?? '';
+        
+        // Apply translation if available
+        if (!empty($value)) {
+            $value = \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $value);
         }
-
-        return '';
+        
+        return $value;
     }
 
     /**
@@ -257,14 +268,19 @@ class SC_ContactInfos
         if (!empty($value)) {
             $output .= nl2br(esc_html($value));
         } else {
-            // Build address from individual fields
+            // Build address from individual fields using batch meta data
             $address_parts = [];
             
             if ($contact_id) {
-                $street = get_post_meta($contact_id, '_street', true);
-                $zip = get_post_meta($contact_id, '_zip', true);
-                $city = get_post_meta($contact_id, '_city', true);
-                $country = get_post_meta($contact_id, '_country', true);
+                // Use batch meta retrieval for address fields
+                $address_meta_keys = ['_street', '_zip', '_city', '_country'];
+                $all_meta = get_post_meta($contact_id, '', true);
+                $address_data = array_intersect_key($all_meta, array_flip($address_meta_keys));
+                
+                $street = $address_data['_street'] ?? '';
+                $zip = $address_data['_zip'] ?? '';
+                $city = $address_data['_city'] ?? '';
+                $country = $address_data['_country'] ?? '';
                 
                 if ($street) $address_parts[] = $street;
                 if ($zip && $city) {
