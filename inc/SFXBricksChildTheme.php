@@ -120,7 +120,7 @@ class SFXBricksChildTheme
   {
     if (!bricks_is_builder_main()) {
       wp_enqueue_style('bricks-child', get_stylesheet_uri(), ['bricks-frontend'], filemtime(get_stylesheet_directory() . '/style.css'));
-      wp_enqueue_style('sfx-frontend', $this->ASSET_DIR . 'css/frontend.css', ['bricks-child'], filemtime(get_stylesheet_directory() . '/assets/css/frontend.css'));
+      wp_enqueue_style('sfx-frontend', $this->ASSET_DIR . 'css/frontend/styles.css', ['bricks-child'], filemtime(get_stylesheet_directory() . '/assets/css/frontend/styles.css'));
     } else {
       // Load builder-specific styles
       wp_enqueue_style('sfx-builder-styles', $this->ASSET_DIR . 'css/builder/styles.css', ['bricks-builder'], filemtime(get_stylesheet_directory() . '/assets/css/builder/styles.css'));
@@ -130,15 +130,19 @@ class SFXBricksChildTheme
 
   public function enqueue_admin_scripts($hook_suffix)
   {
-    // Only load on Global Theme Settings pages and subpages
-    if (strpos($hook_suffix, 'global-theme-settings') === false && strpos($hook_suffix, 'sfx-theme-settings') === false && strpos($hook_suffix, 'sfx-wp-optimizer') === false ) {
+    // Only load on Global Theme Settings pages and subpages, and custom script post type pages
+    if (strpos($hook_suffix, 'global-theme-settings') === false && 
+        strpos($hook_suffix, 'sfx-theme-settings') === false && 
+        strpos($hook_suffix, 'sfx-wp-optimizer') === false &&
+        strpos($hook_suffix, 'sfx_custom_script') === false &&
+        strpos($hook_suffix, 'security-header') === false) {
         return;
     }
     wp_enqueue_style(
       'sfx-bricks-child-admin-styles',
-      $this->ASSET_DIR . 'css/backend.css',
+      $this->ASSET_DIR . 'css/backend/styles.css',
       array(),
-      filemtime(get_stylesheet_directory() . '/assets/css/backend.css')
+      filemtime(get_stylesheet_directory() . '/assets/css/backend/styles.css')
     );
     // Enqueue JS to add sfx-toggle class to all checkboxes in admin
     wp_add_inline_script(

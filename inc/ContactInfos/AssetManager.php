@@ -28,12 +28,12 @@ class AssetManager
         $assets_dir = $theme_dir . '/inc/ContactInfos/assets/';
 
         // Enqueue ContactInfos specific CSS (legacy branch styles)
-        // Note: Shared .sfx-settings-* styles are now in global backend.css
+        // Note: Shared .sfx-settings-* styles are now in global styles.css
         if (file_exists($assets_dir . 'admin-style.css')) {
             wp_enqueue_style(
                 'sfx-contact-settings',
                 $assets_url . 'admin-style.css',
-                [], // No dependencies - global backend.css is loaded by theme
+                [], // No dependencies - global styles.css is loaded by theme
                 filemtime($assets_dir . 'admin-style.css')
             );
         } else {

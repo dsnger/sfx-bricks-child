@@ -9,6 +9,9 @@
   margin: 0
 }
 
+
+
+
 .acf-field.acf-accordion .acf-accordion-content>.acf-fields {
   background-color: #fafafa
 }
@@ -705,3 +708,13 @@ input[type="checkbox"].sfx-toggle:checked:after {
       margin-top: 0.5rem;
   }
 }
+
+
+/* select2 */
+.select2 textarea[type="search"],
+.select2-search__field {
+  box-shadow: 0 0 0 transparent;
+  border-radius: 4px;
+  border: none!important;
+}
+

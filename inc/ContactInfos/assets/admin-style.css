@@ -1,6 +1,6 @@
 /* ContactInfos Specific Styles */
-/* Only styles unique to ContactInfos that aren't in global backend.css */
-/* Shared .sfx-settings-* styles are now in /assets/css/backend.css */
+/* Only styles unique to ContactInfos that aren't in global styles.css */
+/* Shared .sfx-settings-* styles are now in /assets/css/backend/styles.css */
 
 /* Legacy branch-specific classes - used only by ContactInfos branches repeater */
 .sfx-branch-fields {
