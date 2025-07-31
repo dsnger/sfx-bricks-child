@@ -196,6 +196,14 @@ class SC_ContactInfos
             }
         }
         
+        // Ensure contact_id is always an integer
+        $contact_id = (int) $contact_id;
+        
+        // Validate contact_id
+        if ($contact_id <= 0) {
+            return '';
+        }
+        
         // Batch retrieve all meta values for this contact in one query
         $meta_keys = [
             '_company', '_director', '_street', '_zip', '_city', '_country',

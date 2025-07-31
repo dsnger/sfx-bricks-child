@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.53] - 2025-07-31
+
+### Fixed
+
+- **ContactInfos Shortcode**: Fixed TypeError where `get_translated_field()` received string instead of integer
+  - **Issue**: Cached contact_id from transient was being passed as string to `get_translated_field()`
+  - **Fix**: Added integer casting and validation for contact_id before calling translation method
+  - **Impact**: ContactInfos shortcodes now work correctly without type errors
+
 ## [0.4.52] - 2025-07-31
 
 ### Fixed
