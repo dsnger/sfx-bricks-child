@@ -65,13 +65,14 @@ class Controller
       'post_type' => 'sfx_custom_script',
       'post_status' => 'publish',
       'numberposts' => -1,
-      'orderby' => 'menu_order',
+      'meta_key' => '_priority',
+      'orderby' => 'meta_value_num',
       'order' => 'ASC'
     ]);
 
     foreach ($scripts as $script_post) {
       // Check if script should be loaded based on conditional settings
-      if (sfx_should_load_script($script_post->ID)) {
+      if (self::should_load_script($script_post->ID)) {
         $this->handle_custom_script($script_post);
       }
     }
@@ -79,30 +80,31 @@ class Controller
 
   private function handle_custom_script(\WP_Post $script_post)
   {
-    $script_type = sfx_get_custom_script_config($script_post->ID, 'script_type') ?: 'javascript';
-    $location = sfx_get_custom_script_config($script_post->ID, 'location') ?: 'footer';
-    $include_type = sfx_get_custom_script_config($script_post->ID, 'include_type') ?: 'enqueue';
-    $frontend_only = sfx_get_custom_script_config($script_post->ID, 'frontend_only') ?: '1';
-    $source_type = sfx_get_custom_script_config($script_post->ID, 'script_source_type') ?: 'file';
-    $dependencies = sfx_get_custom_script_config($script_post->ID, 'dependencies') ?: '';
+    $script_type = self::get_custom_script_config($script_post->ID, 'script_type') ?: 'javascript';
+    $location = self::get_custom_script_config($script_post->ID, 'location') ?: 'footer';
+    $include_type = self::get_custom_script_config($script_post->ID, 'include_type') ?: 'enqueue';
+    $frontend_only = self::get_custom_script_config($script_post->ID, 'frontend_only') ?: '1';
+    $source_type = self::get_custom_script_config($script_post->ID, 'script_source_type') ?: 'file';
+    $dependencies = self::get_custom_script_config($script_post->ID, 'dependencies') ?: '';
+    $priority = self::get_custom_script_config($script_post->ID, 'priority') ?: 10;
     $handle = sanitize_title($script_post->post_title);
 
     // Determine the script source URL based on the selected source type
     $src = '';
     if ($source_type === 'file') {
-      $src = sfx_get_custom_script_config($script_post->ID, 'script_file') ?: '';
+      $src = self::get_custom_script_config($script_post->ID, 'script_file') ?: '';
     } elseif ($source_type === 'cdn') {
-      $src = sfx_get_custom_script_config($script_post->ID, 'script_cdn') ?: '';
+      $src = self::get_custom_script_config($script_post->ID, 'script_cdn') ?: '';
     } elseif ($source_type === 'cdn_file') {
       $src = $this->download_cdn_script(
-        sfx_get_custom_script_config($script_post->ID, 'script_cdn') ?: '',
+        self::get_custom_script_config($script_post->ID, 'script_cdn') ?: '',
         $handle,
         $script_type
       );
       if (!$src) return;
     } elseif ($source_type === 'inline') {
       // For inline scripts, we'll handle them differently
-      $this->handle_inline_script($script_post, $script_type, $location, $include_type, $frontend_only);
+      $this->handle_inline_script($script_post, $script_type, $location, $include_type, $frontend_only, $priority);
       return;
     } else {
       return; // Exit if the source type is unrecognized
@@ -124,21 +126,21 @@ class Controller
       if ($include_type === 'enqueue') {
         add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps, $in_footer) {
           wp_enqueue_script($handle, $src, $deps, null, $in_footer);
-        });
+        }, $priority);
       } elseif ($include_type === 'register') {
         add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps, $in_footer) {
           wp_register_script($handle, $src, $deps, null, $in_footer);
-        });
+        }, $priority);
       }
     } elseif (strtolower($script_type) === 'css') {
       if ($include_type === 'enqueue') {
         add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps) {
           wp_enqueue_style($handle, $src, $deps);
-        });
+        }, $priority);
       } elseif ($include_type === 'register') {
         add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps) {
           wp_register_style($handle, $src, $deps);
-        });
+        }, $priority);
       }
     }
   }
@@ -146,9 +148,9 @@ class Controller
   /**
    * Handle inline scripts.
    */
-  private function handle_inline_script(\WP_Post $script_post, string $script_type, string $location, string $include_type, string $frontend_only): void
+  private function handle_inline_script(\WP_Post $script_post, string $script_type, string $location, string $include_type, string $frontend_only, int $priority): void
   {
-    $script_content = sfx_get_custom_script_config($script_post->ID, 'script_content') ?: '';
+    $script_content = self::get_custom_script_config($script_post->ID, 'script_content') ?: '';
     if (empty($script_content)) {
       return;
     }
@@ -166,24 +168,24 @@ class Controller
         add_action('wp_enqueue_scripts', function () use ($handle, $script_content, $in_footer) {
           wp_enqueue_script($handle, '', [], null, $in_footer);
           wp_add_inline_script($handle, $script_content);
-        });
+        }, $priority);
       } elseif ($include_type === 'register') {
         add_action('wp_enqueue_scripts', function () use ($handle, $script_content, $in_footer) {
           wp_register_script($handle, '', [], null, $in_footer);
           wp_add_inline_script($handle, $script_content);
-        });
+        }, $priority);
       }
     } elseif (strtolower($script_type) === 'css') {
       if ($include_type === 'enqueue') {
         add_action('wp_enqueue_scripts', function () use ($handle, $script_content) {
           wp_enqueue_style($handle, '');
           wp_add_inline_style($handle, $script_content);
-        });
+        }, $priority);
       } elseif ($include_type === 'register') {
         add_action('wp_enqueue_scripts', function () use ($handle, $script_content) {
           wp_register_style($handle, '');
           wp_add_inline_style($handle, $script_content);
-        });
+        }, $priority);
       }
     }
   }
@@ -266,6 +268,107 @@ class Controller
       'error' => 'Missing CustomScriptsManagerController class in theme',
       'hook'  => null,
     ];
+  }
+
+  /**
+   * Get a custom script configuration value.
+   *
+   * @param int    $post_id The post ID.
+   * @param string $key     The configuration key.
+   * @return mixed          The configuration value, or null if not found.
+   */
+  public static function get_custom_script_config(int $post_id, string $key) {
+    return get_post_meta($post_id, '_' . $key, true);
+  }
+
+  /**
+   * Check if a script should be loaded on the current page based on conditional settings.
+   *
+   * @param int $script_post_id The script post ID.
+   * @return bool Whether the script should be loaded.
+   */
+  public static function should_load_script(int $script_post_id): bool {
+    $include_posts = get_post_meta($script_post_id, '_include_posts', true) ?: [];
+    $include_pages = get_post_meta($script_post_id, '_include_pages', true) ?: [];
+    $exclude_posts = get_post_meta($script_post_id, '_exclude_posts', true) ?: [];
+    $exclude_pages = get_post_meta($script_post_id, '_exclude_pages', true) ?: [];
+    
+    // If no conditions are set, load everywhere
+    if (empty($include_posts) && empty($include_pages) && empty($exclude_posts) && empty($exclude_pages)) {
+      return true;
+    }
+    
+    $current_post_id = get_the_ID();
+    $should_load = true;
+    
+    // Check include posts
+    if (!empty($include_posts)) {
+      $should_load = in_array($current_post_id, $include_posts);
+    }
+    
+    // Check include pages
+    if (!empty($include_pages) && $should_load) {
+      $current_page_type = self::get_current_page_type();
+      $should_load = in_array($current_page_type, $include_pages);
+    }
+    
+    // Check exclude posts
+    if (!empty($exclude_posts) && $should_load) {
+      $should_load = !in_array($current_post_id, $exclude_posts);
+    }
+    
+    // Check exclude pages
+    if (!empty($exclude_pages) && $should_load) {
+      $current_page_type = self::get_current_page_type();
+      $should_load = !in_array($current_page_type, $exclude_pages);
+    }
+    
+    return $should_load;
+  }
+
+  /**
+   * Get the current page type for conditional loading.
+   *
+   * @return string The current page type.
+   */
+  public static function get_current_page_type(): string {
+    if (is_front_page()) {
+      return 'front_page';
+    }
+    
+    if (is_home()) {
+      return 'home';
+    }
+    
+    if (is_single()) {
+      $post_type = get_post_type();
+      if ($post_type === 'post') {
+        return 'single';
+      }
+      return 'single_' . $post_type;
+    }
+    
+    if (is_page()) {
+      return 'page';
+    }
+    
+    if (is_archive()) {
+      $post_type = get_post_type();
+      if ($post_type) {
+        return 'archive_' . $post_type;
+      }
+      return 'archive';
+    }
+    
+    if (is_search()) {
+      return 'search';
+    }
+    
+    if (is_404()) {
+      return '404';
+    }
+    
+    return '';
   }
 
 }

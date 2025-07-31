@@ -1,0 +1,60 @@
+/* Social Media Accounts Admin Styles */
+
+.sfx-image-preview {
+    margin-top: 10px;
+}
+
+.sfx-image-preview img {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 2px;
+    background: #fff;
+}
+
+.sfx-file-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.sfx-file-input-group input {
+    flex: 1;
+}
+
+.sfx-file-input-group .button {
+    flex-shrink: 0;
+}
+
+/* Admin list column styles */
+.column-icon {
+    width: 80px;
+}
+
+.column-link {
+    width: 20%;
+}
+
+.column-status {
+    width: 100px;
+}
+
+.no-icon,
+.no-link {
+    color: #999;
+    font-style: italic;
+}
+
+.status-publish {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+.status-draft {
+    color: #d63638;
+    font-weight: 500;
+}
+
+.status-private {
+    color: #f56e28;
+    font-weight: 500;
+} 

@@ -1,0 +1,329 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SFX\SocialMediaAccounts;
+
+/**
+ * Registers the 'sfx_social_account' post type.
+ */
+class PostType
+{
+    /**
+     * Custom post type slug.
+     *
+     * @var string
+     */
+    public static string $post_type = 'sfx_social_account';
+
+    /**
+     * Initialize post type and meta box hooks.
+     */
+    public static function init(): void
+    {
+        add_action('init', [self::class, 'register_post_type']);
+        add_action('add_meta_boxes', [self::class, 'register_meta_box']);
+        add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_icon_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_icon_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_link_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_link_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
+    }
+
+    /**
+     * Register the custom post type.
+     */
+    public static function register_post_type(): void
+    {
+        $labels = [
+            'name'                  => __('Social Media Accounts', 'sfx-bricks-child'),
+            'singular_name'         => __('Social Media Account', 'sfx-bricks-child'),
+            'add_new'               => __('Add New', 'sfx-bricks-child'),
+            'add_new_item'          => __('Add New Social Account', 'sfx-bricks-child'),
+            'edit_item'             => __('Edit Social Account', 'sfx-bricks-child'),
+            'new_item'              => __('New Social Account', 'sfx-bricks-child'),
+            'view_item'             => __('View Social Account', 'sfx-bricks-child'),
+            'search_items'          => __('Search Social Accounts', 'sfx-bricks-child'),
+            'not_found'             => __('No social accounts found', 'sfx-bricks-child'),
+            'not_found_in_trash'    => __('No social accounts found in Trash', 'sfx-bricks-child'),
+            'all_items'             => __('All Social Accounts', 'sfx-bricks-child'),
+            'menu_name'             => __('Social Accounts', 'sfx-bricks-child'),
+            'name_admin_bar'        => __('Social Account', 'sfx-bricks-child'),
+        ];
+
+        $args = [
+            'labels'             => $labels,
+            'public'             => false,
+            'show_in_menu'       => false, // Will be added as submenu under theme admin
+            'show_in_rest'       => true,
+            'supports'           => ['title'],
+            'has_archive'        => false,
+            'rewrite'            => false,
+            'capability_type'    => 'post',
+            'show_ui'            => true,
+        ];
+
+        register_post_type(self::$post_type, $args);
+    }
+
+    /**
+     * Register the meta box for social account configuration fields.
+     */
+    public static function register_meta_box(): void
+    {
+        add_meta_box(
+            'sfx_social_account_config',
+            __('Social Account Configuration', 'sfx-bricks-child'),
+            [self::class, 'render_meta_box'],
+            self::$post_type,
+            'normal',
+            'high'
+        );
+    }
+
+    /**
+     * Render the meta box UI for social account configuration fields.
+     *
+     * @param \WP_Post $post
+     */
+    public static function render_meta_box($post): void
+    {
+        wp_nonce_field('sfx_social_account_config_nonce', 'sfx_social_account_config_nonce');
+        
+        // Get saved values
+        $icon_image = get_post_meta($post->ID, '_icon_image', true) ?: '';
+        $link_url = get_post_meta($post->ID, '_link_url', true) ?: '';
+        $link_title = get_post_meta($post->ID, '_link_title', true) ?: '';
+        $link_target = get_post_meta($post->ID, '_link_target', true) ?: '_blank';
+        ?>
+        
+        <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="icon_image"><?php esc_html_e('Icon Image', 'sfx-bricks-child'); ?></label>
+                </th>
+                <td>
+                    <div class="sfx-file-input-group">
+                        <input type="text" name="icon_image" id="icon_image" value="<?php echo esc_attr($icon_image); ?>" class="regular-text" placeholder="<?php esc_attr_e('Image URL', 'sfx-bricks-child'); ?>" />
+                        <button type="button" class="button" id="upload_icon_image"><?php esc_html_e('Upload Image', 'sfx-bricks-child'); ?></button>
+                    </div>
+                    <p class="description"><?php esc_html_e('Upload an icon image (preferably SVG) for this social media account.', 'sfx-bricks-child'); ?></p>
+                    <?php if (!empty($icon_image)) : ?>
+                        <div class="sfx-image-preview">
+                            <img src="<?php echo esc_url($icon_image); ?>" alt="<?php esc_attr_e('Icon Preview', 'sfx-bricks-child'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />
+                        </div>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="link_url"><?php esc_html_e('Link URL', 'sfx-bricks-child'); ?></label>
+                </th>
+                <td>
+                    <input type="url" name="link_url" id="link_url" value="<?php echo esc_url($link_url); ?>" class="regular-text" placeholder="https://example.com" />
+                    <p class="description"><?php esc_html_e('The URL to the social media profile.', 'sfx-bricks-child'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="link_title"><?php esc_html_e('Link Title', 'sfx-bricks-child'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="link_title" id="link_title" value="<?php echo esc_attr($link_title); ?>" class="regular-text" placeholder="<?php esc_attr_e('Follow us on...', 'sfx-bricks-child'); ?>" />
+                    <p class="description"><?php esc_html_e('Optional title attribute for the link.', 'sfx-bricks-child'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="link_target"><?php esc_html_e('Link Target', 'sfx-bricks-child'); ?></label>
+                </th>
+                <td>
+                    <select name="link_target" id="link_target">
+                        <option value="_blank" <?php selected($link_target, '_blank'); ?>><?php esc_html_e('Open in new tab', 'sfx-bricks-child'); ?></option>
+                        <option value="_self" <?php selected($link_target, '_self'); ?>><?php esc_html_e('Open in same tab', 'sfx-bricks-child'); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e('How the link should open when clicked.', 'sfx-bricks-child'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#upload_icon_image').on('click', function(e) {
+                e.preventDefault();
+                var button = $(this);
+                var fileInput = $('#icon_image');
+                
+                var frame = wp.media({
+                    title: '<?php esc_html_e('Select Icon Image', 'sfx-bricks-child'); ?>',
+                    button: {
+                        text: '<?php esc_html_e('Use this image', 'sfx-bricks-child'); ?>'
+                    },
+                    multiple: false
+                });
+                
+                frame.on('select', function() {
+                    var attachment = frame.state().get('selection').first().toJSON();
+                    fileInput.val(attachment.url);
+                    
+                    // Update preview
+                    var preview = $('.sfx-image-preview');
+                    if (preview.length === 0) {
+                        preview = $('<div class="sfx-image-preview"></div>');
+                        fileInput.parent().after(preview);
+                    }
+                    preview.html('<img src="' + attachment.url + '" alt="<?php esc_attr_e('Icon Preview', 'sfx-bricks-child'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />');
+                });
+                
+                frame.open();
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Save the custom fields for the social account post type.
+     *
+     * @param int $post_id
+     */
+    public static function save_custom_fields(int $post_id): void
+    {
+        if (!isset($_POST['sfx_social_account_config_nonce']) || !wp_verify_nonce($_POST['sfx_social_account_config_nonce'], 'sfx_social_account_config_nonce')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        // Save social account configuration fields
+        $fields = [
+            'icon_image' => esc_url_raw($_POST['icon_image'] ?? ''),
+            'link_url' => esc_url_raw($_POST['link_url'] ?? ''),
+            'link_title' => sanitize_text_field($_POST['link_title'] ?? ''),
+            'link_target' => sanitize_text_field($_POST['link_target'] ?? '_blank'),
+        ];
+
+        foreach ($fields as $key => $value) {
+            update_post_meta($post_id, '_' . $key, $value);
+        }
+    }
+
+    /**
+     * Add a custom column for icon.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_icon_column(array $columns): array
+    {
+        $date = $columns['date'] ?? null;
+        unset($columns['date']);
+        $columns['icon'] = __('Icon', 'sfx-bricks-child');
+        if ($date !== null) {
+            $columns['date'] = $date;
+        }
+        return $columns;
+    }
+
+    /**
+     * Add a custom column for link.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_link_column(array $columns): array
+    {
+        $columns['link'] = __('Link', 'sfx-bricks-child');
+        return $columns;
+    }
+
+    /**
+     * Add a custom column for status.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_status_column(array $columns): array
+    {
+        $columns['status'] = __('Status', 'sfx-bricks-child');
+        return $columns;
+    }
+
+    /**
+     * Render the icon column content.
+     *
+     * @param string $column
+     * @param int    $post_id
+     */
+    public static function render_icon_column(string $column, int $post_id): void
+    {
+        if ($column === 'icon') {
+            $icon_image = get_post_meta($post_id, '_icon_image', true);
+            if (!empty($icon_image)) {
+                echo '<img src="' . esc_url($icon_image) . '" alt="Icon" style="max-width: 30px; max-height: 30px;" />';
+            } else {
+                echo '<span class="no-icon">' . esc_html__('No icon', 'sfx-bricks-child') . '</span>';
+            }
+        }
+    }
+
+    /**
+     * Render the link column content.
+     *
+     * @param string $column
+     * @param int    $post_id
+     */
+    public static function render_link_column(string $column, int $post_id): void
+    {
+        if ($column === 'link') {
+            $link_url = get_post_meta($post_id, '_link_url', true);
+            if (!empty($link_url)) {
+                echo '<a href="' . esc_url($link_url) . '" target="_blank" rel="noopener noreferrer">' . esc_url($link_url) . '</a>';
+            } else {
+                echo '<span class="no-link">' . esc_html__('No link', 'sfx-bricks-child') . '</span>';
+            }
+        }
+    }
+
+    /**
+     * Render the status column content.
+     *
+     * @param string $column
+     * @param int    $post_id
+     */
+    public static function render_status_column(string $column, int $post_id): void
+    {
+        if ($column === 'status') {
+            $post = get_post($post_id);
+            $status = $post->post_status;
+            $status_labels = [
+                'publish' => __('Active', 'sfx-bricks-child'),
+                'draft' => __('Draft', 'sfx-bricks-child'),
+                'private' => __('Private', 'sfx-bricks-child'),
+            ];
+            echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
+        }
+    }
+
+    /**
+     * Remove the date column.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function remove_date_column(array $columns): array
+    {
+        unset($columns['date']);
+        return $columns;
+    }
+} 

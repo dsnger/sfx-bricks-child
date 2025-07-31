@@ -38,6 +38,8 @@ class PostType
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_location_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_priority_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_priority_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_conditions_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_conditions_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
@@ -148,7 +150,7 @@ class PostType
         $script_cdn = get_post_meta($post->ID, '_script_cdn', true) ?: '';
         $script_content = get_post_meta($post->ID, '_script_content', true) ?: '';
         $dependencies = get_post_meta($post->ID, '_dependencies', true) ?: '';
-        $conditions = get_post_meta($post->ID, '_conditions', true) ?: '';
+        $priority = get_post_meta($post->ID, '_priority', true) ?: '10';
         
         // Conditional loading fields
         $include_posts = get_post_meta($post->ID, '_include_posts', true) ?: [];
@@ -199,7 +201,7 @@ class PostType
                     <label for="frontend_only"><?php esc_html_e('Frontend Only', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
-                    <input type="checkbox" name="frontend_only" id="frontend_only" value="1" <?php checked($frontend_only, '1'); ?> />
+                    <input type="checkbox" name="frontend_only" id="frontend_only" value="1" <?php checked($frontend_only, '1'); ?> class="sfx-toggle"/>
                     <span class="description"><?php esc_html_e('Only load on frontend (not in admin)', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
@@ -251,20 +253,22 @@ class PostType
                     <label for="dependencies"><?php esc_html_e('Dependencies', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
-                    <input type="text" name="dependencies" id="dependencies" value="<?php echo esc_attr($dependencies); ?>" class="regular-text" />
+                    <input type="text" name="dependencies" id="dependencies" value="<?php echo esc_attr($dependencies); ?>" class="regular-text" /><br>
                     <span class="description"><?php esc_html_e('Comma-separated list of script handles (e.g., jquery, wp-util)', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="conditions"><?php esc_html_e('Load Conditions', 'sfx-bricks-child'); ?></label>
+                    <label for="priority"><?php esc_html_e('Priority', 'sfx-bricks-child'); ?></label>
                 </th>
                 <td>
-                    <textarea name="conditions" id="conditions" rows="3" class="large-text"><?php echo esc_textarea($conditions); ?></textarea>
-                    <span class="description"><?php esc_html_e('PHP conditions for when to load this script (e.g., is_front_page(), is_singular())', 'sfx-bricks-child'); ?></span>
+                    <input type="number" name="priority" id="priority" value="<?php echo esc_attr($priority); ?>" class="small-text" min="1" max="999" />
+                    <span class="description"><?php esc_html_e('Loading priority (1 = highest, 999 = lowest). Lower numbers load first.', 'sfx-bricks-child'); ?></span>
                 </td>
             </tr>
+            
+
             
             <tr>
                 <th scope="row" colspan="2">
@@ -499,7 +503,7 @@ class PostType
             'script_cdn' => esc_url_raw($_POST['script_cdn'] ?? ''),
             'script_content' => wp_kses_post($_POST['script_content'] ?? ''),
             'dependencies' => sanitize_text_field($_POST['dependencies'] ?? ''),
-            'conditions' => sanitize_textarea_field($_POST['conditions'] ?? ''),
+            'priority' => absint($_POST['priority'] ?? 10),
         ];
 
         // Save conditional loading fields
@@ -564,6 +568,18 @@ class PostType
     }
 
     /**
+     * Add a custom column for priority.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_priority_column(array $columns): array
+    {
+        $columns['priority'] = __('Priority', 'sfx-bricks-child');
+        return $columns;
+    }
+
+    /**
      * Render the script type column content.
      *
      * @param string $column
@@ -616,6 +632,31 @@ class PostType
                 'private' => __('Private', 'sfx-bricks-child'),
             ];
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
+        }
+    }
+
+    /**
+     * Render the priority column content.
+     *
+     * @param string $column
+     * @param int    $post_id
+     */
+    public static function render_priority_column(string $column, int $post_id): void
+    {
+        if ($column === 'priority') {
+            $priority = get_post_meta($post_id, '_priority', true) ?: '10';
+            $priority_class = 'priority-' . $priority;
+            
+            // Color coding based on priority
+            if ($priority <= 5) {
+                $priority_class .= ' priority-high';
+            } elseif ($priority <= 15) {
+                $priority_class .= ' priority-medium';
+            } else {
+                $priority_class .= ' priority-low';
+            }
+            
+            echo '<span class="' . esc_attr($priority_class) . '">' . esc_html($priority) . '</span>';
         }
     }
 
@@ -705,104 +746,3 @@ class PostType
         }
     }
 }
-
-/**
- * Get a custom script configuration value.
- *
- * @param int    $post_id The post ID.
- * @param string $key     The configuration key.
- * @return mixed          The configuration value, or null if not found.
- */
-function sfx_get_custom_script_config(int $post_id, string $key) {
-    return get_post_meta($post_id, '_' . $key, true);
-}
-
-/**
- * Check if a script should be loaded on the current page based on conditional settings.
- *
- * @param int $script_post_id The script post ID.
- * @return bool Whether the script should be loaded.
- */
-function sfx_should_load_script(int $script_post_id): bool {
-    $include_posts = get_post_meta($script_post_id, '_include_posts', true) ?: [];
-    $include_pages = get_post_meta($script_post_id, '_include_pages', true) ?: [];
-    $exclude_posts = get_post_meta($script_post_id, '_exclude_posts', true) ?: [];
-    $exclude_pages = get_post_meta($script_post_id, '_exclude_pages', true) ?: [];
-    
-    // If no conditions are set, load everywhere
-    if (empty($include_posts) && empty($include_pages) && empty($exclude_posts) && empty($exclude_pages)) {
-        return true;
-    }
-    
-    $current_post_id = get_the_ID();
-    $should_load = true;
-    
-    // Check include posts
-    if (!empty($include_posts)) {
-        $should_load = in_array($current_post_id, $include_posts);
-    }
-    
-    // Check include pages
-    if (!empty($include_pages) && $should_load) {
-        $current_page_type = sfx_get_current_page_type();
-        $should_load = in_array($current_page_type, $include_pages);
-    }
-    
-    // Check exclude posts
-    if (!empty($exclude_posts) && $should_load) {
-        $should_load = !in_array($current_post_id, $exclude_posts);
-    }
-    
-    // Check exclude pages
-    if (!empty($exclude_pages) && $should_load) {
-        $current_page_type = sfx_get_current_page_type();
-        $should_load = !in_array($current_page_type, $exclude_pages);
-    }
-    
-    return $should_load;
-}
-
-/**
- * Get the current page type for conditional loading.
- *
- * @return string The current page type.
- */
-function sfx_get_current_page_type(): string {
-    if (is_front_page()) {
-        return 'front_page';
-    }
-    
-    if (is_home()) {
-        return 'home';
-    }
-    
-    if (is_single()) {
-        $post_type = get_post_type();
-        if ($post_type === 'post') {
-            return 'single';
-        }
-        return 'single_' . $post_type;
-    }
-    
-    if (is_page()) {
-        return 'page';
-    }
-    
-    if (is_archive()) {
-        $post_type = get_post_type();
-        if ($post_type) {
-            return 'archive_' . $post_type;
-        }
-        return 'archive';
-    }
-    
-    if (is_search()) {
-        return 'search';
-    }
-    
-    if (is_404()) {
-        return '404';
-    }
-    
-    return '';
-} 

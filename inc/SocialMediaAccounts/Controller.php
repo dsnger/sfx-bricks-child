@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SFX\SocialMediaAccounts;
+
+class Controller
+{
+  public const OPTION_NAME = 'sfx_social_media_accounts_options';
+
+  public function __construct()
+  {
+    AdminPage::register();
+    AssetManager::register();
+    PostType::init();
+    
+    // Initialize shortcodes
+    new Shortcode\SC_SocialAccounts();
+  }
+
+  public static function get_feature_config(): array
+  {
+    return [
+      'class' => self::class,
+      'menu_slug' => AdminPage::$menu_slug,
+      'page_title' => AdminPage::$page_title,
+      'description' => AdminPage::$description,
+      'error' => 'Missing SocialMediaAccountsController class in theme',
+      'hook'  => null,
+    ];
+  }
+} 
