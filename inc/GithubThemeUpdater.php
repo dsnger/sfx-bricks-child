@@ -24,6 +24,11 @@ class GitHubThemeUpdater
 
   public function __construct()
   {
+    // Enable debug mode if debug_updater=1 parameter is present
+    if (isset($_GET['debug_updater']) && $_GET['debug_updater'] === '1') {
+      $this->debug = true;
+    }
+
     // Extract username and repo from GitHub URL
     $path = parse_url($this->github_url, PHP_URL_PATH);
     [$this->github_username, $this->github_repo] = array_slice(explode('/', trim($path, '/')), 0, 2);

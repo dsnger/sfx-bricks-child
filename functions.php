@@ -1,4 +1,10 @@
 <?php
+/**
+ * SFX Bricks Child Theme Functions
+ *
+ * @package SFX_Bricks_Child_Theme
+ * @version 1.0.1
+ */
 
 defined('ABSPATH') || exit;
 
@@ -49,10 +55,27 @@ $updater = new \SFX\GitHubThemeUpdater();
 // Debug: Show development mode status
 if (is_admin() && current_user_can('manage_options') && \SFX\Environment::is_dev_mode()) {
     add_action('admin_notices', function() {
-        echo '<div class="notice notice-info"><p>';
-        echo '<strong>SFX Theme Updater Status:</strong> ';
-        echo 'Development Mode (updater disabled unless ?debug_updater=1)';
-        echo '</p></div>';
+        // Only show on theme settings pages and their subpages
+        $current_screen = get_current_screen();
+        $allowed_pages = [
+            'toplevel_page_sfx-theme-settings',
+            'theme-settings_page_sfx-general-theme-options',
+            'theme-settings_page_sfx-custom-scripts-manager',
+            'theme-settings_page_sfx-security-header',
+            'theme-settings_page_sfx-text-snippets',
+            'theme-settings_page_sfx-company-logo',
+            'theme-settings_page_sfx-contact-infos',
+            'theme-settings_page_sfx-wp-optimizer',
+            'theme-settings_page_sfx-image-optimizer',
+            'theme-settings_page_theme-updater-debug'
+        ];
+        
+        if ($current_screen && in_array($current_screen->id, $allowed_pages)) {
+            echo '<div class="notice notice-info"><p>';
+            echo '<strong>SFX Theme Status:</strong> ';
+            echo 'Development Mode - No auto-updates';
+            echo '</p></div>';
+        }
     });
 }
 
