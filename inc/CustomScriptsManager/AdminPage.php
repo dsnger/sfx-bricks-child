@@ -12,36 +12,33 @@ class AdminPage
 
   public static function register()
   {
-    add_action('admin_menu', [self::class, 'add_submenu_page']);
+    add_action('admin_menu', [self::class, 'add_submenu_pages']);
   }
 
-  public static function add_submenu_page(): void
+  public static function add_submenu_pages(): void
   {
+    // Add main Custom Scripts page
     add_submenu_page(
       \SFX\SFXBricksChildAdmin::$menu_slug,
-      self::$page_title,
-      self::$page_title,
+      __(self::$page_title, 'sfx-bricks-child'),
+      __(self::$page_title, 'sfx-bricks-child'),
       'manage_options',
-      self::$menu_slug,
-      [self::class, 'render_page'],
-      1
+      'edit.php?post_type=' . PostType::$post_type
     );
+
   }
 
   public static function render_page()
-{
+  {
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(self::$page_title); ?></h1>
         <p><?php echo esc_html(self::$description); ?></p>
-        <form method="post" action="options.php">
-            <?php
-            settings_fields(\SFX\CustomScriptsManager\Settings::$OPTION_GROUP);
-            do_settings_sections(\SFX\CustomScriptsManager\Settings::$OPTION_GROUP);
-            submit_button();
-            ?>
-        </form>
+        <p><?php esc_html_e('Use the Custom Scripts post type to manage your scripts and styles.', 'sfx-bricks-child'); ?></p>
+        <a href="<?php echo esc_url(admin_url('edit.php?post_type=' . PostType::$post_type)); ?>" class="button button-primary">
+            <?php esc_html_e('Manage Custom Scripts', 'sfx-bricks-child'); ?>
+        </a>
     </div>
     <?php
-}
+  }
 }

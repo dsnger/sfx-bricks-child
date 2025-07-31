@@ -25,7 +25,6 @@ class Controller
   {
     // new \SFX\Options\AdminOptionPages();
     new \SFX\Options\ACF\OptionsSocialMedia();
-    new \SFX\Options\ACF\OptionsPresetScripts();
     new \SFX\Options\ACF\OptionsHeader();
     new \SFX\Options\ACF\OptionsFooter();
 
@@ -304,13 +303,7 @@ class Controller
   }
 
 
-  private function enqueue_preset_scripts()
-  {
-    add_action('wp_enqueue_scripts', function () {
-      // Example of enqueuing a preset script
-      wp_enqueue_script('preset-script', get_template_directory_uri() . '/assets/js/preset-script.js', [], '1.0.0', true);
-    });
-  }
+
 
   public static function get_feature_config(): array
   {

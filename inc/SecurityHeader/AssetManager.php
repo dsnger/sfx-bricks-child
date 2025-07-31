@@ -26,16 +26,6 @@ class AssetManager
         $assets_url = $theme_url . '/inc/SecurityHeader/assets/';
         $assets_dir = $theme_dir . '/inc/SecurityHeader/assets/';
 
-        // First, enqueue the global backend styles
-        if (file_exists($theme_dir . '/assets/css/backend.css')) {
-            wp_enqueue_style(
-                'sfx-global-admin-style',
-                $theme_url . '/assets/css/backend.css',
-                [],
-                filemtime($theme_dir . '/assets/css/backend.css')
-            );
-        }
-
         // Then enqueue module-specific styles
         if (file_exists($assets_dir . 'admin-style.css')) {
             wp_enqueue_style(

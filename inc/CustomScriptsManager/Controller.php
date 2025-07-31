@@ -9,117 +9,194 @@ class Controller
 
   public function __construct()
   {
-    Settings::register(self::OPTION_NAME);
+    // Settings::register(self::OPTION_NAME); // No longer needed with post type
     AdminPage::register();
     AssetManager::register();
+    PostType::init();
 
     // Register script execution on init
     add_action('init', [$this, 'execute_custom_scripts']);
-    add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
+    add_action('save_post_sfx_custom_script', [$this, 'handle_script_save'], 10, 2);
+    add_action('delete_post', [$this, 'handle_script_delete'], 10, 1);
   }
 
-  private function is_option_enabled(string $option_key): bool
+  /**
+   * Handle script save/update.
+   */
+  public function handle_script_save(int $post_id, \WP_Post $post): void
   {
-    $options = get_option(self::OPTION_NAME, []);
-    return !empty($options[$option_key]);
-  }
+    // Only process if this is our custom script post type
+    if ($post->post_type !== 'sfx_custom_script') {
+      return;
+    }
 
-  public function handle_options($old_value = null, $value = null): void
-  {
-    // Cleanup removed or changed CDN files
-    $old_scripts = $old_value['custom_scripts'] ?? [];
-    $new_scripts = $value['custom_scripts'] ?? [];
-    $old_handles = [];
-    foreach ($old_scripts as $old_script) {
-      if (($old_script['script_source_type'] ?? '') === 'cdn_file') {
-        $old_handles[sanitize_title($old_script['script_name'] ?? '')] = $old_script['script_cdn'] ?? '';
-      }
-    }
-    foreach ($new_scripts as $new_script) {
-      $handle = sanitize_title($new_script['script_name'] ?? '');
-      if (isset($old_handles[$handle]) && $old_handles[$handle] === ($new_script['script_cdn'] ?? '')) {
-        unset($old_handles[$handle]); // Still present and unchanged
-      }
-    }
-    // Delete files for removed/changed scripts
-    foreach ($old_handles as $handle => $cdn_url) {
+    // Cleanup old CDN files if script source type changed
+    $old_script_source_type = get_post_meta($post_id, '_script_source_type', true);
+    $new_script_source_type = $_POST['script_source_type'] ?? '';
+    
+    if ($old_script_source_type === 'cdn_file' && $new_script_source_type !== 'cdn_file') {
+      $handle = sanitize_title($post->post_title);
       $this->delete_local_cdn_file($handle);
     }
   }
 
   /**
-   * Enqueue or register custom scripts/styles from settings.
+   * Handle script deletion.
    */
-  public function execute_custom_scripts()
+  public function handle_script_delete(int $post_id): void
   {
-    $options = get_option(self::OPTION_NAME, []);
-    $scripts = $options['custom_scripts'] ?? [];
-    if ($scripts) {
-      foreach ($scripts as $script) {
-        $this->handle_custom_scripts($script);
+    $post = get_post($post_id);
+    if ($post && $post->post_type === 'sfx_custom_script') {
+      $script_source_type = get_post_meta($post_id, '_script_source_type', true);
+      if ($script_source_type === 'cdn_file') {
+        $handle = sanitize_title($post->post_title);
+        $this->delete_local_cdn_file($handle);
       }
     }
   }
 
-  private function handle_custom_scripts($script)
+  /**
+   * Enqueue or register custom scripts/styles from post type.
+   */
+  public function execute_custom_scripts()
   {
-    $script_type = $script['script_type'] ?? '';
-    $location = $script['location'] ?? 'footer';
-    $include_type = $script['include_type'] ?? 'enqueue';
-    $frontend_only = !empty($script['frontend_only']);
-    $source_type = $script['script_source_type'] ?? '';
-    $handle = sanitize_title($script['script_name'] ?? '');
+    // Get all published custom scripts
+    $scripts = get_posts([
+      'post_type' => 'sfx_custom_script',
+      'post_status' => 'publish',
+      'numberposts' => -1,
+      'orderby' => 'menu_order',
+      'order' => 'ASC'
+    ]);
+
+    foreach ($scripts as $script_post) {
+      // Check if script should be loaded based on conditional settings
+      if (sfx_should_load_script($script_post->ID)) {
+        $this->handle_custom_script($script_post);
+      }
+    }
+  }
+
+  private function handle_custom_script(\WP_Post $script_post)
+  {
+    $script_type = sfx_get_custom_script_config($script_post->ID, 'script_type') ?: 'javascript';
+    $location = sfx_get_custom_script_config($script_post->ID, 'location') ?: 'footer';
+    $include_type = sfx_get_custom_script_config($script_post->ID, 'include_type') ?: 'enqueue';
+    $frontend_only = sfx_get_custom_script_config($script_post->ID, 'frontend_only') ?: '1';
+    $source_type = sfx_get_custom_script_config($script_post->ID, 'script_source_type') ?: 'file';
+    $dependencies = sfx_get_custom_script_config($script_post->ID, 'dependencies') ?: '';
+    $handle = sanitize_title($script_post->post_title);
 
     // Determine the script source URL based on the selected source type
+    $src = '';
     if ($source_type === 'file') {
-      $src = $script['script_file'] ?? '';
+      $src = sfx_get_custom_script_config($script_post->ID, 'script_file') ?: '';
     } elseif ($source_type === 'cdn') {
-      $src = $script['script_cdn'] ?? '';
+      $src = sfx_get_custom_script_config($script_post->ID, 'script_cdn') ?: '';
     } elseif ($source_type === 'cdn_file') {
-      $src = $this->download_cdn_script($script['script_cdn'] ?? '', $handle, $script_type);
+      $src = $this->download_cdn_script(
+        sfx_get_custom_script_config($script_post->ID, 'script_cdn') ?: '',
+        $handle,
+        $script_type
+      );
       if (!$src) return;
+    } elseif ($source_type === 'inline') {
+      // For inline scripts, we'll handle them differently
+      $this->handle_inline_script($script_post, $script_type, $location, $include_type, $frontend_only);
+      return;
     } else {
       return; // Exit if the source type is unrecognized
     }
 
+    if (empty($src)) {
+      return; // Exit if no source URL
+    }
+
     $in_footer = ($location === 'footer');
+    $deps = !empty($dependencies) ? array_map('trim', explode(',', $dependencies)) : [];
 
     // Only enqueue on frontend if frontend_only is set
-    if ($frontend_only && is_admin()) {
+    if ($frontend_only === '1' && is_admin()) {
       return;
     }
 
     if ($script_type === 'javascript') {
       if ($include_type === 'enqueue') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
-          wp_enqueue_script($handle, $src, [], null, $in_footer);
+        add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps, $in_footer) {
+          wp_enqueue_script($handle, $src, $deps, null, $in_footer);
         });
       } elseif ($include_type === 'register') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src, $in_footer) {
-          wp_register_script($handle, $src, [], null, $in_footer);
+        add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps, $in_footer) {
+          wp_register_script($handle, $src, $deps, null, $in_footer);
         });
       }
     } elseif (strtolower($script_type) === 'css') {
       if ($include_type === 'enqueue') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src) {
-          wp_enqueue_style($handle, $src);
+        add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps) {
+          wp_enqueue_style($handle, $src, $deps);
         });
       } elseif ($include_type === 'register') {
-        add_action('wp_enqueue_scripts', function () use ($handle, $src) {
-          wp_register_style($handle, $src);
+        add_action('wp_enqueue_scripts', function () use ($handle, $src, $deps) {
+          wp_register_style($handle, $src, $deps);
         });
       }
     }
   }
 
   /**
-   * Download a CDN file and return the local URL, or false on failure.
+   * Handle inline scripts.
+   */
+  private function handle_inline_script(\WP_Post $script_post, string $script_type, string $location, string $include_type, string $frontend_only): void
+  {
+    $script_content = sfx_get_custom_script_config($script_post->ID, 'script_content') ?: '';
+    if (empty($script_content)) {
+      return;
+    }
+
+    $handle = sanitize_title($script_post->post_title);
+    $in_footer = ($location === 'footer');
+
+    // Only enqueue on frontend if frontend_only is set
+    if ($frontend_only === '1' && is_admin()) {
+      return;
+    }
+
+    if ($script_type === 'javascript') {
+      if ($include_type === 'enqueue') {
+        add_action('wp_enqueue_scripts', function () use ($handle, $script_content, $in_footer) {
+          wp_enqueue_script($handle, '', [], null, $in_footer);
+          wp_add_inline_script($handle, $script_content);
+        });
+      } elseif ($include_type === 'register') {
+        add_action('wp_enqueue_scripts', function () use ($handle, $script_content, $in_footer) {
+          wp_register_script($handle, '', [], null, $in_footer);
+          wp_add_inline_script($handle, $script_content);
+        });
+      }
+    } elseif (strtolower($script_type) === 'css') {
+      if ($include_type === 'enqueue') {
+        add_action('wp_enqueue_scripts', function () use ($handle, $script_content) {
+          wp_enqueue_style($handle, '');
+          wp_add_inline_style($handle, $script_content);
+        });
+      } elseif ($include_type === 'register') {
+        add_action('wp_enqueue_scripts', function () use ($handle, $script_content) {
+          wp_register_style($handle, '');
+          wp_add_inline_style($handle, $script_content);
+        });
+      }
+    }
+  }
+
+  /**
+   * Download a CDN file and return the local URL, or null on failure.
    */
   private function download_cdn_script(string $cdn_url, string $handle, string $script_type): ?string
   {
-    if (!filter_var($cdn_url, FILTER_VALIDATE_URL)) {
+    if (empty($cdn_url) || !filter_var($cdn_url, FILTER_VALIDATE_URL)) {
       return null;
     }
+    
     $ext = strtolower(pathinfo(parse_url($cdn_url, PHP_URL_PATH), PATHINFO_EXTENSION));
     if ($script_type === 'javascript' && $ext !== 'js') return null;
     if (strtolower($script_type) === 'css' && $ext !== 'css') return null;
@@ -138,12 +215,15 @@ class Controller
     $needs_download = !file_exists($local_path);
     if (!$needs_download) {
       $remote_headers = wp_remote_head($cdn_url);
-      $remote_size = isset($remote_headers['headers']['content-length']) ? (int)$remote_headers['headers']['content-length'] : null;
-      $local_size = filesize($local_path);
-      if ($remote_size && $remote_size !== $local_size) {
-        $needs_download = true;
+      if (!is_wp_error($remote_headers)) {
+        $remote_size = isset($remote_headers['headers']['content-length']) ? (int)$remote_headers['headers']['content-length'] : null;
+        $local_size = filesize($local_path);
+        if ($remote_size && $remote_size !== $local_size) {
+          $needs_download = true;
+        }
       }
     }
+    
     if ($needs_download) {
       $response = wp_remote_get($cdn_url, ['timeout' => 15]);
       if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
@@ -151,8 +231,13 @@ class Controller
       }
       $body = wp_remote_retrieve_body($response);
       if (empty($body)) return null;
-      file_put_contents($local_path, $body);
+      
+      $result = file_put_contents($local_path, $body);
+      if ($result === false) {
+        return null;
+      }
     }
+    
     return $local_url;
   }
 

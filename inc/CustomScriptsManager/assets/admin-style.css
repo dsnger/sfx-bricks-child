@@ -1,8 +1,70 @@
 /* Custom Scripts Manager Specific Styles */
-/* Only styles unique to CustomScriptsManager that aren't in global backend.css */
-/* Shared .sfx-settings-* styles are now in /assets/css/backend.css */
+/* Only styles unique to CustomScriptsManager that aren't in global styles.css */
+/* Shared .sfx-settings-* styles are now in /assets/css/backend/styles.css */
 
 /* Radio button label spacing - unique to CustomScriptsManager radio button layout */
 .sfx-settings-field label input[type="radio"] + span {
     margin-left: 4px;
+}
+
+/* Conditions column styling */
+.column-conditions {
+    width: 15%;
+}
+
+.conditions-summary {
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.condition-item {
+    display: inline-block;
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    color: #50575e;
+    font-weight: 500;
+}
+
+.conditions-none {
+    color: #00a32a;
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* Script type and location column styling */
+.script-type-javascript {
+    color: #0073aa;
+    font-weight: 500;
+}
+
+.script-type-css {
+    color: #d63638;
+    font-weight: 500;
+}
+
+.location-header {
+    color: #0073aa;
+    font-weight: 500;
+}
+
+.location-footer {
+    color: #d63638;
+    font-weight: 500;
+}
+
+.status-publish {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+.status-draft {
+    color: #d63638;
+    font-weight: 500;
+}
+
+.status-private {
+    color: #f56e28;
+    font-weight: 500;
 } 
