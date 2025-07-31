@@ -223,6 +223,51 @@ class GitHubThemeUpdater
 
     // Add admin notice for updates
     add_action('admin_notices', [$this, 'update_admin_notice']);
+
+    // Clear update transient when theme is updated
+    add_action('upgrader_process_complete', [$this, 'clear_update_transient'], 10, 2);
+    add_action('switch_theme', [$this, 'clear_update_transient']);
+
+    // Check for version changes
+    add_action('admin_init', [$this, 'check_version_change']);
+  }
+
+  /**
+   * Clear update transient when theme is updated or switched
+   */
+  public function clear_update_transient($upgrader = null, $hook_extra = null): void
+  {
+    // Check if our theme was updated
+    if ($upgrader && isset($hook_extra['themes']) && is_array($hook_extra['themes'])) {
+      foreach ($hook_extra['themes'] as $theme) {
+        if ($theme === $this->theme_slug) {
+          $this->debug_log('Theme updated - clearing update transient');
+          delete_site_transient('update_themes');
+          return;
+        }
+      }
+    }
+    
+    // Also clear on theme switch
+    if (!$upgrader) {
+      $this->debug_log('Theme switched - clearing update transient');
+      delete_site_transient('update_themes');
+    }
+  }
+
+  /**
+   * Check if theme version has changed and clear transient if needed
+   */
+  public function check_version_change(): void
+  {
+    $stored_version = get_option('sfx_theme_version_stored', '');
+    $current_version = $this->theme_version;
+    
+    if ($stored_version !== $current_version) {
+      $this->debug_log('Theme version changed from ' . $stored_version . ' to ' . $current_version . ' - clearing update transient');
+      delete_site_transient('update_themes');
+      update_option('sfx_theme_version_stored', $current_version);
+    }
   }
 
   /**

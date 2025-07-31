@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.52] - 2025-07-31
+
+### Fixed
+
+- **GitHubThemeUpdater**: Fixed transient caching issue where "update available" message persisted after theme update
+  - **Issue**: WordPress cached `update_themes` transient wasn't cleared after theme updates
+  - **Fix**: Added hooks to clear transient on theme updates and version changes
+  - **Impact**: Update notifications now properly disappear after theme updates
+
 ## [0.4.51] - 2025-07-31
 
 ### Fixed
