@@ -12,16 +12,15 @@ class Controller
 
   public function __construct()
   {
-    Settings::register(self::OPTION_NAME);
+    // Initialize components
     AdminPage::register();
     AssetManager::register();
     PostType::init();
     new Shortcode\SC_Snippet();
 
-    // Initialize the theme only after ACF is confirmed to be active
-    add_action('init', [$this,'handle_options']);
-    add_action('update_option_' . self::OPTION_NAME, [$this, 'handle_options'], 10, 2);
-    add_action('init', [$this, 'register_bricks_dynamic_tag'], 20, 3);
+    // Register hooks through consolidated system
+    add_action('sfx_init_settings', [$this, 'handle_options']);
+    add_action('sfx_init_advanced_features', [$this, 'register_bricks_dynamic_tag']);
   }
 
 

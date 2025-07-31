@@ -10,11 +10,10 @@ class Controller
 
   public function __construct()
   {
+    // Initialize components
     AdminPage::register();
     AssetManager::register();
     PostType::init();
-    
-    // Initialize shortcodes
     new Shortcode\SC_SocialAccounts();
   }
 

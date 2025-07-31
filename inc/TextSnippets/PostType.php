@@ -28,14 +28,20 @@ class PostType
      */
     public static function init(): void
     {
-        add_action('init', [self::class, 'register_post_type']);
-        add_action('init', [self::class, 'register_taxonomy']);
+        // Register post type and taxonomy through consolidated system
+        add_action('sfx_init_post_types', [self::class, 'register_post_type']);
+        add_action('sfx_init_post_types', [self::class, 'register_taxonomy']);
+        
+        // Register meta boxes and save operations (these need to be on their specific hooks)
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_shortcode_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_shortcode_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_dynamic_tag_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_dynamic_tag_column'], 10, 2);
+        
+        // Register admin columns
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_snippet_type_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_snippet_type_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
     }
 
     /**
@@ -225,28 +231,9 @@ class PostType
      * @param array $columns
      * @return array
      */
-    public static function add_shortcode_column(array $columns): array
+    public static function add_snippet_type_column(array $columns): array
     {
-        // Move 'date' column to the end after adding custom columns
-        $date = $columns['date'] ?? null;
-        unset($columns['date']);
-        $columns['snippet_shortcode'] = __('Shortcode', 'sfx-bricks-child');
-        $columns['snippet_dynamic_tag'] = __('Bricks Dynamic Tag', 'sfx-bricks-child');
-        if ($date !== null) {
-            $columns['date'] = $date;
-        }
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for the Bricks dynamic data tag.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_dynamic_tag_column(array $columns): array
-    {
-        $columns['snippet_dynamic_tag'] = __('Bricks Dynamic Tag', 'sfx-bricks-child');
+        $columns['snippet_type'] = __('Type', 'sfx-bricks-child');
         return $columns;
     }
 
@@ -256,24 +243,50 @@ class PostType
      * @param string $column
      * @param int    $post_id
      */
-    public static function render_shortcode_column(string $column, int $post_id): void
+    public static function render_snippet_type_column(string $column, int $post_id): void
     {
-        if ($column === 'snippet_shortcode') {
-            echo '<code style="font-size: 14px;cursor: pointer;" onclick="let textToCopy = this.innerText; let textArea = document.createElement(\'textarea\'); textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select(); document.execCommand(\'copy\'); textArea.remove(); alert(\'Shortcode wurde kopiert.\');">[snippet id=\'' . esc_attr($post_id) . '\']</code>';
+        if ($column === 'snippet_type') {
+            $snippet_type = get_post_meta($post_id, '_sfx_text_snippet_type', true);
+            echo esc_html($snippet_type ?: __('Text Snippet', 'sfx-bricks-child'));
         }
     }
 
     /**
-     * Render the dynamic tag column content.
+     * Add a custom column for the status.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_status_column(array $columns): array
+    {
+        $columns['snippet_status'] = __('Status', 'sfx-bricks-child');
+        return $columns;
+    }
+
+    /**
+     * Render the status column content.
      *
      * @param string $column
      * @param int    $post_id
      */
-    public static function render_dynamic_tag_column(string $column, int $post_id): void
+    public static function render_status_column(string $column, int $post_id): void
     {
-        if ($column === 'snippet_dynamic_tag') {
-            echo '<code style="font-size: 14px;cursor: pointer;" onclick="let textToCopy = this.innerText; let textArea = document.createElement(\'textarea\'); textArea.value = textToCopy; document.body.appendChild(textArea); textArea.select(); document.execCommand(\'copy\'); textArea.remove(); alert(\'Dynamic Tag wurde kopiert.\');">{snippet_content:' . esc_attr($post_id) . '}</code>';
+        if ($column === 'snippet_status') {
+            $snippet_status = get_post_meta($post_id, '_sfx_text_snippet_status', true);
+            echo esc_html($snippet_status ?: __('Active', 'sfx-bricks-child'));
         }
+    }
+
+    /**
+     * Remove the default 'Date' column.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function remove_date_column(array $columns): array
+    {
+        unset($columns['date']);
+        return $columns;
     }
 }
 

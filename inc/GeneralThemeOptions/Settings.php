@@ -10,15 +10,14 @@ class Settings
     /**
      * Register all settings for security headers.
      */
-    public static function register($option_key): void
+    public static function register(): void
     {
-        self::$OPTION_GROUP = $option_key . '_group';
-        self::$OPTION_NAME = $option_key;
-
-        // Ensure defaults are set before anything else
-        \SFX\GeneralThemeOptions\Controller::maybe_set_default_options();
-
-        add_action('admin_init', [self::class, 'register_settings']);
+        // Initialize static properties
+        self::$OPTION_GROUP = 'sfx_general_options';
+        self::$OPTION_NAME = 'sfx_general_options';
+        
+        // Register settings through consolidated system
+        add_action('sfx_init_admin_features', [self::class, 'register_settings']);
     }
 
     public static function get_fields(): array {

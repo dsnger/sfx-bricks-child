@@ -9,15 +9,13 @@ class Controller
 
   public function __construct()
   {
-    // Settings::register(self::OPTION_NAME); // No longer needed with post type
+    // Initialize components
     AdminPage::register();
     AssetManager::register();
     PostType::init();
 
-    // Register script execution on init
-    add_action('init', [$this, 'execute_custom_scripts']);
-    add_action('save_post_sfx_custom_script', [$this, 'handle_script_save'], 10, 2);
-    add_action('delete_post', [$this, 'handle_script_delete'], 10, 1);
+    // Register hooks through consolidated system
+    add_action('sfx_init_advanced_features', [$this, 'execute_custom_scripts']);
   }
 
   /**

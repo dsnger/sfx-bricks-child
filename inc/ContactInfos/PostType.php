@@ -21,9 +21,14 @@ class PostType
      */
     public static function init(): void
     {
-        add_action('init', [self::class, 'register_post_type']);
+        // Register post type through consolidated system
+        add_action('sfx_init_post_types', [self::class, 'register_post_type']);
+        
+        // Register meta boxes and save operations (these need to be on their specific hooks)
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
+        
+        // Register admin columns
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_type_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_type_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_address_column']);
@@ -34,8 +39,8 @@ class PostType
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
         
-        // Multilingual support
-        add_action('init', [self::class, 'register_multilingual_support']);
+        // Multilingual support through consolidated system
+        add_action('sfx_init_advanced_features', [self::class, 'register_multilingual_support']);
     }
 
     /**
@@ -532,15 +537,11 @@ class PostType
     public static function render_address_column(string $column, int $post_id): void
     {
         if ($column === 'address') {
-            // Batch retrieve address-related meta fields
-            $address_meta_keys = ['_street', '_zip', '_city', '_country'];
-            $all_meta = get_post_meta($post_id, '', true);
-            $address_data = array_intersect_key($all_meta, array_flip($address_meta_keys));
-            
-            $street = self::get_translated_field($post_id, 'street', $address_data['_street'] ?? '');
-            $zip = self::get_translated_field($post_id, 'zip', $address_data['_zip'] ?? '');
-            $city = self::get_translated_field($post_id, 'city', $address_data['_city'] ?? '');
-            $country = self::get_translated_field($post_id, 'country', $address_data['_country'] ?? '');
+            // Get individual meta values to ensure we get strings, not arrays
+            $street = self::get_translated_field($post_id, 'street', get_post_meta($post_id, '_street', true) ?: '');
+            $zip = self::get_translated_field($post_id, 'zip', get_post_meta($post_id, '_zip', true) ?: '');
+            $city = self::get_translated_field($post_id, 'city', get_post_meta($post_id, '_city', true) ?: '');
+            $country = self::get_translated_field($post_id, 'country', get_post_meta($post_id, '_country', true) ?: '');
             
             $address_parts = [];
             if ($street) $address_parts[] = $street;
@@ -572,13 +573,9 @@ class PostType
     public static function render_contact_column(string $column, int $post_id): void
     {
         if ($column === 'contact') {
-            // Batch retrieve contact-related meta fields
-            $contact_meta_keys = ['_phone', '_email'];
-            $all_meta = get_post_meta($post_id, '', true);
-            $contact_data = array_intersect_key($all_meta, array_flip($contact_meta_keys));
-            
-            $phone = self::get_translated_field($post_id, 'phone', $contact_data['_phone'] ?? '');
-            $email = self::get_translated_field($post_id, 'email', $contact_data['_email'] ?? '');
+            // Get individual meta values to ensure we get strings, not arrays
+            $phone = self::get_translated_field($post_id, 'phone', get_post_meta($post_id, '_phone', true) ?: '');
+            $email = self::get_translated_field($post_id, 'email', get_post_meta($post_id, '_email', true) ?: '');
             
             $contact_parts = [];
             

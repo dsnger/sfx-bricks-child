@@ -12,15 +12,14 @@ class Controller
 
   public function __construct()
   {
+    // Initialize components
     AdminPage::register();
     AssetManager::register();
     PostType::init();
-    
-    // Initialize shortcodes
-    self::$shortcode_instance = new Shortcode\SC_ContactInfos();
+    new Shortcode\SC_ContactInfos();
 
-    // Register Bricks dynamic data tag for contact infos
-    self::register_bricks_dynamic_tag();
+    // Register hooks through consolidated system
+    add_action('sfx_init_advanced_features', [$this, 'register_bricks_dynamic_tag']);
   }
 
 

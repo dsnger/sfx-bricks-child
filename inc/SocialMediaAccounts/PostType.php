@@ -21,9 +21,14 @@ class PostType
      */
     public static function init(): void
     {
-        add_action('init', [self::class, 'register_post_type']);
+        // Register post type through consolidated system
+        add_action('sfx_init_post_types', [self::class, 'register_post_type']);
+        
+        // Register meta boxes and save operations (these need to be on their specific hooks)
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
+        
+        // Register admin columns
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_icon_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_icon_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_link_column']);
@@ -64,6 +69,11 @@ class PostType
             'rewrite'            => false,
             'capability_type'    => 'post',
             'show_ui'            => true,
+            // Additional privacy settings
+            'publicly_queryable' => false,
+            'query_var'          => false,
+            'exclude_from_search' => true,
+            'show_in_nav_menus' => false,
         ];
 
         register_post_type(self::$post_type, $args);

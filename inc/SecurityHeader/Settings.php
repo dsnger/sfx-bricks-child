@@ -16,7 +16,8 @@ class Settings
      */
     public static function register(): void
     {
-        add_action('admin_init', [self::class, 'register_settings']);
+        // Register settings through consolidated system
+        add_action('sfx_init_admin_features', [self::class, 'register_settings']);
     }
 
     /**

@@ -11,11 +11,14 @@ class Settings
     /**
      * Register all settings for company logo options.
      */
-    public static function register(string $option_key): void
+    public static function register(): void
     {
-        self::$OPTION_GROUP = $option_key . '_group';
-        self::$OPTION_NAME = $option_key;
-        add_action('admin_init', [self::class, 'register_settings']);
+        // Initialize static properties
+        self::$OPTION_GROUP = 'sfx_company_logo_options';
+        self::$OPTION_NAME = 'sfx_company_logo_options';
+        
+        // Register settings through consolidated system
+        add_action('sfx_init_admin_features', [self::class, 'register_settings']);
     }
 
     /**

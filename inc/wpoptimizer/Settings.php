@@ -11,13 +11,13 @@ class Settings
     /**
      * Register all settings for WP Optimizer options.
      */
-    public static function register(string $option_key): void
+    public static function register(): void
     {
-        self::$OPTION_GROUP = $option_key . '_group';
-        add_action('admin_init', [self::class, 'register_settings']);
-
-        // Ensure defaults are set before anything else
-        \SFX\WPOptimizer\Controller::maybe_set_default_options();
+        // Initialize static properties
+        self::$OPTION_GROUP = 'sfx_wpoptimizer_options';
+        
+        // Register settings through consolidated system
+        add_action('sfx_init_admin_features', [self::class, 'register_settings']);
     }
 
     /**

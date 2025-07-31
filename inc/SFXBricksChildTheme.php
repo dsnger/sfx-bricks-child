@@ -60,11 +60,78 @@ class SFXBricksChildTheme
 
     $this->load_dependencies();
 
+    // Centralized hook consolidation
+    $this->register_consolidated_hooks();
+
     // Register custom elements
     add_action('init', [$this, 'register_custom_elements'], 11);
 
     // Add text strings to builder
     add_filter('bricks/builder/i18n', [$this, 'add_builder_text_strings']);
+
+    // Exclude private post types from sitemaps
+    $this->exclude_private_post_types_from_sitemaps();
+  }
+
+  /**
+   * Register consolidated hooks with proper initialization order
+   */
+  private function register_consolidated_hooks(): void
+  {
+    // Phase 1: Core initialization (priority 5)
+    add_action('init', [$this, 'init_core_features'], 5);
+    
+    // Phase 2: Post types and taxonomies (priority 10)
+    add_action('init', [$this, 'init_post_types'], 10);
+    
+    // Phase 3: Settings and options (priority 15)
+    add_action('init', [$this, 'init_settings'], 15);
+    
+    // Phase 4: Admin-specific features (priority 20)
+    add_action('admin_init', [$this, 'init_admin_features'], 20);
+    
+    // Phase 5: Advanced features (priority 25)
+    add_action('init', [$this, 'init_advanced_features'], 25);
+  }
+
+  /**
+   * Initialize core features
+   */
+  public function init_core_features(): void
+  {
+    do_action('sfx_init_core_features');
+  }
+
+  /**
+   * Initialize post types and taxonomies
+   */
+  public function init_post_types(): void
+  {
+    do_action('sfx_init_post_types');
+  }
+
+  /**
+   * Initialize settings and options
+   */
+  public function init_settings(): void
+  {
+    do_action('sfx_init_settings');
+  }
+
+  /**
+   * Initialize admin-specific features
+   */
+  public function init_admin_features(): void
+  {
+    do_action('sfx_init_admin_features');
+  }
+
+  /**
+   * Initialize advanced features
+   */
+  public function init_advanced_features(): void
+  {
+    do_action('sfx_init_advanced_features');
   }
 
 
@@ -201,6 +268,43 @@ class SFXBricksChildTheme
             self::register_feature($feature_key, $config);
         }
     }
+  }
+
+  /**
+   * Exclude private post types from sitemaps.
+   */
+  private function exclude_private_post_types_from_sitemaps(): void
+  {
+    // Exclude our private post types from sitemaps
+    add_filter('wp_sitemaps_post_types', function($post_types) {
+      $private_post_types = ['sfx_custom_script', 'sfx_contact_info', 'sfx_social_account'];
+      
+      foreach ($private_post_types as $post_type) {
+        if (isset($post_types[$post_type])) {
+          unset($post_types[$post_type]);
+        }
+      }
+      
+      return $post_types;
+    });
+
+    // Also exclude from Yoast SEO sitemaps if active
+    add_filter('wpseo_sitemap_exclude_post_type', function($excluded, $post_type) {
+      $private_post_types = ['sfx_custom_script', 'sfx_contact_info', 'sfx_social_account'];
+      return in_array($post_type, $private_post_types) ? true : $excluded;
+    }, 10, 2);
+
+    // Exclude from other popular sitemap plugins
+    add_filter('rank_math/sitemap/excluded_post_types', function($excluded) {
+      return array_merge($excluded, ['sfx_custom_script', 'sfx_contact_info', 'sfx_social_account']);
+    });
+
+    // Prevent search engines from indexing these post types
+    add_action('wp_head', function() {
+      if (is_singular(['sfx_custom_script', 'sfx_contact_info', 'sfx_social_account'])) {
+        echo '<meta name="robots" content="noindex, nofollow" />' . "\n";
+      }
+    });
   }
 
 }
