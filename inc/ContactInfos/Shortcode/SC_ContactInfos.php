@@ -218,6 +218,13 @@ class SC_ContactInfos
         $meta_key = '_' . $field;
         $value = $contact_data[$meta_key] ?? '';
         
+        // Ensure value is always a string
+        if (is_array($value)) {
+            $value = implode(', ', $value);
+        } else {
+            $value = (string) $value;
+        }
+        
         // Apply translation if available
         if (!empty($value)) {
             $value = \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $value);

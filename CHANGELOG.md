@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.54] - 2025-07-31
+
+### Fixed
+
+- **ContactInfos Shortcode**: Fixed TypeError where `get_translated_field()` received array instead of string
+  - **Issue**: Batch meta retrieval could return arrays instead of strings for meta values
+  - **Fix**: Added array to string conversion before calling translation method
+  - **Impact**: ContactInfos shortcodes now handle multiple meta values correctly
+
 ## [0.4.53] - 2025-07-31
 
 ### Fixed
