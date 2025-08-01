@@ -74,6 +74,9 @@ class SFXBricksChildTheme
 
     // Initialize global cache management
     $this->init_cache_management();
+
+    // Add back to list button functionality
+    add_action('edit_form_after_title', [$this, 'add_back_to_list_button'], 5);
   }
 
   /**
@@ -318,13 +321,11 @@ class SFXBricksChildTheme
     // Exclude our private post types from sitemaps
     add_filter('wp_sitemaps_post_types', function($post_types) {
       $private_post_types = ['sfx_custom_script', 'sfx_contact_info', 'sfx_social_account'];
-      
       foreach ($private_post_types as $post_type) {
         if (isset($post_types[$post_type])) {
           unset($post_types[$post_type]);
         }
       }
-      
       return $post_types;
     });
 
@@ -346,5 +347,33 @@ class SFXBricksChildTheme
       }
     });
   }
+
+  /**
+   * Add "Back to List" button on custom post type edit pages
+   */
+  public function add_back_to_list_button(): void
+  {
+    $screen = get_current_screen();
+    if (!$screen) {
+      return;
+    }
+    
+    // Define our custom post types
+    $custom_post_types = [
+      'sfx_custom_script',
+      'sfx_contact_info', 
+      'sfx_social_account',
+    ];
+    
+    // Show on edit pages for our custom post types
+    if (in_array($screen->post_type, $custom_post_types)) {
+      $list_url = admin_url('edit.php?post_type=' . $screen->post_type);
+      echo '<a href="' . esc_url($list_url) . '" class="button button-secondary sfx-back-to-list-btn">';
+      echo '← Back to List';
+      echo '</a>';
+    }
+  }
+
+
 
 }

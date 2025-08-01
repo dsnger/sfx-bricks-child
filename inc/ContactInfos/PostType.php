@@ -178,26 +178,26 @@ class PostType
         $all_meta = get_post_meta($post->ID, '', true);
         $contact_data = array_intersect_key($all_meta, array_flip($meta_keys));
         
-        // Extract values with defaults
-        $contact_type = $contact_data['_contact_type'] ?? 'main';
-        $company = $contact_data['_company'] ?? '';
-        $director = $contact_data['_director'] ?? '';
-        $street = $contact_data['_street'] ?? '';
-        $zip = $contact_data['_zip'] ?? '';
-        $city = $contact_data['_city'] ?? '';
-        $country = $contact_data['_country'] ?? '';
-        $address = $contact_data['_address'] ?? '';
-        $phone = $contact_data['_phone'] ?? '';
-        $mobile = $contact_data['_mobile'] ?? '';
-        $fax = $contact_data['_fax'] ?? '';
-        $email = $contact_data['_email'] ?? '';
-        $tax_id = $contact_data['_tax_id'] ?? '';
-        $vat = $contact_data['_vat'] ?? '';
-        $hrb = $contact_data['_hrb'] ?? '';
-        $court = $contact_data['_court'] ?? '';
-        $dsb = $contact_data['_dsb'] ?? '';
-        $opening = $contact_data['_opening'] ?? '';
-        $maplink = $contact_data['_maplink'] ?? '';
+        // Extract values with defaults and ensure they are strings
+        $contact_type = is_array($contact_data['_contact_type'] ?? '') ? implode(', ', $contact_data['_contact_type']) : ($contact_data['_contact_type'] ?? 'main');
+        $company = is_array($contact_data['_company'] ?? '') ? implode(', ', $contact_data['_company']) : ($contact_data['_company'] ?? '');
+        $director = is_array($contact_data['_director'] ?? '') ? implode(', ', $contact_data['_director']) : ($contact_data['_director'] ?? '');
+        $street = is_array($contact_data['_street'] ?? '') ? implode(', ', $contact_data['_street']) : ($contact_data['_street'] ?? '');
+        $zip = is_array($contact_data['_zip'] ?? '') ? implode(', ', $contact_data['_zip']) : ($contact_data['_zip'] ?? '');
+        $city = is_array($contact_data['_city'] ?? '') ? implode(', ', $contact_data['_city']) : ($contact_data['_city'] ?? '');
+        $country = is_array($contact_data['_country'] ?? '') ? implode(', ', $contact_data['_country']) : ($contact_data['_country'] ?? '');
+        $address = is_array($contact_data['_address'] ?? '') ? implode(', ', $contact_data['_address']) : ($contact_data['_address'] ?? '');
+        $phone = is_array($contact_data['_phone'] ?? '') ? implode(', ', $contact_data['_phone']) : ($contact_data['_phone'] ?? '');
+        $mobile = is_array($contact_data['_mobile'] ?? '') ? implode(', ', $contact_data['_mobile']) : ($contact_data['_mobile'] ?? '');
+        $fax = is_array($contact_data['_fax'] ?? '') ? implode(', ', $contact_data['_fax']) : ($contact_data['_fax'] ?? '');
+        $email = is_array($contact_data['_email'] ?? '') ? implode(', ', $contact_data['_email']) : ($contact_data['_email'] ?? '');
+        $tax_id = is_array($contact_data['_tax_id'] ?? '') ? implode(', ', $contact_data['_tax_id']) : ($contact_data['_tax_id'] ?? '');
+        $vat = is_array($contact_data['_vat'] ?? '') ? implode(', ', $contact_data['_vat']) : ($contact_data['_vat'] ?? '');
+        $hrb = is_array($contact_data['_hrb'] ?? '') ? implode(', ', $contact_data['_hrb']) : ($contact_data['_hrb'] ?? '');
+        $court = is_array($contact_data['_court'] ?? '') ? implode(', ', $contact_data['_court']) : ($contact_data['_court'] ?? '');
+        $dsb = is_array($contact_data['_dsb'] ?? '') ? implode(', ', $contact_data['_dsb']) : ($contact_data['_dsb'] ?? '');
+        $opening = is_array($contact_data['_opening'] ?? '') ? implode(', ', $contact_data['_opening']) : ($contact_data['_opening'] ?? '');
+        $maplink = is_array($contact_data['_maplink'] ?? '') ? implode(', ', $contact_data['_maplink']) : ($contact_data['_maplink'] ?? '');
         ?>
         
         <table class="form-table">

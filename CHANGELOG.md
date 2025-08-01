@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.56] - 2025-08-01
+
+### Fixed
+
+- **ContactInfos PostType**: Fixed array to string conversion error in WYSIWYG editors
+  - **Issue**: Batch meta retrieval could return arrays instead of strings for meta values
+  - **Fix**: Added array to string conversion for all meta field values before passing to wp_editor()
+  - **Impact**: ContactInfos edit pages now load without PHP errors
+
+### Changed
+
+- **Back to List Button**: Simplified button design by removing notice wrapper
+  - **Before**: Button wrapped in notice div with background and border
+  - **After**: Pure button with direct styling and hover effects
+  - **Impact**: Cleaner, more minimal design that integrates better with WordPress admin
+
+## [0.4.55] - 2025-07-31
+
+### Added
+
+- **Back to List Button**: Added "Back to List" button on all custom post type edit pages
+  - **Location**: Admin notice area (top of edit pages)
+  - **Post Types**: CustomScriptsManager, ContactInfos, SocialMediaAccounts, TextSnippets
+  - **Features**: WordPress-styled button with hover effects and responsive design
+  - **Implementation**: Global functions in SFXBricksChildTheme class with global CSS styling in backend styles
+
 ## [0.4.54] - 2025-07-31
 
 ### Fixed
