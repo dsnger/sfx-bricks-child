@@ -722,6 +722,64 @@ input[type="checkbox"].sfx-toggle:checked:after {
   margin-top: 20px!important;
 }
 
+/* Admin Card Button Alignment */
+/* Make all admin cards the same height and align buttons at bottom */
+.wrap > div[style*="flex: 1 1 33%"] {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 200px !important;
+}
+
+.wrap > div[style*="flex: 1 1 33%"] h2 {
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.wrap > div[style*="flex: 1 1 33%"] p {
+  flex: 1 !important;
+  margin-bottom: 0 !important;
+}
+
+.wrap > div[style*="flex: 1 1 33%"] .button {
+  margin-top: auto !important;
+  align-self: flex-start !important;
+}
+
+/* Alternative approach using more specific selectors */
+.wrap .sfx-feature-card {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 160px !important;
+}
+
+.wrap .sfx-feature-card h2 {
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.wrap .sfx-feature-card p {
+  flex: 1 !important;
+  margin-bottom: 0 !important;
+}
+
+.wrap .sfx-feature-card .button {
+  margin-top: auto !important;
+  align-self: flex-start !important;
+}
+
+/* Responsive adjustments for admin cards */
+@media screen and (max-width: 782px) {
+  .wrap .sfx-feature-card {
+    min-height: 140px !important;
+  }
+  
+  .wrap .sfx-feature-card .button {
+    width: 100% !important;
+    text-align: center !important;
+  }
+}
+
 .sfx-back-to-list-btn:hover {
   background: #005a87;
   border-color: #005a87;

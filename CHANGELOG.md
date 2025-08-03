@@ -8,6 +8,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.57] - 2025-08-03
+
+### Added
+
+- **HTML Copy/Paste for Bricks Builder**: New advanced theme feature to paste regular HTML into Bricks Builder
+  - **Core Functionality**: Copy HTML code and paste directly into Bricks Builder to auto-generate elements
+  - **Smart Conversion**: Converts HTML elements (divs, headings, images, links, etc.) to proper Bricks element structure
+  - **Modal Editor**: Clean dark-themed modal with textarea editor for HTML input
+  - **Button Integration**: Seamlessly integrates paste buttons into Bricks Builder toolbar
+  - **Root-level Insertion**: Supports pasting at root level when no element is selected
+  - **Settings Panel**: Configurable options for HTML conversion behavior, editor mode, and attribute preservation
+  - **Theme Integration**: Fully integrated into theme's `/inc/HtmlCopyPaste/` directory structure
+  - **Production Ready**: Clean console output with essential error logging only
+
+### Technical Implementation
+
+- **Bricks Builder API**: Direct integration with Bricks' internal Vue.js API for seamless element creation
+- **Clipboard API**: Modern clipboard access with fallbacks for browser compatibility
+- **Asset Management**: Proper WordPress asset enqueuing with builder context detection
+- **Settings API**: WordPress-compliant settings registration and sanitization
+- **Cache Busting**: Automatic file versioning for development and production environments
+
+### Changed
+
+- **Asset Naming Convention**: Renamed frontend assets to builder assets for clarity
+  - `frontend.css` → `builder.css` (for Bricks Builder interface styling)
+  - `frontend.js` → `builder.js` (for Bricks Builder functionality)
+  - Updated AssetManager to reflect proper naming (builder vs. frontend user assets)
+
+- **Admin UI Improvements**: Enhanced admin card layout and button alignment
+  - **Button Alignment**: All admin feature cards now have buttons aligned at the bottom
+  - **Flexbox Layout**: Implemented CSS flexbox for consistent card heights and button positioning
+  - **Responsive Design**: Mobile-optimized with full-width buttons on smaller screens
+  - **Visual Consistency**: Uniform card appearance regardless of content length
+
+### Fixed
+
+- **Debug Cleanup**: Removed verbose development logging for production readiness
+  - **Before**: ~30+ console.log statements flooding browser console
+  - **After**: Clean console with essential error reporting only
+  - **Retained**: Critical error messages and user operation feedback
+  - **Performance**: Slightly improved due to reduced string operations
+
 ## [0.4.56] - 2025-08-01
 
 ### Fixed
