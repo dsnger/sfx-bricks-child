@@ -40,7 +40,10 @@ class SFXBricksChildAdmin
       if (empty($feature['menu_slug']) || empty($feature['page_title'])) {
         continue; // Only show features with a menu_slug and page_title
       }
-      $url = admin_url('admin.php?page=' . $feature['menu_slug']);
+      
+      // Use custom URL if provided, otherwise construct from menu_slug
+      $url = !empty($feature['url']) ? $feature['url'] : admin_url('admin.php?page=' . $feature['menu_slug']);
+      
       echo '<div style="flex: 1 1 33%; flex-wrap: wrap; min-width: 200px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">';
       echo '<h2 style="margin-top:0; font-size: 1.2em;">' . esc_html($feature['page_title']) . '</h2>';
       if (!empty($feature['description'])) {
