@@ -1,0 +1,241 @@
+/* HTML Copy/Paste Feature Styles */
+
+/* Editor Container */
+#sfx-html-paste-editor {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.sfx-code-editor-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+}
+
+.sfx-code-editor {
+    background: #2d3748;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 90%;
+    max-width: 800px;
+    height: 80%;
+    max-height: 600px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.sfx-code-editor-message {
+    padding: 20px;
+    color: #e2e8f0;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.sfx-input-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#sfx-textarea-paste {
+    width: 100%;
+    min-height: 200px;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 12px;
+    resize: vertical;
+}
+
+.sfx-paste-msg {
+    color: #a0aec0;
+    font-size: 12px;
+    text-align: center;
+    font-style: italic;
+}
+
+.sfx-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: #e53e3e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.sfx-close-btn:hover {
+    background: #c53030;
+}
+
+.code-editor-container {
+    flex: 1;
+    padding: 20px;
+    display: none;
+    position: relative;
+}
+
+/* Monaco Editor specific styles */
+#sfx-monaco-editor-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 300px !important;
+    background: #1e1e1e !important;
+    border-radius: 4px !important;
+    position: relative !important;
+}
+
+.monaco-editor {
+    border-radius: 4px !important;
+}
+
+.monaco-editor .overflow-guard {
+    border-radius: 4px !important;
+}
+
+.sfx-insert-btn-container {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.sfx-insert-btn {
+    background: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sfx-insert-btn:hover {
+    background: #2c5aa0;
+}
+
+/* Bricks Builder Integration */
+.sfx-paste-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sfx-paste-button:hover {
+    background: #2c5aa0;
+}
+
+.sfx-paste-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Loading States */
+.sfx-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.sfx-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3182ce;
+    border-radius: 50%;
+    animation: sfx-spin 1s linear infinite;
+}
+
+@keyframes sfx-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notifications */
+.sfx-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    z-index: 1000000;
+    animation: sfx-slide-in 0.3s ease-out;
+}
+
+.sfx-notification.success {
+    background: #38a169;
+}
+
+.sfx-notification.error {
+    background: #e53e3e;
+}
+
+.sfx-notification.info {
+    background: #3182ce;
+}
+
+@keyframes sfx-slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sfx-code-editor {
+        width: 95%;
+        height: 90%;
+    }
+    
+    .sfx-code-editor-message {
+        font-size: 13px;
+        padding: 15px;
+    }
+    
+    #sfx-textarea-paste {
+        min-height: 150px;
+        font-size: 12px;
+    }
+} 
