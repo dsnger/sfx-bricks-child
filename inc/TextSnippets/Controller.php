@@ -139,6 +139,7 @@ class Controller
       'menu_slug' => AdminPage::$menu_slug,
       'page_title' => AdminPage::$page_title,
       'description' => AdminPage::$description,
+      'show_in_theme_settings' => false, // Exclude from theme settings page since it's a standalone feature
       'error' => 'Missing TextSnippetsController class in theme',
       'hook'  => null,
     ];

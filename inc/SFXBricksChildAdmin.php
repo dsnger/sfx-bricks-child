@@ -41,6 +41,11 @@ class SFXBricksChildAdmin
         continue; // Only show features with a menu_slug and page_title
       }
       
+      // Skip features that are explicitly excluded from theme settings page
+      if (isset($feature['show_in_theme_settings']) && $feature['show_in_theme_settings'] === false) {
+        continue;
+      }
+      
       // Use custom URL if provided, otherwise construct from menu_slug
       $url = !empty($feature['url']) ? $feature['url'] : admin_url('admin.php?page=' . $feature['menu_slug']);
       

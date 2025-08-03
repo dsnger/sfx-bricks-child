@@ -24,6 +24,7 @@ class Controller
       'menu_slug' => AdminPage::$menu_slug,
       'page_title' => AdminPage::$page_title,
       'description' => AdminPage::$description,
+      'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
       'error' => 'Missing SocialMediaAccountsController class in theme',
       'hook'  => null,
     ];
