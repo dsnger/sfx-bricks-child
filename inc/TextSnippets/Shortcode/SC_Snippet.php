@@ -157,6 +157,11 @@ function sfx_get_text_snippet_field(int $post_id, string $slug): ?string {
  * @param int $post_id
  */
 function sfx_clear_text_snippet_caches(int $post_id): void {
+    // Only clear caches if this is actually a text snippet post
+    if (get_post_type($post_id) !== 'cpt_text_snippet') {
+        return;
+    }
+    
     // Clear all text snippet caches for this post
     global $wpdb;
     $wpdb->query(
@@ -169,7 +174,7 @@ function sfx_clear_text_snippet_caches(int $post_id): void {
 
 // Register cache invalidation hooks
 add_action('save_post_cpt_text_snippet', 'sfx_clear_text_snippet_caches');
-add_action('delete_post', 'sfx_clear_text_snippet_caches');
+add_action('delete_post_cpt_text_snippet', 'sfx_clear_text_snippet_caches');
 
 // Register the shortcode
 new SC_Snippet();

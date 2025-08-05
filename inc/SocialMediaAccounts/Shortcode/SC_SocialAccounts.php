@@ -33,7 +33,7 @@ class SC_SocialAccounts
         
         // Clear caches when social account posts are updated
         add_action('save_post_sfx_social_account', [$this, 'clear_social_account_caches']);
-        add_action('delete_post', [$this, 'clear_social_account_caches']);
+        add_action('delete_post_sfx_social_account', [$this, 'clear_social_account_caches']);
     }
     
     /**

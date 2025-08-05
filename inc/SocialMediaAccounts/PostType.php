@@ -93,7 +93,7 @@ class PostType
         
         // Add validation and cleanup hooks
         add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
-        add_action('delete_post', [self::class, 'cleanup_meta_fields']);
+        add_action('delete_post_' . self::$post_type, [self::class, 'cleanup_meta_fields']);
     }
 
     /**
@@ -120,11 +120,6 @@ class PostType
      */
     public static function cleanup_meta_fields(int $post_id): void
     {
-        $post_type = get_post_type($post_id);
-        if ($post_type !== self::$post_type) {
-            return;
-        }
-        
         $expected_fields = ['_icon_image', '_link_url', '_link_title', '_link_target'];
         
         \SFX\MetaFieldManager::cleanup_fields($post_id, self::$post_type, $expected_fields);

@@ -19,7 +19,7 @@ class Controller
     
     // Clear caches when custom scripts are updated
     add_action('save_post_sfx_custom_script', [$this, 'clear_custom_script_caches']);
-    add_action('delete_post', [$this, 'clear_custom_script_caches']);
+    add_action('delete_post_sfx_custom_script', [$this, 'clear_custom_script_caches']);
   }
 
   /**

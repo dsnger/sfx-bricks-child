@@ -118,7 +118,7 @@ class PostType
 
         // Add validation and cleanup hooks
         add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);
-        add_action('delete_post', [self::class, 'cleanup_meta_fields']);
+        add_action('delete_post_' . self::$post_type, [self::class, 'cleanup_meta_fields']);
     }
 
     /**

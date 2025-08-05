@@ -29,7 +29,7 @@ class SC_ContactInfos
         
         // Clear caches when contact info posts are updated
         add_action('save_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
-        add_action('delete_post', [$this, 'clear_contact_info_caches']);
+        add_action('delete_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
     }
     
     /**
