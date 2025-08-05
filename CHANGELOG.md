@@ -8,6 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.58] - 2025-01-27
+
+### Fixed
+
+- **Theme Settings Button Links**: Fixed incorrect button URLs for features that use post type edit pages
+  - **ContactInfos (Company Informations / Branches)**: Now correctly links to `edit.php?post_type=sfx_contact_info`
+  - **CustomScriptsManager**: Now correctly links to `edit.php?post_type=sfx_custom_script`
+  - **SocialMediaAccounts**: Now correctly links to `edit.php?post_type=sfx_social_account`
+  - **Implementation**: Added `url` field to feature configurations for custom URL handling
+  - **Maintainability**: Each feature controls its own URL through feature configuration
+
+- **TextSnippets Feature Exclusion**: Excluded TextSnippets from theme settings page since it's a standalone feature
+  - **Added**: `show_in_theme_settings` flag to feature configuration system
+  - **Implementation**: TextSnippets now uses `show_in_theme_settings => false` to exclude from admin cards
+  - **Benefit**: Cleaner admin interface without redundant standalone feature cards
+
+- **Global Hook Performance Issues**: Fixed critical performance bugs with global `delete_post` hooks
+  - **TextSnippets Shortcode**: Changed from global `delete_post` to `delete_post_cpt_text_snippet`
+  - **ContactInfos Shortcode**: Changed from global `delete_post` to `delete_post_sfx_contact_info`
+  - **SocialMediaAccounts Shortcode**: Changed from global `delete_post` to `delete_post_sfx_social_account`
+  - **ContactInfos PostType**: Changed from global `delete_post` to `delete_post_sfx_contact_info`
+  - **SocialMediaAccounts PostType**: Changed from global `delete_post` to `delete_post_sfx_social_account`
+  - **CustomScriptsManager PostType**: Changed from global `delete_post` to `delete_post_sfx_custom_script`
+  - **CustomScriptsManager Controller**: Changed from global `delete_post` to `delete_post_sfx_custom_script`
+  - **Performance Impact**: Eliminated unnecessary function calls for unrelated post types
+  - **WordPress Best Practices**: Now using proper post-type-specific hooks throughout
+
+### Changed
+
+- **Feature Configuration System**: Enhanced feature registration with custom URL support
+  - **Added**: `url` field for features that need custom URLs (post type edit pages)
+  - **Added**: `show_in_theme_settings` flag for excluding standalone features
+  - **Maintainability**: Each feature controls its own display and URL behavior
+
 ## [0.4.57] - 2025-08-03
 
 ### Added
