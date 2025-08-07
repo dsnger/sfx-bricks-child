@@ -100,7 +100,10 @@ class AdminPage
                                         <input type="number" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="<?php echo esc_attr($value); ?>" min="<?php echo $min; ?>" max="<?php echo $max; ?>" style="margin-top: 16px;"/>
                                     <?php elseif ($type === 'post_types'):
                                         $post_types = get_post_types(['public' => true], 'objects');
-                                        $selected_post_types = is_array($value) ? $value : [];
+                                        $selected_post_types = [];
+                                        if (is_array($value)) {
+                                            $selected_post_types = $value;
+                                        }
                                     ?>
                                         <div class="post-types-selection">
                                             <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
@@ -125,7 +128,10 @@ class AdminPage
                                         <p style="font-size: 0.97em; color: #555; margin-bottom: 16px;"><?php echo esc_html($next_field['description']); ?></p>
                                         <?php if ($next_field['type'] === 'post_types'):
                                             $next_post_types = get_post_types(['public' => true], 'objects');
-                                            $next_selected_post_types = is_array($options[$next_field['id']] ?? []) ? $options[$next_field['id']] : [];
+                                            $next_selected_post_types = [];
+                                            if (isset($options[$next_field['id']]) && is_array($options[$next_field['id']])) {
+                                                $next_selected_post_types = $options[$next_field['id']];
+                                            }
                                         ?>
                                             <div class="post-types-selection">
                                                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">

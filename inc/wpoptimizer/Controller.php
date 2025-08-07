@@ -401,12 +401,13 @@ class Controller
         // Remove Comments menu
         add_action('admin_menu', function () {
             remove_menu_page('edit-comments.php');
-        });
+            remove_submenu_page('options-general.php', 'options-discussion.php');
+        }, 999);
 
         // Remove from admin bar
         add_action('wp_before_admin_bar_render', function () {
             global $wp_admin_bar;
-            if ($wp_admin_bar) {
+            if ($wp_admin_bar && $wp_admin_bar->get_node('comments')) {
                 $wp_admin_bar->remove_menu('comments');
             }
         });
