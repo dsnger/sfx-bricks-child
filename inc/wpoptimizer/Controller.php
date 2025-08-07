@@ -432,6 +432,23 @@ class Controller
         // Disable comment feeds
         add_action('do_feed_rss2_comments', '__return_false', 1);
         add_action('do_feed_atom_comments', '__return_false', 1);
+        add_filter('feed_links_show_comments_feed', '__return_false');
+
+        // Remove comment-reply.js script
+        add_action('wp_print_scripts', function () {
+            wp_dequeue_script('comment-reply');
+        }, 100);
+
+        // Remove inline CSS from Recent Comments widget
+        add_action('widgets_init', function () {
+            global $wp_widget_factory;
+            if (isset($wp_widget_factory->widgets['WP_Widget_Recent_Comments'])) {
+                remove_action('wp_head', [
+                    $wp_widget_factory->widgets['WP_Widget_Recent_Comments'],
+                    'recent_comments_style'
+                ]);
+            }
+        });
     }
 
     private function disable_embed()
@@ -621,36 +638,7 @@ class Controller
         });
     }
 
-    private function limit_comments_js()
-    {
-        add_action('wp_print_scripts', function () {
-            // Check if comments are completely disabled
-            if ($this->is_option_enabled('disable_comments')) {
-                // If comments are disabled, don't load comment-reply.js
-                wp_dequeue_script('comment-reply');
-                return;
-            }
-            
-            if (is_singular() && (get_option('thread_comments') == 1) && comments_open() && get_comments_number()) {
-                wp_enqueue_script('comment-reply');
-            } else {
-                wp_dequeue_script('comment-reply');
-            }
-        }, 100);
-    }
 
-    private function remove_comments_style()
-    {
-        add_action('widgets_init', function () {
-            global $wp_widget_factory;
-            if (isset($wp_widget_factory->widgets['WP_Widget_Recent_Comments'])) {
-                remove_action('wp_head', [
-                    $wp_widget_factory->widgets['WP_Widget_Recent_Comments'],
-                    'recent_comments_style'
-                ]);
-            }
-        });
-    }
 
     private function slow_heartbeat()
     {
@@ -765,10 +753,7 @@ class Controller
         });
     }
 
-    private function disable_comment_rss_feeds()
-    {
-        add_filter('feed_links_show_comments_feed', '__return_false');
-    }
+
 
     private function disable_rest_api_non_authenticated()
     {
@@ -780,16 +765,7 @@ class Controller
         });
     }
 
-    private function disable_comments_on_attachments()
-    {
-        add_filter('comments_open', function ($open, $post_id) {
-            $post = get_post($post_id);
-            if ('attachment' === $post->post_type) {
-                return false;
-            }
-            return $open;
-        }, 25, 2); // Higher priority than disable_comments (20) to run after
-    }
+
 
     public static function get_feature_config(): array
     {

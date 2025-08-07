@@ -153,22 +153,7 @@ class Settings
                 'default'     => 1,
                 'group'       => 'comments',
             ],
-            [
-                'id'          => 'limit_comments_js',
-                'label'       => __('Limit Comments JS', 'sfx'),
-                'description' => __('Only loads the comment-reply.js script when threaded comments are enabled and needed. Recommended for performance.', 'sfx'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-                'group'       => 'comments',
-            ],
-            [
-                'id'          => 'remove_comments_style',
-                'label'       => __('Remove Comments Style', 'sfx'),
-                'description' => __('Removes inline CSS added by the Recent Comments widget for cleaner HTML.', 'sfx'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-                'group'       => 'comments',
-            ],
+
             [
                 'id'          => 'disable_emoji',
                 'label'       => __('Disable Emoji', 'sfx'),
@@ -355,14 +340,7 @@ class Settings
                 'default'     => 1,
                 'group'       => 'frontend',
             ],
-            [
-                'id'          => 'disable_comment_rss_feeds',
-                'label'       => __('Disable Comment RSS Feeds', 'sfx'),
-                'description' => __('Disables comment feeds, which are rarely used and can be a spam vector. Reduces unnecessary endpoints.', 'sfx'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-                'group'       => 'comments',
-            ],
+
             [
                 'id'          => 'disable_rest_api_non_authenticated',
                 'label'       => __('Disable REST API for Non-Authenticated Users', 'sfx'),
@@ -371,14 +349,7 @@ class Settings
                 'default'     => 0,
                 'group'       => 'security',
             ],
-            [
-                'id'          => 'disable_comments_on_attachments',
-                'label'       => __('Disable Comments on Media Attachments', 'sfx'),
-                'description' => __('Prevents comments on media attachment pages to reduce spam and unnecessary comment forms.', 'sfx'),
-                'type'        => 'checkbox',
-                'default'     => 1,
-                'group'       => 'comments',
-            ],
+
             // New orphaned functions as settings
             [
                 'id'          => 'add_font_mime_types',

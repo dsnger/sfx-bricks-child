@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.63] - 2025-01-07
+
+### Changed
+
+- **WPOptimizer Comments Consolidation**: Consolidated all comment-related settings into a single comprehensive option
+  - **Removed**: Individual settings for "Limit Comments JS", "Remove Comments Style", "Disable Comment RSS Feeds", and "Disable Comments on Media Attachments"
+  - **Enhanced**: Single "Disable Comments" setting now handles all comment functionality comprehensively
+  - **Implementation**: 
+    - Removed redundant settings from Settings.php
+    - Enhanced `disable_comments()` function to include all comment-related functionality
+    - Removed individual comment functions (`limit_comments_js`, `remove_comments_style`, `disable_comment_rss_feeds`, `disable_comments_on_attachments`)
+    - Consolidated functionality into single `disable_comments()` method
+  - **Impact**: 
+    - ✅ Cleaner admin interface with single comment control
+    - ✅ Simplified user experience - one setting controls all comment features
+    - ✅ Reduced code complexity and maintenance overhead
+    - ✅ All comment functionality properly disabled when setting is enabled
+
 ## [0.4.62] - 2025-01-07
 
 ### Fixed
