@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Simple wrapper for the release script
+# Usage: ./release <version>
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Call the main release script
+"${SCRIPT_DIR}/release.sh" "$@" 
