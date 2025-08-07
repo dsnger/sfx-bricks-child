@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.59] - 2025-01-27
+
+### Fixed
+
+- **ImageOptimizer JavaScript Error**: Fixed "ImageOptimizerAjax is not defined" console error
+  - **Issue**: JavaScript was trying to access `ImageOptimizerAjax.ajax_url` and `ImageOptimizerAjax.nonce` but these values were never localized
+  - **Fix**: Added `wp_localize_script()` in AssetManager to pass AJAX URL and nonce to JavaScript
+  - **Impact**: All ImageOptimizer AJAX functionality now works properly (Convert/Scale, Cleanup Images, Fix URLs, etc.)
+  - **Implementation**: Added script localization with `admin_url('admin-ajax.php')` and `wp_create_nonce('webp_converter_nonce')`
+
 ## [0.4.58] - 2025-01-27
 
 ### Fixed

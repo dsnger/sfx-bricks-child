@@ -44,6 +44,12 @@ class AssetManager
 
         if (file_exists($js_file)) {
             wp_enqueue_script('sfx-image-optimizer-admin', get_stylesheet_directory_uri() . '/inc/ImageOptimizer/assets/admin-script.js', ['jquery'], filemtime($js_file), true);
+            
+            // Localize the script with AJAX data
+            wp_localize_script('sfx-image-optimizer-admin', 'ImageOptimizerAjax', [
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('webp_converter_nonce')
+            ]);
         }
     }
 } 
