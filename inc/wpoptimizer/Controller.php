@@ -539,6 +539,64 @@ class Controller
             // Deregister the script entirely
             wp_deregister_script('jquery-migrate');
         }, 1); // Early priority to catch before other scripts
+
+        // Also run on wp_head to catch any late registrations
+        add_action('wp_head', function () {
+            if ($this->is_option_enabled('disable_jquery')) {
+                return;
+            }
+            wp_deregister_script('jquery-migrate');
+        }, 1);
+
+        // Prevent jQuery Migrate from being enqueued
+        add_filter('wp_script_loader_tag', function ($tag, $handle, $src) {
+            if ($handle === 'jquery-migrate') {
+                return '';
+            }
+            return $tag;
+        }, 10, 3);
+
+        // Remove jQuery Migrate from any script dependencies
+        add_filter('script_loader_tag', function ($tag, $handle, $src) {
+            if ($handle === 'jquery-migrate') {
+                return '';
+            }
+            return $tag;
+        }, 10, 3);
+
+        // Prevent jQuery Migrate from being registered in the first place
+        add_action('wp_default_scripts', function ($scripts) {
+            if (isset($scripts->registered['jquery-migrate'])) {
+                unset($scripts->registered['jquery-migrate']);
+            }
+        }, 1);
+
+        // Also prevent it from being enqueued by any means
+        add_action('wp_print_scripts', function () {
+            wp_deregister_script('jquery-migrate');
+            wp_dequeue_script('jquery-migrate');
+        }, 1);
+
+        // Prevent WordPress core from loading jQuery Migrate
+        add_action('wp_default_scripts', function ($scripts) {
+            // Remove jquery-migrate from jquery dependencies
+            if (isset($scripts->registered['jquery'])) {
+                $scripts->registered['jquery']->deps = array_diff(
+                    $scripts->registered['jquery']->deps,
+                    ['jquery-migrate']
+                );
+            }
+            // Completely remove jquery-migrate from scripts
+            if (isset($scripts->registered['jquery-migrate'])) {
+                unset($scripts->registered['jquery-migrate']);
+            }
+        }, 1);
+
+        // Also run on init to catch any late registrations
+        add_action('init', function () {
+            wp_deregister_script('jquery-migrate');
+            wp_dequeue_script('jquery-migrate');
+        }, 1);
     }
 
     private function disable_rest_api()

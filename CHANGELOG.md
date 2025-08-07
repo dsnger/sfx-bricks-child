@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.65] - 2025-01-07
+
+### Fixed
+
+- **WordPress Core jQuery Migrate Disabling**: Fixed jQuery Migrate loading from WordPress core (`wp-includes`)
+  - **Problem**: jQuery Migrate was still loading from WordPress core despite being disabled
+  - **Root Cause**: WordPress core itself loads jQuery Migrate, not just plugins
+  - **Enhanced Implementation**: 
+    - Added `wp_default_scripts` hook to prevent core registration
+    - Added `init` hook for early deregistration
+    - Enhanced script dependency removal from WordPress core
+    - Added complete script removal from WordPress core scripts object
+  - **Impact**: 
+    - ✅ jQuery Migrate completely prevented from WordPress core loading
+    - ✅ No more console messages about jQuery Migrate from wp-includes
+    - ✅ Works at the WordPress core level, not just plugin level
+    - ✅ Most comprehensive jQuery Migrate disabling approach
+
+## [0.4.64] - 2025-01-07
+
+### Fixed
+
+- **Enhanced jQuery Migrate Disabling**: Fixed issue where jQuery Migrate was still loading despite being disabled
+  - **Problem**: Console message "JQMIGRATE: Migrate is installed, version 3.4.1" appearing even when disabled
+  - **Root Cause**: Other plugins/themes loading jQuery Migrate after our function runs
+  - **Enhanced Implementation**: 
+    - Added `wp_head` hook to catch late registrations
+    - Added `wp_script_loader_tag` filter to prevent script loading
+    - Added `script_loader_tag` filter to remove script tags
+    - Added `wp_default_scripts` hook to prevent registration
+    - Added `wp_print_scripts` hook for final cleanup
+  - **Impact**: 
+    - ✅ jQuery Migrate completely prevented from loading
+    - ✅ No more console messages about jQuery Migrate
+    - ✅ More aggressive and comprehensive disabling approach
+    - ✅ Works even when other plugins try to load jQuery Migrate
+
 ## [0.4.63] - 2025-01-07
 
 ### Changed
