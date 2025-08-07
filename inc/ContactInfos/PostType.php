@@ -96,7 +96,10 @@ class PostType
             'vat', 'hrb', 'court', 'dsb', 'opening', 'maplink', 'contact_type'
         ];
         
-        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
+        // Fields that should allow HTML content (WYSIWYG editors)
+        $html_fields = ['address', 'opening'];
+        
+        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields, $html_fields);
         
         // Add validation and cleanup hooks
         add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);

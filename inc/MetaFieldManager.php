@@ -21,16 +21,19 @@ class MetaFieldManager
      * 
      * @param string $post_type
      * @param array $fields
+     * @param array $html_fields Fields that should allow HTML content
      * @return void
      */
-    public static function register_fields(string $post_type, array $fields): void
+    public static function register_fields(string $post_type, array $fields, array $html_fields = []): void
     {
         foreach ($fields as $field) {
+            $sanitize_callback = in_array($field, $html_fields) ? 'wp_kses_post' : 'sanitize_text_field';
+            
             register_meta('post', '_' . $field, [
                 'type' => 'string',
                 'single' => true,
                 'show_in_rest' => false,
-                'sanitize_callback' => 'sanitize_text_field'
+                'sanitize_callback' => $sanitize_callback
             ]);
         }
     }

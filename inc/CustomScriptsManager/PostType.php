@@ -114,7 +114,10 @@ class PostType
             'exclude_pages'
         ];
 
-        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields);
+        // Fields that should allow HTML content
+        $html_fields = ['script_content'];
+
+        \SFX\MetaFieldManager::register_fields(self::$post_type, $fields, $html_fields);
 
         // Add validation and cleanup hooks
         add_action('save_post_' . self::$post_type, [self::class, 'validate_meta_fields']);

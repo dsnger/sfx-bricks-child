@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.60] - 2025-01-27
+
+### Fixed
+
+- **WYSIWYG Editor HTML Formatting**: Fixed HTML formatting not being saved in Contact Info WYSIWYG editor fields
+  - **Issue**: MetaFieldManager was using `sanitize_text_field` for all fields, which strips HTML tags from WYSIWYG editor content
+  - **Root Cause**: WordPress's meta field sanitization was overriding the `wp_kses_post()` sanitization used in individual post type save methods
+  - **Fix**: Enhanced MetaFieldManager to support HTML fields with `wp_kses_post` sanitization
+  - **Implementation**: 
+    - Updated `MetaFieldManager::register_fields()` to accept optional `$html_fields` parameter
+    - Modified sanitize callback logic to use `wp_kses_post` for HTML fields and `sanitize_text_field` for regular fields
+    - Updated ContactInfos PostType to specify `['address', 'opening']` as HTML fields
+    - Updated CustomScriptsManager PostType to specify `['script_content']` as HTML field
+  - **Impact**: 
+    - ✅ Opening Hours WYSIWYG editor now saves HTML formatting (bold, italic, lists, links, etc.)
+    - ✅ Formatted Address WYSIWYG editor now saves HTML formatting
+    - ✅ Script Content textarea now properly handles HTML content
+    - ✅ Backward compatibility maintained for existing functionality
+    - ✅ Security preserved using `wp_kses_post()` for proper HTML sanitization
+
+### Changed
+
+- **MetaFieldManager Enhancement**: Added support for HTML field registration
+  - **New Parameter**: `$html_fields` array to specify which fields should allow HTML content
+  - **Smart Sanitization**: Automatic selection of appropriate sanitize callback based on field type
+  - **Maintainability**: Centralized HTML field management for consistent behavior across features
+
 ## [0.4.59] - 2025-01-27
 
 ### Fixed
