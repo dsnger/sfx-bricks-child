@@ -16,8 +16,15 @@ class Settings
         // Initialize static properties
         self::$OPTION_GROUP = 'sfx_wpoptimizer_options';
         
-        // Register settings through consolidated system
-        add_action('sfx_init_admin_features', [self::class, 'register_settings']);
+        // Register the settings with WordPress
+        register_setting(
+            self::$OPTION_GROUP,
+            'sfx_wpoptimizer_options',
+            [
+                'sanitize_callback' => [self::class, 'sanitize_options'],
+                'default' => []
+            ]
+        );
     }
 
     /**
@@ -28,16 +35,16 @@ class Settings
         return [
             [
                 'id'          => 'disable_search',
-                'label'       => __('Disable Search', 'sfxtheme'),
-                'description' => __('Disables the default WordPress search feature. Useful for brochure sites or when search is not needed. Not recommended for content-heavy or blog sites.', 'sfxtheme'),
+                'label'       => __('Disable Search', 'sfx'),
+                'description' => __('Disables the default WordPress search feature. Useful for brochure sites or when search is not needed. Not recommended for content-heavy or blog sites.', 'sfx'),
                 'type'        => 'checkbox',
                 'default'     => 0,
                 'group'       => 'frontend',
             ],
             [
                 'id'          => 'add_json_mime_types',
-                'label'       => __('Allow Lottie JSON Files', 'sfxtheme'),
-                'description' => __('Allows uploading of JSON files (e.g., for Lottie animations) and plain text files. Enable if you need to upload these file types. Only recommended if you trust your site\'s users, as JSON can contain sensitive data.', 'sfxtheme'),
+                'label'       => __('Allow Lottie JSON Files', 'sfx'),
+                'description' => __('Allows uploading of JSON files (e.g., for Lottie animations) and plain text files. Enable if you need to upload these file types. Only recommended if you trust your site\'s users, as JSON can contain sensitive data.', 'sfx'),
                 'type'        => 'checkbox',
                 'default'     => 0,
                 'group'       => 'media',
@@ -269,6 +276,14 @@ class Settings
                 'group'       => 'performance',
             ],
             [
+                'id'          => 'limit_revisions_post_types',
+                'label'       => __('Post Types for Revision Limiting', 'sfx'),
+                'description' => __('Select which post types should have revision limiting applied. Leave empty to apply to all post types.', 'sfx'),
+                'type'        => 'post_types',
+                'default'     => [],
+                'group'       => 'performance',
+            ],
+            [
                 'id'          => 'disable_heartbeat',
                 'label'       => __('Disable Heartbeat', 'sfx'),
                 'description' => __('Disables the WordPress Heartbeat API in the admin, reducing AJAX requests. May affect autosave and real-time features.', 'sfx'),
@@ -364,60 +379,56 @@ class Settings
                 'default'     => 1,
                 'group'       => 'comments',
             ],
+            // New orphaned functions as settings
+            [
+                'id'          => 'add_font_mime_types',
+                'label'       => __('Allow Font File Uploads', 'sfx'),
+                'description' => __('Allows uploading of font files (WOFF, WOFF2, TTF). Only enable if you need to upload custom fonts. Security warning: Only enable if you trust your site\'s users.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'media',
+            ],
+            [
+                'id'          => 'remove_menus_appearance_patterns',
+                'label'       => __('Remove Patterns Menu', 'sfx'),
+                'description' => __('Removes the Patterns submenu from Appearance menu in admin. Useful for sites not using Full Site Editing patterns.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'admin',
+            ],
+            [
+                'id'          => 'disable_block_styling',
+                'label'       => __('Disable Block Styles', 'sfx'),
+                'description' => __('Removes Gutenberg block styles from frontend. Recommended for classic themes or sites not using blocks. Saves ~50KB of CSS.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+                'group'       => 'performance',
+            ],
+            [
+                'id'          => 'disable_embed',
+                'label'       => __('Disable Embeds', 'sfx'),
+                'description' => __('Disables WordPress oEmbed functionality. Prevents embedding content from other sites and improves security. Saves ~10KB of JavaScript.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+                'group'       => 'security',
+            ],
+            [
+                'id'          => 'disable_application_passwords',
+                'label'       => __('Disable Application Passwords', 'sfx'),
+                'description' => __('Disables WordPress 5.6+ application passwords feature. Improves security by preventing external API access via generated passwords.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+                'group'       => 'security',
+            ],
+            [
+                'id'          => 'remove_global_styles_and_svg_filters',
+                'label'       => __('Remove Global Styles & SVG Filters', 'sfx'),
+                'description' => __('Removes Full Site Editing global styles and SVG filters for classic themes. Reduces CSS output and improves performance.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 1,
+                'group'       => 'performance',
+            ],
         ];
-    }
-
-    public static function register_settings(): void
-    {
-        register_setting(self::$OPTION_GROUP, 'sfx_wpoptimizer_options', [
-            'type' => 'array',
-            'sanitize_callback' => [self::class, 'sanitize_options'],
-            'default' => [],
-        ]);
-
-        add_settings_section(
-            'sfx_wpoptimizer_options_section',
-            __('WP Optimizer Options', 'sfxtheme'),
-            [self::class, 'render_section'],
-            self::$OPTION_GROUP
-        );
-
-        foreach (self::get_fields() as $field) {
-            add_settings_field(
-                $field['id'],
-                $field['label'],
-                [self::class, 'render_field'],
-                self::$OPTION_GROUP,
-                'sfx_wpoptimizer_options_section',
-                $field
-            );
-        }
-    }
-
-    public static function render_section(): void
-    {
-        echo '<p>' . esc_html__('WP Optimizer Options', 'sfxtheme') . '</p>';
-    }
-
-    public static function render_field(array $args): void
-    {
-        $options = get_option('sfx_wpoptimizer_options', []);
-        $id = esc_attr($args['id']);
-        $type = $args['type'] ?? 'checkbox';
-        $value = $options[$id] ?? $args['default'];
-        if ($type === 'checkbox') {
-            ?>
-            <input type="checkbox" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="1" <?php checked((int)$value, 1); ?> />
-            <label for="<?php echo $id; ?>"><?php echo esc_html($args['description']); ?></label>
-            <?php
-        } elseif ($type === 'number') {
-            $min = isset($args['min']) ? (int)$args['min'] : 0;
-            $max = isset($args['max']) ? (int)$args['max'] : 10;
-            ?>
-            <input type="number" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="<?php echo esc_attr($value); ?>" min="<?php echo $min; ?>" max="<?php echo $max; ?>" />
-            <label for="<?php echo $id; ?>"><?php echo esc_html($args['description']); ?></label>
-            <?php
-        }
     }
 
     public static function sanitize_options($input): array
@@ -427,6 +438,8 @@ class Settings
             $id = $field['id'];
             if ($field['type'] === 'number') {
                 $output[$id] = isset($input[$id]) ? (int)$input[$id] : (int)$field['default'];
+            } elseif ($field['type'] === 'post_types') {
+                $output[$id] = isset($input[$id]) && is_array($input[$id]) ? array_map('sanitize_text_field', $input[$id]) : [];
             } else {
                 $output[$id] = isset($input[$id]) && $input[$id] ? 1 : 0;
             }
@@ -437,5 +450,28 @@ class Settings
     public static function delete(): void
     {
         delete_option('sfx_wpoptimizer_options');
+    }
+
+    /**
+     * Get a specific setting value
+     * 
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public static function get(string $key, $default = null)
+    {
+        $options = get_option('sfx_wpoptimizer_options', []);
+        return $options[$key] ?? $default;
+    }
+
+    /**
+     * Get all settings
+     * 
+     * @return array
+     */
+    public static function get_all(): array
+    {
+        return get_option('sfx_wpoptimizer_options', []);
     }
 } 

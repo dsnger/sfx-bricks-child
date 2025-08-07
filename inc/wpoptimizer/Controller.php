@@ -20,6 +20,7 @@ class Controller
 {
 
     private $fields = [];
+    private $styles = [];
     public const OPTION_NAME = 'sfx_wpoptimizer_options';
 
     /**
@@ -33,7 +34,16 @@ class Controller
         Settings::register();
 
         // Register hooks through consolidated system
-        add_action('sfx_init_settings', [$this, 'handle_options']);
+        $this->init_fields();
+        $this->handle_options();
+
+        // Immediate check for comments disabling
+        if ($this->is_option_enabled('disable_comments')) {
+            add_action('wp_loaded', function () {
+                remove_menu_page('edit-comments.php');
+                remove_submenu_page('options-general.php', 'options-discussion.php');
+            });
+        }
 
         // Clear caches when settings are updated
         add_action('update_option_sfx_wpoptimizer_options', [$this, 'clear_optimizer_caches']);
@@ -59,6 +69,7 @@ class Controller
         if (empty($this->fields) || !is_array($this->fields) || $this->is_option_enabled('disable_wp_optimizer')) {
             return;
         }
+        
         foreach ($this->fields as $field) {
             if ($this->is_option_enabled($field['id']) && method_exists($this, $field['id'])) {
                 $this->{$field['id']}();
@@ -153,6 +164,60 @@ class Controller
         });
     }
 
+    private function limit_revisions()
+    {
+        if (defined('WP_POST_REVISIONS') && WP_POST_REVISIONS !== false) {
+            add_filter('wp_revisions_to_keep', function ($num, $post) {
+                // Get the revision number setting
+                $revision_number = Settings::get('limit_revisions_number', 0);
+                
+                // Check if revisions are enabled for this post type
+                $enabled_post_types = Settings::get('limit_revisions_post_types', []);
+                $post_type = $post->post_type;
+                
+                // If post type is not in enabled list, return original number
+                if (!empty($enabled_post_types) && !in_array($post_type, $enabled_post_types)) {
+                    return $num;
+                }
+                
+                return $revision_number;
+            }, 10, 2);
+        }
+    }
+
+    private function limit_revisions_number()
+    {
+        // This function is handled by limit_revisions() above
+        // It uses the limit_revisions_number setting value
+    }
+
+    private function disable_search()
+    {
+        // Remove search functionality
+        add_action('wp_loaded', function () {
+            if (is_search()) {
+                wp_redirect(home_url(), 301);
+                exit;
+            }
+        });
+
+        // Remove search widget
+        add_action('widgets_init', function () {
+            unregister_widget('WP_Widget_Search');
+        });
+
+        // Remove search from admin bar
+        add_action('wp_before_admin_bar_render', function () {
+            global $wp_admin_bar;
+            $wp_admin_bar->remove_menu('search');
+        });
+
+        // Remove search from navigation menus
+        add_filter('wp_nav_menu_items', function ($items, $args) {
+            return preg_replace('/<li[^>]*class="[^"]*search[^"]*"[^>]*>.*?<\/li>/i', '', $items);
+        }, 10, 2);
+    }
+
     private function add_font_mime_types()
     {
         add_filter('upload_mimes', function ($mimes) {
@@ -201,7 +266,7 @@ class Controller
         $this->check_json_mime_types();
     }
 
-    function check_json_mime_types()
+    private function check_json_mime_types()
     {
 
         add_filter('wp_check_filetype_and_ext', function ($data, $file, $filename, $mimes) {
@@ -247,12 +312,18 @@ class Controller
                 return;
             }
             global $wp_styles;
+            $this->styles = []; // Initialize styles array
+            
             foreach ($wp_styles->queue as $handle) {
-                $this->styles[] = $wp_styles->registered[$handle];
-                // Dependencies auch gleich merken
-                $deps = $wp_styles->registered[$handle]->deps ?? [];
-                foreach ($deps as $dep) {
-                    $this->styles[] = $wp_styles->registered[$dep] ?? null;
+                if (isset($wp_styles->registered[$handle])) {
+                    $this->styles[] = $wp_styles->registered[$handle];
+                    // Dependencies auch gleich merken
+                    $deps = $wp_styles->registered[$handle]->deps ?? [];
+                    foreach ($deps as $dep) {
+                        if (isset($wp_styles->registered[$dep])) {
+                            $this->styles[] = $wp_styles->registered[$dep];
+                        }
+                    }
                 }
             }
             // Duplikate entfernen
@@ -260,18 +331,20 @@ class Controller
 
             // Alle aus der Queue werfen
             foreach ($this->styles as $style) {
-                wp_dequeue_style($style->handle);
+                if ($style && isset($style->handle)) {
+                    wp_dequeue_style($style->handle);
+                }
             }
         }, 9999);
 
         // Per loadCSS einbinden
         add_action('wp_head', function () {
-            if (is_customize_preview()) {
+            if (is_customize_preview() || empty($this->styles)) {
                 return;
             }
             $out = '<script>function loadCSS(href,before,media,callback){"use strict";var ss=window.document.createElement("link");var ref=before||window.document.getElementsByTagName("script")[0];var sheets=window.document.styleSheets;ss.rel="stylesheet";ss.href=href;ss.media="only x";if(callback){ss.onload=callback;}ref.parentNode.insertBefore(ss,ref);ss.onloadcssdefined=function(cb){var defined;for(var i=0;i<sheets.length;i++){if(sheets[i].href&&sheets[i].href.indexOf(href)>-1){defined=true;}}defined?cb():setTimeout(function(){ss.onloadcssdefined(cb);});};ss.onloadcssdefined(function(){ss.media=media||"all";});return ss;}</script>';
             foreach ($this->styles as $style) {
-                if (!isset($style->extra['conditional'])) {
+                if ($style && !isset($style->extra['conditional'])) {
                     $src = $style->src;
                     if (strpos($src, 'http') === false) {
                         $src = site_url() . $src;
@@ -306,30 +379,58 @@ class Controller
 
     private function disable_comments()
     {
-        if (is_admin()) {
-            update_option('default_comment_status', 'closed');
-        }
-        add_filter('comments_open', '__return_false', 20, 2);
-        add_filter('pings_open', '__return_false', 20, 2);
+        // Disable comments at the database level
+        update_option('default_comment_status', 'closed');
+        update_option('default_ping_status', 'closed');
 
-        add_action('admin_init', function () {
-            $postTypes = get_post_types();
-            foreach ($postTypes as $pt) {
-                if (post_type_supports($pt, 'comments')) {
-                    remove_post_type_support($pt, 'comments');
-                    remove_post_type_support($pt, 'trackbacks');
-                }
+        // Disable comments on all post types
+        add_action('init', function () {
+            $post_types = get_post_types();
+            foreach ($post_types as $post_type) {
+                remove_post_type_support($post_type, 'comments');
+                remove_post_type_support($post_type, 'trackbacks');
             }
         });
 
+        // Disable all comment functionality
+        add_filter('comments_open', '__return_false', 20, 2);
+        add_filter('pings_open', '__return_false', 20, 2);
+        add_filter('comments_template', '__return_empty_string');
+        add_filter('get_comments_number', '__return_zero');
+
+        // Remove Comments menu
         add_action('admin_menu', function () {
             remove_menu_page('edit-comments.php');
         });
 
+        // Remove from admin bar
         add_action('wp_before_admin_bar_render', function () {
             global $wp_admin_bar;
-            $wp_admin_bar->remove_menu('comments');
+            if ($wp_admin_bar) {
+                $wp_admin_bar->remove_menu('comments');
+            }
         });
+
+        // Remove all comment capabilities from all user roles
+        add_action('admin_init', function () {
+            $roles = ['administrator', 'editor', 'author', 'contributor', 'subscriber'];
+            foreach ($roles as $role_name) {
+                $role = get_role($role_name);
+                if ($role) {
+                    $role->remove_cap('moderate_comments');
+                    $role->remove_cap('edit_comment');
+                    $role->remove_cap('edit_comments');
+                    $role->remove_cap('delete_comment');
+                    $role->remove_cap('delete_comments');
+                    $role->remove_cap('approve_comment');
+                    $role->remove_cap('approve_comments');
+                }
+            }
+        });
+
+        // Disable comment feeds
+        add_action('do_feed_rss2_comments', '__return_false', 1);
+        add_action('do_feed_atom_comments', '__return_false', 1);
     }
 
     private function disable_embed()
@@ -391,7 +492,7 @@ class Controller
 
     private function disable_jquery()
     {
-        if (!is_admin() && !bricks_is_builder()) {
+        if (!is_admin() && !(function_exists('\bricks_is_builder') ? \bricks_is_builder() : false)) {
             add_action('wp_enqueue_scripts', function () {
                 wp_deregister_script('jquery');
                 wp_deregister_script('jquery-core');
@@ -399,10 +500,16 @@ class Controller
         }
     }
 
-        private function disable_jquery_migrate()
+    private function disable_jquery_migrate()
     {
         // Remove jQuery Migrate from frontend only to avoid breaking admin
         add_action('wp_enqueue_scripts', function () {
+            // Check if jQuery is being completely disabled
+            if ($this->is_option_enabled('disable_jquery')) {
+                // If jQuery is disabled, no need to remove jQuery Migrate
+                return;
+            }
+
             // Remove jquery-migrate from jquery dependencies on frontend
             global $wp_scripts;
             if (isset($wp_scripts->registered['jquery'])) {
@@ -501,6 +608,12 @@ class Controller
     private function jquery_to_footer()
     {
         add_action('wp_enqueue_scripts', function () {
+            // Check if jQuery is being completely disabled
+            if ($this->is_option_enabled('disable_jquery')) {
+                // If jQuery is disabled, don't re-register it
+                return;
+            }
+            
             wp_deregister_script('jquery');
             wp_register_script('jquery', includes_url('/js/jquery/jquery.js'), false, null, true);
             wp_enqueue_script('jquery');
@@ -510,21 +623,19 @@ class Controller
     private function limit_comments_js()
     {
         add_action('wp_print_scripts', function () {
+            // Check if comments are completely disabled
+            if ($this->is_option_enabled('disable_comments')) {
+                // If comments are disabled, don't load comment-reply.js
+                wp_dequeue_script('comment-reply');
+                return;
+            }
+            
             if (is_singular() && (get_option('thread_comments') == 1) && comments_open() && get_comments_number()) {
                 wp_enqueue_script('comment-reply');
             } else {
                 wp_dequeue_script('comment-reply');
             }
         }, 100);
-    }
-
-    private function limit_revisions()
-    {
-        if (defined('WP_POST_REVISIONS') && WP_POST_REVISIONS !== false) {
-            add_filter('wp_revisions_to_keep', function ($num) {
-                return 0; // z.B. max 5 Revisionen
-            }, 10, 2);
-        }
     }
 
     private function remove_comments_style()
@@ -676,7 +787,7 @@ class Controller
                 return false;
             }
             return $open;
-        }, 10, 2);
+        }, 25, 2); // Higher priority than disable_comments (20) to run after
     }
 
     public static function get_feature_config(): array

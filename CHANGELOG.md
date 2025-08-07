@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.61] - 2025-01-07
+
+### Fixed
+
+- **WPOptimizer Function Issues**: Fixed multiple critical issues in WPOptimizer functions
+  - **Indentation Error**: Fixed incorrect indentation in `disable_jquery_migrate()` function
+  - **Missing Visibility Modifier**: Added `private` modifier to `check_json_mime_types()` function
+  - **Missing Property Declaration**: Added `private $styles = [];` property for `defer_css()` function
+  - **Enhanced Error Handling**: Added null checks and proper initialization in `defer_css()` function
+  - **Impact**: All WPOptimizer functions now work correctly without PHP errors
+
+- **Comments Menu Removal**: Improved comments disabling functionality
+  - **Simplified Approach**: Replaced complex menu removal with clean WordPress functions
+  - **Comprehensive Disabling**: Single setting now disables all comment functionality (database, post types, frontend, admin, capabilities, feeds)
+  - **No More Warnings**: Eliminated foreach warnings by using proper WordPress API calls
+
 ## [0.4.60] - 2025-01-27
 
 ### Fixed
