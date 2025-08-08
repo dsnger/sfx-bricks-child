@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.69] - 2025-01-07
+
+### Fixed
+
+- **ContactInfos WYSIWYG Editor HTML Rendering**: Fixed HTML content from WYSIWYG editors being output as text instead of rendered HTML
+  - **Issue**: HTML tags like `<strong>`, `<em>`, `<br>` were being displayed as text (`&lt;strong&gt;`) instead of rendered formatting
+  - **Root Cause**: Shortcode was using `esc_html()` instead of `wp_kses_post()` for WYSIWYG editor fields
+  - **Fix**: Updated shortcode rendering methods to properly handle HTML content from WYSIWYG editors
+  - **Implementation**: 
+    - **Address Field**: Changed from `nl2br(esc_html($value))` to `wp_kses_post($value)` in `render_address_field()`
+    - **Opening Field**: Added dedicated `render_opening_field()` method using `wp_kses_post($value)`
+    - **Span Wrapper Removal**: Removed unnecessary `<span>` wrapper for WYSIWYG fields to prevent HTML structure conflicts
+    - **Debug Mode**: Added `debug` parameter to shortcode for troubleshooting HTML content issues
+    - **Enhanced Cache Clearing**: Improved cache invalidation to ensure fresh HTML content retrieval
+  - **Impact**: 
+    - ✅ Opening Hours WYSIWYG editor content now renders with proper HTML formatting
+    - ✅ Formatted Address WYSIWYG editor content now renders with proper HTML formatting
+    - ✅ HTML tags like `<strong>`, `<em>`, `<br>`, `<ul>`, `<li>`, `<a>` render correctly
+    - ✅ No more unwanted `<span>` wrappers around WYSIWYG content
+    - ✅ Security maintained using `wp_kses_post()` for safe HTML rendering
+    - ✅ Backward compatibility preserved for existing functionality
+    - ✅ Debug mode available for troubleshooting: `[contact_info field="opening" debug="1"]`
+
+### Enhanced
+
+- **ContactInfos Shortcode Debugging**: Added debug mode for troubleshooting HTML content issues
+  - **New Parameter**: `debug` attribute for shortcode to display raw database content
+  - **Usage**: `[contact_info field="opening" debug="1"]` shows raw HTML content from database
+  - **Benefit**: Easier troubleshooting of HTML rendering issues and content validation
+
 ## [0.4.68] - 2025-01-07
 
 ### Fixed
