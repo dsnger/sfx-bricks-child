@@ -90,7 +90,7 @@ class AdminPage
                                 ?>
                                 <div style="flex: 1 1 33%; min-width: 220px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
                                     <h2 style="margin-top:0; font-size: 1.1em;"><?php echo esc_html($field['label']); ?></h2>
-                                    <p style="font-size: 0.97em; color: #555;margin-top: 16px; margin-bottom: auto;"><?php echo esc_html($field['description']); ?></p>
+                                    <p style="font-size: 0.97em; color: #555;margin-top: 0; margin-bottom: auto;"><?php echo esc_html($field['description']); ?></p>
                                     <?php if ($type === 'checkbox'): ?>
                                         <input type="checkbox" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="1" <?php checked((int)$value, 1); ?> style="margin-top: 32px;"/>
                                     <?php elseif ($type === 'number'):
@@ -133,21 +133,27 @@ class AdminPage
                                                 $next_selected_post_types = $options[$next_field['id']];
                                             }
                                         ?>
-                                            <div class="post-types-selection">
-                                                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9;">
+                                            <details class="post-types-accordion" style="margin-top: 10px;">
+                                                <summary>
+                                                    <?php _e('Select Post Types', 'sfx'); ?> 
+                                                    <span>▼</span>
+                                                </summary>
+                                                <div style="border: 1px solid #ddd; border-top: none; padding: 10px; background: #f9f9f9; max-height: 200px; overflow-y: auto;">
                                                     <?php foreach ($next_post_types as $post_type => $post_type_obj): ?>
-                                                        <label style="display: block; margin-bottom: 5px;">
+                                                        <label style="display: block; margin-bottom: 8px; padding: 4px 0;">
                                                             <input type="checkbox" 
                                                                    name="sfx_wpoptimizer_options[<?php echo esc_attr($next_field['id']); ?>][]" 
                                                                    value="<?php echo esc_attr($post_type); ?>"
                                                                    <?php checked(in_array($post_type, $next_selected_post_types)); ?> />
                                                             <strong><?php echo esc_html($post_type_obj->labels->name); ?></strong>
-                                                            <small>(<?php echo esc_html($post_type); ?>)</small>
+                                                            <small style="color: #666;">(<?php echo esc_html($post_type); ?>)</small>
                                                         </label>
                                                     <?php endforeach; ?>
+                                                    <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666; border-top: 1px solid #ddd; padding-top: 8px;">
+                                                        <small><?php _e('Leave all unchecked to apply to all post types.', 'sfx'); ?></small>
+                                                    </p>
                                                 </div>
-                                                <p><small><?php _e('Leave all unchecked to apply to all post types.', 'sfx'); ?></small></p>
-                                            </div>
+                                            </details>
                                         <?php endif; ?>
                                         <?php $i++; // Skip the next field since we've already rendered it ?>
                                     <?php endif; ?>
@@ -166,6 +172,8 @@ class AdminPage
                     <?php submit_button(); ?>
                 </form>
             </div>
+            
+
             
             <script>
             document.addEventListener('DOMContentLoaded', function() {

@@ -1,0 +1,42 @@
+summary {
+    cursor: pointer;
+}
+
+/* Hide default summary marker */
+summary::-webkit-details-marker {
+    display: none;
+}
+
+/* For Firefox */
+summary {
+    list-style: none;
+}
+
+summary::-moz-list-bullet {
+    list-style-type: none;
+}
+
+/* Accordion specific styles */
+.post-types-accordion summary {
+    transition: background-color 0.2s ease;
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: 500;
+    user-select: none;
+}
+
+.post-types-accordion summary:hover {
+    background-color: #e8e8e8;
+}
+
+.post-types-accordion summary span {
+    transition: transform 0.2s ease;
+    float: right;
+    font-size: 0.8em;
+}
+
+.post-types-accordion[open] summary span {
+    transform: rotate(180deg);
+}
