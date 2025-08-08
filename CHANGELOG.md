@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.66] - 2025-01-07
+
+### Enhanced
+
+- **Native HTML Accordion for Post Type Selection**: Improved WPOptimizer settings interface with native HTML accordion
+  - **Problem**: Default browser summary marker was still visible in post type selection
+  - **Root Cause**: Incomplete CSS styling for hiding default browser markers
+  - **Enhanced Implementation**:
+    - Added comprehensive CSS to hide default summary markers across all browsers
+    - Added Firefox-specific styling (`list-style: none` and `::-moz-list-bullet`)
+    - Enhanced accordion styling with proper transitions and hover effects
+    - Moved all inline styles to CSS file for better maintainability
+    - Added smooth arrow rotation animation when accordion opens/closes
+  - **Impact**:
+    - ✅ Default browser triangle marker completely hidden
+    - ✅ Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
+    - ✅ Professional appearance with smooth animations
+    - ✅ Clean separation of HTML and CSS
+    - ✅ Better user experience in WPOptimizer settings
+
 ## [0.4.65] - 2025-01-07
 
 ### Fixed
@@ -15,12 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WordPress Core jQuery Migrate Disabling**: Fixed jQuery Migrate loading from WordPress core (`wp-includes`)
   - **Problem**: jQuery Migrate was still loading from WordPress core despite being disabled
   - **Root Cause**: WordPress core itself loads jQuery Migrate, not just plugins
-  - **Enhanced Implementation**: 
+  - **Enhanced Implementation**:
     - Added `wp_default_scripts` hook to prevent core registration
     - Added `init` hook for early deregistration
     - Enhanced script dependency removal from WordPress core
     - Added complete script removal from WordPress core scripts object
-  - **Impact**: 
+  - **Impact**:
     - ✅ jQuery Migrate completely prevented from WordPress core loading
     - ✅ No more console messages about jQuery Migrate from wp-includes
     - ✅ Works at the WordPress core level, not just plugin level
