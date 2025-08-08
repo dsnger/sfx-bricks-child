@@ -1,0 +1,46 @@
+# Release Process Rules
+
+## Before Making Any Release
+
+### 1. **Ask for Permission**
+- **ALWAYS** ask the user before making a release
+- Only proceed with release **on demand** from the user
+- Never automatically create releases
+
+### 2. **Check Changelog and Version**
+- Verify `style.css` version is updated for the latest changes
+- Verify `CHANGELOG.md` has an entry for the current version
+- If either is missing, update them first:
+  - Update version in `style.css`
+  - Add changelog entry with proper format and details
+
+### 3. **Check Git Status**
+- Verify all changes are committed to git
+- If uncommitted changes exist, commit them first:
+  - `git add .`
+  - `git commit -m "vX.X.X: [description of changes]"`
+  - `git push`
+
+### 4. **Release Process Checklist**
+After user approval, follow this order:
+1. ✅ Confirm changelog and version are updated
+2. ✅ Confirm all changes are committed and pushed
+3. ✅ Build theme: `./build-theme.sh`
+4. ✅ Create git tag: `git tag vX.X.X`
+5. ✅ Push tag: `git push origin vX.X.X`
+6. ✅ Create GitHub release with zip file
+7. ✅ Clean up local zip file
+
+### 5. **Never Skip Steps**
+- Always follow the checklist in order
+- Never assume anything is already done
+- Always verify each step before proceeding to the next
+
+### 6. **User Communication**
+- Keep user informed of each step
+- Report any issues immediately
+- Confirm completion of release process
+description: Rules for publishing a release
+globs:
+alwaysApply: true
+---
