@@ -510,96 +510,132 @@ class Controller
 
     private function disable_jquery()
     {
-        if (!is_admin() && !(function_exists('\bricks_is_builder') ? \bricks_is_builder() : false)) {
-            add_action('wp_enqueue_scripts', function () {
-                wp_deregister_script('jquery');
-                wp_deregister_script('jquery-core');
-            }, 100);
-        }
+        // Always register; decide at runtime to properly detect Bricks contexts
+        add_action('wp_enqueue_scripts', function () {
+            // Do not disable jQuery in admin
+            if (is_admin()) {
+                return;
+            }
+            // Do not disable in Bricks builder (backend or frontend iframe)
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+
+            // Frontend only: deregister jQuery
+            wp_deregister_script('jquery');
+            wp_deregister_script('jquery-core');
+        }, 100);
     }
 
     private function disable_jquery_migrate()
     {
-        // Only disable jQuery Migrate on frontend, not in admin or Bricks builder
-        if (!is_admin() && !(function_exists('\bricks_is_builder') ? \bricks_is_builder() : false)) {
-            // Remove jQuery Migrate from frontend only to avoid breaking admin
-            add_action('wp_enqueue_scripts', function () {
-                // Check if jQuery is being completely disabled
-                if ($this->is_option_enabled('disable_jquery')) {
-                    // If jQuery is disabled, no need to remove jQuery Migrate
-                    return;
-                }
+        // Register hooks always; bail at runtime for admin/Bricks contexts
+        add_action('wp_enqueue_scripts', function () {
+            if (is_admin()) {
+                return;
+            }
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+            // If jQuery is fully disabled, skip migrate handling
+            if ($this->is_option_enabled('disable_jquery')) {
+                return;
+            }
 
-                // Remove jquery-migrate from jquery dependencies on frontend
-                global $wp_scripts;
-                if (isset($wp_scripts->registered['jquery'])) {
-                    $wp_scripts->registered['jquery']->deps = array_diff(
-                        $wp_scripts->registered['jquery']->deps,
-                        ['jquery-migrate']
-                    );
-                }
-                // Deregister the script entirely
-                wp_deregister_script('jquery-migrate');
-            }, 1); // Early priority to catch before other scripts
+            global $wp_scripts;
+            if (isset($wp_scripts->registered['jquery'])) {
+                $wp_scripts->registered['jquery']->deps = array_diff(
+                    $wp_scripts->registered['jquery']->deps,
+                    ['jquery-migrate']
+                );
+            }
+            wp_deregister_script('jquery-migrate');
+        }, 1);
 
-            // Also run on wp_head to catch any late registrations
-            add_action('wp_head', function () {
-                if ($this->is_option_enabled('disable_jquery')) {
-                    return;
-                }
-                wp_deregister_script('jquery-migrate');
-            }, 1);
+        add_action('wp_head', function () {
+            if (is_admin()) {
+                return;
+            }
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+            if ($this->is_option_enabled('disable_jquery')) {
+                return;
+            }
+            wp_deregister_script('jquery-migrate');
+        }, 1);
 
-            // Prevent jQuery Migrate from being enqueued
-            add_filter('wp_script_loader_tag', function ($tag, $handle, $src) {
-                if ($handle === 'jquery-migrate') {
-                    return '';
-                }
-                return $tag;
-            }, 10, 3);
+        add_filter('wp_script_loader_tag', function ($tag, $handle, $src) {
+            if ($handle === 'jquery-migrate') {
+                return '';
+            }
+            return $tag;
+        }, 10, 3);
 
-            // Remove jQuery Migrate from any script dependencies
-            add_filter('script_loader_tag', function ($tag, $handle, $src) {
-                if ($handle === 'jquery-migrate') {
-                    return '';
-                }
-                return $tag;
-            }, 10, 3);
+        add_filter('script_loader_tag', function ($tag, $handle, $src) {
+            if ($handle === 'jquery-migrate') {
+                return '';
+            }
+            return $tag;
+        }, 10, 3);
 
-            // Prevent jQuery Migrate from being registered in the first place
-            add_action('wp_default_scripts', function ($scripts) {
-                if (isset($scripts->registered['jquery-migrate'])) {
-                    unset($scripts->registered['jquery-migrate']);
-                }
-            }, 1);
+        add_action('wp_default_scripts', function ($scripts) {
+            if (is_admin()) {
+                return;
+            }
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+            if (isset($scripts->registered['jquery'])) {
+                $scripts->registered['jquery']->deps = array_diff(
+                    $scripts->registered['jquery']->deps,
+                    ['jquery-migrate']
+                );
+            }
+            if (isset($scripts->registered['jquery-migrate'])) {
+                unset($scripts->registered['jquery-migrate']);
+            }
+        }, 1);
 
-            // Also prevent it from being enqueued by any means
-            add_action('wp_print_scripts', function () {
-                wp_deregister_script('jquery-migrate');
-                wp_dequeue_script('jquery-migrate');
-            }, 1);
+        add_action('wp_print_scripts', function () {
+            if (is_admin()) {
+                return;
+            }
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+            wp_deregister_script('jquery-migrate');
+            wp_dequeue_script('jquery-migrate');
+        }, 1);
 
-            // Prevent WordPress core from loading jQuery Migrate
-            add_action('wp_default_scripts', function ($scripts) {
-                // Remove jquery-migrate from jquery dependencies
-                if (isset($scripts->registered['jquery'])) {
-                    $scripts->registered['jquery']->deps = array_diff(
-                        $scripts->registered['jquery']->deps,
-                        ['jquery-migrate']
-                    );
-                }
-                // Completely remove jquery-migrate from scripts
-                if (isset($scripts->registered['jquery-migrate'])) {
-                    unset($scripts->registered['jquery-migrate']);
-                }
-            }, 1);
-
-            // Also run on init to catch any late registrations
-            add_action('init', function () {
-                wp_deregister_script('jquery-migrate');
-                wp_dequeue_script('jquery-migrate');
-            }, 1);
-        }
+        add_action('init', function () {
+            if (is_admin()) {
+                return;
+            }
+            if (function_exists('\\bricks_is_builder') && \\bricks_is_builder()) {
+                return;
+            }
+            if (isset($_GET['bricks']) || isset($_GET['bricks_iframe']) || isset($_GET['bricks_preview'])) {
+                return;
+            }
+            wp_deregister_script('jquery-migrate');
+            wp_dequeue_script('jquery-migrate');
+        }, 1);
     }
 
     private function disable_rest_api()
