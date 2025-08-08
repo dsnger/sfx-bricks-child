@@ -46,7 +46,10 @@ if (file_exists($composer_autoload)) {
 
 
 // Load environment handler
-require_once get_stylesheet_directory() . '/inc/Environment.php';
+$environment_file = get_stylesheet_directory() . '/inc/Environment.php';
+if (file_exists($environment_file)) {
+    require_once $environment_file;
+}
 
 // Load theme functionality
 require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
@@ -59,7 +62,7 @@ require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
 $updater = new \SFX\GitHubThemeUpdater();
 
 // Debug: Show development mode status
-if (is_admin() && current_user_can('manage_options') && \SFX\Environment::is_dev_mode()) {
+if (is_admin() && current_user_can('manage_options') && class_exists('SFX\\Environment') && \SFX\Environment::is_dev_mode()) {
     add_action('admin_notices', function() {
         $current_screen = get_current_screen();
         if (!$current_screen) {
@@ -134,7 +137,7 @@ function sfx_get_theme_post_types(): array
 }
 
 // Only initialize in production OR when specifically debugging the updater
-if (!\SFX\Environment::is_dev_mode() || (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_updater']))) {
+if ((!class_exists('SFX\\Environment') || !\SFX\Environment::is_dev_mode()) || (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_updater']))) {
     $updater->initialize();
 }
 

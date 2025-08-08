@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.71] - 2025-01-07
+
+### Fixed
+
+- **Critical Environment.php Missing File Error**: Fixed fatal PHP error when Environment.php file is missing from deployed theme
+  - **Issue**: Fatal error "Failed opening required '/inc/Environment.php'" causing site to crash
+  - **Root Cause**: Environment.php file missing from deployed theme package
+  - **Fix**: Added file existence check before requiring Environment.php
+  - **Implementation**: 
+    - Added `file_exists()` check before requiring Environment.php
+    - Added `class_exists()` checks before using Environment class methods
+    - Graceful fallback when Environment class is not available
+    - Prevents fatal errors when files are missing from deployment
+  - **Impact**: 
+    - ✅ Site no longer crashes when Environment.php is missing
+    - ✅ Graceful degradation when optional files are not present
+    - ✅ Maintains functionality even with missing files
+    - ✅ Better error handling for deployment issues
+
 ## [0.4.70] - 2025-01-07
 
 ### Fixed
