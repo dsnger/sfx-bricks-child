@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.68] - 2025-01-07
+
+### Fixed
+
+- **WPOptimizer Bricks Builder Compatibility**: Enhanced multiple functions to prevent interference with Bricks Builder
+  - **`disable_embed()`**: Added Bricks Builder context checks to prevent `wp-embed` script deregistration
+  - **`defer_js()`**: Added Bricks Builder context checks to prevent script deferring in builder
+  - **`defer_css()`**: Added Bricks Builder context checks to prevent CSS deferring in builder
+  - **Context-Sensitive Options**: Added `disable_embed`, `defer_js`, and `defer_css` to context-sensitive handling
+  - **Impact**: Resolves "wp is not defined" errors and ensures Bricks Builder functionality is preserved
+  - **Root Cause**: Functions were deregistering/deferring scripts and CSS needed by Bricks Builder
+  - **Solution**: Added comprehensive Bricks Builder context checks across all script/CSS optimization functions
+
 ## [0.4.67] - 2025-01-07
 
 ### Fixed
