@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.67] - 2025-01-07
+
+### Fixed
+
+- **WPOptimizer jQuery Safeguards**: Ensure jQuery and jQuery Migrate are not disabled in Admin or Bricks Builder
+  - Added admin and Bricks Builder context checks to `disable_jquery_migrate()` (aligned with `disable_jquery()` logic)
+  - Frontend-only disabling preserved for performance, while protecting backend and builder functionality
+
 ## [0.4.66] - 2025-01-07
 
 ### Enhanced
