@@ -49,6 +49,9 @@ class SC_ContactInfos
         foreach ($meta_keys as $field) {
             delete_transient('sfx_contact_info_' . $post_id . '_' . $field);
         }
+        
+        // Also clear any cached values for this post
+        delete_transient('sfx_contact_info_' . $post_id . '_all');
     }
 
     /**
@@ -72,6 +75,7 @@ class SC_ContactInfos
                 'text'       => null,     // Custom text instead of the field value
                 'class'      => null,     // CSS classes for the wrapper
                 'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
+                'debug'      => null,     // Debug mode to show raw value
             ],
             $atts,
             'contact_info'
@@ -93,6 +97,11 @@ class SC_ContactInfos
         // Get field value
         $value = $this->get_field_value($atts['field'], $atts['contact_id'], $atts['type']);
 
+        // Debug mode - show raw value
+        if (!empty($atts['debug'])) {
+            return '<pre>' . htmlspecialchars($value) . '</pre>';
+        }
+
         // Handle link attribute properly - check for 'false' string
         $has_link = !in_array(strtolower($atts['link']), ['false', '0', 'no', 'off'], true);
 
@@ -113,6 +122,9 @@ class SC_ContactInfos
 
             case 'address':
                 return $this->render_address_field($value, $atts, $icon, $atts['contact_id']);
+
+            case 'opening':
+                return $this->render_opening_field($value, $atts, $icon);
 
             case 'maplink':
                 if (empty($value)) {
@@ -314,15 +326,15 @@ class SC_ContactInfos
         $classes = $this->process_classes($atts['class']);
         $classes[] = 'contact-info-address';
 
-        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+        $output = '';
 
         if ($icon) {
             $output .= $icon;
         }
 
-        // If we have a formatted address, use it
+        // If we have a formatted address, use it (allow HTML content from WYSIWYG editor)
         if (!empty($value)) {
-            $output .= nl2br(esc_html($value));
+            $output .= wp_kses_post($value);
         } else {
             // Build address from individual fields using batch meta data
             $address_parts = [];
@@ -347,10 +359,37 @@ class SC_ContactInfos
                 if ($country) $address_parts[] = $country;
             }
             
-            $output .= implode('<br>', array_map('esc_html', $address_parts));
+            // For non-WYSIWYG address, wrap in span with classes
+            if (!empty($address_parts)) {
+                $output .= '<span class="' . esc_attr(implode(' ', $classes)) . '">';
+                $output .= implode('<br>', array_map('esc_html', $address_parts));
+                $output .= '</span>';
+            }
         }
 
-        $output .= '</span>';
+        return $output;
+    }
+
+    /**
+     * Render opening hours field (allows HTML content from WYSIWYG editor)
+     * 
+     * @param string $value
+     * @param array $atts
+     * @param string $icon
+     * @return string
+     */
+    private function render_opening_field(string $value, array $atts, string $icon): string
+    {
+        $output = '';
+
+        if ($icon) {
+            $output .= $icon;
+        }
+
+        // Allow HTML content from WYSIWYG editor without wrapping in span
+        if (!empty($value)) {
+            $output .= wp_kses_post($value);
+        }
 
         return $output;
     }
