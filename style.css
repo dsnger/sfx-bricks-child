@@ -10,3 +10,34 @@
  GitHub Theme URI: https://github.com/dsnger/sfx-bricks-child
  GitHub Branch:   main
 */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+*::before,
+*::after {
+  /* Font smoothing - only apply to text elements for better performance */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Text rendering */
+  text-rendering: optimizeLegibility;
+
+  /* Text size adjustment */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Apply backface-visibility only to elements that need it */
+body {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
