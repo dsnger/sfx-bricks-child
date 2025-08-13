@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.72] - 2025-01-07
+
+### Enhanced
+
+- **Font Optimization and Performance Improvements**: Enhanced CSS styles for improved text rendering and layout performance
+  - **Font Smoothing**: Optimized font smoothing properties for better cross-browser compatibility
+    - Added missing `-moz-text-size-adjust` vendor prefix for Firefox
+    - Improved font smoothing with `-moz-osx-font-smoothing: grayscale` for macOS
+    - Better organization of font-related properties with logical grouping
+  - **Performance Optimization**: Moved `backface-visibility` from universal selector to body only
+    - Prevents performance impact when applying `backface-visibility: hidden` to all elements
+    - Maintains 3D transform performance benefits where needed
+    - Better separation of concerns for performance-critical properties
+  - **Code Organization**: Improved CSS structure and readability
+    - Added descriptive comments for each property group
+    - Logical grouping of related properties (font smoothing, text rendering, text size adjustment)
+    - Cleaner, more maintainable CSS structure
+  - **Cross-Browser Compatibility**: Enhanced vendor prefix coverage
+    - Consistent vendor prefixing across all text-related properties
+    - Better support for Firefox, Safari, and Chrome browsers
+    - Improved fallback handling for older browser versions
+  - **Impact**:
+    - ✅ Better font rendering across all browsers
+    - ✅ Improved performance by limiting `backface-visibility` scope
+    - ✅ Enhanced code maintainability and readability
+    - ✅ Better cross-browser compatibility
+    - ✅ Optimized CSS for production use
+
 ## [0.4.71] - 2025-01-07
 
 ### Fixed
