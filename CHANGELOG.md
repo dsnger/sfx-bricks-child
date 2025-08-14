@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.4.72] - 2025-01-07
+## [0.4.73] - 2025-08-14
+
+Fixed: admin/Bricks guards for defer CSS/JS; Fixed: invalid loadCSS entries; Changed: safer admin menu removal timing; Fixed: REST/context options timing; Fixed: search redirect hook timing
+
 
 ### Enhanced
 
