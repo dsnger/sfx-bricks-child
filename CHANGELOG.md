@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.5.0] - 2025-01-07
+
+### Enhanced
+
+- **Content Order Functionality**: Added comprehensive content ordering system for hierarchical post types
+  - **New Feature**: Drag & drop interface for reordering posts, pages, and custom post types
+  - **Post Type Support**: Automatic detection of hierarchical post types and those supporting page attributes
+  - **Performance Optimized**: Hardware-accelerated dragging with smooth animations and responsive feedback
+  - **Admin Integration**: New "Order" submenu under each supported post type for easy access
+  - **Asset Management**: Efficient loading of required libraries (jQuery UI, nestedSortable) only when needed
+  - **User Experience**: Visual feedback during operations, success/error states, and mobile-responsive design
+
 ## [0.4.73] - 2025-08-14
 
 Fixed: admin/Bricks guards for defer CSS/JS; Fixed: invalid loadCSS entries; Changed: safer admin menu removal timing; Fixed: REST/context options timing; Fixed: search redirect hook timing
