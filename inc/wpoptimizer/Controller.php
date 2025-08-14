@@ -264,18 +264,6 @@ class Controller
         }, 10, 2);
     }
 
-    private function add_font_mime_types()
-    {
-        add_filter('upload_mimes', function ($mimes) {
-            $mimes['woff']  = 'application/font-woff';
-            $mimes['woff2'] = 'application/font-woff2';
-            $mimes['ttf']   = 'application/x-font-ttf';
-            return $mimes;
-        });
-
-        $this->check_font_mime_types();
-    }
-
     private function check_font_mime_types()
     {
         add_filter('wp_additional_filetype_and_ext', function ($data, $file, $filename, $mimes) {
@@ -338,7 +326,42 @@ class Controller
             // Defensive check: ensure $submenu is an array before calling removal function
             global $submenu;
             if (is_array($submenu) && isset($submenu['themes.php'])) {
-                remove_submenu_page('themes.php', 'site-editor.php?path=/patterns');
+                // Try multiple possible submenu page slugs for patterns
+                $possible_pattern_slugs = [
+                    'site-editor.php?path=/patterns',
+                    'site-editor.php?path=%2Fpatterns',
+                    'site-editor.php?path=/patterns&',
+                    'site-editor.php?path=%2Fpatterns&',
+                    'site-editor.php?p=%2Fpattern',
+                    'site-editor.php?p=%2Fpatterns',
+                    'site-editor.php?p=/pattern',
+                    'site-editor.php?p=/patterns',
+                    'edit.php?post_type=wp_block',
+                    'edit.php?post_type=wp_block&patterns=1'
+                ];
+                
+                // Also check for any submenu item containing 'pattern' in the URL
+                if (isset($submenu['themes.php'])) {
+                    foreach ($submenu['themes.php'] as $key => $item) {
+                        if (isset($item[2])) {
+                            $submenu_url = $item[2];
+                            
+                            // Check if this submenu item contains 'pattern' in any form
+                            if (stripos($submenu_url, 'pattern') !== false) {
+                                remove_submenu_page('themes.php', $submenu_url);
+                                break; // Exit loop if found
+                            }
+                            
+                            // Also check the specific slug patterns
+                            foreach ($possible_pattern_slugs as $slug) {
+                                if (strpos($submenu_url, $slug) !== false) {
+                                    remove_submenu_page('themes.php', $submenu_url);
+                                    break 2; // Exit both loops if found
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }, 999); // Run late to ensure submenu exists
     }

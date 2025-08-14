@@ -364,14 +364,6 @@ class Settings
 
             // New orphaned functions as settings
             [
-                'id'          => 'add_font_mime_types',
-                'label'       => __('Allow Font File Uploads', 'sfx'),
-                'description' => __('Allows uploading of font files (WOFF, WOFF2, TTF). Only enable if you need to upload custom fonts. Security warning: Only enable if you trust your site\'s users.', 'sfx'),
-                'type'        => 'checkbox',
-                'default'     => 0,
-                'group'       => 'media',
-            ],
-            [
                 'id'          => 'remove_menus_appearance_patterns',
                 'label'       => __('Remove Patterns Menu', 'sfx'),
                 'description' => __('Removes the Patterns submenu from Appearance menu in admin. Useful for sites not using Full Site Editing patterns.', 'sfx'),
