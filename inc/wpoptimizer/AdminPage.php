@@ -75,6 +75,10 @@ class AdminPage
                                         $is_conditional = in_array($id, ['limit_revisions_number', 'limit_revisions_post_types']);
                                         $limit_revisions_enabled = $options['limit_revisions'] ?? 1;
 
+                                        // Check if this is a conditional field that depends on disable_heartbeat
+                                        $is_heartbeat_conditional = in_array($id, ['slow_heartbeat']);
+                                        $disable_heartbeat_enabled = $options['disable_heartbeat'] ?? 0;
+
                                         // Check if next field is also conditional
                                         $next_field = null;
                                         $next_is_conditional = false;
@@ -87,7 +91,11 @@ class AdminPage
                                         $combine_with_next = $is_conditional && $next_is_conditional;
 
                                         if ($is_conditional) {
-                                            $display_style = $limit_revisions_enabled ? 'block' : 'none';
+                                            $display_style = $limit_revisions_enabled ? 'flex' : 'none';
+                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
+                                        }
+                                        if ($is_heartbeat_conditional) {
+                                            $display_style = $disable_heartbeat_enabled ? 'none' : 'flex';
                                             echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
                                         }
                                     ?>
@@ -166,6 +174,9 @@ class AdminPage
                                         if ($is_conditional) {
                                             echo '</div>';
                                         }
+                                        if ($is_heartbeat_conditional) {
+                                            echo '</div>';
+                                        }
                                         $i++;
                                     endwhile;
                                     ?>
@@ -182,6 +193,7 @@ class AdminPage
 
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
+                    // Revision limits conditional logic
                     const limitRevisionsCheckbox = document.getElementById('limit_revisions');
                     const revisionNumberContainer = document.getElementById('limit_revisions_number_container');
                     const revisionPostTypesContainer = document.getElementById('limit_revisions_post_types_container');
@@ -190,10 +202,10 @@ class AdminPage
                         const isEnabled = limitRevisionsCheckbox && limitRevisionsCheckbox.checked;
 
                         if (revisionNumberContainer) {
-                            revisionNumberContainer.style.display = isEnabled ? 'block' : 'none';
+                            revisionNumberContainer.style.display = isEnabled ? 'flex' : 'none';
                         }
                         if (revisionPostTypesContainer) {
-                            revisionPostTypesContainer.style.display = isEnabled ? 'block' : 'none';
+                            revisionPostTypesContainer.style.display = isEnabled ? 'flex' : 'none';
                         }
                     }
 
@@ -201,6 +213,24 @@ class AdminPage
                         limitRevisionsCheckbox.addEventListener('change', toggleRevisionFields);
                         // Set initial state
                         toggleRevisionFields();
+                    }
+
+                    // Heartbeat conditional logic
+                    const disableHeartbeatCheckbox = document.getElementById('disable_heartbeat');
+                    const slowHeartbeatContainer = document.getElementById('slow_heartbeat_container');
+
+                    function toggleHeartbeatFields() {
+                        const isDisabled = disableHeartbeatCheckbox && disableHeartbeatCheckbox.checked;
+
+                        if (slowHeartbeatContainer) {
+                            slowHeartbeatContainer.style.display = isDisabled ? 'none' : 'flex';
+                        }
+                    }
+
+                    if (disableHeartbeatCheckbox) {
+                        disableHeartbeatCheckbox.addEventListener('change', toggleHeartbeatFields);
+                        // Set initial state
+                        toggleHeartbeatFields();
                     }
                 });
             </script>
