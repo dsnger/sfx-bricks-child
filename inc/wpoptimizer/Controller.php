@@ -37,15 +37,26 @@ class Controller
         $this->init_fields();
         
         // Handle context-sensitive options at the right time
-        add_action('init', [$this, 'handle_context_sensitive_options'], 1);
+		add_action('init', [$this, 'handle_context_sensitive_options'], 1);
         add_action('wp_loaded', [$this, 'handle_options']);
+
+		// Define theme/plugin editor restriction as early as possible if enabled
+		if ($this->is_option_enabled('disable_theme_editor') && !defined('DISALLOW_FILE_EDIT')) {
+			define('DISALLOW_FILE_EDIT', true);
+		}
 
         // Immediate check for comments disabling
         if ($this->is_option_enabled('disable_comments')) {
-            add_action('wp_loaded', function () {
-                remove_menu_page('edit-comments.php');
-                remove_submenu_page('options-general.php', 'options-discussion.php');
-            });
+			add_action('admin_menu', function () {
+                // Defensive check: ensure $menu and $submenu are arrays before calling removal functions
+                global $menu, $submenu;
+                if (is_array($menu)) {
+                    remove_menu_page('edit-comments.php');
+                }
+                if (is_array($submenu) && isset($submenu['options-general.php'])) {
+                    remove_submenu_page('options-general.php', 'options-discussion.php');
+                }
+			}, 999); // Run late to ensure menus are registered
         }
 
         // Clear caches when settings are updated
@@ -73,8 +84,17 @@ class Controller
             return;
         }
         
-        // Handle options that need proper context checking
-        $context_sensitive_options = ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css'];
+		// Handle options that need proper context checking
+		$context_sensitive_options = [
+			'disable_jquery',
+			'disable_jquery_migrate',
+			'disable_embed',
+			'defer_js',
+			'defer_css',
+			// Ensure REST-related restrictions are registered early
+			'disable_rest_api',
+			'disable_rest_api_non_authenticated',
+		];
         
         foreach ($this->fields as $field) {
             if (in_array($field['id'], $context_sensitive_options) && 
@@ -219,13 +239,13 @@ class Controller
 
     private function disable_search()
     {
-        // Remove search functionality
-        add_action('wp_loaded', function () {
+		// Remove search functionality
+		add_action('template_redirect', function () {
             if (is_search()) {
                 wp_redirect(home_url(), 301);
                 exit;
             }
-        });
+		});
 
         // Remove search widget
         add_action('widgets_init', function () {
@@ -315,8 +335,12 @@ class Controller
     private function remove_menus_appearance_patterns()
     {
         add_action('admin_menu', function () {
-            remove_submenu_page('themes.php', 'site-editor.php?path=/patterns');
-        });
+            // Defensive check: ensure $submenu is an array before calling removal function
+            global $submenu;
+            if (is_array($submenu) && isset($submenu['themes.php'])) {
+                remove_submenu_page('themes.php', 'site-editor.php?path=/patterns');
+            }
+        }, 999); // Run late to ensure submenu exists
     }
 
     // --- Beispiele aus WPOptimizer (2. Datei, ebenfalls umbenannt) ---
@@ -334,7 +358,7 @@ class Controller
     {
         // Sammle Styles
         add_action('wp_enqueue_scripts', function () {
-            if (is_customize_preview() || (function_exists('\bricks_is_builder') && \bricks_is_builder())) {
+            if (is_admin() || is_customize_preview() || (function_exists('\bricks_is_builder') && \bricks_is_builder())) {
                 return;
             }
             global $wp_styles;
@@ -365,19 +389,27 @@ class Controller
 
         // Per loadCSS einbinden
         add_action('wp_head', function () {
-            if (is_customize_preview() || (function_exists('\bricks_is_builder') && \bricks_is_builder()) || empty($this->styles)) {
+            if (is_admin() || is_customize_preview() || (function_exists('\bricks_is_builder') && \bricks_is_builder()) || empty($this->styles)) {
                 return;
             }
-            $out = '<script>function loadCSS(href,before,media,callback){"use strict";var ss=window.document.createElement("link");var ref=before||window.document.getElementsByTagName("script")[0];var sheets=window.document.styleSheets;ss.rel="stylesheet";ss.href=href;ss.media="only x";if(callback){ss.onload=callback;}ref.parentNode.insertBefore(ss,ref);ss.onloadcssdefined=function(cb){var defined;for(var i=0;i<sheets.length;i++){if(sheets[i].href&&sheets[i].href.indexOf(href)>-1){defined=true;}}defined?cb():setTimeout(function(){ss.onloadcssdefined(cb);});};ss.onloadcssdefined(function(){ss.media=media||"all";});return ss;}</script>';
+			$out = '<script>function loadCSS(href,before,media,callback){"use strict";var ss=window.document.createElement("link");var ref=before||window.document.getElementsByTagName("script")[0];var sheets=window.document.styleSheets;ss.rel="stylesheet";ss.href=href;ss.media="only x";if(callback){ss.onload=callback;}ref.parentNode.insertBefore(ss,ref);ss.onloadcssdefined=function(cb){var defined;for(var i=0;i<sheets.length;i++){if(sheets[i].href&&sheets[i].href.indexOf(href)>-1){defined=true;}}defined?cb():setTimeout(function(){ss.onloadcssdefined(cb);});};ss.onloadcssdefined(function(){ss.media=media||"all";});return ss;}';
             foreach ($this->styles as $style) {
-                if ($style && !isset($style->extra['conditional'])) {
-                    $src = $style->src;
-                    if (strpos($src, 'http') === false) {
-                        $src = site_url() . $src;
-                    }
-                    $media = $style->args ?? 'all';
-                    $out .= 'loadCSS("' . $src . '","","' . $media . '");';
-                }
+				if ($style && !isset($style->extra['conditional'])) {
+					$src = $style->src;
+					if (empty($src)) {
+						continue;
+					}
+					if (strpos($src, '//') === 0) {
+						$src = (is_ssl() ? 'https:' : 'http:') . $src;
+					} elseif (strpos($src, 'http') !== 0) {
+						$src = site_url() . $src;
+					}
+					if ($src === site_url()) {
+						continue;
+					}
+					$media = $style->args ?? 'all';
+					$out .= 'loadCSS("' . esc_url_raw($src) . '","","' . esc_attr($media) . '");';
+				}
             }
             $out .= '</script>';
             echo $out;
@@ -425,11 +457,17 @@ class Controller
         add_filter('comments_template', '__return_empty_string');
         add_filter('get_comments_number', '__return_zero');
 
-        // Remove Comments menu
-        add_action('admin_menu', function () {
-            remove_menu_page('edit-comments.php');
-            remove_submenu_page('options-general.php', 'options-discussion.php');
-        }, 999);
+		// Remove Comments menu
+		add_action('admin_menu', function () {
+            // Defensive check: ensure $menu and $submenu are arrays before calling removal functions
+            global $menu, $submenu;
+            if (is_array($menu)) {
+                remove_menu_page('edit-comments.php');
+            }
+            if (is_array($submenu) && isset($submenu['options-general.php'])) {
+                remove_submenu_page('options-general.php', 'options-discussion.php');
+            }
+		}, 999); // Run late to ensure menus are registered
 
         // Remove from admin bar
         add_action('wp_before_admin_bar_render', function () {
