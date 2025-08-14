@@ -32,6 +32,11 @@ class Controller
         AdminPage::register();
         AssetManager::register();
         Settings::register();
+        
+        // Load ContentOrder class if it exists
+        if (file_exists(__DIR__ . '/classes/ContentOrder.php')) {
+            require_once __DIR__ . '/classes/ContentOrder.php';
+        }
 
         // Register hooks through consolidated system
         $this->init_fields();
@@ -94,6 +99,8 @@ class Controller
 			// Ensure REST-related restrictions are registered early
 			'disable_rest_api',
 			'disable_rest_api_non_authenticated',
+			// Content order needs to run early in admin
+			'enable_content_order',
 		];
         
         foreach ($this->fields as $field) {
@@ -113,7 +120,7 @@ class Controller
         
         foreach ($this->fields as $field) {
             // Skip context-sensitive options (handled separately)
-            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css'])) {
+            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order'])) {
                 continue;
             }
             
@@ -364,6 +371,16 @@ class Controller
                 }
             }
         }, 999); // Run late to ensure submenu exists
+    }
+
+    private function enable_content_order()
+    {
+        // Include and register the ContentOrder class
+        if (class_exists('\SFX\WPOptimizer\classes\ContentOrder')) {
+            // Get the selected post types for content ordering
+            $selected_post_types = Settings::get('enable_content_order_post_types', []);
+            \SFX\WPOptimizer\classes\ContentOrder::register($selected_post_types);
+        }
     }
 
     // --- Beispiele aus WPOptimizer (2. Datei, ebenfalls umbenannt) ---

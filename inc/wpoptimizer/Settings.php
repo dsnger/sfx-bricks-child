@@ -151,7 +151,7 @@ class Settings
                 'description' => __('Disables all comment features site-wide. Recommended for sites that do not use comments.', 'sfx'),
                 'type'        => 'checkbox',
                 'default'     => 1,
-                'group'       => 'comments',
+                'group'       => 'admin',
             ],
 
             [
@@ -370,6 +370,26 @@ class Settings
                 'type'        => 'checkbox',
                 'default'     => 0,
                 'group'       => 'admin',
+            ],
+            [
+                'id'          => 'enable_content_order',
+                'label'       => __('Content Order', 'sfx'),
+                'description' => __('Enable custom ordering of various "hierarchical" content types or those supporting "page attributes". A new \'Order\' sub-menu will appear for enabled content type(s). The "All {Posts}" list page for enabled post types in wp-admin will automatically use the custom order.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'admin',
+            ],
+            [
+                'id'          => 'enable_content_order_post_types',
+                'label'       => __('Post Types for Content Ordering', 'sfx'),
+                'description' => __('Select which post types should have custom ordering enabled. Only hierarchical post types and those supporting page attributes can be ordered (taxonomies are not supported). Leave empty to apply to all supported post types.', 'sfx'),
+                'type'        => 'post_types',
+                'default'     => [],
+                'group'       => 'admin',
+                'conditional' => [
+                    'field'    => 'enable_content_order',
+                    'operator' => 'checked'
+                ]
             ],
             [
                 'id'          => 'disable_block_styling',
