@@ -259,6 +259,10 @@ class Settings
                 'min'         => 0,
                 'max'         => 10,
                 'group'       => 'performance',
+                'conditional' => [
+                    'field'    => 'limit_revisions',
+                    'operator' => 'checked'
+                ]
             ],
             [
                 'id'          => 'limit_revisions_post_types',
@@ -267,6 +271,10 @@ class Settings
                 'type'        => 'post_types',
                 'default'     => [],
                 'group'       => 'performance',
+                'conditional' => [
+                    'field'    => 'limit_revisions',
+                    'operator' => 'checked'
+                ]
             ],
             [
                 'id'          => 'disable_heartbeat',
@@ -283,6 +291,10 @@ class Settings
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'group'       => 'performance',
+                'conditional' => [
+                    'field'    => 'disable_heartbeat',
+                    'operator' => '!checked'
+                ]
             ],
             [
                 'id'          => 'remove_wp_embed',

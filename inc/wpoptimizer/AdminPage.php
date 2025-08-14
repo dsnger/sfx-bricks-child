@@ -10,6 +10,51 @@ class AdminPage
     public static $page_title = 'WP Optimizer';
     public static $description = 'Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.';
 
+    /**
+     * Evaluate conditional logic for field display
+     */
+    private static function evaluate_condition($value, $operator, $expected_value = null): bool
+    {
+        switch ($operator) {
+            case 'checked':
+                return (bool)$value;
+            case '!checked':
+                return !(bool)$value;
+            case 'equals':
+                return $value == $expected_value;
+            case '!equals':
+                return $value != $expected_value;
+            case 'in_array':
+                return is_array($expected_value) && in_array($value, $expected_value);
+            case '!in_array':
+                return is_array($expected_value) && !in_array($value, $expected_value);
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Get all conditional field configurations
+     */
+    private static function get_conditional_fields(): array
+    {
+        $fields = Settings::get_fields();
+        $conditionals = [];
+        
+        foreach ($fields as $field) {
+            if (isset($field['conditional'])) {
+                $conditionals[] = [
+                    'target' => $field['id'],
+                    'dependency' => $field['conditional']['field'],
+                    'operator' => $field['conditional']['operator'],
+                    'value' => $field['conditional']['value'] ?? null
+                ];
+            }
+        }
+        
+        return $conditionals;
+    }
+
     public static function register(): void
     {
         add_action('admin_menu', [self::class, 'add_submenu_page']);
@@ -35,6 +80,7 @@ class AdminPage
             <?php
             $groups = [
                 'performance' => __('Performance', 'sfx'),
+                'admin'       => __('Admin Enhancements', 'sfx'),
                 'security'    => __('Security & Privacy', 'sfx'),
                 'frontend'    => __('Frontend Cleanup', 'sfx'),
                 'media'       => __('Media & Uploads', 'sfx'),
@@ -71,33 +117,33 @@ class AdminPage
                                         $type = $field['type'] ?? 'checkbox';
                                         $value = $options[$id] ?? $field['default'];
 
-                                        // Check if this is a conditional field that depends on limit_revisions
-                                        $is_conditional = in_array($id, ['limit_revisions_number', 'limit_revisions_post_types']);
-                                        $limit_revisions_enabled = $options['limit_revisions'] ?? 1;
+                                        // Check if this is a conditional field
+                                        $is_conditional = isset($field['conditional']);
+                                        $should_show = true;
+                                        
+                                        if ($is_conditional) {
+                                            $dep_field = $field['conditional']['field'];
+                                            $operator = $field['conditional']['operator'];
+                                            $dep_value = $field['conditional']['value'] ?? null;
+                                            $dep_field_value = $options[$dep_field] ?? 0;
+                                            
+                                            $should_show = self::evaluate_condition($dep_field_value, $operator, $dep_value);
+                                            $display_style = $should_show ? 'flex' : 'none';
+                                            
+                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
+                                        }
 
-                                        // Check if this is a conditional field that depends on disable_heartbeat
-                                        $is_heartbeat_conditional = in_array($id, ['slow_heartbeat']);
-                                        $disable_heartbeat_enabled = $options['disable_heartbeat'] ?? 0;
-
-                                        // Check if next field is also conditional
+                                        // Check if next field is also conditional (for combining display)
                                         $next_field = null;
                                         $next_is_conditional = false;
                                         if ($i + 1 < count($group_fields)) {
                                             $next_field = array_values($group_fields)[$i + 1];
-                                            $next_is_conditional = in_array($next_field['id'], ['limit_revisions_number', 'limit_revisions_post_types']);
+                                            $next_is_conditional = isset($next_field['conditional']);
                                         }
 
-                                        // If current and next are both conditional, combine them
-                                        $combine_with_next = $is_conditional && $next_is_conditional;
-
-                                        if ($is_conditional) {
-                                            $display_style = $limit_revisions_enabled ? 'flex' : 'none';
-                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
-                                        }
-                                        if ($is_heartbeat_conditional) {
-                                            $display_style = $disable_heartbeat_enabled ? 'none' : 'flex';
-                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
-                                        }
+                                        // If current and next are both conditional and depend on the same field, combine them
+                                        $combine_with_next = $is_conditional && $next_is_conditional && 
+                                            $field['conditional']['field'] === $next_field['conditional']['field'];
                                     ?>
                                         <div style="flex: 1 1 33%; min-width: 220px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
                                             <h2 style="margin-top:0; font-size: 1.1em;"><?php echo esc_html($field['label']); ?></h2>
@@ -174,9 +220,6 @@ class AdminPage
                                         if ($is_conditional) {
                                             echo '</div>';
                                         }
-                                        if ($is_heartbeat_conditional) {
-                                            echo '</div>';
-                                        }
                                         $i++;
                                     endwhile;
                                     ?>
@@ -193,45 +236,47 @@ class AdminPage
 
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
-                    // Revision limits conditional logic
-                    const limitRevisionsCheckbox = document.getElementById('limit_revisions');
-                    const revisionNumberContainer = document.getElementById('limit_revisions_number_container');
-                    const revisionPostTypesContainer = document.getElementById('limit_revisions_post_types_container');
-
-                    function toggleRevisionFields() {
-                        const isEnabled = limitRevisionsCheckbox && limitRevisionsCheckbox.checked;
-
-                        if (revisionNumberContainer) {
-                            revisionNumberContainer.style.display = isEnabled ? 'flex' : 'none';
-                        }
-                        if (revisionPostTypesContainer) {
-                            revisionPostTypesContainer.style.display = isEnabled ? 'flex' : 'none';
-                        }
-                    }
-
-                    if (limitRevisionsCheckbox) {
-                        limitRevisionsCheckbox.addEventListener('change', toggleRevisionFields);
-                        // Set initial state
-                        toggleRevisionFields();
-                    }
-
-                    // Heartbeat conditional logic
-                    const disableHeartbeatCheckbox = document.getElementById('disable_heartbeat');
-                    const slowHeartbeatContainer = document.getElementById('slow_heartbeat_container');
-
-                    function toggleHeartbeatFields() {
-                        const isDisabled = disableHeartbeatCheckbox && disableHeartbeatCheckbox.checked;
-
-                        if (slowHeartbeatContainer) {
-                            slowHeartbeatContainer.style.display = isDisabled ? 'none' : 'flex';
+                    // Generic conditional field handler
+                    const conditionalFields = <?php echo json_encode(self::get_conditional_fields()); ?>;
+                    
+                    function evaluateCondition(value, operator, expectedValue = null) {
+                        switch (operator) {
+                            case 'checked':
+                                return Boolean(value);
+                            case '!checked':
+                                return !Boolean(value);
+                            case 'equals':
+                                return value == expectedValue;
+                            case '!equals':
+                                return value != expectedValue;
+                            case 'in_array':
+                                return Array.isArray(expectedValue) && expectedValue.includes(value);
+                            case '!in_array':
+                                return Array.isArray(expectedValue) && !expectedValue.includes(value);
+                            default:
+                                return true;
                         }
                     }
-
-                    if (disableHeartbeatCheckbox) {
-                        disableHeartbeatCheckbox.addEventListener('change', toggleHeartbeatFields);
-                        // Set initial state
-                        toggleHeartbeatFields();
+                    
+                    function initializeConditionalFields() {
+                        conditionalFields.forEach(config => {
+                            const depCheckbox = document.getElementById(config.dependency);
+                            const targetContainer = document.getElementById(config.target + '_container');
+                            
+                            if (depCheckbox && targetContainer) {
+                                const toggleFunction = () => {
+                                    const shouldShow = evaluateCondition(depCheckbox.checked, config.operator, config.value);
+                                    targetContainer.style.display = shouldShow ? 'flex' : 'none';
+                                };
+                                
+                                depCheckbox.addEventListener('change', toggleFunction);
+                                toggleFunction(); // Set initial state
+                            }
+                        });
                     }
+                    
+                    // Initialize all conditional fields
+                    initializeConditionalFields();
                 });
             </script>
         </div>
