@@ -49,6 +49,7 @@ class Settings
                 'default'     => 0,
                 'group'       => 'media',
             ],
+
             [
                 'id'          => 'disable_jquery',
                 'label'       => __('Disable jQuery', 'sfx'),
@@ -390,6 +391,14 @@ class Settings
                     'field'    => 'enable_content_order',
                     'operator' => 'checked'
                 ]
+            ],
+            [
+                'id'          => 'enable_media_replacement',
+                'label'       => __('Media Replacement', 'sfx'),
+                'description' => __('Enable media replacement functionality. Adds a "Replace Media" button to attachment edit screens, allowing you to replace media files while keeping the same ID, URL, and metadata.', 'sfx'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'media',
             ],
             [
                 'id'          => 'disable_block_styling',

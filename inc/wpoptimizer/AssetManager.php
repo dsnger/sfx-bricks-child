@@ -39,6 +39,33 @@ class AssetManager
     }
 
     /**
+     * Check if we're on an attachment edit page
+     * 
+     * @return bool
+     */
+    private static function is_attachment_edit_page(): bool
+    {
+        $screen = get_current_screen();
+        if (!$screen) {
+            return false;
+        }
+
+        // Check if we're on an attachment edit page
+        return $screen->id === 'attachment' && isset($_GET['action']) && $_GET['action'] === 'edit';
+    }
+
+    /**
+     * Check if media replacement is enabled
+     * 
+     * @return bool
+     */
+    private static function is_media_replacement_enabled(): bool
+    {
+        $options = get_option('sfx_wpoptimizer_options', []);
+        return isset($options['enable_media_replacement']) && $options['enable_media_replacement'];
+    }
+
+    /**
      * Enqueue admin assets with conditional loading
      */
     public static function enqueue_admin_assets(): void
@@ -95,6 +122,27 @@ class AssetManager
                 // Localize script with necessary data
                 wp_localize_script('sfx-content-order', 'sfxContentOrder', [
                     'nonce' => wp_create_nonce('order_sorting_nonce'),
+                    'ajaxurl' => admin_url('admin-ajax.php')
+                ]);
+            }
+        }
+
+        // Load media replacement assets on attachment edit pages
+        if (self::is_attachment_edit_page() && self::is_media_replacement_enabled()) {
+            // Enqueue media replacement specific assets
+            $media_replace_css = get_stylesheet_directory() . '/inc/WPOptimizer/assets/media-replace.css';
+            $media_replace_js = get_stylesheet_directory() . '/inc/WPOptimizer/assets/media-replace.js';
+
+            if (file_exists($media_replace_css)) {
+                wp_enqueue_style('sfx-media-replace', get_stylesheet_directory_uri() . '/inc/WPOptimizer/assets/media-replace.css', [], filemtime($media_replace_css));
+            }
+
+            if (file_exists($media_replace_js)) {
+                wp_enqueue_script('sfx-media-replace', get_stylesheet_directory_uri() . '/inc/WPOptimizer/assets/media-replace.js', ['jquery', 'wp-media-utils'], filemtime($media_replace_js), true);
+                
+                // Localize script with necessary data
+                wp_localize_script('sfx-media-replace', 'sfxMediaReplace', [
+                    'nonce' => wp_create_nonce('sfx_media_replace_nonce'),
                     'ajaxurl' => admin_url('admin-ajax.php')
                 ]);
             }

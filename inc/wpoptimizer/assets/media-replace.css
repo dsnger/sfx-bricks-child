@@ -1,0 +1,112 @@
+/* Media Replacement Styles */
+
+#media-replace-div {
+    margin-top: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+#media-replace-div .postbox-header {
+    background: #f9f9f9;
+    border-bottom: 1px solid #ccd0d4;
+    padding: 8px 12px;
+}
+
+#media-replace-div .postbox-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+#media-replace-div .inside {
+    padding: 12px;
+}
+
+.sfx-media-replace-button {
+    width: 100%;
+    margin-bottom: 12px !important;
+    background: #0073aa !important;
+    border-color: #0073aa !important;
+    color: #fff !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+.sfx-media-replace-button:hover {
+    background: #005a87 !important;
+    border-color: #005a87 !important;
+    color: #fff !important;
+}
+
+.sfx-media-replace-button:focus {
+    box-shadow: 0 0 0 1px #0073aa !important;
+}
+
+.sfx-media-replace-notes {
+    background: #f7f7f7;
+    border-left: 4px solid #0073aa;
+    padding: 8px 12px;
+    margin: 0;
+}
+
+.sfx-media-replace-notes p {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Media Frame Customization */
+.mime-type-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+/* Notice Messages */
+#media-replace-div .notice {
+    margin: 0 0 12px 0;
+    padding: 8px 12px;
+    border-left: 4px solid;
+}
+
+#media-replace-div .notice-success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+#media-replace-div .notice-error {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+/* Loading State */
+#sfx-media-replace:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    #media-replace-div {
+        margin-top: 15px;
+    }
+    
+    .sfx-media-replace-button {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+    
+    .sfx-media-replace-notes {
+        font-size: 11px;
+    }
+}
+

@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.0] - 2025-08-15
+
+### Added
+
+- **Media Replacement Functionality**: Complete media replacement system integrated into WPOptimizer
+  - **New Feature**: Replace media files while preserving IDs, URLs, and metadata
+  - **Admin Integration**: "Replace Media" button appears on attachment edit screens
+  - **AJAX-Based**: Modern, non-blocking replacement process with real-time feedback
+  - **Smart File Handling**: Automatic thumbnail regeneration and metadata updates
+  - **Cache Busting**: Built-in timestamp system ensures immediate visibility of replaced media
+  - **Security**: Nonce verification, user permission checks, and file validation
+  - **User Experience**: Loading states, success/error messages, and automatic page refresh
+  - **File Safety**: Comprehensive validation prevents accidental file deletion or corruption
+
+### Enhanced
+
+- **WPOptimizer Module**: Extended with new media replacement capabilities
+  - **Asset Management**: CSS and JavaScript files for media replacement interface
+  - **Settings Integration**: Media replacement option in WPOptimizer settings
+  - **Context Awareness**: Only shows on full attachment edit screens, not in modals
+  - **Error Handling**: Graceful failures with user-friendly error messages
+  - **Performance**: Efficient file operations with fallback copy methods
+
 ## [0.5.0] - 2025-01-07
 
 ### Enhanced
