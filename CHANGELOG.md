@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.1] - 2025-08-17
+
+### Fixed
+
+- **Bricks Dynamic Data Compatibility**: Fixed fatal errors when using dynamic data fields in Bricks builder
+  - **Issue**: Fatal error "Argument #1 ($tag) must be of type string, array given" when using dynamic data fields
+  - **Root Cause**: ContactInfos, CompanyLogo, and TextSnippets controllers were registering global `bricks/dynamic_data/render_tag` filters that interfered with all dynamic data rendering
+  - **Fix**: Removed global `bricks/dynamic_data/render_tag` filters and kept only content-specific filters
+  - **Implementation**: 
+    - Removed `bricks/dynamic_data/render_tag` filter registration from all three controllers
+    - Kept `bricks/dynamic_data/render_content` and `bricks/frontend/render_data` filters for content processing
+    - Maintained backward compatibility for contact info, company logo, and text snippet functionality
+    - Added robust error handling for array/string type compatibility
+  - **Impact**: 
+    - No more fatal errors when using dynamic data fields in Bricks
+    - Dynamic image data, post titles, and other Bricks dynamic fields work correctly
+    - Contact info, company logo, and text snippet tags still work in content areas
+    - Better separation of concerns between global and content-specific dynamic data processing
+    - Improved compatibility with Bricks framework updates
+
 ## [0.6.0] - 2025-08-15
 
 ### Added

@@ -36,7 +36,7 @@ class Controller
   public static function register_bricks_dynamic_tag(): void
   {
     add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
-    add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_bricks_dynamic_tag'], 20, 3);
+    // Only register render_tag filter for content processing, not for individual tag rendering
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
     add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
   }
@@ -58,8 +58,35 @@ class Controller
    * Render the custom tag output for Bricks.
    * Supports {snippet_content:ID} for content and {snippet_content:ID:field_slug} for custom field value.
    */
-  public static function render_bricks_dynamic_tag(string $tag, $post, string $context): string
+  public static function render_bricks_dynamic_tag($tag, $post, $context = 'text'): string
   {
+    // Handle case where $tag might be an array (Bricks framework compatibility)
+    if (is_array($tag)) {
+      // If tag is an array, try to extract the tag value
+      if (isset($tag['tag'])) {
+        $tag = $tag['tag'];
+      } elseif (isset($tag['name'])) {
+        $tag = $tag['name'];
+      } elseif (isset($tag['value'])) {
+        $tag = $tag['value'];
+      } else {
+        // Log the array structure for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+          error_log('TextSnippets: render_bricks_dynamic_tag received array with keys: ' . implode(', ', array_keys($tag)));
+        }
+        // If we can't determine the tag, return empty string
+        return '';
+      }
+    }
+    
+    // Ensure tag is a string
+    if (!is_string($tag)) {
+      if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('TextSnippets: render_bricks_dynamic_tag received non-string tag: ' . gettype($tag));
+      }
+      return '';
+    }
+    
     if (strpos($tag, '{snippet_content:') !== 0) {
       return $tag;
     }

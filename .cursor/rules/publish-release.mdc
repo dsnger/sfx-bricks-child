@@ -40,6 +40,14 @@ After user approval, follow this order:
 - Keep user informed of each step
 - Report any issues immediately
 - Confirm completion of release process
+
+### 7. **Release Notes Formatting**
+- **NEVER use emoticons or Unicode symbols** in release notes
+- Use only ASCII characters for compatibility
+- Avoid emojis (, ✨, 🔧, 📥, 📋, etc.) in GitHub CLI commands
+- Use plain text formatting: `->` instead of `→`
+- Test release notes in terminal before publishing
+- If using GitHub CLI, ensure notes display properly without encoding issues
 description: Rules for publishing a release
 globs:
 alwaysApply: true
