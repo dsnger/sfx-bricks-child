@@ -9,7 +9,7 @@ class Settings
     public static string $OPTION_GROUP;
     public static string $OPTION_NAME;
     /**
-     * Register all settings for company logo options.
+     * Register all settings for text snippet options.
      */
     public static function register(): void
     {
@@ -22,7 +22,7 @@ class Settings
     }
 
     /**
-     * Get all logo fields for the settings page.
+     * Get all text snippet fields for the settings page.
      */
     public static function get_fields(): array
     {
@@ -30,7 +30,7 @@ class Settings
     }
 
     /**
-     * Register all logo options with proper sanitization.
+     * Register all text snippet options with proper sanitization.
      */
     public static function register_settings(): void
     {
@@ -88,12 +88,12 @@ class Settings
 
     public static function render_section(): void
     {
-        echo '<p>' . esc_html__('Configure and manage the company logo options below.', 'sfxtheme') . '</p>';
+        echo '<p>' . esc_html__('Configure and manage the text snippet options below.', 'sfxtheme') . '</p>';
     }
 
 
     /**
-     * Delete all logo options.
+     * Delete all text snippet options.
      */
     public static function delete_all_options(): void
     {

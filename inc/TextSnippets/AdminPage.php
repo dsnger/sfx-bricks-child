@@ -35,7 +35,7 @@ class AdminPage
   }
 
   /**
-   * Render the admin page for logo settings.
+   * Render the admin page for text snippet settings.
    */
   public static function render_admin_page(): void
   {

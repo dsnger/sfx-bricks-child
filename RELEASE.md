@@ -14,7 +14,7 @@
 **Bricks Dynamic Data Compatibility**
 - Fixed fatal errors when using dynamic data fields in Bricks builder
 - Resolved "Argument #1 ($tag) must be of type string, array given" errors
-- Contact info, company logo, and text snippet dynamic tags now work correctly without interfering with other Bricks dynamic data fields
+- Contact info and text snippet dynamic tags now work correctly without interfering with other Bricks dynamic data fields
 
 ### 🔧 Technical Improvements
 
@@ -26,7 +26,7 @@
 ### 📁 Files Changed
 
 - `inc/ContactInfos/Controller.php` - Removed problematic filter registration
-- `inc/CompanyLogo/Controller.php` - Removed problematic filter registration  
+  
 - `inc/TextSnippets/Controller.php` - Removed problematic filter registration
 - `style.css` - Version bump to 0.6.1
 - `CHANGELOG.md` - Updated with release notes
