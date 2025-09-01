@@ -30,6 +30,8 @@ class SC_ContactInfos
         // Clear caches when contact info posts are updated
         add_action('save_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
         add_action('delete_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
+        
+
     }
     
     /**
@@ -52,6 +54,8 @@ class SC_ContactInfos
         
         // Also clear any cached values for this post
         delete_transient('sfx_contact_info_' . $post_id . '_all');
+        
+
     }
 
     /**
@@ -121,7 +125,46 @@ class SC_ContactInfos
                 return $this->render_phone_field($value, $atts, $icon, $has_link);
 
             case 'address':
-                return $this->render_address_field($value, $atts, $icon, $atts['contact_id']);
+                // For address field, we need to get the contact_id from the field value retrieval context
+                $contact_id = $atts['contact_id'] ?? null;
+                if (!$contact_id) {
+                    // Try to find contact by type if no specific ID provided
+                    $type = $atts['type'] ?? 'main';
+                    $type_cache_key = 'sfx_contact_info_type_' . $type;
+                    $contact_id = get_transient($type_cache_key);
+                    
+                    if ($contact_id === false) {
+                        $args = [
+                            'post_type' => 'sfx_contact_info',
+                            'post_status' => 'publish',
+                            'posts_per_page' => 1,
+                            'meta_query' => [
+                                [
+                                    'key' => '_contact_type',
+                                    'value' => $type,
+                                    'compare' => '='
+                                ]
+                            ]
+                        ];
+                        
+                        $query = new \WP_Query($args);
+                        
+                        if ($query->have_posts()) {
+                            $contact_id = $query->posts[0]->ID;
+                            set_transient($type_cache_key, $contact_id, HOUR_IN_SECONDS);
+                        }
+                    }
+                }
+                
+                // Ensure contact_id is properly cast to integer or null
+                if ($contact_id !== null) {
+                    $contact_id = (int) $contact_id;
+                    if ($contact_id <= 0) {
+                        $contact_id = null;
+                    }
+                }
+                
+                return $this->render_address_field($value, $atts, $icon, $contact_id);
 
             case 'opening':
                 return $this->render_opening_field($value, $atts, $icon);
@@ -205,8 +248,13 @@ class SC_ContactInfos
                 } else {
                     return '';
                 }
+            } else {
+                // Ensure contact_id from cache is properly cast to integer
+                $contact_id = (int) $contact_id;
             }
         }
+        
+
         
         // Ensure contact_id is always an integer
         $contact_id = (int) $contact_id;
@@ -230,6 +278,12 @@ class SC_ContactInfos
         $meta_key = '_' . $field;
         $value = $contact_data[$meta_key] ?? '';
         
+
+        
+
+        
+
+        
         // Ensure value is always a string
         if (is_array($value)) {
             $value = implode(', ', $value);
@@ -246,6 +300,30 @@ class SC_ContactInfos
         set_transient($cache_key, $value, 30 * MINUTE_IN_SECONDS);
         
         return $value;
+    }
+
+
+
+    /**
+     * Convert meta value to string, handling arrays and other types
+     * 
+     * @param mixed $value
+     * @return string
+     */
+    private function convert_meta_to_string($value): string
+    {
+        if (is_array($value)) {
+            // Handle nested arrays by flattening them
+            $flattened = [];
+            array_walk_recursive($value, function($item) use (&$flattened) {
+                if (!empty($item)) {
+                    $flattened[] = $item;
+                }
+            });
+            return implode(', ', $flattened);
+        }
+        
+        return (string) $value;
     }
 
     /**
@@ -321,8 +399,16 @@ class SC_ContactInfos
      * @param int|null $contact_id
      * @return string
      */
-    private function render_address_field(string $value, array $atts, string $icon, ?int $contact_id): string
+    private function render_address_field(string $value, array $atts, string $icon, $contact_id): string
     {
+        // Ensure contact_id is properly typed
+        if ($contact_id !== null) {
+            $contact_id = (int) $contact_id;
+            if ($contact_id <= 0) {
+                $contact_id = null;
+            }
+        }
+        
         $classes = $this->process_classes($atts['class']);
         $classes[] = 'contact-info-address';
 
@@ -331,6 +417,8 @@ class SC_ContactInfos
         if ($icon) {
             $output .= $icon;
         }
+
+
 
         // If we have a formatted address, use it (allow HTML content from WYSIWYG editor)
         if (!empty($value)) {
@@ -345,10 +433,40 @@ class SC_ContactInfos
                 $all_meta = get_post_meta($contact_id, '', true);
                 $address_data = array_intersect_key($all_meta, array_flip($address_meta_keys));
                 
+
+                
                 $street = $address_data['_street'] ?? '';
                 $zip = $address_data['_zip'] ?? '';
                 $city = $address_data['_city'] ?? '';
                 $country = $address_data['_country'] ?? '';
+                
+                // Convert arrays to strings with better handling
+                $street = $this->convert_meta_to_string($street);
+                $zip = $this->convert_meta_to_string($zip);
+                $city = $this->convert_meta_to_string($city);
+                $country = $this->convert_meta_to_string($country);
+                
+
+                
+                if ($street) $address_parts[] = $street;
+                if ($zip && $city) {
+                    $address_parts[] = $zip . ' ' . $city;
+                } elseif ($city) {
+                    $address_parts[] = $city;
+                }
+                if ($country) $address_parts[] = $country;
+                
+
+            } else {
+                // Fallback: try to get individual address fields directly
+                
+                // Get individual address fields using the same method as other fields
+                $street = $this->get_field_value('street', $contact_id, $atts['type'] ?? 'main');
+                $zip = $this->get_field_value('zip', $contact_id, $atts['type'] ?? 'main');
+                $city = $this->get_field_value('city', $contact_id, $atts['type'] ?? 'main');
+                $country = $this->get_field_value('country', $contact_id, $atts['type'] ?? 'main');
+                
+
                 
                 if ($street) $address_parts[] = $street;
                 if ($zip && $city) {
@@ -432,6 +550,8 @@ class SC_ContactInfos
     {
         $classes = $this->process_classes($atts['class']);
         $classes[] = 'contact-info-field';
+
+
 
         $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
 

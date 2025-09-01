@@ -22,6 +22,8 @@ class Controller
 
     // Register hooks through consolidated system
     add_action('sfx_init_advanced_features', [$this, 'register_bricks_dynamic_tag']);
+    
+
   }
 
 
@@ -38,13 +40,16 @@ class Controller
     ];
   }
 
+
+
   /**
    * Register Bricks dynamic data tag {contact_info:field} or {contact_info:field:location} for contact infos.
    */
   public static function register_bricks_dynamic_tag(): void
   {
     add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
-    // Only register render_tag filter for content processing, not for individual tag rendering
+    // Register render_tag filter for individual tag rendering
+    add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_bricks_dynamic_tag'], 20, 3);
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
     add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
   }
@@ -54,11 +59,37 @@ class Controller
    */
   public static function add_bricks_dynamic_tag(array $tags): array
   {
-    $tags[] = [
-      'name'  => '{contact_info}',
-      'label' => 'Contact Info Field',
-      'group' => 'Custom',
+    // Define all available contact info fields with their labels
+    $contact_fields = [
+      'company' => 'Company Name',
+      'director' => 'Director',
+      'street' => 'Street',
+      'zip' => 'ZIP Code',
+      'city' => 'City',
+      'country' => 'Country',
+      'address' => 'Full Address',
+      'phone' => 'Phone',
+      'mobile' => 'Mobile',
+      'fax' => 'Fax',
+      'email' => 'Email',
+      'tax_id' => 'Tax ID',
+      'vat' => 'VAT Number',
+      'hrb' => 'HRB Number',
+      'court' => 'Court',
+      'dsb' => 'DSB',
+      'opening' => 'Opening Hours',
+      'maplink' => 'Map Link'
     ];
+    
+    // Add each field as a separate dynamic tag option
+    foreach ($contact_fields as $field => $label) {
+      $tags[] = [
+        'name'  => '{contact_info:' . $field . '}',
+        'label' => 'Contact Info: ' . $label,
+        'group' => 'Contact Info',
+      ];
+    }
+    
     return $tags;
   }
 
@@ -138,6 +169,14 @@ class Controller
         }
       }
     }
+    
+    // Ensure contact_id is properly cast to integer if it exists
+    if (isset($atts['contact_id'])) {
+      $atts['contact_id'] = (int) $atts['contact_id'];
+      if ($atts['contact_id'] <= 0) {
+        unset($atts['contact_id']);
+      }
+    }
 
     // Use the SC_ContactInfos class to render the field
     if (!class_exists('SFX\\ContactInfos\\Shortcode\\SC_ContactInfos')) {
@@ -151,12 +190,14 @@ class Controller
       }
       
       $sc = self::$shortcode_instance;
+      
+
+      
       // Render using the same logic as the shortcode
-      return $sc->render_contact_info($atts);
+      $result = $sc->render_contact_info($atts);
+      
+      return $result;
     } catch (\Exception $e) {
-      if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('ContactInfos: Error rendering contact info: ' . $e->getMessage());
-      }
       return '';
     }
   }

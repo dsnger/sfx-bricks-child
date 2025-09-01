@@ -41,6 +41,11 @@ class PostType
         
         // Multilingual support through consolidated system
         add_action('sfx_init_advanced_features', [self::class, 'register_multilingual_support']);
+        
+        // Add cache clearing functionality
+        add_action('admin_notices', [self::class, 'admin_notices']);
+        add_action('admin_init', [self::class, 'handle_cache_clear']);
+        add_action('admin_footer', [self::class, 'add_cache_clear_button']);
     }
 
     /**
@@ -124,6 +129,8 @@ class PostType
         ];
         
         \SFX\MetaFieldManager::validate_fields($post_id, self::$post_type, $validation_rules);
+        
+
     }
 
     /**
@@ -518,6 +525,8 @@ class PostType
 
         foreach ($fields as $key => $value) {
             update_post_meta($post_id, '_' . $key, $value);
+            
+            
         }
     }
 
@@ -808,5 +817,108 @@ class PostType
         }
         
         return $value;
+    }
+
+    /**
+     * Handle cache clearing action
+     */
+    public static function handle_cache_clear(): void
+    {
+        if (!isset($_GET['sfx_clear_contact_cache']) || !wp_verify_nonce($_GET['_wpnonce'], 'sfx_clear_contact_cache')) {
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        // Clear all contact info caches
+        self::clear_all_contact_caches();
+
+        // Redirect back to the list page with success message
+        wp_redirect(add_query_arg('sfx_cache_cleared', '1', admin_url('edit.php?post_type=' . self::$post_type)));
+        exit;
+    }
+
+    /**
+     * Clear all contact info caches
+     */
+    public static function clear_all_contact_caches(): void
+    {
+        // Clear type-based caches
+        delete_transient('sfx_contact_info_type_main');
+        delete_transient('sfx_contact_info_type_branch');
+
+        // Get all contact info posts
+        $args = [
+            'post_type' => self::$post_type,
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ];
+
+        $contact_ids = get_posts($args);
+
+        // Clear field-specific caches for each post
+        $meta_keys = ['company', 'director', 'street', 'zip', 'city', 'country', 'address', 'phone', 'mobile', 'fax', 'email', 'tax_id', 'vat', 'hrb', 'court', 'dsb', 'opening', 'maplink'];
+
+        foreach ($contact_ids as $contact_id) {
+            foreach ($meta_keys as $field) {
+                delete_transient('sfx_contact_info_' . $contact_id . '_' . $field);
+            }
+            delete_transient('sfx_contact_info_' . $contact_id . '_all');
+        }
+
+        // Clear type-based field caches
+        foreach ($meta_keys as $field) {
+            delete_transient('sfx_contact_info_type_main_' . $field);
+            delete_transient('sfx_contact_info_type_branch_' . $field);
+        }
+    }
+
+    /**
+     * Display admin notices
+     */
+    public static function admin_notices(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== self::$post_type) {
+            return;
+        }
+
+        if (isset($_GET['sfx_cache_cleared'])) {
+            ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php esc_html_e('Contact Info cache cleared successfully!', 'sfx-bricks-child'); ?></p>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Add cache clear button to admin footer
+     */
+    public static function add_cache_clear_button(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== self::$post_type) {
+            return;
+        }
+
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Add cache clear button after the page title
+            var cacheButton = $('<a href="<?php echo esc_url(wp_nonce_url(add_query_arg('sfx_clear_contact_cache', '1', admin_url('edit.php?post_type=' . self::$post_type)), 'sfx_clear_contact_cache')); ?>" class="page-title-action"><?php esc_html_e('Clear Cache', 'sfx-bricks-child'); ?></a>');
+            
+            // Insert after the first page-title-action button or after the h1
+            if ($('.page-title-action').length > 0) {
+                $('.page-title-action').first().after(cacheButton);
+            } else {
+                $('h1.wp-heading-inline').after(cacheButton);
+            }
+        });
+        </script>
+        <?php
     }
 } 
