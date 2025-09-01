@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.2] - 2025-09-01
+
+### Added
+
+- **Contact Info Cache Management**: Added manual cache clearing functionality for Contact Info module
+  - **New Feature**: "Clear Cache" button in Contact Info admin list page
+  - **Functionality**: Clears all contact info caches including type-based and field-specific caches
+  - **Security**: Nonce protection and user permission checks
+  - **User Experience**: Success message confirmation and automatic page refresh
+  - **Use Cases**: Useful for troubleshooting, development, and ensuring fresh data after updates
+
+### Fixed
+
+- **Contact Info Bricks Dynamic Content**: Fixed individual field selection in Bricks Builder
+  - **Issue**: Only generic `{contact_info}` tag was available in Bricks dynamic content picker
+  - **Fix**: Each contact info field now available as individual dynamic tag (e.g., `{contact_info:vat}`, `{contact_info:address}`)
+  - **Implementation**: Registered individual fields as separate dynamic tags in Bricks picker
+  - **Address Field Logic**: Enhanced address field to return "full address" if available, otherwise build from street/ZIP/city with line breaks
+  - **Type Safety**: Fixed type casting issues for contact_id parameters
+  - **Meta Data Handling**: Improved array-to-string conversion for meta field values
+
+### Removed
+
+- **Company Logo Feature**: Completely removed Company Logo functionality from theme
+  - **Files Removed**: All CompanyLogo directory files and assets
+  - **Code Cleanup**: Removed all references and documentation mentions
+  - **Settings Cleanup**: Removed font MIME types setting (no longer needed)
+
 ## [0.6.1] - 2025-08-17
 
 ### Fixed
