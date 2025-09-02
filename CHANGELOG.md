@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.3] - 2025-09-01
+
+### Fixed
+
+- **Bricks Builder Compatibility**: Fixed critical regression in Bricks Builder dynamic data functionality
+  - **Issue**: Fatal errors when using dynamic data fields in Bricks builder (regression from v0.6.2)
+  - **Root Cause**: `bricks/dynamic_data/render_tag` filter was accidentally re-added in ContactInfos Controller
+  - **Fix**: Removed problematic `bricks/dynamic_data/render_tag` filter to restore v0.6.1 compatibility
+  - **Impact**: 
+    - ✅ Bricks Builder dynamic data fields work correctly again
+    - ✅ No more fatal errors when using dynamic data in Bricks
+    - ✅ Contact info functionality remains intact
+    - ✅ Restored compatibility with Bricks framework
+
 ## [0.6.2] - 2025-09-01
 
 ### Added

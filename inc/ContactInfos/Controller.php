@@ -48,8 +48,7 @@ class Controller
   public static function register_bricks_dynamic_tag(): void
   {
     add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
-    // Register render_tag filter for individual tag rendering
-    add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_bricks_dynamic_tag'], 20, 3);
+    // Only register render_tag filter for content processing, not for individual tag rendering
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
     add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
   }
