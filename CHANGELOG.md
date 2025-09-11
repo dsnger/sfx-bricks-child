@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.4] - 2025-01-15
+
+### Enhanced
+
+- **jQuery Migrate Handling**: Improved jQuery Migrate disabling to be frontend-only
+  - Added `is_admin()` checks to prevent jQuery Migrate disabling in admin areas
+  - Replaced multiple hooks with single `template_redirect` hook for better control
+  - Simplified logic and removed redundant Bricks Builder context checks
+  - Preserves admin functionality while maintaining frontend performance optimization
+
+### Changed
+
+- **Version Update**: Incremented theme version to 0.6.4 for maintenance and tracking purposes
+
 ## [0.6.3] - 2025-09-01
 
 ### Fixed
