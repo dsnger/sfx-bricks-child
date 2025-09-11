@@ -696,10 +696,10 @@ class Controller
                 wp_deregister_script('jquery-migrate');
             }, 1);
 
-            // Prevent jQuery Migrate from being enqueued
+            // Prevent jQuery Migrate from being enqueued - FRONTEND ONLY
             add_filter('wp_script_loader_tag', function ($tag, $handle, $src) {
-                // Double-check we're not in Bricks Builder context
-                if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
+                // Only run on frontend, never in admin
+                if (is_admin() || (function_exists('\bricks_is_builder') && \bricks_is_builder())) {
                     return $tag;
                 }
                 
@@ -709,10 +709,10 @@ class Controller
                 return $tag;
             }, 10, 3);
 
-            // Remove jQuery Migrate from any script dependencies
+            // Remove jQuery Migrate from any script dependencies - FRONTEND ONLY
             add_filter('script_loader_tag', function ($tag, $handle, $src) {
-                // Double-check we're not in Bricks Builder context
-                if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
+                // Only run on frontend, never in admin
+                if (is_admin() || (function_exists('\bricks_is_builder') && \bricks_is_builder())) {
                     return $tag;
                 }
                 
@@ -722,56 +722,27 @@ class Controller
                 return $tag;
             }, 10, 3);
 
-            // Prevent jQuery Migrate from being registered in the first place
-            add_action('wp_default_scripts', function ($scripts) {
+            // Use template_redirect hook which only runs on frontend
+            add_action('template_redirect', function () {
                 // Double-check we're not in Bricks Builder context
                 if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
                     return;
                 }
                 
-                if (isset($scripts->registered['jquery-migrate'])) {
-                    unset($scripts->registered['jquery-migrate']);
-                }
-            }, 1);
-
-            // Also prevent it from being enqueued by any means
-            add_action('wp_print_scripts', function () {
-                // Double-check we're not in Bricks Builder context
-                if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
-                    return;
-                }
-                
-                wp_deregister_script('jquery-migrate');
-                wp_dequeue_script('jquery-migrate');
-            }, 1);
-
-            // Prevent WordPress core from loading jQuery Migrate
-            add_action('wp_default_scripts', function ($scripts) {
-                // Double-check we're not in Bricks Builder context
-                if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
+                if ($this->is_option_enabled('disable_jquery')) {
                     return;
                 }
                 
                 // Remove jquery-migrate from jquery dependencies
-                if (isset($scripts->registered['jquery'])) {
-                    $scripts->registered['jquery']->deps = array_diff(
-                        $scripts->registered['jquery']->deps,
+                global $wp_scripts;
+                if (isset($wp_scripts->registered['jquery'])) {
+                    $wp_scripts->registered['jquery']->deps = array_diff(
+                        $wp_scripts->registered['jquery']->deps,
                         ['jquery-migrate']
                     );
                 }
-                // Completely remove jquery-migrate from scripts
-                if (isset($scripts->registered['jquery-migrate'])) {
-                    unset($scripts->registered['jquery-migrate']);
-                }
-            }, 1);
-
-            // Also run on init to catch any late registrations
-            add_action('init', function () {
-                // Double-check we're not in Bricks Builder context
-                if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
-                    return;
-                }
                 
+                // Deregister and dequeue the script
                 wp_deregister_script('jquery-migrate');
                 wp_dequeue_script('jquery-migrate');
             }, 1);
