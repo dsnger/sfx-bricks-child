@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.5] - 2025-01-15
+
+### Enhanced
+
+- **SecurityHeader Module**: Improved security header delivery with multiple methods
+  - Added direct header sending via `header()` function for better compatibility
+  - Implemented multiple hooks (`send_headers`, `template_redirect`) to ensure headers are sent regardless of caching
+  - Added duplicate header prevention to avoid conflicts
+  - Improved Permissions-Policy handling to only add header when value is not empty
+  - Refactored code to extract shared `build_headers_array()` method
+  - Maintained backward compatibility with `wp_headers` filter
+
 ## [0.6.4] - 2025-01-15
 
 ### Enhanced
