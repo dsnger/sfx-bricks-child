@@ -16,17 +16,51 @@ class Controller
         Settings::register();
         AdminPage::register();
         AssetManager::register();
+        
+        // Method 1: For WordPress-generated pages and redirects
         add_filter('wp_headers', [self::class, 'filter_wp_headers']);
+        
+        // Method 2: Early header sending - fires as soon as WordPress determines the request
+        add_action('send_headers', [self::class, 'send_security_headers'], 1);
+        
+        // Method 3: Fallback for frontend pages (template_redirect)
+        add_action('template_redirect', [self::class, 'send_security_headers'], 1);
     }
 
     /**
-     * Filter and add security headers to the response.
-     *
-     * @param array $headers
-     * @return array
+     * Send security headers directly via header() function.
+     * Uses multiple hooks to ensure headers are sent regardless of caching or request type.
      */
-    public static function filter_wp_headers(array $headers): array
+    public static function send_security_headers(): void
     {
+        // Don't send headers if already sent by PHP
+        if (headers_sent()) {
+            return;
+        }
+        
+        // Prevent duplicate header sending
+        static $headers_sent = false;
+        if ($headers_sent) {
+            return;
+        }
+        $headers_sent = true;
+        
+        $headers = self::build_headers_array();
+        
+        foreach ($headers as $name => $value) {
+            if (!empty($value)) {
+                header($name . ': ' . $value, true);
+            }
+        }
+    }
+
+    /**
+     * Build headers array (shared by both methods)
+     */
+    private static function build_headers_array(): array
+    {
+        $headers = [];
+        
         // HSTS
         if (! (bool) get_option('sfx_disable_hsts_header', false)) {
             $headers['Strict-Transport-Security'] = self::get_hsts_header();
@@ -44,7 +78,10 @@ class Controller
         }
         
         // Permissions Policy
-        $headers['Permissions-Policy'] = get_option('sfx_permissions_policy', '');
+        $permissions_policy = get_option('sfx_permissions_policy', '');
+        if (!empty($permissions_policy)) {
+            $headers['Permissions-Policy'] = $permissions_policy;
+        }
         
         // X-Frame-Options
         if (! (bool) get_option('sfx_disable_x_frame_options_header', false)) {
@@ -77,6 +114,14 @@ class Controller
         $headers['X-Permitted-Cross-Domain-Policies'] = 'none';
         
         return $headers;
+    }
+
+    /**
+     * Filter for wp_headers (backward compatibility)
+     */
+    public static function filter_wp_headers(array $headers): array
+    {
+        return array_merge($headers, self::build_headers_array());
     }
 
     private static function get_hsts_header(): string
