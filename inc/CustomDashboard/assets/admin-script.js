@@ -262,6 +262,60 @@
     }
 
     /**
+     * Initialize sortable quicklinks
+     */
+    function initQuicklinksSortable() {
+        var $sortable = $('#sfx-quicklinks-sortable');
+        
+        if (!$sortable.length) {
+            return;
+        }
+        
+        // Check if sortable is available
+        if (typeof $.fn.sortable === 'undefined') {
+            return;
+        }
+        
+        // Destroy existing sortable if it exists
+        try {
+            if ($sortable.data('ui-sortable')) {
+                $sortable.sortable('destroy');
+            }
+        } catch(e) {}
+        
+        // Initialize sortable
+        $sortable.sortable({
+            items: '> li.sfx-stat-item',
+            placeholder: 'sfx-stat-placeholder',
+            axis: 'y',
+            cursor: 'move',
+            opacity: 0.8,
+            revert: 150,
+            update: function(event, ui) {
+                updateQuicklinksIndices();
+            }
+        });
+    }
+
+    /**
+     * Update quicklinks indices after reorder
+     */
+    function updateQuicklinksIndices() {
+        $('#sfx-quicklinks-sortable .sfx-stat-item').each(function(index) {
+            var $item = $(this);
+            $item.find('input').each(function() {
+                var $input = $(this);
+                var name = $input.attr('name');
+                if (name) {
+                    // Replace the index number in predefined_quicklinks[X]
+                    name = name.replace(/\[predefined_quicklinks\]\[\d+\]/, '[predefined_quicklinks][' + index + ']');
+                    $input.attr('name', name);
+                }
+            });
+        });
+    }
+
+    /**
      * Initialize on document ready
      */
     /**
@@ -286,11 +340,17 @@
         initColorSelectPreview();
         
         // Initialize sortable with a small delay to ensure DOM is ready
-        setTimeout(initStatsSortable, 150);
+        setTimeout(function() {
+            initStatsSortable();
+            initQuicklinksSortable();
+        }, 150);
         
         // Re-initialize sortable when switching tabs
         $(document).on('click', '.sfx-dashboard-tabs .nav-tab', function() {
-            setTimeout(initStatsSortable, 200);
+            setTimeout(function() {
+                initStatsSortable();
+                initQuicklinksSortable();
+            }, 200);
         });
     });
 
