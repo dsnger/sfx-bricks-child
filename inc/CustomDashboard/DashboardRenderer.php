@@ -73,58 +73,7 @@ class DashboardRenderer
     private function render_icon(string $icon): string
     {
         // Allow SVG elements and attributes
-        $allowed_svg = [
-            'svg' => [
-                'xmlns' => true,
-                'width' => true,
-                'height' => true,
-                'viewbox' => true,
-                'fill' => true,
-                'stroke' => true,
-                'stroke-width' => true,
-                'stroke-linecap' => true,
-                'stroke-linejoin' => true,
-            ],
-            'path' => [
-                'd' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'circle' => [
-                'cx' => true,
-                'cy' => true,
-                'r' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'rect' => [
-                'x' => true,
-                'y' => true,
-                'width' => true,
-                'height' => true,
-                'rx' => true,
-                'ry' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'line' => [
-                'x1' => true,
-                'y1' => true,
-                'x2' => true,
-                'y2' => true,
-                'stroke' => true,
-            ],
-            'polyline' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'polygon' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-        ];
+        $allowed_svg = Settings::get_allowed_svg_tags();
 
         return wp_kses($icon, $allowed_svg);
     }

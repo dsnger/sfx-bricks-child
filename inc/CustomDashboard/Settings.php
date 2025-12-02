@@ -30,6 +30,94 @@ class Settings
     }
 
     /**
+     * Get allowed SVG tags and attributes for sanitization
+     *
+     * @return array<string, array<string, bool>>
+     */
+    public static function get_allowed_svg_tags(): array
+    {
+        return [
+            'svg' => [
+                'xmlns' => true,
+                'width' => true,
+                'height' => true,
+                'viewbox' => true,
+                'fill' => true,
+                'stroke' => true,
+                'stroke-width' => true,
+                'stroke-linecap' => true,
+                'stroke-linejoin' => true,
+                'class' => true,
+            ],
+            'path' => [
+                'd' => true,
+                'fill' => true,
+                'stroke' => true,
+                'stroke-linecap' => true,
+                'stroke-linejoin' => true,
+            ],
+            'circle' => [
+                'cx' => true,
+                'cy' => true,
+                'r' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'rect' => [
+                'x' => true,
+                'y' => true,
+                'width' => true,
+                'height' => true,
+                'rx' => true,
+                'ry' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'line' => [
+                'x1' => true,
+                'y1' => true,
+                'x2' => true,
+                'y2' => true,
+                'stroke' => true,
+            ],
+            'polyline' => [
+                'points' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'polygon' => [
+                'points' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+        ];
+    }
+
+    /**
+     * Get available brand color options
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function get_brand_colors(): array
+    {
+        $options = get_option(self::$OPTION_NAME, []);
+        $primary = $options['brand_primary_color'] ?? '#667eea';
+        $secondary = $options['brand_secondary_color'] ?? '#764ba2';
+        $accent = $options['brand_accent_color'] ?? '#f093fb';
+        
+        return [
+            'primary' => ['label' => __('Primary', 'sfxtheme'), 'color' => $primary],
+            'secondary' => ['label' => __('Secondary', 'sfxtheme'), 'color' => $secondary],
+            'accent' => ['label' => __('Accent', 'sfxtheme'), 'color' => $accent],
+            'white' => ['label' => __('White', 'sfxtheme'), 'color' => '#ffffff'],
+            'black' => ['label' => __('Black', 'sfxtheme'), 'color' => '#000000'],
+            'light-gray' => ['label' => __('Light Gray', 'sfxtheme'), 'color' => '#e2e8f0'],
+            'gray' => ['label' => __('Gray', 'sfxtheme'), 'color' => '#94a3b8'],
+            'dark-gray' => ['label' => __('Dark Gray', 'sfxtheme'), 'color' => '#475569'],
+        ];
+    }
+
+    /**
      * Get default predefined quicklinks
      *
      * @return array<int, array<string, mixed>>
@@ -726,21 +814,7 @@ class Settings
                 break;
 
             case 'brand_color_select':
-                $options_data = get_option(self::$OPTION_NAME, []);
-                $primary = $options_data['brand_primary_color'] ?? '#667eea';
-                $secondary = $options_data['brand_secondary_color'] ?? '#764ba2';
-                $accent = $options_data['brand_accent_color'] ?? '#f093fb';
-                
-                $color_options = [
-                    'primary' => ['label' => __('Primary', 'sfxtheme'), 'color' => $primary],
-                    'secondary' => ['label' => __('Secondary', 'sfxtheme'), 'color' => $secondary],
-                    'accent' => ['label' => __('Accent', 'sfxtheme'), 'color' => $accent],
-                    'white' => ['label' => __('White', 'sfxtheme'), 'color' => '#ffffff'],
-                    'black' => ['label' => __('Black', 'sfxtheme'), 'color' => '#000000'],
-                    'light-gray' => ['label' => __('Light Gray', 'sfxtheme'), 'color' => '#e2e8f0'],
-                    'gray' => ['label' => __('Gray', 'sfxtheme'), 'color' => '#94a3b8'],
-                    'dark-gray' => ['label' => __('Dark Gray', 'sfxtheme'), 'color' => '#475569'],
-                ];
+                $color_options = self::get_brand_colors();
                 $current_color = $color_options[$value]['color'] ?? '#667eea';
                 ?>
                 <div class="sfx-color-select-wrapper">
@@ -1342,61 +1416,7 @@ class Settings
         $defaults = self::get_default_quicklinks();
 
         // Define allowed SVG tags and attributes
-        $allowed_svg = [
-            'svg' => [
-                'xmlns' => true,
-                'width' => true,
-                'height' => true,
-                'viewbox' => true,
-                'fill' => true,
-                'stroke' => true,
-                'stroke-width' => true,
-                'stroke-linecap' => true,
-                'stroke-linejoin' => true,
-                'class' => true,
-            ],
-            'path' => [
-                'd' => true,
-                'fill' => true,
-                'stroke' => true,
-                'stroke-linecap' => true,
-                'stroke-linejoin' => true,
-            ],
-            'circle' => [
-                'cx' => true,
-                'cy' => true,
-                'r' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'rect' => [
-                'x' => true,
-                'y' => true,
-                'width' => true,
-                'height' => true,
-                'rx' => true,
-                'ry' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'line' => [
-                'x1' => true,
-                'y1' => true,
-                'x2' => true,
-                'y2' => true,
-                'stroke' => true,
-            ],
-            'polyline' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'polygon' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-        ];
+        $allowed_svg = self::get_allowed_svg_tags();
 
         foreach ($defaults as $index => $default_link) {
             if (isset($input[$index])) {
@@ -1429,61 +1449,7 @@ class Settings
         }
 
         // Define allowed SVG tags and attributes
-        $allowed_svg = [
-            'svg' => [
-                'xmlns' => true,
-                'width' => true,
-                'height' => true,
-                'viewbox' => true,
-                'fill' => true,
-                'stroke' => true,
-                'stroke-width' => true,
-                'stroke-linecap' => true,
-                'stroke-linejoin' => true,
-                'class' => true,
-            ],
-            'path' => [
-                'd' => true,
-                'fill' => true,
-                'stroke' => true,
-                'stroke-linecap' => true,
-                'stroke-linejoin' => true,
-            ],
-            'circle' => [
-                'cx' => true,
-                'cy' => true,
-                'r' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'rect' => [
-                'x' => true,
-                'y' => true,
-                'width' => true,
-                'height' => true,
-                'rx' => true,
-                'ry' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'line' => [
-                'x1' => true,
-                'y1' => true,
-                'x2' => true,
-                'y2' => true,
-                'stroke' => true,
-            ],
-            'polyline' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-            'polygon' => [
-                'points' => true,
-                'fill' => true,
-                'stroke' => true,
-            ],
-        ];
+        $allowed_svg = self::get_allowed_svg_tags();
 
         $sanitized = [];
 

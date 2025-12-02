@@ -164,16 +164,10 @@ class AssetManager
         $shadow_intensity = absint($options['brand_shadow_intensity'] ?? 1);
         
         // Color map for brand color selections
-        $color_map = [
-            'primary' => $primary,
-            'secondary' => $secondary,
-            'accent' => $accent,
-            'white' => '#ffffff',
-            'black' => '#000000',
-            'light-gray' => '#e2e8f0',
-            'gray' => '#94a3b8',
-            'dark-gray' => '#475569',
-        ];
+        $brand_colors = Settings::get_brand_colors();
+        $color_map = array_map(function($item) {
+            return $item['color'];
+        }, $brand_colors);
         
         $border_color_key = $options['brand_border_color'] ?? 'light-gray';
         $header_gradient = !empty($options['brand_header_gradient']);
