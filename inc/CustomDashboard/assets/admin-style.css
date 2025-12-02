@@ -1,0 +1,542 @@
+/**
+ * Custom Dashboard Admin Settings Styles
+ *
+ * @package SFX_Bricks_Child_Theme
+ */
+
+/* Quicklinks Table */
+.sfx-quicklinks-table {
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+.sfx-quicklinks-table thead th {
+    font-weight: 600;
+    text-align: left;
+    padding: 10px;
+    background: #f0f0f1;
+}
+
+.sfx-quicklinks-table tbody td {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.sfx-quicklinks-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sfx-quicklinks-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.sfx-quicklinks-table code {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Custom Quicklinks Table */
+.sfx-custom-quicklinks-table {
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+.sfx-custom-quicklinks-table thead th {
+    font-weight: 600;
+    text-align: left;
+    padding: 10px;
+    background: #f0f0f1;
+}
+
+.sfx-custom-quicklinks-table tbody td {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+
+/* Column widths for custom quicklinks */
+.sfx-custom-quicklinks-table th:last-child,
+.sfx-custom-quicklinks-table td:last-child {
+    width: 80px;
+    text-align: center;
+}
+
+.sfx-custom-quicklinks-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sfx-custom-quicklinks-table input[type="text"] {
+    width: 100%;
+}
+
+.sfx-custom-quicklinks-table .small-text {
+    width: 100%;
+    min-width: 150px;
+    font-family: monospace;
+    font-size: 11px;
+    resize: vertical;
+}
+
+/* SVG Icon Input */
+.sfx-svg-icon-input,
+.sfx-custom-quicklinks-table textarea {
+    width: 100%;
+    min-width: 280px;
+    max-width: 400px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 8px;
+    resize: both;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.sfx-svg-icon-input:focus,
+.sfx-custom-quicklinks-table textarea:focus {
+    background: #fff;
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* Icon Input Wrapper with Preview */
+.sfx-icon-input-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.sfx-icon-preview {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f1;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.sfx-icon-preview svg {
+    width: 28px;
+    height: 28px;
+    color: #333;
+}
+
+.sfx-icon-preview:empty::before {
+    content: '?';
+    color: #999;
+    font-size: 18px;
+}
+
+/* Custom Link Row */
+.sfx-custom-link-row {
+    transition: background 0.2s ease;
+}
+
+.sfx-custom-link-row:hover {
+    background: #f9f9f9;
+}
+
+.sfx-remove-link {
+    color: #b32d2e;
+    border-color: #b32d2e;
+}
+
+.sfx-remove-link:hover {
+    background: #b32d2e;
+    color: #fff;
+}
+
+/* Add Custom Link Button */
+#sfx-add-custom-link {
+    margin-top: 10px;
+}
+
+/* Dashboard Header */
+.sfx-dashboard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.sfx-dashboard-header-content {
+    flex: 1;
+}
+
+.sfx-dashboard-header-content h1 {
+    margin: 0 0 10px 0;
+}
+
+.sfx-dashboard-header-content p {
+    margin: 0;
+    color: #646970;
+}
+
+.sfx-dashboard-header-actions {
+    flex-shrink: 0;
+    padding-top: 5px;
+}
+
+.sfx-dashboard-header-actions .button-primary {
+    height: auto;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+@media (max-width: 782px) {
+    .sfx-dashboard-header {
+        flex-direction: column;
+    }
+    
+    .sfx-dashboard-header-actions {
+        width: 100%;
+    }
+    
+    .sfx-dashboard-header-actions .button-primary {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Settings Sections */
+.form-table {
+    margin-top: 20px;
+}
+
+.form-table th {
+    font-weight: 600;
+}
+
+/* Empty State for Custom Links */
+.sfx-custom-quicklinks-empty {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Tab System */
+.nav-tab-wrapper {
+    margin: 20px 0;
+    border-bottom: 1px solid #ccc;
+}
+
+.sfx-dashboard-settings-form {
+    margin-top: 20px;
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Sub-tab Navigation */
+.sfx-subtab-wrapper {
+    margin-top: 0;
+}
+
+.sfx-subtab-nav {
+    display: flex;
+    gap: 5px;
+    padding: 0 0 15px 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.sfx-subtab {
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #50575e;
+    background: #f0f0f1;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sfx-subtab:hover {
+    background: #e0e0e0;
+    color: #1d2327;
+}
+
+.sfx-subtab-active {
+    background: #2271b1;
+    color: #fff;
+}
+
+.sfx-subtab-active:hover {
+    background: #135e96;
+    color: #fff;
+}
+
+.sfx-subtab-content {
+    padding-top: 10px;
+}
+
+.sfx-settings-section {
+    margin-bottom: 30px;
+}
+
+.sfx-settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.sfx-settings-section h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.sfx-settings-section p.description {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #646970;
+}
+
+/* Logo Upload Styling */
+.sfx-logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.sfx-logo-preview {
+    flex-basis: 100%;
+}
+
+.sfx-logo-preview img {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    background: #f9f9f9;
+}
+
+.sfx-upload-logo-button {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+.sfx-upload-logo-button:hover {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+}
+
+/* Color Picker Styling */
+input[type="color"] {
+    width: 100px;
+    height: 40px;
+    padding: 2px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* Dashboard Widgets Selection */
+.sfx-dashboard-widgets-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.sfx-widget-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.sfx-widget-checkbox:hover {
+    background: #f0f6fc;
+}
+
+.sfx-widget-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.sfx-widget-checkbox span {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Custom Post Types Selection */
+.sfx-custom-post-types-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.sfx-cpt-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.sfx-cpt-checkbox:hover {
+    background: #f0f6fc;
+}
+
+.sfx-cpt-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.sfx-cpt-checkbox span {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Stats Items Sortable */
+.sfx-stats-items-container {
+    max-width: 600px;
+}
+
+.sfx-stats-sortable {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.sfx-stat-item {
+    display: grid;
+    grid-template-columns: 30px 50px 1fr auto;
+    align-items: center;
+    gap: 8px 20px;
+    padding: 12px 15px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s ease;
+    position: relative;
+    cursor: move;
+    cursor: grab;
+}
+
+.sfx-stat-item:last-child {
+    border-bottom: none;
+}
+
+.sfx-stat-item:hover {
+    background: #f7f7f7;
+}
+
+.sfx-stat-item.ui-sortable-helper {
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    z-index: 9999;
+    cursor: grabbing !important;
+}
+
+.sfx-stat-placeholder {
+    background: #e8f4fc !important;
+    border: 2px dashed #2271b1 !important;
+    border-radius: 4px;
+    visibility: visible !important;
+    min-height: 50px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    box-sizing: border-box;
+}
+
+.sfx-stat-drag-handle {
+    color: #999;
+    font-size: 18px;
+    user-select: none;
+    line-height: 1;
+    text-align: center;
+}
+
+.sfx-stat-item:hover .sfx-stat-drag-handle {
+    color: #333;
+}
+
+.sfx-stat-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sfx-stat-label {
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sfx-stat-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #e0e0e0;
+    color: #666;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.sfx-stat-count {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    background: #f0f0f0;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+/* Color Select with Preview */
+.sfx-color-select-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sfx-color-preview {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 2px solid #ddd;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.sfx-color-select {
+    min-width: 150px;
+}
+
