@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.2] - 2025-12-03
+
+### Added
+
+- **GitHub Updater**: Authentication support and improved error handling for private repos
+
 ## [0.7.1] - 2025-12-03
 
 ### Fixed
