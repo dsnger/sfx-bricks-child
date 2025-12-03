@@ -59,7 +59,8 @@ body.index-php #wpbody-content {
     display: flex;
     align-items: stretch;
     gap: 15px;
-    margin-bottom: 25px;
+    margin-bottom: var(--sfx-dashboard-gap);
+    margin-top: var(--sfx-dashboard-gap);
 }
 
 /* Site Health Section */

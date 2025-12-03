@@ -120,10 +120,9 @@ class Settings
                 'card_hover_background_color',
                 'card_hover_text_color',
                 'card_hover_border_color',
+                'dashboard_gap',
                 'stats_columns',
-                'stats_gap',
                 'quicklinks_columns',
-                'quicklinks_gap',
                 'dashboard_custom_css',
             ],
         ];
@@ -142,8 +141,8 @@ class Settings
             'color_mode' => ['color_mode_default', 'allow_user_mode_switch'],
             'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color'],
             'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
-            'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
-            'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'stats_columns', 'stats_gap'],
+            'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns'],
+            'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'dashboard_gap', 'stats_columns'],
             'custom_css' => ['dashboard_custom_css'],
         ];
     }
@@ -318,7 +317,6 @@ class Settings
             'card_hover_text_color' => 'primary-foreground',
             'card_hover_border_color' => 'primary',
             'quicklinks_columns' => 4,
-            'quicklinks_gap' => 15,
         ];
     }
 
@@ -335,8 +333,8 @@ class Settings
             'brand_border_color' => 'border',
             'brand_shadow_enabled' => 1,
             'brand_shadow_intensity' => 1,
+            'dashboard_gap' => 15,
             'stats_columns' => 4,
-            'stats_gap' => 20,
         ];
     }
 
@@ -890,27 +888,20 @@ CSS;
                 'type' => 'number',
                 'default' => 4,
             ],
+            // Layout Settings
             [
-                'id' => 'quicklinks_gap',
-                'label' => __('Quick Links Gap', 'sfxtheme'),
-                'description' => __('Gap between quick action boxes in pixels (5-50).', 'sfxtheme'),
+                'id' => 'dashboard_gap',
+                'label' => __('Dashboard Gap', 'sfxtheme'),
+                'description' => __('Gap between all dashboard sections and grid items in pixels (10-50).', 'sfxtheme'),
                 'type' => 'number',
                 'default' => 15,
             ],
-            // Layout Settings
             [
                 'id' => 'stats_columns',
                 'label' => __('Stats Columns', 'sfxtheme'),
                 'description' => __('Number of columns for statistics cards (2-6).', 'sfxtheme'),
                 'type' => 'number',
                 'default' => 4,
-            ],
-            [
-                'id' => 'stats_gap',
-                'label' => __('Stats Gap', 'sfxtheme'),
-                'description' => __('Gap between statistics cards in pixels (5-50).', 'sfxtheme'),
-                'type' => 'number',
-                'default' => 20,
             ],
             // Note Section
             [
@@ -1022,7 +1013,7 @@ CSS;
                 $section = self::$option_name . '_stats';
             } elseif (strpos($field['id'], 'show_') === 0 && strpos($field['id'], 'note_') !== 0) {
                 $section = self::$option_name . '_sections';
-            } elseif (strpos($field['id'], 'quicklinks') !== false && !in_array($field['id'], ['quicklinks_columns', 'quicklinks_gap'])) {
+            } elseif (strpos($field['id'], 'quicklinks') !== false && $field['id'] !== 'quicklinks_columns') {
                 $section = self::$option_name . '_quicklinks';
             } elseif (strpos($field['id'], 'contact_') === 0) {
                 $section = self::$option_name . '_contact';
@@ -1032,7 +1023,7 @@ CSS;
                 $section = self::$option_name . '_sections';
             } elseif (in_array($field['id'], ['note_title', 'note_content', 'show_note_section', 'form_submissions_limit'])) {
                 $section = self::$option_name . '_sections';
-            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
+            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['dashboard_gap', 'stats_columns', 'quicklinks_columns', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
                 $section = self::$option_name . '_brand';
             }
 

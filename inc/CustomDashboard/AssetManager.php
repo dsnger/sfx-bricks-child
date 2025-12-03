@@ -296,10 +296,9 @@ class AssetManager
         $card_hover_border = self::resolve_color($options['card_hover_border_color'] ?? 'primary', $brand_colors, 'hsl(var(--primary))');
         
         // Column and gap settings
+        $dashboard_gap = max(10, min(50, absint($options['dashboard_gap'] ?? 15)));
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
-        $stats_gap = max(5, min(50, absint($options['stats_gap'] ?? 20)));
         $quicklinks_columns = max(2, min(6, absint($options['quicklinks_columns'] ?? 4)));
-        $quicklinks_gap = max(5, min(50, absint($options['quicklinks_gap'] ?? 15)));
 
         // Build shared variables array
         $shared_vars = [
@@ -352,14 +351,42 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
   }
 }
 
+/* Dashboard gap variable */
+.sfx-dashboard-container {
+    --sfx-dashboard-gap: {$dashboard_gap}px;
+}
+
 /* Grid layouts */
 .sfx-stats-grid {
     grid-template-columns: repeat({$stats_columns}, 1fr);
-    gap: {$stats_gap}px;
+    gap: var(--sfx-dashboard-gap);
 }
 .sfx-quicklinks-grid {
     grid-template-columns: repeat({$quicklinks_columns}, 1fr);
-    gap: {$quicklinks_gap}px;
+    gap: var(--sfx-dashboard-gap);
+}
+.sfx-content-grid {
+    gap: var(--sfx-dashboard-gap);
+}
+.sfx-dashboard-widgets-grid {
+    gap: var(--sfx-dashboard-gap);
+}
+.sfx-status-bar {
+    gap: var(--sfx-dashboard-gap);
+}
+.sfx-welcome-section {
+    margin-bottom: var(--sfx-dashboard-gap);
+}
+.sfx-stats-grid {
+    margin-bottom: var(--sfx-dashboard-gap);
+}
+.sfx-content-grid {
+    margin-bottom: var(--sfx-dashboard-gap);
+}
+.sfx-form-submissions-section,
+.sfx-wp-dashboard-widgets-section,
+.sfx-note-section {
+    margin-top: var(--sfx-dashboard-gap);
 }
 @media (max-width: 1024px) {
     .sfx-stats-grid, .sfx-quicklinks-grid {
