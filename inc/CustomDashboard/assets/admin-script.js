@@ -287,9 +287,15 @@
             var $preview = $select.siblings('.sfx-color-preview');
             var selectedOption = $select.find('option:selected');
             var color = selectedOption.data('color');
+            var isVariable = selectedOption.data('is-variable') === 1 || selectedOption.data('is-variable') === '1';
             
             if (color && $preview.length) {
-                $preview.css('background-color', color);
+                if (isVariable) {
+                    // For CSS variable colors, use the variable reference
+                    $preview.css('background', 'hsl(' + color + ')');
+                } else {
+                    $preview.css('background', color);
+                }
             }
         });
     }

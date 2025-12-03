@@ -95,6 +95,11 @@ class Settings
 
     /**
      * Get available brand color options
+     * 
+     * Returns colors organized in groups:
+     * - Brand colors (user-defined)
+     * - Semantic colors (auto-generated, use CSS variables)
+     * - Static colors (fixed values)
      *
      * @return array<string, array<string, string>>
      */
@@ -106,15 +111,40 @@ class Settings
         $accent = $options['brand_accent_color'] ?? '#f093fb';
         
         return [
-            'primary' => ['label' => __('Primary', 'sfxtheme'), 'color' => $primary],
-            'secondary' => ['label' => __('Secondary', 'sfxtheme'), 'color' => $secondary],
-            'accent' => ['label' => __('Accent', 'sfxtheme'), 'color' => $accent],
-            'white' => ['label' => __('White', 'sfxtheme'), 'color' => '#ffffff'],
-            'black' => ['label' => __('Black', 'sfxtheme'), 'color' => '#000000'],
-            'light-gray' => ['label' => __('Light Gray', 'sfxtheme'), 'color' => '#e2e8f0'],
-            'gray' => ['label' => __('Gray', 'sfxtheme'), 'color' => '#94a3b8'],
-            'dark-gray' => ['label' => __('Dark Gray', 'sfxtheme'), 'color' => '#475569'],
+            // Brand Colors (user-defined)
+            'primary' => ['label' => __('Primary', 'sfxtheme'), 'color' => $primary, 'group' => 'brand'],
+            'secondary' => ['label' => __('Secondary', 'sfxtheme'), 'color' => $secondary, 'group' => 'brand'],
+            'accent' => ['label' => __('Accent', 'sfxtheme'), 'color' => $accent, 'group' => 'brand'],
+            
+            // Semantic Colors (auto-generated, CSS variable references)
+            'background' => ['label' => __('Background', 'sfxtheme'), 'color' => 'var(--background)', 'group' => 'semantic', 'is_variable' => true],
+            'foreground' => ['label' => __('Foreground', 'sfxtheme'), 'color' => 'var(--foreground)', 'group' => 'semantic', 'is_variable' => true],
+            'card' => ['label' => __('Card', 'sfxtheme'), 'color' => 'var(--card)', 'group' => 'semantic', 'is_variable' => true],
+            'card-foreground' => ['label' => __('Card Foreground', 'sfxtheme'), 'color' => 'var(--card-foreground)', 'group' => 'semantic', 'is_variable' => true],
+            'muted' => ['label' => __('Muted', 'sfxtheme'), 'color' => 'var(--muted)', 'group' => 'semantic', 'is_variable' => true],
+            'muted-foreground' => ['label' => __('Muted Foreground', 'sfxtheme'), 'color' => 'var(--muted-foreground)', 'group' => 'semantic', 'is_variable' => true],
+            'border' => ['label' => __('Border', 'sfxtheme'), 'color' => 'var(--border)', 'group' => 'semantic', 'is_variable' => true],
+            'primary-foreground' => ['label' => __('Primary Foreground', 'sfxtheme'), 'color' => 'var(--primary-foreground)', 'group' => 'semantic', 'is_variable' => true],
+            'secondary-color' => ['label' => __('Secondary (Semantic)', 'sfxtheme'), 'color' => 'var(--secondary)', 'group' => 'semantic', 'is_variable' => true],
+            'secondary-foreground' => ['label' => __('Secondary Foreground', 'sfxtheme'), 'color' => 'var(--secondary-foreground)', 'group' => 'semantic', 'is_variable' => true],
+            
+            // Static Colors (fixed values)
+            'white' => ['label' => __('White', 'sfxtheme'), 'color' => '#ffffff', 'group' => 'static'],
+            'black' => ['label' => __('Black', 'sfxtheme'), 'color' => '#000000', 'group' => 'static'],
+            'light-gray' => ['label' => __('Light Gray', 'sfxtheme'), 'color' => '#e2e8f0', 'group' => 'static'],
+            'gray' => ['label' => __('Gray', 'sfxtheme'), 'color' => '#94a3b8', 'group' => 'static'],
+            'dark-gray' => ['label' => __('Dark Gray', 'sfxtheme'), 'color' => '#475569', 'group' => 'static'],
         ];
+    }
+
+    /**
+     * Get list of all valid brand color keys for sanitization
+     *
+     * @return array<int, string>
+     */
+    public static function get_brand_color_keys(): array
+    {
+        return array_keys(self::get_brand_colors());
     }
 
     /**
@@ -290,114 +320,6 @@ class Settings
                 'type' => 'number',
                 'default' => 5,
             ],
-            // Content & Activity Sections
-            [
-                'id' => 'show_drafts_section',
-                'label' => __('Show Drafts Section', 'sfxtheme'),
-                'description' => __('Display count of draft posts and pages.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 1,
-            ],
-            [
-                'id' => 'show_scheduled_section',
-                'label' => __('Show Scheduled Content', 'sfxtheme'),
-                'description' => __('Display upcoming scheduled posts and pages.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 1,
-            ],
-            [
-                'id' => 'show_comments_section',
-                'label' => __('Show Pending Comments', 'sfxtheme'),
-                'description' => __('Display count of comments awaiting moderation.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 1,
-            ],
-            [
-                'id' => 'show_revisions_section',
-                'label' => __('Show Recent Activity', 'sfxtheme'),
-                'description' => __('Display recent content edits and revisions.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'revisions_limit',
-                'label' => __('Activity Items to Show', 'sfxtheme'),
-                'description' => __('Number of recent activity items to display (1-20).', 'sfxtheme'),
-                'type' => 'number',
-                'default' => 10,
-            ],
-            [
-                'id' => 'show_stale_content_section',
-                'label' => __('Show Stale Content', 'sfxtheme'),
-                'description' => __('Highlight content that has not been updated recently.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'stale_content_months',
-                'label' => __('Stale Content Threshold (Months)', 'sfxtheme'),
-                'description' => __('Consider content stale if not modified in this many months (1-24).', 'sfxtheme'),
-                'type' => 'number',
-                'default' => 6,
-            ],
-            [
-                'id' => 'show_taxonomy_section',
-                'label' => __('Show Taxonomy Summary', 'sfxtheme'),
-                'description' => __('Display count of categories and tags.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'show_recent_users_section',
-                'label' => __('Show Recent Users', 'sfxtheme'),
-                'description' => __('Display recently registered users.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            // System Sections
-            [
-                'id' => 'show_system_info_section',
-                'label' => __('Show System Info', 'sfxtheme'),
-                'description' => __('Display WordPress, PHP, and MySQL versions.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'show_database_section',
-                'label' => __('Show Database Size', 'sfxtheme'),
-                'description' => __('Display the total database size.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'show_media_size_section',
-                'label' => __('Show Media Library Size', 'sfxtheme'),
-                'description' => __('Display the total size of uploaded media.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'show_cron_section',
-                'label' => __('Show Scheduled Tasks', 'sfxtheme'),
-                'description' => __('Display WordPress cron jobs overview.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            // Utility Sections
-            [
-                'id' => 'show_quick_search_section',
-                'label' => __('Show Quick Search', 'sfxtheme'),
-                'description' => __('Display a search box for quickly finding content.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 0,
-            ],
-            [
-                'id' => 'show_homepage_shortcut',
-                'label' => __('Show Edit Homepage Button', 'sfxtheme'),
-                'description' => __('Display a quick button to edit the homepage.', 'sfxtheme'),
-                'type' => 'checkbox',
-                'default' => 1,
-            ],
             [
                 'id' => 'show_dashboard_widgets',
                 'label' => __('Show WordPress Dashboard Widgets', 'sfxtheme'),
@@ -461,10 +383,30 @@ class Settings
                 'type' => 'textarea',
                 'default' => '',
             ],
+            // Color Mode Settings
+            [
+                'id' => 'color_mode_default',
+                'label' => __('Default Color Mode', 'sfxtheme'),
+                'description' => __('Choose the default color mode for the dashboard.', 'sfxtheme'),
+                'type' => 'select',
+                'default' => 'light',
+                'options' => [
+                    'light' => __('Light', 'sfxtheme'),
+                    'dark' => __('Dark', 'sfxtheme'),
+                    'system' => __('System (follow OS preference)', 'sfxtheme'),
+                ],
+            ],
+            [
+                'id' => 'allow_user_mode_switch',
+                'label' => __('Allow Mode Switching', 'sfxtheme'),
+                'description' => __('Show a toggle button on the dashboard allowing users to switch between light and dark modes.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
             [
                 'id' => 'brand_primary_color',
                 'label' => __('Primary Brand Color', 'sfxtheme'),
-                'description' => __('Main brand color for buttons, links, and accents.', 'sfxtheme'),
+                'description' => __('Main brand color - all other colors will be auto-generated from this. Choose a color that represents your brand.', 'sfxtheme'),
                 'type' => 'color',
                 'default' => '#667eea',
             ],
@@ -765,7 +707,7 @@ class Settings
                 $section = self::$OPTION_NAME . '_sections';
             } elseif (in_array($field['id'], ['note_title', 'note_content', 'show_note_section', 'form_submissions_limit'])) {
                 $section = self::$OPTION_NAME . '_sections';
-            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'])) {
+            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'allow_user_mode_switch'])) {
                 $section = self::$OPTION_NAME . '_brand';
             }
 
@@ -917,22 +859,63 @@ class Settings
                 <?php
                 break;
 
+            case 'select':
+                $select_options = $args['options'] ?? [];
+                ?>
+                <select id="<?php echo $id; ?>" 
+                        name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]">
+                    <?php foreach ($select_options as $option_value => $option_label): ?>
+                        <option value="<?php echo esc_attr($option_value); ?>" <?php selected($value, $option_value); ?>>
+                            <?php echo esc_html($option_label); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php echo esc_html($args['description']); ?></p>
+                <?php
+                break;
+
             case 'brand_color_select':
                 $color_options = self::get_brand_colors();
-                $current_color = $color_options[$value]['color'] ?? '#667eea';
+                $current_color_data = $color_options[$value] ?? $color_options['primary'];
+                $current_color = $current_color_data['color'] ?? '#667eea';
+                $is_variable = !empty($current_color_data['is_variable']);
+                
+                // Group colors by their group
+                $grouped = [
+                    'brand' => [],
+                    'semantic' => [],
+                    'static' => [],
+                ];
+                foreach ($color_options as $key => $data) {
+                    $group = $data['group'] ?? 'static';
+                    $grouped[$group][$key] = $data;
+                }
+                
+                $group_labels = [
+                    'brand' => __('Brand Colors', 'sfxtheme'),
+                    'semantic' => __('Semantic Colors (Auto-generated)', 'sfxtheme'),
+                    'static' => __('Static Colors', 'sfxtheme'),
+                ];
                 ?>
                 <div class="sfx-color-select-wrapper">
-                    <span class="sfx-color-preview" style="background-color: <?php echo esc_attr($current_color); ?>;"></span>
+                    <span class="sfx-color-preview" style="background: <?php echo $is_variable ? 'hsl(' . esc_attr($current_color) . ')' : esc_attr($current_color); ?>;"></span>
                     <select id="<?php echo $id; ?>" 
                             name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]"
                             class="sfx-color-select"
                             data-colors='<?php echo esc_attr(wp_json_encode(array_map(function($opt) { return $opt['color']; }, $color_options))); ?>'>
-                        <?php foreach ($color_options as $option_value => $option_data): ?>
-                            <option value="<?php echo esc_attr($option_value); ?>" 
-                                    data-color="<?php echo esc_attr($option_data['color']); ?>"
-                                    <?php selected($value, $option_value); ?>>
-                                <?php echo esc_html($option_data['label']); ?>
-                            </option>
+                        <?php foreach ($grouped as $group_key => $group_options): ?>
+                            <?php if (!empty($group_options)): ?>
+                                <optgroup label="<?php echo esc_attr($group_labels[$group_key]); ?>">
+                                    <?php foreach ($group_options as $option_value => $option_data): ?>
+                                        <option value="<?php echo esc_attr($option_value); ?>" 
+                                                data-color="<?php echo esc_attr($option_data['color']); ?>"
+                                                data-is-variable="<?php echo !empty($option_data['is_variable']) ? '1' : '0'; ?>"
+                                                <?php selected($value, $option_value); ?>>
+                                            <?php echo esc_html($option_data['label']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -1534,8 +1517,16 @@ class Settings
                     break;
 
                 case 'brand_color_select':
-                    $allowed_values = ['primary', 'secondary', 'accent', 'white', 'black', 'light-gray', 'gray', 'dark-gray'];
-                    $output[$id] = in_array($input[$id], $allowed_values) ? sanitize_key($input[$id]) : $default;
+                    $allowed_values = self::get_brand_color_keys();
+                    $output[$id] = in_array($input[$id], $allowed_values) ? sanitize_text_field($input[$id]) : $default;
+                    break;
+
+                case 'select':
+                    // Get allowed options from field definition
+                    $field_def = array_filter(self::get_fields(), fn($f) => $f['id'] === $id);
+                    $field_def = reset($field_def);
+                    $allowed_options = array_keys($field_def['options'] ?? []);
+                    $output[$id] = in_array($input[$id], $allowed_options) ? sanitize_key($input[$id]) : $default;
                     break;
 
                 case 'number':

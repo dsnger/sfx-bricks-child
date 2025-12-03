@@ -149,6 +149,33 @@ class AssetManager
     }
 
     /**
+     * Resolve a color key to its CSS value
+     * 
+     * Handles both hex colors and semantic CSS variable references
+     *
+     * @param string $color_key The color key from settings
+     * @param array<string, array<string, mixed>> $brand_colors The brand colors array
+     * @param string $fallback Fallback color if key not found
+     * @return string CSS color value (hex or hsl(var(--name)))
+     */
+    private static function resolve_color(string $color_key, array $brand_colors, string $fallback = '#667eea'): string
+    {
+        if (!isset($brand_colors[$color_key])) {
+            return $fallback;
+        }
+        
+        $color_data = $brand_colors[$color_key];
+        $color = $color_data['color'] ?? $fallback;
+        
+        // If it's a CSS variable reference, wrap it in hsl()
+        if (!empty($color_data['is_variable'])) {
+            return 'hsl(' . $color . ')';
+        }
+        
+        return $color;
+    }
+
+    /**
      * Inject brand styles as CSS variables
      *
      * @return void
@@ -164,62 +191,59 @@ class AssetManager
         $border_width = $options['brand_border_width'] ?? 0;
         $shadow_enabled = !empty($options['brand_shadow_enabled']);
         $shadow_intensity = absint($options['brand_shadow_intensity'] ?? 1);
+        $color_mode_default = $options['color_mode_default'] ?? 'light';
+        
+        // Generate semantic color palettes
+        $light_palette = ColorUtils::generatePalette($primary, 'light');
+        $dark_palette = ColorUtils::generatePalette($primary, 'dark');
         
         // Color map for brand color selections
         $brand_colors = Settings::get_brand_colors();
-        $color_map = array_map(function($item) {
-            return $item['color'];
-        }, $brand_colors);
         
-        $border_color_key = $options['brand_border_color'] ?? 'light-gray';
         $header_gradient = !empty($options['brand_header_gradient']);
         $header_gradient_start_key = $options['brand_header_gradient_start'] ?? 'primary';
         $header_gradient_end_key = $options['brand_header_gradient_end'] ?? 'secondary';
         $header_bg_key = $options['brand_header_bg_color'] ?? 'primary';
-        $header_text_key = $options['brand_header_text_color'] ?? 'white';
         
-        $border_color = $color_map[$border_color_key] ?? $color_map['light-gray'];
-        $gradient_start = $color_map[$header_gradient_start_key] ?? $color_map['primary'];
-        $gradient_end = $color_map[$header_gradient_end_key] ?? $color_map['secondary'];
-        $header_bg_solid = $color_map[$header_bg_key] ?? $color_map['primary'];
-        $header_text = $color_map[$header_text_key] ?? $color_map['white'];
+        $gradient_start = self::resolve_color($header_gradient_start_key, $brand_colors, $primary);
+        $gradient_end = self::resolve_color($header_gradient_end_key, $brand_colors, $secondary);
+        $header_bg_solid = self::resolve_color($header_bg_key, $brand_colors, $primary);
         
         // Generate header background (gradient or solid)
-        $header_bg = $header_gradient 
+        $header_bg_light = $header_gradient 
             ? "linear-gradient(135deg, {$gradient_start} 0%, {$gradient_end} 100%)"
             : $header_bg_solid;
+        
+        // For dark mode, adjust the gradient slightly
+        $header_bg_dark = $header_gradient 
+            ? ColorUtils::generateHeaderGradient($primary, 'dark')
+            : ColorUtils::hslToHex($dark_palette['primary']['h'], $dark_palette['primary']['s'], $dark_palette['primary']['l']);
 
         // Define shadow values based on intensity
-        $shadows = [
+        $shadows_light = [
             0 => 'none',
             1 => '0 2px 4px rgba(0, 0, 0, 0.08)',
             2 => '0 4px 6px rgba(0, 0, 0, 0.1)',
             3 => '0 8px 16px rgba(0, 0, 0, 0.15)',
         ];
+        
+        $shadows_dark = [
+            0 => 'none',
+            1 => '0 2px 4px rgba(0, 0, 0, 0.3)',
+            2 => '0 4px 6px rgba(0, 0, 0, 0.4)',
+            3 => '0 8px 16px rgba(0, 0, 0, 0.5)',
+        ];
 
-        $shadow_value = $shadow_enabled ? ($shadows[$shadow_intensity] ?? $shadows[1]) : 'none';
-        $header_shadow = $shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none';
+        $shadow_value_light = $shadow_enabled ? ($shadows_light[$shadow_intensity] ?? $shadows_light[1]) : 'none';
+        $shadow_value_dark = $shadow_enabled ? ($shadows_dark[$shadow_intensity] ?? $shadows_dark[1]) : 'none';
 
         // Card styling options
-        $card_bg_key = $options['card_background_color'] ?? 'white';
-        $card_text_key = $options['card_text_color'] ?? 'dark-gray';
         $card_border_width = $options['card_border_width'] ?? 2;
-        $card_border_color_key = $options['card_border_color'] ?? 'light-gray';
         $card_radius = $options['card_border_radius'] ?? 8;
         $card_shadow_enabled = !empty($options['card_shadow_enabled']);
         
-        // Card hover states
-        $card_hover_bg_key = $options['card_hover_background_color'] ?? 'primary';
-        $card_hover_text_key = $options['card_hover_text_color'] ?? 'white';
-        $card_hover_border_key = $options['card_hover_border_color'] ?? 'primary';
-        
-        $card_bg = $color_map[$card_bg_key] ?? $color_map['white'];
-        $card_text = $color_map[$card_text_key] ?? $color_map['dark-gray'];
-        $card_border_color = $color_map[$card_border_color_key] ?? $color_map['light-gray'];
-        $card_shadow = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.08)' : 'none';
-        $card_hover_bg = $color_map[$card_hover_bg_key] ?? $color_map['primary'];
-        $card_hover_text = $color_map[$card_hover_text_key] ?? $color_map['white'];
-        $card_hover_border = $color_map[$card_hover_border_key] ?? $color_map['primary'];
+        $card_shadow_light = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.08)' : 'none';
+        $card_shadow_dark = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.3)' : 'none';
         
         // Column and gap settings
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
@@ -227,81 +251,159 @@ class AssetManager
         $quicklinks_columns = max(2, min(6, absint($options['quicklinks_columns'] ?? 4)));
         $quicklinks_gap = max(5, min(50, absint($options['quicklinks_gap'] ?? 15)));
 
+        // Generate CSS for light mode palette
+        $light_css_vars = ColorUtils::paletteToCss($light_palette);
+        $dark_css_vars = ColorUtils::paletteToCss($dark_palette);
+
         $custom_css = "
-        :root {
-            --sfx-primary: {$primary};
-            --sfx-secondary: {$secondary};
-            --sfx-accent: {$accent};
-            --sfx-radius: {$radius}px;
-            --sfx-border-width: {$border_width}px;
-            --sfx-border-color: {$border_color};
-            --sfx-shadow: {$shadow_value};
-            --sfx-header-shadow: {$header_shadow};
-            --sfx-header-bg: {$header_bg};
-            --sfx-header-text: {$header_text};
-            --sfx-card-bg: {$card_bg};
-            --sfx-card-text: {$card_text};
-            --sfx-card-border-width: {$card_border_width}px;
-            --sfx-card-border-color: {$card_border_color};
-            --sfx-card-radius: {$card_radius}px;
-            --sfx-card-shadow: {$card_shadow};
-            --sfx-card-hover-bg: {$card_hover_bg};
-            --sfx-card-hover-text: {$card_hover_text};
-            --sfx-card-hover-border: {$card_hover_border};
-        }
-        .sfx-dashboard-container {
-            --primary-color: var(--sfx-primary);
-            --secondary-color: var(--sfx-secondary);
-            --accent-color: var(--sfx-accent);
-            --border-radius: var(--sfx-radius);
-            --border-width: var(--sfx-border-width);
-            --border-color: var(--sfx-border-color);
-            --box-shadow: var(--sfx-shadow);
-            --header-shadow: var(--sfx-header-shadow);
-            --header-bg-color: var(--sfx-header-bg);
-            --header-text-color: var(--sfx-header-text);
-            --card-bg-color: var(--sfx-card-bg);
-            --card-text-color: var(--sfx-card-text);
-            --card-border-width: var(--sfx-card-border-width);
-            --card-border-color: var(--sfx-card-border-color);
-            --card-border-radius: var(--sfx-card-radius);
-            --card-shadow: var(--sfx-card-shadow);
-            --card-hover-bg: var(--sfx-card-hover-bg);
-            --card-hover-text: var(--sfx-card-hover-text);
-            --card-hover-border: var(--sfx-card-hover-border);
-        }
-        .sfx-stats-grid {
-            grid-template-columns: repeat({$stats_columns}, 1fr);
-            gap: {$stats_gap}px;
-        }
-        .sfx-quicklinks-grid {
-            grid-template-columns: repeat({$quicklinks_columns}, 1fr);
-            gap: {$quicklinks_gap}px;
-        }
-        @media (max-width: 1024px) {
-            .sfx-stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .sfx-quicklinks-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        @media (max-width: 768px) {
-            .sfx-stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .sfx-quicklinks-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 480px) {
-            .sfx-stats-grid {
-                grid-template-columns: 1fr;
-            }
-            .sfx-quicklinks-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
+/* Light Mode (default) */
+body.index-php #wpcontent,
+body.index-php:has([data-theme=\"light\"]) #wpcontent,
+.sfx-dashboard-container,
+.sfx-dashboard-container[data-theme=\"light\"] {
+{$light_css_vars}
+  --sfx-radius: {$radius}px;
+  --sfx-border-width: {$border_width}px;
+  --sfx-shadow: {$shadow_value_light};
+  --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none') . ";
+  --sfx-header-bg: {$header_bg_light};
+  --sfx-card-border-width: {$card_border_width}px;
+  --sfx-card-radius: {$card_radius}px;
+  --sfx-card-shadow: {$card_shadow_light};
+  
+  /* Legacy compatibility variables */
+  --primary-color: hsl(var(--primary));
+  --secondary-color: {$secondary};
+  --accent-color: {$accent};
+  --border-radius: var(--sfx-radius);
+  --border-width: var(--sfx-border-width);
+  --border-color: hsl(var(--border));
+  --box-shadow: var(--sfx-shadow);
+  --header-shadow: var(--sfx-header-shadow);
+  --header-bg-color: var(--sfx-header-bg);
+  --header-text-color: hsl(var(--primary-foreground));
+  --card-bg-color: hsl(var(--card));
+  --card-text-color: hsl(var(--card-foreground));
+  --card-border-width: var(--sfx-card-border-width);
+  --card-border-color: hsl(var(--border));
+  --card-border-radius: var(--sfx-card-radius);
+  --card-shadow: var(--sfx-card-shadow);
+  --card-hover-bg: hsl(var(--primary));
+  --card-hover-text: hsl(var(--primary-foreground));
+  --card-hover-border: hsl(var(--primary));
+}
+
+/* Dark Mode */
+body.index-php:has([data-theme=\"dark\"]) #wpcontent,
+.sfx-dashboard-container[data-theme=\"dark\"] {
+{$dark_css_vars}
+  --sfx-radius: {$radius}px;
+  --sfx-border-width: {$border_width}px;
+  --sfx-shadow: {$shadow_value_dark};
+  --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.3)' : 'none') . ";
+  --sfx-header-bg: {$header_bg_dark};
+  --sfx-card-border-width: {$card_border_width}px;
+  --sfx-card-radius: {$card_radius}px;
+  --sfx-card-shadow: {$card_shadow_dark};
+  
+  /* Legacy compatibility variables */
+  --primary-color: hsl(var(--primary));
+  --secondary-color: {$secondary};
+  --accent-color: {$accent};
+  --border-radius: var(--sfx-radius);
+  --border-width: var(--sfx-border-width);
+  --border-color: hsl(var(--border));
+  --box-shadow: var(--sfx-shadow);
+  --header-shadow: var(--sfx-header-shadow);
+  --header-bg-color: var(--sfx-header-bg);
+  --header-text-color: hsl(var(--primary-foreground));
+  --card-bg-color: hsl(var(--card));
+  --card-text-color: hsl(var(--card-foreground));
+  --card-border-width: var(--sfx-card-border-width);
+  --card-border-color: hsl(var(--border));
+  --card-border-radius: var(--sfx-card-radius);
+  --card-shadow: var(--sfx-card-shadow);
+  --card-hover-bg: hsl(var(--primary));
+  --card-hover-text: hsl(var(--primary-foreground));
+  --card-hover-border: hsl(var(--primary));
+}
+
+/* System preference (when data-theme='system') */
+@media (prefers-color-scheme: dark) {
+  body.index-php:has([data-theme=\"system\"]) #wpcontent,
+  .sfx-dashboard-container[data-theme=\"system\"] {
+{$dark_css_vars}
+    --sfx-radius: {$radius}px;
+    --sfx-border-width: {$border_width}px;
+    --sfx-shadow: {$shadow_value_dark};
+    --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.3)' : 'none') . ";
+    --sfx-header-bg: {$header_bg_dark};
+    --sfx-card-border-width: {$card_border_width}px;
+    --sfx-card-radius: {$card_radius}px;
+    --sfx-card-shadow: {$card_shadow_dark};
+    
+    /* Legacy compatibility variables */
+    --primary-color: hsl(var(--primary));
+    --secondary-color: {$secondary};
+    --accent-color: {$accent};
+    --border-radius: var(--sfx-radius);
+    --border-width: var(--sfx-border-width);
+    --border-color: hsl(var(--border));
+    --box-shadow: var(--sfx-shadow);
+    --header-shadow: var(--sfx-header-shadow);
+    --header-bg-color: var(--sfx-header-bg);
+    --header-text-color: hsl(var(--primary-foreground));
+    --card-bg-color: hsl(var(--card));
+    --card-text-color: hsl(var(--card-foreground));
+    --card-border-width: var(--sfx-card-border-width);
+    --card-border-color: hsl(var(--border));
+    --card-border-radius: var(--sfx-card-radius);
+    --card-shadow: var(--sfx-card-shadow);
+    --card-hover-bg: hsl(var(--primary));
+    --card-hover-text: hsl(var(--primary-foreground));
+    --card-hover-border: hsl(var(--primary));
+  }
+}
+
+/* Grid layouts */
+.sfx-stats-grid {
+    grid-template-columns: repeat({$stats_columns}, 1fr);
+    gap: {$stats_gap}px;
+}
+.sfx-quicklinks-grid {
+    grid-template-columns: repeat({$quicklinks_columns}, 1fr);
+    gap: {$quicklinks_gap}px;
+}
+@media (max-width: 1024px) {
+    .sfx-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .sfx-quicklinks-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (max-width: 768px) {
+    .sfx-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .sfx-quicklinks-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 480px) {
+    .sfx-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .sfx-quicklinks-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Color transition for smooth theme switching */
+.sfx-dashboard-container,
+.sfx-dashboard-container * {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
         ";
 
         wp_add_inline_style('sfx-custom-dashboard', $custom_css);

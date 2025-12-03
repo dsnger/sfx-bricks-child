@@ -134,7 +134,8 @@ class AdminPage
     private static function get_brand_subtabs(): array
     {
         return [
-            'colors' => __('Colors', 'sfxtheme'),
+            'color_mode' => __('Color Mode', 'sfxtheme'),
+            'colors' => __('Brand Colors', 'sfxtheme'),
             'header' => __('Welcome Header', 'sfxtheme'),
             'cards' => __('Quick Action Boxes', 'sfxtheme'),
             'general_style' => __('Dashboard Layout', 'sfxtheme'),
@@ -149,6 +150,7 @@ class AdminPage
     private static function get_brand_subtab_fields(): array
     {
         return [
+            'color_mode' => ['color_mode_default', 'allow_user_mode_switch'],
             'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color'],
             'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
             'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
@@ -231,9 +233,9 @@ class AdminPage
         $options = get_option(Settings::$OPTION_NAME, []);
         
         // Get current subtab
-        $current_subtab = isset($_GET['subtab']) ? sanitize_key($_GET['subtab']) : 'colors';
+        $current_subtab = isset($_GET['subtab']) ? sanitize_key($_GET['subtab']) : 'color_mode';
         if (!isset($subtabs[$current_subtab])) {
-            $current_subtab = 'colors';
+            $current_subtab = 'color_mode';
         }
 
         // Render sub-tab navigation
@@ -344,18 +346,13 @@ class AdminPage
             'sections' => [
                 'show_updates_section', 'show_site_health_section', 'show_stats_section', 'show_quicklinks_section', 
                 'show_contact_section', 'show_form_submissions_section', 'form_submissions_limit', 
-                'show_drafts_section', 'show_scheduled_section', 'show_comments_section', 
-                'show_revisions_section', 'revisions_limit', 'show_stale_content_section', 'stale_content_months',
-                'show_taxonomy_section', 'show_recent_users_section', 
-                'show_system_info_section', 'show_database_section', 'show_media_size_section', 'show_cron_section',
-                'show_quick_search_section', 'show_homepage_shortcut',
                 'show_dashboard_widgets', 'enabled_dashboard_widgets', 
                 'show_note_section', 'note_title', 'note_content'
             ],
             'stats' => ['stats_items'],
             'quicklinks' => ['quicklinks_sortable'],
             'contact' => ['contact_card_title', 'contact_card_subtitle', 'contact_company', 'contact_email', 'contact_phone', 'contact_website', 'contact_address'],
-            'brand' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'],
+            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'],
         ];
 
         // Get fields for current tab

@@ -116,6 +116,7 @@ class Controller
         }
 
         // Hide default dashboard widgets, screen options, and notices via CSS
+        // Also apply full-page background color
         ?>
         <style>
             #dashboard-widgets-wrap {
@@ -137,6 +138,21 @@ class Controller
             #wpbody-content > .updated,
             #wpbody-content > .error,
             #wpbody-content > .update-nag {
+                display: none !important;
+            }
+            /* Full page background - remove default WordPress spacing */
+            #wpcontent {
+                padding-left: 0 !important;
+            }
+            #wpbody-content {
+                padding-bottom: 0 !important;
+                float: none !important;
+            }
+            .wrap {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #wpfooter {
                 display: none !important;
             }
         </style>
