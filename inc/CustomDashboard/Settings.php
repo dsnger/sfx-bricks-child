@@ -1119,14 +1119,23 @@ CSS;
                 break;
 
             case 'html_textarea':
+                $editor_id = str_replace('-', '_', $id); // wp_editor requires underscores
+                $editor_settings = [
+                    'textarea_name' => esc_attr(self::$option_name) . '[' . $id . ']',
+                    'textarea_rows' => 8,
+                    'media_buttons' => true,
+                    'teeny'         => false,
+                    'quicktags'     => true,
+                    'tinymce'       => [
+                        'toolbar1' => 'formatselect,bold,italic,underline,strikethrough,bullist,numlist,blockquote,hr,alignleft,aligncenter,alignright,link,unlink,wp_more,spellchecker,fullscreen,wp_adv',
+                        'toolbar2' => 'styleselect,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+                    ],
+                ];
                 ?>
-                <textarea 
-                       id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
-                       rows="6"
-                       class="large-text code"
-                       style="font-family: monospace;"><?php echo esc_textarea($value); ?></textarea>
-                <p class="description"><?php echo esc_html($args['description']); ?></p>
+                <div class="sfx-editor-wrapper">
+                    <?php wp_editor($value ?? '', $editor_id, $editor_settings); ?>
+                    <p class="description" style="margin-top: 10px;"><?php echo esc_html($args['description']); ?></p>
+                </div>
                 <?php
                 break;
 
@@ -2033,7 +2042,7 @@ CSS;
         }
 
         $file = $_FILES[$file_key];
-
+        
         // Validate file size (max 200KB) before upload
         if ($file['size'] > 204800) {
             add_settings_error(

@@ -582,8 +582,8 @@ body.index-php #wpbody-content {
     box-sizing: border-box;
 }
 
-.sfx-section-title {
-    margin: 0 0 20px 0;
+.sfx-dashboard-container .sfx-section-title {
+    margin: 0 0 12px 0;
     font-size: 1.4em;
     font-weight: 600;
     color: hsl(var(--card-foreground));
@@ -782,7 +782,7 @@ body.index-php #wpbody-content {
 .sfx-submission-form-name {
     font-weight: 600;
     color: hsl(var(--card-foreground));
-    font-size: 0.95em;
+    font-size: 1em;
 }
 
 .sfx-submission-date {
@@ -877,7 +877,7 @@ body.index-php #wpbody-content {
 /* Style widget internals */
 .sfx-dashboard-widget-content h3,
 .sfx-dashboard-widget-content h4 {
-    font-size: 0.95em;
+    font-size: 1em;
     font-weight: 600;
     margin: 0 0 10px 0;
     color: hsl(var(--muted-foreground));
@@ -1046,9 +1046,35 @@ body.index-php #wpbody-content {
 }
 
 .sfx-note-content {
-    font-size: 0.95em;
+    font-size: 1.125em;
     line-height: 1.6;
     color: hsl(var(--muted-foreground));
+}
+
+/* Ensure consistent text color for all elements except links */
+.sfx-note-content h1,
+.sfx-note-content h2,
+.sfx-note-content h3,
+.sfx-note-content h4,
+.sfx-note-content h5,
+.sfx-note-content h6,
+.sfx-note-content p,
+.sfx-note-content li,
+.sfx-note-content span,
+.sfx-note-content strong,
+.sfx-note-content em,
+.sfx-note-content blockquote,
+.sfx-note-content td,
+.sfx-note-content th {
+    color: inherit;
+}
+
+.sfx-note-content *:first-child {
+    margin-top: 0;
+}
+
+.sfx-note-content *:last-child {
+    margin-bottom: 0;
 }
 
 .sfx-note-content p {

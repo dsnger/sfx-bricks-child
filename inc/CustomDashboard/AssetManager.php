@@ -66,8 +66,9 @@ class AssetManager
             return;
         }
 
-        // Enqueue WordPress media library
+        // Enqueue WordPress media library and editor
         wp_enqueue_media();
+        wp_enqueue_editor();
 
         $css_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/admin-style.css';
         $js_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/admin-script.js';

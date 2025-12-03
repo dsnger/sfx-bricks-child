@@ -300,7 +300,7 @@ class DashboardRenderer
      */
     private function render_welcome_section(): void
     {
-        $title = $this->get_option('dashboard_welcome_title', __('Welcome back! 👋', 'sfxtheme'));
+        $title = $this->get_option('dashboard_welcome_title', __('Welcome back, {user_name}! 👋', 'sfxtheme'));
         $subtitle = $this->get_option('dashboard_welcome_subtitle', __("Here's what's happening with your projects today.", 'sfxtheme'));
         $logo = $this->get_option('brand_logo', '');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
