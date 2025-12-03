@@ -329,9 +329,9 @@ class Settings
     {
         return [
             'brand_border_radius' => 8,
-            'brand_border_width' => 0,
+            'brand_border_width' => 1,
             'brand_border_color' => 'border',
-            'brand_shadow_enabled' => 1,
+            'brand_shadow_enabled' => 0,
             'brand_shadow_intensity' => 1,
             'dashboard_gap' => 15,
             'stats_columns' => 4,
@@ -541,7 +541,7 @@ CSS;
                 'label' => __('Enable Custom Dashboard', 'sfxtheme'),
                 'description' => __('Enable the custom dashboard to replace the default WordPress dashboard.', 'sfxtheme'),
                 'type' => 'checkbox',
-                'default' => 1,
+                'default' => 0,
             ],
             [
                 'id' => 'dashboard_welcome_title',
@@ -751,7 +751,7 @@ CSS;
                 'label' => __('Border Width', 'sfxtheme'),
                 'description' => __('Border width in pixels for cards and elements (0-10).', 'sfxtheme'),
                 'type' => 'number',
-                'default' => 0,
+                'default' => 1,
             ],
             [
                 'id' => 'brand_border_color',
@@ -765,7 +765,7 @@ CSS;
                 'label' => __('Enable Shadows', 'sfxtheme'),
                 'description' => __('Add shadow effects to cards and elements.', 'sfxtheme'),
                 'type' => 'checkbox',
-                'default' => 1,
+                'default' => 0,
             ],
             [
                 'id' => 'brand_shadow_intensity',
