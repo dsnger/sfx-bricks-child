@@ -175,7 +175,10 @@ class GitHubThemeUpdater
         'timeout' => 30
       ];
       if ($this->authorize_token) {
-        $args['headers']['Authorization'] = "Bearer {$this->authorize_token}";
+        // Classic tokens use 'token', fine-grained tokens use 'Bearer'
+        // For backwards compatibility, use 'token' for classic PATs (starting with ghp_)
+        $auth_type = str_starts_with($this->authorize_token, 'ghp_') ? 'token' : 'Bearer';
+        $args['headers']['Authorization'] = "{$auth_type} {$this->authorize_token}";
       }
 
       $this->debug_log('Requesting: ' . $request_uri);
@@ -214,6 +217,15 @@ class GitHubThemeUpdater
 
       $this->github_response = json_decode($response_body);
 
+      // Check for JSON decode errors
+      if (json_last_error() !== JSON_ERROR_NONE) {
+        $error_message = 'GitHub API Error: Invalid JSON response - ' . json_last_error_msg();
+        $this->debug_log($error_message);
+        $this->debug_log('Response body: ' . substr($response_body, 0, 500));
+        error_log($error_message);
+        return;
+      }
+
       if (empty($this->github_response->tag_name)) {
         $error_message = 'GitHub API Error: tag_name missing in response';
         $this->debug_log($error_message);
@@ -232,6 +244,7 @@ class GitHubThemeUpdater
 
     add_filter('pre_set_site_transient_update_themes', [$this, 'modify_transient'], 10, 1);
     add_filter('themes_api', [$this, 'theme_popup'], 10, 3);
+    add_filter('upgrader_pre_download', [$this, 'download_package'], 10, 3);
 
     // Add action to force check for updates (useful for debugging)
     add_action('admin_init', [$this, 'force_check']);
@@ -315,18 +328,22 @@ class GitHubThemeUpdater
       return;
     }
 
-    // Handle actions
-    if (isset($_GET['action'])) {
-      switch ($_GET['action']) {
-        case 'force_check':
-          delete_site_transient('update_themes');
-          $this->debug_log('Manual force check triggered from debug page');
-          echo '<div class="notice notice-success"><p>Update check forced!</p></div>';
-          break;
-        case 'clear_logs':
-          $this->clear_debug_logs();
-          echo '<div class="notice notice-success"><p>Debug logs cleared!</p></div>';
-          break;
+    // Handle actions with nonce verification
+    if (isset($_GET['action']) && isset($_GET['_wpnonce'])) {
+      if (!wp_verify_nonce($_GET['_wpnonce'], 'sfx_updater_debug_action')) {
+        echo '<div class="notice notice-error"><p>Security check failed. Please try again.</p></div>';
+      } else {
+        switch ($_GET['action']) {
+          case 'force_check':
+            delete_site_transient('update_themes');
+            $this->debug_log('Manual force check triggered from debug page');
+            echo '<div class="notice notice-success"><p>Update check forced!</p></div>';
+            break;
+          case 'clear_logs':
+            $this->clear_debug_logs();
+            echo '<div class="notice notice-success"><p>Debug logs cleared!</p></div>';
+            break;
+        }
       }
     }
 
@@ -372,8 +389,10 @@ class GitHubThemeUpdater
     // Action buttons
     echo '<h2>Actions</h2>';
     echo '<p>';
-    echo '<a href="' . add_query_arg('action', 'force_check') . '" class="button button-primary">Force Update Check</a> ';
-    echo '<a href="' . add_query_arg('action', 'clear_logs') . '" class="button">Clear Debug Logs</a>';
+    $force_check_url = wp_nonce_url(add_query_arg('action', 'force_check'), 'sfx_updater_debug_action');
+    $clear_logs_url = wp_nonce_url(add_query_arg('action', 'clear_logs'), 'sfx_updater_debug_action');
+    echo '<a href="' . esc_url($force_check_url) . '" class="button button-primary">Force Update Check</a> ';
+    echo '<a href="' . esc_url($clear_logs_url) . '" class="button">Clear Debug Logs</a>';
     echo '</p>';
 
     // Test GitHub connection
@@ -546,9 +565,8 @@ class GitHubThemeUpdater
           }
         }
       }
-      if ($this->authorize_token) {
-        $package = add_query_arg(['access_token' => $this->authorize_token], $package);
-      }
+      // Note: Token authentication is handled via wp_remote_get headers during download
+      // Adding access_token to URL is deprecated by GitHub
       $obj = [
         'theme' => $this->theme_slug,
         'new_version' => $latest_version,
@@ -561,6 +579,35 @@ class GitHubThemeUpdater
       $this->debug_log('No update needed. Current version is latest or newer');
     }
     return $transient;
+  }
+
+  /**
+   * Handle package download with authentication
+   */
+  public function download_package($reply, $package, $upgrader)
+  {
+    // Only handle GitHub URLs for this theme
+    if (!str_contains($package, 'github.com') && !str_contains($package, 'api.github.com')) {
+      return $reply;
+    }
+
+    if (!$this->authorize_token) {
+      return $reply;
+    }
+
+    $this->debug_log('Downloading package with authentication: ' . $package);
+
+    // Add authentication header to download request
+    add_filter('http_request_args', function($args, $url) use ($package) {
+      if ($url === $package) {
+        $auth_type = str_starts_with($this->authorize_token, 'ghp_') ? 'token' : 'Bearer';
+        $args['headers']['Authorization'] = "{$auth_type} {$this->authorize_token}";
+        $this->debug_log('Added authentication header to download request');
+      }
+      return $args;
+    }, 10, 2);
+
+    return $reply;
   }
 
   public function theme_popup($result, $action, $args)
@@ -588,6 +635,17 @@ class GitHubThemeUpdater
       $release_body = $parsedown->text($release_body);
     }
 
+    // Use custom asset download link if available, otherwise zipball
+    $download_link = $this->github_response->zipball_url;
+    if (!empty($this->github_response->assets) && is_array($this->github_response->assets)) {
+      foreach ($this->github_response->assets as $asset) {
+        if (isset($asset->name) && str_ends_with($asset->name, '.zip') && isset($asset->browser_download_url)) {
+          $download_link = $asset->browser_download_url;
+          break;
+        }
+      }
+    }
+
     $info = [
       'name' => $theme->get('Name'),
       'slug' => $this->theme_slug,
@@ -601,7 +659,7 @@ class GitHubThemeUpdater
         'description' => $theme->get('Description'),
         'changelog' => $release_body,
       ],
-      'download_link' => $this->github_response->zipball_url,
+      'download_link' => $download_link,
       'tested' => '6.7.1',
     ];
     return (object) $info;
