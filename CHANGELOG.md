@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.3] - 2025-12-03
+
+### Enhanced
+
+- **GitHub Updater**: Improved authentication and error handling
+  - Fixed Authorization header format (classic vs fine-grained tokens)
+  - Added download package authentication for private repos
+  - Removed deprecated URL parameter authentication
+  - Added JSON decode error handling
+  - Fixed custom asset download link in theme popup
+  - Added nonce verification for debug page actions
+
 ## [0.7.2] - 2025-12-03
 
 ### Added
