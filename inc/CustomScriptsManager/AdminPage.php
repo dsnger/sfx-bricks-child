@@ -17,6 +17,11 @@ class AdminPage
 
   public static function add_submenu_pages(): void
   {
+    // Only register menu if user has theme settings access
+    if (!\SFX\AccessControl::can_access_theme_settings()) {
+      return;
+    }
+
     // Add main Custom Scripts page
     add_submenu_page(
       \SFX\SFXBricksChildAdmin::$menu_slug,
@@ -25,7 +30,6 @@ class AdminPage
       'manage_options',
       'edit.php?post_type=' . PostType::$post_type
     );
-
   }
 
   public static function render_page()

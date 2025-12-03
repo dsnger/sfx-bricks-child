@@ -45,4 +45,23 @@ This will:
 - Exclude development files (.git, node_modules, .env, etc.)
 - Place the zip file in the theme root directory
 
+## Restricting Theme Settings Access
+
+Two-tier access control via `wp-config.php`. **If not defined, access is locked for everyone.**
+
+```php
+// Theme Settings - role OR capability (auto-detected)
+define('SFX_THEME_ADMINS', 'administrator');  // or 'manage_options'
+
+// Custom Dashboard Settings - usernames (comma-separated)
+define('SFX_THEME_DASHBOARD', 'agency_user,agency_dev');
+```
+
+| SFX_THEME_ADMINS | SFX_THEME_DASHBOARD | Theme Settings | Dashboard Settings |
+|------------------|---------------------|----------------|-------------------|
+| Not defined | Not defined | Locked | Locked |
+| Defined | Not defined | By role/cap | Locked |
+| Not defined | Defined | Locked | By username |
+| Defined | Defined | By role/cap | By username |
+
 ## Other Documentation

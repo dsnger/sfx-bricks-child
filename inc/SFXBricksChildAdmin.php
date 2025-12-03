@@ -14,6 +14,11 @@ class SFXBricksChildAdmin
 
   public static function register_admin_menu()
   {
+    // Only register menu if user has theme settings access
+    if (!AccessControl::can_access_theme_settings()) {
+      return;
+    }
+
     add_menu_page(
       __('Global Theme Settings', 'sfxtheme'),
       __('Global Theme Settings', 'sfxtheme'),
@@ -27,6 +32,9 @@ class SFXBricksChildAdmin
 
   public static function render_theme_settings_page()
   {
+    // Block direct URL access for unauthorized users
+    AccessControl::die_if_unauthorized_theme();
+
     echo '<div class="wrap">';
     echo '<h1>' . esc_html__('Global Theme Settings', 'sfxtheme') . '</h1>';
 

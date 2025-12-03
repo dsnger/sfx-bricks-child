@@ -32,6 +32,11 @@ class AdminPage
      */
     public static function add_submenu_page(): void
     {
+        // Only register menu if user has dashboard settings access
+        if (!\SFX\AccessControl::can_access_dashboard_settings()) {
+            return;
+        }
+
         add_submenu_page(
             \SFX\SFXBricksChildAdmin::$menu_slug,
             self::$page_title,
@@ -50,10 +55,8 @@ class AdminPage
      */
     public static function render_page(): void
     {
-        // Check user capabilities
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'sfxtheme'));
-        }
+        // Block direct URL access for unauthorized users
+        \SFX\AccessControl::die_if_unauthorized_dashboard();
 
         // Get current tab
         $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
