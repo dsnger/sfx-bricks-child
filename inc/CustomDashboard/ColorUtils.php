@@ -124,7 +124,7 @@ class ColorUtils
      * @param string $hex Hex color code
      * @return float Luminance value (0-1)
      */
-    public static function getLuminance(string $hex): float
+    private static function getLuminance(string $hex): float
     {
         $hex = ltrim($hex, '#');
         
@@ -144,30 +144,12 @@ class ColorUtils
     }
 
     /**
-     * Calculate contrast ratio between two colors
-     *
-     * @param string $hex1 First hex color
-     * @param string $hex2 Second hex color
-     * @return float Contrast ratio (1-21)
-     */
-    public static function getContrastRatio(string $hex1, string $hex2): float
-    {
-        $l1 = self::getLuminance($hex1);
-        $l2 = self::getLuminance($hex2);
-        
-        $lighter = max($l1, $l2);
-        $darker = min($l1, $l2);
-        
-        return ($lighter + 0.05) / ($darker + 0.05);
-    }
-
-    /**
      * Determine if a color is light or dark
      *
      * @param string $hex Hex color code
      * @return bool True if light, false if dark
      */
-    public static function isLightColor(string $hex): bool
+    private static function isLightColor(string $hex): bool
     {
         return self::getLuminance($hex) > 0.5;
     }
@@ -178,37 +160,9 @@ class ColorUtils
      * @param string $hex Background hex color
      * @return string Contrasting foreground hex color
      */
-    public static function getContrastingForeground(string $hex): string
+    private static function getContrastingForeground(string $hex): string
     {
         return self::isLightColor($hex) ? '#000000' : '#ffffff';
-    }
-
-    /**
-     * Adjust lightness of a color
-     *
-     * @param string $hex Hex color code
-     * @param float $amount Amount to adjust (-100 to 100)
-     * @return string Adjusted hex color
-     */
-    public static function adjustLightness(string $hex, float $amount): string
-    {
-        $hsl = self::hexToHsl($hex);
-        $hsl['l'] = max(0, min(100, $hsl['l'] + $amount));
-        return self::hslToHex($hsl['h'], $hsl['s'], $hsl['l']);
-    }
-
-    /**
-     * Adjust saturation of a color
-     *
-     * @param string $hex Hex color code
-     * @param float $amount Amount to adjust (-100 to 100)
-     * @return string Adjusted hex color
-     */
-    public static function adjustSaturation(string $hex, float $amount): string
-    {
-        $hsl = self::hexToHsl($hex);
-        $hsl['s'] = max(0, min(100, $hsl['s'] + $amount));
-        return self::hslToHex($hsl['h'], $hsl['s'], $hsl['l']);
     }
 
     /**

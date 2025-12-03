@@ -51,7 +51,7 @@ class AssetManager
      */
     private static function is_custom_dashboard_enabled(): bool
     {
-        $options = get_option(Settings::$OPTION_NAME, []);
+        $options = get_option(Settings::$option_name, []);
         return !empty($options['enable_custom_dashboard']);
     }
 
@@ -106,9 +106,10 @@ class AssetManager
                 true
             );
 
-            // Pass option name to JavaScript for dynamic field management
+            // Pass option name and default values to JavaScript for dynamic field management
             wp_localize_script('sfx-custom-dashboard-admin', 'sfxDashboardAdmin', [
-                'optionName' => Settings::$OPTION_NAME,
+                'optionName' => Settings::$option_name,
+                'defaultIcon' => Settings::DEFAULT_CUSTOM_ICON,
                 'strings' => [
                     'remove' => __('Remove', 'sfxtheme'),
                     'icon' => __('Icon', 'sfxtheme'),
@@ -181,7 +182,7 @@ class AssetManager
             self::inject_brand_styles();
             
             // Add custom CSS on top if set
-            $options = get_option(Settings::$OPTION_NAME, []);
+            $options = get_option(Settings::$option_name, []);
             $custom_css = $options['dashboard_custom_css'] ?? '';
             
             if (!empty($custom_css)) {
@@ -236,7 +237,7 @@ class AssetManager
      */
     private static function inject_brand_styles(): void
     {
-        $options = get_option(Settings::$OPTION_NAME, []);
+        $options = get_option(Settings::$option_name, []);
         
         $defaults = Settings::get_default_brand_colors();
         $primary = $options['brand_primary_color'] ?? $defaults['brand_primary_color'];
@@ -246,7 +247,6 @@ class AssetManager
         $border_width = $options['brand_border_width'] ?? 0;
         $shadow_enabled = !empty($options['brand_shadow_enabled']);
         $shadow_intensity = absint($options['brand_shadow_intensity'] ?? 1);
-        $color_mode_default = $options['color_mode_default'] ?? 'light';
         
         // Get custom status colors
         $statusColors = [
@@ -271,61 +271,28 @@ class AssetManager
         $gradient_end = self::resolve_color($header_gradient_end_key, $brand_colors, $secondary);
         $header_bg_solid = self::resolve_color($header_bg_key, $brand_colors, $primary);
         
-        // Generate header background (gradient or solid)
+        // Generate header backgrounds (gradient or solid)
         $header_bg_light = $header_gradient 
             ? "linear-gradient(135deg, {$gradient_start} 0%, {$gradient_end} 100%)"
             : $header_bg_solid;
-        
-        // For dark mode, adjust the gradient slightly
         $header_bg_dark = $header_gradient 
             ? ColorUtils::generateHeaderGradient($primary, 'dark')
             : ColorUtils::hslToHex($dark_palette['primary']['h'], $dark_palette['primary']['s'], $dark_palette['primary']['l']);
-
-        // Define shadow values based on intensity
-        $shadows_light = [
-            0 => 'none',
-            1 => '0 2px 4px rgba(0, 0, 0, 0.08)',
-            2 => '0 4px 6px rgba(0, 0, 0, 0.1)',
-            3 => '0 8px 16px rgba(0, 0, 0, 0.15)',
-        ];
-        
-        $shadows_dark = [
-            0 => 'none',
-            1 => '0 2px 4px rgba(0, 0, 0, 0.3)',
-            2 => '0 4px 6px rgba(0, 0, 0, 0.4)',
-            3 => '0 8px 16px rgba(0, 0, 0, 0.5)',
-        ];
-
-        $shadow_value_light = $shadow_enabled ? ($shadows_light[$shadow_intensity] ?? $shadows_light[1]) : 'none';
-        $shadow_value_dark = $shadow_enabled ? ($shadows_dark[$shadow_intensity] ?? $shadows_dark[1]) : 'none';
 
         // Card styling options
         $card_border_width = $options['card_border_width'] ?? 2;
         $card_radius = $options['card_border_radius'] ?? 8;
         $card_shadow_enabled = !empty($options['card_shadow_enabled']);
         
-        $card_shadow_light = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.08)' : 'none';
-        $card_shadow_dark = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.3)' : 'none';
-        
-        // Resolve color settings from admin options (defaults match Settings.php)
-        $header_text_key = $options['brand_header_text_color'] ?? 'primary-foreground';
-        $border_color_key = $options['brand_border_color'] ?? 'border';
-        $card_bg_key = $options['card_background_color'] ?? 'secondary-color';
-        $card_text_key = $options['card_text_color'] ?? 'secondary-foreground';
-        $card_border_key = $options['card_border_color'] ?? 'border';
-        $card_hover_bg_key = $options['card_hover_background_color'] ?? 'primary';
-        $card_hover_text_key = $options['card_hover_text_color'] ?? 'primary-foreground';
-        $card_hover_border_key = $options['card_hover_border_color'] ?? 'primary';
-        
-        // Resolve all colors
-        $header_text_color = self::resolve_color($header_text_key, $brand_colors, 'hsl(var(--primary-foreground))');
-        $border_color = self::resolve_color($border_color_key, $brand_colors, 'hsl(var(--border))');
-        $card_bg_color = self::resolve_color($card_bg_key, $brand_colors, 'hsl(var(--secondary))');
-        $card_text_color = self::resolve_color($card_text_key, $brand_colors, 'hsl(var(--secondary-foreground))');
-        $card_border_color = self::resolve_color($card_border_key, $brand_colors, 'hsl(var(--border))');
-        $card_hover_bg = self::resolve_color($card_hover_bg_key, $brand_colors, 'hsl(var(--primary))');
-        $card_hover_text = self::resolve_color($card_hover_text_key, $brand_colors, 'hsl(var(--primary-foreground))');
-        $card_hover_border = self::resolve_color($card_hover_border_key, $brand_colors, 'hsl(var(--primary))');
+        // Resolve color settings from admin options
+        $header_text_color = self::resolve_color($options['brand_header_text_color'] ?? 'primary-foreground', $brand_colors, 'hsl(var(--primary-foreground))');
+        $border_color = self::resolve_color($options['brand_border_color'] ?? 'border', $brand_colors, 'hsl(var(--border))');
+        $card_bg_color = self::resolve_color($options['card_background_color'] ?? 'secondary-color', $brand_colors, 'hsl(var(--secondary))');
+        $card_text_color = self::resolve_color($options['card_text_color'] ?? 'secondary-foreground', $brand_colors, 'hsl(var(--secondary-foreground))');
+        $card_border_color = self::resolve_color($options['card_border_color'] ?? 'border', $brand_colors, 'hsl(var(--border))');
+        $card_hover_bg = self::resolve_color($options['card_hover_background_color'] ?? 'primary', $brand_colors, 'hsl(var(--primary))');
+        $card_hover_text = self::resolve_color($options['card_hover_text_color'] ?? 'primary-foreground', $brand_colors, 'hsl(var(--primary-foreground))');
+        $card_hover_border = self::resolve_color($options['card_hover_border_color'] ?? 'primary', $brand_colors, 'hsl(var(--primary))');
         
         // Column and gap settings
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
@@ -333,9 +300,33 @@ class AssetManager
         $quicklinks_columns = max(2, min(6, absint($options['quicklinks_columns'] ?? 4)));
         $quicklinks_gap = max(5, min(50, absint($options['quicklinks_gap'] ?? 15)));
 
-        // Generate CSS for light mode palette
-        $light_css_vars = ColorUtils::paletteToCss($light_palette);
-        $dark_css_vars = ColorUtils::paletteToCss($dark_palette);
+        // Build shared variables array
+        $shared_vars = [
+            'secondary' => $secondary,
+            'accent' => $accent,
+            'radius' => $radius,
+            'border_width' => $border_width,
+            'border_color' => $border_color,
+            'header_text_color' => $header_text_color,
+            'card_border_width' => $card_border_width,
+            'card_radius' => $card_radius,
+            'card_bg_color' => $card_bg_color,
+            'card_text_color' => $card_text_color,
+            'card_border_color' => $card_border_color,
+            'card_hover_bg' => $card_hover_bg,
+            'card_hover_text' => $card_hover_text,
+            'card_hover_border' => $card_hover_border,
+        ];
+
+        // Light mode specific
+        $light_vars = self::build_mode_vars($light_palette, $shadow_enabled, $shadow_intensity, $header_bg_light, $card_shadow_enabled, 'light');
+        
+        // Dark mode specific
+        $dark_vars = self::build_mode_vars($dark_palette, $shadow_enabled, $shadow_intensity, $header_bg_dark, $card_shadow_enabled, 'dark');
+
+        // Generate CSS
+        $light_css_block = self::generate_css_vars_block($light_vars, $shared_vars);
+        $dark_css_block = self::generate_css_vars_block($dark_vars, $shared_vars);
 
         $custom_css = "
 /* Light Mode (default) */
@@ -343,107 +334,20 @@ body.index-php #wpcontent,
 body.index-php:has([data-theme=\"light\"]) #wpcontent,
 .sfx-dashboard-container,
 .sfx-dashboard-container[data-theme=\"light\"] {
-{$light_css_vars}
-  --sfx-radius: {$radius}px;
-  --sfx-border-width: {$border_width}px;
-  --sfx-shadow: {$shadow_value_light};
-  --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none') . ";
-  --sfx-header-bg: {$header_bg_light};
-  --sfx-card-border-width: {$card_border_width}px;
-  --sfx-card-radius: {$card_radius}px;
-  --sfx-card-shadow: {$card_shadow_light};
-  
-  /* Legacy compatibility variables */
-  --primary-color: hsl(var(--primary));
-  --secondary-color: {$secondary};
-  --accent-color: {$accent};
-  --border-radius: var(--sfx-radius);
-  --border-width: var(--sfx-border-width);
-  --border-color: {$border_color};
-  --box-shadow: var(--sfx-shadow);
-  --header-shadow: var(--sfx-header-shadow);
-  --header-bg-color: var(--sfx-header-bg);
-  --header-text-color: {$header_text_color};
-  --card-bg-color: {$card_bg_color};
-  --card-text-color: {$card_text_color};
-  --card-border-width: var(--sfx-card-border-width);
-  --card-border-color: {$card_border_color};
-  --card-border-radius: var(--sfx-card-radius);
-  --card-shadow: var(--sfx-card-shadow);
-  --card-hover-bg: {$card_hover_bg};
-  --card-hover-text: {$card_hover_text};
-  --card-hover-border: {$card_hover_border};
+{$light_css_block}
 }
 
 /* Dark Mode */
 body.index-php:has([data-theme=\"dark\"]) #wpcontent,
 .sfx-dashboard-container[data-theme=\"dark\"] {
-{$dark_css_vars}
-  --sfx-radius: {$radius}px;
-  --sfx-border-width: {$border_width}px;
-  --sfx-shadow: {$shadow_value_dark};
-  --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.3)' : 'none') . ";
-  --sfx-header-bg: {$header_bg_dark};
-  --sfx-card-border-width: {$card_border_width}px;
-  --sfx-card-radius: {$card_radius}px;
-  --sfx-card-shadow: {$card_shadow_dark};
-  
-  /* Legacy compatibility variables */
-  --primary-color: hsl(var(--primary));
-  --secondary-color: {$secondary};
-  --accent-color: {$accent};
-  --border-radius: var(--sfx-radius);
-  --border-width: var(--sfx-border-width);
-  --border-color: {$border_color};
-  --box-shadow: var(--sfx-shadow);
-  --header-shadow: var(--sfx-header-shadow);
-  --header-bg-color: var(--sfx-header-bg);
-  --header-text-color: {$header_text_color};
-  --card-bg-color: {$card_bg_color};
-  --card-text-color: {$card_text_color};
-  --card-border-width: var(--sfx-card-border-width);
-  --card-border-color: {$card_border_color};
-  --card-border-radius: var(--sfx-card-radius);
-  --card-shadow: var(--sfx-card-shadow);
-  --card-hover-bg: {$card_hover_bg};
-  --card-hover-text: {$card_hover_text};
-  --card-hover-border: {$card_hover_border};
+{$dark_css_block}
 }
 
 /* System preference (when data-theme='system') */
 @media (prefers-color-scheme: dark) {
   body.index-php:has([data-theme=\"system\"]) #wpcontent,
   .sfx-dashboard-container[data-theme=\"system\"] {
-{$dark_css_vars}
-    --sfx-radius: {$radius}px;
-    --sfx-border-width: {$border_width}px;
-    --sfx-shadow: {$shadow_value_dark};
-    --sfx-header-shadow: " . ($shadow_enabled && $shadow_intensity > 0 ? '0 4px 6px rgba(0, 0, 0, 0.3)' : 'none') . ";
-    --sfx-header-bg: {$header_bg_dark};
-    --sfx-card-border-width: {$card_border_width}px;
-    --sfx-card-radius: {$card_radius}px;
-    --sfx-card-shadow: {$card_shadow_dark};
-    
-    /* Legacy compatibility variables */
-    --primary-color: hsl(var(--primary));
-    --secondary-color: {$secondary};
-    --accent-color: {$accent};
-    --border-radius: var(--sfx-radius);
-    --border-width: var(--sfx-border-width);
-    --border-color: {$border_color};
-    --box-shadow: var(--sfx-shadow);
-    --header-shadow: var(--sfx-header-shadow);
-    --header-bg-color: var(--sfx-header-bg);
-    --header-text-color: {$header_text_color};
-    --card-bg-color: {$card_bg_color};
-    --card-text-color: {$card_text_color};
-    --card-border-width: var(--sfx-card-border-width);
-    --card-border-color: {$card_border_color};
-    --card-border-radius: var(--sfx-card-radius);
-    --card-shadow: var(--sfx-card-shadow);
-    --card-hover-bg: {$card_hover_bg};
-    --card-hover-text: {$card_hover_text};
-    --card-hover-border: {$card_hover_border};
+{$dark_css_block}
   }
 }
 
@@ -457,18 +361,12 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
     gap: {$quicklinks_gap}px;
 }
 @media (max-width: 1024px) {
-    .sfx-stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .sfx-quicklinks-grid {
+    .sfx-stats-grid, .sfx-quicklinks-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 @media (max-width: 768px) {
-    .sfx-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .sfx-quicklinks-grid {
+    .sfx-stats-grid, .sfx-quicklinks-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
@@ -489,6 +387,84 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
         ";
 
         wp_add_inline_style('sfx-custom-dashboard', $custom_css);
+    }
+
+    /**
+     * Build mode-specific CSS variables
+     *
+     * @param array $palette Color palette
+     * @param bool $shadow_enabled Whether shadows are enabled
+     * @param int $shadow_intensity Shadow intensity level (0-3)
+     * @param string $header_bg Header background value
+     * @param bool $card_shadow_enabled Whether card shadows are enabled
+     * @param string $mode 'light' or 'dark'
+     * @return array<string, string>
+     */
+    private static function build_mode_vars(array $palette, bool $shadow_enabled, int $shadow_intensity, string $header_bg, bool $card_shadow_enabled, string $mode): array
+    {
+        $is_dark = $mode === 'dark';
+        
+        $shadows = $is_dark ? [
+            0 => 'none',
+            1 => '0 2px 4px rgba(0, 0, 0, 0.3)',
+            2 => '0 4px 6px rgba(0, 0, 0, 0.4)',
+            3 => '0 8px 16px rgba(0, 0, 0, 0.5)',
+        ] : [
+            0 => 'none',
+            1 => '0 2px 4px rgba(0, 0, 0, 0.08)',
+            2 => '0 4px 6px rgba(0, 0, 0, 0.1)',
+            3 => '0 8px 16px rgba(0, 0, 0, 0.15)',
+        ];
+        
+        $header_shadow_opacity = $is_dark ? '0.3' : '0.1';
+        
+        return [
+            'palette_css' => ColorUtils::paletteToCss($palette),
+            'shadow' => $shadow_enabled ? ($shadows[$shadow_intensity] ?? $shadows[1]) : 'none',
+            'header_shadow' => ($shadow_enabled && $shadow_intensity > 0) ? "0 4px 6px rgba(0, 0, 0, {$header_shadow_opacity})" : 'none',
+            'header_bg' => $header_bg,
+            'card_shadow' => $card_shadow_enabled ? ($is_dark ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.08)') : 'none',
+        ];
+    }
+
+    /**
+     * Generate CSS variables block from mode and shared variables
+     *
+     * @param array<string, string> $mode_vars Mode-specific variables
+     * @param array<string, mixed> $shared_vars Shared variables
+     * @return string CSS block content
+     */
+    private static function generate_css_vars_block(array $mode_vars, array $shared_vars): string
+    {
+        return "{$mode_vars['palette_css']}  --sfx-radius: {$shared_vars['radius']}px;
+  --sfx-border-width: {$shared_vars['border_width']}px;
+  --sfx-shadow: {$mode_vars['shadow']};
+  --sfx-header-shadow: {$mode_vars['header_shadow']};
+  --sfx-header-bg: {$mode_vars['header_bg']};
+  --sfx-card-border-width: {$shared_vars['card_border_width']}px;
+  --sfx-card-radius: {$shared_vars['card_radius']}px;
+  --sfx-card-shadow: {$mode_vars['card_shadow']};
+  
+  /* Legacy compatibility variables */
+  --primary-color: hsl(var(--primary));
+  --secondary-color: {$shared_vars['secondary']};
+  --accent-color: {$shared_vars['accent']};
+  --border-radius: var(--sfx-radius);
+  --border-width: var(--sfx-border-width);
+  --border-color: {$shared_vars['border_color']};
+  --box-shadow: var(--sfx-shadow);
+  --header-shadow: var(--sfx-header-shadow);
+  --header-bg-color: var(--sfx-header-bg);
+  --header-text-color: {$shared_vars['header_text_color']};
+  --card-bg-color: {$shared_vars['card_bg_color']};
+  --card-text-color: {$shared_vars['card_text_color']};
+  --card-border-width: var(--sfx-card-border-width);
+  --card-border-color: {$shared_vars['card_border_color']};
+  --card-border-radius: var(--sfx-card-radius);
+  --card-shadow: var(--sfx-card-shadow);
+  --card-hover-bg: {$shared_vars['card_hover_bg']};
+  --card-hover-text: {$shared_vars['card_hover_text']};
+  --card-hover-border: {$shared_vars['card_hover_border']};";
     }
 }
 

@@ -11,8 +11,6 @@ namespace SFX\CustomDashboard;
  */
 class Controller
 {
-    public const OPTION_NAME = 'sfx_custom_dashboard';
-
     /**
      * Dashboard renderer instance
      *
@@ -231,10 +229,20 @@ class Controller
      */
     public function clear_stats_cache(): void
     {
-        $options = get_option(self::OPTION_NAME, []);
-        $enabled_cpts = $options['enabled_custom_post_types'] ?? [];
+        $options = get_option(Settings::$option_name, []);
+        $stats_items = $options['stats_items'] ?? [];
         
-        StatsProvider::clear_all_cache(is_array($enabled_cpts) ? $enabled_cpts : []);
+        // Extract enabled custom post types from stats configuration
+        $enabled_cpts = [];
+        if (is_array($stats_items)) {
+            foreach ($stats_items as $item) {
+                if (!empty($item['enabled']) && !empty($item['id']) && strpos($item['id'], 'cpt_') === 0) {
+                    $enabled_cpts[] = str_replace('cpt_', '', $item['id']);
+                }
+            }
+        }
+        
+        StatsProvider::clear_all_cache($enabled_cpts);
         FormSubmissionsProvider::clear_cache();
     }
 
@@ -246,7 +254,7 @@ class Controller
      */
     private function is_option_enabled(string $option_key): bool
     {
-        $options = get_option(self::OPTION_NAME, []);
+        $options = get_option(Settings::$option_name, []);
         return !empty($options[$option_key]);
     }
 
@@ -274,12 +282,12 @@ class Controller
      */
     public static function maybe_set_default_options(): void
     {
-        if (false === get_option(self::OPTION_NAME, false)) {
+        if (false === get_option(Settings::$option_name, false)) {
             $defaults = [];
             foreach (Settings::get_fields() as $field) {
                 $defaults[$field['id']] = $field['default'];
             }
-            add_option(self::OPTION_NAME, $defaults);
+            add_option(Settings::$option_name, $defaults);
         }
     }
 
@@ -290,14 +298,14 @@ class Controller
      */
     public static function maybe_migrate_icons_to_svg(): void
     {
-        $options = get_option(self::OPTION_NAME, []);
+        $options = get_option(Settings::$option_name, []);
         
         if (empty($options)) {
             return;
         }
 
         // Check if migration is needed (version 3 for proper SVG sanitization)
-        $migration_version = get_option(self::OPTION_NAME . '_icon_migration_version', 0);
+        $migration_version = get_option(Settings::$option_name . '_icon_migration_version', 0);
         if ($migration_version >= 3) {
             return;
         }
@@ -319,11 +327,11 @@ class Controller
         }
 
         if ($updated) {
-            update_option(self::OPTION_NAME, $options);
+            update_option(Settings::$option_name, $options);
         }
 
         // Mark migration version 3 as done (Heroicons with proper SVG sanitization)
-        update_option(self::OPTION_NAME . '_icon_migration_version', 3);
+        update_option(Settings::$option_name . '_icon_migration_version', 3);
     }
 }
 

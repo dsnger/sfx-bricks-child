@@ -11,9 +11,23 @@ namespace SFX\CustomDashboard;
  */
 class AdminPage
 {
-    public static $menu_slug = 'sfx-custom-dashboard';
-    public static $page_title = 'Custom Dashboard';
-    public static $description = 'Customize your WordPress dashboard with stats, quick actions, and contact information.';
+    /**
+     * Menu slug for the settings page
+     * @var string
+     */
+    public static string $menu_slug = 'sfx-custom-dashboard';
+
+    /**
+     * Page title for the settings page
+     * @var string
+     */
+    public static string $page_title = 'Custom Dashboard';
+
+    /**
+     * Page description
+     * @var string
+     */
+    public static string $description = 'Customize your WordPress dashboard with stats, quick actions, and contact information.';
 
     /**
      * Register admin page
@@ -97,7 +111,7 @@ class AdminPage
 
             <form method="post" action="options.php" class="sfx-dashboard-settings-form" enctype="multipart/form-data">
                 <?php
-                settings_fields(Settings::$OPTION_GROUP);
+                settings_fields(Settings::$option_group);
                 
                 // Render visible tab content
                 self::render_tab_content($current_tab);
@@ -147,23 +161,6 @@ class AdminPage
     }
 
     /**
-     * Get fields for brand sub-tabs
-     *
-     * @return array<string, array>
-     */
-    private static function get_brand_subtab_fields(): array
-    {
-        return [
-            'color_mode' => ['color_mode_default', 'allow_user_mode_switch'],
-            'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color'],
-            'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
-            'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
-            'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'stats_columns', 'stats_gap'],
-            'custom_css' => ['dashboard_custom_css'],
-        ];
-    }
-
-    /**
      * Render tab content
      *
      * @param string $tab
@@ -173,7 +170,7 @@ class AdminPage
     {
         global $wp_settings_sections, $wp_settings_fields;
 
-        $page = Settings::$OPTION_GROUP;
+        $page = Settings::$option_group;
 
         if (!isset($wp_settings_sections[$page])) {
             return;
@@ -187,11 +184,11 @@ class AdminPage
 
         // Map tabs to their sections
         $sections_map = [
-            'general' => [Settings::$OPTION_NAME . '_main'],
-            'sections' => [Settings::$OPTION_NAME . '_sections'],
-            'stats' => [Settings::$OPTION_NAME . '_stats'],
-            'quicklinks' => [Settings::$OPTION_NAME . '_quicklinks'],
-            'contact' => [Settings::$OPTION_NAME . '_contact'],
+            'general' => [Settings::$option_name . '_main'],
+            'sections' => [Settings::$option_name . '_sections'],
+            'stats' => [Settings::$option_name . '_stats'],
+            'quicklinks' => [Settings::$option_name . '_quicklinks'],
+            'contact' => [Settings::$option_name . '_contact'],
         ];
 
         $sections_to_show = $sections_map[$tab] ?? [];
@@ -231,11 +228,11 @@ class AdminPage
     {
         global $wp_settings_fields;
 
-        $page = Settings::$OPTION_GROUP;
-        $section = Settings::$OPTION_NAME . '_brand';
+        $page = Settings::$option_group;
+        $section = Settings::$option_name . '_brand';
         $subtabs = self::get_brand_subtabs();
-        $subtab_fields = self::get_brand_subtab_fields();
-        $options = get_option(Settings::$OPTION_NAME, []);
+        $subtab_fields = Settings::get_brand_subtab_fields();
+        $options = get_option(Settings::$option_name, []);
         
         // Get current subtab
         $current_subtab = isset($_GET['subtab']) ? sanitize_key($_GET['subtab']) : 'color_mode';
@@ -328,9 +325,9 @@ class AdminPage
             $value = $options[$field_id] ?? $field['default'];
             
             if (is_array($value)) {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$OPTION_NAME) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" />';
+                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" />';
             } else {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$OPTION_NAME) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
+                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
             }
         }
     }
@@ -418,25 +415,13 @@ class AdminPage
      */
     private static function render_hidden_fields(string $current_tab): void
     {
-        $options = get_option(Settings::$OPTION_NAME, []);
+        $options = get_option(Settings::$option_name, []);
         
         // Get all fields
         $all_fields = Settings::get_fields();
         
-        // Map fields to tabs
-        $tab_fields = [
-            'general' => ['enable_custom_dashboard', 'dashboard_welcome_title', 'dashboard_welcome_subtitle'],
-            'sections' => [
-                'show_updates_section', 'show_site_health_section', 'show_stats_section', 'show_quicklinks_section', 
-                'show_contact_section', 'show_form_submissions_section', 'form_submissions_limit', 
-                'show_dashboard_widgets', 'enabled_dashboard_widgets', 
-                'show_note_section', 'note_title', 'note_content'
-            ],
-            'stats' => ['stats_items'],
-            'quicklinks' => ['quicklinks_sortable'],
-            'contact' => ['contact_card_title', 'contact_card_subtitle', 'contact_company', 'contact_email', 'contact_phone', 'contact_website', 'contact_address'],
-            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'dashboard_custom_css'],
-        ];
+        // Use centralized tab-fields mapping
+        $tab_fields = Settings::get_tab_fields_map();
 
         // Get fields for current tab
         $current_fields = $tab_fields[$current_tab] ?? [];
@@ -456,10 +441,10 @@ class AdminPage
             // Render as hidden field based on type
             if ($field['type'] === 'quicklinks_sortable' || $field['type'] === 'stats_items' || $field['type'] === 'dashboard_widgets' || is_array($value)) {
                 // For complex array fields, serialize as JSON in hidden input
-                echo '<input type="hidden" name="' . esc_attr(Settings::$OPTION_NAME) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" data-sfx-json-field="true" />';
+                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" data-sfx-json-field="true" />';
             } else {
                 // For simple fields
-                echo '<input type="hidden" name="' . esc_attr(Settings::$OPTION_NAME) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
+                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
             }
         }
     }

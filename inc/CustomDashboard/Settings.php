@@ -11,8 +11,28 @@ namespace SFX\CustomDashboard;
  */
 class Settings
 {
-    public static $OPTION_GROUP;
-    public static $OPTION_NAME;
+    /**
+     * Option group name for settings registration
+     * @var string
+     */
+    public static string $option_group = 'sfx_custom_dashboard';
+
+    /**
+     * Option name for storing settings in database
+     * @var string
+     */
+    public static string $option_name = 'sfx_custom_dashboard';
+
+    /**
+     * Default SVG icon for custom quicklinks (Heroicons link icon)
+     */
+    public const DEFAULT_CUSTOM_ICON = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
+
+    /**
+     * Tab to fields mapping - single source of truth
+     * @var array<string, array<string>>|null
+     */
+    private static ?array $tab_fields_map = null;
 
     /**
      * Register all settings for custom dashboard
@@ -21,12 +41,111 @@ class Settings
      */
     public static function register(): void
     {
-        // Initialize static properties
-        self::$OPTION_GROUP = 'sfx_custom_dashboard';
-        self::$OPTION_NAME = 'sfx_custom_dashboard';
-        
         // Register settings through consolidated system
         add_action('sfx_init_admin_features', [self::class, 'register_settings']);
+    }
+
+    /**
+     * Get tab to fields mapping (single source of truth)
+     *
+     * @return array<string, array<string>>
+     */
+    public static function get_tab_fields_map(): array
+    {
+        if (self::$tab_fields_map !== null) {
+            return self::$tab_fields_map;
+        }
+
+        self::$tab_fields_map = [
+            'general' => [
+                'enable_custom_dashboard',
+                'dashboard_welcome_title',
+                'dashboard_welcome_subtitle',
+            ],
+            'sections' => [
+                'show_updates_section',
+                'show_site_health_section',
+                'show_stats_section',
+                'show_quicklinks_section',
+                'show_contact_section',
+                'show_form_submissions_section',
+                'form_submissions_limit',
+                'show_dashboard_widgets',
+                'enabled_dashboard_widgets',
+                'show_note_section',
+                'note_title',
+                'note_content',
+            ],
+            'stats' => [
+                'stats_items',
+            ],
+            'quicklinks' => [
+                'quicklinks_sortable',
+            ],
+            'contact' => [
+                'contact_card_title',
+                'contact_card_subtitle',
+                'contact_company',
+                'contact_email',
+                'contact_phone',
+                'contact_website',
+                'contact_address',
+            ],
+            'brand' => [
+                'color_mode_default',
+                'allow_user_mode_switch',
+                'brand_primary_color',
+                'brand_secondary_color',
+                'brand_accent_color',
+                'brand_success_color',
+                'brand_warning_color',
+                'brand_error_color',
+                'brand_border_radius',
+                'brand_border_width',
+                'brand_border_color',
+                'brand_shadow_enabled',
+                'brand_shadow_intensity',
+                'brand_header_gradient',
+                'brand_header_gradient_start',
+                'brand_header_gradient_end',
+                'brand_header_bg_color',
+                'brand_header_text_color',
+                'brand_logo',
+                'card_background_color',
+                'card_text_color',
+                'card_border_width',
+                'card_border_color',
+                'card_border_radius',
+                'card_shadow_enabled',
+                'card_hover_background_color',
+                'card_hover_text_color',
+                'card_hover_border_color',
+                'stats_columns',
+                'stats_gap',
+                'quicklinks_columns',
+                'quicklinks_gap',
+                'dashboard_custom_css',
+            ],
+        ];
+
+        return self::$tab_fields_map;
+    }
+
+    /**
+     * Get brand sub-tab to fields mapping
+     *
+     * @return array<string, array<string>>
+     */
+    public static function get_brand_subtab_fields(): array
+    {
+        return [
+            'color_mode' => ['color_mode_default', 'allow_user_mode_switch'],
+            'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color'],
+            'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
+            'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
+            'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'stats_columns', 'stats_gap'],
+            'custom_css' => ['dashboard_custom_css'],
+        ];
     }
 
     /**
@@ -105,7 +224,7 @@ class Settings
      */
     public static function get_brand_colors(): array
     {
-        $options = get_option(self::$OPTION_NAME, []);
+        $options = get_option(self::$option_name, []);
         $primary = $options['brand_primary_color'] ?? '#667eea';
         $secondary = $options['brand_secondary_color'] ?? '#764ba2';
         $accent = $options['brand_accent_color'] ?? '#f093fb';
@@ -840,7 +959,7 @@ CSS;
      */
     public static function register_settings(): void
     {
-        register_setting(self::$OPTION_GROUP, self::$OPTION_NAME, [
+        register_setting(self::$option_group, self::$option_name, [
             'type' => 'array',
             'sanitize_callback' => [self::class, 'sanitize_options'],
             'default' => [],
@@ -848,80 +967,80 @@ CSS;
 
         // Main Settings Section
         add_settings_section(
-            self::$OPTION_NAME . '_main',
+            self::$option_name . '_main',
             __('General Settings', 'sfxtheme'),
             [self::class, 'render_main_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Section Visibility
         add_settings_section(
-            self::$OPTION_NAME . '_sections',
+            self::$option_name . '_sections',
             __('Dashboard Sections', 'sfxtheme'),
             [self::class, 'render_sections_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Stats Settings
         add_settings_section(
-            self::$OPTION_NAME . '_stats',
+            self::$option_name . '_stats',
             __('Statistics Settings', 'sfxtheme'),
             [self::class, 'render_stats_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Quicklinks Settings
         add_settings_section(
-            self::$OPTION_NAME . '_quicklinks',
+            self::$option_name . '_quicklinks',
             __('Quick Actions Settings', 'sfxtheme'),
             [self::class, 'render_quicklinks_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Contact Settings
         add_settings_section(
-            self::$OPTION_NAME . '_contact',
+            self::$option_name . '_contact',
             __('Contact Information', 'sfxtheme'),
             [self::class, 'render_contact_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Brand Settings
         add_settings_section(
-            self::$OPTION_NAME . '_brand',
+            self::$option_name . '_brand',
             __('Brand & Styling', 'sfxtheme'),
             [self::class, 'render_brand_section'],
-            self::$OPTION_GROUP
+            self::$option_group
         );
 
         // Add fields to sections
         foreach (self::get_fields() as $field) {
-            $section = self::$OPTION_NAME . '_main';
+            $section = self::$option_name . '_main';
             
             // Determine section based on field
             if ($field['id'] === 'stats_items') {
-                $section = self::$OPTION_NAME . '_stats';
+                $section = self::$option_name . '_stats';
             } elseif (strpos($field['id'], 'show_') === 0 && strpos($field['id'], 'note_') !== 0) {
-                $section = self::$OPTION_NAME . '_sections';
+                $section = self::$option_name . '_sections';
             } elseif (strpos($field['id'], 'quicklinks') !== false && !in_array($field['id'], ['quicklinks_columns', 'quicklinks_gap'])) {
-                $section = self::$OPTION_NAME . '_quicklinks';
+                $section = self::$option_name . '_quicklinks';
             } elseif (strpos($field['id'], 'contact_') === 0) {
-                $section = self::$OPTION_NAME . '_contact';
+                $section = self::$option_name . '_contact';
             } elseif ($field['id'] === 'custom_quicklinks') {
-                $section = self::$OPTION_NAME . '_quicklinks';
+                $section = self::$option_name . '_quicklinks';
             } elseif ($field['id'] === 'enabled_dashboard_widgets' || $field['id'] === 'show_dashboard_widgets') {
-                $section = self::$OPTION_NAME . '_sections';
+                $section = self::$option_name . '_sections';
             } elseif (in_array($field['id'], ['note_title', 'note_content', 'show_note_section', 'form_submissions_limit'])) {
-                $section = self::$OPTION_NAME . '_sections';
+                $section = self::$option_name . '_sections';
             } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
-                $section = self::$OPTION_NAME . '_brand';
+                $section = self::$option_name . '_brand';
             }
 
             add_settings_field(
                 $field['id'],
                 $field['label'],
                 [self::class, 'render_field'],
-                self::$OPTION_GROUP,
+                self::$option_group,
                 $section,
                 $field
             );
@@ -969,7 +1088,7 @@ CSS;
      */
     public static function render_field(array $args): void
     {
-        $options = get_option(self::$OPTION_NAME, []);
+        $options = get_option(self::$option_name, []);
         $id = esc_attr($args['id']);
         $type = $args['type'];
         $default = $args['default'];
@@ -981,7 +1100,7 @@ CSS;
                 ?>
                 <input type="checkbox" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="1" 
                        <?php checked($checked, 1); ?> />
                 <label for="<?php echo $id; ?>"><?php echo esc_html($args['description']); ?></label>
@@ -992,7 +1111,7 @@ CSS;
                 ?>
                 <input type="text" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="<?php echo esc_attr($value); ?>" 
                        class="regular-text" />
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
@@ -1003,7 +1122,7 @@ CSS;
                 ?>
                 <textarea 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        rows="6"
                        class="large-text code"
                        style="font-family: monospace;"><?php echo esc_textarea($value); ?></textarea>
@@ -1017,7 +1136,7 @@ CSS;
                 <div class="sfx-code-editor-wrapper">
                     <textarea 
                         id="<?php echo esc_attr($id); ?>" 
-                        name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>]" 
+                        name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>]" 
                         rows="20"
                         class="large-text sfx-code-editor"
                         placeholder="/* Add your custom CSS here */"
@@ -1060,7 +1179,7 @@ CSS;
                 ?>
                 <input type="email" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="<?php echo esc_attr($value); ?>" 
                        class="regular-text" />
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
@@ -1071,7 +1190,7 @@ CSS;
                 ?>
                 <input type="url" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="<?php echo esc_attr($value); ?>" 
                        class="regular-text" />
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
@@ -1081,7 +1200,7 @@ CSS;
             case 'textarea':
                 ?>
                 <textarea id="<?php echo $id; ?>" 
-                          name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                          name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                           rows="3" 
                           class="large-text"><?php echo esc_textarea($value); ?></textarea>
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
@@ -1104,7 +1223,7 @@ CSS;
                 ?>
                 <input type="color" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="<?php echo esc_attr($value); ?>" />
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
                 <?php
@@ -1114,7 +1233,7 @@ CSS;
                 $select_options = $args['options'] ?? [];
                 ?>
                 <select id="<?php echo $id; ?>" 
-                        name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]">
+                        name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]">
                     <?php foreach ($select_options as $option_value => $option_label): ?>
                         <option value="<?php echo esc_attr($option_value); ?>" <?php selected($value, $option_value); ?>>
                             <?php echo esc_html($option_label); ?>
@@ -1151,7 +1270,7 @@ CSS;
                 <div class="sfx-color-select-wrapper">
                     <span class="sfx-color-preview" style="background: <?php echo $is_variable ? 'hsl(' . esc_attr($current_color) . ')' : esc_attr($current_color); ?>;"></span>
                     <select id="<?php echo $id; ?>" 
-                            name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]"
+                            name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]"
                             class="sfx-color-select"
                             data-colors='<?php echo esc_attr(wp_json_encode(array_map(function($opt) { return $opt['color']; }, $color_options))); ?>'>
                         <?php foreach ($grouped as $group_key => $group_options): ?>
@@ -1190,7 +1309,7 @@ CSS;
                 ?>
                 <input type="number" 
                        id="<?php echo $id; ?>" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                        value="<?php echo esc_attr($value); ?>" 
                        min="<?php echo esc_attr($min); ?>" 
                        max="<?php echo esc_attr($max); ?>"
@@ -1204,7 +1323,7 @@ CSS;
                 <div class="sfx-logo-upload">
                     <input type="hidden" 
                            id="<?php echo $id; ?>" 
-                           name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" 
+                           name="<?php echo esc_attr(self::$option_name); ?>[<?php echo $id; ?>]" 
                            value="<?php echo esc_attr($value); ?>" 
                            class="sfx-logo-url" />
                     <input type="file" 
@@ -1239,7 +1358,7 @@ CSS;
      */
     public static function migrate_legacy_quicklinks(): ?array
     {
-        $options = get_option(self::$OPTION_NAME, []);
+        $options = get_option(self::$option_name, []);
         
         // Check if we already have the new format
         if (!empty($options['quicklinks_sortable'])) {
@@ -1370,7 +1489,6 @@ CSS;
     {
         $quicklinks = self::get_ordered_quicklinks(is_array($value) ? $value : []);
         $allowed_svg = self::get_allowed_svg_tags();
-        $default_custom_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
         ?>
         <div class="sfx-quicklinks-sortable-container">
             <p class="description" style="margin-bottom: 15px;">
@@ -1388,15 +1506,15 @@ CSS;
                         <span class="sfx-quicklink-drag-handle">☰</span>
                         <label class="sfx-quicklink-checkbox">
                             <input type="checkbox" 
-                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
                                    value="1" 
                                    <?php checked(!empty($link['enabled'])); ?> />
                             <input type="hidden" 
-                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
                                    value="<?php echo esc_attr($link['id']); ?>" 
                                    class="sfx-quicklink-id" />
                             <input type="hidden" 
-                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
                                    value="<?php echo esc_attr($link['type']); ?>" 
                                    class="sfx-quicklink-type" />
                         </label>
@@ -1405,16 +1523,16 @@ CSS;
                         <?php if ($is_custom): ?>
                             <div class="sfx-quicklink-custom-fields">
                                 <input type="text" 
-                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][title]" 
+                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][title]" 
                                        value="<?php echo esc_attr($link['title']); ?>" 
                                        class="sfx-quicklink-title-input" 
                                        placeholder="<?php esc_attr_e('Title', 'sfxtheme'); ?>" />
                                 <input type="text" 
-                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][url]" 
+                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][url]" 
                                        value="<?php echo esc_attr($link['url']); ?>" 
                                        class="sfx-quicklink-url-input" 
                                        placeholder="<?php esc_attr_e('URL', 'sfxtheme'); ?>" />
-                                <textarea name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][icon]" 
+                                <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][icon]" 
                                           class="sfx-quicklink-icon-input" 
                                           placeholder="<?php esc_attr_e('SVG Icon', 'sfxtheme'); ?>" 
                                           rows="2"><?php echo esc_textarea($link['icon']); ?></textarea>
@@ -1568,11 +1686,11 @@ CSS;
                         <span class="sfx-stat-drag-handle">☰</span>
                         <label class="sfx-stat-checkbox">
                             <input type="checkbox" 
-                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
                                    value="1" 
                                    <?php checked(!empty($item['enabled'])); ?> />
                             <input type="hidden" 
-                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
                                    value="<?php echo esc_attr($item['id']); ?>" />
                         </label>
                         <span class="sfx-stat-label">
@@ -1694,7 +1812,7 @@ CSS;
             ?>
             <label class="sfx-widget-checkbox">
                 <input type="checkbox" 
-                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][]" 
+                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][]" 
                        value="<?php echo esc_attr($widget_id); ?>"
                        <?php echo $checked; ?> />
                 <span><?php echo esc_html($widget_title); ?></span>
@@ -1862,7 +1980,6 @@ CSS;
         $allowed_svg = self::get_allowed_svg_tags();
         $predefined = self::get_default_quicklinks();
         $predefined_ids = array_column($predefined, 'id');
-        $default_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
 
         $sanitized = [];
 
@@ -1893,7 +2010,7 @@ CSS;
                         'id' => sanitize_key($item['id'] ?? 'custom_' . uniqid()),
                         'title' => $title,
                         'url' => $url,
-                        'icon' => wp_kses($item['icon'] ?? $default_icon, $allowed_svg),
+                        'icon' => wp_kses($item['icon'] ?? self::DEFAULT_CUSTOM_ICON, $allowed_svg),
                         'enabled' => !empty($item['enabled']),
                     ];
                 }
@@ -1904,7 +2021,7 @@ CSS;
     }
 
     /**
-     * Handle logo file upload
+     * Handle logo file upload using WordPress upload system
      *
      * @param string $file_key
      * @return string|false URL of uploaded file or false on failure
@@ -1915,60 +2032,60 @@ CSS;
             return false;
         }
 
-        // Create upload directory if it doesn't exist
-        $upload_dir = WP_CONTENT_DIR . '/uploads/dashboard-logos';
-        if (!file_exists($upload_dir)) {
-            wp_mkdir_p($upload_dir);
-            // Add index.php for security
-            file_put_contents($upload_dir . '/index.php', '<?php // Silence is golden. ?>');
-        }
-
         $file = $_FILES[$file_key];
-        
-        // Validate file type
-        $allowed_types = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'];
-        $file_type = $file['type'];
-        
-        if (!in_array($file_type, $allowed_types)) {
-            add_settings_error(
-                self::$OPTION_NAME,
-                'invalid_file_type',
-                __('Invalid file type. Only PNG, JPG, SVG, and WebP are allowed.', 'sfxtheme')
-            );
-            return false;
-        }
 
-        // Validate file size (max 200KB)
+        // Validate file size (max 200KB) before upload
         if ($file['size'] > 204800) {
             add_settings_error(
-                self::$OPTION_NAME,
+                self::$option_name,
                 'file_too_large',
                 __('File too large. Maximum size is 200KB.', 'sfxtheme')
             );
             return false;
         }
 
-        // Generate unique filename
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = 'logo-' . time() . '-' . wp_generate_password(8, false) . '.' . $extension;
-        $filepath = $upload_dir . '/' . $filename;
-
-        // Move uploaded file
-        if (move_uploaded_file($file['tmp_name'], $filepath)) {
-            // Return URL
-            return content_url('uploads/dashboard-logos/' . $filename);
+        // Include required file for wp_handle_upload
+        if (!function_exists('wp_handle_upload')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
         }
 
+        // Define allowed mime types for logo upload
+        $allowed_mimes = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+        ];
+
+        // WordPress upload overrides
+        $upload_overrides = [
+            'test_form' => false,
+            'mimes' => $allowed_mimes,
+            'unique_filename_callback' => function ($dir, $name, $ext) {
+                return 'dashboard-logo-' . time() . '-' . wp_generate_password(8, false) . $ext;
+            },
+        ];
+
+        // Use WordPress's secure upload handling
+        $movefile = wp_handle_upload($file, $upload_overrides);
+
+        if ($movefile && !isset($movefile['error'])) {
+            return $movefile['url'];
+        }
+
+        // Handle upload error
+        $error_message = $movefile['error'] ?? __('Failed to upload logo. Please try again.', 'sfxtheme');
         add_settings_error(
-            self::$OPTION_NAME,
+            self::$option_name,
             'upload_failed',
-            __('Failed to upload logo. Please try again.', 'sfxtheme')
+            $error_message
         );
         return false;
     }
 
     /**
-     * Delete logo file
+     * Delete logo file from WordPress uploads
      *
      * @param string $logo_url
      * @return void
@@ -1979,13 +2096,22 @@ CSS;
             return;
         }
 
-        // Extract filename from URL
-        $filename = basename($logo_url);
-        $filepath = WP_CONTENT_DIR . '/uploads/dashboard-logos/' . $filename;
+        // Get upload directory info
+        $upload_dir = wp_upload_dir();
+        $upload_base_url = $upload_dir['baseurl'];
 
-        // Delete file if it exists
-        if (file_exists($filepath)) {
-            unlink($filepath);
+        // Only delete files that are in WordPress uploads directory
+        if (strpos($logo_url, $upload_base_url) !== 0) {
+            return;
+        }
+
+        // Convert URL to file path
+        $relative_path = str_replace($upload_base_url, '', $logo_url);
+        $filepath = $upload_dir['basedir'] . $relative_path;
+
+        // Delete file if it exists and is a dashboard logo
+        if (file_exists($filepath) && strpos(basename($filepath), 'dashboard-logo-') === 0) {
+            wp_delete_file($filepath);
         }
     }
 
@@ -1996,7 +2122,7 @@ CSS;
      */
     public static function delete_all_options(): void
     {
-        delete_option(self::$OPTION_NAME);
+        delete_option(self::$option_name);
     }
 }
 
