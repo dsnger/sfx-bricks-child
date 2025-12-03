@@ -29,6 +29,12 @@ class GitHubThemeUpdater
       $this->debug = true;
     }
 
+    // Load GitHub token from wp-config.php constant if defined
+    // To set this, add to wp-config.php: define('SFX_GITHUB_TOKEN', 'your_token_here');
+    if (defined('SFX_GITHUB_TOKEN') && !empty(SFX_GITHUB_TOKEN)) {
+      $this->authorize_token = SFX_GITHUB_TOKEN;
+    }
+
     // Extract username and repo from GitHub URL
     $path = parse_url($this->github_url, PHP_URL_PATH);
     [$this->github_username, $this->github_repo] = array_slice(explode('/', trim($path, '/')), 0, 2);
@@ -49,6 +55,7 @@ class GitHubThemeUpdater
     $this->debug_log('Initialized for ' . $this->theme_name . ' (v' . $this->theme_version . ')');
     $this->debug_log('GitHub URL: ' . $this->github_url);
     $this->debug_log('GitHub User/Repo: ' . $this->github_username . '/' . $this->github_repo);
+    $this->debug_log('GitHub Token: ' . ($this->authorize_token ? 'Configured ✓' : 'Not configured (rate limits may apply)'));
   }
 
   /**
@@ -191,8 +198,19 @@ class GitHubThemeUpdater
         $this->debug_log($error_message);
         $this->debug_log('Response body: ' . substr($response_body, 0, 500) . '...');
         error_log($error_message . ' - Response: ' . $response_body);
+        
+        // Store the last error for display in debug page
+        update_option('sfx_github_updater_last_error', [
+          'code' => $response_code,
+          'message' => $response_body,
+          'time' => current_time('mysql')
+        ]);
+        
         return;
       }
+      
+      // Clear last error on success
+      delete_option('sfx_github_updater_last_error');
 
       $this->github_response = json_decode($response_body);
 
@@ -323,8 +341,33 @@ class GitHubThemeUpdater
     echo '<tr><th>GitHub URL</th><td><a href="' . esc_url($this->github_url) . '" target="_blank">' . esc_html($this->github_url) . '</a></td></tr>';
     echo '<tr><th>GitHub Username</th><td>' . esc_html($this->github_username) . '</td></tr>';
     echo '<tr><th>GitHub Repo</th><td>' . esc_html($this->github_repo) . '</td></tr>';
+    echo '<tr><th>GitHub Token</th><td>';
+    if ($this->authorize_token) {
+      echo '<span style="color: green;">✓ Configured</span> (5,000 requests/hour)';
+    } else {
+      echo '<span style="color: orange;">✗ Not configured</span> (60 requests/hour - shared IP limit)';
+    }
+    echo '</td></tr>';
     echo '<tr><th>Debug Mode</th><td>' . ($this->debug ? 'Enabled' : 'Disabled') . '</td></tr>';
     echo '</table>';
+
+    // Show token setup instructions if not configured
+    if (!$this->authorize_token) {
+      echo '<div class="notice notice-warning">';
+      echo '<p><strong>⚠️ GitHub Token Not Configured</strong></p>';
+      echo '<p>Without a token, GitHub limits API requests to 60/hour per IP. On shared hosting, this limit is shared with other sites.</p>';
+      echo '<p><strong>To fix rate limiting issues:</strong></p>';
+      echo '<ol>';
+      echo '<li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)</a></li>';
+      echo '<li>Click "Generate new token (classic)"</li>';
+      echo '<li>Give it a name like "WordPress Theme Updater"</li>';
+      echo '<li>Select scope: <code>public_repo</code> (for public repos) or <code>repo</code> (for private repos)</li>';
+      echo '<li>Generate and copy the token</li>';
+      echo '<li>Add this line to your <code>wp-config.php</code>:</li>';
+      echo '</ol>';
+      echo '<pre style="background: #1d2327; color: #50c878; padding: 15px; border-radius: 4px;">define(\'SFX_GITHUB_TOKEN\', \'ghp_your_token_here\');</pre>';
+      echo '</div>';
+    }
 
     // Action buttons
     echo '<h2>Actions</h2>';
@@ -342,6 +385,9 @@ class GitHubThemeUpdater
       echo '<div class="notice notice-success"><p><strong>✓ Successfully connected to GitHub!</strong></p></div>';
       echo '<p><strong>Latest Release:</strong> ' . esc_html($this->github_response->tag_name) . '</p>';
       echo '<p><strong>Published:</strong> ' . esc_html($this->github_response->published_at) . '</p>';
+      
+      // Clear any stored errors since connection succeeded
+      delete_option('sfx_github_updater_last_error');
 
       // Version comparison analysis
       $latest_version = ltrim($this->github_response->tag_name, 'v');
@@ -374,6 +420,33 @@ class GitHubThemeUpdater
       }
     } else {
       echo '<div class="notice notice-error"><p><strong>✗ Failed to connect to GitHub</strong></p></div>';
+      
+      // Show last error details
+      $last_error = get_option('sfx_github_updater_last_error');
+      if ($last_error) {
+        echo '<div style="background: #fff5f5; border: 1px solid #c00; padding: 15px; margin: 10px 0; border-radius: 4px;">';
+        echo '<p><strong>Last Error (at ' . esc_html($last_error['time']) . '):</strong></p>';
+        echo '<p>Response Code: <code>' . esc_html($last_error['code']) . '</code></p>';
+        
+        $error_data = json_decode($last_error['message']);
+        if ($error_data && isset($error_data->message)) {
+          echo '<p>Message: ' . esc_html($error_data->message) . '</p>';
+          
+          // Specific help for rate limiting
+          if ($last_error['code'] == 403 && strpos($error_data->message, 'rate limit') !== false) {
+            echo '<div style="background: #fffbcc; padding: 10px; margin-top: 10px; border-radius: 4px;">';
+            echo '<p><strong>🔧 Rate Limit Solution:</strong></p>';
+            echo '<p>Your server IP has exceeded GitHub\'s rate limit (60 requests/hour for unauthenticated requests).</p>';
+            echo '<p>Add a GitHub Personal Access Token to get 5,000 requests/hour:</p>';
+            echo '<pre style="background: #1d2327; color: #50c878; padding: 10px; border-radius: 4px;">define(\'SFX_GITHUB_TOKEN\', \'ghp_your_token_here\');</pre>';
+            echo '<p>Add this to your <code>wp-config.php</code> file.</p>';
+            echo '</div>';
+          }
+        } else {
+          echo '<p>Raw Response: <code>' . esc_html(substr($last_error['message'], 0, 500)) . '</code></p>';
+        }
+        echo '</div>';
+      }
     }
 
     // Debug logs

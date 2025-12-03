@@ -27,6 +27,19 @@ This theme supports a development mode that disables GitHub updates during local
 - When `SFX_THEME_DEV_MODE=true`, the GitHub updater will not be initialized
 - This prevents the theme from checking for updates during development
 
+## GitHub Updater Authentication
+
+On shared hosting, GitHub's API rate limit (60 requests/hour per IP) can cause "no connection" errors. Add a token for 5,000 requests/hour:
+
+```php
+// wp-config.php
+define('SFX_GITHUB_TOKEN', 'ghp_your_token_here');
+```
+
+**Create token:** [GitHub Settings → Developer settings → Personal access tokens (classic)](https://github.com/settings/tokens) → Generate with `public_repo` scope.
+
+**Debug page:** `/wp-admin/themes.php?page=theme-updater-debug`
+
 ## Building a Release Package
 
 To create a production-ready zip file of the theme:
