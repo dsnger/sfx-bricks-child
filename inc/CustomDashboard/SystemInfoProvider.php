@@ -23,10 +23,7 @@ class SystemInfoProvider
     /**
      * Get site health status
      *
-     * WordPress determines the overall status by percentage of passed tests:
-     * - >= 80% good → "Good"
-     * - >= 50% good → "Should be improved"  
-     * - < 50% good → "Critical"
+     * Reads WordPress's site health status directly from core functions
      *
      * @return array{status: string, label: string, critical: int, recommended: int, total: int, issues: int}
      */
@@ -54,19 +51,33 @@ class SystemInfoProvider
                 $result['issues'] = $result['critical'] + $result['recommended'];
                 $result['total'] = $good + $result['issues'];
                 
-                // Calculate percentage of passed tests (WordPress's actual logic)
-                $good_percent = ($result['total'] > 0) ? ($good / $result['total']) * 100 : 100;
-                
-                // Determine status based on percentage (matching WordPress core)
-                if ($good_percent >= 80) {
-                    $result['status'] = 'good';
-                    $result['label'] = __('Good', 'sfxtheme');
-                } elseif ($good_percent >= 50) {
-                    $result['status'] = 'recommended';
-                    $result['label'] = __('Should be improved', 'sfxtheme');
+                // Use WordPress's actual status if available (most reliable)
+                if (isset($health_data['status'])) {
+                    $wp_status = $health_data['status'];
+                    $result['status'] = $wp_status;
+                    
+                    // Set label based on WordPress's status
+                    $result['label'] = match($wp_status) {
+                        'critical' => __('Critical', 'sfxtheme'),
+                        'recommended' => __('Should be improved', 'sfxtheme'),
+                        'good' => __('Good', 'sfxtheme'),
+                        default => __('Good', 'sfxtheme'),
+                    };
                 } else {
-                    $result['status'] = 'critical';
-                    $result['label'] = __('Critical', 'sfxtheme');
+                    // Fallback: Calculate status based on critical issues
+                    // WordPress logic: Any critical issue = critical status
+                    // Any recommended issue (no critical) = recommended status  
+                    // No issues = good status
+                    if ($result['critical'] > 0) {
+                        $result['status'] = 'critical';
+                        $result['label'] = __('Critical', 'sfxtheme');
+                    } elseif ($result['recommended'] > 0) {
+                        $result['status'] = 'recommended';
+                        $result['label'] = __('Should be improved', 'sfxtheme');
+                    } else {
+                        $result['status'] = 'good';
+                        $result['label'] = __('Good', 'sfxtheme');
+                    }
                 }
             }
         }

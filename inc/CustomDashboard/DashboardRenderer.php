@@ -211,7 +211,10 @@ class DashboardRenderer
             <div class="sfx-health-details">
                 <span class="sfx-health-label"><?php echo esc_html($health['label']); ?></span>
                 <?php if ($health['issues'] > 0): ?>
-                    <span class="sfx-health-badge <?php echo $health['critical'] > 0 ? 'sfx-badge-critical' : 'sfx-badge-warning'; ?>"><?php echo esc_html($health['issues']); ?></span>
+                    <span class="sfx-health-badge <?php echo $health['critical'] > 0 ? 'sfx-badge-critical' : 'sfx-badge-warning'; ?>" 
+                          title="<?php echo esc_attr(sprintf(__('%d issue(s) need attention', 'sfxtheme'), $health['issues'])); ?>">
+                        <?php echo esc_html($health['issues']); ?>
+                    </span>
                 <?php endif; ?>
             </div>
             
