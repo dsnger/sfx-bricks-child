@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.0] - 2025-12-03
+
+### Added
+
+- **Custom Dashboard Module**: New admin dashboard replacement with extensive customization
+  - Custom welcome message with user personalization
+  - Brand color management with primary/secondary colors and reset functionality
+  - Quicklinks management with sortable UI for custom dashboard links
+  - Custom CSS injection for dashboard styling
+  - Media editor integration for brand assets
+  - Color mode settings with light/dark theme toggle
+  - Dashboard gap/layout configuration
+  - Form submissions, stats, and system info providers
+
+### Enhanced
+
+- **Access Control**: Two-tier access control system for theme settings and dashboard
+- **Uninstall Cleanup**: Added `uninstall.php` to properly clean up theme data on removal
+
 ## [0.6.5] - 2025-01-15
 
 ### Enhanced
