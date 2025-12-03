@@ -253,6 +253,26 @@ class AssetManager
         $card_shadow_light = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.08)' : 'none';
         $card_shadow_dark = $card_shadow_enabled ? '0 2px 4px rgba(0, 0, 0, 0.3)' : 'none';
         
+        // Resolve color settings from admin options (defaults match Settings.php)
+        $header_text_key = $options['brand_header_text_color'] ?? 'primary-foreground';
+        $border_color_key = $options['brand_border_color'] ?? 'border';
+        $card_bg_key = $options['card_background_color'] ?? 'secondary-color';
+        $card_text_key = $options['card_text_color'] ?? 'secondary-foreground';
+        $card_border_key = $options['card_border_color'] ?? 'border';
+        $card_hover_bg_key = $options['card_hover_background_color'] ?? 'primary';
+        $card_hover_text_key = $options['card_hover_text_color'] ?? 'primary-foreground';
+        $card_hover_border_key = $options['card_hover_border_color'] ?? 'primary';
+        
+        // Resolve all colors
+        $header_text_color = self::resolve_color($header_text_key, $brand_colors, 'hsl(var(--primary-foreground))');
+        $border_color = self::resolve_color($border_color_key, $brand_colors, 'hsl(var(--border))');
+        $card_bg_color = self::resolve_color($card_bg_key, $brand_colors, 'hsl(var(--secondary))');
+        $card_text_color = self::resolve_color($card_text_key, $brand_colors, 'hsl(var(--secondary-foreground))');
+        $card_border_color = self::resolve_color($card_border_key, $brand_colors, 'hsl(var(--border))');
+        $card_hover_bg = self::resolve_color($card_hover_bg_key, $brand_colors, 'hsl(var(--primary))');
+        $card_hover_text = self::resolve_color($card_hover_text_key, $brand_colors, 'hsl(var(--primary-foreground))');
+        $card_hover_border = self::resolve_color($card_hover_border_key, $brand_colors, 'hsl(var(--primary))');
+        
         // Column and gap settings
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
         $stats_gap = max(5, min(50, absint($options['stats_gap'] ?? 20)));
@@ -285,20 +305,20 @@ body.index-php:has([data-theme=\"light\"]) #wpcontent,
   --accent-color: {$accent};
   --border-radius: var(--sfx-radius);
   --border-width: var(--sfx-border-width);
-  --border-color: hsl(var(--border));
+  --border-color: {$border_color};
   --box-shadow: var(--sfx-shadow);
   --header-shadow: var(--sfx-header-shadow);
   --header-bg-color: var(--sfx-header-bg);
-  --header-text-color: hsl(var(--primary-foreground));
-  --card-bg-color: hsl(var(--card));
-  --card-text-color: hsl(var(--card-foreground));
+  --header-text-color: {$header_text_color};
+  --card-bg-color: {$card_bg_color};
+  --card-text-color: {$card_text_color};
   --card-border-width: var(--sfx-card-border-width);
-  --card-border-color: hsl(var(--border));
+  --card-border-color: {$card_border_color};
   --card-border-radius: var(--sfx-card-radius);
   --card-shadow: var(--sfx-card-shadow);
-  --card-hover-bg: hsl(var(--primary));
-  --card-hover-text: hsl(var(--primary-foreground));
-  --card-hover-border: hsl(var(--primary));
+  --card-hover-bg: {$card_hover_bg};
+  --card-hover-text: {$card_hover_text};
+  --card-hover-border: {$card_hover_border};
 }
 
 /* Dark Mode */
@@ -320,20 +340,20 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
   --accent-color: {$accent};
   --border-radius: var(--sfx-radius);
   --border-width: var(--sfx-border-width);
-  --border-color: hsl(var(--border));
+  --border-color: {$border_color};
   --box-shadow: var(--sfx-shadow);
   --header-shadow: var(--sfx-header-shadow);
   --header-bg-color: var(--sfx-header-bg);
-  --header-text-color: hsl(var(--primary-foreground));
-  --card-bg-color: hsl(var(--card));
-  --card-text-color: hsl(var(--card-foreground));
+  --header-text-color: {$header_text_color};
+  --card-bg-color: {$card_bg_color};
+  --card-text-color: {$card_text_color};
   --card-border-width: var(--sfx-card-border-width);
-  --card-border-color: hsl(var(--border));
+  --card-border-color: {$card_border_color};
   --card-border-radius: var(--sfx-card-radius);
   --card-shadow: var(--sfx-card-shadow);
-  --card-hover-bg: hsl(var(--primary));
-  --card-hover-text: hsl(var(--primary-foreground));
-  --card-hover-border: hsl(var(--primary));
+  --card-hover-bg: {$card_hover_bg};
+  --card-hover-text: {$card_hover_text};
+  --card-hover-border: {$card_hover_border};
 }
 
 /* System preference (when data-theme='system') */
@@ -356,20 +376,20 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
     --accent-color: {$accent};
     --border-radius: var(--sfx-radius);
     --border-width: var(--sfx-border-width);
-    --border-color: hsl(var(--border));
+    --border-color: {$border_color};
     --box-shadow: var(--sfx-shadow);
     --header-shadow: var(--sfx-header-shadow);
     --header-bg-color: var(--sfx-header-bg);
-    --header-text-color: hsl(var(--primary-foreground));
-    --card-bg-color: hsl(var(--card));
-    --card-text-color: hsl(var(--card-foreground));
+    --header-text-color: {$header_text_color};
+    --card-bg-color: {$card_bg_color};
+    --card-text-color: {$card_text_color};
     --card-border-width: var(--sfx-card-border-width);
-    --card-border-color: hsl(var(--border));
+    --card-border-color: {$card_border_color};
     --card-border-radius: var(--sfx-card-radius);
     --card-shadow: var(--sfx-card-shadow);
-    --card-hover-bg: hsl(var(--primary));
-    --card-hover-text: hsl(var(--primary-foreground));
-    --card-hover-border: hsl(var(--primary));
+    --card-hover-bg: {$card_hover_bg};
+    --card-hover-text: {$card_hover_text};
+    --card-hover-border: {$card_hover_border};
   }
 }
 

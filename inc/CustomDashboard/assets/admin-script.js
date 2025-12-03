@@ -301,10 +301,46 @@
     }
 
     /**
-     * Initialize reset brand colors button
+     * Initialize all reset buttons
      */
-    function initResetBrandColors() {
-        var $resetButton = $('#sfx-reset-brand-colors');
+    function initResetButtons() {
+        var resetConfigs = [
+            {
+                buttonId: 'sfx-reset-brand-colors',
+                varName: 'sfxDefaultBrandColors',
+                confirmMsg: 'Are you sure you want to reset all brand and status colors to their default values?',
+                successMsg: 'Colors Reset!'
+            },
+            {
+                buttonId: 'sfx-reset-header-settings',
+                varName: 'sfxDefaultHeaderSettings',
+                confirmMsg: 'Are you sure you want to reset header settings to their default values?',
+                successMsg: 'Header Reset!'
+            },
+            {
+                buttonId: 'sfx-reset-card-settings',
+                varName: 'sfxDefaultCardSettings',
+                confirmMsg: 'Are you sure you want to reset card styling to default values?',
+                successMsg: 'Cards Reset!'
+            },
+            {
+                buttonId: 'sfx-reset-layout-settings',
+                varName: 'sfxDefaultLayoutSettings',
+                confirmMsg: 'Are you sure you want to reset layout settings to default values?',
+                successMsg: 'Layout Reset!'
+            }
+        ];
+
+        $.each(resetConfigs, function(i, config) {
+            initSingleResetButton(config);
+        });
+    }
+
+    /**
+     * Initialize a single reset button
+     */
+    function initSingleResetButton(config) {
+        var $resetButton = $('#' + config.buttonId);
         
         if (!$resetButton.length) {
             return;
@@ -313,27 +349,39 @@
         $resetButton.on('click', function(e) {
             e.preventDefault();
             
-            if (!confirm('Are you sure you want to reset all brand and status colors to their default values?')) {
+            if (!confirm(config.confirmMsg)) {
                 return;
             }
             
             // Get defaults from global variable set by PHP
-            var defaults = window.sfxDefaultBrandColors;
+            var defaults = window[config.varName];
             
             if (!defaults || typeof defaults !== 'object') {
-                console.error('SFX: No default colors found');
-                alert('Error: Could not load default colors.');
+                console.error('SFX: No defaults found for ' + config.varName);
+                alert('Error: Could not load default values.');
                 return;
             }
             
-            // Update each color input with its default value
-            $.each(defaults, function(fieldId, colorValue) {
+            // Update each input with its default value
+            $.each(defaults, function(fieldId, defaultValue) {
                 var $input = $('#' + fieldId);
+                
+                if (!$input.length) {
+                    // Try finding by name attribute for select elements
+                    $input = $('[name="sfx_custom_dashboard_options[' + fieldId + ']"]');
+                }
+                
                 if ($input.length) {
-                    $input.val(colorValue);
-                    // Trigger change event to update any color preview
+                    if ($input.is(':checkbox')) {
+                        $input.prop('checked', !!defaultValue);
+                    } else if ($input.is('select')) {
+                        $input.val(defaultValue);
+                    } else {
+                        $input.val(defaultValue);
+                    }
+                    // Trigger change event to update any previews
                     $input.trigger('change');
-                    console.log('SFX: Reset ' + fieldId + ' to ' + colorValue);
+                    console.log('SFX: Reset ' + fieldId + ' to ' + defaultValue);
                 } else {
                     console.warn('SFX: Could not find input for ' + fieldId);
                 }
@@ -341,7 +389,7 @@
             
             // Show feedback
             var originalText = $resetButton.text();
-            $resetButton.text('Colors Reset!').prop('disabled', true);
+            $resetButton.text(config.successMsg).prop('disabled', true);
             setTimeout(function() {
                 $resetButton.text(originalText).prop('disabled', false);
             }, 2000);
@@ -357,7 +405,7 @@
         initAddCustomQuicklink();
         initRemoveCustomQuicklink();
         initQuicklinkIconPreview();
-        initResetBrandColors();
+        initResetButtons();
         
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {

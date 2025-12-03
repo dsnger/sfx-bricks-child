@@ -165,6 +165,63 @@ class Settings
     }
 
     /**
+     * Get default header settings for reset functionality
+     *
+     * @return array<string, mixed>
+     */
+    public static function get_default_header_settings(): array
+    {
+        return [
+            'brand_header_gradient' => 1,
+            'brand_header_gradient_start' => 'primary',
+            'brand_header_gradient_end' => 'secondary',
+            'brand_header_bg_color' => 'primary',
+            'brand_header_text_color' => 'primary-foreground',
+            'brand_logo' => '',
+        ];
+    }
+
+    /**
+     * Get default card/quicklinks styling settings for reset functionality
+     *
+     * @return array<string, mixed>
+     */
+    public static function get_default_card_settings(): array
+    {
+        return [
+            'card_background_color' => 'secondary-color',
+            'card_text_color' => 'secondary-foreground',
+            'card_border_width' => 2,
+            'card_border_color' => 'border',
+            'card_border_radius' => 8,
+            'card_shadow_enabled' => 0,
+            'card_hover_background_color' => 'primary',
+            'card_hover_text_color' => 'primary-foreground',
+            'card_hover_border_color' => 'primary',
+            'quicklinks_columns' => 4,
+            'quicklinks_gap' => 15,
+        ];
+    }
+
+    /**
+     * Get default dashboard layout settings for reset functionality
+     *
+     * @return array<string, mixed>
+     */
+    public static function get_default_layout_settings(): array
+    {
+        return [
+            'brand_border_radius' => 8,
+            'brand_border_width' => 0,
+            'brand_border_color' => 'border',
+            'brand_shadow_enabled' => 1,
+            'brand_shadow_intensity' => 1,
+            'stats_columns' => 4,
+            'stats_gap' => 20,
+        ];
+    }
+
+    /**
      * Get default predefined quicklinks
      *
      * @return array<int, array<string, mixed>>
@@ -482,7 +539,7 @@ class Settings
                 'label' => __('Border Color', 'sfxtheme'),
                 'description' => __('Border color for cards and elements.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'light-gray',
+                'default' => 'border',
             ],
             [
                 'id' => 'brand_shadow_enabled',
@@ -531,7 +588,7 @@ class Settings
                 'label' => __('Header Text Color', 'sfxtheme'),
                 'description' => __('Text color for the welcome header section.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'white',
+                'default' => 'primary-foreground',
             ],
             [
                 'id' => 'brand_logo',
@@ -546,14 +603,14 @@ class Settings
                 'label' => __('Card Background Color', 'sfxtheme'),
                 'description' => __('Background color for quick action cards.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'white',
+                'default' => 'secondary-color',
             ],
             [
                 'id' => 'card_text_color',
                 'label' => __('Card Text Color', 'sfxtheme'),
                 'description' => __('Text color for quick action cards.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'dark-gray',
+                'default' => 'secondary-foreground',
             ],
             [
                 'id' => 'card_border_width',
@@ -567,7 +624,7 @@ class Settings
                 'label' => __('Card Border Color', 'sfxtheme'),
                 'description' => __('Border color for quick action cards.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'light-gray',
+                'default' => 'border',
             ],
             [
                 'id' => 'card_border_radius',
@@ -596,7 +653,7 @@ class Settings
                 'label' => __('Hover Text Color', 'sfxtheme'),
                 'description' => __('Text color when hovering over cards.', 'sfxtheme'),
                 'type' => 'brand_color_select',
-                'default' => 'white',
+                'default' => 'primary-foreground',
             ],
             [
                 'id' => 'card_hover_border_color',

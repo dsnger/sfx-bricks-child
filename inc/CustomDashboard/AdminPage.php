@@ -285,23 +285,8 @@ class AdminPage
             echo '</table>';
         }
 
-        // Add reset button for colors subtab
-        if ($current_subtab === 'colors') {
-            $default_colors = Settings::get_default_brand_colors();
-            ?>
-            <div class="sfx-reset-colors-wrapper" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
-                <button type="button" id="sfx-reset-brand-colors" class="button button-secondary">
-                    <?php esc_html_e('Reset Colors to Defaults', 'sfxtheme'); ?>
-                </button>
-                <p class="description" style="margin-top: 8px;">
-                    <?php esc_html_e('Reset all brand and status colors to their default values.', 'sfxtheme'); ?>
-                </p>
-            </div>
-            <script type="text/javascript">
-                var sfxDefaultBrandColors = <?php echo wp_json_encode($default_colors); ?>;
-            </script>
-            <?php
-        }
+        // Add reset buttons for each subtab
+        self::render_subtab_reset_button($current_subtab);
 
         echo '</div>';
         
@@ -346,6 +331,66 @@ class AdminPage
                 echo '<input type="hidden" name="' . esc_attr(Settings::$OPTION_NAME) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
             }
         }
+    }
+
+    /**
+     * Render reset button for a brand subtab
+     *
+     * @param string $subtab
+     * @return void
+     */
+    private static function render_subtab_reset_button(string $subtab): void
+    {
+        $reset_config = [
+            'colors' => [
+                'id' => 'sfx-reset-brand-colors',
+                'label' => __('Reset Colors to Defaults', 'sfxtheme'),
+                'description' => __('Reset all brand and status colors to their default values.', 'sfxtheme'),
+                'defaults_method' => 'get_default_brand_colors',
+                'var_name' => 'sfxDefaultBrandColors',
+            ],
+            'header' => [
+                'id' => 'sfx-reset-header-settings',
+                'label' => __('Reset Header to Defaults', 'sfxtheme'),
+                'description' => __('Reset welcome header settings to their default values.', 'sfxtheme'),
+                'defaults_method' => 'get_default_header_settings',
+                'var_name' => 'sfxDefaultHeaderSettings',
+            ],
+            'cards' => [
+                'id' => 'sfx-reset-card-settings',
+                'label' => __('Reset Card Styling to Defaults', 'sfxtheme'),
+                'description' => __('Reset quick action card styling to default values.', 'sfxtheme'),
+                'defaults_method' => 'get_default_card_settings',
+                'var_name' => 'sfxDefaultCardSettings',
+            ],
+            'general_style' => [
+                'id' => 'sfx-reset-layout-settings',
+                'label' => __('Reset Layout to Defaults', 'sfxtheme'),
+                'description' => __('Reset dashboard layout settings to default values.', 'sfxtheme'),
+                'defaults_method' => 'get_default_layout_settings',
+                'var_name' => 'sfxDefaultLayoutSettings',
+            ],
+        ];
+
+        if (!isset($reset_config[$subtab])) {
+            return;
+        }
+
+        $config = $reset_config[$subtab];
+        $defaults = call_user_func([Settings::class, $config['defaults_method']]);
+        ?>
+        <div class="sfx-reset-wrapper" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+            <button type="button" id="<?php echo esc_attr($config['id']); ?>" class="button button-secondary sfx-reset-btn">
+                <?php echo esc_html($config['label']); ?>
+            </button>
+            <p class="description" style="margin-top: 8px;">
+                <?php echo esc_html($config['description']); ?>
+            </p>
+        </div>
+        <script type="text/javascript">
+            var <?php echo esc_js($config['var_name']); ?> = <?php echo wp_json_encode($defaults); ?>;
+        </script>
+        <?php
     }
 
     /**
