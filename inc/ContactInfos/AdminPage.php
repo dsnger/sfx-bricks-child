@@ -17,6 +17,11 @@ class AdminPage
 
     public static function add_submenu_pages(): void
     {
+        // Only register menu if user has theme settings access
+        if (!\SFX\AccessControl::can_access_theme_settings()) {
+            return;
+        }
+
         // Add main Contact Information page
     add_submenu_page(
       \SFX\SFXBricksChildAdmin::$menu_slug,

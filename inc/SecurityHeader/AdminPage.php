@@ -18,6 +18,11 @@ class AdminPage
 
     public static function add_submenu_page(): void
     {
+        // Only register menu if user has theme settings access
+        if (!\SFX\AccessControl::can_access_theme_settings()) {
+            return;
+        }
+
         add_submenu_page(
             'sfx-theme-settings',
             self::$page_title,
@@ -30,9 +35,8 @@ class AdminPage
 
     public static function render_page(): void
     {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'sfxtheme' ) );
-        }
+        // Block direct URL access for unauthorized users
+        \SFX\AccessControl::die_if_unauthorized_theme();
         ?>
         <div class="wrap" style="padding: 0; font-size: 14px;">
             <div class="sfx-flex">

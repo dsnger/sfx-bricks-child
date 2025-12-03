@@ -32,10 +32,18 @@ class SFXBricksChildTheme
   /**
    * Get all registered features.
    *
+   * When called in admin context, respects AccessControl settings
+   * to filter features for unauthorized users.
+   *
    * @return array<string, array>
    */
   public static function get_registered_features(): array
   {
+    // If in admin, check theme settings access
+    if (is_admin() && !AccessControl::can_access_theme_settings()) {
+      return []; // Return empty array for unauthorized users
+    }
+    
     return self::$feature_registry;
   }
 
@@ -244,6 +252,7 @@ class SFXBricksChildTheme
     if (strpos($hook_suffix, 'global-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-wp-optimizer') === false &&
+        strpos($hook_suffix, 'sfx-custom-dashboard') === false &&
         strpos($hook_suffix, 'sfx_custom_script') === false &&
         strpos($hook_suffix, 'sfx_social_account') === false &&
         strpos($hook_suffix, 'sfx_contact_info') === false &&

@@ -17,6 +17,11 @@ class AdminPage
 
     public static function add_submenu_page(): void
     {
+        // Only register menu if user has theme settings access
+        if (!\SFX\AccessControl::can_access_theme_settings()) {
+            return;
+        }
+
         add_submenu_page(
             \SFX\SFXBricksChildAdmin::$menu_slug,
             self::$page_title,
@@ -29,6 +34,9 @@ class AdminPage
 
     public static function render_page(): void
     {
+        // Block direct URL access for unauthorized users
+        \SFX\AccessControl::die_if_unauthorized_theme();
+
         AssetManager::enqueue_admin_assets('sfx-theme-settings_page_sfx-image-optimizer');
         ?>
         <div class="wrap" style="padding: 0; font-size: 14px;">

@@ -17,6 +17,11 @@ class AdminPage
 
   public static function add_submenu_page(): void
   {
+    // Only register menu if user has theme settings access
+    if (!\SFX\AccessControl::can_access_theme_settings()) {
+      return;
+    }
+
     add_submenu_page(
       \SFX\SFXBricksChildAdmin::$menu_slug,
       self::$page_title,
@@ -30,6 +35,8 @@ class AdminPage
 
   public static function render_page()
 {
+    // Block direct URL access for unauthorized users
+    \SFX\AccessControl::die_if_unauthorized_theme();
     ?>
     <div class="wrap">
         <h1><?php esc_html_e('General Theme Options', 'sfxtheme'); ?></h1>
