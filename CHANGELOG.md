@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.4] - 2025-12-03
+
+### Fixed
+
+- **Custom Dashboard**: Site health status detection now matches WordPress native display
+  - Fixed incorrect "Good" status when issues were present
+  - Now uses WordPress's actual status from transient data
+  - Proper fallback logic based on critical vs recommended issues
+  - Badge displays correctly for all status levels
+
 ## [0.7.3] - 2025-12-03
 
 ### Enhanced
