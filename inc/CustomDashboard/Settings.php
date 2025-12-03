@@ -148,6 +148,23 @@ class Settings
     }
 
     /**
+     * Get default brand colors for reset functionality
+     *
+     * @return array<string, string>
+     */
+    public static function get_default_brand_colors(): array
+    {
+        return [
+            'brand_primary_color' => '#00DBD0',
+            'brand_secondary_color' => '#138680',
+            'brand_accent_color' => '#FF8624',
+            'brand_success_color' => '#22c55e',
+            'brand_warning_color' => '#f59e0b',
+            'brand_error_color' => '#ef4444',
+        ];
+    }
+
+    /**
      * Get default predefined quicklinks
      *
      * @return array<int, array<string, mixed>>
@@ -408,21 +425,43 @@ class Settings
                 'label' => __('Primary Brand Color', 'sfxtheme'),
                 'description' => __('Main brand color - all other colors will be auto-generated from this. Choose a color that represents your brand.', 'sfxtheme'),
                 'type' => 'color',
-                'default' => '#667eea',
+                'default' => '#00DBD0',
             ],
             [
                 'id' => 'brand_secondary_color',
                 'label' => __('Secondary Brand Color', 'sfxtheme'),
                 'description' => __('Secondary brand color for hover states and highlights.', 'sfxtheme'),
                 'type' => 'color',
-                'default' => '#764ba2',
+                'default' => '#138680',
             ],
             [
                 'id' => 'brand_accent_color',
                 'label' => __('Accent Color', 'sfxtheme'),
                 'description' => __('Accent color for special elements.', 'sfxtheme'),
                 'type' => 'color',
-                'default' => '#f093fb',
+                'default' => '#FF8624',
+            ],
+            // Status Colors
+            [
+                'id' => 'brand_success_color',
+                'label' => __('Success Color', 'sfxtheme'),
+                'description' => __('Color for success states, health indicators, and positive messages.', 'sfxtheme'),
+                'type' => 'color',
+                'default' => '#22c55e',
+            ],
+            [
+                'id' => 'brand_warning_color',
+                'label' => __('Warning Color', 'sfxtheme'),
+                'description' => __('Color for warnings, pending updates, and caution messages.', 'sfxtheme'),
+                'type' => 'color',
+                'default' => '#f59e0b',
+            ],
+            [
+                'id' => 'brand_error_color',
+                'label' => __('Error Color', 'sfxtheme'),
+                'description' => __('Color for errors, critical issues, and destructive actions.', 'sfxtheme'),
+                'type' => 'color',
+                'default' => '#ef4444',
             ],
             [
                 'id' => 'brand_border_radius',

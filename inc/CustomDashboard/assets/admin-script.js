@@ -301,6 +301,54 @@
     }
 
     /**
+     * Initialize reset brand colors button
+     */
+    function initResetBrandColors() {
+        var $resetButton = $('#sfx-reset-brand-colors');
+        
+        if (!$resetButton.length) {
+            return;
+        }
+        
+        $resetButton.on('click', function(e) {
+            e.preventDefault();
+            
+            if (!confirm('Are you sure you want to reset all brand and status colors to their default values?')) {
+                return;
+            }
+            
+            // Get defaults from global variable set by PHP
+            var defaults = window.sfxDefaultBrandColors;
+            
+            if (!defaults || typeof defaults !== 'object') {
+                console.error('SFX: No default colors found');
+                alert('Error: Could not load default colors.');
+                return;
+            }
+            
+            // Update each color input with its default value
+            $.each(defaults, function(fieldId, colorValue) {
+                var $input = $('#' + fieldId);
+                if ($input.length) {
+                    $input.val(colorValue);
+                    // Trigger change event to update any color preview
+                    $input.trigger('change');
+                    console.log('SFX: Reset ' + fieldId + ' to ' + colorValue);
+                } else {
+                    console.warn('SFX: Could not find input for ' + fieldId);
+                }
+            });
+            
+            // Show feedback
+            var originalText = $resetButton.text();
+            $resetButton.text('Colors Reset!').prop('disabled', true);
+            setTimeout(function() {
+                $resetButton.text(originalText).prop('disabled', false);
+            }, 2000);
+        });
+    }
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function() {
@@ -309,6 +357,7 @@
         initAddCustomQuicklink();
         initRemoveCustomQuicklink();
         initQuicklinkIconPreview();
+        initResetBrandColors();
         
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {

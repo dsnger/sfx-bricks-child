@@ -31,7 +31,7 @@ class SFXBricksChildTheme
 
   /**
    * Get all registered features.
-   * 
+   *
    * When called in admin context, respects AccessControl settings
    * to filter features for unauthorized users.
    *

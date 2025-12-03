@@ -154,7 +154,7 @@ class AdminPage
     {
         return [
             'color_mode' => ['color_mode_default', 'allow_user_mode_switch'],
-            'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color'],
+            'colors' => ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color'],
             'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
             'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
             'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'stats_columns', 'stats_gap'],
@@ -285,6 +285,24 @@ class AdminPage
             echo '</table>';
         }
 
+        // Add reset button for colors subtab
+        if ($current_subtab === 'colors') {
+            $default_colors = Settings::get_default_brand_colors();
+            ?>
+            <div class="sfx-reset-colors-wrapper" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <button type="button" id="sfx-reset-brand-colors" class="button button-secondary">
+                    <?php esc_html_e('Reset Colors to Defaults', 'sfxtheme'); ?>
+                </button>
+                <p class="description" style="margin-top: 8px;">
+                    <?php esc_html_e('Reset all brand and status colors to their default values.', 'sfxtheme'); ?>
+                </p>
+            </div>
+            <script type="text/javascript">
+                var sfxDefaultBrandColors = <?php echo wp_json_encode($default_colors); ?>;
+            </script>
+            <?php
+        }
+
         echo '</div>';
         
         // Render hidden fields for other sub-tabs to preserve their values
@@ -355,7 +373,7 @@ class AdminPage
             'stats' => ['stats_items'],
             'quicklinks' => ['quicklinks_sortable'],
             'contact' => ['contact_card_title', 'contact_card_subtitle', 'contact_company', 'contact_email', 'contact_phone', 'contact_website', 'contact_address'],
-            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'],
+            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'],
         ];
 
         // Get fields for current tab

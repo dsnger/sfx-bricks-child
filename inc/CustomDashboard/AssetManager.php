@@ -184,18 +184,26 @@ class AssetManager
     {
         $options = get_option(Settings::$OPTION_NAME, []);
         
-        $primary = $options['brand_primary_color'] ?? '#667eea';
-        $secondary = $options['brand_secondary_color'] ?? '#764ba2';
-        $accent = $options['brand_accent_color'] ?? '#f093fb';
+        $defaults = Settings::get_default_brand_colors();
+        $primary = $options['brand_primary_color'] ?? $defaults['brand_primary_color'];
+        $secondary = $options['brand_secondary_color'] ?? $defaults['brand_secondary_color'];
+        $accent = $options['brand_accent_color'] ?? $defaults['brand_accent_color'];
         $radius = $options['brand_border_radius'] ?? 8;
         $border_width = $options['brand_border_width'] ?? 0;
         $shadow_enabled = !empty($options['brand_shadow_enabled']);
         $shadow_intensity = absint($options['brand_shadow_intensity'] ?? 1);
         $color_mode_default = $options['color_mode_default'] ?? 'light';
         
-        // Generate semantic color palettes
-        $light_palette = ColorUtils::generatePalette($primary, 'light');
-        $dark_palette = ColorUtils::generatePalette($primary, 'dark');
+        // Get custom status colors
+        $statusColors = [
+            'success' => $options['brand_success_color'] ?? $defaults['brand_success_color'],
+            'warning' => $options['brand_warning_color'] ?? $defaults['brand_warning_color'],
+            'error' => $options['brand_error_color'] ?? $defaults['brand_error_color'],
+        ];
+        
+        // Generate semantic color palettes with custom status colors
+        $light_palette = ColorUtils::generatePalette($primary, 'light', $statusColors);
+        $dark_palette = ColorUtils::generatePalette($primary, 'dark', $statusColors);
         
         // Color map for brand color selections
         $brand_colors = Settings::get_brand_colors();

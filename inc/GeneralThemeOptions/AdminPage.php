@@ -34,7 +34,7 @@ class AdminPage
   }
 
   public static function render_page()
-  {
+{
     // Block direct URL access for unauthorized users
     \SFX\AccessControl::die_if_unauthorized_theme();
     ?>

@@ -216,9 +216,10 @@ class ColorUtils
      *
      * @param string $primaryHex Primary brand color
      * @param string $mode 'light' or 'dark'
+     * @param array<string, string> $statusColors Optional custom status colors (success, warning, error hex values)
      * @return array<string, array{h: float, s: float, l: float}> Semantic color palette
      */
-    public static function generatePalette(string $primaryHex, string $mode = 'light'): array
+    public static function generatePalette(string $primaryHex, string $mode = 'light', array $statusColors = []): array
     {
         $primary = self::hexToHsl($primaryHex);
         $isDark = $mode === 'dark';
@@ -226,6 +227,27 @@ class ColorUtils
         // Base neutrals derived from primary hue
         $baseHue = $primary['h'];
         $baseSat = min($primary['s'] * 0.15, 15); // Very desaturated for neutrals
+        
+        // Parse custom status colors or use defaults
+        $successHsl = isset($statusColors['success']) 
+            ? self::hexToHsl($statusColors['success']) 
+            : ['h' => 142, 's' => 76, 'l' => $isDark ? 45 : 36];
+        
+        $warningHsl = isset($statusColors['warning']) 
+            ? self::hexToHsl($statusColors['warning']) 
+            : ['h' => 38, 's' => 92, 'l' => 50];
+        
+        $errorHsl = isset($statusColors['error']) 
+            ? self::hexToHsl($statusColors['error']) 
+            : ['h' => 0, 's' => $isDark ? 62 : 84, 'l' => $isDark ? 50 : 60];
+        
+        // Adjust lightness for dark mode if needed
+        if ($isDark) {
+            // Ensure status colors are visible in dark mode
+            $successHsl['l'] = max($successHsl['l'], 45);
+            $warningHsl['l'] = max($warningHsl['l'], 50);
+            $errorHsl['l'] = max($errorHsl['l'], 50);
+        }
         
         if ($isDark) {
             // Dark mode palette
@@ -260,8 +282,8 @@ class ColorUtils
                 'accent' => ['h' => $baseHue, 's' => $baseSat + 5, 'l' => 18],
                 'accent-foreground' => ['h' => $baseHue, 's' => 5, 'l' => 95],
                 
-                // Destructive
-                'destructive' => ['h' => 0, 's' => 62, 'l' => 50],
+                // Destructive (error color)
+                'destructive' => $errorHsl,
                 'destructive-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
                 
                 // Border and input
@@ -277,10 +299,16 @@ class ColorUtils
                 'chart-5' => ['h' => fmod($primary['h'] + 270, 360), 's' => 60, 'l' => 55],
                 
                 // Status colors
-                'success' => ['h' => 142, 's' => 70, 'l' => 45],
-                'success-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
-                'warning' => ['h' => 38, 's' => 92, 'l' => 50],
-                'warning-foreground' => ['h' => 0, 's' => 0, 'l' => 10],
+                'success' => $successHsl,
+                'success-foreground' => self::hexToHsl(self::getContrastingForeground(
+                    self::hslToHex($successHsl['h'], $successHsl['s'], $successHsl['l'])
+                )),
+                'warning' => $warningHsl,
+                'warning-foreground' => self::hexToHsl(self::getContrastingForeground(
+                    self::hslToHex($warningHsl['h'], $warningHsl['s'], $warningHsl['l'])
+                )),
+                'error' => $errorHsl,
+                'error-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
                 'info' => ['h' => 199, 's' => 89, 'l' => 48],
                 'info-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
             ];
@@ -315,8 +343,8 @@ class ColorUtils
                 'accent' => ['h' => $baseHue, 's' => $baseSat + 10, 'l' => 96],
                 'accent-foreground' => ['h' => $baseHue, 's' => 50, 'l' => 15],
                 
-                // Destructive
-                'destructive' => ['h' => 0, 's' => 84, 'l' => 60],
+                // Destructive (error color)
+                'destructive' => $errorHsl,
                 'destructive-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
                 
                 // Border and input
@@ -332,10 +360,16 @@ class ColorUtils
                 'chart-5' => ['h' => fmod($primary['h'] + 270, 360), 's' => 65, 'l' => 50],
                 
                 // Status colors
-                'success' => ['h' => 142, 's' => 76, 'l' => 36],
-                'success-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
-                'warning' => ['h' => 38, 's' => 92, 'l' => 50],
-                'warning-foreground' => ['h' => 0, 's' => 0, 'l' => 10],
+                'success' => $successHsl,
+                'success-foreground' => self::hexToHsl(self::getContrastingForeground(
+                    self::hslToHex($successHsl['h'], $successHsl['s'], $successHsl['l'])
+                )),
+                'warning' => $warningHsl,
+                'warning-foreground' => self::hexToHsl(self::getContrastingForeground(
+                    self::hslToHex($warningHsl['h'], $warningHsl['s'], $warningHsl['l'])
+                )),
+                'error' => $errorHsl,
+                'error-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
                 'info' => ['h' => 199, 's' => 89, 'l' => 48],
                 'info-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
             ];

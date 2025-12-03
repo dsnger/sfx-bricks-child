@@ -23,14 +23,14 @@ class AdminPage
         }
 
         // Add main Contact Information page
-        add_submenu_page(
-            \SFX\SFXBricksChildAdmin::$menu_slug,
+    add_submenu_page(
+      \SFX\SFXBricksChildAdmin::$menu_slug,
             __(self::$page_title, 'sfx-bricks-child'),
             __(self::$page_title, 'sfx-bricks-child'),
-            'manage_options',
+      'manage_options',
             'edit.php?post_type=' . PostType::$post_type
-        );
-    }
+    );
+  }
 
     public static function render_page(): void
   {
