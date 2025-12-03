@@ -328,6 +328,14 @@
                 varName: 'sfxDefaultLayoutSettings',
                 confirmMsg: 'Are you sure you want to reset layout settings to default values?',
                 successMsg: 'Layout Reset!'
+            },
+            {
+                buttonId: 'sfx-reset-custom-css',
+                varName: 'sfxDefaultDashboardCSS',
+                confirmMsg: 'Are you sure you want to clear all additional CSS?',
+                successMsg: 'CSS Cleared!',
+                isCodeEditor: true,
+                targetField: 'dashboard_custom_css'
             }
         ];
 
@@ -356,36 +364,59 @@
             // Get defaults from global variable set by PHP
             var defaults = window[config.varName];
             
-            if (!defaults || typeof defaults !== 'object') {
-                console.error('SFX: No defaults found for ' + config.varName);
-                alert('Error: Could not load default values.');
-                return;
-            }
-            
-            // Update each input with its default value
-            $.each(defaults, function(fieldId, defaultValue) {
-                var $input = $('#' + fieldId);
-                
-                if (!$input.length) {
-                    // Try finding by name attribute for select elements
-                    $input = $('[name="sfx_custom_dashboard_options[' + fieldId + ']"]');
+            // Handle code editor (string value) vs regular settings (object)
+            if (config.isCodeEditor) {
+                // defaults can be empty string for "clear" action
+                if (typeof defaults !== 'string') {
+                    console.error('SFX: Invalid default value for code editor');
+                    alert('Error: Could not process default value.');
+                    return;
                 }
                 
-                if ($input.length) {
-                    if ($input.is(':checkbox')) {
-                        $input.prop('checked', !!defaultValue);
-                    } else if ($input.is('select')) {
-                        $input.val(defaultValue);
-                    } else {
-                        $input.val(defaultValue);
+                var $textarea = $('#' + config.targetField);
+                if ($textarea.length) {
+                    $textarea.val(defaults);
+                    
+                    // If CodeMirror is initialized, update it too
+                    if (window.sfxCodeMirrorEditor) {
+                        window.sfxCodeMirrorEditor.codemirror.setValue(defaults);
                     }
-                    // Trigger change event to update any previews
-                    $input.trigger('change');
-                    console.log('SFX: Reset ' + fieldId + ' to ' + defaultValue);
-                } else {
-                    console.warn('SFX: Could not find input for ' + fieldId);
+                    
+                    $textarea.trigger('change');
+                    console.log('SFX: CSS field updated');
                 }
-            });
+            } else {
+                if (!defaults || typeof defaults !== 'object') {
+                    console.error('SFX: No defaults found for ' + config.varName);
+                    alert('Error: Could not load default values.');
+                    return;
+                }
+                
+                // Update each input with its default value
+                $.each(defaults, function(fieldId, defaultValue) {
+                    var $input = $('#' + fieldId);
+                    
+                    if (!$input.length) {
+                        // Try finding by name attribute for select elements
+                        $input = $('[name="sfx_custom_dashboard_options[' + fieldId + ']"]');
+                    }
+                    
+                    if ($input.length) {
+                        if ($input.is(':checkbox')) {
+                            $input.prop('checked', !!defaultValue);
+                        } else if ($input.is('select')) {
+                            $input.val(defaultValue);
+                        } else {
+                            $input.val(defaultValue);
+                        }
+                        // Trigger change event to update any previews
+                        $input.trigger('change');
+                        console.log('SFX: Reset ' + fieldId + ' to ' + defaultValue);
+                    } else {
+                        console.warn('SFX: Could not find input for ' + fieldId);
+                    }
+                });
+            }
             
             // Show feedback
             var originalText = $resetButton.text();

@@ -222,6 +222,108 @@ class Settings
     }
 
     /**
+     * Get default dashboard CSS from the stylesheet file
+     *
+     * @return string
+     */
+    public static function get_default_dashboard_css(): string
+    {
+        $css_file = __DIR__ . '/assets/dashboard-style.css';
+        
+        if (file_exists($css_file)) {
+            $css = file_get_contents($css_file);
+            return $css !== false ? $css : '';
+        }
+        
+        return '';
+    }
+
+    /**
+     * Get CSS variables reference for the editor
+     *
+     * @return string
+     */
+    public static function get_css_variables_reference(): string
+    {
+        $variables = <<<'CSS'
+/* ===== COLOR VARIABLES ===== */
+
+/* Primary Colors (from Brand Settings) */
+--primary: <hsl values>;           /* Primary brand color */
+--primary-foreground: <hsl>;       /* Text on primary background */
+
+/* Secondary Colors */
+--secondary: <hsl values>;         /* Secondary/muted backgrounds */
+--secondary-foreground: <hsl>;     /* Text on secondary background */
+
+/* Semantic Colors */
+--background: <hsl values>;        /* Page background */
+--foreground: <hsl values>;        /* Main text color */
+--card: <hsl values>;              /* Card backgrounds */
+--card-foreground: <hsl>;          /* Card text color */
+--muted: <hsl values>;             /* Muted/subtle backgrounds */
+--muted-foreground: <hsl>;         /* Muted text */
+--border: <hsl values>;            /* Border color */
+--accent: <hsl values>;            /* Accent color */
+--accent-foreground: <hsl>;        /* Text on accent */
+
+/* Status Colors */
+--destructive: <hsl values>;       /* Error/destructive actions */
+--destructive-foreground: <hsl>;   /* Text on destructive */
+--success: <hsl values>;           /* Success states */
+--success-foreground: <hsl>;       /* Text on success */
+--warning: <hsl values>;           /* Warning states */
+--warning-foreground: <hsl>;       /* Text on warning */
+
+/* ===== LEGACY VARIABLES ===== */
+--primary-color: hsl(var(--primary));
+--secondary-color: <hex>;
+--accent-color: <hex>;
+--border-color: hsl(var(--border));
+--box-shadow: var(--sfx-shadow);
+
+/* ===== LAYOUT VARIABLES ===== */
+--sfx-radius: Xpx;                 /* Global border radius */
+--sfx-border-width: Xpx;           /* Global border width */
+--sfx-shadow: <shadow value>;      /* Global shadow */
+
+/* Header */
+--sfx-header-bg: <gradient/color>; /* Header background */
+--sfx-header-shadow: <shadow>;     /* Header shadow */
+--header-bg-color: var(--sfx-header-bg);
+--header-text-color: <color>;      /* Header text */
+
+/* Cards */
+--sfx-card-border-width: Xpx;      /* Card border width */
+--sfx-card-radius: Xpx;            /* Card border radius */
+--sfx-card-shadow: <shadow>;       /* Card shadow */
+--card-bg-color: <color>;          /* Card background */
+--card-text-color: <color>;        /* Card text */
+--card-border-color: <color>;      /* Card border */
+--card-hover-bg: <color>;          /* Card hover background */
+--card-hover-text: <color>;        /* Card hover text */
+--card-hover-border: <color>;      /* Card hover border */
+
+/* ===== EXAMPLE USAGE ===== */
+/*
+.my-custom-element {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--sfx-radius);
+}
+
+.my-custom-card {
+    background: var(--card-bg-color);
+    color: var(--card-text-color);
+}
+*/
+CSS;
+        
+        return $variables;
+    }
+
+    /**
      * Get default predefined quicklinks
      *
      * @return array<int, array<string, mixed>>
@@ -720,6 +822,14 @@ class Settings
                 'type' => 'quicklinks_sortable',
                 'default' => [],
             ],
+            // Custom CSS
+            [
+                'id' => 'dashboard_custom_css',
+                'label' => __('Additional CSS', 'sfxtheme'),
+                'description' => __('Add custom CSS that will be applied on top of the default dashboard styles.', 'sfxtheme'),
+                'type' => 'code_editor',
+                'default' => '',
+            ],
         ];
     }
 
@@ -803,7 +913,7 @@ class Settings
                 $section = self::$OPTION_NAME . '_sections';
             } elseif (in_array($field['id'], ['note_title', 'note_content', 'show_note_section', 'form_submissions_limit'])) {
                 $section = self::$OPTION_NAME . '_sections';
-            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'allow_user_mode_switch'])) {
+            } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
                 $section = self::$OPTION_NAME . '_brand';
             }
 
@@ -898,6 +1008,51 @@ class Settings
                        class="large-text code"
                        style="font-family: monospace;"><?php echo esc_textarea($value); ?></textarea>
                 <p class="description"><?php echo esc_html($args['description']); ?></p>
+                <?php
+                break;
+
+            case 'code_editor':
+                $css_value = $value ?? '';
+                ?>
+                <div class="sfx-code-editor-wrapper">
+                    <textarea 
+                        id="<?php echo esc_attr($id); ?>" 
+                        name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>]" 
+                        rows="20"
+                        class="large-text sfx-code-editor"
+                        placeholder="/* Add your custom CSS here */"
+                        style="width: 100%; min-height: 300px; font-family: monospace;"><?php echo esc_textarea($css_value); ?></textarea>
+                    <p class="description" style="margin-top: 10px;"><?php echo esc_html($args['description']); ?></p>
+                </div>
+                
+                <!-- CSS Variables Reference -->
+                <div class="sfx-css-reference" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;"><?php esc_html_e('Available CSS Variables', 'sfxtheme'); ?></h3>
+                    <p class="description" style="margin-bottom: 10px;"><?php esc_html_e('These CSS variables are available for use in your custom CSS:', 'sfxtheme'); ?></p>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                        <pre style="margin: 0; white-space: pre-wrap;"><?php echo esc_html(self::get_css_variables_reference()); ?></pre>
+                    </div>
+                </div>
+                
+                <!-- Default CSS Reference -->
+                <div class="sfx-css-reference" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;"><?php esc_html_e('Default Dashboard CSS', 'sfxtheme'); ?></h3>
+                    <p class="description" style="margin-bottom: 10px;"><?php esc_html_e('Reference: The complete default stylesheet (read-only):', 'sfxtheme'); ?></p>
+                    <details style="background: #f5f5f5; border-radius: 4px;">
+                        <summary style="padding: 15px; cursor: pointer; font-weight: 500;"><?php esc_html_e('Click to expand default CSS', 'sfxtheme'); ?></summary>
+                        <div style="padding: 15px; padding-top: 0; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap;"><?php echo esc_html(self::get_default_dashboard_css()); ?></pre>
+                        </div>
+                    </details>
+                </div>
+                
+                <style>
+                    .sfx-code-editor-wrapper .CodeMirror {
+                        min-height: 300px;
+                        height: auto;
+                        border: 1px solid #ddd;
+                    }
+                </style>
                 <?php
                 break;
 
@@ -1596,6 +1751,18 @@ class Settings
 
                 case 'html_textarea':
                     $output[$id] = wp_kses_post($input[$id]);
+                    break;
+
+                case 'code_editor':
+                    // Allow CSS but strip PHP tags for security
+                    $css = $input[$id];
+                    // Remove any PHP tags
+                    $css = preg_replace('/<\?php.*?\?>/is', '', $css);
+                    $css = preg_replace('/<\?.*?\?>/is', '', $css);
+                    // Remove script tags
+                    $css = preg_replace('/<script.*?>.*?<\/script>/is', '', $css);
+                    // Store the sanitized CSS
+                    $output[$id] = $css;
                     break;
 
                 case 'quicklinks_sortable':

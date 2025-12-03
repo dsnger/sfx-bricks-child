@@ -142,6 +142,7 @@ class AdminPage
             'header' => __('Welcome Header', 'sfxtheme'),
             'cards' => __('Quick Action Boxes', 'sfxtheme'),
             'general_style' => __('Dashboard Layout', 'sfxtheme'),
+            'custom_css' => __('Custom CSS', 'sfxtheme'),
         ];
     }
 
@@ -158,6 +159,7 @@ class AdminPage
             'header' => ['brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo'],
             'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns', 'quicklinks_gap'],
             'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'stats_columns', 'stats_gap'],
+            'custom_css' => ['dashboard_custom_css'],
         ];
     }
 
@@ -370,6 +372,15 @@ class AdminPage
                 'defaults_method' => 'get_default_layout_settings',
                 'var_name' => 'sfxDefaultLayoutSettings',
             ],
+            'custom_css' => [
+                'id' => 'sfx-reset-custom-css',
+                'label' => __('Clear Additional CSS', 'sfxtheme'),
+                'description' => __('Remove all additional custom CSS. The default dashboard styles will still apply.', 'sfxtheme'),
+                'defaults_method' => null,
+                'var_name' => 'sfxDefaultDashboardCSS',
+                'is_code_editor' => true,
+                'clear_value' => '',
+            ],
         ];
 
         if (!isset($reset_config[$subtab])) {
@@ -377,7 +388,13 @@ class AdminPage
         }
 
         $config = $reset_config[$subtab];
-        $defaults = call_user_func([Settings::class, $config['defaults_method']]);
+        
+        // Get defaults - either from method or use clear_value
+        if (!empty($config['defaults_method'])) {
+            $defaults = call_user_func([Settings::class, $config['defaults_method']]);
+        } else {
+            $defaults = $config['clear_value'] ?? '';
+        }
         ?>
         <div class="sfx-reset-wrapper" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
             <button type="button" id="<?php echo esc_attr($config['id']); ?>" class="button button-secondary sfx-reset-btn">
@@ -418,7 +435,7 @@ class AdminPage
             'stats' => ['stats_items'],
             'quicklinks' => ['quicklinks_sortable'],
             'contact' => ['contact_card_title', 'contact_card_subtitle', 'contact_company', 'contact_email', 'contact_phone', 'contact_website', 'contact_address'],
-            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap'],
+            'brand' => ['color_mode_default', 'allow_user_mode_switch', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'brand_success_color', 'brand_warning_color', 'brand_error_color', 'brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'brand_header_gradient', 'brand_header_gradient_start', 'brand_header_gradient_end', 'brand_header_bg_color', 'brand_header_text_color', 'brand_logo', 'card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'stats_columns', 'stats_gap', 'quicklinks_columns', 'quicklinks_gap', 'dashboard_custom_css'],
         ];
 
         // Get fields for current tab

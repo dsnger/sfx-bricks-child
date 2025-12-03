@@ -87,6 +87,16 @@ class AssetManager
         wp_enqueue_script('jquery-ui-mouse');
         wp_enqueue_script('jquery-ui-sortable');
 
+        // Enqueue CodeMirror for CSS editor if on custom_css subtab
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $current_subtab = isset($_GET['subtab']) ? sanitize_key($_GET['subtab']) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : '';
+        
+        if ($current_tab === 'brand' && $current_subtab === 'custom_css') {
+            self::enqueue_code_editor();
+        }
+
         if (file_exists($js_file)) {
             wp_enqueue_script(
                 'sfx-custom-dashboard-admin',
@@ -112,6 +122,40 @@ class AssetManager
     }
 
     /**
+     * Enqueue WordPress CodeMirror for CSS editing
+     *
+     * @return void
+     */
+    private static function enqueue_code_editor(): void
+    {
+        // Use WordPress built-in code editor
+        $settings = wp_enqueue_code_editor(['type' => 'text/css']);
+        
+        if ($settings === false) {
+            // Code editor disabled, fallback to plain textarea
+            return;
+        }
+        
+        // Add inline script to initialize CodeMirror
+        wp_add_inline_script(
+            'code-editor',
+            sprintf(
+                'jQuery(function($) {
+                    var $textarea = $(".sfx-code-editor");
+                    if ($textarea.length) {
+                        var editorSettings = %s;
+                        editorSettings.codemirror.lineNumbers = true;
+                        editorSettings.codemirror.lineWrapping = true;
+                        editorSettings.codemirror.viewportMargin = Infinity;
+                        window.sfxCodeMirrorEditor = wp.codeEditor.initialize($textarea, editorSettings);
+                    }
+                });',
+                wp_json_encode($settings)
+            )
+        );
+    }
+
+    /**
      * Enqueue dashboard page assets
      *
      * @return void
@@ -122,9 +166,9 @@ class AssetManager
             return;
         }
 
+        // Always load default stylesheet
         $css_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/dashboard-style.css';
-        $js_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/dashboard-script.js';
-
+        
         if (file_exists($css_file)) {
             wp_enqueue_style(
                 'sfx-custom-dashboard',
@@ -135,8 +179,18 @@ class AssetManager
 
             // Inject custom brand CSS variables
             self::inject_brand_styles();
+            
+            // Add custom CSS on top if set
+            $options = get_option(Settings::$OPTION_NAME, []);
+            $custom_css = $options['dashboard_custom_css'] ?? '';
+            
+            if (!empty($custom_css)) {
+                wp_add_inline_style('sfx-custom-dashboard', $custom_css);
+            }
         }
 
+        $js_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/dashboard-script.js';
+        
         if (file_exists($js_file)) {
             wp_enqueue_script(
                 'sfx-custom-dashboard',
