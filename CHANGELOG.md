@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.1] - 2025-12-03
+
+### Fixed
+
+- **Custom Dashboard**: Updated settings for border and shadow options
+
 ## [0.7.0] - 2025-12-03
 
 ### Added
