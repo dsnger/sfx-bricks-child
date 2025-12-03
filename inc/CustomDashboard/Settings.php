@@ -242,6 +242,13 @@ class Settings
                 'default' => 1,
             ],
             [
+                'id' => 'show_site_health_section',
+                'label' => __('Show Site Health', 'sfxtheme'),
+                'description' => __('Display WordPress site health status indicator.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
+            [
                 'id' => 'show_stats_section',
                 'label' => __('Show Stats Section', 'sfxtheme'),
                 'description' => __('Display the statistics section with post, page, media, and user counts.', 'sfxtheme'),
@@ -282,6 +289,114 @@ class Settings
                 'description' => __('Maximum number of recent form submissions to display (1-20).', 'sfxtheme'),
                 'type' => 'number',
                 'default' => 5,
+            ],
+            // Content & Activity Sections
+            [
+                'id' => 'show_drafts_section',
+                'label' => __('Show Drafts Section', 'sfxtheme'),
+                'description' => __('Display count of draft posts and pages.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
+            [
+                'id' => 'show_scheduled_section',
+                'label' => __('Show Scheduled Content', 'sfxtheme'),
+                'description' => __('Display upcoming scheduled posts and pages.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
+            [
+                'id' => 'show_comments_section',
+                'label' => __('Show Pending Comments', 'sfxtheme'),
+                'description' => __('Display count of comments awaiting moderation.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
+            [
+                'id' => 'show_revisions_section',
+                'label' => __('Show Recent Activity', 'sfxtheme'),
+                'description' => __('Display recent content edits and revisions.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'revisions_limit',
+                'label' => __('Activity Items to Show', 'sfxtheme'),
+                'description' => __('Number of recent activity items to display (1-20).', 'sfxtheme'),
+                'type' => 'number',
+                'default' => 10,
+            ],
+            [
+                'id' => 'show_stale_content_section',
+                'label' => __('Show Stale Content', 'sfxtheme'),
+                'description' => __('Highlight content that has not been updated recently.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'stale_content_months',
+                'label' => __('Stale Content Threshold (Months)', 'sfxtheme'),
+                'description' => __('Consider content stale if not modified in this many months (1-24).', 'sfxtheme'),
+                'type' => 'number',
+                'default' => 6,
+            ],
+            [
+                'id' => 'show_taxonomy_section',
+                'label' => __('Show Taxonomy Summary', 'sfxtheme'),
+                'description' => __('Display count of categories and tags.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'show_recent_users_section',
+                'label' => __('Show Recent Users', 'sfxtheme'),
+                'description' => __('Display recently registered users.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            // System Sections
+            [
+                'id' => 'show_system_info_section',
+                'label' => __('Show System Info', 'sfxtheme'),
+                'description' => __('Display WordPress, PHP, and MySQL versions.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'show_database_section',
+                'label' => __('Show Database Size', 'sfxtheme'),
+                'description' => __('Display the total database size.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'show_media_size_section',
+                'label' => __('Show Media Library Size', 'sfxtheme'),
+                'description' => __('Display the total size of uploaded media.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'show_cron_section',
+                'label' => __('Show Scheduled Tasks', 'sfxtheme'),
+                'description' => __('Display WordPress cron jobs overview.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            // Utility Sections
+            [
+                'id' => 'show_quick_search_section',
+                'label' => __('Show Quick Search', 'sfxtheme'),
+                'description' => __('Display a search box for quickly finding content.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'show_homepage_shortcut',
+                'label' => __('Show Edit Homepage Button', 'sfxtheme'),
+                'description' => __('Display a quick button to edit the homepage.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
             ],
             [
                 'id' => 'show_dashboard_widgets',
@@ -561,17 +676,10 @@ class Settings
                 'default' => '',
             ],
             [
-                'id' => 'predefined_quicklinks',
-                'label' => __('Predefined Quick Links', 'sfxtheme'),
-                'description' => __('Enable or disable predefined quick action links.', 'sfxtheme'),
-                'type' => 'quicklinks',
-                'default' => self::get_default_quicklinks(),
-            ],
-            [
-                'id' => 'custom_quicklinks',
-                'label' => __('Custom Quick Links', 'sfxtheme'),
-                'description' => __('Add your own custom quick action links.', 'sfxtheme'),
-                'type' => 'custom_quicklinks',
+                'id' => 'quicklinks_sortable',
+                'label' => __('Quick Links', 'sfxtheme'),
+                'description' => __('Enable, disable, and reorder quick action links. Drag to reorder.', 'sfxtheme'),
+                'type' => 'quicklinks_sortable',
                 'default' => [],
             ],
         ];
@@ -787,12 +895,8 @@ class Settings
                 <?php
                 break;
 
-            case 'quicklinks':
-                self::render_quicklinks_field($id, $value);
-                break;
-
-            case 'custom_quicklinks':
-                self::render_custom_quicklinks_field($id, $value);
+            case 'quicklinks_sortable':
+                self::render_quicklinks_sortable_field($id, $value);
                 break;
 
             case 'dashboard_widgets':
@@ -894,76 +998,216 @@ class Settings
     }
 
     /**
-     * Render predefined quicklinks field with sortable UI
+     * Migrate from legacy quicklinks format (predefined_quicklinks + custom_quicklinks)
+     * to the new unified quicklinks_sortable format
+     *
+     * @return array<int, array<string, mixed>>|null Returns migrated data or null if no migration needed
+     */
+    public static function migrate_legacy_quicklinks(): ?array
+    {
+        $options = get_option(self::$OPTION_NAME, []);
+        
+        // Check if we already have the new format
+        if (!empty($options['quicklinks_sortable'])) {
+            return null;
+        }
+        
+        // Check for legacy data
+        $legacy_predefined = $options['predefined_quicklinks'] ?? [];
+        $legacy_custom = $options['custom_quicklinks'] ?? [];
+        
+        if (empty($legacy_predefined) && empty($legacy_custom)) {
+            return null;
+        }
+        
+        $migrated = [];
+        
+        // Migrate predefined quicklinks
+        if (!empty($legacy_predefined)) {
+            foreach ($legacy_predefined as $link) {
+                if (isset($link['id'])) {
+                    $migrated[] = [
+                        'type' => 'predefined',
+                        'id' => $link['id'],
+                        'enabled' => !empty($link['enabled']),
+                    ];
+                }
+            }
+        }
+        
+        // Migrate custom quicklinks
+        if (!empty($legacy_custom)) {
+            foreach ($legacy_custom as $index => $link) {
+                if (!empty($link['title']) || !empty($link['url'])) {
+                    $migrated[] = [
+                        'type' => 'custom',
+                        'id' => 'custom_migrated_' . $index,
+                        'title' => $link['title'] ?? '',
+                        'url' => $link['url'] ?? '',
+                        'icon' => $link['icon'] ?? '',
+                        'enabled' => true, // Custom links were always enabled in the old format
+                    ];
+                }
+            }
+        }
+        
+        return $migrated;
+    }
+
+    /**
+     * Get all quicklinks (predefined + custom) with order
+     *
+     * @param array $saved_data Saved quicklinks data
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_ordered_quicklinks(array $saved_data = []): array
+    {
+        $predefined = self::get_default_quicklinks();
+        $items = [];
+        
+        // Check for legacy migration if no data provided
+        if (empty($saved_data)) {
+            $migrated = self::migrate_legacy_quicklinks();
+            if ($migrated !== null) {
+                $saved_data = $migrated;
+            }
+        }
+        
+        if (!empty($saved_data)) {
+            // Use saved order and settings
+            foreach ($saved_data as $item) {
+                if (!isset($item['type'])) {
+                    continue;
+                }
+                
+                if ($item['type'] === 'predefined') {
+                    // Find predefined link data
+                    foreach ($predefined as $predef) {
+                        if ($predef['id'] === $item['id']) {
+                            $items[] = array_merge($predef, [
+                                'type' => 'predefined',
+                                'enabled' => !empty($item['enabled']),
+                            ]);
+                            break;
+                        }
+                    }
+                } elseif ($item['type'] === 'custom') {
+                    $items[] = [
+                        'type' => 'custom',
+                        'id' => $item['id'] ?? 'custom_' . uniqid(),
+                        'title' => $item['title'] ?? '',
+                        'url' => $item['url'] ?? '',
+                        'icon' => $item['icon'] ?? '',
+                        'enabled' => !empty($item['enabled']),
+                    ];
+                }
+            }
+            
+            // Add any new predefined links that weren't in saved data
+            $saved_predefined_ids = array_column(array_filter($saved_data, fn($i) => ($i['type'] ?? '') === 'predefined'), 'id');
+            foreach ($predefined as $predef) {
+                if (!in_array($predef['id'], $saved_predefined_ids)) {
+                    $items[] = array_merge($predef, [
+                        'type' => 'predefined',
+                        'enabled' => !empty($predef['enabled']),
+                    ]);
+                }
+            }
+        } else {
+            // Initialize with defaults
+            foreach ($predefined as $predef) {
+                $items[] = array_merge($predef, [
+                    'type' => 'predefined',
+                ]);
+            }
+        }
+        
+        return $items;
+    }
+
+    /**
+     * Render unified sortable quicklinks field
      *
      * @param string $id
      * @param mixed $value
      * @return void
      */
-    private static function render_quicklinks_field(string $id, $value): void
+    public static function render_quicklinks_sortable_field(string $id, $value): void
     {
-        $quicklinks = is_array($value) && !empty($value) ? $value : self::get_default_quicklinks();
-        
-        // If we just have default quicklinks (not sorted/saved yet), use them
-        // But we need to make sure we have all default items available
-        $default_links = self::get_default_quicklinks();
-        $default_links_map = array_column($default_links, null, 'id');
-        
-        // Ensure all items from default are present (in case new ones were added)
-        // and merge existing values
-        $display_links = [];
-        
-        // First add saved/sorted items
-        $seen_ids = [];
-        foreach ($quicklinks as $link) {
-            if (isset($default_links_map[$link['id']])) {
-                // Use current enabled state but ensure other properties are up to date from default
-                $merged_link = array_merge($default_links_map[$link['id']], [
-                    'enabled' => !empty($link['enabled']) ? 1 : 0
-                ]);
-                $display_links[] = $merged_link;
-                $seen_ids[$link['id']] = true;
-            }
-        }
-        
-        // Then append any new default items not yet saved
-        foreach ($default_links as $default_link) {
-            if (!isset($seen_ids[$default_link['id']])) {
-                $default_link['enabled'] = 0; // Default to disabled for new items to not clutter
-                $display_links[] = $default_link;
-            }
-        }
-        
+        $quicklinks = self::get_ordered_quicklinks(is_array($value) ? $value : []);
+        $allowed_svg = self::get_allowed_svg_tags();
+        $default_custom_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
         ?>
-        <div class="sfx-stats-items-container">
+        <div class="sfx-quicklinks-sortable-container">
             <p class="description" style="margin-bottom: 15px;">
-                <?php esc_html_e('Drag to reorder. Check to enable/disable each quick action.', 'sfxtheme'); ?>
+                <?php esc_html_e('Drag to reorder. Check to enable/disable each quick link.', 'sfxtheme'); ?>
             </p>
-            <ul class="sfx-stats-sortable" id="sfx-quicklinks-sortable">
-                <?php foreach ($display_links as $index => $link): ?>
-                    <li class="sfx-stat-item" data-id="<?php echo esc_attr($link['id']); ?>">
-                        <span class="sfx-stat-drag-handle">☰</span>
-                        <label class="sfx-stat-checkbox">
+            <ul class="sfx-quicklinks-sortable" id="sfx-quicklinks-sortable">
+                <?php foreach ($quicklinks as $index => $link): ?>
+                    <?php
+                    $type_badge = $link['type'] === 'custom' ? '<span class="sfx-quicklink-badge">' . esc_html__('Custom', 'sfxtheme') . '</span>' : '';
+                    $is_custom = $link['type'] === 'custom';
+                    ?>
+                    <li class="sfx-quicklink-item <?php echo $is_custom ? 'sfx-quicklink-item-custom' : ''; ?>" 
+                        data-id="<?php echo esc_attr($link['id']); ?>" 
+                        data-type="<?php echo esc_attr($link['type']); ?>">
+                        <span class="sfx-quicklink-drag-handle">☰</span>
+                        <label class="sfx-quicklink-checkbox">
                             <input type="checkbox" 
                                    name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
                                    value="1" 
-                                   <?php checked(!empty($link['enabled']), true); ?> />
+                                   <?php checked(!empty($link['enabled'])); ?> />
                             <input type="hidden" 
                                    name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                   value="<?php echo esc_attr($link['id']); ?>" />
+                                   value="<?php echo esc_attr($link['id']); ?>" 
+                                   class="sfx-quicklink-id" />
+                            <input type="hidden" 
+                                   name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
+                                   value="<?php echo esc_attr($link['type']); ?>" 
+                                   class="sfx-quicklink-type" />
                         </label>
-                        <span class="sfx-stat-label">
-                            <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
-                                <?php echo wp_kses_post($link['icon']); ?>
+                        <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
+                        
+                        <?php if ($is_custom): ?>
+                            <div class="sfx-quicklink-custom-fields">
+                                <input type="text" 
+                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][title]" 
+                                       value="<?php echo esc_attr($link['title']); ?>" 
+                                       class="sfx-quicklink-title-input" 
+                                       placeholder="<?php esc_attr_e('Title', 'sfxtheme'); ?>" />
+                                <input type="text" 
+                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][url]" 
+                                       value="<?php echo esc_attr($link['url']); ?>" 
+                                       class="sfx-quicklink-url-input" 
+                                       placeholder="<?php esc_attr_e('URL', 'sfxtheme'); ?>" />
+                                <textarea name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][icon]" 
+                                          class="sfx-quicklink-icon-input" 
+                                          placeholder="<?php esc_attr_e('SVG Icon', 'sfxtheme'); ?>" 
+                                          rows="2"><?php echo esc_textarea($link['icon']); ?></textarea>
+                                <button type="button" class="button sfx-remove-quicklink" title="<?php esc_attr_e('Remove', 'sfxtheme'); ?>">✕</button>
                             </div>
-                            <?php echo esc_html($link['title']); ?>
-                        </span>
-                        <span class="sfx-stat-count">
-                            <code><?php echo esc_html($link['url']); ?></code>
-                        </span>
+                        <?php else: ?>
+                            <span class="sfx-quicklink-label">
+                                <?php echo esc_html($link['title']); ?>
+                            </span>
+                            <code class="sfx-quicklink-url"><?php echo esc_html($link['url']); ?></code>
+                        <?php endif; ?>
+                        <?php echo $type_badge; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>
+            <div class="sfx-quicklinks-actions">
+                <button type="button" id="sfx-add-custom-quicklink" class="button button-secondary">
+                    <?php esc_html_e('+ Add Custom Link', 'sfxtheme'); ?>
+                </button>
+            </div>
+            <p class="description" style="margin-top: 15px;">
+                <strong><?php esc_html_e('URL:', 'sfxtheme'); ?></strong> <?php esc_html_e('Use admin paths (e.g., "edit.php") or placeholders:', 'sfxtheme'); ?>
+                <code>{admin_url}</code>, <code>{site_url}</code>, <code>{home_url}</code>
+                <br>
+                <strong><?php esc_html_e('Icon:', 'sfxtheme'); ?></strong> <?php esc_html_e('Paste SVG code.', 'sfxtheme'); ?> 
+                <a href="https://heroicons.com/" target="_blank" rel="noopener">Heroicons</a> <?php esc_html_e('(outline style, 24x24) recommended.', 'sfxtheme'); ?>
+            </p>
         </div>
         <?php
     }
@@ -1227,80 +1471,6 @@ class Settings
     }
 
     /**
-     * Render custom quicklinks field
-     *
-     * @param string $id
-     * @param mixed $value
-     * @return void
-     */
-    private static function render_custom_quicklinks_field(string $id, $value): void
-    {
-        $custom_links = is_array($value) ? $value : [];
-        ?>
-        <div id="sfx-custom-quicklinks-wrapper">
-            <table class="widefat sfx-custom-quicklinks-table">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e('Icon', 'sfxtheme'); ?></th>
-                        <th><?php esc_html_e('Title', 'sfxtheme'); ?></th>
-                        <th><?php esc_html_e('URL', 'sfxtheme'); ?></th>
-                        <th><?php esc_html_e('Action', 'sfxtheme'); ?></th>
-                    </tr>
-                </thead>
-                <tbody id="sfx-custom-quicklinks-body">
-                    <?php if (!empty($custom_links)): ?>
-                        <?php foreach ($custom_links as $index => $link): ?>
-                        <tr class="sfx-custom-link-row">
-                            <td>
-                                <div class="sfx-icon-input-wrapper">
-                                    <textarea 
-                                           name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>][<?php echo $index; ?>][icon]" 
-                                           rows="3"
-                                           class="sfx-svg-icon-input" 
-                                           placeholder="SVG code"><?php echo esc_textarea($link['icon'] ?? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'); ?></textarea>
-                                    <div class="sfx-icon-preview" title="<?php esc_attr_e('Icon Preview', 'sfxtheme'); ?>"><?php echo $link['icon'] ?? ''; ?></div>
-                                </div>
-                            </td>
-                            <td>
-                                <input type="text" 
-                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>][<?php echo $index; ?>][title]" 
-                                       value="<?php echo esc_attr($link['title'] ?? ''); ?>" 
-                                       class="regular-text" 
-                                       placeholder="<?php esc_attr_e('Link Title', 'sfxtheme'); ?>" />
-                            </td>
-                            <td>
-                                <input type="text" 
-                                       name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>][<?php echo $index; ?>][url]" 
-                                       value="<?php echo esc_attr($link['url'] ?? ''); ?>" 
-                                       class="regular-text" 
-                                       placeholder="<?php esc_attr_e('URL or admin page', 'sfxtheme'); ?>" />
-                            </td>
-                            <td>
-                                <button type="button" class="button sfx-remove-link"><?php esc_html_e('Remove', 'sfxtheme'); ?></button>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-            <button type="button" id="sfx-add-custom-link" class="button button-secondary" style="margin-top: 10px;">
-                <?php esc_html_e('Add Custom Link', 'sfxtheme'); ?>
-            </button>
-        </div>
-        <p class="description" style="margin-top: 15px;">
-            <?php esc_html_e('Add custom quick action links.', 'sfxtheme'); ?>
-            <br>
-            <strong><?php esc_html_e('URL:', 'sfxtheme'); ?></strong> <?php esc_html_e('Use admin paths (e.g., "edit.php") or placeholders:', 'sfxtheme'); ?>
-            <code>{admin_url}</code>, <code>{site_url}</code>, <code>{home_url}</code>
-            <br>
-            <span style="color: #666; font-size: 12px;"><?php esc_html_e('Example:', 'sfxtheme'); ?> <code>{admin_url}edit.php?post_type=page</code> <?php esc_html_e('or', 'sfxtheme'); ?> <code>{site_url}/contact</code></span>
-            <br>
-            <strong><?php esc_html_e('Icon:', 'sfxtheme'); ?></strong> <?php esc_html_e('Paste SVG code. We recommend', 'sfxtheme'); ?> <a href="https://heroicons.com/" target="_blank" rel="noopener">Heroicons</a> <?php esc_html_e('(outline style, 24x24).', 'sfxtheme'); ?>
-        </p>
-        <?php
-    }
-
-    /**
      * Sanitize options
      *
      * @param mixed $input
@@ -1349,23 +1519,13 @@ class Settings
                     $output[$id] = wp_kses_post($input[$id]);
                     break;
 
-                case 'quicklinks':
+                case 'quicklinks_sortable':
                     // Check if it's JSON encoded (from hidden field)
                     if (is_string($input[$id]) && !empty($input[$id])) {
                         $decoded = json_decode($input[$id], true);
-                        $output[$id] = is_array($decoded) ? $decoded : self::sanitize_quicklinks($input[$id]);
+                        $output[$id] = is_array($decoded) ? self::sanitize_quicklinks_sortable($decoded) : [];
                     } else {
-                        $output[$id] = self::sanitize_quicklinks($input[$id]);
-                    }
-                    break;
-
-                case 'custom_quicklinks':
-                    // Check if it's JSON encoded (from hidden field)
-                    if (is_string($input[$id]) && !empty($input[$id])) {
-                        $decoded = json_decode($input[$id], true);
-                        $output[$id] = is_array($decoded) ? $decoded : self::sanitize_custom_quicklinks($input[$id]);
-                    } else {
-                        $output[$id] = self::sanitize_custom_quicklinks($input[$id]);
+                        $output[$id] = self::sanitize_quicklinks_sortable($input[$id] ?? []);
                     }
                     break;
 
@@ -1434,87 +1594,56 @@ class Settings
     }
 
     /**
-     * Sanitize predefined quicklinks
+     * Sanitize sortable quicklinks
      *
      * @param mixed $input
      * @return array<int, array<string, mixed>>
      */
-    private static function sanitize_quicklinks($input): array
-    {
-        if (!is_array($input)) {
-            return self::get_default_quicklinks();
-        }
-
-        $defaults = self::get_default_quicklinks();
-        $defaults_by_id = array_column($defaults, null, 'id');
-        $allowed_svg = self::get_allowed_svg_tags();
-        
-        $sanitized = [];
-
-        // Process items in the order they were submitted (drag and drop order)
-        foreach ($input as $item) {
-            // Skip if missing ID or not a valid default item
-            if (empty($item['id']) || !isset($defaults_by_id[$item['id']])) {
-                continue;
-            }
-
-            $default_link = $defaults_by_id[$item['id']];
-            
-            $sanitized[] = [
-                'id' => sanitize_key($item['id']),
-                'title' => sanitize_text_field($default_link['title']),
-                'url' => sanitize_text_field($default_link['url']),
-                'icon' => wp_kses($default_link['icon'], $allowed_svg),
-                'enabled' => !empty($item['enabled']) ? 1 : 0,
-            ];
-
-            // Remove from map so we know what's left
-            unset($defaults_by_id[$item['id']]);
-        }
-
-        // Append any missing default items (e.g. new ones added in update)
-        foreach ($defaults_by_id as $default_link) {
-            $sanitized[] = [
-                'id' => $default_link['id'],
-                'title' => $default_link['title'],
-                'url' => $default_link['url'],
-                'icon' => $default_link['icon'],
-                'enabled' => 0, // Default to disabled for new items
-            ];
-        }
-
-        return $sanitized;
-    }
-
-    /**
-     * Sanitize custom quicklinks
-     *
-     * @param mixed $input
-     * @return array<int, array<string, string>>
-     */
-    private static function sanitize_custom_quicklinks($input): array
+    private static function sanitize_quicklinks_sortable($input): array
     {
         if (!is_array($input)) {
             return [];
         }
 
-        // Define allowed SVG tags and attributes
         $allowed_svg = self::get_allowed_svg_tags();
+        $predefined = self::get_default_quicklinks();
+        $predefined_ids = array_column($predefined, 'id');
+        $default_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
 
         $sanitized = [];
 
-        foreach ($input as $link) {
-            if (!is_array($link) || empty($link['title']) || empty($link['url'])) {
+        foreach ($input as $item) {
+            if (!is_array($item) || empty($item['type'])) {
                 continue;
             }
 
-            $default_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
+            $type = sanitize_key($item['type']);
 
-            $sanitized[] = [
-                'icon' => wp_kses($link['icon'] ?? $default_icon, $allowed_svg),
-                'title' => sanitize_text_field($link['title']),
-                'url' => sanitize_text_field($link['url']),
-            ];
+            if ($type === 'predefined') {
+                $id = sanitize_key($item['id'] ?? '');
+                if (in_array($id, $predefined_ids)) {
+                    $sanitized[] = [
+                        'type' => 'predefined',
+                        'id' => $id,
+                        'enabled' => !empty($item['enabled']),
+                    ];
+                }
+            } elseif ($type === 'custom') {
+                // Only add custom links with at least a title or url
+                $title = sanitize_text_field($item['title'] ?? '');
+                $url = sanitize_text_field($item['url'] ?? '');
+                
+                if (!empty($title) || !empty($url)) {
+                    $sanitized[] = [
+                        'type' => 'custom',
+                        'id' => sanitize_key($item['id'] ?? 'custom_' . uniqid()),
+                        'title' => $title,
+                        'url' => $url,
+                        'icon' => wp_kses($item['icon'] ?? $default_icon, $allowed_svg),
+                        'enabled' => !empty($item['enabled']),
+                    ];
+                }
+            }
         }
 
         return $sanitized;

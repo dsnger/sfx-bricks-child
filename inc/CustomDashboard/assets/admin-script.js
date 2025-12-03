@@ -8,138 +8,155 @@
     'use strict';
 
     /**
-     * Initialize custom quicklinks management
+     * Initialize sortable quicklinks
      */
-    function initCustomQuicklinks() {
-        const wrapper = $('#sfx-custom-quicklinks-wrapper');
-        const tbody = $('#sfx-custom-quicklinks-body');
-        const addButton = $('#sfx-add-custom-link');
+    function initQuicklinksSortable() {
+        var $sortable = $('#sfx-quicklinks-sortable');
+        
+        if (!$sortable.length) {
+            return;
+        }
+        
+        // Check if sortable is available
+        if (typeof $.fn.sortable === 'undefined') {
+            console.error('SFX: jQuery UI Sortable not loaded!');
+            return;
+        }
+        
+        // Destroy existing sortable if it exists
+        try {
+            if ($sortable.data('ui-sortable')) {
+                $sortable.sortable('destroy');
+            }
+        } catch(e) {}
+        
+        // Initialize sortable
+        $sortable.sortable({
+            items: '> li.sfx-quicklink-item',
+            placeholder: 'sfx-quicklink-placeholder',
+            axis: 'y',
+            cursor: 'move',
+            opacity: 0.8,
+            revert: 150,
+            handle: '.sfx-quicklink-drag-handle',
+            update: function(event, ui) {
+                updateQuicklinksIndices();
+            }
+        });
+    }
 
-        if (!wrapper.length || !tbody.length || !addButton.length) {
+    /**
+     * Update quicklinks item indices after reorder
+     */
+    function updateQuicklinksIndices() {
+        $('#sfx-quicklinks-sortable .sfx-quicklink-item').each(function(index) {
+            var $item = $(this);
+            $item.find('input, textarea').each(function() {
+                var $input = $(this);
+                var name = $input.attr('name');
+                if (name) {
+                    // Replace the index number in quicklinks_sortable[X]
+                    name = name.replace(/\[quicklinks_sortable\]\[\d+\]/, '[quicklinks_sortable][' + index + ']');
+                    $input.attr('name', name);
+                }
+            });
+        });
+    }
+
+    /**
+     * Initialize add custom quicklink button
+     */
+    function initAddCustomQuicklink() {
+        var $addButton = $('#sfx-add-custom-quicklink');
+        var $sortable = $('#sfx-quicklinks-sortable');
+        
+        if (!$addButton.length || !$sortable.length) {
             return;
         }
 
-        // Get option name from localized script
-        const optionName = sfxDashboardAdmin.optionName;
-        const strings = sfxDashboardAdmin.strings;
-
-        // Default SVG icon for new links
+        var optionName = sfxDashboardAdmin.optionName;
+        var strings = sfxDashboardAdmin.strings;
         var defaultSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
 
-        // Add custom link
-        addButton.on('click', function(e) {
+        $addButton.on('click', function(e) {
             e.preventDefault();
             
-            // Get current row count
-            const rowCount = tbody.find('tr').length;
-            const newIndex = rowCount;
-
-            // Create new row
-            const newRow = $('<tr>', { class: 'sfx-custom-link-row' });
+            var newIndex = $sortable.find('.sfx-quicklink-item').length;
+            var newId = 'custom_' + Date.now();
             
-            // Icon field (textarea for SVG with preview)
-            const iconWrapper = $('<div>', { class: 'sfx-icon-input-wrapper' });
+            var $newItem = $('<li>', {
+                class: 'sfx-quicklink-item sfx-quicklink-item-custom sfx-quicklink-item-new',
+                'data-id': newId,
+                'data-type': 'custom'
+            });
             
-            const iconTextarea = $('<textarea>', {
-                name: optionName + '[custom_quicklinks][' + newIndex + '][icon]',
-                rows: 3,
-                class: 'sfx-svg-icon-input',
-                placeholder: 'SVG code'
-            }).val(defaultSvgIcon);
+            // Build the item HTML
+            var itemHtml = '<span class="sfx-quicklink-drag-handle">☰</span>' +
+                '<label class="sfx-quicklink-checkbox">' +
+                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][enabled]" value="1" checked />' +
+                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][id]" value="' + newId + '" class="sfx-quicklink-id" />' +
+                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][type]" value="custom" class="sfx-quicklink-type" />' +
+                '</label>' +
+                '<span class="sfx-quicklink-icon-preview">' + defaultSvgIcon + '</span>' +
+                '<div class="sfx-quicklink-custom-fields">' +
+                    '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.title || 'Title') + '" />' +
+                    '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][url]" value="" class="sfx-quicklink-url-input" placeholder="' + (strings.url || 'URL') + '" />' +
+                    '<textarea name="' + optionName + '[quicklinks_sortable][' + newIndex + '][icon]" class="sfx-quicklink-icon-input" placeholder="SVG Icon" rows="2">' + defaultSvgIcon + '</textarea>' +
+                    '<button type="button" class="button sfx-remove-quicklink" title="' + (strings.remove || 'Remove') + '">✕</button>' +
+                '</div>' +
+                '<span class="sfx-quicklink-badge">' + (strings.custom || 'Custom') + '</span>';
             
-            const iconPreview = $('<div>', { 
-                class: 'sfx-icon-preview',
-                title: 'Icon Preview'
-            }).html(defaultSvgIcon);
+            $newItem.html(itemHtml);
+            $sortable.append($newItem);
             
-            iconWrapper.append(iconTextarea, iconPreview);
-            const iconCell = $('<td>').append(iconWrapper);
-
-            // Title field
-            const titleCell = $('<td>').append(
-                $('<input>', {
-                    type: 'text',
-                    name: optionName + '[custom_quicklinks][' + newIndex + '][title]',
-                    value: '',
-                    class: 'regular-text',
-                    placeholder: strings.title
-                })
-            );
-
-            // URL field
-            const urlCell = $('<td>').append(
-                $('<input>', {
-                    type: 'text',
-                    name: optionName + '[custom_quicklinks][' + newIndex + '][url]',
-                    value: '',
-                    class: 'regular-text',
-                    placeholder: strings.url
-                })
-            );
-
-            // Action field (remove button)
-            const actionCell = $('<td>').append(
-                $('<button>', {
-                    type: 'button',
-                    class: 'button sfx-remove-link',
-                    text: strings.remove
-                })
-            );
-
-            // Append cells to row
-            newRow.append(iconCell, titleCell, urlCell, actionCell);
+            // Focus on title input
+            $newItem.find('.sfx-quicklink-title-input').focus();
             
-            // Append row to tbody
-            tbody.append(newRow);
-
-            // Focus on title field
-            titleCell.find('input').focus();
+            // Remove highlight after animation
+            setTimeout(function() {
+                $newItem.removeClass('sfx-quicklink-item-new');
+            }, 1000);
+            
+            // Refresh sortable
+            $sortable.sortable('refresh');
         });
+    }
 
-        // Remove custom link (delegated event for dynamically added rows)
-        tbody.on('click', '.sfx-remove-link', function(e) {
+    /**
+     * Initialize remove custom quicklink buttons
+     */
+    function initRemoveCustomQuicklink() {
+        $(document).on('click', '.sfx-remove-quicklink', function(e) {
             e.preventDefault();
             
-            const row = $(this).closest('tr');
+            var $item = $(this).closest('.sfx-quicklink-item');
             
-            // Confirm before removing
-            if (confirm('Are you sure you want to remove this custom link?')) {
-                row.fadeOut(300, function() {
+            if (confirm(sfxDashboardAdmin.strings.confirmRemove || 'Are you sure you want to remove this custom link?')) {
+                $item.fadeOut(300, function() {
                     $(this).remove();
-                    reindexCustomLinks();
+                    updateQuicklinksIndices();
                 });
             }
         });
+    }
 
-        // Live SVG preview update
-        tbody.on('input', '.sfx-svg-icon-input', function() {
-            const textarea = $(this);
-            const preview = textarea.closest('.sfx-icon-input-wrapper').find('.sfx-icon-preview');
-            const svgCode = textarea.val().trim();
+    /**
+     * Initialize live SVG icon preview for quicklinks
+     */
+    function initQuicklinkIconPreview() {
+        $(document).on('input', '.sfx-quicklink-icon-input', function() {
+            var $textarea = $(this);
+            var $item = $textarea.closest('.sfx-quicklink-item');
+            var $preview = $item.find('.sfx-quicklink-icon-preview');
+            var svgCode = $textarea.val().trim();
             
             // Only update if it looks like valid SVG
             if (svgCode.indexOf('<svg') !== -1 && svgCode.indexOf('</svg>') !== -1) {
-                preview.html(svgCode);
+                $preview.html(svgCode);
             } else {
-                preview.html('');
+                $preview.html('');
             }
         });
-
-        /**
-         * Reindex custom link fields after removal
-         */
-        function reindexCustomLinks() {
-            tbody.find('tr').each(function(index) {
-                $(this).find('input').each(function() {
-                    const name = $(this).attr('name');
-                    if (name) {
-                        // Replace the index in the name attribute
-                        const newName = name.replace(/\[custom_quicklinks\]\[\d+\]/, '[custom_quicklinks][' + index + ']');
-                        $(this).attr('name', newName);
-                    }
-                });
-            });
-        }
     }
 
     /**
@@ -262,63 +279,6 @@
     }
 
     /**
-     * Initialize sortable quicklinks
-     */
-    function initQuicklinksSortable() {
-        var $sortable = $('#sfx-quicklinks-sortable');
-        
-        if (!$sortable.length) {
-            return;
-        }
-        
-        // Check if sortable is available
-        if (typeof $.fn.sortable === 'undefined') {
-            return;
-        }
-        
-        // Destroy existing sortable if it exists
-        try {
-            if ($sortable.data('ui-sortable')) {
-                $sortable.sortable('destroy');
-            }
-        } catch(e) {}
-        
-        // Initialize sortable
-        $sortable.sortable({
-            items: '> li.sfx-stat-item',
-            placeholder: 'sfx-stat-placeholder',
-            axis: 'y',
-            cursor: 'move',
-            opacity: 0.8,
-            revert: 150,
-            update: function(event, ui) {
-                updateQuicklinksIndices();
-            }
-        });
-    }
-
-    /**
-     * Update quicklinks indices after reorder
-     */
-    function updateQuicklinksIndices() {
-        $('#sfx-quicklinks-sortable .sfx-stat-item').each(function(index) {
-            var $item = $(this);
-            $item.find('input').each(function() {
-                var $input = $(this);
-                var name = $input.attr('name');
-                if (name) {
-                    // Replace the index number in predefined_quicklinks[X]
-                    name = name.replace(/\[predefined_quicklinks\]\[\d+\]/, '[predefined_quicklinks][' + index + ']');
-                    $input.attr('name', name);
-                }
-            });
-        });
-    }
-
-    /**
-     * Initialize on document ready
-     */
-    /**
      * Initialize color select preview updates
      */
     function initColorSelectPreview() {
@@ -334,19 +294,24 @@
         });
     }
 
+    /**
+     * Initialize on document ready
+     */
     $(document).ready(function() {
-        initCustomQuicklinks();
         initLogoUploader();
         initColorSelectPreview();
+        initAddCustomQuicklink();
+        initRemoveCustomQuicklink();
+        initQuicklinkIconPreview();
         
-        // Initialize sortable with a small delay to ensure DOM is ready
+        // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {
             initStatsSortable();
             initQuicklinksSortable();
         }, 150);
         
-        // Re-initialize sortable when switching tabs
-        $(document).on('click', '.sfx-dashboard-tabs .nav-tab', function() {
+        // Re-initialize sortables when switching tabs
+        $(document).on('click', '.sfx-dashboard-tabs .nav-tab, .nav-tab-wrapper .nav-tab', function() {
             setTimeout(function() {
                 initStatsSortable();
                 initQuicklinksSortable();

@@ -33,16 +33,176 @@
     margin-bottom: 0;
 }
 
+/* Status Bar */
+.sfx-status-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+/* Site Health Section - matches Updates Section */
+.sfx-health-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 24px;
+    border-radius: var(--border-radius, 8px);
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    white-space: nowrap;
+}
+
+.sfx-health-section.sfx-health-recommended {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.sfx-health-section.sfx-health-critical {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.sfx-health-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.sfx-health-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sfx-health-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.sfx-health-good .sfx-health-icon svg {
+    color: #16a34a;
+}
+
+.sfx-health-recommended .sfx-health-icon svg {
+    color: #d97706;
+}
+
+.sfx-health-critical .sfx-health-icon svg {
+    color: #dc2626;
+}
+
+.sfx-health-text {
+    color: #374151;
+}
+
+.sfx-health-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.sfx-health-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.sfx-health-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sfx-badge-critical {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.sfx-badge-warning {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.sfx-health-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #16a34a;
+    color: #ffffff;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-left: 10px;
+}
+
+.sfx-health-action:hover {
+    background: #15803d;
+    color: #ffffff;
+}
+
+.sfx-health-action svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sfx-health-recommended .sfx-health-action {
+    background: #d97706;
+}
+
+.sfx-health-recommended .sfx-health-action:hover {
+    background: #b45309;
+}
+
+.sfx-health-critical .sfx-health-action {
+    background: #dc2626;
+}
+
+.sfx-health-critical .sfx-health-action:hover {
+    background: #b91c1c;
+}
+
+@media (max-width: 900px) {
+    .sfx-status-bar {
+        flex-direction: column;
+    }
+    
+    .sfx-health-section {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .sfx-health-details {
+        margin-left: 0;
+    }
+    
+    .sfx-health-action {
+        margin-left: 0;
+    }
+}
+
 /* Updates Section */
 .sfx-updates-section {
     display: flex;
     align-items: center;
     gap: 20px;
     padding: 16px 24px;
-    margin-bottom: 20px;
     border-radius: var(--border-radius, 8px);
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
+    flex: 1;
 }
 
 .sfx-updates-section.sfx-updates-warning {

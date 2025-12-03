@@ -107,7 +107,7 @@ class FormSubmissionsProvider
         $table_name = $wpdb->prefix . 'bricks_form_submissions';
         
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name;
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
         if ($table_exists) {
             $results = $wpdb->get_results(
@@ -175,7 +175,7 @@ class FormSubmissionsProvider
         // Delete all transients with our prefix
         $wpdb->query(
             $wpdb->prepare(
-                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                "DELETE FROM " . $wpdb->options . " WHERE option_name LIKE %s",
                 $wpdb->esc_like('_transient_' . self::CACHE_PREFIX) . '%'
             )
         );

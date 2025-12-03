@@ -108,9 +108,7 @@ class DashboardRenderer
         <div class="sfx-dashboard-container">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
-            <?php if ($this->is_enabled('show_updates_section')): ?>
-                <?php $this->render_updates_section(); ?>
-            <?php endif; ?>
+            <?php $this->render_status_bar(); ?>
             <?php if ($this->is_enabled('show_stats_section')): ?>
                 <?php $this->render_stats_grid(); ?>
             <?php endif; ?>
@@ -155,6 +153,70 @@ class DashboardRenderer
             echo $GLOBALS['sfx_admin_notices'];
             echo '</div>';
         }
+    }
+
+    /**
+     * Render status bar (updates + site health)
+     *
+     * @return void
+     */
+    private function render_status_bar(): void
+    {
+        $show_updates = $this->is_enabled('show_updates_section');
+        $show_health = $this->is_enabled('show_site_health_section');
+
+        if (!$show_updates && !$show_health) {
+            return;
+        }
+
+        ?>
+        <div class="sfx-status-bar">
+            <?php if ($show_updates): ?>
+                <?php $this->render_updates_section(); ?>
+            <?php endif; ?>
+            <?php if ($show_health): ?>
+                <?php $this->render_site_health_section(); ?>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render site health section
+     *
+     * @return void
+     */
+    private function render_site_health_section(): void
+    {
+        $health = SystemInfoProvider::get_site_health_status();
+        
+        $status = $health['status']; // 'good', 'recommended', 'critical'
+        $icon = match($status) {
+            'critical' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>',
+            'recommended' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>',
+            default => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+        };
+
+        ?>
+        <div class="sfx-health-section sfx-health-<?php echo esc_attr($status); ?>">
+            <div class="sfx-health-status">
+                <span class="sfx-health-icon"><?php echo $this->render_icon($icon); ?></span>
+                <span class="sfx-health-text"><?php esc_html_e('Site Health', 'sfxtheme'); ?></span>
+            </div>
+            
+            <div class="sfx-health-details">
+                <span class="sfx-health-label"><?php echo esc_html($health['label']); ?></span>
+                <?php if ($health['issues'] > 0): ?>
+                    <span class="sfx-health-badge <?php echo $health['critical'] > 0 ? 'sfx-badge-critical' : 'sfx-badge-warning'; ?>"><?php echo esc_html($health['issues']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <a href="<?php echo esc_url(admin_url('site-health.php')); ?>" class="sfx-health-action">
+                <?php esc_html_e('View Details', 'sfxtheme'); ?>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            </a>
+        </div>
+        <?php
     }
 
     /**
@@ -412,35 +474,33 @@ class DashboardRenderer
      */
     private function render_quicklinks(): void
     {
-        $predefined = $this->get_option('predefined_quicklinks', Settings::get_default_quicklinks());
-        $custom = $this->get_option('custom_quicklinks', []);
+        $quicklinks_data = $this->get_option('quicklinks_sortable', []);
+        $all_quicklinks = Settings::get_ordered_quicklinks(is_array($quicklinks_data) ? $quicklinks_data : []);
 
-        // Filter enabled predefined links
-        $enabled_predefined = array_filter($predefined, function($link) {
-            return !empty($link['enabled']);
+        // Filter to only enabled links with valid title/url
+        $enabled_links = array_filter($all_quicklinks, function($link) {
+            return !empty($link['enabled']) && !empty($link['title']) && !empty($link['url']);
         });
 
-        // Add theme module quicklinks if enabled
-        $theme_quicklinks = $this->get_theme_module_quicklinks();
-
-        // Combine all links
-        $all_links = array_merge($enabled_predefined, $custom, $theme_quicklinks);
-
-        if (empty($all_links)) {
+        if (empty($enabled_links)) {
             return;
         }
+
+        $default_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
 
         ?>
         <section class="sfx-quicklinks-section">
             <h2 class="sfx-section-title"><?php esc_html_e('Quick Actions', 'sfxtheme'); ?></h2>
             <div class="sfx-quicklinks-grid">
-                <?php foreach ($all_links as $link): ?>
+                <?php foreach ($enabled_links as $link): ?>
                     <?php
-                    $url = $this->resolve_url($link['url']);
+                    $url = $this->resolve_url($link['url'] ?? '');
+                    $icon = $link['icon'] ?? $default_icon;
+                    $title = $link['title'] ?? '';
                     ?>
                     <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card">
-                        <span class="sfx-quicklink-icon"><?php echo $this->render_icon($link['icon']); ?></span>
-                        <span class="sfx-quicklink-text"><?php echo esc_html($link['title']); ?></span>
+                        <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
+                        <span class="sfx-quicklink-text"><?php echo esc_html($title); ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -551,17 +611,6 @@ class DashboardRenderer
             </div>
         </aside>
         <?php
-    }
-
-    /**
-     * Get quicklinks from theme modules (deprecated - now in predefined quicklinks)
-     *
-     * @return array<int, array<string, string>>
-     */
-    private function get_theme_module_quicklinks(): array
-    {
-        // These are now part of predefined quicklinks
-        return [];
     }
 
     /**

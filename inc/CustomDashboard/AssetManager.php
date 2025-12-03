@@ -102,8 +102,10 @@ class AssetManager
                 'strings' => [
                     'remove' => __('Remove', 'sfxtheme'),
                     'icon' => __('Icon', 'sfxtheme'),
-                    'title' => __('Link Title', 'sfxtheme'),
-                    'url' => __('URL or admin page', 'sfxtheme'),
+                    'title' => __('Title', 'sfxtheme'),
+                    'url' => __('URL', 'sfxtheme'),
+                    'custom' => __('Custom', 'sfxtheme'),
+                    'confirmRemove' => __('Are you sure you want to remove this custom link?', 'sfxtheme'),
                 ],
             ]);
         }
