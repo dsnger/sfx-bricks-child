@@ -683,7 +683,7 @@ class Controller
 
         // Use template_redirect hook which ONLY runs on frontend, never in admin
         add_action('template_redirect', function () {
-            // Double-check we're not in Bricks Builder context
+            // Skip if in Bricks Builder context
             if (function_exists('\bricks_is_builder') && \bricks_is_builder()) {
                 return;
             }
