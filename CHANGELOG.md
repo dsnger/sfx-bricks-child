@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.5] - 2025-12-04
+
+### Refactored
+
+- **WPOptimizer**: Simplified Controller code and improved Bricks Builder context checks
+
 ## [0.7.4] - 2025-12-03
 
 ### Fixed
