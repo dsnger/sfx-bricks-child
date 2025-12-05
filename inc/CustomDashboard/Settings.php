@@ -61,6 +61,8 @@ class Settings
                 'enable_custom_dashboard',
                 'dashboard_welcome_title',
                 'dashboard_welcome_subtitle',
+                'allow_sidebar_toggle',
+                'sidebar_default_state',
             ],
             'sections' => [
                 'show_updates_section',
@@ -576,6 +578,91 @@ CSS;
                 ],
             ];
         }
+        
+        // Add custom post types dynamically
+        $custom_post_types = get_post_types([
+            'public' => true,
+            '_builtin' => false,
+        ], 'objects');
+        
+        if (!empty($custom_post_types)) {
+            // Default icon for custom post types
+            $default_cpt_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>';
+            $add_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
+            $folder_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>';
+            $tag_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg>';
+            
+            foreach ($custom_post_types as $post_type) {
+                // Skip certain post types that might not be suitable
+                if (in_array($post_type->name, ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation'])) {
+                    continue;
+                }
+                
+                $cpt_items = [];
+                
+                // Add "All {post_type}" link
+                if ($post_type->name === 'post') {
+                    $cpt_items[] = [
+                        'url' => 'edit.php',
+                        'title' => sprintf(__('All %s', 'sfxtheme'), $post_type->labels->name),
+                        'icon' => $default_cpt_icon,
+                    ];
+                } else {
+                    $cpt_items[] = [
+                        'url' => 'edit.php?post_type=' . $post_type->name,
+                        'title' => sprintf(__('All %s', 'sfxtheme'), $post_type->labels->name),
+                        'icon' => $default_cpt_icon,
+                    ];
+                }
+                
+                // Add "Add New {post_type}" link
+                if ($post_type->name === 'post') {
+                    $cpt_items[] = [
+                        'url' => 'post-new.php',
+                        'title' => sprintf(__('Add New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                        'icon' => $add_icon,
+                    ];
+                } else {
+                    $cpt_items[] = [
+                        'url' => 'post-new.php?post_type=' . $post_type->name,
+                        'title' => sprintf(__('Add New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                        'icon' => $add_icon,
+                    ];
+                }
+                
+                // Add associated taxonomies
+                $taxonomies = get_object_taxonomies($post_type->name, 'objects');
+                foreach ($taxonomies as $taxonomy) {
+                    if (!$taxonomy->public || !$taxonomy->show_ui) {
+                        continue;
+                    }
+                    
+                    // Determine icon based on taxonomy type
+                    $tax_icon = $taxonomy->hierarchical ? $folder_icon : $tag_icon;
+                    
+                    // Build taxonomy URL
+                    if ($post_type->name === 'post') {
+                        $tax_url = 'edit-tags.php?taxonomy=' . $taxonomy->name;
+                    } else {
+                        $tax_url = 'edit-tags.php?taxonomy=' . $taxonomy->name . '&post_type=' . $post_type->name;
+                    }
+                    
+                    $cpt_items[] = [
+                        'url' => $tax_url,
+                        'title' => $taxonomy->labels->name,
+                        'icon' => $tax_icon,
+                    ];
+                }
+                
+                // Only add if there are items
+                if (!empty($cpt_items)) {
+                    $suggestions['cpt_' . $post_type->name] = [
+                        'label' => $post_type->labels->name,
+                        'items' => $cpt_items,
+                    ];
+                }
+            }
+        }
 
         return apply_filters('sfx_quicklink_url_suggestions', $suggestions);
     }
@@ -587,7 +674,7 @@ CSS;
      */
     public static function get_default_quicklinks(): array
     {
-        return [
+        $quicklinks = [
             [
                 'id' => 'new_post',
                 'title' => __('New Post', 'sfxtheme'),
@@ -612,6 +699,38 @@ CSS;
                 'enabled' => 1,
                 'roles' => [],
             ],
+        ];
+        
+        // Add custom post types to default quicklinks (limited to public types)
+        $custom_post_types = get_post_types([
+            'public' => true,
+            '_builtin' => false,
+            'show_in_menu' => true,
+        ], 'objects');
+        
+        if (!empty($custom_post_types)) {
+            $add_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
+            
+            foreach ($custom_post_types as $post_type) {
+                // Skip certain post types that might not be suitable for quick actions
+                if (in_array($post_type->name, ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation'])) {
+                    continue;
+                }
+                
+                // Add quicklink for this post type (capability check will happen at render time)
+                $quicklinks[] = [
+                    'id' => 'new_' . $post_type->name,
+                    'title' => sprintf(__('New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                    'url' => 'post-new.php?post_type=' . $post_type->name,
+                    'icon' => $add_icon,
+                    'enabled' => 1,
+                    'roles' => [],
+                ];
+            }
+        }
+        
+        // Add remaining default quicklinks
+        $quicklinks = array_merge($quicklinks, [
             [
                 'id' => 'themes',
                 'title' => __('Themes', 'sfxtheme'),
@@ -676,7 +795,9 @@ CSS;
                 'enabled' => 0,
                 'roles' => [],
             ],
-        ];
+        ]);
+        
+        return $quicklinks;
     }
 
     /**
@@ -764,6 +885,33 @@ CSS;
                 ];
             }
             
+            // Add any new predefined links that aren't in saved data to the first group
+            $all_saved_predefined_ids = [];
+            foreach ($groups as $group) {
+                foreach ($group['quicklinks'] as $link) {
+                    if (($link['type'] ?? '') === 'predefined') {
+                        $all_saved_predefined_ids[] = $link['id'];
+                    }
+                }
+            }
+            
+            // Find new predefined links
+            $new_predefined_links = [];
+            foreach ($predefined as $predef) {
+                if (!in_array($predef['id'], $all_saved_predefined_ids)) {
+                    $new_predefined_links[] = array_merge($predef, [
+                        'type' => 'predefined',
+                        'enabled' => !empty($predef['enabled']),
+                        'roles' => [],
+                    ]);
+                }
+            }
+            
+            // Add new links to the first group
+            if (!empty($new_predefined_links) && !empty($groups)) {
+                $groups[0]['quicklinks'] = array_merge($groups[0]['quicklinks'], $new_predefined_links);
+            }
+            
             return $groups;
         }
         
@@ -771,6 +919,22 @@ CSS;
         if (!empty($saved_data) && !isset($saved_data['groups'])) {
             // Old flat format - migrate to single group
             $quicklinks = self::get_ordered_quicklinks($saved_data);
+            
+            // Sanitize roles in each quicklink during migration
+            $available_roles = array_keys(self::get_available_roles());
+            foreach ($quicklinks as &$quicklink) {
+                $sanitized_roles = [];
+                if (!empty($quicklink['roles']) && is_array($quicklink['roles'])) {
+                    foreach ($quicklink['roles'] as $role) {
+                        $sanitized_role = sanitize_key($role);
+                        if ($sanitized_role === 'all' || in_array($sanitized_role, $available_roles)) {
+                            $sanitized_roles[] = $sanitized_role;
+                        }
+                    }
+                }
+                $quicklink['roles'] = $sanitized_roles;
+            }
+            unset($quicklink); // Break reference
             
             return [
                 [
@@ -814,6 +978,24 @@ CSS;
                 'description' => __('The subtitle text displayed below the title. Available placeholders: {user_name}, {first_name}, {last_name}, {username}', 'sfxtheme'),
                 'type' => 'text',
                 'default' => __("Here's what's happening with your projects today.", 'sfxtheme'),
+            ],
+            [
+                'id' => 'allow_sidebar_toggle',
+                'label' => __('Allow Sidebar Toggle', 'sfxtheme'),
+                'description' => __('Show a toggle button to collapse/expand the admin menu sidebar as an offcanvas.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'sidebar_default_state',
+                'label' => __('Sidebar Default State', 'sfxtheme'),
+                'description' => __('Choose whether the admin sidebar is visible or collapsed by default.', 'sfxtheme'),
+                'type' => 'select',
+                'default' => 'visible',
+                'options' => [
+                    'visible' => __('Visible', 'sfxtheme'),
+                    'collapsed' => __('Collapsed', 'sfxtheme'),
+                ],
             ],
             [
                 'id' => 'show_updates_section',
@@ -2408,6 +2590,8 @@ CSS;
                         $output[$id] = 3;
                     } elseif ($id === 'form_submissions_limit') {
                         $output[$id] = min(max($output[$id], 1), 20);
+                    } elseif ($id === 'contact_logo_height') {
+                        $output[$id] = min(max($output[$id], 20), 200);
                     }
                     break;
 

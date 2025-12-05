@@ -10,11 +10,62 @@
 /* Full Page Background - applied via body class */
 body.index-php #wpcontent {
     background: hsl(var(--background));
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, margin-left 0.3s ease;
 }
 
 body.index-php #wpbody-content {
     padding-bottom: 0;
+}
+
+/* ========================================
+   Sidebar Offcanvas Toggle
+   ======================================== */
+
+/* Sidebar transition for smooth animation */
+body.index-php #adminmenuback,
+body.index-php #adminmenuwrap {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Collapsed sidebar state */
+body.index-php.sfx-sidebar-collapsed #adminmenuback,
+body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.index-php.sfx-sidebar-collapsed #wpcontent,
+body.index-php.sfx-sidebar-collapsed #wpfooter {
+    margin-left: 0;
+}
+
+/* Prevent layout shift during transition */
+body.index-php.sfx-sidebar-transitioning #wpcontent,
+body.index-php.sfx-sidebar-transitioning #wpfooter {
+    transition: margin-left 0.3s ease;
+}
+
+/* Folded menu support */
+body.index-php.folded.sfx-sidebar-collapsed #wpcontent,
+body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
+    margin-left: 0;
+}
+
+/* Auto-fold menu support */
+@media screen and (max-width: 960px) {
+    body.index-php.auto-fold.sfx-sidebar-collapsed #wpcontent,
+    body.index-php.auto-fold.sfx-sidebar-collapsed #wpfooter {
+        margin-left: 0;
+    }
+}
+
+/* Mobile responsive - hide admin menu completely when collapsed */
+@media screen and (max-width: 782px) {
+    body.index-php.sfx-sidebar-collapsed #adminmenuback,
+    body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
+        display: none;
+    }
 }
 
 /* Root wrapper */
@@ -294,17 +345,17 @@ body.index-php #wpbody-content {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: hsl(var(--muted));
+    background: hsl(var(--warning) / 0.15);
     border-radius: 20px;
     text-decoration: none;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--warning));
     font-size: 13px;
     transition: background 0.2s;
 }
 
 .sfx-update-item:hover {
-    background: hsl(var(--muted) / 0.8);
-    color: hsl(var(--foreground));
+    background: hsl(var(--warning) / 0.25);
+    color: hsl(var(--warning));
 }
 
 .sfx-update-item.sfx-update-critical {
@@ -410,11 +461,19 @@ body.index-php #wpbody-content {
     color: inherit;
 }
 
-/* Theme Toggle */
-.sfx-theme-toggle-wrapper {
+/* Welcome Toggles Container */
+.sfx-welcome-toggles {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Theme Toggle */
+.sfx-theme-toggle-wrapper {
+    display: flex;
 }
 
 .sfx-theme-toggle {
@@ -459,6 +518,52 @@ body.index-php #wpbody-content {
 }
 
 .sfx-dashboard-container[data-theme="system"] .sfx-theme-icon-system {
+    display: block;
+}
+
+/* Sidebar Toggle Button */
+.sfx-sidebar-toggle-wrapper {
+    display: flex;
+}
+
+.sfx-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: hsl(var(--primary-foreground) / 0.15);
+    border: 1px solid hsl(var(--primary-foreground) / 0.2);
+    border-radius: 50%;
+    color: hsl(var(--primary-foreground));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.sfx-sidebar-toggle:hover {
+    background: hsl(var(--primary-foreground) / 0.25);
+    transform: scale(1.05);
+}
+
+.sfx-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+.sfx-sidebar-icon {
+    width: 20px;
+    height: 20px;
+    display: none;
+}
+
+/* Show hamburger icon when sidebar is collapsed (to open it) */
+body.sfx-sidebar-collapsed .sfx-sidebar-icon-open {
+    display: block;
+}
+
+/* Show close icon when sidebar is visible (to close it) */
+body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: block;
 }
 
@@ -1060,11 +1165,18 @@ body.index-php #wpbody-content {
         font-size: 1em;
     }
     
-    .sfx-theme-toggle-wrapper {
+    .sfx-welcome-toggles {
         position: relative;
         top: 0;
         right: 0;
         margin-top: 15px;
+        justify-content: center;
+    }
+    
+    /* Adjust welcome section for mobile with toggles */
+    .sfx-welcome-section {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .sfx-quicklinks-grid {
@@ -1224,4 +1336,12 @@ body.index-php #wpbody-content {
 .sfx-theme-transitioning,
 .sfx-theme-transitioning * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Sidebar transition effect */
+.sfx-sidebar-transitioning #adminmenuback,
+.sfx-sidebar-transitioning #adminmenuwrap,
+.sfx-sidebar-transitioning #wpcontent,
+.sfx-sidebar-transitioning #wpfooter {
+    transition: transform 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease !important;
 }

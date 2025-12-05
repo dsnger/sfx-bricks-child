@@ -137,7 +137,7 @@ class AssetManager
                     'confirmRemoveGroup' => __('Are you sure you want to remove this group and all its links?', 'sfxtheme'),
                     'collapseExpand' => __('Collapse/Expand', 'sfxtheme'),
                     // Validation messages
-                    'errorTitleOrUrl' => __('Title or URL is required', 'sfxtheme'),
+                    'errorTitleAndUrl' => __('Both title and URL are required', 'sfxtheme'),
                     'errorTitleTooLong' => __('Title is too long (max 100 characters)', 'sfxtheme'),
                     'errorInvalidUrl' => __('Invalid URL protocol', 'sfxtheme'),
                     'errorInvalidSvg' => __('Invalid SVG (must include <svg> tags)', 'sfxtheme'),

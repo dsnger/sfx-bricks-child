@@ -638,6 +638,12 @@ input[type="color"] {
     flex-shrink: 0;
 }
 
+.button.sfx-toggle-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .sfx-toggle-group,
 .sfx-remove-group {
     padding: 4px 8px !important;

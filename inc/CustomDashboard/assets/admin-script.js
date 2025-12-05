@@ -554,12 +554,12 @@
         var url = $urlInput.val().trim();
         var icon = $iconInput.val().trim();
         
-        // Title validation
-        if (!title && !url) {
+        // Title and URL validation - both are required for a quicklink
+        if (!title || !url) {
             result.valid = false;
             result.errors.push({
-                field: 'title',
-                message: sfxDashboardAdmin.strings.errorTitleOrUrl || 'Title or URL is required'
+                field: !title ? 'title' : 'url',
+                message: sfxDashboardAdmin.strings.errorTitleAndUrl || 'Both title and URL are required'
             });
         }
         
@@ -1043,11 +1043,11 @@
                 '<div id="sfx-url-suggestions-modal" class="sfx-modal-overlay" style="display: none;">' +
                     '<div class="sfx-modal-container">' +
                         '<div class="sfx-modal-header">' +
-                            '<h3 class="sfx-modal-title">' + (strings.selectLink || 'Select a WordPress Link') + '</h3>' +
-                            '<button type="button" class="sfx-modal-close" aria-label="' + (strings.close || 'Close') + '">&times;</button>' +
+                            '<h3 class="sfx-modal-title">' + escapeHtml(strings.selectLink || 'Select a WordPress Link') + '</h3>' +
+                            '<button type="button" class="sfx-modal-close" aria-label="' + escapeAttr(strings.close || 'Close') + '">&times;</button>' +
                         '</div>' +
                         '<div class="sfx-modal-search">' +
-                            '<input type="text" class="sfx-modal-search-input" placeholder="' + (strings.searchLinks || 'Search links...') + '" />' +
+                            '<input type="text" class="sfx-modal-search-input" placeholder="' + escapeAttr(strings.searchLinks || 'Search links...') + '" />' +
                         '</div>' +
                         '<div class="sfx-modal-body">' +
                             '<div class="sfx-suggestions-grid">' + categoriesHtml + '</div>' +

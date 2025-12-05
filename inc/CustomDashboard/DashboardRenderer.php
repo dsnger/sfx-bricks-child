@@ -107,9 +107,13 @@ class DashboardRenderer
         $color_mode_default = $this->get_option('color_mode_default', 'light');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
 
+        // Get sidebar toggle settings
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
+        $sidebar_default_state = $this->get_option('sidebar_default_state', 'visible');
+
         ?>
         <!-- SFX Custom Dashboard -->
-        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>">
+        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
             <?php $this->render_status_bar(); ?>
@@ -307,6 +311,7 @@ class DashboardRenderer
         $subtitle = $this->get_option('dashboard_welcome_subtitle', __("Here's what's happening with your projects today.", 'sfxtheme'));
         $logo = $this->get_option('brand_logo', '');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
         
         // Replace placeholders with dynamic values
         $current_user = wp_get_current_user();
@@ -324,10 +329,40 @@ class DashboardRenderer
                 <h2 class="sfx-welcome-title"><?php echo esc_html($title); ?></h2>
                 <p class="sfx-welcome-subtitle"><?php echo esc_html($subtitle); ?></p>
             </div>
-            <?php if ($allow_mode_switch): ?>
-                <?php $this->render_theme_toggle(); ?>
+            <?php if ($allow_sidebar_toggle || $allow_mode_switch): ?>
+                <div class="sfx-welcome-toggles">
+                    <?php if ($allow_sidebar_toggle): ?>
+                        <?php $this->render_sidebar_toggle(); ?>
+                    <?php endif; ?>
+                    <?php if ($allow_mode_switch): ?>
+                        <?php $this->render_theme_toggle(); ?>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </section>
+        <?php
+    }
+
+    /**
+     * Render sidebar toggle button
+     *
+     * @return void
+     */
+    private function render_sidebar_toggle(): void
+    {
+        ?>
+        <div class="sfx-sidebar-toggle-wrapper">
+            <button type="button" class="sfx-sidebar-toggle" id="sfx-sidebar-toggle" aria-label="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>" title="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>">
+                <!-- Hamburger icon (shown when sidebar is collapsed) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                <!-- Close icon (shown when sidebar is visible) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
         <?php
     }
 
