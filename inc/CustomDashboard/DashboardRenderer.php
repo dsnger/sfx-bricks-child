@@ -526,7 +526,7 @@ class DashboardRenderer
             return false;
         }
 
-        $user_roles = $current_user->roles;
+        $user_roles = (array) ($current_user->roles ?? []);
         
         // Check if user has at least one of the allowed roles
         return !empty(array_intersect($roles, $user_roles));
@@ -553,7 +553,7 @@ class DashboardRenderer
             return false;
         }
 
-        $user_roles = $current_user->roles;
+        $user_roles = (array) ($current_user->roles ?? []);
         
         // Check if user has at least one of the allowed roles
         return !empty(array_intersect($roles, $user_roles));
@@ -629,7 +629,7 @@ class DashboardRenderer
                     <div class="sfx-quicklinks-grid">
                         <?php foreach ($enabled_links as $link): 
                             $url = $this->resolve_url($link['url'] ?? '');
-                            $icon = $link['icon'] ?? $default_icon;
+                            $icon = !empty($link['icon']) ? $link['icon'] : $default_icon;
                             $title = $link['title'] ?? '';
                             $roles = $link['roles'] ?? [];
                             $has_role_restriction = !empty($roles) && !in_array('all', $roles);
@@ -692,14 +692,15 @@ class DashboardRenderer
         $phone = $this->get_option('contact_phone', '');
         $website = $this->get_option('contact_website', '');
         $address = $this->get_option('contact_address', '');
-        $logo = $this->get_option('brand_logo', '');
+        $logo = $this->get_option('contact_logo', '');
+        $logo_height = absint($this->get_option('contact_logo_height', 48));
 
         ?>
         <aside class="sfx-info-section">
             <div class="sfx-info-card sfx-contact-info">
                 <?php if (!empty($logo)): ?>
                     <div class="sfx-contact-logo">
-                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" />
+                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" style="height: <?php echo esc_attr($logo_height); ?>px; width: auto;" />
                     </div>
                 <?php endif; ?>
                 <h2 class="sfx-section-title"><?php echo esc_html($card_title); ?></h2>

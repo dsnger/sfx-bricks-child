@@ -112,6 +112,7 @@ class AssetManager
                 'optionName' => Settings::$option_name,
                 'defaultIcon' => Settings::DEFAULT_CUSTOM_ICON,
                 'availableRoles' => Settings::get_available_roles(),
+                'urlSuggestions' => Settings::get_wordpress_url_suggestions(),
                 'strings' => [
                     // General
                     'remove' => __('Remove', 'sfxtheme'),
@@ -140,6 +141,11 @@ class AssetManager
                     'errorTitleTooLong' => __('Title is too long (max 100 characters)', 'sfxtheme'),
                     'errorInvalidUrl' => __('Invalid URL protocol', 'sfxtheme'),
                     'errorInvalidSvg' => __('Invalid SVG (must include <svg> tags)', 'sfxtheme'),
+                    // URL Suggestions Modal
+                    'selectLink' => __('Select a WordPress Link', 'sfxtheme'),
+                    'searchLinks' => __('Search links...', 'sfxtheme'),
+                    'browseLinks' => __('Browse WordPress Links', 'sfxtheme'),
+                    'close' => __('Close', 'sfxtheme'),
                 ],
             ]);
         }

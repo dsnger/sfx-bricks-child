@@ -8,6 +8,24 @@
     'use strict';
 
     /**
+     * Escape HTML special characters for safe insertion
+     */
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Escape text for use in HTML attributes
+     */
+    function escapeAttr(text) {
+        if (typeof text !== 'string') return '';
+        return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
      * Initialize sortable quicklink groups
      */
     function initQuicklinkGroupsSortable() {
@@ -92,8 +110,8 @@
         $('#sfx-quicklink-groups-sortable .sfx-quicklink-group').each(function(groupIndex) {
             var $group = $(this);
             
-            // Update group inputs
-            $group.find('> .sfx-quicklink-group-header input').each(function() {
+            // Update group inputs (including nested role checkboxes)
+            $group.find('.sfx-quicklink-group-header input').each(function() {
                 var $input = $(this);
                 var name = $input.attr('name');
                 if (name) {
@@ -133,12 +151,12 @@
             var strings = sfxDashboardAdmin.strings || {};
             var availableRoles = sfxDashboardAdmin.availableRoles || {};
             
-            // Build role checkboxes HTML
+            // Build role checkboxes HTML (escape role names for XSS prevention)
             var rolesHtml = '';
             $.each(availableRoles, function(roleSlug, roleName) {
                 rolesHtml += '<label class="sfx-role-checkbox">' +
-                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
-                    '<span>' + roleName + '</span>' +
+                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="' + escapeAttr(roleSlug) + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<span>' + escapeHtml(roleName) + '</span>' +
                 '</label>';
             });
             
@@ -258,12 +276,12 @@
             
             var namePrefix = optionName + '[quicklinks_sortable][groups][' + groupIndex + '][quicklinks][' + linkIndex + ']';
             
-            // Build role checkboxes HTML
+            // Build role checkboxes HTML (escape role names for XSS prevention)
             var rolesHtml = '';
             $.each(availableRoles, function(roleSlug, roleName) {
                 rolesHtml += '<label class="sfx-role-checkbox">' +
-                    '<input type="checkbox" name="' + namePrefix + '[roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
-                    '<span>' + roleName + '</span>' +
+                    '<input type="checkbox" name="' + namePrefix + '[roles][]" value="' + escapeAttr(roleSlug) + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<span>' + escapeHtml(roleName) + '</span>' +
                 '</label>';
             });
             
@@ -309,7 +327,12 @@
                             '</div>' +
                             '<div class="sfx-edit-field">' +
                                 '<label>' + (strings.url || 'URL') + '</label>' +
-                                '<input type="text" name="' + namePrefix + '[url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
+                                '<div class="sfx-url-field-wrapper">' +
+                                    '<input type="text" name="' + namePrefix + '[url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
+                                    '<button type="button" class="sfx-browse-url-button" title="' + (strings.browseLinks || 'Browse WordPress Links') + '">' +
+                                        '<span class="dashicons dashicons-search"></span>' +
+                                    '</button>' +
+                                '</div>' +
                             '</div>' +
                             '<div class="sfx-edit-field sfx-edit-field-full">' +
                                 '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
@@ -980,6 +1003,196 @@
     }
 
     /**
+     * Initialize URL Suggestions Modal
+     */
+    function initUrlSuggestionsModal() {
+        var $modal = null;
+        var $currentItem = null;
+        var suggestions = sfxDashboardAdmin.urlSuggestions || {};
+        var strings = sfxDashboardAdmin.strings || {};
+        
+        // Create modal HTML if not exists
+        function createModal() {
+            if ($('#sfx-url-suggestions-modal').length) {
+                return $('#sfx-url-suggestions-modal');
+            }
+            
+            var categoriesHtml = '';
+            $.each(suggestions, function(categoryKey, category) {
+                if (!category.items || category.items.length === 0) {
+                    return; // skip empty categories
+                }
+                
+                var itemsHtml = '';
+                $.each(category.items, function(i, item) {
+                    itemsHtml += 
+                        '<div class="sfx-suggestion-item" data-url="' + escapeAttr(item.url) + '" data-title="' + escapeAttr(item.title) + '" data-icon="' + escapeAttr(item.icon) + '">' +
+                            '<span class="sfx-suggestion-icon">' + item.icon + '</span>' +
+                            '<span class="sfx-suggestion-title">' + escapeHtml(item.title) + '</span>' +
+                        '</div>';
+                });
+                
+                categoriesHtml += 
+                    '<div class="sfx-suggestion-category" data-category="' + categoryKey + '">' +
+                        '<h4 class="sfx-suggestion-category-title">' + escapeHtml(category.label) + '</h4>' +
+                        '<div class="sfx-suggestion-items">' + itemsHtml + '</div>' +
+                    '</div>';
+            });
+            
+            var modalHtml = 
+                '<div id="sfx-url-suggestions-modal" class="sfx-modal-overlay" style="display: none;">' +
+                    '<div class="sfx-modal-container">' +
+                        '<div class="sfx-modal-header">' +
+                            '<h3 class="sfx-modal-title">' + (strings.selectLink || 'Select a WordPress Link') + '</h3>' +
+                            '<button type="button" class="sfx-modal-close" aria-label="' + (strings.close || 'Close') + '">&times;</button>' +
+                        '</div>' +
+                        '<div class="sfx-modal-search">' +
+                            '<input type="text" class="sfx-modal-search-input" placeholder="' + (strings.searchLinks || 'Search links...') + '" />' +
+                        '</div>' +
+                        '<div class="sfx-modal-body">' +
+                            '<div class="sfx-suggestions-grid">' + categoriesHtml + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            
+            $('body').append(modalHtml);
+            return $('#sfx-url-suggestions-modal');
+        }
+        
+        // Note: escapeHtml and escapeAttr functions are defined globally at the top of this file
+        
+        // Open modal
+        function openModal($item) {
+            $modal = createModal();
+            $currentItem = $item;
+            
+            // Clear search
+            $modal.find('.sfx-modal-search-input').val('');
+            $modal.find('.sfx-suggestion-item, .sfx-suggestion-category').show();
+            
+            // Show modal with animation
+            $modal.fadeIn(200);
+            $modal.find('.sfx-modal-search-input').focus();
+            
+            // Prevent body scroll
+            $('body').addClass('sfx-modal-open');
+        }
+        
+        // Close modal
+        function closeModal() {
+            if ($modal) {
+                $modal.fadeOut(200);
+                $('body').removeClass('sfx-modal-open');
+            }
+            $currentItem = null;
+        }
+        
+        // Select suggestion
+        function selectSuggestion($suggestion) {
+            if (!$currentItem) {
+                return;
+            }
+            
+            var url = $suggestion.data('url');
+            var title = $suggestion.data('title');
+            var icon = $suggestion.data('icon');
+            
+            // Fill the form fields
+            var $titleInput = $currentItem.find('.sfx-quicklink-title-input');
+            var $urlInput = $currentItem.find('.sfx-quicklink-url-input');
+            var $iconInput = $currentItem.find('.sfx-quicklink-icon-input');
+            
+            $titleInput.val(title).trigger('input');
+            $urlInput.val(url).trigger('input');
+            $iconInput.val(icon).trigger('input');
+            
+            // Update preview
+            $currentItem.find('.sfx-quicklink-title-display').text(title);
+            $currentItem.find('.sfx-quicklink-url-display').text(url);
+            $currentItem.find('.sfx-quicklink-icon-preview').html(icon);
+            
+            closeModal();
+        }
+        
+        // Filter suggestions by search
+        function filterSuggestions(searchTerm) {
+            if (!$modal) return;
+            
+            searchTerm = searchTerm.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                $modal.find('.sfx-suggestion-item, .sfx-suggestion-category').show();
+                return;
+            }
+            
+            $modal.find('.sfx-suggestion-category').each(function() {
+                var $category = $(this);
+                var hasVisibleItems = false;
+                
+                $category.find('.sfx-suggestion-item').each(function() {
+                    var $item = $(this);
+                    var title = $item.data('title').toLowerCase();
+                    var url = $item.data('url').toLowerCase();
+                    
+                    if (title.indexOf(searchTerm) !== -1 || url.indexOf(searchTerm) !== -1) {
+                        $item.show();
+                        hasVisibleItems = true;
+                    } else {
+                        $item.hide();
+                    }
+                });
+                
+                // Hide category if no items match
+                if (hasVisibleItems) {
+                    $category.show();
+                } else {
+                    $category.hide();
+                }
+            });
+        }
+        
+        // Event handlers
+        
+        // Open modal on browse button click
+        $(document).on('click', '.sfx-browse-url-button', function(e) {
+            e.preventDefault();
+            var $item = $(this).closest('.sfx-quicklink-item');
+            openModal($item);
+        });
+        
+        // Close modal on overlay click
+        $(document).on('click', '.sfx-modal-overlay', function(e) {
+            if ($(e.target).hasClass('sfx-modal-overlay')) {
+                closeModal();
+            }
+        });
+        
+        // Close modal on close button click
+        $(document).on('click', '.sfx-modal-close', function(e) {
+            e.preventDefault();
+            closeModal();
+        });
+        
+        // Close modal on escape key
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $modal && $modal.is(':visible')) {
+                closeModal();
+            }
+        });
+        
+        // Select suggestion on click
+        $(document).on('click', '.sfx-suggestion-item', function(e) {
+            e.preventDefault();
+            selectSuggestion($(this));
+        });
+        
+        // Search filter
+        $(document).on('input', '.sfx-modal-search-input', function() {
+            filterSuggestions($(this).val());
+        });
+    }
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function() {
@@ -994,6 +1207,7 @@
         initQuicklinkIconPreview();
         initResetButtons();
         initRoleSelectors();
+        initUrlSuggestionsModal();
         
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {
