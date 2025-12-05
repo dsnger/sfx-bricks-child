@@ -506,6 +506,33 @@ class DashboardRenderer
     }
 
     /**
+     * Check if current user can see a quicklink based on role restrictions
+     *
+     * @param array<string, mixed> $link The quicklink data
+     * @return bool
+     */
+    private function user_can_see_quicklink(array $link): bool
+    {
+        $roles = $link['roles'] ?? [];
+
+        // If no roles specified or 'all' is selected, show to everyone
+        if (empty($roles) || in_array('all', $roles)) {
+            return true;
+        }
+
+        // Get current user's roles
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->exists()) {
+            return false;
+        }
+
+        $user_roles = $current_user->roles;
+        
+        // Check if user has at least one of the allowed roles
+        return !empty(array_intersect($roles, $user_roles));
+    }
+
+    /**
      * Render quicklinks section
      *
      * @return void
@@ -515,9 +542,12 @@ class DashboardRenderer
         $quicklinks_data = $this->get_option('quicklinks_sortable', []);
         $all_quicklinks = Settings::get_ordered_quicklinks(is_array($quicklinks_data) ? $quicklinks_data : []);
 
-        // Filter to only enabled links with valid title/url
+        // Filter to only enabled links with valid title/url and user has permission
         $enabled_links = array_filter($all_quicklinks, function($link) {
-            return !empty($link['enabled']) && !empty($link['title']) && !empty($link['url']);
+            return !empty($link['enabled']) 
+                && !empty($link['title']) 
+                && !empty($link['url'])
+                && $this->user_can_see_quicklink($link);
         });
 
         if (empty($enabled_links)) {
@@ -530,15 +560,29 @@ class DashboardRenderer
         <section class="sfx-quicklinks-section">
             <h2 class="sfx-section-title"><?php esc_html_e('Quick Actions', 'sfxtheme'); ?></h2>
             <div class="sfx-quicklinks-grid">
-                <?php foreach ($enabled_links as $link): ?>
-                    <?php
+                <?php foreach ($enabled_links as $link): 
                     $url = $this->resolve_url($link['url'] ?? '');
                     $icon = $link['icon'] ?? $default_icon;
                     $title = $link['title'] ?? '';
+                    $roles = $link['roles'] ?? [];
+                    $has_role_restriction = !empty($roles) && !in_array('all', $roles);
+                    $role_badges = '';
+                    
+                    // Show role badges only to admins for restricted links
+                    if ($has_role_restriction && current_user_can('manage_options')) {
+                        $available_roles = Settings::get_available_roles();
+                        $role_badges = '<div class="sfx-quicklink-role-badges">';
+                        foreach ($roles as $role_slug) {
+                            $role_name = $available_roles[$role_slug] ?? $role_slug;
+                            $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
+                        }
+                        $role_badges .= '</div>';
+                    }
                     ?>
-                    <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card">
+                    <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
+                        <?php echo $role_badges; ?>
                         <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
-                        <span class="sfx-quicklink-text"><?php echo esc_html($title); ?></span>
+                        <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>

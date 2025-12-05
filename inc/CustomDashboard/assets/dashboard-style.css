@@ -598,6 +598,7 @@ body.index-php #wpbody-content {
 }
 
 .sfx-quicklink-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -653,6 +654,41 @@ body.index-php #wpbody-content {
     font-weight: 500;
     color: var(--card-text-color, hsl(var(--secondary-foreground)));
     transition: color 0.2s ease;
+}
+
+/* Role-restricted quicklink badges (visible to admins only) */
+.sfx-quicklink-role-badges {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    left: auto !important;
+    bottom: auto !important;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: flex-end;
+    max-width: 80%;
+    z-index: 10;
+}
+
+.sfx-quicklink-role-badge {
+    display: inline-block !important;
+    padding: 2px 5px !important;
+    font-size: 8px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px;
+    color: #fff !important;
+    background: rgba(59, 130, 246, 0.85) !important;
+    border-radius: 3px !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sfx-quicklink-card:hover .sfx-quicklink-role-badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #fff !important;
 }
 
 /* Info/Contact Section */

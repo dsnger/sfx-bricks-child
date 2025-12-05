@@ -111,13 +111,27 @@ class AssetManager
             wp_localize_script('sfx-custom-dashboard-admin', 'sfxDashboardAdmin', [
                 'optionName' => Settings::$option_name,
                 'defaultIcon' => Settings::DEFAULT_CUSTOM_ICON,
+                'availableRoles' => Settings::get_available_roles(),
                 'strings' => [
                     'remove' => __('Remove', 'sfxtheme'),
+                    'edit' => __('Edit', 'sfxtheme'),
                     'icon' => __('Icon', 'sfxtheme'),
                     'title' => __('Title', 'sfxtheme'),
                     'url' => __('URL', 'sfxtheme'),
                     'custom' => __('Custom', 'sfxtheme'),
+                    'untitled' => __('Untitled', 'sfxtheme'),
+                    'linkTitle' => __('Link Title', 'sfxtheme'),
+                    'svgIcon' => __('SVG Icon', 'sfxtheme'),
+                    'done' => __('Done', 'sfxtheme'),
                     'confirmRemove' => __('Are you sure you want to remove this custom link?', 'sfxtheme'),
+                    'allRoles' => __('All Roles', 'sfxtheme'),
+                    'oneRole' => __('1 Role', 'sfxtheme'),
+                    'roles' => __('Roles', 'sfxtheme'),
+                    // Validation messages
+                    'errorTitleOrUrl' => __('Title or URL is required', 'sfxtheme'),
+                    'errorTitleTooLong' => __('Title is too long (max 100 characters)', 'sfxtheme'),
+                    'errorInvalidUrl' => __('Invalid URL protocol', 'sfxtheme'),
+                    'errorInvalidSvg' => __('Invalid SVG (must include <svg> tags)', 'sfxtheme'),
                 ],
             ]);
         }
