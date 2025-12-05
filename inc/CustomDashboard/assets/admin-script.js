@@ -8,12 +8,12 @@
     'use strict';
 
     /**
-     * Initialize sortable quicklinks
+     * Initialize sortable quicklink groups
      */
-    function initQuicklinksSortable() {
-        var $sortable = $('#sfx-quicklinks-sortable');
+    function initQuicklinkGroupsSortable() {
+        var $groupsContainer = $('#sfx-quicklink-groups-sortable');
         
-        if (!$sortable.length) {
+        if (!$groupsContainer.length) {
             return;
         }
         
@@ -25,137 +25,304 @@
         
         // Destroy existing sortable if it exists
         try {
-            if ($sortable.data('ui-sortable')) {
-                $sortable.sortable('destroy');
+            if ($groupsContainer.data('ui-sortable')) {
+                $groupsContainer.sortable('destroy');
             }
         } catch(e) {}
         
-        // Initialize sortable
-        $sortable.sortable({
-            items: '> li.sfx-quicklink-item',
-            placeholder: 'sfx-quicklink-placeholder',
+        // Initialize groups sortable
+        $groupsContainer.sortable({
+            items: '> .sfx-quicklink-group',
+            placeholder: 'sfx-quicklink-group-placeholder',
             axis: 'y',
             cursor: 'move',
             opacity: 0.8,
             revert: 150,
-            handle: '.sfx-quicklink-drag-handle',
+            handle: '.sfx-group-drag-handle',
             update: function(event, ui) {
-                updateQuicklinksIndices();
+                updateAllIndices();
             }
         });
+        
+        // Initialize quicklinks sortable within each group with cross-group support
+        initQuicklinksSortableInGroups();
     }
 
     /**
-     * Update quicklinks item indices after reorder
+     * Initialize sortable quicklinks within groups with cross-group dragging
      */
-    function updateQuicklinksIndices() {
-        $('#sfx-quicklinks-sortable .sfx-quicklink-item').each(function(index) {
-            var $item = $(this);
-            $item.find('input, textarea').each(function() {
-                var $input = $(this);
-                var name = $input.attr('name');
-                if (name) {
-                    // Replace the index number in quicklinks_sortable[X]
-                    name = name.replace(/\[quicklinks_sortable\]\[\d+\]/, '[quicklinks_sortable][' + index + ']');
-                    $input.attr('name', name);
+    function initQuicklinksSortableInGroups() {
+        var $sortables = $('.sfx-quicklinks-sortable');
+        
+        $sortables.each(function() {
+            var $sortable = $(this);
+            
+            // Destroy existing sortable if it exists
+            try {
+                if ($sortable.data('ui-sortable')) {
+                    $sortable.sortable('destroy');
+                }
+            } catch(e) {}
+            
+            // Initialize sortable with connectWith for cross-group dragging
+            $sortable.sortable({
+                items: '> li.sfx-quicklink-item',
+                placeholder: 'sfx-quicklink-placeholder',
+                connectWith: '.sfx-quicklinks-sortable',
+                cursor: 'move',
+                opacity: 0.8,
+                revert: 150,
+                handle: '.sfx-quicklink-drag-handle',
+                update: function(event, ui) {
+                    // Only update indices if this is the receiving list
+                    if (this === ui.item.parent()[0]) {
+                        updateAllIndices();
+                    }
                 }
             });
         });
     }
 
     /**
-     * Initialize add custom quicklink button
+     * Update all indices for groups and quicklinks
      */
-    function initAddCustomQuicklink() {
-        var $addButton = $('#sfx-add-custom-quicklink');
-        var $sortable = $('#sfx-quicklinks-sortable');
-        
-        if (!$addButton.length || !$sortable.length) {
-            return;
-        }
-
+    function updateAllIndices() {
         var optionName = sfxDashboardAdmin.optionName;
-        var strings = sfxDashboardAdmin.strings;
-        var availableRoles = sfxDashboardAdmin.availableRoles || {};
-        var defaultSvgIcon = sfxDashboardAdmin.defaultIcon || '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
+        
+        $('#sfx-quicklink-groups-sortable .sfx-quicklink-group').each(function(groupIndex) {
+            var $group = $(this);
+            
+            // Update group inputs
+            $group.find('> .sfx-quicklink-group-header input').each(function() {
+                var $input = $(this);
+                var name = $input.attr('name');
+                if (name) {
+                    name = name.replace(/\[groups\]\[\d+\]/, '[groups][' + groupIndex + ']');
+                    $input.attr('name', name);
+                }
+            });
+            
+            // Update quicklinks within this group
+            $group.find('.sfx-quicklinks-sortable').attr('data-group-index', groupIndex);
+            $group.find('.sfx-quicklinks-sortable .sfx-quicklink-item').each(function(linkIndex) {
+                var $item = $(this);
+                $item.find('input, textarea').each(function() {
+                    var $input = $(this);
+                    var name = $input.attr('name');
+                    if (name) {
+                        // Replace both group and quicklink indices
+                        name = name.replace(/\[groups\]\[\d+\]\[quicklinks\]\[\d+\]/, '[groups][' + groupIndex + '][quicklinks][' + linkIndex + ']');
+                        $input.attr('name', name);
+                    }
+                });
+            });
+        });
+    }
 
-        $addButton.on('click', function(e) {
+    /**
+     * Initialize add group button
+     */
+    function initAddGroup() {
+        $(document).on('click', '#sfx-add-quicklink-group', function(e) {
             e.preventDefault();
             
-            var newIndex = $sortable.find('.sfx-quicklink-item').length;
-            var newId = 'custom_' + Date.now();
-            
-            var $newItem = $('<li>', {
-                class: 'sfx-quicklink-item sfx-quicklink-item-custom sfx-quicklink-item-new is-editing',
-                'data-id': newId,
-                'data-type': 'custom'
-            });
+            var $container = $('#sfx-quicklink-groups-sortable');
+            var groupIndex = $container.find('.sfx-quicklink-group').length;
+            var newGroupId = 'group_' + Date.now();
+            var optionName = sfxDashboardAdmin.optionName;
+            var strings = sfxDashboardAdmin.strings || {};
+            var availableRoles = sfxDashboardAdmin.availableRoles || {};
             
             // Build role checkboxes HTML
             var rolesHtml = '';
             $.each(availableRoles, function(roleSlug, roleName) {
                 rolesHtml += '<label class="sfx-role-checkbox">' +
-                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
                     '<span>' + roleName + '</span>' +
                 '</label>';
             });
             
-            // Build the compact item HTML (same layout as predefined)
-            var itemHtml = 
-                '<span class="sfx-quicklink-drag-handle">☰</span>' +
-                '<label class="sfx-quicklink-checkbox">' +
-                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][enabled]" value="1" checked />' +
-                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][id]" value="' + newId + '" class="sfx-quicklink-id" />' +
-                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][type]" value="custom" class="sfx-quicklink-type" />' +
-                '</label>' +
-                '<span class="sfx-quicklink-icon-preview">' + defaultSvgIcon + '</span>' +
-                '<span class="sfx-quicklink-label sfx-quicklink-title-display">' + (strings.untitled || 'Untitled') + '</span>' +
-                '<code class="sfx-quicklink-url sfx-quicklink-url-display">—</code>' +
-                '<span class="sfx-quicklink-badge">' + (strings.custom || 'Custom') + '</span>' +
-                '<div class="sfx-quicklink-roles">' +
-                    '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
-                        '<span class="sfx-roles-toggle-icon">▼</span>' +
-                        '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
-                    '</button>' +
-                    '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
-                        '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
-                            '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
-                            '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
-                        '</label>' +
-                        '<div class="sfx-roles-divider"></div>' +
-                        rolesHtml +
+            var groupHtml = 
+                '<div class="sfx-quicklink-group sfx-quicklink-group-new" data-group-id="' + newGroupId + '">' +
+                    '<div class="sfx-quicklink-group-header">' +
+                        '<span class="sfx-group-drag-handle">☰</span>' +
+                        '<input type="hidden" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][id]" value="' + newGroupId + '" class="sfx-group-id" />' +
+                        '<input type="text" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][title]" value="" class="sfx-group-title-input" placeholder="' + (strings.groupTitle || 'Group Title') + '" />' +
+                        '<div class="sfx-quicklink-roles sfx-group-roles">' +
+                            '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
+                                '<span class="sfx-roles-toggle-icon">▼</span>' +
+                                '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
+                            '</button>' +
+                            '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
+                                '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
+                                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
+                                    '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
+                                '</label>' +
+                                '<div class="sfx-roles-divider"></div>' +
+                                rolesHtml +
+                            '</div>' +
+                        '</div>' +
+                        '<button type="button" class="button sfx-toggle-group" title="' + (strings.collapseExpand || 'Collapse/Expand') + '">' +
+                            '<span class="dashicons dashicons-arrow-up-alt2"></span>' +
+                        '</button>' +
+                        '<button type="button" class="button sfx-remove-group" title="' + (strings.removeGroup || 'Remove Group') + '">' +
+                            '<span class="dashicons dashicons-trash"></span>' +
+                        '</button>' +
                     '</div>' +
-                '</div>' +
-                '<div class="sfx-quicklink-actions">' +
-                    '<button type="button" class="button sfx-edit-quicklink" title="' + (strings.edit || 'Edit') + '">' +
-                        '<span class="dashicons dashicons-edit"></span>' +
-                    '</button>' +
-                    '<button type="button" class="button sfx-remove-quicklink" title="' + (strings.remove || 'Remove') + '">' +
-                        '<span class="dashicons dashicons-trash"></span>' +
-                    '</button>' +
-                '</div>' +
-                // Edit form (shown for new items)
-                '<div class="sfx-quicklink-edit-form">' +
-                    '<div class="sfx-quicklink-edit-fields">' +
-                        '<div class="sfx-edit-field">' +
-                            '<label>' + (strings.title || 'Title') + '</label>' +
-                            '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.linkTitle || 'Link Title') + '" />' +
+                    '<div class="sfx-quicklink-group-content">' +
+                        '<ul class="sfx-quicklinks-sortable" data-group-index="' + groupIndex + '"></ul>' +
+                        '<div class="sfx-quicklinks-actions">' +
+                            '<button type="button" class="button button-secondary sfx-add-custom-quicklink">' +
+                                (strings.addLink || '+ Add Link') +
+                            '</button>' +
                         '</div>' +
-                        '<div class="sfx-edit-field">' +
-                            '<label>' + (strings.url || 'URL') + '</label>' +
-                            '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
-                        '</div>' +
-                        '<div class="sfx-edit-field sfx-edit-field-full">' +
-                            '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
-                            '<textarea name="' + optionName + '[quicklinks_sortable][' + newIndex + '][icon]" class="sfx-quicklink-icon-input" placeholder="<svg>...</svg>" rows="3">' + defaultSvgIcon + '</textarea>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="sfx-quicklink-edit-actions">' +
-                        '<button type="button" class="button button-primary sfx-save-quicklink">' + (strings.done || 'Done') + '</button>' +
                     '</div>' +
                 '</div>';
             
-            $newItem.html(itemHtml);
+            var $newGroup = $(groupHtml);
+            $container.append($newGroup);
+            
+            // Focus on title input
+            $newGroup.find('.sfx-group-title-input').focus();
+            
+            // Remove highlight after animation
+            setTimeout(function() {
+                $newGroup.removeClass('sfx-quicklink-group-new');
+            }, 1000);
+            
+            // Re-initialize sortables
+            initQuicklinksSortableInGroups();
+            $('#sfx-quicklink-groups-sortable').sortable('refresh');
+        });
+    }
+
+    /**
+     * Initialize remove group button
+     */
+    function initRemoveGroup() {
+        $(document).on('click', '.sfx-remove-group', function(e) {
+            e.preventDefault();
+            
+            var $group = $(this).closest('.sfx-quicklink-group');
+            var strings = sfxDashboardAdmin.strings || {};
+            
+            if (confirm(strings.confirmRemoveGroup || 'Are you sure you want to remove this group and all its links?')) {
+                $group.fadeOut(300, function() {
+                    $(this).remove();
+                    updateAllIndices();
+                });
+            }
+        });
+    }
+
+    /**
+     * Initialize toggle group (collapse/expand)
+     */
+    function initToggleGroup() {
+        $(document).on('click', '.sfx-toggle-group', function(e) {
+            e.preventDefault();
+            
+            var $button = $(this);
+            var $group = $button.closest('.sfx-quicklink-group');
+            var $content = $group.find('.sfx-quicklink-group-content');
+            var $icon = $button.find('.dashicons');
+            
+            $content.slideToggle(200);
+            
+            if ($icon.hasClass('dashicons-arrow-up-alt2')) {
+                $icon.removeClass('dashicons-arrow-up-alt2').addClass('dashicons-arrow-down-alt2');
+            } else {
+                $icon.removeClass('dashicons-arrow-down-alt2').addClass('dashicons-arrow-up-alt2');
+            }
+        });
+    }
+
+    /**
+     * Initialize add custom quicklink button (within groups)
+     */
+    function initAddCustomQuicklink() {
+        $(document).on('click', '.sfx-add-custom-quicklink', function(e) {
+            e.preventDefault();
+            
+            var $button = $(this);
+            var $group = $button.closest('.sfx-quicklink-group');
+            var $sortable = $group.find('.sfx-quicklinks-sortable');
+            var groupIndex = $sortable.data('group-index');
+            var linkIndex = $sortable.find('.sfx-quicklink-item').length;
+            var newId = 'custom_' + Date.now();
+            
+            var optionName = sfxDashboardAdmin.optionName;
+            var strings = sfxDashboardAdmin.strings || {};
+            var availableRoles = sfxDashboardAdmin.availableRoles || {};
+            var defaultSvgIcon = sfxDashboardAdmin.defaultIcon || '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
+            
+            var namePrefix = optionName + '[quicklinks_sortable][groups][' + groupIndex + '][quicklinks][' + linkIndex + ']';
+            
+            // Build role checkboxes HTML
+            var rolesHtml = '';
+            $.each(availableRoles, function(roleSlug, roleName) {
+                rolesHtml += '<label class="sfx-role-checkbox">' +
+                    '<input type="checkbox" name="' + namePrefix + '[roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<span>' + roleName + '</span>' +
+                '</label>';
+            });
+            
+            var itemHtml = 
+                '<li class="sfx-quicklink-item sfx-quicklink-item-custom sfx-quicklink-item-new is-editing" data-id="' + newId + '" data-type="custom">' +
+                    '<span class="sfx-quicklink-drag-handle">☰</span>' +
+                    '<label class="sfx-quicklink-checkbox">' +
+                        '<input type="checkbox" name="' + namePrefix + '[enabled]" value="1" checked />' +
+                        '<input type="hidden" name="' + namePrefix + '[id]" value="' + newId + '" class="sfx-quicklink-id" />' +
+                        '<input type="hidden" name="' + namePrefix + '[type]" value="custom" class="sfx-quicklink-type" />' +
+                    '</label>' +
+                    '<span class="sfx-quicklink-icon-preview">' + defaultSvgIcon + '</span>' +
+                    '<span class="sfx-quicklink-label sfx-quicklink-title-display">' + (strings.untitled || 'Untitled') + '</span>' +
+                    '<code class="sfx-quicklink-url sfx-quicklink-url-display">—</code>' +
+                    '<span class="sfx-quicklink-badge">' + (strings.custom || 'Custom') + '</span>' +
+                    '<div class="sfx-quicklink-roles">' +
+                        '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
+                            '<span class="sfx-roles-toggle-icon">▼</span>' +
+                            '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
+                        '</button>' +
+                        '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
+                            '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
+                                '<input type="checkbox" name="' + namePrefix + '[roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
+                                '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
+                            '</label>' +
+                            '<div class="sfx-roles-divider"></div>' +
+                            rolesHtml +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="sfx-quicklink-actions">' +
+                        '<button type="button" class="button sfx-edit-quicklink" title="' + (strings.edit || 'Edit') + '">' +
+                            '<span class="dashicons dashicons-edit"></span>' +
+                        '</button>' +
+                        '<button type="button" class="button sfx-remove-quicklink" title="' + (strings.remove || 'Remove') + '">' +
+                            '<span class="dashicons dashicons-trash"></span>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="sfx-quicklink-edit-form">' +
+                        '<div class="sfx-quicklink-edit-fields">' +
+                            '<div class="sfx-edit-field">' +
+                                '<label>' + (strings.title || 'Title') + '</label>' +
+                                '<input type="text" name="' + namePrefix + '[title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.linkTitle || 'Link Title') + '" />' +
+                            '</div>' +
+                            '<div class="sfx-edit-field">' +
+                                '<label>' + (strings.url || 'URL') + '</label>' +
+                                '<input type="text" name="' + namePrefix + '[url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
+                            '</div>' +
+                            '<div class="sfx-edit-field sfx-edit-field-full">' +
+                                '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
+                                '<textarea name="' + namePrefix + '[icon]" class="sfx-quicklink-icon-input" placeholder="<svg>...</svg>" rows="3">' + defaultSvgIcon + '</textarea>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="sfx-quicklink-edit-actions">' +
+                            '<button type="button" class="button button-primary sfx-save-quicklink">' + (strings.done || 'Done') + '</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</li>';
+            
+            var $newItem = $(itemHtml);
             $sortable.append($newItem);
             
             // Focus on title input
@@ -183,7 +350,7 @@
             if (confirm(sfxDashboardAdmin.strings.confirmRemove || 'Are you sure you want to remove this custom link?')) {
                 $item.fadeOut(300, function() {
                     $(this).remove();
-                    updateQuicklinksIndices();
+                    updateAllIndices();
                 });
             }
         });
@@ -818,6 +985,9 @@
     $(document).ready(function() {
         initLogoUploader();
         initColorSelectPreview();
+        initAddGroup();
+        initRemoveGroup();
+        initToggleGroup();
         initAddCustomQuicklink();
         initRemoveCustomQuicklink();
         initEditCustomQuicklink();
@@ -828,17 +998,16 @@
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {
             initStatsSortable();
-            initQuicklinksSortable();
+            initQuicklinkGroupsSortable();
         }, 150);
         
         // Re-initialize sortables when switching tabs
         $(document).on('click', '.sfx-dashboard-tabs .nav-tab, .nav-tab-wrapper .nav-tab', function() {
             setTimeout(function() {
                 initStatsSortable();
-                initQuicklinksSortable();
+                initQuicklinkGroupsSortable();
             }, 200);
         });
     });
 
 })(jQuery);
-

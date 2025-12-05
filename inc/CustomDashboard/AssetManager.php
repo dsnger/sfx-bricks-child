@@ -113,6 +113,7 @@ class AssetManager
                 'defaultIcon' => Settings::DEFAULT_CUSTOM_ICON,
                 'availableRoles' => Settings::get_available_roles(),
                 'strings' => [
+                    // General
                     'remove' => __('Remove', 'sfxtheme'),
                     'edit' => __('Edit', 'sfxtheme'),
                     'icon' => __('Icon', 'sfxtheme'),
@@ -124,9 +125,16 @@ class AssetManager
                     'svgIcon' => __('SVG Icon', 'sfxtheme'),
                     'done' => __('Done', 'sfxtheme'),
                     'confirmRemove' => __('Are you sure you want to remove this custom link?', 'sfxtheme'),
+                    // Roles
                     'allRoles' => __('All Roles', 'sfxtheme'),
                     'oneRole' => __('1 Role', 'sfxtheme'),
                     'roles' => __('Roles', 'sfxtheme'),
+                    // Groups
+                    'groupTitle' => __('Group Title', 'sfxtheme'),
+                    'addLink' => __('+ Add Link', 'sfxtheme'),
+                    'removeGroup' => __('Remove Group', 'sfxtheme'),
+                    'confirmRemoveGroup' => __('Are you sure you want to remove this group and all its links?', 'sfxtheme'),
+                    'collapseExpand' => __('Collapse/Expand', 'sfxtheme'),
                     // Validation messages
                     'errorTitleOrUrl' => __('Title or URL is required', 'sfxtheme'),
                     'errorTitleTooLong' => __('Title is too long (max 100 characters)', 'sfxtheme'),

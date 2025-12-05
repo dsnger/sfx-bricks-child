@@ -533,59 +533,127 @@ class DashboardRenderer
     }
 
     /**
-     * Render quicklinks section
+     * Check if user can see a quicklink group
+     *
+     * @param array $group Group data with roles
+     * @return bool
+     */
+    private function user_can_see_group(array $group): bool
+    {
+        $roles = $group['roles'] ?? [];
+        
+        // If no roles are specified, or 'all' is present, show to everyone
+        if (empty($roles) || in_array('all', $roles)) {
+            return true;
+        }
+
+        // Get current user's roles
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->exists()) {
+            return false;
+        }
+
+        $user_roles = $current_user->roles;
+        
+        // Check if user has at least one of the allowed roles
+        return !empty(array_intersect($roles, $user_roles));
+    }
+
+    /**
+     * Render quicklinks section with groups support
      *
      * @return void
      */
     private function render_quicklinks(): void
     {
         $quicklinks_data = $this->get_option('quicklinks_sortable', []);
-        $all_quicklinks = Settings::get_ordered_quicklinks(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $groups = Settings::get_ordered_quicklink_groups(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
+        $available_roles = Settings::get_available_roles();
 
-        // Filter to only enabled links with valid title/url and user has permission
-        $enabled_links = array_filter($all_quicklinks, function($link) {
-            return !empty($link['enabled']) 
-                && !empty($link['title']) 
-                && !empty($link['url'])
-                && $this->user_can_see_quicklink($link);
-        });
+        // Filter groups that user can see and have enabled links
+        $visible_groups = [];
+        foreach ($groups as $group) {
+            // Check group-level role restriction
+            if (!$this->user_can_see_group($group)) {
+                continue;
+            }
 
-        if (empty($enabled_links)) {
+            // Filter to only enabled links with valid title/url and user has permission
+            $enabled_links = array_filter($group['quicklinks'] ?? [], function($link) {
+                return !empty($link['enabled']) 
+                    && !empty($link['title']) 
+                    && !empty($link['url'])
+                    && $this->user_can_see_quicklink($link);
+            });
+
+            // Skip empty groups
+            if (!empty($enabled_links)) {
+                $visible_groups[] = [
+                    'group' => $group,
+                    'links' => $enabled_links,
+                ];
+            }
+        }
+
+        // Don't render anything if no visible groups
+        if (empty($visible_groups)) {
             return;
         }
 
-        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
-
         ?>
         <section class="sfx-quicklinks-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Quick Actions', 'sfxtheme'); ?></h2>
-            <div class="sfx-quicklinks-grid">
-                <?php foreach ($enabled_links as $link): 
-                    $url = $this->resolve_url($link['url'] ?? '');
-                    $icon = $link['icon'] ?? $default_icon;
-                    $title = $link['title'] ?? '';
-                    $roles = $link['roles'] ?? [];
-                    $has_role_restriction = !empty($roles) && !in_array('all', $roles);
-                    $role_badges = '';
-                    
-                    // Show role badges only to admins for restricted links
-                    if ($has_role_restriction && current_user_can('manage_options')) {
-                        $available_roles = Settings::get_available_roles();
-                        $role_badges = '<div class="sfx-quicklink-role-badges">';
-                        foreach ($roles as $role_slug) {
-                            $role_name = $available_roles[$role_slug] ?? $role_slug;
-                            $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
-                        }
-                        $role_badges .= '</div>';
-                    }
-                    ?>
-                    <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
-                        <?php echo $role_badges; ?>
-                        <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
-                        <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
+            <?php foreach ($visible_groups as $index => $group_data): 
+                $group = $group_data['group'];
+                $enabled_links = $group_data['links'];
+                $group_title = $group['title'] ?? __('Quick Actions', 'sfxtheme');
+                $group_roles = $group['roles'] ?? [];
+                $group_has_role_restriction = !empty($group_roles) && !in_array('all', $group_roles);
+            ?>
+                <div class="sfx-quicklinks-group<?php echo $index > 0 ? ' sfx-quicklinks-group-stacked' : ''; ?>">
+                    <h3 class="sfx-quicklinks-group-title">
+                        <?php echo esc_html($group_title); ?>
+                        <?php 
+                        // Show group role badges to admins
+                        if ($group_has_role_restriction && current_user_can('manage_options')): 
+                        ?>
+                            <span class="sfx-group-role-badges">
+                                <?php foreach ($group_roles as $role_slug): 
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                ?>
+                                    <span class="sfx-group-role-badge"><?php echo esc_html($role_name); ?></span>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
+                    </h3>
+                    <div class="sfx-quicklinks-grid">
+                        <?php foreach ($enabled_links as $link): 
+                            $url = $this->resolve_url($link['url'] ?? '');
+                            $icon = $link['icon'] ?? $default_icon;
+                            $title = $link['title'] ?? '';
+                            $roles = $link['roles'] ?? [];
+                            $has_role_restriction = !empty($roles) && !in_array('all', $roles);
+                            $role_badges = '';
+                            
+                            // Show role badges only to admins for restricted links
+                            if ($has_role_restriction && current_user_can('manage_options')) {
+                                $role_badges = '<div class="sfx-quicklink-role-badges">';
+                                foreach ($roles as $role_slug) {
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                    $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
+                                }
+                                $role_badges .= '</div>';
+                            }
+                            ?>
+                            <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
+                                <?php echo $role_badges; ?>
+                                <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
+                                <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </section>
         <?php
     }

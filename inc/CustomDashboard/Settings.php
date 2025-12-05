@@ -561,6 +561,113 @@ CSS;
     }
 
     /**
+     * Get default quicklink groups structure
+     * Returns one default group containing all predefined quicklinks
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_default_quicklink_groups(): array
+    {
+        $predefined = self::get_default_quicklinks();
+        $quicklinks = [];
+        
+        foreach ($predefined as $link) {
+            $quicklinks[] = array_merge($link, ['type' => 'predefined']);
+        }
+        
+        return [
+            [
+                'id' => 'group_default',
+                'title' => __('Quick Actions', 'sfxtheme'),
+                'roles' => [],
+                'quicklinks' => $quicklinks,
+            ],
+        ];
+    }
+
+    /**
+     * Get ordered quicklink groups with saved data merged
+     *
+     * @param array $saved_data Saved groups data from options
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_ordered_quicklink_groups(array $saved_data = []): array
+    {
+        $predefined = self::get_default_quicklinks();
+        $predefined_ids = array_column($predefined, 'id');
+        
+        // Check if data is in new groups format
+        if (!empty($saved_data) && isset($saved_data['groups'])) {
+            // New format - process groups
+            $groups = [];
+            
+            foreach ($saved_data['groups'] as $group) {
+                if (!isset($group['id'])) {
+                    continue;
+                }
+                
+                $quicklinks = [];
+                foreach ($group['quicklinks'] ?? [] as $item) {
+                    if (!isset($item['type'])) {
+                        continue;
+                    }
+                    
+                    if ($item['type'] === 'predefined') {
+                        // Find predefined link data
+                        foreach ($predefined as $predef) {
+                            if ($predef['id'] === $item['id']) {
+                                $quicklinks[] = array_merge($predef, [
+                                    'type' => 'predefined',
+                                    'enabled' => !empty($item['enabled']),
+                                    'roles' => $item['roles'] ?? [],
+                                ]);
+                                break;
+                            }
+                        }
+                    } elseif ($item['type'] === 'custom') {
+                        $quicklinks[] = [
+                            'type' => 'custom',
+                            'id' => $item['id'] ?? 'custom_' . uniqid(),
+                            'title' => $item['title'] ?? '',
+                            'url' => $item['url'] ?? '',
+                            'icon' => $item['icon'] ?? self::DEFAULT_CUSTOM_ICON,
+                            'enabled' => !empty($item['enabled']),
+                            'roles' => $item['roles'] ?? [],
+                        ];
+                    }
+                }
+                
+                $groups[] = [
+                    'id' => $group['id'],
+                    'title' => $group['title'] ?? __('Untitled Group', 'sfxtheme'),
+                    'roles' => $group['roles'] ?? [],
+                    'quicklinks' => $quicklinks,
+                ];
+            }
+            
+            return $groups;
+        }
+        
+        // Check for legacy flat format or empty - migrate to groups
+        if (!empty($saved_data) && !isset($saved_data['groups'])) {
+            // Old flat format - migrate to single group
+            $quicklinks = self::get_ordered_quicklinks($saved_data);
+            
+            return [
+                [
+                    'id' => 'group_default',
+                    'title' => __('Quick Actions', 'sfxtheme'),
+                    'roles' => [],
+                    'quicklinks' => $quicklinks,
+                ],
+            ];
+        }
+        
+        // No saved data - return defaults
+        return self::get_default_quicklink_groups();
+    }
+
+    /**
      * Get field definitions
      *
      * @return array<int, array<string, mixed>>
@@ -1515,7 +1622,7 @@ CSS;
     }
 
     /**
-     * Render unified sortable quicklinks field
+     * Render unified sortable quicklinks field with groups support
      *
      * @param string $id
      * @param mixed $value
@@ -1523,211 +1630,282 @@ CSS;
      */
     public static function render_quicklinks_sortable_field(string $id, $value): void
     {
-        $quicklinks = self::get_ordered_quicklinks(is_array($value) ? $value : []);
+        $groups = self::get_ordered_quicklink_groups(is_array($value) ? $value : []);
         $allowed_svg = self::get_allowed_svg_tags();
         $available_roles = self::get_available_roles();
         ?>
-        <div class="sfx-quicklinks-sortable-container">
+        <div class="sfx-quicklinks-groups-container">
             <p class="description" style="margin-bottom: 15px;">
-                <?php esc_html_e('Drag to reorder. Check to enable/disable each quick link. Use the role selector to restrict visibility.', 'sfxtheme'); ?>
+                <?php esc_html_e('Create multiple groups of quick links. Drag groups to reorder them, or drag links between groups.', 'sfxtheme'); ?>
             </p>
-            <ul class="sfx-quicklinks-sortable" id="sfx-quicklinks-sortable">
-                <?php foreach ($quicklinks as $index => $link): ?>
-                    <?php
-                    $type_badge = $link['type'] === 'custom' ? '<span class="sfx-quicklink-badge">' . esc_html__('Custom', 'sfxtheme') . '</span>' : '';
-                    $is_custom = $link['type'] === 'custom';
-                    $link_roles = $link['roles'] ?? [];
-                    $has_all_roles = in_array('all', $link_roles);
-                    ?>
-                    <li class="sfx-quicklink-item <?php echo $is_custom ? 'sfx-quicklink-item-custom' : ''; ?>" 
-                        data-id="<?php echo esc_attr($link['id']); ?>" 
-                        data-type="<?php echo esc_attr($link['type']); ?>">
+            
+            <div class="sfx-quicklink-groups-sortable" id="sfx-quicklink-groups-sortable">
+                <?php foreach ($groups as $group_index => $group): 
+                    $group_roles = $group['roles'] ?? [];
+                    $group_has_all_roles = empty($group_roles) || in_array('all', $group_roles);
+                ?>
+                <div class="sfx-quicklink-group" data-group-id="<?php echo esc_attr($group['id']); ?>">
+                    <div class="sfx-quicklink-group-header">
+                        <span class="sfx-group-drag-handle">☰</span>
+                        <input type="hidden" 
+                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][id]" 
+                               value="<?php echo esc_attr($group['id']); ?>"
+                               class="sfx-group-id" />
+                        <input type="text" 
+                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][title]" 
+                               value="<?php echo esc_attr($group['title']); ?>"
+                               class="sfx-group-title-input"
+                               placeholder="<?php esc_attr_e('Group Title', 'sfxtheme'); ?>" />
                         
-                        <?php if ($is_custom): ?>
-                            <!-- Custom Link: Compact View (like predefined) -->
-                            <span class="sfx-quicklink-drag-handle">☰</span>
-                            <label class="sfx-quicklink-checkbox">
-                                <input type="checkbox" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
-                                       value="1" 
-                                       <?php checked(!empty($link['enabled'])); ?> />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                       value="<?php echo esc_attr($link['id']); ?>" 
-                                       class="sfx-quicklink-id" />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
-                                       value="<?php echo esc_attr($link['type']); ?>" 
-                                       class="sfx-quicklink-type" />
-                            </label>
-                            <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
-                            <span class="sfx-quicklink-label sfx-quicklink-title-display"><?php echo wp_kses($link['title'] ?: __('Untitled', 'sfxtheme'), self::get_allowed_title_tags()); ?></span>
-                            <code class="sfx-quicklink-url sfx-quicklink-url-display"><?php echo esc_html($link['url'] ?: '—'); ?></code>
-                            <?php echo $type_badge; ?>
-                            
-                            <!-- Role Selector -->
-                            <div class="sfx-quicklink-roles">
-                                <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
-                                    <span class="sfx-roles-toggle-icon">▼</span>
-                                    <span class="sfx-roles-toggle-label">
-                                        <?php 
-                                        if (empty($link_roles) || $has_all_roles) {
-                                            esc_html_e('All Roles', 'sfxtheme');
-                                        } else {
-                                            $role_count = count($link_roles);
-                                            printf(
-                                                esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
-                                                $role_count
-                                            );
-                                        }
-                                        ?>
-                                    </span>
-                                </button>
-                                <div class="sfx-quicklink-roles-dropdown" style="display: none;">
-                                    <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                        <!-- Group Role Selector -->
+                        <div class="sfx-quicklink-roles sfx-group-roles">
+                            <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
+                                <span class="sfx-roles-toggle-icon">▼</span>
+                                <span class="sfx-roles-toggle-label">
+                                    <?php 
+                                    if ($group_has_all_roles) {
+                                        esc_html_e('All Roles', 'sfxtheme');
+                                    } else {
+                                        $role_count = count($group_roles);
+                                        printf(
+                                            esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
+                                            $role_count
+                                        );
+                                    }
+                                    ?>
+                                </span>
+                            </button>
+                            <div class="sfx-quicklink-roles-dropdown" style="display: none;">
+                                <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                                    <input type="checkbox" 
+                                           name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][roles][]" 
+                                           value="all" 
+                                           class="sfx-role-all-checkbox"
+                                           <?php checked($group_has_all_roles); ?> />
+                                    <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                                </label>
+                                <div class="sfx-roles-divider"></div>
+                                <?php foreach ($available_roles as $role_slug => $role_name): ?>
+                                    <label class="sfx-role-checkbox">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                               value="all" 
-                                               class="sfx-role-all-checkbox"
-                                               <?php checked($has_all_roles || empty($link_roles)); ?> />
-                                        <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][roles][]" 
+                                               value="<?php echo esc_attr($role_slug); ?>" 
+                                               class="sfx-role-individual-checkbox"
+                                               <?php checked(in_array($role_slug, $group_roles) && !$group_has_all_roles); ?>
+                                               <?php disabled($group_has_all_roles); ?> />
+                                        <span><?php echo esc_html($role_name); ?></span>
                                     </label>
-                                    <div class="sfx-roles-divider"></div>
-                                    <?php foreach ($available_roles as $role_slug => $role_name): ?>
-                                        <label class="sfx-role-checkbox">
-                                            <input type="checkbox" 
-                                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                                   value="<?php echo esc_attr($role_slug); ?>" 
-                                                   class="sfx-role-individual-checkbox"
-                                                   <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles && !empty($link_roles)); ?>
-                                                   <?php disabled($has_all_roles || empty($link_roles)); ?> />
-                                            <span><?php echo esc_html($role_name); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="sfx-quicklink-actions">
-                                <button type="button" class="button sfx-edit-quicklink" title="<?php esc_attr_e('Edit', 'sfxtheme'); ?>">
-                                    <span class="dashicons dashicons-edit"></span>
-                                </button>
-                                <button type="button" class="button sfx-remove-quicklink" title="<?php esc_attr_e('Remove', 'sfxtheme'); ?>">
-                                    <span class="dashicons dashicons-trash"></span>
-                                </button>
-                            </div>
-                            
-                            <!-- Custom Link: Editable Form (hidden by default) -->
-                            <div class="sfx-quicklink-edit-form" style="display: none;">
-                                <div class="sfx-quicklink-edit-fields">
-                                    <div class="sfx-edit-field">
-                                        <label><?php esc_html_e('Title', 'sfxtheme'); ?></label>
-                                        <input type="text" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][title]" 
-                                               value="<?php echo esc_attr($link['title']); ?>" 
-                                               class="sfx-quicklink-title-input" 
-                                               placeholder="<?php esc_attr_e('Link Title', 'sfxtheme'); ?>" />
-                                    </div>
-                                    <div class="sfx-edit-field">
-                                        <label><?php esc_html_e('URL', 'sfxtheme'); ?></label>
-                                        <input type="text" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][url]" 
-                                               value="<?php echo esc_attr($link['url']); ?>" 
-                                               class="sfx-quicklink-url-input" 
-                                               placeholder="<?php esc_attr_e('admin.php?page=example', 'sfxtheme'); ?>" />
-                                    </div>
-                                    <div class="sfx-edit-field sfx-edit-field-full">
-                                        <label><?php esc_html_e('SVG Icon', 'sfxtheme'); ?></label>
-                                        <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][icon]" 
-                                                  class="sfx-quicklink-icon-input" 
-                                                  placeholder="<?php esc_attr_e('<svg>...</svg>', 'sfxtheme'); ?>" 
-                                                  rows="3"><?php echo esc_textarea($link['icon']); ?></textarea>
-                                    </div>
-                                </div>
-                                <div class="sfx-quicklink-edit-actions">
-                                    <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <!-- Predefined Link: Single Row -->
-                            <span class="sfx-quicklink-drag-handle">☰</span>
-                            <label class="sfx-quicklink-checkbox">
-                                <input type="checkbox" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
-                                       value="1" 
-                                       <?php checked(!empty($link['enabled'])); ?> />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                       value="<?php echo esc_attr($link['id']); ?>" 
-                                       class="sfx-quicklink-id" />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
-                                       value="<?php echo esc_attr($link['type']); ?>" 
-                                       class="sfx-quicklink-type" />
-                            </label>
-                            <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
-                            <span class="sfx-quicklink-label"><?php echo esc_html($link['title']); ?></span>
-                            <code class="sfx-quicklink-url"><?php echo esc_html($link['url']); ?></code>
-                            
-                            <!-- Role Selector -->
-                            <div class="sfx-quicklink-roles">
-                                <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
-                                    <span class="sfx-roles-toggle-icon">▼</span>
-                                    <span class="sfx-roles-toggle-label">
-                                        <?php 
-                                        if (empty($link_roles) || $has_all_roles) {
-                                            esc_html_e('All Roles', 'sfxtheme');
-                                        } else {
-                                            $role_count = count($link_roles);
-                                            printf(
-                                                esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
-                                                $role_count
-                                            );
-                                        }
-                                        ?>
-                                    </span>
-                                </button>
-                                <div class="sfx-quicklink-roles-dropdown" style="display: none;">
-                                    <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                        </div>
+                        
+                        <button type="button" class="button sfx-toggle-group" title="<?php esc_attr_e('Collapse/Expand', 'sfxtheme'); ?>">
+                            <span class="dashicons dashicons-arrow-up-alt2"></span>
+                        </button>
+                        <button type="button" class="button sfx-remove-group" title="<?php esc_attr_e('Remove Group', 'sfxtheme'); ?>">
+                            <span class="dashicons dashicons-trash"></span>
+                        </button>
+                    </div>
+                    
+                    <div class="sfx-quicklink-group-content">
+                        <ul class="sfx-quicklinks-sortable" data-group-index="<?php echo $group_index; ?>">
+                            <?php foreach ($group['quicklinks'] as $link_index => $link): 
+                                $type_badge = $link['type'] === 'custom' ? '<span class="sfx-quicklink-badge">' . esc_html__('Custom', 'sfxtheme') . '</span>' : '';
+                                $is_custom = $link['type'] === 'custom';
+                                $link_roles = $link['roles'] ?? [];
+                                $has_all_roles = empty($link_roles) || in_array('all', $link_roles);
+                            ?>
+                            <li class="sfx-quicklink-item <?php echo $is_custom ? 'sfx-quicklink-item-custom' : ''; ?>" 
+                                data-id="<?php echo esc_attr($link['id']); ?>" 
+                                data-type="<?php echo esc_attr($link['type']); ?>">
+                                
+                                <?php if ($is_custom): ?>
+                                    <!-- Custom Link -->
+                                    <span class="sfx-quicklink-drag-handle">☰</span>
+                                    <label class="sfx-quicklink-checkbox">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                               value="all" 
-                                               class="sfx-role-all-checkbox"
-                                               <?php checked($has_all_roles || empty($link_roles)); ?> />
-                                        <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][enabled]" 
+                                               value="1" 
+                                               <?php checked(!empty($link['enabled'])); ?> />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][id]" 
+                                               value="<?php echo esc_attr($link['id']); ?>" 
+                                               class="sfx-quicklink-id" />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][type]" 
+                                               value="<?php echo esc_attr($link['type']); ?>" 
+                                               class="sfx-quicklink-type" />
                                     </label>
-                                    <div class="sfx-roles-divider"></div>
-                                    <?php foreach ($available_roles as $role_slug => $role_name): ?>
-                                        <label class="sfx-role-checkbox">
-                                            <input type="checkbox" 
-                                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                                   value="<?php echo esc_attr($role_slug); ?>" 
-                                                   class="sfx-role-individual-checkbox"
-                                                   <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles && !empty($link_roles)); ?>
-                                                   <?php disabled($has_all_roles || empty($link_roles)); ?> />
-                                            <span><?php echo esc_html($role_name); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </li>
+                                    <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
+                                    <span class="sfx-quicklink-label sfx-quicklink-title-display"><?php echo wp_kses($link['title'] ?: __('Untitled', 'sfxtheme'), self::get_allowed_title_tags()); ?></span>
+                                    <code class="sfx-quicklink-url sfx-quicklink-url-display"><?php echo esc_html($link['url'] ?: '—'); ?></code>
+                                    <?php echo $type_badge; ?>
+                                    
+                                    <!-- Role Selector -->
+                                    <?php self::render_quicklink_roles_selector($id, $group_index, $link_index, $link_roles, $has_all_roles, $available_roles, true); ?>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="sfx-quicklink-actions">
+                                        <button type="button" class="button sfx-edit-quicklink" title="<?php esc_attr_e('Edit', 'sfxtheme'); ?>">
+                                            <span class="dashicons dashicons-edit"></span>
+                                        </button>
+                                        <button type="button" class="button sfx-remove-quicklink" title="<?php esc_attr_e('Remove', 'sfxtheme'); ?>">
+                                            <span class="dashicons dashicons-trash"></span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Custom Link: Editable Form -->
+                                    <div class="sfx-quicklink-edit-form" style="display: none;">
+                                        <div class="sfx-quicklink-edit-fields">
+                                            <div class="sfx-edit-field">
+                                                <label><?php esc_html_e('Title', 'sfxtheme'); ?></label>
+                                                <input type="text" 
+                                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][title]" 
+                                                       value="<?php echo esc_attr($link['title']); ?>" 
+                                                       class="sfx-quicklink-title-input" 
+                                                       placeholder="<?php esc_attr_e('Link Title', 'sfxtheme'); ?>" />
+                                            </div>
+                                            <div class="sfx-edit-field">
+                                                <label><?php esc_html_e('URL', 'sfxtheme'); ?></label>
+                                                <input type="text" 
+                                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][url]" 
+                                                       value="<?php echo esc_attr($link['url']); ?>" 
+                                                       class="sfx-quicklink-url-input" 
+                                                       placeholder="<?php esc_attr_e('admin.php?page=example', 'sfxtheme'); ?>" />
+                                            </div>
+                                            <div class="sfx-edit-field sfx-edit-field-full">
+                                                <label><?php esc_html_e('SVG Icon', 'sfxtheme'); ?></label>
+                                                <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][icon]" 
+                                                          class="sfx-quicklink-icon-input" 
+                                                          placeholder="<?php esc_attr_e('<svg>...</svg>', 'sfxtheme'); ?>" 
+                                                          rows="3"><?php echo esc_textarea($link['icon']); ?></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="sfx-quicklink-edit-actions">
+                                            <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <!-- Predefined Link -->
+                                    <span class="sfx-quicklink-drag-handle">☰</span>
+                                    <label class="sfx-quicklink-checkbox">
+                                        <input type="checkbox" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][enabled]" 
+                                               value="1" 
+                                               <?php checked(!empty($link['enabled'])); ?> />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][id]" 
+                                               value="<?php echo esc_attr($link['id']); ?>" 
+                                               class="sfx-quicklink-id" />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][type]" 
+                                               value="<?php echo esc_attr($link['type']); ?>" 
+                                               class="sfx-quicklink-type" />
+                                    </label>
+                                    <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
+                                    <span class="sfx-quicklink-label"><?php echo esc_html($link['title']); ?></span>
+                                    <code class="sfx-quicklink-url"><?php echo esc_html($link['url']); ?></code>
+                                    
+                                    <!-- Role Selector -->
+                                    <?php self::render_quicklink_roles_selector($id, $group_index, $link_index, $link_roles, $has_all_roles, $available_roles, true); ?>
+                                <?php endif; ?>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        
+                        <div class="sfx-quicklinks-actions">
+                            <button type="button" class="button button-secondary sfx-add-custom-quicklink">
+                                <?php esc_html_e('+ Add Link', 'sfxtheme'); ?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <?php endforeach; ?>
-            </ul>
-            <div class="sfx-quicklinks-actions">
-                <button type="button" id="sfx-add-custom-quicklink" class="button button-secondary">
-                    <?php esc_html_e('+ Add Custom Link', 'sfxtheme'); ?>
+            </div>
+            
+            <div class="sfx-quicklink-groups-actions">
+                <button type="button" id="sfx-add-quicklink-group" class="button button-primary">
+                    <?php esc_html_e('+ Add New Group', 'sfxtheme'); ?>
                 </button>
             </div>
+            
             <p class="description" style="margin-top: 15px;">
+                <strong><?php esc_html_e('Groups:', 'sfxtheme'); ?></strong> <?php esc_html_e('Each group appears as a separate section on the dashboard. Set group roles to restrict who can see the entire group.', 'sfxtheme'); ?>
+                <br>
                 <strong><?php esc_html_e('URL:', 'sfxtheme'); ?></strong> <?php esc_html_e('Use admin paths (e.g., "edit.php") or placeholders:', 'sfxtheme'); ?>
                 <code>{admin_url}</code>, <code>{site_url}</code>, <code>{home_url}</code>
                 <br>
                 <strong><?php esc_html_e('Icon:', 'sfxtheme'); ?></strong> <?php esc_html_e('Paste SVG code.', 'sfxtheme'); ?> 
                 <a href="https://heroicons.com/" target="_blank" rel="noopener">Heroicons</a> <?php esc_html_e('(outline style, 24x24) recommended.', 'sfxtheme'); ?>
-                <br>
-                <strong><?php esc_html_e('Roles:', 'sfxtheme'); ?></strong> <?php esc_html_e('Select which user roles can see this link. "All Roles" shows the link to everyone.', 'sfxtheme'); ?>
             </p>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render role selector for a quicklink (helper method)
+     *
+     * @param string $id
+     * @param int $group_index
+     * @param int $link_index
+     * @param array $link_roles
+     * @param bool $has_all_roles
+     * @param array $available_roles
+     * @param bool $is_group_format
+     * @return void
+     */
+    private static function render_quicklink_roles_selector(
+        string $id, 
+        int $group_index, 
+        int $link_index, 
+        array $link_roles, 
+        bool $has_all_roles, 
+        array $available_roles,
+        bool $is_group_format = true
+    ): void {
+        $name_prefix = $is_group_format 
+            ? self::$option_name . "[{$id}][groups][{$group_index}][quicklinks][{$link_index}]"
+            : self::$option_name . "[{$id}][{$link_index}]";
+        ?>
+        <div class="sfx-quicklink-roles">
+            <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
+                <span class="sfx-roles-toggle-icon">▼</span>
+                <span class="sfx-roles-toggle-label">
+                    <?php 
+                    if ($has_all_roles) {
+                        esc_html_e('All Roles', 'sfxtheme');
+                    } else {
+                        $role_count = count($link_roles);
+                        printf(
+                            esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
+                            $role_count
+                        );
+                    }
+                    ?>
+                </span>
+            </button>
+            <div class="sfx-quicklink-roles-dropdown" style="display: none;">
+                <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                    <input type="checkbox" 
+                           name="<?php echo esc_attr($name_prefix); ?>[roles][]" 
+                           value="all" 
+                           class="sfx-role-all-checkbox"
+                           <?php checked($has_all_roles); ?> />
+                    <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                </label>
+                <div class="sfx-roles-divider"></div>
+                <?php foreach ($available_roles as $role_slug => $role_name): ?>
+                    <label class="sfx-role-checkbox">
+                        <input type="checkbox" 
+                               name="<?php echo esc_attr($name_prefix); ?>[roles][]" 
+                               value="<?php echo esc_attr($role_slug); ?>" 
+                               class="sfx-role-individual-checkbox"
+                               <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles); ?>
+                               <?php disabled($has_all_roles); ?> />
+                        <span><?php echo esc_html($role_name); ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
         </div>
         <?php
     }
@@ -2055,9 +2233,9 @@ CSS;
                     // Check if it's JSON encoded (from hidden field)
                     if (is_string($input[$id]) && !empty($input[$id])) {
                         $decoded = json_decode($input[$id], true);
-                        $output[$id] = is_array($decoded) ? self::sanitize_quicklinks_sortable($decoded) : [];
+                        $output[$id] = is_array($decoded) ? self::sanitize_quicklink_groups($decoded) : ['groups' => []];
                     } else {
-                        $output[$id] = self::sanitize_quicklinks_sortable($input[$id] ?? []);
+                        $output[$id] = self::sanitize_quicklink_groups($input[$id] ?? []);
                     }
                     break;
 
@@ -2211,7 +2389,83 @@ CSS;
     }
 
     /**
-     * Sanitize sortable quicklinks
+     * Sanitize quicklink groups (new format with groups)
+     *
+     * @param mixed $input
+     * @return array{groups: array<int, array<string, mixed>>}
+     */
+    private static function sanitize_quicklink_groups($input): array
+    {
+        if (!is_array($input)) {
+            return ['groups' => []];
+        }
+
+        // Check if it's in the new groups format
+        if (isset($input['groups']) && is_array($input['groups'])) {
+            $groups = [];
+            $available_roles = array_keys(self::get_available_roles());
+            
+            foreach ($input['groups'] as $group) {
+                if (!is_array($group)) {
+                    continue;
+                }
+                
+                // Sanitize group ID
+                $group_id = $group['id'] ?? '';
+                if (empty($group_id) || !preg_match('/^group_[a-zA-Z0-9_]+$/', $group_id)) {
+                    $group_id = 'group_' . uniqid();
+                } else {
+                    $group_id = sanitize_key($group_id);
+                }
+                
+                // Sanitize group title
+                $group_title = sanitize_text_field($group['title'] ?? __('Untitled Group', 'sfxtheme'));
+                if (mb_strlen($group_title) > 100) {
+                    $group_title = mb_substr($group_title, 0, 100);
+                }
+                
+                // Sanitize group roles
+                $group_roles = [];
+                if (!empty($group['roles']) && is_array($group['roles'])) {
+                    foreach ($group['roles'] as $role) {
+                        $sanitized_role = sanitize_key($role);
+                        if ($sanitized_role === 'all' || in_array($sanitized_role, $available_roles)) {
+                            $group_roles[] = $sanitized_role;
+                        }
+                    }
+                }
+                
+                // Sanitize quicklinks within this group
+                $quicklinks = self::sanitize_quicklinks_sortable($group['quicklinks'] ?? []);
+                
+                $groups[] = [
+                    'id' => $group_id,
+                    'title' => $group_title,
+                    'roles' => $group_roles,
+                    'quicklinks' => $quicklinks,
+                ];
+            }
+            
+            return ['groups' => $groups];
+        }
+        
+        // Legacy flat format - migrate to groups format
+        $quicklinks = self::sanitize_quicklinks_sortable($input);
+        
+        return [
+            'groups' => [
+                [
+                    'id' => 'group_default',
+                    'title' => __('Quick Actions', 'sfxtheme'),
+                    'roles' => [],
+                    'quicklinks' => $quicklinks,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Sanitize sortable quicklinks (individual quicklinks within a group)
      *
      * @param mixed $input
      * @return array<int, array<string, mixed>>
