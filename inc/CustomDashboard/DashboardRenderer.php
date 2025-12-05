@@ -107,9 +107,13 @@ class DashboardRenderer
         $color_mode_default = $this->get_option('color_mode_default', 'light');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
 
+        // Get sidebar toggle settings
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
+        $sidebar_default_state = $this->get_option('sidebar_default_state', 'visible');
+
         ?>
         <!-- SFX Custom Dashboard -->
-        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>">
+        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
             <?php $this->render_status_bar(); ?>
@@ -307,6 +311,7 @@ class DashboardRenderer
         $subtitle = $this->get_option('dashboard_welcome_subtitle', __("Here's what's happening with your projects today.", 'sfxtheme'));
         $logo = $this->get_option('brand_logo', '');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
         
         // Replace placeholders with dynamic values
         $current_user = wp_get_current_user();
@@ -324,10 +329,40 @@ class DashboardRenderer
                 <h2 class="sfx-welcome-title"><?php echo esc_html($title); ?></h2>
                 <p class="sfx-welcome-subtitle"><?php echo esc_html($subtitle); ?></p>
             </div>
-            <?php if ($allow_mode_switch): ?>
-                <?php $this->render_theme_toggle(); ?>
+            <?php if ($allow_sidebar_toggle || $allow_mode_switch): ?>
+                <div class="sfx-welcome-toggles">
+                    <?php if ($allow_sidebar_toggle): ?>
+                        <?php $this->render_sidebar_toggle(); ?>
+                    <?php endif; ?>
+                    <?php if ($allow_mode_switch): ?>
+                        <?php $this->render_theme_toggle(); ?>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </section>
+        <?php
+    }
+
+    /**
+     * Render sidebar toggle button
+     *
+     * @return void
+     */
+    private function render_sidebar_toggle(): void
+    {
+        ?>
+        <div class="sfx-sidebar-toggle-wrapper">
+            <button type="button" class="sfx-sidebar-toggle" id="sfx-sidebar-toggle" aria-label="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>" title="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>">
+                <!-- Hamburger icon (shown when sidebar is collapsed) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                <!-- Close icon (shown when sidebar is visible) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
         <?php
     }
 
@@ -526,66 +561,134 @@ class DashboardRenderer
             return false;
         }
 
-        $user_roles = $current_user->roles;
+        $user_roles = (array) ($current_user->roles ?? []);
         
         // Check if user has at least one of the allowed roles
         return !empty(array_intersect($roles, $user_roles));
     }
 
     /**
-     * Render quicklinks section
+     * Check if user can see a quicklink group
+     *
+     * @param array $group Group data with roles
+     * @return bool
+     */
+    private function user_can_see_group(array $group): bool
+    {
+        $roles = $group['roles'] ?? [];
+        
+        // If no roles are specified, or 'all' is present, show to everyone
+        if (empty($roles) || in_array('all', $roles)) {
+            return true;
+        }
+
+        // Get current user's roles
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->exists()) {
+            return false;
+        }
+
+        $user_roles = (array) ($current_user->roles ?? []);
+        
+        // Check if user has at least one of the allowed roles
+        return !empty(array_intersect($roles, $user_roles));
+    }
+
+    /**
+     * Render quicklinks section with groups support
      *
      * @return void
      */
     private function render_quicklinks(): void
     {
         $quicklinks_data = $this->get_option('quicklinks_sortable', []);
-        $all_quicklinks = Settings::get_ordered_quicklinks(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $groups = Settings::get_ordered_quicklink_groups(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
+        $available_roles = Settings::get_available_roles();
 
-        // Filter to only enabled links with valid title/url and user has permission
-        $enabled_links = array_filter($all_quicklinks, function($link) {
-            return !empty($link['enabled']) 
-                && !empty($link['title']) 
-                && !empty($link['url'])
-                && $this->user_can_see_quicklink($link);
-        });
+        // Filter groups that user can see and have enabled links
+        $visible_groups = [];
+        foreach ($groups as $group) {
+            // Check group-level role restriction
+            if (!$this->user_can_see_group($group)) {
+                continue;
+            }
 
-        if (empty($enabled_links)) {
+            // Filter to only enabled links with valid title/url and user has permission
+            $enabled_links = array_filter($group['quicklinks'] ?? [], function($link) {
+                return !empty($link['enabled']) 
+                    && !empty($link['title']) 
+                    && !empty($link['url'])
+                    && $this->user_can_see_quicklink($link);
+            });
+
+            // Skip empty groups
+            if (!empty($enabled_links)) {
+                $visible_groups[] = [
+                    'group' => $group,
+                    'links' => $enabled_links,
+                ];
+            }
+        }
+
+        // Don't render anything if no visible groups
+        if (empty($visible_groups)) {
             return;
         }
 
-        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
-
         ?>
         <section class="sfx-quicklinks-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Quick Actions', 'sfxtheme'); ?></h2>
-            <div class="sfx-quicklinks-grid">
-                <?php foreach ($enabled_links as $link): 
-                    $url = $this->resolve_url($link['url'] ?? '');
-                    $icon = $link['icon'] ?? $default_icon;
-                    $title = $link['title'] ?? '';
-                    $roles = $link['roles'] ?? [];
-                    $has_role_restriction = !empty($roles) && !in_array('all', $roles);
-                    $role_badges = '';
-                    
-                    // Show role badges only to admins for restricted links
-                    if ($has_role_restriction && current_user_can('manage_options')) {
-                        $available_roles = Settings::get_available_roles();
-                        $role_badges = '<div class="sfx-quicklink-role-badges">';
-                        foreach ($roles as $role_slug) {
-                            $role_name = $available_roles[$role_slug] ?? $role_slug;
-                            $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
-                        }
-                        $role_badges .= '</div>';
-                    }
-                    ?>
-                    <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
-                        <?php echo $role_badges; ?>
-                        <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
-                        <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
+            <?php foreach ($visible_groups as $index => $group_data): 
+                $group = $group_data['group'];
+                $enabled_links = $group_data['links'];
+                $group_title = $group['title'] ?? __('Quick Actions', 'sfxtheme');
+                $group_roles = $group['roles'] ?? [];
+                $group_has_role_restriction = !empty($group_roles) && !in_array('all', $group_roles);
+            ?>
+                <div class="sfx-quicklinks-group<?php echo $index > 0 ? ' sfx-quicklinks-group-stacked' : ''; ?>">
+                    <h3 class="sfx-quicklinks-group-title">
+                        <?php echo esc_html($group_title); ?>
+                        <?php 
+                        // Show group role badges to admins
+                        if ($group_has_role_restriction && current_user_can('manage_options')): 
+                        ?>
+                            <span class="sfx-group-role-badges">
+                                <?php foreach ($group_roles as $role_slug): 
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                ?>
+                                    <span class="sfx-group-role-badge"><?php echo esc_html($role_name); ?></span>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
+                    </h3>
+                    <div class="sfx-quicklinks-grid">
+                        <?php foreach ($enabled_links as $link): 
+                            $url = $this->resolve_url($link['url'] ?? '');
+                            $icon = !empty($link['icon']) ? $link['icon'] : $default_icon;
+                            $title = $link['title'] ?? '';
+                            $roles = $link['roles'] ?? [];
+                            $has_role_restriction = !empty($roles) && !in_array('all', $roles);
+                            $role_badges = '';
+                            
+                            // Show role badges only to admins for restricted links
+                            if ($has_role_restriction && current_user_can('manage_options')) {
+                                $role_badges = '<div class="sfx-quicklink-role-badges">';
+                                foreach ($roles as $role_slug) {
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                    $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
+                                }
+                                $role_badges .= '</div>';
+                            }
+                            ?>
+                            <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
+                                <?php echo $role_badges; ?>
+                                <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
+                                <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </section>
         <?php
     }
@@ -624,14 +727,15 @@ class DashboardRenderer
         $phone = $this->get_option('contact_phone', '');
         $website = $this->get_option('contact_website', '');
         $address = $this->get_option('contact_address', '');
-        $logo = $this->get_option('brand_logo', '');
+        $logo = $this->get_option('contact_logo', '');
+        $logo_height = absint($this->get_option('contact_logo_height', 48));
 
         ?>
         <aside class="sfx-info-section">
             <div class="sfx-info-card sfx-contact-info">
                 <?php if (!empty($logo)): ?>
                     <div class="sfx-contact-logo">
-                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" />
+                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" style="height: <?php echo esc_attr($logo_height); ?>px; width: auto;" />
                     </div>
                 <?php endif; ?>
                 <h2 class="sfx-section-title"><?php echo esc_html($card_title); ?></h2>

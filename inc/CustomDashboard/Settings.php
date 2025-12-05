@@ -61,6 +61,8 @@ class Settings
                 'enable_custom_dashboard',
                 'dashboard_welcome_title',
                 'dashboard_welcome_subtitle',
+                'allow_sidebar_toggle',
+                'sidebar_default_state',
             ],
             'sections' => [
                 'show_updates_section',
@@ -85,6 +87,8 @@ class Settings
             'contact' => [
                 'contact_card_title',
                 'contact_card_subtitle',
+                'contact_logo',
+                'contact_logo_height',
                 'contact_company',
                 'contact_email',
                 'contact_phone',
@@ -462,13 +466,215 @@ CSS;
     }
 
     /**
+     * Get WordPress URL suggestions for the quicklink modal
+     * Returns categorized admin URLs with titles and icons
+     * 
+     * Loads base suggestions from config file and adds dynamic plugin suggestions
+     *
+     * @return array<string, array{label: string, items: array<int, array{url: string, title: string, icon: string}>}>
+     */
+    public static function get_wordpress_url_suggestions(): array
+    {
+        // Base WordPress admin suggestions
+        $suggestions = [
+            'content' => [
+                'label' => __('Content', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'edit.php', 'title' => __('All Posts', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" /></svg>'],
+                    ['url' => 'post-new.php', 'title' => __('Add New Post', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>'],
+                    ['url' => 'edit.php?post_type=page', 'title' => __('All Pages', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>'],
+                    ['url' => 'post-new.php?post_type=page', 'title' => __('Add New Page', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>'],
+                    ['url' => 'edit-tags.php?taxonomy=category', 'title' => __('Categories', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>'],
+                    ['url' => 'edit-tags.php?taxonomy=post_tag', 'title' => __('Tags', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg>'],
+                    ['url' => 'edit-comments.php', 'title' => __('Comments', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" /></svg>'],
+                ],
+            ],
+            'media' => [
+                'label' => __('Media', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'upload.php', 'title' => __('Media Library', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>'],
+                    ['url' => 'media-new.php', 'title' => __('Add New Media', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>'],
+                ],
+            ],
+            'appearance' => [
+                'label' => __('Appearance', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'themes.php', 'title' => __('Themes', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>'],
+                    ['url' => 'customize.php', 'title' => __('Customize', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>'],
+                    ['url' => 'widgets.php', 'title' => __('Widgets', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" /></svg>'],
+                    ['url' => 'nav-menus.php', 'title' => __('Menus', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>'],
+                ],
+            ],
+            'plugins' => [
+                'label' => __('Plugins', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'plugins.php', 'title' => __('Installed Plugins', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" /></svg>'],
+                    ['url' => 'plugin-install.php', 'title' => __('Add New Plugin', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>'],
+                ],
+            ],
+            'users' => [
+                'label' => __('Users', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'users.php', 'title' => __('All Users', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>'],
+                    ['url' => 'user-new.php', 'title' => __('Add New User', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>'],
+                    ['url' => 'profile.php', 'title' => __('Your Profile', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'],
+                ],
+            ],
+            'tools' => [
+                'label' => __('Tools', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'tools.php', 'title' => __('Available Tools', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" /></svg>'],
+                    ['url' => 'import.php', 'title' => __('Import', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>'],
+                    ['url' => 'export.php', 'title' => __('Export', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>'],
+                    ['url' => 'site-health.php', 'title' => __('Site Health', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>'],
+                ],
+            ],
+            'settings' => [
+                'label' => __('Settings', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'options-general.php', 'title' => __('General Settings', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'],
+                    ['url' => 'options-writing.php', 'title' => __('Writing', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>'],
+                    ['url' => 'options-reading.php', 'title' => __('Reading', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>'],
+                    ['url' => 'options-permalink.php', 'title' => __('Permalinks', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>'],
+                ],
+            ],
+            'theme' => [
+                'label' => __('Theme Settings', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'admin.php?page=sfx-theme-settings', 'title' => __('Global Theme Settings', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-general-theme-options', 'title' => __('General Options', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-custom-dashboard', 'title' => __('Custom Dashboard', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-wp-optimizer', 'title' => __('WP Optimizer', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-image-optimizer', 'title' => __('Image Optimizer', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-security-headers', 'title' => __('Security Headers', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>'],
+                    ['url' => 'admin.php?page=sfx-html-copy-paste', 'title' => __('HTML Copy/Paste', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>'],
+                    ['url' => 'edit.php?post_type=sfx_contact_info', 'title' => __('Contact Information', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>'],
+                    ['url' => 'edit.php?post_type=sfx_social_account', 'title' => __('Social Media', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>'],
+                    ['url' => 'edit.php?post_type=sfx_custom_script', 'title' => __('Custom Scripts', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" /></svg>'],
+                ],
+            ],
+        ];
+        
+        // Add Bricks if active
+        if (defined('BRICKS_VERSION') || class_exists('Bricks\\Theme')) {
+            $suggestions['bricks'] = [
+                'label' => __('Bricks Builder', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'admin.php?page=bricks', 'title' => __('Bricks Settings', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>'],
+                    ['url' => 'admin.php?page=bricks-templates', 'title' => __('Bricks Templates', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5A3.375 3.375 0 006.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" /></svg>'],
+                ],
+            ];
+        }
+        
+        // Add WooCommerce if active
+        if (class_exists('WooCommerce')) {
+            $suggestions['woocommerce'] = [
+                'label' => __('WooCommerce', 'sfxtheme'),
+                'items' => [
+                    ['url' => 'edit.php?post_type=product', 'title' => __('Products', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>'],
+                    ['url' => 'post-new.php?post_type=product', 'title' => __('Add Product', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>'],
+                    ['url' => 'edit.php?post_type=shop_order', 'title' => __('Orders', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>'],
+                    ['url' => 'admin.php?page=wc-settings', 'title' => __('WooCommerce Settings', 'sfxtheme'), 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'],
+                ],
+            ];
+        }
+        
+        // Add custom post types dynamically
+        $custom_post_types = get_post_types([
+            'public' => true,
+            '_builtin' => false,
+        ], 'objects');
+        
+        if (!empty($custom_post_types)) {
+            // Default icon for custom post types
+            $default_cpt_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>';
+            $add_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
+            $folder_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>';
+            $tag_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg>';
+            
+            foreach ($custom_post_types as $post_type) {
+                // Skip certain post types that might not be suitable
+                if (in_array($post_type->name, ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation'])) {
+                    continue;
+                }
+                
+                $cpt_items = [];
+                
+                // Add "All {post_type}" link
+                if ($post_type->name === 'post') {
+                    $cpt_items[] = [
+                        'url' => 'edit.php',
+                        'title' => sprintf(__('All %s', 'sfxtheme'), $post_type->labels->name),
+                        'icon' => $default_cpt_icon,
+                    ];
+                } else {
+                    $cpt_items[] = [
+                        'url' => 'edit.php?post_type=' . $post_type->name,
+                        'title' => sprintf(__('All %s', 'sfxtheme'), $post_type->labels->name),
+                        'icon' => $default_cpt_icon,
+                    ];
+                }
+                
+                // Add "Add New {post_type}" link
+                if ($post_type->name === 'post') {
+                    $cpt_items[] = [
+                        'url' => 'post-new.php',
+                        'title' => sprintf(__('Add New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                        'icon' => $add_icon,
+                    ];
+                } else {
+                    $cpt_items[] = [
+                        'url' => 'post-new.php?post_type=' . $post_type->name,
+                        'title' => sprintf(__('Add New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                        'icon' => $add_icon,
+                    ];
+                }
+                
+                // Add associated taxonomies
+                $taxonomies = get_object_taxonomies($post_type->name, 'objects');
+                foreach ($taxonomies as $taxonomy) {
+                    if (!$taxonomy->public || !$taxonomy->show_ui) {
+                        continue;
+                    }
+                    
+                    // Determine icon based on taxonomy type
+                    $tax_icon = $taxonomy->hierarchical ? $folder_icon : $tag_icon;
+                    
+                    // Build taxonomy URL
+                    if ($post_type->name === 'post') {
+                        $tax_url = 'edit-tags.php?taxonomy=' . $taxonomy->name;
+                    } else {
+                        $tax_url = 'edit-tags.php?taxonomy=' . $taxonomy->name . '&post_type=' . $post_type->name;
+                    }
+                    
+                    $cpt_items[] = [
+                        'url' => $tax_url,
+                        'title' => $taxonomy->labels->name,
+                        'icon' => $tax_icon,
+                    ];
+                }
+                
+                // Only add if there are items
+                if (!empty($cpt_items)) {
+                    $suggestions['cpt_' . $post_type->name] = [
+                        'label' => $post_type->labels->name,
+                        'items' => $cpt_items,
+                    ];
+                }
+            }
+        }
+
+        return apply_filters('sfx_quicklink_url_suggestions', $suggestions);
+    }
+
+    /**
      * Get default predefined quicklinks
      *
      * @return array<int, array<string, mixed>>
      */
     public static function get_default_quicklinks(): array
     {
-        return [
+        $quicklinks = [
             [
                 'id' => 'new_post',
                 'title' => __('New Post', 'sfxtheme'),
@@ -493,6 +699,38 @@ CSS;
                 'enabled' => 1,
                 'roles' => [],
             ],
+        ];
+        
+        // Add custom post types to default quicklinks (limited to public types)
+        $custom_post_types = get_post_types([
+            'public' => true,
+            '_builtin' => false,
+            'show_in_menu' => true,
+        ], 'objects');
+        
+        if (!empty($custom_post_types)) {
+            $add_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
+            
+            foreach ($custom_post_types as $post_type) {
+                // Skip certain post types that might not be suitable for quick actions
+                if (in_array($post_type->name, ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'wp_template', 'wp_template_part', 'wp_global_styles', 'wp_navigation'])) {
+                    continue;
+                }
+                
+                // Add quicklink for this post type (capability check will happen at render time)
+                $quicklinks[] = [
+                    'id' => 'new_' . $post_type->name,
+                    'title' => sprintf(__('New %s', 'sfxtheme'), $post_type->labels->singular_name),
+                    'url' => 'post-new.php?post_type=' . $post_type->name,
+                    'icon' => $add_icon,
+                    'enabled' => 1,
+                    'roles' => [],
+                ];
+            }
+        }
+        
+        // Add remaining default quicklinks
+        $quicklinks = array_merge($quicklinks, [
             [
                 'id' => 'themes',
                 'title' => __('Themes', 'sfxtheme'),
@@ -557,7 +795,159 @@ CSS;
                 'enabled' => 0,
                 'roles' => [],
             ],
+        ]);
+        
+        return $quicklinks;
+    }
+
+    /**
+     * Get default quicklink groups structure
+     * Returns one default group containing all predefined quicklinks
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_default_quicklink_groups(): array
+    {
+        $predefined = self::get_default_quicklinks();
+        $quicklinks = [];
+        
+        foreach ($predefined as $link) {
+            $quicklinks[] = array_merge($link, ['type' => 'predefined']);
+        }
+        
+        return [
+            [
+                'id' => 'group_default',
+                'title' => __('Quick Actions', 'sfxtheme'),
+                'roles' => [],
+                'quicklinks' => $quicklinks,
+            ],
         ];
+    }
+
+    /**
+     * Get ordered quicklink groups with saved data merged
+     *
+     * @param array $saved_data Saved groups data from options
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_ordered_quicklink_groups(array $saved_data = []): array
+    {
+        $predefined = self::get_default_quicklinks();
+        $predefined_ids = array_column($predefined, 'id');
+        
+        // Check if data is in new groups format with non-empty groups
+        if (!empty($saved_data) && isset($saved_data['groups']) && !empty($saved_data['groups'])) {
+            // New format - process groups
+            $groups = [];
+            
+            foreach ($saved_data['groups'] as $group) {
+                if (!isset($group['id'])) {
+                    continue;
+                }
+                
+                $quicklinks = [];
+                foreach ($group['quicklinks'] ?? [] as $item) {
+                    if (!isset($item['type'])) {
+                        continue;
+                    }
+                    
+                    if ($item['type'] === 'predefined') {
+                        // Find predefined link data
+                        foreach ($predefined as $predef) {
+                            if ($predef['id'] === $item['id']) {
+                                $quicklinks[] = array_merge($predef, [
+                                    'type' => 'predefined',
+                                    'enabled' => !empty($item['enabled']),
+                                    'roles' => $item['roles'] ?? [],
+                                ]);
+                                break;
+                            }
+                        }
+                    } elseif ($item['type'] === 'custom') {
+                        $quicklinks[] = [
+                            'type' => 'custom',
+                            'id' => $item['id'] ?? 'custom_' . uniqid(),
+                            'title' => $item['title'] ?? '',
+                            'url' => $item['url'] ?? '',
+                            'icon' => !empty($item['icon']) ? $item['icon'] : self::DEFAULT_CUSTOM_ICON,
+                            'enabled' => !empty($item['enabled']),
+                            'roles' => $item['roles'] ?? [],
+                        ];
+                    }
+                }
+                
+                $groups[] = [
+                    'id' => $group['id'],
+                    'title' => $group['title'] ?? __('Untitled Group', 'sfxtheme'),
+                    'roles' => $group['roles'] ?? [],
+                    'quicklinks' => $quicklinks,
+                ];
+            }
+            
+            // Add any new predefined links that aren't in saved data to the first group
+            $all_saved_predefined_ids = [];
+            foreach ($groups as $group) {
+                foreach ($group['quicklinks'] as $link) {
+                    if (($link['type'] ?? '') === 'predefined') {
+                        $all_saved_predefined_ids[] = $link['id'];
+                    }
+                }
+            }
+            
+            // Find new predefined links
+            $new_predefined_links = [];
+            foreach ($predefined as $predef) {
+                if (!in_array($predef['id'], $all_saved_predefined_ids)) {
+                    $new_predefined_links[] = array_merge($predef, [
+                        'type' => 'predefined',
+                        'enabled' => !empty($predef['enabled']),
+                        'roles' => [],
+                    ]);
+                }
+            }
+            
+            // Add new links to the first group
+            if (!empty($new_predefined_links) && !empty($groups)) {
+                $groups[0]['quicklinks'] = array_merge($groups[0]['quicklinks'], $new_predefined_links);
+            }
+            
+            return $groups;
+        }
+        
+        // Check for legacy flat format or empty - migrate to groups
+        if (!empty($saved_data) && !isset($saved_data['groups'])) {
+            // Old flat format - migrate to single group
+            $quicklinks = self::get_ordered_quicklinks($saved_data);
+            
+            // Sanitize roles in each quicklink during migration
+            $available_roles = array_keys(self::get_available_roles());
+            foreach ($quicklinks as &$quicklink) {
+                $sanitized_roles = [];
+                if (!empty($quicklink['roles']) && is_array($quicklink['roles'])) {
+                    foreach ($quicklink['roles'] as $role) {
+                        $sanitized_role = sanitize_key($role);
+                        if ($sanitized_role === 'all' || in_array($sanitized_role, $available_roles)) {
+                            $sanitized_roles[] = $sanitized_role;
+                        }
+                    }
+                }
+                $quicklink['roles'] = $sanitized_roles;
+            }
+            unset($quicklink); // Break reference
+            
+            return [
+                [
+                    'id' => 'group_default',
+                    'title' => __('Quick Actions', 'sfxtheme'),
+                    'roles' => [],
+                    'quicklinks' => $quicklinks,
+                ],
+            ];
+        }
+        
+        // No saved data - return defaults
+        return self::get_default_quicklink_groups();
     }
 
     /**
@@ -588,6 +978,24 @@ CSS;
                 'description' => __('The subtitle text displayed below the title. Available placeholders: {user_name}, {first_name}, {last_name}, {username}', 'sfxtheme'),
                 'type' => 'text',
                 'default' => __("Here's what's happening with your projects today.", 'sfxtheme'),
+            ],
+            [
+                'id' => 'allow_sidebar_toggle',
+                'label' => __('Allow Sidebar Toggle', 'sfxtheme'),
+                'description' => __('Show a toggle button to collapse/expand the admin menu sidebar as an offcanvas.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
+            ],
+            [
+                'id' => 'sidebar_default_state',
+                'label' => __('Sidebar Default State', 'sfxtheme'),
+                'description' => __('Choose whether the admin sidebar is visible or collapsed by default.', 'sfxtheme'),
+                'type' => 'select',
+                'default' => 'visible',
+                'options' => [
+                    'visible' => __('Visible', 'sfxtheme'),
+                    'collapsed' => __('Collapsed', 'sfxtheme'),
+                ],
             ],
             [
                 'id' => 'show_updates_section',
@@ -700,6 +1108,23 @@ CSS;
                 'description' => __('Company website URL.', 'sfxtheme'),
                 'type' => 'url',
                 'default' => '',
+            ],
+            [
+                'id' => 'contact_logo',
+                'label' => __('Contact Logo', 'sfxtheme'),
+                'description' => __('Upload a logo to display in the contact card. If not set, no logo will be shown. Recommended: PNG or SVG, max 200KB.', 'sfxtheme'),
+                'type' => 'logo_upload',
+                'default' => '',
+            ],
+            [
+                'id' => 'contact_logo_height',
+                'label' => __('Contact Logo Height', 'sfxtheme'),
+                'description' => __('Set the height of the contact logo in pixels. Width will scale proportionally.', 'sfxtheme'),
+                'type' => 'number',
+                'default' => 48,
+                'min' => 20,
+                'max' => 200,
+                'step' => 1,
             ],
             [
                 'id' => 'contact_address',
@@ -1483,7 +1908,7 @@ CSS;
                         'id' => $item['id'] ?? 'custom_' . uniqid(),
                         'title' => $item['title'] ?? '',
                         'url' => $item['url'] ?? '',
-                        'icon' => $item['icon'] ?? '',
+                        'icon' => !empty($item['icon']) ? $item['icon'] : self::DEFAULT_CUSTOM_ICON,
                         'enabled' => !empty($item['enabled']),
                         'roles' => $item['roles'] ?? [],
                     ];
@@ -1515,7 +1940,7 @@ CSS;
     }
 
     /**
-     * Render unified sortable quicklinks field
+     * Render unified sortable quicklinks field with groups support
      *
      * @param string $id
      * @param mixed $value
@@ -1523,211 +1948,287 @@ CSS;
      */
     public static function render_quicklinks_sortable_field(string $id, $value): void
     {
-        $quicklinks = self::get_ordered_quicklinks(is_array($value) ? $value : []);
+        $groups = self::get_ordered_quicklink_groups(is_array($value) ? $value : []);
         $allowed_svg = self::get_allowed_svg_tags();
         $available_roles = self::get_available_roles();
         ?>
-        <div class="sfx-quicklinks-sortable-container">
+        <div class="sfx-quicklinks-groups-container">
             <p class="description" style="margin-bottom: 15px;">
-                <?php esc_html_e('Drag to reorder. Check to enable/disable each quick link. Use the role selector to restrict visibility.', 'sfxtheme'); ?>
+                <?php esc_html_e('Create multiple groups of quick links. Drag groups to reorder them, or drag links between groups.', 'sfxtheme'); ?>
             </p>
-            <ul class="sfx-quicklinks-sortable" id="sfx-quicklinks-sortable">
-                <?php foreach ($quicklinks as $index => $link): ?>
+            
+            <div class="sfx-quicklink-groups-sortable" id="sfx-quicklink-groups-sortable">
+                <?php foreach ($groups as $group_index => $group): 
+                    $group_roles = $group['roles'] ?? [];
+                    $group_has_all_roles = empty($group_roles) || in_array('all', $group_roles);
+                ?>
+                <div class="sfx-quicklink-group" data-group-id="<?php echo esc_attr($group['id']); ?>">
+                    <div class="sfx-quicklink-group-header">
+                        <span class="sfx-group-drag-handle">☰</span>
+                        <input type="hidden" 
+                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][id]" 
+                               value="<?php echo esc_attr($group['id']); ?>"
+                               class="sfx-group-id" />
+                        <input type="text" 
+                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][title]" 
+                               value="<?php echo esc_attr($group['title']); ?>"
+                               class="sfx-group-title-input"
+                               placeholder="<?php esc_attr_e('Group Title', 'sfxtheme'); ?>" />
+                        
+                        <!-- Group Role Selector -->
+                        <div class="sfx-quicklink-roles sfx-group-roles">
+                            <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
+                                <span class="sfx-roles-toggle-icon">▼</span>
+                                <span class="sfx-roles-toggle-label">
                     <?php
+                                    if ($group_has_all_roles) {
+                                        esc_html_e('All Roles', 'sfxtheme');
+                                    } else {
+                                        $role_count = count($group_roles);
+                                        printf(
+                                            esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
+                                            $role_count
+                                        );
+                                    }
+                                    ?>
+                                </span>
+                            </button>
+                            <div class="sfx-quicklink-roles-dropdown" style="display: none;">
+                                <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                                    <input type="checkbox" 
+                                           name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][roles][]" 
+                                           value="all" 
+                                           class="sfx-role-all-checkbox"
+                                           <?php checked($group_has_all_roles); ?> />
+                                    <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                                </label>
+                                <div class="sfx-roles-divider"></div>
+                                <?php foreach ($available_roles as $role_slug => $role_name): ?>
+                                    <label class="sfx-role-checkbox">
+                                        <input type="checkbox" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][roles][]" 
+                                               value="<?php echo esc_attr($role_slug); ?>" 
+                                               class="sfx-role-individual-checkbox"
+                                               <?php checked(in_array($role_slug, $group_roles) && !$group_has_all_roles); ?>
+                                               <?php disabled($group_has_all_roles); ?> />
+                                        <span><?php echo esc_html($role_name); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="button sfx-toggle-group" title="<?php esc_attr_e('Collapse/Expand', 'sfxtheme'); ?>">
+                            <span class="dashicons dashicons-arrow-up-alt2"></span>
+                        </button>
+                        <button type="button" class="button sfx-remove-group" title="<?php esc_attr_e('Remove Group', 'sfxtheme'); ?>">
+                            <span class="dashicons dashicons-trash"></span>
+                        </button>
+                    </div>
+                    
+                    <div class="sfx-quicklink-group-content">
+                        <ul class="sfx-quicklinks-sortable" data-group-index="<?php echo $group_index; ?>">
+                            <?php foreach ($group['quicklinks'] as $link_index => $link): 
                     $type_badge = $link['type'] === 'custom' ? '<span class="sfx-quicklink-badge">' . esc_html__('Custom', 'sfxtheme') . '</span>' : '';
                     $is_custom = $link['type'] === 'custom';
-                    $link_roles = $link['roles'] ?? [];
-                    $has_all_roles = in_array('all', $link_roles);
+                                $link_roles = $link['roles'] ?? [];
+                                $has_all_roles = empty($link_roles) || in_array('all', $link_roles);
                     ?>
                     <li class="sfx-quicklink-item <?php echo $is_custom ? 'sfx-quicklink-item-custom' : ''; ?>" 
                         data-id="<?php echo esc_attr($link['id']); ?>" 
                         data-type="<?php echo esc_attr($link['type']); ?>">
-                        
-                        <?php if ($is_custom): ?>
-                            <!-- Custom Link: Compact View (like predefined) -->
-                            <span class="sfx-quicklink-drag-handle">☰</span>
-                            <label class="sfx-quicklink-checkbox">
-                                <input type="checkbox" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
-                                       value="1" 
-                                       <?php checked(!empty($link['enabled'])); ?> />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                       value="<?php echo esc_attr($link['id']); ?>" 
-                                       class="sfx-quicklink-id" />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
-                                       value="<?php echo esc_attr($link['type']); ?>" 
-                                       class="sfx-quicklink-type" />
-                            </label>
-                            <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
-                            <span class="sfx-quicklink-label sfx-quicklink-title-display"><?php echo wp_kses($link['title'] ?: __('Untitled', 'sfxtheme'), self::get_allowed_title_tags()); ?></span>
-                            <code class="sfx-quicklink-url sfx-quicklink-url-display"><?php echo esc_html($link['url'] ?: '—'); ?></code>
-                            <?php echo $type_badge; ?>
-                            
-                            <!-- Role Selector -->
-                            <div class="sfx-quicklink-roles">
-                                <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
-                                    <span class="sfx-roles-toggle-icon">▼</span>
-                                    <span class="sfx-roles-toggle-label">
-                                        <?php 
-                                        if (empty($link_roles) || $has_all_roles) {
-                                            esc_html_e('All Roles', 'sfxtheme');
-                                        } else {
-                                            $role_count = count($link_roles);
-                                            printf(
-                                                esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
-                                                $role_count
-                                            );
-                                        }
-                                        ?>
-                                    </span>
-                                </button>
-                                <div class="sfx-quicklink-roles-dropdown" style="display: none;">
-                                    <label class="sfx-role-checkbox sfx-role-checkbox-all">
-                                        <input type="checkbox" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                               value="all" 
-                                               class="sfx-role-all-checkbox"
-                                               <?php checked($has_all_roles || empty($link_roles)); ?> />
-                                        <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
-                                    </label>
-                                    <div class="sfx-roles-divider"></div>
-                                    <?php foreach ($available_roles as $role_slug => $role_name): ?>
-                                        <label class="sfx-role-checkbox">
-                                            <input type="checkbox" 
-                                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                                   value="<?php echo esc_attr($role_slug); ?>" 
-                                                   class="sfx-role-individual-checkbox"
-                                                   <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles && !empty($link_roles)); ?>
-                                                   <?php disabled($has_all_roles || empty($link_roles)); ?> />
-                                            <span><?php echo esc_html($role_name); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="sfx-quicklink-actions">
-                                <button type="button" class="button sfx-edit-quicklink" title="<?php esc_attr_e('Edit', 'sfxtheme'); ?>">
-                                    <span class="dashicons dashicons-edit"></span>
-                                </button>
-                                <button type="button" class="button sfx-remove-quicklink" title="<?php esc_attr_e('Remove', 'sfxtheme'); ?>">
-                                    <span class="dashicons dashicons-trash"></span>
-                                </button>
-                            </div>
-                            
-                            <!-- Custom Link: Editable Form (hidden by default) -->
-                            <div class="sfx-quicklink-edit-form" style="display: none;">
-                                <div class="sfx-quicklink-edit-fields">
-                                    <div class="sfx-edit-field">
-                                        <label><?php esc_html_e('Title', 'sfxtheme'); ?></label>
-                                        <input type="text" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][title]" 
-                                               value="<?php echo esc_attr($link['title']); ?>" 
-                                               class="sfx-quicklink-title-input" 
-                                               placeholder="<?php esc_attr_e('Link Title', 'sfxtheme'); ?>" />
+                                
+                                <?php if ($is_custom): ?>
+                                    <!-- Custom Link -->
+                        <span class="sfx-quicklink-drag-handle">☰</span>
+                        <label class="sfx-quicklink-checkbox">
+                            <input type="checkbox" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][enabled]" 
+                                   value="1" 
+                                   <?php checked(!empty($link['enabled'])); ?> />
+                            <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][id]" 
+                                   value="<?php echo esc_attr($link['id']); ?>" 
+                                   class="sfx-quicklink-id" />
+                            <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][type]" 
+                                   value="<?php echo esc_attr($link['type']); ?>" 
+                                   class="sfx-quicklink-type" />
+                        </label>
+                        <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
+                                    <span class="sfx-quicklink-label sfx-quicklink-title-display"><?php echo wp_kses($link['title'] ?: __('Untitled', 'sfxtheme'), self::get_allowed_title_tags()); ?></span>
+                                    <code class="sfx-quicklink-url sfx-quicklink-url-display"><?php echo esc_html($link['url'] ?: '—'); ?></code>
+                                    <?php echo $type_badge; ?>
+                                    
+                                    <!-- Role Selector -->
+                                    <?php self::render_quicklink_roles_selector($id, $group_index, $link_index, $link_roles, $has_all_roles, $available_roles, true); ?>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="sfx-quicklink-actions">
+                                        <button type="button" class="button sfx-edit-quicklink" title="<?php esc_attr_e('Edit', 'sfxtheme'); ?>">
+                                            <span class="dashicons dashicons-edit"></span>
+                                        </button>
+                                        <button type="button" class="button sfx-remove-quicklink" title="<?php esc_attr_e('Remove', 'sfxtheme'); ?>">
+                                            <span class="dashicons dashicons-trash"></span>
+                                        </button>
                                     </div>
-                                    <div class="sfx-edit-field">
-                                        <label><?php esc_html_e('URL', 'sfxtheme'); ?></label>
-                                        <input type="text" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][url]" 
-                                               value="<?php echo esc_attr($link['url']); ?>" 
-                                               class="sfx-quicklink-url-input" 
-                                               placeholder="<?php esc_attr_e('admin.php?page=example', 'sfxtheme'); ?>" />
-                                    </div>
-                                    <div class="sfx-edit-field sfx-edit-field-full">
-                                        <label><?php esc_html_e('SVG Icon', 'sfxtheme'); ?></label>
-                                        <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][icon]" 
-                                                  class="sfx-quicklink-icon-input" 
-                                                  placeholder="<?php esc_attr_e('<svg>...</svg>', 'sfxtheme'); ?>" 
-                                                  rows="3"><?php echo esc_textarea($link['icon']); ?></textarea>
-                                    </div>
-                                </div>
-                                <div class="sfx-quicklink-edit-actions">
-                                    <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
-                                </div>
+                                    
+                                    <!-- Custom Link: Editable Form -->
+                                    <div class="sfx-quicklink-edit-form" style="display: none;">
+                                        <div class="sfx-quicklink-edit-fields">
+                                            <div class="sfx-edit-field">
+                                                <label><?php esc_html_e('Title', 'sfxtheme'); ?></label>
+                                <input type="text" 
+                                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][title]" 
+                                       value="<?php echo esc_attr($link['title']); ?>" 
+                                       class="sfx-quicklink-title-input" 
+                                                       placeholder="<?php esc_attr_e('Link Title', 'sfxtheme'); ?>" />
+                                            </div>
+                                            <div class="sfx-edit-field">
+                                                <label><?php esc_html_e('URL', 'sfxtheme'); ?></label>
+                                                <div class="sfx-url-field-wrapper">
+                                <input type="text" 
+                                                           name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][url]" 
+                                       value="<?php echo esc_attr($link['url']); ?>" 
+                                       class="sfx-quicklink-url-input" 
+                                                           placeholder="<?php esc_attr_e('admin.php?page=example', 'sfxtheme'); ?>" />
+                                                    <button type="button" class="sfx-browse-url-button" title="<?php esc_attr_e('Browse WordPress Links', 'sfxtheme'); ?>">
+                                                        <span class="dashicons dashicons-search"></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="sfx-edit-field sfx-edit-field-full">
+                                                <label><?php esc_html_e('SVG Icon', 'sfxtheme'); ?></label>
+                                                <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][icon]" 
+                                          class="sfx-quicklink-icon-input" 
+                                                          placeholder="<?php esc_attr_e('<svg>...</svg>', 'sfxtheme'); ?>" 
+                                                          rows="3"><?php echo esc_textarea($link['icon']); ?></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="sfx-quicklink-edit-actions">
+                                            <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
+                                        </div>
                             </div>
                         <?php else: ?>
-                            <!-- Predefined Link: Single Row -->
-                            <span class="sfx-quicklink-drag-handle">☰</span>
-                            <label class="sfx-quicklink-checkbox">
-                                <input type="checkbox" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
-                                       value="1" 
-                                       <?php checked(!empty($link['enabled'])); ?> />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                       value="<?php echo esc_attr($link['id']); ?>" 
-                                       class="sfx-quicklink-id" />
-                                <input type="hidden" 
-                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][type]" 
-                                       value="<?php echo esc_attr($link['type']); ?>" 
-                                       class="sfx-quicklink-type" />
-                            </label>
-                            <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
-                            <span class="sfx-quicklink-label"><?php echo esc_html($link['title']); ?></span>
-                            <code class="sfx-quicklink-url"><?php echo esc_html($link['url']); ?></code>
-                            
-                            <!-- Role Selector -->
-                            <div class="sfx-quicklink-roles">
-                                <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
-                                    <span class="sfx-roles-toggle-icon">▼</span>
-                                    <span class="sfx-roles-toggle-label">
-                                        <?php 
-                                        if (empty($link_roles) || $has_all_roles) {
-                                            esc_html_e('All Roles', 'sfxtheme');
-                                        } else {
-                                            $role_count = count($link_roles);
-                                            printf(
-                                                esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
-                                                $role_count
-                                            );
-                                        }
-                                        ?>
-                                    </span>
-                                </button>
-                                <div class="sfx-quicklink-roles-dropdown" style="display: none;">
-                                    <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                                    <!-- Predefined Link -->
+                                    <span class="sfx-quicklink-drag-handle">☰</span>
+                                    <label class="sfx-quicklink-checkbox">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                               value="all" 
-                                               class="sfx-role-all-checkbox"
-                                               <?php checked($has_all_roles || empty($link_roles)); ?> />
-                                        <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][enabled]" 
+                                               value="1" 
+                                               <?php checked(!empty($link['enabled'])); ?> />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][id]" 
+                                               value="<?php echo esc_attr($link['id']); ?>" 
+                                               class="sfx-quicklink-id" />
+                                        <input type="hidden" 
+                                               name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][type]" 
+                                               value="<?php echo esc_attr($link['type']); ?>" 
+                                               class="sfx-quicklink-type" />
                                     </label>
-                                    <div class="sfx-roles-divider"></div>
-                                    <?php foreach ($available_roles as $role_slug => $role_name): ?>
-                                        <label class="sfx-role-checkbox">
-                                            <input type="checkbox" 
-                                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][roles][]" 
-                                                   value="<?php echo esc_attr($role_slug); ?>" 
-                                                   class="sfx-role-individual-checkbox"
-                                                   <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles && !empty($link_roles)); ?>
-                                                   <?php disabled($has_all_roles || empty($link_roles)); ?> />
-                                            <span><?php echo esc_html($role_name); ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
+                                    <span class="sfx-quicklink-icon-preview"><?php echo wp_kses($link['icon'], $allowed_svg); ?></span>
+                                    <span class="sfx-quicklink-label"><?php echo esc_html($link['title']); ?></span>
+                            <code class="sfx-quicklink-url"><?php echo esc_html($link['url']); ?></code>
+                                    
+                                    <!-- Role Selector -->
+                                    <?php self::render_quicklink_roles_selector($id, $group_index, $link_index, $link_roles, $has_all_roles, $available_roles, true); ?>
                         <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
             </ul>
+                        
             <div class="sfx-quicklinks-actions">
-                <button type="button" id="sfx-add-custom-quicklink" class="button button-secondary">
-                    <?php esc_html_e('+ Add Custom Link', 'sfxtheme'); ?>
+                            <button type="button" class="button button-secondary sfx-add-custom-quicklink">
+                                <?php esc_html_e('+ Add Link', 'sfxtheme'); ?>
                 </button>
             </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <div class="sfx-quicklink-groups-actions">
+                <button type="button" id="sfx-add-quicklink-group" class="button button-primary">
+                    <?php esc_html_e('+ Add New Group', 'sfxtheme'); ?>
+                </button>
+            </div>
+            
             <p class="description" style="margin-top: 15px;">
+                <strong><?php esc_html_e('Groups:', 'sfxtheme'); ?></strong> <?php esc_html_e('Each group appears as a separate section on the dashboard. Set group roles to restrict who can see the entire group.', 'sfxtheme'); ?>
+                <br>
                 <strong><?php esc_html_e('URL:', 'sfxtheme'); ?></strong> <?php esc_html_e('Use admin paths (e.g., "edit.php") or placeholders:', 'sfxtheme'); ?>
                 <code>{admin_url}</code>, <code>{site_url}</code>, <code>{home_url}</code>
                 <br>
                 <strong><?php esc_html_e('Icon:', 'sfxtheme'); ?></strong> <?php esc_html_e('Paste SVG code.', 'sfxtheme'); ?> 
                 <a href="https://heroicons.com/" target="_blank" rel="noopener">Heroicons</a> <?php esc_html_e('(outline style, 24x24) recommended.', 'sfxtheme'); ?>
-                <br>
-                <strong><?php esc_html_e('Roles:', 'sfxtheme'); ?></strong> <?php esc_html_e('Select which user roles can see this link. "All Roles" shows the link to everyone.', 'sfxtheme'); ?>
             </p>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render role selector for a quicklink (helper method)
+     *
+     * @param string $id
+     * @param int $group_index
+     * @param int $link_index
+     * @param array $link_roles
+     * @param bool $has_all_roles
+     * @param array $available_roles
+     * @param bool $is_group_format
+     * @return void
+     */
+    private static function render_quicklink_roles_selector(
+        string $id, 
+        int $group_index, 
+        int $link_index, 
+        array $link_roles, 
+        bool $has_all_roles, 
+        array $available_roles,
+        bool $is_group_format = true
+    ): void {
+        $name_prefix = $is_group_format 
+            ? self::$option_name . "[{$id}][groups][{$group_index}][quicklinks][{$link_index}]"
+            : self::$option_name . "[{$id}][{$link_index}]";
+        ?>
+        <div class="sfx-quicklink-roles">
+            <button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">
+                <span class="sfx-roles-toggle-icon">▼</span>
+                <span class="sfx-roles-toggle-label">
+                    <?php 
+                    if ($has_all_roles) {
+                        esc_html_e('All Roles', 'sfxtheme');
+                    } else {
+                        $role_count = count($link_roles);
+                        printf(
+                            esc_html(_n('%d Role', '%d Roles', $role_count, 'sfxtheme')),
+                            $role_count
+                        );
+                    }
+                    ?>
+                </span>
+            </button>
+            <div class="sfx-quicklink-roles-dropdown" style="display: none;">
+                <label class="sfx-role-checkbox sfx-role-checkbox-all">
+                    <input type="checkbox" 
+                           name="<?php echo esc_attr($name_prefix); ?>[roles][]" 
+                           value="all" 
+                           class="sfx-role-all-checkbox"
+                           <?php checked($has_all_roles); ?> />
+                    <span><?php esc_html_e('All Roles', 'sfxtheme'); ?></span>
+                </label>
+                <div class="sfx-roles-divider"></div>
+                <?php foreach ($available_roles as $role_slug => $role_name): ?>
+                    <label class="sfx-role-checkbox">
+                        <input type="checkbox" 
+                               name="<?php echo esc_attr($name_prefix); ?>[roles][]" 
+                               value="<?php echo esc_attr($role_slug); ?>" 
+                               class="sfx-role-individual-checkbox"
+                               <?php checked(in_array($role_slug, $link_roles) && !$has_all_roles); ?>
+                               <?php disabled($has_all_roles); ?> />
+                        <span><?php echo esc_html($role_name); ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
         </div>
         <?php
     }
@@ -2055,9 +2556,9 @@ CSS;
                     // Check if it's JSON encoded (from hidden field)
                     if (is_string($input[$id]) && !empty($input[$id])) {
                         $decoded = json_decode($input[$id], true);
-                        $output[$id] = is_array($decoded) ? self::sanitize_quicklinks_sortable($decoded) : [];
+                        $output[$id] = is_array($decoded) ? self::sanitize_quicklink_groups($decoded) : ['groups' => []];
                     } else {
-                        $output[$id] = self::sanitize_quicklinks_sortable($input[$id] ?? []);
+                        $output[$id] = self::sanitize_quicklink_groups($input[$id] ?? []);
                     }
                     break;
 
@@ -2089,6 +2590,8 @@ CSS;
                         $output[$id] = 3;
                     } elseif ($id === 'form_submissions_limit') {
                         $output[$id] = min(max($output[$id], 1), 20);
+                    } elseif ($id === 'contact_logo_height') {
+                        $output[$id] = min(max($output[$id], 20), 200);
                     }
                     break;
 
@@ -2201,9 +2704,9 @@ CSS;
             return esc_url_raw($url, ['https', 'http']);
         }
 
-        // Handle query strings and anchors
+        // Handle query strings and anchors - sanitize as text field to preserve structure
         if (strpos($url, '?') === 0 || strpos($url, '#') === 0) {
-            return esc_attr($url);
+            return sanitize_text_field($url);
         }
 
         // Default: sanitize as URL
@@ -2211,7 +2714,83 @@ CSS;
     }
 
     /**
-     * Sanitize sortable quicklinks
+     * Sanitize quicklink groups (new format with groups)
+     *
+     * @param mixed $input
+     * @return array{groups: array<int, array<string, mixed>>}
+     */
+    private static function sanitize_quicklink_groups($input): array
+    {
+        if (!is_array($input)) {
+            return ['groups' => []];
+        }
+
+        // Check if it's in the new groups format
+        if (isset($input['groups']) && is_array($input['groups'])) {
+            $groups = [];
+            $available_roles = array_keys(self::get_available_roles());
+            
+            foreach ($input['groups'] as $group) {
+                if (!is_array($group)) {
+                    continue;
+                }
+                
+                // Sanitize group ID
+                $group_id = $group['id'] ?? '';
+                if (empty($group_id) || !preg_match('/^group_[a-zA-Z0-9_]+$/', $group_id)) {
+                    $group_id = 'group_' . uniqid();
+                } else {
+                    $group_id = sanitize_key($group_id);
+                }
+                
+                // Sanitize group title
+                $group_title = sanitize_text_field($group['title'] ?? __('Untitled Group', 'sfxtheme'));
+                if (mb_strlen($group_title) > 100) {
+                    $group_title = mb_substr($group_title, 0, 100);
+                }
+                
+                // Sanitize group roles
+                $group_roles = [];
+                if (!empty($group['roles']) && is_array($group['roles'])) {
+                    foreach ($group['roles'] as $role) {
+                        $sanitized_role = sanitize_key($role);
+                        if ($sanitized_role === 'all' || in_array($sanitized_role, $available_roles)) {
+                            $group_roles[] = $sanitized_role;
+                        }
+                    }
+                }
+                
+                // Sanitize quicklinks within this group
+                $quicklinks = self::sanitize_quicklinks_sortable($group['quicklinks'] ?? []);
+                
+                $groups[] = [
+                    'id' => $group_id,
+                    'title' => $group_title,
+                    'roles' => $group_roles,
+                    'quicklinks' => $quicklinks,
+                ];
+            }
+            
+            return ['groups' => $groups];
+        }
+        
+        // Legacy flat format - migrate to groups format
+        $quicklinks = self::sanitize_quicklinks_sortable($input);
+        
+        return [
+            'groups' => [
+                [
+                    'id' => 'group_default',
+                    'title' => __('Quick Actions', 'sfxtheme'),
+                    'roles' => [],
+                    'quicklinks' => $quicklinks,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Sanitize sortable quicklinks (individual quicklinks within a group)
      *
      * @param mixed $input
      * @return array<int, array<string, mixed>>
@@ -2267,7 +2846,9 @@ CSS;
                 // Validate title length (max 100 chars after stripping tags)
                 $title_text = wp_strip_all_tags($title);
                 if (mb_strlen($title_text) > 100) {
-                    $title = mb_substr($title, 0, 100);
+                    // If too long, use truncated plain text to avoid corrupting HTML tags
+                    // This is safer than truncating HTML which could break mid-tag
+                    $title = esc_html(mb_substr($title_text, 0, 100));
                 }
                 
                 // Sanitize URL with proper validation
@@ -2282,8 +2863,9 @@ CSS;
                     $icon = self::DEFAULT_CUSTOM_ICON;
                 }
                 
-                // Only add custom links with at least a title or url
-                if (!empty($title) || !empty($url)) {
+                // Only add custom links with actual text content in title and valid url
+                // Use trimmed text content to reject titles with only HTML/whitespace
+                if (!empty(trim($title_text)) && !empty($url)) {
                     // Ensure ID is valid
                     $id = $item['id'] ?? '';
                     if (empty($id) || !preg_match('/^custom_[a-zA-Z0-9_]+$/', $id)) {

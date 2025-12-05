@@ -8,12 +8,30 @@
     'use strict';
 
     /**
-     * Initialize sortable quicklinks
+     * Escape HTML special characters for safe insertion
      */
-    function initQuicklinksSortable() {
-        var $sortable = $('#sfx-quicklinks-sortable');
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Escape text for use in HTML attributes
+     */
+    function escapeAttr(text) {
+        if (typeof text !== 'string') return '';
+        return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Initialize sortable quicklink groups
+     */
+    function initQuicklinkGroupsSortable() {
+        var $groupsContainer = $('#sfx-quicklink-groups-sortable');
         
-        if (!$sortable.length) {
+        if (!$groupsContainer.length) {
             return;
         }
         
@@ -25,137 +43,309 @@
         
         // Destroy existing sortable if it exists
         try {
-            if ($sortable.data('ui-sortable')) {
-                $sortable.sortable('destroy');
+            if ($groupsContainer.data('ui-sortable')) {
+                $groupsContainer.sortable('destroy');
             }
         } catch(e) {}
         
-        // Initialize sortable
-        $sortable.sortable({
-            items: '> li.sfx-quicklink-item',
-            placeholder: 'sfx-quicklink-placeholder',
+        // Initialize groups sortable
+        $groupsContainer.sortable({
+            items: '> .sfx-quicklink-group',
+            placeholder: 'sfx-quicklink-group-placeholder',
             axis: 'y',
             cursor: 'move',
             opacity: 0.8,
             revert: 150,
-            handle: '.sfx-quicklink-drag-handle',
+            handle: '.sfx-group-drag-handle',
             update: function(event, ui) {
-                updateQuicklinksIndices();
+                updateAllIndices();
             }
         });
+        
+        // Initialize quicklinks sortable within each group with cross-group support
+        initQuicklinksSortableInGroups();
     }
 
     /**
-     * Update quicklinks item indices after reorder
+     * Initialize sortable quicklinks within groups with cross-group dragging
      */
-    function updateQuicklinksIndices() {
-        $('#sfx-quicklinks-sortable .sfx-quicklink-item').each(function(index) {
-            var $item = $(this);
-            $item.find('input, textarea').each(function() {
-                var $input = $(this);
-                var name = $input.attr('name');
-                if (name) {
-                    // Replace the index number in quicklinks_sortable[X]
-                    name = name.replace(/\[quicklinks_sortable\]\[\d+\]/, '[quicklinks_sortable][' + index + ']');
-                    $input.attr('name', name);
+    function initQuicklinksSortableInGroups() {
+        var $sortables = $('.sfx-quicklinks-sortable');
+        
+        $sortables.each(function() {
+            var $sortable = $(this);
+            
+            // Destroy existing sortable if it exists
+            try {
+                if ($sortable.data('ui-sortable')) {
+                    $sortable.sortable('destroy');
+                }
+            } catch(e) {}
+            
+            // Initialize sortable with connectWith for cross-group dragging
+            $sortable.sortable({
+                items: '> li.sfx-quicklink-item',
+                placeholder: 'sfx-quicklink-placeholder',
+                connectWith: '.sfx-quicklinks-sortable',
+                cursor: 'move',
+                opacity: 0.8,
+                revert: 150,
+                handle: '.sfx-quicklink-drag-handle',
+                update: function(event, ui) {
+                    // Only update indices if this is the receiving list
+                    if (this === ui.item.parent()[0]) {
+                        updateAllIndices();
+                    }
                 }
             });
         });
     }
 
     /**
-     * Initialize add custom quicklink button
+     * Update all indices for groups and quicklinks
      */
-    function initAddCustomQuicklink() {
-        var $addButton = $('#sfx-add-custom-quicklink');
-        var $sortable = $('#sfx-quicklinks-sortable');
-        
-        if (!$addButton.length || !$sortable.length) {
-            return;
-        }
-
+    function updateAllIndices() {
         var optionName = sfxDashboardAdmin.optionName;
-        var strings = sfxDashboardAdmin.strings;
-        var availableRoles = sfxDashboardAdmin.availableRoles || {};
-        var defaultSvgIcon = sfxDashboardAdmin.defaultIcon || '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
-
-        $addButton.on('click', function(e) {
-            e.preventDefault();
+        
+        $('#sfx-quicklink-groups-sortable .sfx-quicklink-group').each(function(groupIndex) {
+            var $group = $(this);
             
-            var newIndex = $sortable.find('.sfx-quicklink-item').length;
-            var newId = 'custom_' + Date.now();
-            
-            var $newItem = $('<li>', {
-                class: 'sfx-quicklink-item sfx-quicklink-item-custom sfx-quicklink-item-new is-editing',
-                'data-id': newId,
-                'data-type': 'custom'
+            // Update group inputs (including nested role checkboxes)
+            $group.find('.sfx-quicklink-group-header input').each(function() {
+                var $input = $(this);
+                var name = $input.attr('name');
+                if (name) {
+                    name = name.replace(/\[groups\]\[\d+\]/, '[groups][' + groupIndex + ']');
+                    $input.attr('name', name);
+                }
             });
             
-            // Build role checkboxes HTML
+            // Update quicklinks within this group
+            $group.find('.sfx-quicklinks-sortable').attr('data-group-index', groupIndex);
+            $group.find('.sfx-quicklinks-sortable .sfx-quicklink-item').each(function(linkIndex) {
+                var $item = $(this);
+                $item.find('input, textarea').each(function() {
+                    var $input = $(this);
+                    var name = $input.attr('name');
+                    if (name) {
+                        // Replace both group and quicklink indices
+                        name = name.replace(/\[groups\]\[\d+\]\[quicklinks\]\[\d+\]/, '[groups][' + groupIndex + '][quicklinks][' + linkIndex + ']');
+                        $input.attr('name', name);
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * Initialize add group button
+     */
+    function initAddGroup() {
+        $(document).on('click', '#sfx-add-quicklink-group', function(e) {
+            e.preventDefault();
+            
+            var $container = $('#sfx-quicklink-groups-sortable');
+            var groupIndex = $container.find('.sfx-quicklink-group').length;
+            var newGroupId = 'group_' + Date.now();
+            var optionName = sfxDashboardAdmin.optionName;
+            var strings = sfxDashboardAdmin.strings || {};
+            var availableRoles = sfxDashboardAdmin.availableRoles || {};
+            
+            // Build role checkboxes HTML (escape role names for XSS prevention)
             var rolesHtml = '';
             $.each(availableRoles, function(roleSlug, roleName) {
                 rolesHtml += '<label class="sfx-role-checkbox">' +
-                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][roles][]" value="' + roleSlug + '" class="sfx-role-individual-checkbox" disabled />' +
-                    '<span>' + roleName + '</span>' +
+                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="' + escapeAttr(roleSlug) + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<span>' + escapeHtml(roleName) + '</span>' +
                 '</label>';
             });
             
-            // Build the compact item HTML (same layout as predefined)
-            var itemHtml = 
-                '<span class="sfx-quicklink-drag-handle">☰</span>' +
-                '<label class="sfx-quicklink-checkbox">' +
-                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][enabled]" value="1" checked />' +
-                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][id]" value="' + newId + '" class="sfx-quicklink-id" />' +
-                    '<input type="hidden" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][type]" value="custom" class="sfx-quicklink-type" />' +
-                '</label>' +
-                '<span class="sfx-quicklink-icon-preview">' + defaultSvgIcon + '</span>' +
-                '<span class="sfx-quicklink-label sfx-quicklink-title-display">' + (strings.untitled || 'Untitled') + '</span>' +
-                '<code class="sfx-quicklink-url sfx-quicklink-url-display">—</code>' +
-                '<span class="sfx-quicklink-badge">' + (strings.custom || 'Custom') + '</span>' +
-                '<div class="sfx-quicklink-roles">' +
-                    '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
-                        '<span class="sfx-roles-toggle-icon">▼</span>' +
-                        '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
-                    '</button>' +
-                    '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
-                        '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
-                            '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
-                            '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
-                        '</label>' +
-                        '<div class="sfx-roles-divider"></div>' +
-                        rolesHtml +
+            var groupHtml = 
+                '<div class="sfx-quicklink-group sfx-quicklink-group-new" data-group-id="' + newGroupId + '">' +
+                    '<div class="sfx-quicklink-group-header">' +
+                        '<span class="sfx-group-drag-handle">☰</span>' +
+                        '<input type="hidden" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][id]" value="' + newGroupId + '" class="sfx-group-id" />' +
+                        '<input type="text" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][title]" value="" class="sfx-group-title-input" placeholder="' + (strings.groupTitle || 'Group Title') + '" />' +
+                        '<div class="sfx-quicklink-roles sfx-group-roles">' +
+                            '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
+                                '<span class="sfx-roles-toggle-icon">▼</span>' +
+                                '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
+                            '</button>' +
+                            '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
+                                '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
+                                    '<input type="checkbox" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
+                                    '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
+                                '</label>' +
+                                '<div class="sfx-roles-divider"></div>' +
+                                rolesHtml +
+                            '</div>' +
+                        '</div>' +
+                        '<button type="button" class="button sfx-toggle-group" title="' + (strings.collapseExpand || 'Collapse/Expand') + '">' +
+                            '<span class="dashicons dashicons-arrow-up-alt2"></span>' +
+                        '</button>' +
+                        '<button type="button" class="button sfx-remove-group" title="' + (strings.removeGroup || 'Remove Group') + '">' +
+                            '<span class="dashicons dashicons-trash"></span>' +
+                        '</button>' +
                     '</div>' +
-                '</div>' +
-                '<div class="sfx-quicklink-actions">' +
-                    '<button type="button" class="button sfx-edit-quicklink" title="' + (strings.edit || 'Edit') + '">' +
-                        '<span class="dashicons dashicons-edit"></span>' +
-                    '</button>' +
-                    '<button type="button" class="button sfx-remove-quicklink" title="' + (strings.remove || 'Remove') + '">' +
-                        '<span class="dashicons dashicons-trash"></span>' +
-                    '</button>' +
-                '</div>' +
-                // Edit form (shown for new items)
-                '<div class="sfx-quicklink-edit-form">' +
-                    '<div class="sfx-quicklink-edit-fields">' +
-                        '<div class="sfx-edit-field">' +
-                            '<label>' + (strings.title || 'Title') + '</label>' +
-                            '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.linkTitle || 'Link Title') + '" />' +
+                    '<div class="sfx-quicklink-group-content">' +
+                        '<ul class="sfx-quicklinks-sortable" data-group-index="' + groupIndex + '"></ul>' +
+                        '<div class="sfx-quicklinks-actions">' +
+                            '<button type="button" class="button button-secondary sfx-add-custom-quicklink">' +
+                                (strings.addLink || '+ Add Link') +
+                            '</button>' +
                         '</div>' +
-                        '<div class="sfx-edit-field">' +
-                            '<label>' + (strings.url || 'URL') + '</label>' +
-                            '<input type="text" name="' + optionName + '[quicklinks_sortable][' + newIndex + '][url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
-                        '</div>' +
-                        '<div class="sfx-edit-field sfx-edit-field-full">' +
-                            '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
-                            '<textarea name="' + optionName + '[quicklinks_sortable][' + newIndex + '][icon]" class="sfx-quicklink-icon-input" placeholder="<svg>...</svg>" rows="3">' + defaultSvgIcon + '</textarea>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="sfx-quicklink-edit-actions">' +
-                        '<button type="button" class="button button-primary sfx-save-quicklink">' + (strings.done || 'Done') + '</button>' +
                     '</div>' +
                 '</div>';
             
-            $newItem.html(itemHtml);
+            var $newGroup = $(groupHtml);
+            $container.append($newGroup);
+            
+            // Focus on title input
+            $newGroup.find('.sfx-group-title-input').focus();
+            
+            // Remove highlight after animation
+            setTimeout(function() {
+                $newGroup.removeClass('sfx-quicklink-group-new');
+            }, 1000);
+            
+            // Re-initialize sortables
+            initQuicklinksSortableInGroups();
+            $('#sfx-quicklink-groups-sortable').sortable('refresh');
+        });
+    }
+
+    /**
+     * Initialize remove group button
+     */
+    function initRemoveGroup() {
+        $(document).on('click', '.sfx-remove-group', function(e) {
+            e.preventDefault();
+            
+            var $group = $(this).closest('.sfx-quicklink-group');
+            var strings = sfxDashboardAdmin.strings || {};
+            
+            if (confirm(strings.confirmRemoveGroup || 'Are you sure you want to remove this group and all its links?')) {
+                $group.fadeOut(300, function() {
+                    $(this).remove();
+                    updateAllIndices();
+                });
+            }
+        });
+    }
+
+    /**
+     * Initialize toggle group (collapse/expand)
+     */
+    function initToggleGroup() {
+        $(document).on('click', '.sfx-toggle-group', function(e) {
+            e.preventDefault();
+            
+            var $button = $(this);
+            var $group = $button.closest('.sfx-quicklink-group');
+            var $content = $group.find('.sfx-quicklink-group-content');
+            var $icon = $button.find('.dashicons');
+            
+            $content.slideToggle(200);
+            
+            if ($icon.hasClass('dashicons-arrow-up-alt2')) {
+                $icon.removeClass('dashicons-arrow-up-alt2').addClass('dashicons-arrow-down-alt2');
+            } else {
+                $icon.removeClass('dashicons-arrow-down-alt2').addClass('dashicons-arrow-up-alt2');
+            }
+        });
+    }
+
+    /**
+     * Initialize add custom quicklink button (within groups)
+     */
+    function initAddCustomQuicklink() {
+        $(document).on('click', '.sfx-add-custom-quicklink', function(e) {
+            e.preventDefault();
+            
+            var $button = $(this);
+            var $group = $button.closest('.sfx-quicklink-group');
+            var $sortable = $group.find('.sfx-quicklinks-sortable');
+            var groupIndex = $sortable.data('group-index');
+            var linkIndex = $sortable.find('.sfx-quicklink-item').length;
+            var newId = 'custom_' + Date.now();
+            
+            var optionName = sfxDashboardAdmin.optionName;
+            var strings = sfxDashboardAdmin.strings || {};
+            var availableRoles = sfxDashboardAdmin.availableRoles || {};
+            var defaultSvgIcon = sfxDashboardAdmin.defaultIcon || '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>';
+            
+            var namePrefix = optionName + '[quicklinks_sortable][groups][' + groupIndex + '][quicklinks][' + linkIndex + ']';
+            
+            // Build role checkboxes HTML (escape role names for XSS prevention)
+            var rolesHtml = '';
+            $.each(availableRoles, function(roleSlug, roleName) {
+                rolesHtml += '<label class="sfx-role-checkbox">' +
+                    '<input type="checkbox" name="' + namePrefix + '[roles][]" value="' + escapeAttr(roleSlug) + '" class="sfx-role-individual-checkbox" disabled />' +
+                    '<span>' + escapeHtml(roleName) + '</span>' +
+                '</label>';
+            });
+            
+            var itemHtml = 
+                '<li class="sfx-quicklink-item sfx-quicklink-item-custom sfx-quicklink-item-new is-editing" data-id="' + newId + '" data-type="custom">' +
+                    '<span class="sfx-quicklink-drag-handle">☰</span>' +
+                    '<label class="sfx-quicklink-checkbox">' +
+                        '<input type="checkbox" name="' + namePrefix + '[enabled]" value="1" checked />' +
+                        '<input type="hidden" name="' + namePrefix + '[id]" value="' + newId + '" class="sfx-quicklink-id" />' +
+                        '<input type="hidden" name="' + namePrefix + '[type]" value="custom" class="sfx-quicklink-type" />' +
+                    '</label>' +
+                    '<span class="sfx-quicklink-icon-preview">' + defaultSvgIcon + '</span>' +
+                    '<span class="sfx-quicklink-label sfx-quicklink-title-display">' + (strings.untitled || 'Untitled') + '</span>' +
+                    '<code class="sfx-quicklink-url sfx-quicklink-url-display">—</code>' +
+                    '<span class="sfx-quicklink-badge">' + (strings.custom || 'Custom') + '</span>' +
+                    '<div class="sfx-quicklink-roles">' +
+                        '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
+                            '<span class="sfx-roles-toggle-icon">▼</span>' +
+                            '<span class="sfx-roles-toggle-label">' + (strings.allRoles || 'All Roles') + '</span>' +
+                        '</button>' +
+                        '<div class="sfx-quicklink-roles-dropdown" style="display: none;">' +
+                            '<label class="sfx-role-checkbox sfx-role-checkbox-all">' +
+                                '<input type="checkbox" name="' + namePrefix + '[roles][]" value="all" class="sfx-role-all-checkbox" checked />' +
+                                '<span>' + (strings.allRoles || 'All Roles') + '</span>' +
+                            '</label>' +
+                            '<div class="sfx-roles-divider"></div>' +
+                            rolesHtml +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="sfx-quicklink-actions">' +
+                        '<button type="button" class="button sfx-edit-quicklink" title="' + (strings.edit || 'Edit') + '">' +
+                            '<span class="dashicons dashicons-edit"></span>' +
+                        '</button>' +
+                        '<button type="button" class="button sfx-remove-quicklink" title="' + (strings.remove || 'Remove') + '">' +
+                            '<span class="dashicons dashicons-trash"></span>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="sfx-quicklink-edit-form">' +
+                        '<div class="sfx-quicklink-edit-fields">' +
+                            '<div class="sfx-edit-field">' +
+                                '<label>' + (strings.title || 'Title') + '</label>' +
+                                '<input type="text" name="' + namePrefix + '[title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.linkTitle || 'Link Title') + '" />' +
+                            '</div>' +
+                            '<div class="sfx-edit-field">' +
+                                '<label>' + (strings.url || 'URL') + '</label>' +
+                                '<div class="sfx-url-field-wrapper">' +
+                                    '<input type="text" name="' + namePrefix + '[url]" value="" class="sfx-quicklink-url-input" placeholder="admin.php?page=example" />' +
+                                    '<button type="button" class="sfx-browse-url-button" title="' + (strings.browseLinks || 'Browse WordPress Links') + '">' +
+                                        '<span class="dashicons dashicons-search"></span>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="sfx-edit-field sfx-edit-field-full">' +
+                                '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
+                                '<textarea name="' + namePrefix + '[icon]" class="sfx-quicklink-icon-input" placeholder="<svg>...</svg>" rows="3">' + defaultSvgIcon + '</textarea>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="sfx-quicklink-edit-actions">' +
+                            '<button type="button" class="button button-primary sfx-save-quicklink">' + (strings.done || 'Done') + '</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</li>';
+            
+            var $newItem = $(itemHtml);
             $sortable.append($newItem);
             
             // Focus on title input
@@ -183,7 +373,7 @@
             if (confirm(sfxDashboardAdmin.strings.confirmRemove || 'Are you sure you want to remove this custom link?')) {
                 $item.fadeOut(300, function() {
                     $(this).remove();
-                    updateQuicklinksIndices();
+                    updateAllIndices();
                 });
             }
         });
@@ -364,12 +554,12 @@
         var url = $urlInput.val().trim();
         var icon = $iconInput.val().trim();
         
-        // Title validation
-        if (!title && !url) {
+        // Title and URL validation - both are required for a quicklink
+        if (!title || !url) {
             result.valid = false;
             result.errors.push({
-                field: 'title',
-                message: sfxDashboardAdmin.strings.errorTitleOrUrl || 'Title or URL is required'
+                field: !title ? 'title' : 'url',
+                message: sfxDashboardAdmin.strings.errorTitleAndUrl || 'Both title and URL are required'
             });
         }
         
@@ -813,32 +1003,225 @@
     }
 
     /**
+     * Initialize URL Suggestions Modal
+     */
+    function initUrlSuggestionsModal() {
+        var $modal = null;
+        var $currentItem = null;
+        var suggestions = sfxDashboardAdmin.urlSuggestions || {};
+        var strings = sfxDashboardAdmin.strings || {};
+        
+        // Create modal HTML if not exists
+        function createModal() {
+            if ($('#sfx-url-suggestions-modal').length) {
+                return $('#sfx-url-suggestions-modal');
+            }
+            
+            var categoriesHtml = '';
+            $.each(suggestions, function(categoryKey, category) {
+                if (!category.items || category.items.length === 0) {
+                    return; // skip empty categories
+                }
+                
+                var itemsHtml = '';
+                $.each(category.items, function(i, item) {
+                    itemsHtml += 
+                        '<div class="sfx-suggestion-item" data-url="' + escapeAttr(item.url) + '" data-title="' + escapeAttr(item.title) + '" data-icon="' + escapeAttr(item.icon) + '">' +
+                            '<span class="sfx-suggestion-icon">' + item.icon + '</span>' +
+                            '<span class="sfx-suggestion-title">' + escapeHtml(item.title) + '</span>' +
+                        '</div>';
+                });
+                
+                categoriesHtml += 
+                    '<div class="sfx-suggestion-category" data-category="' + categoryKey + '">' +
+                        '<h4 class="sfx-suggestion-category-title">' + escapeHtml(category.label) + '</h4>' +
+                        '<div class="sfx-suggestion-items">' + itemsHtml + '</div>' +
+                    '</div>';
+            });
+            
+            var modalHtml = 
+                '<div id="sfx-url-suggestions-modal" class="sfx-modal-overlay" style="display: none;">' +
+                    '<div class="sfx-modal-container">' +
+                        '<div class="sfx-modal-header">' +
+                            '<h3 class="sfx-modal-title">' + escapeHtml(strings.selectLink || 'Select a WordPress Link') + '</h3>' +
+                            '<button type="button" class="sfx-modal-close" aria-label="' + escapeAttr(strings.close || 'Close') + '">&times;</button>' +
+                        '</div>' +
+                        '<div class="sfx-modal-search">' +
+                            '<input type="text" class="sfx-modal-search-input" placeholder="' + escapeAttr(strings.searchLinks || 'Search links...') + '" />' +
+                        '</div>' +
+                        '<div class="sfx-modal-body">' +
+                            '<div class="sfx-suggestions-grid">' + categoriesHtml + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            
+            $('body').append(modalHtml);
+            return $('#sfx-url-suggestions-modal');
+        }
+        
+        // Note: escapeHtml and escapeAttr functions are defined globally at the top of this file
+        
+        // Open modal
+        function openModal($item) {
+            $modal = createModal();
+            $currentItem = $item;
+            
+            // Clear search
+            $modal.find('.sfx-modal-search-input').val('');
+            $modal.find('.sfx-suggestion-item, .sfx-suggestion-category').show();
+            
+            // Show modal with animation
+            $modal.fadeIn(200);
+            $modal.find('.sfx-modal-search-input').focus();
+            
+            // Prevent body scroll
+            $('body').addClass('sfx-modal-open');
+        }
+        
+        // Close modal
+        function closeModal() {
+            if ($modal) {
+                $modal.fadeOut(200);
+                $('body').removeClass('sfx-modal-open');
+            }
+            $currentItem = null;
+        }
+        
+        // Select suggestion
+        function selectSuggestion($suggestion) {
+            if (!$currentItem) {
+                return;
+            }
+            
+            var url = $suggestion.data('url');
+            var title = $suggestion.data('title');
+            var icon = $suggestion.data('icon');
+            
+            // Fill the form fields
+            var $titleInput = $currentItem.find('.sfx-quicklink-title-input');
+            var $urlInput = $currentItem.find('.sfx-quicklink-url-input');
+            var $iconInput = $currentItem.find('.sfx-quicklink-icon-input');
+            
+            $titleInput.val(title).trigger('input');
+            $urlInput.val(url).trigger('input');
+            $iconInput.val(icon).trigger('input');
+            
+            // Update preview
+            $currentItem.find('.sfx-quicklink-title-display').text(title);
+            $currentItem.find('.sfx-quicklink-url-display').text(url);
+            $currentItem.find('.sfx-quicklink-icon-preview').html(icon);
+            
+            closeModal();
+        }
+        
+        // Filter suggestions by search
+        function filterSuggestions(searchTerm) {
+            if (!$modal) return;
+            
+            searchTerm = searchTerm.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                $modal.find('.sfx-suggestion-item, .sfx-suggestion-category').show();
+                return;
+            }
+            
+            $modal.find('.sfx-suggestion-category').each(function() {
+                var $category = $(this);
+                var hasVisibleItems = false;
+                
+                $category.find('.sfx-suggestion-item').each(function() {
+                    var $item = $(this);
+                    var title = $item.data('title').toLowerCase();
+                    var url = $item.data('url').toLowerCase();
+                    
+                    if (title.indexOf(searchTerm) !== -1 || url.indexOf(searchTerm) !== -1) {
+                        $item.show();
+                        hasVisibleItems = true;
+                    } else {
+                        $item.hide();
+                    }
+                });
+                
+                // Hide category if no items match
+                if (hasVisibleItems) {
+                    $category.show();
+                } else {
+                    $category.hide();
+                }
+            });
+        }
+        
+        // Event handlers
+        
+        // Open modal on browse button click
+        $(document).on('click', '.sfx-browse-url-button', function(e) {
+            e.preventDefault();
+            var $item = $(this).closest('.sfx-quicklink-item');
+            openModal($item);
+        });
+        
+        // Close modal on overlay click
+        $(document).on('click', '.sfx-modal-overlay', function(e) {
+            if ($(e.target).hasClass('sfx-modal-overlay')) {
+                closeModal();
+            }
+        });
+        
+        // Close modal on close button click
+        $(document).on('click', '.sfx-modal-close', function(e) {
+            e.preventDefault();
+            closeModal();
+        });
+        
+        // Close modal on escape key
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $modal && $modal.is(':visible')) {
+                closeModal();
+            }
+        });
+        
+        // Select suggestion on click
+        $(document).on('click', '.sfx-suggestion-item', function(e) {
+            e.preventDefault();
+            selectSuggestion($(this));
+        });
+        
+        // Search filter
+        $(document).on('input', '.sfx-modal-search-input', function() {
+            filterSuggestions($(this).val());
+        });
+    }
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function() {
         initLogoUploader();
         initColorSelectPreview();
+        initAddGroup();
+        initRemoveGroup();
+        initToggleGroup();
         initAddCustomQuicklink();
         initRemoveCustomQuicklink();
         initEditCustomQuicklink();
         initQuicklinkIconPreview();
         initResetButtons();
         initRoleSelectors();
+        initUrlSuggestionsModal();
         
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {
             initStatsSortable();
-            initQuicklinksSortable();
+            initQuicklinkGroupsSortable();
         }, 150);
         
         // Re-initialize sortables when switching tabs
         $(document).on('click', '.sfx-dashboard-tabs .nav-tab, .nav-tab-wrapper .nav-tab', function() {
             setTimeout(function() {
                 initStatsSortable();
-                initQuicklinksSortable();
+                initQuicklinkGroupsSortable();
             }, 200);
         });
     });
 
 })(jQuery);
-

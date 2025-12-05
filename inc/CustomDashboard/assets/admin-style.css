@@ -541,20 +541,157 @@ input[type="color"] {
 }
 
 /* ==========================================================================
-   Sortable Quicklinks
+   Sortable Quicklinks Groups
    ========================================================================== */
 
-.sfx-quicklinks-sortable-container {
-    max-width: 1000px;
+.sfx-quicklinks-groups-container {
+    max-width: 1100px;
 }
 
+/* Groups Sortable Container */
+.sfx-quicklink-groups-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Individual Group */
+.sfx-quicklink-group {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    overflow: visible;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sfx-quicklink-group-header {
+    border-radius: 6px 6px 0 0;
+}
+
+.sfx-quicklink-group-content {
+    border-radius: 0 0 6px 6px;
+}
+
+.sfx-quicklink-group.ui-sortable-helper {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+}
+
+.sfx-quicklink-group-placeholder {
+    background: #e8f4fc !important;
+    border: 2px dashed #2271b1 !important;
+    border-radius: 6px;
+    min-height: 100px;
+    margin: 10px 0;
+}
+
+.sfx-quicklink-group-new {
+    animation: sfx-group-highlight 1s ease;
+}
+
+@keyframes sfx-group-highlight {
+    0% { background: #fff9c4; }
+    100% { background: #fff; }
+}
+
+/* Group Header */
+.sfx-quicklink-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: linear-gradient(to bottom, #f9f9f9, #f3f3f3);
+    border-bottom: 1px solid #ddd;
+}
+
+.sfx-group-drag-handle {
+    color: #999;
+    font-size: 20px;
+    user-select: none;
+    cursor: move;
+    cursor: grab;
+    padding: 5px;
+}
+
+.sfx-quicklink-group:hover .sfx-group-drag-handle {
+    color: #666;
+}
+
+.sfx-group-title-input {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    min-width: 200px;
+}
+
+.sfx-group-title-input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.sfx-quicklink-group-header .sfx-group-roles {
+    flex-shrink: 0;
+}
+
+.button.sfx-toggle-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sfx-toggle-group,
+.sfx-remove-group {
+    padding: 4px 8px !important;
+    min-height: 30px !important;
+}
+
+.sfx-toggle-group .dashicons,
+.sfx-remove-group .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+
+.sfx-remove-group {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.sfx-remove-group:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}
+
+/* Group Content */
+.sfx-quicklink-group-content {
+    padding: 15px;
+    background: #fafafa;
+}
+
+/* Quicklinks list within groups */
 .sfx-quicklinks-sortable {
     list-style: none;
     margin: 0;
     padding: 0;
-    background: #f9f9f9;
+    background: #fff;
     border: 1px solid #ddd;
     border-radius: 4px;
+    min-height: 50px;
+}
+
+.sfx-quicklinks-sortable:empty::before {
+    content: 'Drag links here or click "+ Add Link"';
+    display: block;
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
 }
 
 .sfx-quicklink-item {
@@ -959,7 +1096,7 @@ input[type="color"] {
     position: absolute;
     top: 100%;
     right: 0;
-    z-index: 100;
+    z-index: 1000;
     min-width: 180px;
     max-height: 280px;
     overflow-y: auto;
@@ -1045,14 +1182,26 @@ input[type="color"] {
     }
 }
 
-/* Quicklinks Actions */
+/* Quicklinks Actions (within group) */
 .sfx-quicklinks-actions {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+    margin-top: 12px;
+    padding-top: 0;
 }
 
-#sfx-add-custom-quicklink {
+.sfx-add-custom-quicklink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Global Group Actions */
+.sfx-quicklink-groups-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+#sfx-add-quicklink-group {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1092,6 +1241,282 @@ input[type="color"] {
     
     .sfx-quicklink-item .sfx-quicklink-badge {
         display: none;
+    }
+}
+
+/* ==========================================================================
+   URL Suggestions Modal
+   ========================================================================== */
+
+/* Modal Overlay */
+.sfx-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100100;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Prevent body scroll when modal is open */
+body.sfx-modal-open {
+    overflow: hidden;
+}
+
+/* Modal Container */
+.sfx-modal-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    max-height: calc(100vh - 100px);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: sfx-modal-slide-in 0.25s ease-out;
+}
+
+@keyframes sfx-modal-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.sfx-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.sfx-modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.sfx-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 24px;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sfx-modal-close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+/* Modal Search */
+.sfx-modal-search {
+    padding: 12px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+}
+
+.sfx-modal-search-input {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+.sfx-modal-search-input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.15);
+}
+
+.sfx-modal-search-input::placeholder {
+    color: #94a3b8;
+}
+
+/* Modal Body */
+.sfx-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Suggestions Grid */
+.sfx-suggestions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Category */
+.sfx-suggestion-category {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.sfx-suggestion-category-title {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+/* Items Grid */
+.sfx-suggestion-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+/* Individual Item */
+.sfx-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sfx-suggestion-item:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.sfx-suggestion-item:active {
+    transform: translateY(0);
+}
+
+.sfx-suggestion-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    color: #475569;
+}
+
+.sfx-suggestion-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sfx-suggestion-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Browse URL Button */
+.sfx-browse-url-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin-left: 6px;
+    background: #f1f5f9;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.sfx-browse-url-button:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #334155;
+}
+
+.sfx-browse-url-button:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
+}
+
+.sfx-browse-url-button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* URL Field with Browse Button */
+.sfx-url-field-wrapper {
+    display: flex;
+    align-items: flex-start;
+}
+
+.sfx-url-field-wrapper .sfx-quicklink-url-input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Responsive Modal */
+@media (max-width: 640px) {
+    .sfx-modal-container {
+        max-width: 100%;
+        max-height: calc(100vh - 40px);
+        border-radius: 12px 12px 0 0;
+        margin-top: auto;
+    }
+    
+    .sfx-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+    
+    .sfx-suggestion-items {
+        grid-template-columns: 1fr;
+    }
+    
+    .sfx-modal-body {
+        padding: 16px;
     }
 }
 
