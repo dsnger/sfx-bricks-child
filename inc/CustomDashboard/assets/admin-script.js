@@ -777,6 +777,61 @@
     }
 
     /**
+     * Initialize sortable widgets
+     */
+    function initWidgetsSortable() {
+        var $sortable = $('#sfx-widgets-sortable');
+        
+        if (!$sortable.length) {
+            return;
+        }
+        
+        // Check if sortable is available
+        if (typeof $.fn.sortable === 'undefined') {
+            console.error('SFX: jQuery UI Sortable not loaded!');
+            return;
+        }
+        
+        // Destroy existing sortable if it exists
+        try {
+            if ($sortable.data('ui-sortable')) {
+                $sortable.sortable('destroy');
+            }
+        } catch(e) {}
+        
+        // Initialize sortable - drag anywhere on the item
+        $sortable.sortable({
+            items: '> li.sfx-widget-item',
+            placeholder: 'sfx-widget-placeholder',
+            axis: 'y',
+            cursor: 'move',
+            opacity: 0.8,
+            revert: 150,
+            update: function(event, ui) {
+                updateWidgetsIndices();
+            }
+        });
+    }
+
+    /**
+     * Update widgets item indices after reorder
+     */
+    function updateWidgetsIndices() {
+        $('#sfx-widgets-sortable .sfx-widget-item').each(function(index) {
+            var $item = $(this);
+            $item.find('input').each(function() {
+                var $input = $(this);
+                var name = $input.attr('name');
+                if (name) {
+                    // Replace the index number in enabled_dashboard_widgets[X]
+                    name = name.replace(/\[enabled_dashboard_widgets\]\[\d+\]/, '[enabled_dashboard_widgets][' + index + ']');
+                    $input.attr('name', name);
+                }
+            });
+        });
+    }
+
+    /**
      * Initialize color select preview updates
      */
     function initColorSelectPreview() {
@@ -1212,13 +1267,15 @@
         // Initialize sortables with a small delay to ensure DOM is ready
         setTimeout(function() {
             initStatsSortable();
+            initWidgetsSortable();
             initQuicklinkGroupsSortable();
         }, 150);
-        
+
         // Re-initialize sortables when switching tabs
         $(document).on('click', '.sfx-dashboard-tabs .nav-tab, .nav-tab-wrapper .nav-tab', function() {
             setTimeout(function() {
                 initStatsSortable();
+                initWidgetsSortable();
                 initQuicklinkGroupsSortable();
             }, 200);
         });

@@ -92,14 +92,16 @@ class DashboardRenderer
         // Determine which sections are visible
         $show_quicklinks = $this->is_enabled('show_quicklinks_section');
         $show_contact = $this->is_enabled('show_contact_section') && $this->has_contact_info();
+        $show_tip_card = $this->is_enabled('show_tip_card') && $this->has_tip_card_content();
+        $show_info_section = $show_contact || $show_tip_card;
         
         // Build grid classes
         $grid_classes = ['sfx-content-grid'];
-        if ($show_quicklinks && !$show_contact) {
+        if ($show_quicklinks && !$show_info_section) {
             $grid_classes[] = 'sfx-content-grid--quicklinks-only';
-        } elseif (!$show_quicklinks && $show_contact) {
+        } elseif (!$show_quicklinks && $show_info_section) {
             $grid_classes[] = 'sfx-content-grid--contact-only';
-        } elseif ($show_quicklinks && $show_contact) {
+        } elseif ($show_quicklinks && $show_info_section) {
             $grid_classes[] = 'sfx-content-grid--both';
         }
 
@@ -116,34 +118,39 @@ class DashboardRenderer
         <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
+            <?php $this->render_positioned_sections('below_header'); ?>
             <?php $this->render_status_bar(); ?>
+            <?php $this->render_positioned_sections('below_health_updates'); ?>
             <?php if ($this->is_enabled('show_stats_section')): ?>
                 <?php $this->render_stats_grid(); ?>
             <?php endif; ?>
+            <?php $this->render_positioned_sections('below_stats'); ?>
             
-            <?php if ($show_quicklinks || $show_contact): ?>
+            <?php if ($show_quicklinks || $show_info_section): ?>
             <div class="<?php echo esc_attr(implode(' ', $grid_classes)); ?>">
                 <?php if ($show_quicklinks): ?>
                     <?php $this->render_quicklinks(); ?>
                 <?php endif; ?>
                 
-                <?php if ($show_contact): ?>
-                    <?php $this->render_contact_info(); ?>
+                <?php if ($show_info_section): ?>
+                    <?php $this->render_info_section(); ?>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
+            <?php $this->render_positioned_sections('below_quicklinks'); ?>
 
             <?php if ($this->is_enabled('show_form_submissions_section')): ?>
                 <?php $this->render_form_submissions(); ?>
             <?php endif; ?>
 
-            <?php if ($this->is_enabled('show_note_section')): ?>
-                <?php $this->render_note_section(); ?>
-            <?php endif; ?>
+            <?php $this->render_positioned_sections('below_widgets'); ?>
 
-            <?php if ($this->is_enabled('show_dashboard_widgets')): ?>
-                <?php $this->render_dashboard_widgets(); ?>
-            <?php endif; ?>
+            <footer class="sfx-dashboard-footer">
+                <a href="https://smilefx.io" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+                    <?php esc_html_e('Made by smilefx.io', 'sfxtheme'); ?>
+                </a>
+            </footer>
         </div>
         <?php
     }
@@ -710,13 +717,39 @@ class DashboardRenderer
     }
 
     /**
+     * Check if tip card has content to display
+     *
+     * @return bool
+     */
+    private function has_tip_card_content(): bool
+    {
+        $content = $this->get_option('tip_card_content', __('You can use <button type="button" class="sfx-cmd-shortcut" data-shortcut="cmd+k"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to access the command tool to manage WordPress.', 'sfxtheme'));
+        return !empty($content);
+    }
+
+    /**
+     * Render info section (tip card and contact card wrapper)
+     *
+     * @return void
+     */
+    private function render_info_section(): void
+    {
+        ?>
+        <aside class="sfx-info-section">
+            <?php $this->render_tip_card(); ?>
+            <?php $this->render_contact_info(); ?>
+        </aside>
+        <?php
+    }
+
+    /**
      * Render contact info section
      *
      * @return void
      */
     private function render_contact_info(): void
     {
-        if (!$this->has_contact_info()) {
+        if (!$this->is_enabled('show_contact_section') || !$this->has_contact_info()) {
             return;
         }
 
@@ -731,7 +764,6 @@ class DashboardRenderer
         $logo_height = absint($this->get_option('contact_logo_height', 48));
 
         ?>
-        <aside class="sfx-info-section">
             <div class="sfx-info-card sfx-contact-info">
                 <?php if (!empty($logo)): ?>
                     <div class="sfx-contact-logo">
@@ -795,7 +827,6 @@ class DashboardRenderer
                     <?php endif; ?>
                 </div>
             </div>
-        </aside>
         <?php
     }
 
@@ -859,9 +890,25 @@ class DashboardRenderer
      */
     private function render_dashboard_widgets(): void
     {
-        $enabled_widgets = $this->get_option('enabled_dashboard_widgets', []);
+        $widgets_data = $this->get_option('enabled_dashboard_widgets', []);
         
-        if (empty($enabled_widgets) || !is_array($enabled_widgets)) {
+        if (empty($widgets_data) || !is_array($widgets_data)) {
+            return;
+        }
+
+        // Extract enabled widget IDs in order
+        $enabled_widgets = [];
+        foreach ($widgets_data as $widget) {
+            // Support both old format (simple array of IDs) and new format (array of objects)
+            if (is_array($widget) && !empty($widget['enabled']) && !empty($widget['id'])) {
+                $enabled_widgets[] = $widget['id'];
+            } elseif (is_string($widget)) {
+                // Legacy format support
+                $enabled_widgets[] = $widget;
+            }
+        }
+
+        if (empty($enabled_widgets)) {
             return;
         }
 
@@ -872,7 +919,6 @@ class DashboardRenderer
 
         ?>
         <section class="sfx-wp-dashboard-widgets-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Dashboard Widgets', 'sfxtheme'); ?></h2>
             <div class="sfx-dashboard-widgets-grid">
                 <?php
                 foreach ($enabled_widgets as $widget_id) {
@@ -967,6 +1013,92 @@ class DashboardRenderer
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render the tip card
+     *
+     * @return void
+     */
+    private function render_tip_card(): void
+    {
+        if (!$this->is_enabled('show_tip_card')) {
+            return;
+        }
+
+        $title = $this->get_option('tip_card_title', __('Tip', 'sfxtheme'));
+        $content = $this->get_option('tip_card_content', __('You can use <button type="button" class="sfx-cmd-shortcut" data-shortcut="cmd+k"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to access the command tool to manage WordPress.', 'sfxtheme'));
+
+        if (empty($content)) {
+            return;
+        }
+
+        ?>
+        <div class="sfx-info-card sfx-tip-card">
+            <span class="sfx-tip-icon">💡</span>
+            <div class="sfx-tip-body">
+                <?php if (!empty($title)): ?>
+                    <h3 class="sfx-tip-title"><?php echo esc_html($title); ?></h3>
+                <?php endif; ?>
+                <div class="sfx-tip-content">
+                    <?php echo wp_kses_post($content); ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render positioned sections (note and/or widgets) at a specific position
+     * 
+     * When both sections are positioned at the same location, note renders first,
+     * then widgets below it.
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_positioned_sections(string $position): void
+    {
+        $this->render_note_at_position($position);
+        $this->render_widgets_at_position($position);
+    }
+
+    /**
+     * Render note section at a specific position if enabled
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_note_at_position(string $position): void
+    {
+        if (!$this->is_enabled('show_note_section')) {
+            return;
+        }
+
+        $note_position = $this->get_option('note_position', 'below_quicklinks');
+        
+        if ($note_position === $position) {
+            $this->render_note_section();
+        }
+    }
+
+    /**
+     * Render dashboard widgets at a specific position if enabled
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_widgets_at_position(string $position): void
+    {
+        if (!$this->is_enabled('show_dashboard_widgets')) {
+            return;
+        }
+
+        $widgets_position = $this->get_option('dashboard_widgets_position', 'below_widgets');
+        
+        if ($widgets_position === $position) {
+            $this->render_dashboard_widgets();
+        }
     }
 
     /**

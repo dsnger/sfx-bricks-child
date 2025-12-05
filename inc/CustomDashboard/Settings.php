@@ -74,9 +74,15 @@ class Settings
                 'form_submissions_limit',
                 'show_dashboard_widgets',
                 'enabled_dashboard_widgets',
+                'widgets_columns',
+                'dashboard_widgets_position',
+                'show_tip_card',
+                'tip_card_title',
+                'tip_card_content',
                 'show_note_section',
                 'note_title',
                 'note_content',
+                'note_position',
             ],
             'stats' => [
                 'stats_items',
@@ -148,6 +154,43 @@ class Settings
             'cards' => ['card_background_color', 'card_text_color', 'card_border_width', 'card_border_color', 'card_border_radius', 'card_shadow_enabled', 'card_hover_background_color', 'card_hover_text_color', 'card_hover_border_color', 'quicklinks_columns'],
             'general_style' => ['brand_border_radius', 'brand_border_width', 'brand_border_color', 'brand_shadow_enabled', 'brand_shadow_intensity', 'dashboard_gap', 'stats_columns'],
             'custom_css' => ['dashboard_custom_css'],
+        ];
+    }
+
+    /**
+     * Get sections sub-tab to fields mapping
+     *
+     * @return array<string, array<string>>
+     */
+    public static function get_sections_subtab_fields(): array
+    {
+        return [
+            'toggles' => [
+                'show_updates_section',
+                'show_site_health_section',
+                'show_stats_section',
+                'show_quicklinks_section',
+                'show_contact_section',
+                'show_form_submissions_section',
+                'form_submissions_limit',
+            ],
+            'widgets' => [
+                'show_dashboard_widgets',
+                'enabled_dashboard_widgets',
+                'widgets_columns',
+                'dashboard_widgets_position',
+            ],
+            'tip_card' => [
+                'show_tip_card',
+                'tip_card_title',
+                'tip_card_content',
+            ],
+            'note' => [
+                'show_note_section',
+                'note_title',
+                'note_content',
+                'note_position',
+            ],
         ];
     }
 
@@ -1068,6 +1111,27 @@ CSS;
                 'default' => [],
             ],
             [
+                'id' => 'widgets_columns',
+                'label' => __('Widgets Columns', 'sfxtheme'),
+                'description' => __('Number of columns for dashboard widgets grid (1-4).', 'sfxtheme'),
+                'type' => 'number',
+                'default' => 3,
+            ],
+            [
+                'id' => 'dashboard_widgets_position',
+                'label' => __('Widgets Position', 'sfxtheme'),
+                'description' => __('Choose where to display the WordPress dashboard widgets section.', 'sfxtheme'),
+                'type' => 'select',
+                'default' => 'below_widgets',
+                'options' => [
+                    'below_header' => __('Below Header', 'sfxtheme'),
+                    'below_health_updates' => __('Below Health & Updates Row', 'sfxtheme'),
+                    'below_stats' => __('Below Statistics Row', 'sfxtheme'),
+                    'below_quicklinks' => __('Below Quicklinks & Sidebar Row', 'sfxtheme'),
+                    'below_widgets' => __('Bottom (Default Position)', 'sfxtheme'),
+                ],
+            ],
+            [
                 'id' => 'contact_card_title',
                 'label' => __('Contact Card Title', 'sfxtheme'),
                 'description' => __('Title for the contact information card (e.g., "Created by", "Contact").', 'sfxtheme'),
@@ -1360,6 +1424,28 @@ CSS;
                 'type' => 'number',
                 'default' => 4,
             ],
+            // Tip Card Section
+            [
+                'id' => 'show_tip_card',
+                'label' => __('Show Tip Card', 'sfxtheme'),
+                'description' => __('Display a helpful tip card above the contact section.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 1,
+            ],
+            [
+                'id' => 'tip_card_title',
+                'label' => __('Tip Card Title', 'sfxtheme'),
+                'description' => __('Title for the tip card (optional).', 'sfxtheme'),
+                'type' => 'text',
+                'default' => __('Tip', 'sfxtheme'),
+            ],
+            [
+                'id' => 'tip_card_content',
+                'label' => __('Tip Content', 'sfxtheme'),
+                'description' => __('Content for the tip card. HTML is allowed.', 'sfxtheme'),
+                'type' => 'html_textarea',
+                'default' => __('You can use <button type="button" class="sfx-cmd-shortcut" data-shortcut="cmd+k"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to access the command tool to manage WordPress.', 'sfxtheme'),
+            ],
             // Note Section
             [
                 'id' => 'show_note_section',
@@ -1381,6 +1467,20 @@ CSS;
                 'description' => __('Content for the note section. HTML is allowed.', 'sfxtheme'),
                 'type' => 'html_textarea',
                 'default' => '',
+            ],
+            [
+                'id' => 'note_position',
+                'label' => __('Note Position', 'sfxtheme'),
+                'description' => __('Choose where to display the note section on the dashboard.', 'sfxtheme'),
+                'type' => 'select',
+                'default' => 'below_quicklinks',
+                'options' => [
+                    'below_header' => __('Below Header', 'sfxtheme'),
+                    'below_health_updates' => __('Below Health & Updates Row', 'sfxtheme'),
+                    'below_stats' => __('Below Statistics Row', 'sfxtheme'),
+                    'below_quicklinks' => __('Below Quicklinks & Sidebar Row', 'sfxtheme'),
+                    'below_widgets' => __('Below Widget Row', 'sfxtheme'),
+                ],
             ],
             [
                 'id' => 'quicklinks_sortable',
@@ -1476,9 +1576,9 @@ CSS;
                 $section = self::$option_name . '_contact';
             } elseif ($field['id'] === 'custom_quicklinks') {
                 $section = self::$option_name . '_quicklinks';
-            } elseif ($field['id'] === 'enabled_dashboard_widgets' || $field['id'] === 'show_dashboard_widgets') {
+            } elseif (in_array($field['id'], ['enabled_dashboard_widgets', 'show_dashboard_widgets', 'widgets_columns', 'dashboard_widgets_position'])) {
                 $section = self::$option_name . '_sections';
-            } elseif (in_array($field['id'], ['note_title', 'note_content', 'show_note_section', 'form_submissions_limit'])) {
+            } elseif (in_array($field['id'], ['note_title', 'note_content', 'note_position', 'show_note_section', 'form_submissions_limit', 'show_tip_card', 'tip_card_title', 'tip_card_content'])) {
                 $section = self::$option_name . '_sections';
             } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['dashboard_gap', 'stats_columns', 'quicklinks_columns', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
                 $section = self::$option_name . '_brand';
@@ -1762,6 +1862,9 @@ CSS;
                 } elseif ($id === 'brand_shadow_intensity') {
                     $min = 0;
                     $max = 3;
+                } elseif ($id === 'widgets_columns') {
+                    $min = 1;
+                    $max = 4;
                 }
                 ?>
                 <input type="number" 
@@ -2445,10 +2548,73 @@ CSS;
      */
     public static function render_dashboard_widgets_field(string $id, $value): void
     {
-        if (!is_array($value)) {
-            $value = [];
+        $available_widgets = self::get_available_widgets();
+        
+        if (!is_array($value) || empty($value)) {
+            $value = self::get_default_widgets_items();
         }
 
+        // Build ordered list with current settings
+        $ordered_items = [];
+        $used_ids = [];
+
+        // First, add items in saved order
+        foreach ($value as $item) {
+            $widget_id = is_array($item) ? ($item['id'] ?? '') : $item;
+            if (isset($available_widgets[$widget_id])) {
+                $ordered_items[] = [
+                    'id' => $widget_id,
+                    'label' => $available_widgets[$widget_id],
+                    'enabled' => is_array($item) ? !empty($item['enabled']) : true,
+                ];
+                $used_ids[] = $widget_id;
+            }
+        }
+
+        // Add any new widgets that weren't in saved order
+        foreach ($available_widgets as $widget_id => $widget_label) {
+            if (!in_array($widget_id, $used_ids)) {
+                $ordered_items[] = [
+                    'id' => $widget_id,
+                    'label' => $widget_label,
+                    'enabled' => false,
+                ];
+            }
+        }
+
+        ?>
+        <div class="sfx-widgets-items-container">
+            <p class="description" style="margin-bottom: 15px;">
+                <?php esc_html_e('Drag to reorder. Check to enable/disable each widget.', 'sfxtheme'); ?>
+            </p>
+            <ul class="sfx-widgets-sortable" id="sfx-widgets-sortable">
+                <?php foreach ($ordered_items as $index => $item): ?>
+                    <li class="sfx-widget-item" data-id="<?php echo esc_attr($item['id']); ?>">
+                        <span class="sfx-widget-drag-handle">☰</span>
+                        <label class="sfx-widget-checkbox-label">
+                            <input type="checkbox" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
+                                   value="1" 
+                                   <?php checked(!empty($item['enabled'])); ?> />
+                            <input type="hidden" 
+                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
+                                   value="<?php echo esc_attr($item['id']); ?>" />
+                        </label>
+                        <span class="sfx-widget-label"><?php echo esc_html($item['label']); ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php
+    }
+
+    /**
+     * Get available dashboard widgets
+     *
+     * @return array<string, string>
+     */
+    public static function get_available_widgets(): array
+    {
         // Default WordPress dashboard widgets (always available)
         $available_widgets = [
             'dashboard_site_health' => __('Site Health Status', 'sfxtheme'),
@@ -2463,9 +2629,13 @@ CSS;
         
         if (isset($wp_meta_boxes['dashboard']) && is_array($wp_meta_boxes['dashboard'])) {
             foreach ($wp_meta_boxes['dashboard'] as $context => $priority_widgets) {
-                if (!is_array($priority_widgets)) continue;
+                if (!is_array($priority_widgets)) {
+                    continue;
+                }
                 foreach ($priority_widgets as $priority => $widgets) {
-                    if (!is_array($widgets)) continue;
+                    if (!is_array($widgets)) {
+                        continue;
+                    }
                     foreach ($widgets as $widget_id => $widget) {
                         if (!isset($available_widgets[$widget_id]) && !empty($widget['title'])) {
                             $available_widgets[$widget_id] = $widget['title'];
@@ -2475,20 +2645,56 @@ CSS;
             }
         }
 
-        echo '<div class="sfx-dashboard-widgets-selection">';
-        foreach ($available_widgets as $widget_id => $widget_title) {
-            $checked = in_array($widget_id, $value) ? 'checked' : '';
-            ?>
-            <label class="sfx-widget-checkbox">
-                <input type="checkbox" 
-                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][]" 
-                       value="<?php echo esc_attr($widget_id); ?>"
-                       <?php echo $checked; ?> />
-                <span><?php echo esc_html($widget_title); ?></span>
-            </label>
-            <?php
+        return $available_widgets;
+    }
+
+    /**
+     * Get default widgets items configuration
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function get_default_widgets_items(): array
+    {
+        $items = [];
+        $order = 0;
+
+        foreach (self::get_available_widgets() as $id => $label) {
+            $items[] = [
+                'id' => $id,
+                'enabled' => false, // Disabled by default
+                'order' => $order++,
+            ];
         }
-        echo '</div>';
+
+        return $items;
+    }
+
+    /**
+     * Sanitize widgets items
+     *
+     * @param mixed $input
+     * @return array<int, array<string, mixed>>
+     */
+    private static function sanitize_widgets_items($input): array
+    {
+        if (!is_array($input)) {
+            return self::get_default_widgets_items();
+        }
+
+        $sanitized = [];
+
+        foreach ($input as $item) {
+            if (!is_array($item) || empty($item['id'])) {
+                continue;
+            }
+
+            $sanitized[] = [
+                'id' => sanitize_key($item['id']),
+                'enabled' => !empty($item['enabled']),
+            ];
+        }
+
+        return $sanitized;
     }
 
     /**
@@ -2596,7 +2802,13 @@ CSS;
                     break;
 
                 case 'dashboard_widgets':
-                    $output[$id] = is_array($input[$id]) ? array_map('sanitize_key', $input[$id]) : [];
+                    // Check if it's JSON encoded (from hidden field)
+                    if (is_string($input[$id] ?? '') && !empty($input[$id])) {
+                        $decoded = json_decode($input[$id], true);
+                        $output[$id] = is_array($decoded) ? self::sanitize_widgets_items($decoded) : self::sanitize_widgets_items([]);
+                    } else {
+                        $output[$id] = self::sanitize_widgets_items($input[$id] ?? []);
+                    }
                     break;
 
                 case 'stats_items':
@@ -2659,6 +2871,39 @@ CSS;
             'sub' => [],
             'sup' => [],
         ];
+    }
+
+    /**
+     * Truncate HTML title while preserving formatting tags
+     * 
+     * This function truncates text content to the specified length while
+     * preserving HTML formatting tags. It ensures tags are properly closed
+     * and the result is still valid HTML.
+     *
+     * @param string $html The HTML string to truncate
+     * @param int $max_length Maximum length of plain text content
+     * @param array $allowed_tags Array of allowed HTML tags for wp_kses
+     * @return string Truncated HTML with properly closed tags
+     */
+    private static function truncate_html_title(string $html, int $max_length, array $allowed_tags): string
+    {
+        // Check if truncation is needed
+        $plain_text = wp_strip_all_tags($html);
+        if (mb_strlen($plain_text) <= $max_length) {
+            return $html;
+        }
+
+        // Use WordPress's wp_html_excerpt for smart HTML truncation
+        // This function preserves HTML structure while truncating content
+        $truncated = wp_html_excerpt($html, $max_length, '');
+        
+        // Ensure all HTML tags are properly closed
+        $truncated = force_balance_tags($truncated);
+        
+        // Re-sanitize to ensure only allowed tags remain
+        $truncated = wp_kses($truncated, $allowed_tags);
+        
+        return $truncated;
     }
 
     /**
@@ -2846,9 +3091,8 @@ CSS;
                 // Validate title length (max 100 chars after stripping tags)
                 $title_text = wp_strip_all_tags($title);
                 if (mb_strlen($title_text) > 100) {
-                    // If too long, use truncated plain text to avoid corrupting HTML tags
-                    // This is safer than truncating HTML which could break mid-tag
-                    $title = esc_html(mb_substr($title_text, 0, 100));
+                    // Truncate while preserving HTML formatting
+                    $title = self::truncate_html_title($title, 100, $allowed_title_tags);
                 }
                 
                 // Sanitize URL with proper validation

@@ -194,11 +194,11 @@
     .sfx-dashboard-header {
         flex-direction: column;
     }
-    
+
     .sfx-dashboard-header-actions {
         width: 100%;
     }
-    
+
     .sfx-dashboard-header-actions .button-primary {
         width: 100%;
         text-align: center;
@@ -339,41 +339,84 @@ input[type="color"] {
     cursor: pointer;
 }
 
-/* Dashboard Widgets Selection */
-.sfx-dashboard-widgets-selection {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
+/* Dashboard Widgets Sortable */
+.sfx-widgets-items-container {
+    max-width: 600px;
+}
+
+.sfx-widgets-sortable {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
-    max-height: 400px;
-    overflow-y: auto;
 }
 
-.sfx-widget-checkbox {
+.sfx-widget-item {
+    display: grid;
+    grid-template-columns: 30px 50px 1fr;
+    align-items: center;
+    gap: 8px 20px;
+    padding: 12px 15px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    cursor: grab;
+    user-select: none;
+}
+
+.sfx-widget-item:last-child {
+    border-bottom: none;
+}
+
+.sfx-widget-item:hover {
+    background: #f7f7f7;
+}
+
+.sfx-widget-item.ui-sortable-helper {
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    z-index: 9999;
+    cursor: grabbing !important;
+}
+
+.sfx-widget-drag-handle {
+    color: #999;
+    font-size: 18px;
+    cursor: grab;
+    transition: color 0.2s ease;
+}
+
+.sfx-widget-item:hover .sfx-widget-drag-handle {
+    color: #333;
+}
+
+.sfx-widget-checkbox-label {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px;
-    background: #fff;
-    border-radius: 3px;
+    justify-content: center;
+}
+
+.sfx-widget-checkbox-label input[type="checkbox"] {
     cursor: pointer;
-    transition: background 0.2s ease;
 }
 
-.sfx-widget-checkbox:hover {
-    background: #f0f6fc;
-}
-
-.sfx-widget-checkbox input[type="checkbox"] {
-    margin: 0;
-}
-
-.sfx-widget-checkbox span {
-    font-size: 14px;
+.sfx-widget-label {
+    font-weight: 500;
     color: #333;
+}
+
+.sfx-widget-placeholder {
+    background: #e8f4fc !important;
+    border: 2px dashed #2271b1 !important;
+    border-radius: 4px;
+    visibility: visible !important;
+    min-height: 50px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    box-sizing: border-box;
 }
 
 /* Custom Post Types Selection */
@@ -638,7 +681,8 @@ input[type="color"] {
     flex-shrink: 0;
 }
 
-.button.sfx-toggle-group {
+.button.sfx-toggle-group,
+.button.sfx-remove-group {
     display: inline-flex;
     align-items: center;
     justify-content: center;
