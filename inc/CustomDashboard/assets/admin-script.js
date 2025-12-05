@@ -165,7 +165,7 @@
                     '<div class="sfx-quicklink-group-header">' +
                         '<span class="sfx-group-drag-handle">☰</span>' +
                         '<input type="hidden" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][id]" value="' + newGroupId + '" class="sfx-group-id" />' +
-                        '<input type="text" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][title]" value="" class="sfx-group-title-input" placeholder="' + (strings.groupTitle || 'Group Title') + '" />' +
+                        '<input type="text" name="' + optionName + '[quicklinks_sortable][groups][' + groupIndex + '][title]" value="" class="sfx-group-title-input" placeholder="' + escapeAttr(strings.groupTitle || 'Group Title') + '" />' +
                         '<div class="sfx-quicklink-roles sfx-group-roles">' +
                             '<button type="button" class="sfx-quicklink-roles-toggle" aria-expanded="false">' +
                                 '<span class="sfx-roles-toggle-icon">▼</span>' +
@@ -323,7 +323,7 @@
                         '<div class="sfx-quicklink-edit-fields">' +
                             '<div class="sfx-edit-field">' +
                                 '<label>' + (strings.title || 'Title') + '</label>' +
-                                '<input type="text" name="' + namePrefix + '[title]" value="" class="sfx-quicklink-title-input" placeholder="' + (strings.linkTitle || 'Link Title') + '" />' +
+                                '<input type="text" name="' + namePrefix + '[title]" value="" class="sfx-quicklink-title-input" placeholder="' + escapeAttr(strings.linkTitle || 'Link Title') + '" />' +
                             '</div>' +
                             '<div class="sfx-edit-field">' +
                                 '<label>' + (strings.url || 'URL') + '</label>' +
