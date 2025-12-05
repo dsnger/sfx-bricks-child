@@ -354,22 +354,7 @@ class AdminPage
             $all_brand_fields = array_merge($all_brand_fields, $fields);
         }
         
-        foreach ($all_fields as $field) {
-            $field_id = $field['id'];
-            
-            // Only process brand fields not in current subtab
-            if (!in_array($field_id, $all_brand_fields) || in_array($field_id, $current_fields)) {
-                continue;
-            }
-            
-            $value = $options[$field_id] ?? $field['default'];
-            
-            if (is_array($value)) {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" />';
-            } else {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
-            }
-        }
+        self::render_hidden_fields_generic($all_fields, $all_brand_fields, $current_fields, $options, true);
     }
 
     /**
@@ -464,23 +449,7 @@ class AdminPage
             $all_sections_fields = array_merge($all_sections_fields, $fields);
         }
         
-        foreach ($all_fields as $field) {
-            $field_id = $field['id'];
-            
-            // Only process sections fields not in current subtab
-            if (!in_array($field_id, $all_sections_fields) || in_array($field_id, $current_fields)) {
-                continue;
-            }
-            
-            $value = $options[$field_id] ?? $field['default'];
-            
-            // Handle array values (like dashboard_widgets)
-            if (is_array($value)) {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" data-sfx-json-field="true" />';
-            } else {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
-            }
-        }
+        self::render_hidden_fields_generic($all_fields, $all_sections_fields, $current_fields, $options, true);
     }
 
     /**
@@ -567,35 +536,54 @@ class AdminPage
     private static function render_hidden_fields(string $current_tab): void
     {
         $options = get_option(Settings::$option_name, []);
-        
-        // Get all fields
         $all_fields = Settings::get_fields();
-        
-        // Use centralized tab-fields mapping
         $tab_fields = Settings::get_tab_fields_map();
-
-        // Get fields for current tab
         $current_fields = $tab_fields[$current_tab] ?? [];
 
-        // Render hidden fields for all other tabs
+        // Get all tab fields to check against
+        $all_tab_fields = [];
+        foreach ($tab_fields as $fields) {
+            $all_tab_fields = array_merge($all_tab_fields, $fields);
+        }
+
+        self::render_hidden_fields_generic($all_fields, $all_tab_fields, $current_fields, $options, true);
+    }
+
+    /**
+     * Generic method to render hidden fields for non-visible sections
+     * DRY principle: eliminates duplication across tab/subtab rendering
+     *
+     * @param array $all_fields All field definitions
+     * @param array $scope_fields Fields within the current scope (e.g., all brand fields)
+     * @param array $current_fields Fields currently visible
+     * @param array $options Current option values
+     * @param bool $mark_json Whether to add data-sfx-json-field attribute for arrays
+     * @return void
+     */
+    private static function render_hidden_fields_generic(
+        array $all_fields,
+        array $scope_fields,
+        array $current_fields,
+        array $options,
+        bool $mark_json = false
+    ): void {
         foreach ($all_fields as $field) {
             $field_id = $field['id'];
             
-            // Skip if this field belongs to current tab
-            if (in_array($field_id, $current_fields)) {
+            // Only process fields in scope that are not currently visible
+            if (!in_array($field_id, $scope_fields) || in_array($field_id, $current_fields)) {
                 continue;
             }
-
-            // Get current value
+            
             $value = $options[$field_id] ?? $field['default'];
-
-            // Render as hidden field based on type
-            if ($field['type'] === 'quicklinks_sortable' || $field['type'] === 'stats_items' || $field['type'] === 'dashboard_widgets' || is_array($value)) {
-                // For complex array fields, serialize as JSON in hidden input
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" data-sfx-json-field="true" />';
+            $name = esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']';
+            
+            if (is_array($value)) {
+                $encoded_value = esc_attr(wp_json_encode($value));
+                $json_attr = $mark_json ? ' data-sfx-json-field="true"' : '';
+                echo '<input type="hidden" name="' . $name . '" value="' . $encoded_value . '"' . $json_attr . ' />';
             } else {
-                // For simple fields
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
+                echo '<input type="hidden" name="' . $name . '" value="' . esc_attr((string) $value) . '" />';
             }
         }
     }

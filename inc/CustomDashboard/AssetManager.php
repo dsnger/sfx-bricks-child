@@ -268,6 +268,52 @@ class AssetManager
     {
         $options = get_option(Settings::$option_name, []);
         
+        // Generate cache key from relevant options
+        $cache_keys = [
+            'brand_primary_color',
+            'brand_secondary_color',
+            'brand_accent_color',
+            'brand_success_color',
+            'brand_warning_color',
+            'brand_error_color',
+            'brand_border_radius',
+            'brand_border_width',
+            'brand_shadow_enabled',
+            'brand_shadow_intensity',
+            'brand_header_gradient',
+            'brand_header_gradient_start',
+            'brand_header_gradient_end',
+            'brand_header_bg_color',
+            'brand_header_text_color',
+            'brand_border_color',
+            'card_border_width',
+            'card_border_radius',
+            'card_shadow_enabled',
+            'card_background_color',
+            'card_text_color',
+            'card_border_color',
+            'card_hover_background_color',
+            'card_hover_text_color',
+            'card_hover_border_color',
+            'dashboard_gap',
+            'stats_columns',
+            'quicklinks_columns',
+            'widgets_columns',
+        ];
+        
+        $cache_data = [];
+        foreach ($cache_keys as $key) {
+            $cache_data[$key] = $options[$key] ?? '';
+        }
+        $cache_key = 'sfx_brand_css_' . md5(serialize($cache_data));
+        
+        // Try to get cached CSS
+        $cached_css = get_transient($cache_key);
+        if ($cached_css !== false) {
+            wp_add_inline_style('sfx-custom-dashboard', $cached_css);
+            return;
+        }
+        
         $defaults = Settings::get_default_brand_colors();
         $primary = $options['brand_primary_color'] ?? $defaults['brand_primary_color'];
         $secondary = $options['brand_secondary_color'] ?? $defaults['brand_secondary_color'];
@@ -444,6 +490,9 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
 }
         ";
 
+        // Cache generated CSS for 12 hours
+        set_transient($cache_key, $custom_css, 12 * HOUR_IN_SECONDS);
+        
         wp_add_inline_style('sfx-custom-dashboard', $custom_css);
     }
 

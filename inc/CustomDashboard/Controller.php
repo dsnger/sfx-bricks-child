@@ -100,14 +100,21 @@ class Controller
      */
     public function inject_sidebar_state_script(): void
     {
+        $options = get_option(Settings::$option_name, []);
+        $sidebar_default = $options['sidebar_default_state'] ?? 'visible';
         ?>
         <script>
         (function() {
             var stored = localStorage.getItem('sfx-dashboard-sidebar');
-            if (stored === 'collapsed') {
+            var defaultState = '<?php echo esc_js($sidebar_default); ?>';
+            
+            // Use stored preference if available, otherwise fall back to default
+            var state = stored !== null ? stored : defaultState;
+            
+            if (state === 'collapsed') {
                 document.documentElement.classList.add('sfx-sidebar-collapsed');
                 document.body.classList.add('sfx-sidebar-collapsed');
-            } else if (stored === 'visible') {
+            } else if (state === 'visible') {
                 document.documentElement.classList.remove('sfx-sidebar-collapsed');
                 document.body.classList.remove('sfx-sidebar-collapsed');
             }

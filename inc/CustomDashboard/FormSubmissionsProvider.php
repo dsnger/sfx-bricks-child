@@ -173,11 +173,16 @@ class FormSubmissionsProvider
         global $wpdb;
 
         // Delete all transients with our prefix
-        $wpdb->query(
+        $result = $wpdb->query(
             $wpdb->prepare(
                 "DELETE FROM " . $wpdb->options . " WHERE option_name LIKE %s",
                 $wpdb->esc_like('_transient_' . self::CACHE_PREFIX) . '%'
             )
         );
+
+        // Log error if query failed
+        if ($result === false && !empty($wpdb->last_error)) {
+            error_log('SFX Dashboard: Failed to clear form submissions cache - ' . $wpdb->last_error);
+        }
     }
 }

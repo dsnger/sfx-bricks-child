@@ -1582,6 +1582,8 @@ CSS;
                 $section = self::$option_name . '_sections';
             } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['dashboard_gap', 'stats_columns', 'quicklinks_columns', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
                 $section = self::$option_name . '_brand';
+            } elseif (in_array($field['id'], ['allow_sidebar_toggle', 'sidebar_default_state'])) {
+                $section = self::$option_name . '_main';
             }
 
             add_settings_field(
@@ -2845,7 +2847,28 @@ CSS;
             }
         }
 
+        // Clear brand CSS cache when settings are saved
+        self::clear_brand_css_cache();
+
         return $output;
+    }
+
+    /**
+     * Clear brand CSS cache
+     * Called when dashboard settings are updated
+     *
+     * @return void
+     */
+    public static function clear_brand_css_cache(): void
+    {
+        global $wpdb;
+        
+        // Delete all transients that start with 'sfx_brand_css_'
+        $wpdb->query(
+            "DELETE FROM {$wpdb->options} 
+             WHERE option_name LIKE '_transient_sfx_brand_css_%' 
+             OR option_name LIKE '_transient_timeout_sfx_brand_css_%'"
+        );
     }
 
     /**

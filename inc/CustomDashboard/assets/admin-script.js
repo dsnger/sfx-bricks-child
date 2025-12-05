@@ -7,6 +7,13 @@
 (function($) {
     'use strict';
 
+    // Constants
+    const ANIMATION_DURATION = 1000; // milliseconds
+    const SLIDE_DURATION = 200; // milliseconds
+    const FADE_DURATION = 300; // milliseconds
+    const FEEDBACK_TIMEOUT = 2000; // milliseconds
+    const VALIDATION_CLEAR_DELAY = 3000; // milliseconds
+
     /**
      * Escape HTML special characters for safe insertion
      */
@@ -37,7 +44,6 @@
         
         // Check if sortable is available
         if (typeof $.fn.sortable === 'undefined') {
-            console.error('SFX: jQuery UI Sortable not loaded!');
             return;
         }
         
@@ -206,7 +212,7 @@
             // Remove highlight after animation
             setTimeout(function() {
                 $newGroup.removeClass('sfx-quicklink-group-new');
-            }, 1000);
+            }, ANIMATION_DURATION);
             
             // Re-initialize sortables
             initQuicklinksSortableInGroups();
@@ -225,7 +231,7 @@
             var strings = sfxDashboardAdmin.strings || {};
             
             if (confirm(strings.confirmRemoveGroup || 'Are you sure you want to remove this group and all its links?')) {
-                $group.fadeOut(300, function() {
+                $group.fadeOut(FADE_DURATION, function() {
                     $(this).remove();
                     updateAllIndices();
                 });
@@ -245,7 +251,7 @@
             var $content = $group.find('.sfx-quicklink-group-content');
             var $icon = $button.find('.dashicons');
             
-            $content.slideToggle(200);
+            $content.slideToggle(SLIDE_DURATION);
             
             if ($icon.hasClass('dashicons-arrow-up-alt2')) {
                 $icon.removeClass('dashicons-arrow-up-alt2').addClass('dashicons-arrow-down-alt2');
@@ -354,7 +360,7 @@
             // Remove highlight after animation
             setTimeout(function() {
                 $newItem.removeClass('sfx-quicklink-item-new');
-            }, 1000);
+            }, ANIMATION_DURATION);
             
             // Refresh sortable
             $sortable.sortable('refresh');
@@ -371,7 +377,7 @@
             var $item = $(this).closest('.sfx-quicklink-item');
             
             if (confirm(sfxDashboardAdmin.strings.confirmRemove || 'Are you sure you want to remove this custom link?')) {
-                $item.fadeOut(300, function() {
+                $item.fadeOut(FADE_DURATION, function() {
                     $(this).remove();
                     updateAllIndices();
                 });
@@ -401,7 +407,7 @@
                 
                 // Open this edit form
                 $item.addClass('is-editing');
-                $editForm.slideDown(200, function() {
+                $editForm.slideDown(SLIDE_DURATION, function() {
                     $editForm.find('.sfx-quicklink-title-input').focus();
                 });
             }
@@ -514,7 +520,7 @@
         }
         
         $item.removeClass('is-editing');
-        $editForm.slideUp(200);
+        $editForm.slideUp(SLIDE_DURATION);
         
         // Update the display values
         var title = $item.find('.sfx-quicklink-title-input').val();
@@ -534,7 +540,7 @@
         // Clear validation states after a delay
         setTimeout(function() {
             clearValidationFeedback($item);
-        }, 3000);
+        }, VALIDATION_CLEAR_DELAY);
     }
     
     /**
@@ -733,7 +739,6 @@
         
         // Check if sortable is available
         if (typeof $.fn.sortable === 'undefined') {
-            console.error('SFX: jQuery UI Sortable not loaded!');
             return;
         }
         
@@ -788,7 +793,6 @@
         
         // Check if sortable is available
         if (typeof $.fn.sortable === 'undefined') {
-            console.error('SFX: jQuery UI Sortable not loaded!');
             return;
         }
         
@@ -917,11 +921,10 @@
             // Get defaults from global variable set by PHP
             var defaults = window[config.varName];
             
-            // Handle code editor (string value) vs regular settings (object)
+                // Handle code editor (string value) vs regular settings (object)
             if (config.isCodeEditor) {
                 // defaults can be empty string for "clear" action
                 if (typeof defaults !== 'string') {
-                    console.error('SFX: Invalid default value for code editor');
                     alert('Error: Could not process default value.');
                     return;
                 }
@@ -936,11 +939,9 @@
                     }
                     
                     $textarea.trigger('change');
-                    console.log('SFX: CSS field updated');
                 }
             } else {
                 if (!defaults || typeof defaults !== 'object') {
-                    console.error('SFX: No defaults found for ' + config.varName);
                     alert('Error: Could not load default values.');
                     return;
                 }
@@ -964,9 +965,6 @@
                         }
                         // Trigger change event to update any previews
                         $input.trigger('change');
-                        console.log('SFX: Reset ' + fieldId + ' to ' + defaultValue);
-                    } else {
-                        console.warn('SFX: Could not find input for ' + fieldId);
                     }
                 });
             }
@@ -976,7 +974,7 @@
             $resetButton.text(config.successMsg).prop('disabled', true);
             setTimeout(function() {
                 $resetButton.text(originalText).prop('disabled', false);
-            }, 2000);
+            }, FEEDBACK_TIMEOUT);
         });
     }
 
@@ -1126,7 +1124,7 @@
             $modal.find('.sfx-suggestion-item, .sfx-suggestion-category').show();
             
             // Show modal with animation
-            $modal.fadeIn(200);
+            $modal.fadeIn(SLIDE_DURATION);
             $modal.find('.sfx-modal-search-input').focus();
             
             // Prevent body scroll
@@ -1136,7 +1134,7 @@
         // Close modal
         function closeModal() {
             if ($modal) {
-                $modal.fadeOut(200);
+                $modal.fadeOut(SLIDE_DURATION);
                 $('body').removeClass('sfx-modal-open');
             }
             $currentItem = null;
@@ -1277,7 +1275,7 @@
                 initStatsSortable();
                 initWidgetsSortable();
                 initQuicklinkGroupsSortable();
-            }, 200);
+            }, SLIDE_DURATION);
         });
     });
 

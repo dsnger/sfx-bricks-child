@@ -557,8 +557,13 @@ class DashboardRenderer
     {
         $roles = $link['roles'] ?? [];
 
+        // Validate roles array is properly sanitized
+        if (!is_array($roles)) {
+            return false;
+        }
+
         // If no roles specified or 'all' is selected, show to everyone
-        if (empty($roles) || in_array('all', $roles)) {
+        if (empty($roles) || in_array('all', $roles, true)) {
             return true;
         }
 
@@ -569,6 +574,10 @@ class DashboardRenderer
         }
 
         $user_roles = (array) ($current_user->roles ?? []);
+        
+        // Sanitize user roles array
+        $user_roles = array_map('sanitize_key', $user_roles);
+        $roles = array_map('sanitize_key', $roles);
         
         // Check if user has at least one of the allowed roles
         return !empty(array_intersect($roles, $user_roles));
@@ -584,8 +593,13 @@ class DashboardRenderer
     {
         $roles = $group['roles'] ?? [];
         
+        // Validate roles array is properly sanitized
+        if (!is_array($roles)) {
+            return false;
+        }
+        
         // If no roles are specified, or 'all' is present, show to everyone
-        if (empty($roles) || in_array('all', $roles)) {
+        if (empty($roles) || in_array('all', $roles, true)) {
             return true;
         }
 
@@ -596,6 +610,10 @@ class DashboardRenderer
         }
 
         $user_roles = (array) ($current_user->roles ?? []);
+        
+        // Sanitize user roles array
+        $user_roles = array_map('sanitize_key', $user_roles);
+        $roles = array_map('sanitize_key', $roles);
         
         // Check if user has at least one of the allowed roles
         return !empty(array_intersect($roles, $user_roles));
