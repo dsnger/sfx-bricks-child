@@ -27,7 +27,9 @@ body.index-php #adminmenuwrap {
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-/* Collapsed sidebar state */
+/* Collapsed sidebar state - support both html and body class for FOUC prevention */
+html.sfx-sidebar-collapsed #adminmenuback,
+html.sfx-sidebar-collapsed #adminmenuwrap,
 body.index-php.sfx-sidebar-collapsed #adminmenuback,
 body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
     transform: translateX(-100%);
@@ -35,6 +37,8 @@ body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
     pointer-events: none;
 }
 
+html.sfx-sidebar-collapsed #wpcontent,
+html.sfx-sidebar-collapsed #wpfooter,
 body.index-php.sfx-sidebar-collapsed #wpcontent,
 body.index-php.sfx-sidebar-collapsed #wpfooter {
     margin-left: 0;
@@ -62,6 +66,8 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 
 /* Mobile responsive - hide admin menu completely when collapsed */
 @media screen and (max-width: 782px) {
+    html.sfx-sidebar-collapsed #adminmenuback,
+    html.sfx-sidebar-collapsed #adminmenuwrap,
     body.index-php.sfx-sidebar-collapsed #adminmenuback,
     body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
         display: none;
@@ -860,6 +866,89 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     border-radius: var(--sfx-radius, 8px);
     border: var(--sfx-border-width, 0px) solid hsl(var(--border));
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
+    box-sizing: border-box;
+}
+
+/* Tip Card - Secondary Color Schema */
+.sfx-tip-card {
+    background: hsl(var(--primary)/0.1);
+    border: 0.5px solid hsl(var(--primary)/0.4);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.sfx-tip-icon {
+    font-size: 2em;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.sfx-tip-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.sfx-tip-title {
+    margin: 0 0 8px 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: hsl(var(--secondary-foreground));
+}
+
+.sfx-tip-content {
+    color: hsl(var(--secondary-foreground));
+    font-size: 1.125em;
+    line-height: 1.6;
+}
+
+.sfx-tip-content kbd {
+    display: inline-block;
+    padding: 3px 8px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.85em;
+    line-height: 1;
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 4px;
+    box-shadow: 0 1px 1px hsl(var(--muted-foreground) / 0.1);
+}
+
+/* Clickable command shortcut button */
+.sfx-cmd-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-cmd-shortcut:hover {
+    transform: translateY(-1px);
+}
+
+.sfx-cmd-shortcut:hover kbd {
+    background: hsl(var(--primary) / 0.15);
+    border-color: hsl(var(--primary) / 0.4);
+    color: hsl(var(--primary));
+}
+
+.sfx-cmd-shortcut:active {
+    transform: translateY(0);
+}
+
+.sfx-cmd-shortcut:focus {
+    outline: 2px solid hsl(var(--primary) / 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .sfx-contact-logo {
@@ -1267,6 +1356,13 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     color: inherit;
 }
 
+.sfx-note-content h1,
+.sfx-note-content h2,
+.sfx-note-content h3 {
+    line-height: 1.2;
+}
+
+
 .sfx-note-content *:first-child {
     margin-top: 0;
 }
@@ -1344,4 +1440,30 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-sidebar-transitioning #wpcontent,
 .sfx-sidebar-transitioning #wpfooter {
     transition: transform 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease !important;
+}
+
+/* Dashboard Footer */
+.sfx-dashboard-container .sfx-dashboard-footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid rgba(100, 105, 112, 0.25);
+    text-align: center;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sfx-text-muted, #646970);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s ease;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer a:hover {
+    color: #e91e63;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer svg {
+    color: #e91e63;
 }

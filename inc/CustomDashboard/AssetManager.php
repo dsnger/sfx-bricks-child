@@ -327,6 +327,7 @@ class AssetManager
         $dashboard_gap = max(10, min(50, absint($options['dashboard_gap'] ?? 15)));
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
         $quicklinks_columns = max(2, min(6, absint($options['quicklinks_columns'] ?? 4)));
+        $widgets_columns = max(1, min(4, absint($options['widgets_columns'] ?? 3)));
 
         // Build shared variables array
         $shared_vars = [
@@ -397,6 +398,7 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
     gap: var(--sfx-dashboard-gap);
 }
 .sfx-dashboard-widgets-grid {
+    grid-template-columns: repeat({$widgets_columns}, 1fr);
     gap: var(--sfx-dashboard-gap);
 }
 .sfx-status-bar {

@@ -193,6 +193,7 @@
      */
     function applySidebarState(state, animate = true) {
         const body = document.body;
+        const html = document.documentElement;
         
         if (animate) {
             body.classList.add('sfx-sidebar-transitioning');
@@ -200,8 +201,10 @@
 
         if (state === 'collapsed') {
             body.classList.add('sfx-sidebar-collapsed');
+            html.classList.add('sfx-sidebar-collapsed');
         } else {
             body.classList.remove('sfx-sidebar-collapsed');
+            html.classList.remove('sfx-sidebar-collapsed');
         }
 
         // Update ARIA label on toggle button
@@ -328,6 +331,34 @@
     }
 
     /**
+     * Initialize command shortcut click handler
+     * Triggers Ctrl+K / Cmd+K when clicking on the shortcut button
+     */
+    function initCommandShortcut() {
+        document.addEventListener('click', function(e) {
+            const shortcutBtn = e.target.closest('.sfx-cmd-shortcut');
+            if (!shortcutBtn) return;
+
+            e.preventDefault();
+
+            // Create and dispatch keyboard event for Cmd+K / Ctrl+K
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const keyboardEvent = new KeyboardEvent('keydown', {
+                key: 'k',
+                code: 'KeyK',
+                keyCode: 75,
+                which: 75,
+                ctrlKey: !isMac,
+                metaKey: isMac,
+                bubbles: true,
+                cancelable: true
+            });
+
+            document.dispatchEvent(keyboardEvent);
+        });
+    }
+
+    /**
      * Initialize all dashboard functionality
      */
     function initDashboard() {
@@ -335,6 +366,7 @@
         initSystemPreferenceListener();
         initSidebarToggle();
         initStatCounters();
+        initCommandShortcut();
     }
 
     // Initialize when DOM is ready
