@@ -879,8 +879,8 @@ CSS;
         $predefined = self::get_default_quicklinks();
         $predefined_ids = array_column($predefined, 'id');
         
-        // Check if data is in new groups format with non-empty groups
-        if (!empty($saved_data) && isset($saved_data['groups']) && !empty($saved_data['groups'])) {
+        // Check if data is in new groups format (even if empty, to handle deleted groups vs new/discovered links)
+        if (!empty($saved_data) && isset($saved_data['groups'])) {
             // New format - process groups
             $groups = [];
             
@@ -950,9 +950,19 @@ CSS;
                 }
             }
             
-            // Add new links to the first group
-            if (!empty($new_predefined_links) && !empty($groups)) {
-                $groups[0]['quicklinks'] = array_merge($groups[0]['quicklinks'], $new_predefined_links);
+            // Add new links to the first group or create a new group if none exist
+            if (!empty($new_predefined_links)) {
+                if (!empty($groups)) {
+                    $groups[0]['quicklinks'] = array_merge($groups[0]['quicklinks'], $new_predefined_links);
+                } else {
+                    // Create a default group for the new links
+                    $groups[] = [
+                        'id' => 'group_default',
+                        'title' => __('Quick Actions', 'sfxtheme'),
+                        'roles' => [],
+                        'quicklinks' => $new_predefined_links,
+                    ];
+                }
             }
             
             return $groups;
@@ -2208,11 +2218,10 @@ CSS;
                                                           placeholder="<?php esc_attr_e('<svg>...</svg>', 'sfxtheme'); ?>" 
                                                           rows="3"><?php echo esc_textarea($link['icon']); ?></textarea>
                                             </div>
+                                            <div class="sfx-quicklink-edit-actions">
+                                                <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
+                                            </div>
                                         </div>
-                                        <div class="sfx-quicklink-edit-actions">
-                                            <button type="button" class="button button-primary sfx-save-quicklink"><?php esc_html_e('Done', 'sfxtheme'); ?></button>
-                                        </div>
-                            </div>
                         <?php else: ?>
                                     <!-- Predefined Link -->
                                     <span class="sfx-quicklink-drag-handle">☰</span>
@@ -2865,9 +2874,13 @@ CSS;
         
         // Delete all transients that start with 'sfx_brand_css_'
         $wpdb->query(
-            "DELETE FROM {$wpdb->options} 
-             WHERE option_name LIKE '_transient_sfx_brand_css_%' 
-             OR option_name LIKE '_transient_timeout_sfx_brand_css_%'"
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} 
+                 WHERE option_name LIKE %s 
+                 OR option_name LIKE %s",
+                $wpdb->esc_like('_transient_sfx_brand_css_') . '%',
+                $wpdb->esc_like('_transient_timeout_sfx_brand_css_') . '%'
+            )
         );
     }
 

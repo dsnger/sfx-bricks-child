@@ -1,0 +1,349 @@
+/**
+ * SFX Import/Export Admin Styles
+ * 
+ * NOTE: Most styles come from the global backend stylesheet:
+ * /assets/css/backend/styles.css
+ * 
+ * This file only contains Import/Export-specific styles not covered globally.
+ */
+
+/* Container Layout - extends global .sfx-flex */
+.sfx-import-export-container {
+    margin-top: 24px;
+}
+
+/* Selection Controls */
+.sfx-selection-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* Checkbox Grid - extends global .sfx-settings-fields-grid */
+.sfx-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+/* Checkbox Labels - theme-specific styling */
+.sfx-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: #f9f9f9;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.sfx-checkbox-label:hover {
+    border-color: var(--sfx-primary-color, #1cb1ab);
+}
+
+.sfx-checkbox-label input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.sfx-checkbox-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sfx-checkbox-text strong {
+    font-weight: 500;
+    color: #1d2327;
+}
+
+.sfx-checkbox-text .description {
+    font-size: 12px;
+    color: #646970;
+    line-height: 1.4;
+}
+
+/* Export/Import Groups */
+.sfx-export-group,
+.sfx-import-group {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.sfx-export-group h3,
+.sfx-import-group h3,
+.sfx-export-group h4,
+.sfx-import-group h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+/* File Upload - extends global .sfx-file-input-group */
+.sfx-file-upload {
+    margin-bottom: 20px;
+}
+
+.sfx-file-upload label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.sfx-file-upload input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed #c3c4c7;
+    border-radius: 4px;
+    background: #f6f7f7;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.sfx-file-upload input[type="file"]:hover,
+.sfx-file-upload input[type="file"]:focus {
+    border-color: var(--sfx-primary-color, #1cb1ab);
+}
+
+/* Import Preview */
+.sfx-import-preview {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f0f6fc;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.sfx-preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #c3c4c7;
+    font-size: 13px;
+    color: #50575e;
+}
+
+/* Import Mode - Radio buttons */
+.sfx-import-mode {
+    margin: 20px 0;
+}
+
+.sfx-radio-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.sfx-radio-label:hover {
+    border-color: var(--sfx-primary-color, #1cb1ab);
+}
+
+.sfx-radio-label input[type="radio"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.sfx-radio-label span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sfx-radio-label strong {
+    font-weight: 500;
+}
+
+.sfx-radio-label .description {
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Notices - theme-specific variants */
+.sfx-notice {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin: 16px 0;
+}
+
+.sfx-notice p {
+    margin: 0;
+}
+
+.sfx-notice-info {
+    background: #f0f6fc;
+    border-left: 4px solid #72aee6;
+}
+
+.sfx-notice-warning {
+    background: #fcf9e8;
+    border-left: 4px solid #dba617;
+}
+
+/* Submit area */
+.sfx-card .submit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.sfx-export-btn,
+.sfx-import-btn {
+    display: flex!important;
+    align-items: center;
+    gap: 6px;
+}
+
+.sfx-export-btn .dashicons,
+.sfx-import-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Results Section */
+.sfx-results {
+    margin-top: 24px;
+}
+
+.sfx-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.sfx-results-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #00a32a;
+}
+
+.sfx-results-header h3 .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.sfx-results-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #646970;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.sfx-results-close:hover {
+    background: #f0f0f1;
+    color: #1d2327;
+}
+
+.sfx-results-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f6f7f7;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.sfx-results-meta span {
+    color: #50575e;
+}
+
+.sfx-results-meta strong {
+    color: #1d2327;
+}
+
+.sfx-results-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sfx-result-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.sfx-result-item:last-child {
+    margin-bottom: 0;
+}
+
+.sfx-result-item .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.sfx-result-success {
+    background: #edfaef;
+    color: #1e4620;
+}
+
+.sfx-result-success .dashicons {
+    color: #00a32a;
+}
+
+.sfx-result-warning {
+    background: #fcf9e8;
+    color: #614200;
+}
+
+.sfx-result-warning .dashicons {
+    color: #dba617;
+}
+
+.sfx-result-error {
+    background: #fcf0f1;
+    color: #8a2424;
+}
+
+.sfx-result-error .dashicons {
+    color: #d63638;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .sfx-import-export-container {
+        flex-direction: column;
+    }
+    
+    .sfx-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sfx-preview-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

@@ -175,7 +175,7 @@ class FormSubmissionsProvider
         // Delete all transients with our prefix
         $result = $wpdb->query(
             $wpdb->prepare(
-                "DELETE FROM " . $wpdb->options . " WHERE option_name LIKE %s",
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
                 $wpdb->esc_like('_transient_' . self::CACHE_PREFIX) . '%'
             )
         );

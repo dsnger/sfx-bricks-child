@@ -483,34 +483,63 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 }
 
 .sfx-theme-toggle {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
     padding: 0;
-    background: hsl(var(--primary-foreground) / 0.15);
-    border: 1px solid hsl(var(--primary-foreground) / 0.2);
+    background: transparent;
+    border: none;
     border-radius: 50%;
-    color: hsl(var(--primary-foreground));
+    color: inherit;
     cursor: pointer;
     transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.sfx-theme-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.1;
+    border-radius: 50%;
+    z-index: -1;
+    transition: opacity 0.2s ease;
+}
+
+.sfx-theme-toggle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.15;
+    z-index: -1;
+    pointer-events: none;
 }
 
 .sfx-theme-toggle:hover {
-    background: hsl(var(--primary-foreground) / 0.25);
-    transform: scale(1.05);
+    transform: translateY(-1px);
+}
+
+.sfx-theme-toggle:hover::before {
+    opacity: 0.2;
 }
 
 .sfx-theme-toggle:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.95);
 }
 
 .sfx-theme-icon {
     width: 20px;
     height: 20px;
     display: none;
+    color: inherit;
 }
 
 /* Show appropriate icon based on current theme */
@@ -533,34 +562,63 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 }
 
 .sfx-sidebar-toggle {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
     padding: 0;
-    background: hsl(var(--primary-foreground) / 0.15);
-    border: 1px solid hsl(var(--primary-foreground) / 0.2);
+    background: transparent;
+    border: none;
     border-radius: 50%;
-    color: hsl(var(--primary-foreground));
+    color: inherit;
     cursor: pointer;
     transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.sfx-sidebar-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.1;
+    border-radius: 50%;
+    z-index: -1;
+    transition: opacity 0.2s ease;
+}
+
+.sfx-sidebar-toggle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.15;
+    z-index: -1;
+    pointer-events: none;
 }
 
 .sfx-sidebar-toggle:hover {
-    background: hsl(var(--primary-foreground) / 0.25);
-    transform: scale(1.05);
+    transform: translateY(-1px);
+}
+
+.sfx-sidebar-toggle:hover::before {
+    opacity: 0.2;
 }
 
 .sfx-sidebar-toggle:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.95);
 }
 
 .sfx-sidebar-icon {
     width: 20px;
     height: 20px;
     display: none;
+    color: inherit;
 }
 
 /* Show hamburger icon when sidebar is collapsed (to open it) */
