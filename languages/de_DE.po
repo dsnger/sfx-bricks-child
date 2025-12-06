@@ -1,0 +1,4066 @@
+# German translations for SFX Bricks Child Theme
+# Copyright (C) 2024 SFX
+# This file is distributed under the same license as the SFX Bricks Child Theme package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SFX Bricks Child Theme 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-06 00:00+0000\n"
+"PO-Revision-Date: 2025-12-06 13:01+0100\n"
+"Last-Translator: Daniel Sänger <webmaster@daniel-saenger.de>\n"
+"Language-Team: German\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+
+# ============================================
+# Custom Dashboard - Default Setting Values
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Welcome back, {user_name}! 👋"
+msgstr "Willkommen zurück, {user_name}! 👋"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Here's what's happening with your projects today."
+msgstr "Das Neueste zu deinen Projekten."
+
+#: inc/CustomDashboard/Settings.php inc/ContactInfos/PostType.php
+msgid "Contact"
+msgstr "Kontakt"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Tip"
+msgstr "Tipp"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"You can use <button type=\"button\" class=\"sfx-cmd-shortcut\" data-"
+"shortcut=\"cmd+k\"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to "
+"access the command tool to manage WordPress."
+msgstr ""
+"Du kannst <button type=\"button\" class=\"sfx-cmd-shortcut\" data-"
+"shortcut=\"cmd+k\"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> "
+"verwenden, um das Befehlstool zur WordPress-Verwaltung zu öffnen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Quick Actions"
+msgstr "Schnellaktionen"
+
+# ============================================
+# Custom Dashboard - General Settings Labels
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Enable Custom Dashboard"
+msgstr "Individuelles Dashboard aktivieren"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable the custom dashboard to replace the default WordPress dashboard."
+msgstr ""
+"Das individuelle Dashboard aktivieren, um das Standard-WordPress-Dashboard "
+"zu ersetzen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Welcome Title"
+msgstr "Willkommenstitel"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"The title text displayed at the top of the dashboard. Available "
+"placeholders: {user_name}, {first_name}, {last_name}, {username}"
+msgstr ""
+"Der Titeltext, der oben im Dashboard angezeigt wird. Verfügbare Platzhalter: "
+"{user_name}, {first_name}, {last_name}, {username}"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Welcome Subtitle"
+msgstr "Willkommens-Untertitel"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"The subtitle text displayed below the title. Available placeholders: "
+"{user_name}, {first_name}, {last_name}, {username}"
+msgstr ""
+"Der Untertiteltext unter dem Titel. Verfügbare Platzhalter: {user_name}, "
+"{first_name}, {last_name}, {username}"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Allow Sidebar Toggle"
+msgstr "Seitenleisten-Umschalter erlauben"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Show a toggle button to collapse/expand the admin menu sidebar as an "
+"offcanvas."
+msgstr ""
+"Zeige einen Umschalter, um die Admin-Menü-Seitenleiste ein-/auszuklappen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Sidebar Default State"
+msgstr "Standard-Zustand der Seitenleiste"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Choose whether the admin sidebar is visible or collapsed by default."
+msgstr ""
+"Wähle, ob die Admin-Seitenleiste standardmäßig sichtbar oder eingeklappt ist."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Visible"
+msgstr "Sichtbar"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Collapsed"
+msgstr "Eingeklappt"
+
+# ============================================
+# Custom Dashboard - Section Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Show Pending Updates"
+msgstr "Ausstehende Updates anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Display pending plugin, theme, and WordPress core updates with status "
+"indicator."
+msgstr ""
+"Zeige ausstehende Plugin-, Theme- und WordPress-Core-Updates mit "
+"Statusanzeige."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show Site Health"
+msgstr "Website-Zustand anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display WordPress site health status indicator."
+msgstr "WordPress Website-Zustandsanzeige anzeigen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show Stats Section"
+msgstr "Statistik-Bereich anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display the statistics section with post, page, media, and user counts."
+msgstr ""
+"Zeige den Statistik-Bereich mit Beiträgen, Seiten, Medien und Benutzeranzahl."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Statistics Cards"
+msgstr "Statistik-Karten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable, disable, and reorder stat cards. Drag to reorder."
+msgstr ""
+"Statistik-Karten aktivieren, deaktivieren und neu anordnen. Ziehen zum "
+"Sortieren."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show Quick Actions Section"
+msgstr "Schnellaktionen-Bereich anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display the quick actions section with links to common admin pages."
+msgstr ""
+"Zeige den Schnellaktionen-Bereich mit Links zu häufig genutzten Admin-Seiten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show Contact Section"
+msgstr "Kontakt-Bereich anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display the contact information section."
+msgstr "Zeige den Kontaktinformationen-Bereich."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show Form Submissions Section"
+msgstr "Formular-Einsendungen anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display recent Bricks form submissions."
+msgstr "Zeige aktuelle Bricks-Formular-Einsendungen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Number of Form Submissions to Show"
+msgstr "Anzahl der anzuzeigenden Formular-Einsendungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Maximum number of recent form submissions to display (1-20)."
+msgstr ""
+"Maximale Anzahl der anzuzeigenden aktuellen Formular-Einsendungen (1-20)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Show WordPress Dashboard Widgets"
+msgstr "WordPress-Dashboard-Widgets anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Include WordPress dashboard widgets in your custom dashboard."
+msgstr "WordPress-Dashboard-Widgets in dein individuelles Dashboard einbinden."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enabled Dashboard Widgets"
+msgstr "Aktivierte Dashboard-Widgets"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Select which WordPress dashboard widgets to display."
+msgstr "Wähle, welche WordPress-Dashboard-Widgets angezeigt werden sollen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Widgets Columns"
+msgstr "Widget-Spalten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Number of columns for dashboard widgets grid (1-4)."
+msgstr "Anzahl der Spalten für das Dashboard-Widget-Raster (1-4)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Widgets Position"
+msgstr "Widget-Position"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Choose where to display the WordPress dashboard widgets section."
+msgstr "Wähle, wo die WordPress-Dashboard-Widgets angezeigt werden sollen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Below Header"
+msgstr "Unter dem Header"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Below Health & Updates Row"
+msgstr "Unter Zustand & Updates"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Below Statistics Row"
+msgstr "Unter der Statistik-Zeile"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Below Quicklinks & Sidebar Row"
+msgstr "Unter Schnellaktionen & Seitenleiste"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Bottom (Default Position)"
+msgstr "Unten (Standard-Position)"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Below Widget Row"
+msgstr "Unter der Widget-Zeile"
+
+# ============================================
+# Custom Dashboard - Contact Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Contact Card Title"
+msgstr "Kontaktkarten-Titel"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Title for the contact information card (e.g., \"Created by\", \"Contact\")."
+msgstr "Titel für die Kontaktkarte (z.B. \"Erstellt von\", \"Kontakt\")."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Contact Card Subtitle"
+msgstr "Kontaktkarten-Untertitel"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Optional subtitle text below the title."
+msgstr "Optionaler Untertitel unter dem Titel."
+
+#: inc/CustomDashboard/Settings.php inc/ContactInfos/PostType.php
+msgid "Company Name"
+msgstr "Firmenname"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Your company or organization name."
+msgstr "Dein Firmen- oder Organisationsname."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Email Address"
+msgstr "E-Mail-Adresse"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Contact email address."
+msgstr "Kontakt-E-Mail-Adresse."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Phone Number"
+msgstr "Telefonnummer"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Contact phone number."
+msgstr "Kontakt-Telefonnummer."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Website URL"
+msgstr "Website-URL"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Company website URL."
+msgstr "Firmen-Website-URL."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Contact Logo"
+msgstr "Kontakt-Logo"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Upload a logo to display in the contact card. If not set, no logo will be "
+"shown. Recommended: PNG or SVG, max 200KB."
+msgstr ""
+"Lade ein Logo hoch, das in der Kontaktkarte angezeigt wird. Ohne Einstellung "
+"wird kein Logo angezeigt. Empfohlen: PNG oder SVG, max. 200KB."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Contact Logo Height"
+msgstr "Kontakt-Logo Höhe"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Set the height of the contact logo in pixels. Width will scale "
+"proportionally."
+msgstr ""
+"Lege die Höhe des Kontakt-Logos in Pixeln fest. Die Breite skaliert "
+"proportional."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Physical Address"
+msgstr "Anschrift"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Company physical address."
+msgstr "Firmenadresse."
+
+# ============================================
+# Custom Dashboard - Color Mode Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Default Color Mode"
+msgstr "Standard-Farbmodus"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Choose the default color mode for the dashboard."
+msgstr "Wähle den Standard-Farbmodus für das Dashboard."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Light"
+msgstr "Hell"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Dark"
+msgstr "Dunkel"
+
+#: inc/CustomDashboard/Settings.php
+msgid "System (follow OS preference)"
+msgstr "System (folgt OS-Einstellung)"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Allow Mode Switching"
+msgstr "Modus-Wechsel erlauben"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Show a toggle button on the dashboard allowing users to switch between light "
+"and dark modes."
+msgstr ""
+"Zeige einen Umschalter im Dashboard, mit dem Benutzer zwischen Hell- und "
+"Dunkelmodus wechseln können."
+
+# ============================================
+# Custom Dashboard - Brand Colors
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Primary Brand Color"
+msgstr "Primäre Markenfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Main brand color - all other colors will be auto-generated from this. Choose "
+"a color that represents your brand."
+msgstr ""
+"Haupt-Markenfarbe - alle anderen Farben werden daraus generiert. Wähle eine "
+"Farbe, die deine Marke repräsentiert."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Secondary Brand Color"
+msgstr "Sekundäre Markenfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Secondary brand color for hover states and highlights."
+msgstr "Sekundäre Markenfarbe für Hover-Zustände und Hervorhebungen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Accent Color"
+msgstr "Akzentfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Accent color for special elements."
+msgstr "Akzentfarbe für besondere Elemente."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Success Color"
+msgstr "Erfolgsfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Color for success states, health indicators, and positive messages."
+msgstr ""
+"Farbe für Erfolgszustände, Gesundheitsindikatoren und positive Nachrichten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Warning Color"
+msgstr "Warnfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Color for warnings, pending updates, and caution messages."
+msgstr "Farbe für Warnungen, ausstehende Updates und Vorsichtshinweise."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Error Color"
+msgstr "Fehlerfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Color for errors, critical issues, and destructive actions."
+msgstr "Farbe für Fehler, kritische Probleme und destruktive Aktionen."
+
+# ============================================
+# Custom Dashboard - Layout Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Border Radius"
+msgstr "Eckenradius"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border radius in pixels for cards and elements (0-50)."
+msgstr "Eckenradius in Pixeln für Karten und Elemente (0-50)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border Width"
+msgstr "Rahmenbreite"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border width in pixels for cards and elements (0-10)."
+msgstr "Rahmenbreite in Pixeln für Karten und Elemente (0-10)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border Color"
+msgstr "Rahmenfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border color for cards and elements."
+msgstr "Rahmenfarbe für Karten und Elemente."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable Shadows"
+msgstr "Schatten aktivieren"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add shadow effects to cards and elements."
+msgstr "Schatteneffekte für Karten und Elemente hinzufügen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Shadow Intensity"
+msgstr "Schattenintensität"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Shadow intensity level: 0 (none), 1 (light), 2 (medium), 3 (strong)."
+msgstr ""
+"Schattenintensitätsstufe: 0 (keine), 1 (leicht), 2 (mittel), 3 (stark)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Dashboard Gap"
+msgstr "Dashboard-Abstand"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Gap between all dashboard sections and grid items in pixels (10-50)."
+msgstr ""
+"Abstand zwischen allen Dashboard-Bereichen und Rasterelementen in Pixeln "
+"(10-50)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Stats Columns"
+msgstr "Statistik-Spalten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Number of columns for statistics cards (2-6)."
+msgstr "Anzahl der Spalten für Statistik-Karten (2-6)."
+
+# ============================================
+# Custom Dashboard - Header Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Header Background Gradient"
+msgstr "Header-Hintergrund Farbverlauf"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable gradient background for the header."
+msgstr "Farbverlauf-Hintergrund für den Header aktivieren."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Gradient Start Color"
+msgstr "Farbverlauf Startfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "First color of the gradient (left side)."
+msgstr "Erste Farbe des Farbverlaufs (linke Seite)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Gradient End Color"
+msgstr "Farbverlauf Endfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Second color of the gradient (right side)."
+msgstr "Zweite Farbe des Farbverlaufs (rechte Seite)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Header Background Color"
+msgstr "Header-Hintergrundfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Background color when gradient is disabled."
+msgstr "Hintergrundfarbe wenn Farbverlauf deaktiviert ist."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Header Text Color"
+msgstr "Header-Textfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Text color for the welcome header section."
+msgstr "Textfarbe für den Willkommens-Header-Bereich."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Agency Logo"
+msgstr "Agentur-Logo"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Upload your agency logo to display in the dashboard header. Recommended: PNG "
+"or SVG, max 200KB."
+msgstr ""
+"Lade dein Agentur-Logo hoch, um es im Dashboard-Header anzuzeigen. "
+"Empfohlen: PNG oder SVG, max. 200KB."
+
+# ============================================
+# Custom Dashboard - Card Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Card Background Color"
+msgstr "Karten-Hintergrundfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Background color for quick action cards."
+msgstr "Hintergrundfarbe für Schnellaktions-Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Text Color"
+msgstr "Karten-Textfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Text color for quick action cards."
+msgstr "Textfarbe für Schnellaktions-Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Border Width"
+msgstr "Karten-Rahmenbreite"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border width for cards in pixels."
+msgstr "Rahmenbreite für Karten in Pixeln."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Border Color"
+msgstr "Karten-Rahmenfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border color for quick action cards."
+msgstr "Rahmenfarbe für Schnellaktions-Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Border Radius"
+msgstr "Karten-Eckenradius"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border radius for cards in pixels."
+msgstr "Eckenradius für Karten in Pixeln."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Shadow"
+msgstr "Karten-Schatten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable shadow effect for cards."
+msgstr "Schatteneffekt für Karten aktivieren."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Hover Background Color"
+msgstr "Hover-Hintergrundfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Background color when hovering over cards."
+msgstr "Hintergrundfarbe beim Überfahren von Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Hover Text Color"
+msgstr "Hover-Textfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Text color when hovering over cards."
+msgstr "Textfarbe beim Überfahren von Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Hover Border Color"
+msgstr "Hover-Rahmenfarbe"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border color when hovering over cards."
+msgstr "Rahmenfarbe beim Überfahren von Karten."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Quick Links Columns"
+msgstr "Schnelllink-Spalten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Number of columns for quick action boxes (2-6)."
+msgstr "Anzahl der Spalten für Schnellaktions-Boxen (2-6)."
+
+# ============================================
+# Custom Dashboard - Tip Card Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Show Tip Card"
+msgstr "Tipp-Karte anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display a helpful tip card above the contact section."
+msgstr "Zeige eine hilfreiche Tipp-Karte über dem Kontaktbereich."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Tip Card Title"
+msgstr "Tipp-Karten-Titel"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Title for the tip card (optional)."
+msgstr "Titel für die Tipp-Karte (optional)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Tip Content"
+msgstr "Tipp-Inhalt"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Content for the tip card. HTML is allowed."
+msgstr "Inhalt für die Tipp-Karte. HTML ist erlaubt."
+
+# ============================================
+# Custom Dashboard - Note Section Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Show Note Section"
+msgstr "Notiz-Bereich anzeigen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Display a custom note section at the bottom of the dashboard."
+msgstr "Zeige einen individuellen Notiz-Bereich am Ende des Dashboards."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Note Title"
+msgstr "Notiz-Titel"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Title for the note section (optional)."
+msgstr "Titel für den Notiz-Bereich (optional)."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Note Content"
+msgstr "Notiz-Inhalt"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Content for the note section. HTML is allowed."
+msgstr "Inhalt für den Notiz-Bereich. HTML ist erlaubt."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Note Position"
+msgstr "Notiz-Position"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Choose where to display the note section on the dashboard."
+msgstr "Wähle, wo der Notiz-Bereich im Dashboard angezeigt werden soll."
+
+# ============================================
+# Custom Dashboard - Quick Links Settings
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Quick Links"
+msgstr "Schnelllinks"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Enable, disable, and reorder quick action links. Drag to reorder."
+msgstr ""
+"Schnellaktions-Links aktivieren, deaktivieren und neu anordnen. Ziehen zum "
+"Sortieren."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Additional CSS"
+msgstr "Zusätzliches CSS"
+
+#: inc/CustomDashboard/Settings.php
+msgid ""
+"Add custom CSS that will be applied on top of the default dashboard styles."
+msgstr ""
+"Füge benutzerdefiniertes CSS hinzu, das zusätzlich zu den Standard-Dashboard-"
+"Stilen angewendet wird."
+
+# ============================================
+# Custom Dashboard - Default Quicklink Titles
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "New Post"
+msgstr "Neuer Beitrag"
+
+#: inc/CustomDashboard/Settings.php
+msgid "New Page"
+msgstr "Neue Seite"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Media"
+msgstr "Medien"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Themes"
+msgstr "Themes"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Plugins"
+msgstr "Plugins"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Users"
+msgstr "Benutzer"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Bricks"
+msgstr "Bricks"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Menus"
+msgstr "Menüs"
+
+#: inc/CustomDashboard/Settings.php inc/ContactInfos/PostType.php
+msgid "Contact Info"
+msgstr "Kontaktdaten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Social Media"
+msgstr "Social Media"
+
+#: inc/CustomDashboard/Settings.php
+msgid "New %s"
+msgstr "Neuer %s"
+
+# ============================================
+# Custom Dashboard - URL Suggestions
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Content"
+msgstr "Inhalte"
+
+#: inc/CustomDashboard/Settings.php
+msgid "All Posts"
+msgstr "Alle Beiträge"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New Post"
+msgstr "Neuen Beitrag erstellen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "All Pages"
+msgstr "Alle Seiten"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New Page"
+msgstr "Neue Seite erstellen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Categories"
+msgstr "Kategorien"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Tags"
+msgstr "Schlagwörter"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Comments"
+msgstr "Kommentare"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Media Library"
+msgstr "Mediathek"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New Media"
+msgstr "Neue Medien hinzufügen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Appearance"
+msgstr "Design"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Customize"
+msgstr "Anpassen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Widgets"
+msgstr "Widgets"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Installed Plugins"
+msgstr "Installierte Plugins"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New Plugin"
+msgstr "Neues Plugin hinzufügen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "All Users"
+msgstr "Alle Benutzer"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New User"
+msgstr "Neuen Benutzer hinzufügen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Your Profile"
+msgstr "Dein Profil"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Tools"
+msgstr "Werkzeuge"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Available Tools"
+msgstr "Verfügbare Werkzeuge"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Import"
+msgstr "Importieren"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Export"
+msgstr "Exportieren"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Site Health"
+msgstr "Website-Zustand"
+
+#: inc/CustomDashboard/Settings.php
+msgid "General Settings"
+msgstr "Allgemeine Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Writing"
+msgstr "Schreiben"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Reading"
+msgstr "Lesen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Permalinks"
+msgstr "Permalinks"
+
+#: inc/CustomDashboard/Settings.php inc/ImportExport/AdminPage.php
+msgid "Theme Settings"
+msgstr "Theme-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Global Theme Settings"
+msgstr "Globale Theme-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php inc/GeneralThemeOptions/Settings.php
+msgid "General Options"
+msgstr "Allgemeine Optionen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Custom Dashboard"
+msgstr "Individuelles Dashboard"
+
+#: inc/CustomDashboard/Settings.php
+msgid "WP Optimizer"
+msgstr "WP Optimizer"
+
+#: inc/CustomDashboard/Settings.php inc/ImageOptimizer/AdminPage.php
+msgid "Image Optimizer"
+msgstr "Bild-Optimierer"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Security Headers"
+msgstr "Sicherheits-Header"
+
+#: inc/CustomDashboard/Settings.php
+msgid "HTML Copy/Paste"
+msgstr "HTML Copy/Paste"
+
+# #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#
+# ============================================
+# Contact Infos
+# ============================================
+#: inc/CustomDashboard/Settings.php inc/ContactInfos/AdminPage.php
+msgid "Contact Information"
+msgstr "Kontaktinformationen"
+
+# #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#
+# ============================================
+# Custom Scripts Manager
+# ============================================
+#: inc/CustomDashboard/Settings.php inc/CustomScriptsManager/AdminPage.php
+msgid "Custom Scripts"
+msgstr "Benutzerdefinierte Skripte"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Bricks Builder"
+msgstr "Bricks Builder"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Bricks Settings"
+msgstr "Bricks-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Bricks Templates"
+msgstr "Bricks-Vorlagen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "WooCommerce"
+msgstr "WooCommerce"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Products"
+msgstr "Produkte"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add Product"
+msgstr "Produkt hinzufügen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Orders"
+msgstr "Bestellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "WooCommerce Settings"
+msgstr "WooCommerce-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "All %s"
+msgstr "Alle %s"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add New %s"
+msgstr "%s hinzufügen"
+
+# ============================================
+# Custom Dashboard - Brand Color Labels
+# ============================================
+#: inc/CustomDashboard/Settings.php
+msgid "Primary"
+msgstr "Primär"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Secondary"
+msgstr "Sekundär"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Accent"
+msgstr "Akzent"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Background"
+msgstr "Hintergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Foreground"
+msgstr "Vordergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card"
+msgstr "Karte"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Card Foreground"
+msgstr "Karten-Vordergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Muted"
+msgstr "Gedämpft"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Muted Foreground"
+msgstr "Gedämpft-Vordergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Border"
+msgstr "Rahmen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Primary Foreground"
+msgstr "Primär-Vordergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Secondary (Semantic)"
+msgstr "Sekundär (Semantisch)"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Secondary Foreground"
+msgstr "Sekundär-Vordergrund"
+
+#: inc/CustomDashboard/Settings.php
+msgid "White"
+msgstr "Weiß"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Black"
+msgstr "Schwarz"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Light Gray"
+msgstr "Hellgrau"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Gray"
+msgstr "Grau"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Dark Gray"
+msgstr "Dunkelgrau"
+
+# ============================================
+# Custom Dashboard - Admin Page
+# ============================================
+#: inc/CustomDashboard/AdminPage.php
+msgid ""
+"Customize your WordPress dashboard with stats, quick actions, and contact "
+"information."
+msgstr ""
+"Passe dein WordPress-Dashboard mit Statistiken, Schnellaktionen und "
+"Kontaktinformationen an."
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "View Dashboard"
+msgstr "Dashboard ansehen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "General"
+msgstr "Allgemein"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Sections"
+msgstr "Bereiche"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Statistics"
+msgstr "Statistiken"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Brand & Styling"
+msgstr "Marke & Design"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Color Mode"
+msgstr "Farbmodus"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Brand Colors"
+msgstr "Markenfarben"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Welcome Header"
+msgstr "Willkommens-Header"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Quick Action Boxes"
+msgstr "Schnellaktions-Boxen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Dashboard Layout"
+msgstr "Dashboard-Layout"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Custom CSS"
+msgstr "Benutzerdefiniertes CSS"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Section Toggles"
+msgstr "Bereichs-Schalter"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Tip Card"
+msgstr "Tipp-Karte"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Note"
+msgstr "Notiz"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset Colors to Defaults"
+msgstr "Farben auf Standard zurücksetzen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset all brand and status colors to their default values."
+msgstr "Alle Marken- und Statusfarben auf Standardwerte zurücksetzen."
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset Header to Defaults"
+msgstr "Header auf Standard zurücksetzen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset welcome header settings to their default values."
+msgstr "Willkommens-Header-Einstellungen auf Standardwerte zurücksetzen."
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset Card Styling to Defaults"
+msgstr "Karten-Design auf Standard zurücksetzen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset quick action card styling to default values."
+msgstr "Schnellaktions-Karten-Design auf Standardwerte zurücksetzen."
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset Layout to Defaults"
+msgstr "Layout auf Standard zurücksetzen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Reset dashboard layout settings to default values."
+msgstr "Dashboard-Layout-Einstellungen auf Standardwerte zurücksetzen."
+
+#: inc/CustomDashboard/AdminPage.php
+msgid "Clear Additional CSS"
+msgstr "Zusätzliches CSS löschen"
+
+#: inc/CustomDashboard/AdminPage.php
+msgid ""
+"Remove all additional custom CSS. The default dashboard styles will still "
+"apply."
+msgstr ""
+"Alle zusätzlichen benutzerdefinierten CSS entfernen. Die Standard-Dashboard-"
+"Stile bleiben erhalten."
+
+# ============================================
+# Custom Dashboard - Form Submissions
+# ============================================
+#: inc/CustomDashboard/FormSubmissionsProvider.php
+msgid "Unnamed Form"
+msgstr "Unbenanntes Formular"
+
+#: inc/CustomDashboard/FormSubmissionsProvider.php
+msgid "Form Submission"
+msgstr "Formular-Einsendung"
+
+# ============================================
+# Custom Dashboard - Stats Provider
+# ============================================
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Posts"
+msgstr "Beiträge"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Published blog posts"
+msgstr "Veröffentlichte Blogbeiträge"
+
+#: inc/CustomDashboard/StatsProvider.php inc/CustomScriptsManager/PostType.php
+msgid "Pages"
+msgstr "Seiten"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Published pages"
+msgstr "Veröffentlichte Seiten"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Total media files"
+msgstr "Mediendateien gesamt"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Registered users"
+msgstr "Registrierte Benutzer"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Pending comments"
+msgstr "Ausstehende Kommentare"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Form Submissions"
+msgstr "Formular-Einsendungen"
+
+#: inc/CustomDashboard/StatsProvider.php
+msgid "Total form submissions"
+msgstr "Formular-Einsendungen gesamt"
+
+# ============================================
+# General Theme Options
+# ============================================
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Enable WP Optimizer"
+msgstr "WP Optimizer aktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Enable WP Optimizer to manage some WordPress features for better performance "
+"and security."
+msgstr ""
+"WP Optimizer aktivieren, um einige WordPress-Funktionen für bessere Leistung "
+"und Sicherheit zu verwalten."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Enable Image Optimizer"
+msgstr "Bild-Optimierer aktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Enable Image Optimizer to optimize images for better performance."
+msgstr ""
+"Bild-Optimierer aktivieren, um Bilder für bessere Leistung zu optimieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Enable Security Header"
+msgstr "Sicherheits-Header aktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Enable Security Header to protect your website against common security "
+"threats."
+msgstr ""
+"Sicherheits-Header aktivieren, um deine Website vor gängigen "
+"Sicherheitsbedrohungen zu schützen."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Disable Bricks JS"
+msgstr "Bricks JS deaktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Remove the default Bricks JavaScript from the frontend for enhanced "
+"performance and custom JS solutions."
+msgstr ""
+"Das Standard-Bricks-JavaScript vom Frontend entfernen für bessere Leistung "
+"und benutzerdefinierte JS-Lösungen."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Disable Bricks Styling"
+msgstr "Bricks-Styling deaktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Remove all default Bricks styling."
+msgstr "Alle Standard-Bricks-Styles entfernen."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Delete Data on Uninstall"
+msgstr "Daten beim Deinstallieren löschen"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Delete all theme settings and data when the theme is deleted. This does not "
+"affect the theme when it is just deactivated."
+msgstr ""
+"Alle Theme-Einstellungen und Daten beim Löschen des Themes entfernen. Dies "
+"hat keine Auswirkung, wenn das Theme nur deaktiviert wird."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "General Theme Options"
+msgstr "Allgemeine Theme-Optionen"
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid ""
+"Enable or disable core scripts and styles (like jQuery, Bricks JS, Bricks "
+"styling) for performance and customization."
+msgstr ""
+"Kern-Skripte und -Styles (wie jQuery, Bricks JS, Bricks-Styling) für "
+"Leistung und Anpassung aktivieren oder deaktivieren."
+
+# ============================================
+# Global Theme Settings
+# ============================================
+#: inc/SFXBricksChildAdmin.php
+msgid ""
+"Welcome to the SFX Theme Options! Here you can configure some basic global "
+"settings and features for your website. Use the quick links below to jump "
+"directly to each section. Each area is designed to help you optimize, brand, "
+"and manage your site easily."
+msgstr ""
+"Willkommen bei den SFX Theme-Optionen! Hier kannst du grundlegende globale "
+"Einstellungen und Funktionen für deine Website konfigurieren. Verwende die "
+"Schnelllinks unten, um direkt zu jedem Bereich zu springen. Jeder Bereich "
+"ist darauf ausgelegt, dir zu helfen, deine Website einfach zu optimieren, zu "
+"branden und zu verwalten."
+
+#: inc/SFXBricksChildAdmin.php
+msgid "Go to"
+msgstr "Zu"
+
+# ============================================
+# Custom Dashboard - Asset Manager Strings
+# ============================================
+#: inc/CustomDashboard/AssetManager.php
+msgid "Remove"
+msgstr "Entfernen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: inc/CustomDashboard/AssetManager.php inc/SocialMediaAccounts/PostType.php
+msgid "Icon"
+msgstr "Symbol"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Title"
+msgstr "Titel"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "URL"
+msgstr "URL"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Custom"
+msgstr "Benutzerdefiniert"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Untitled"
+msgstr "Unbenannt"
+
+#: inc/CustomDashboard/AssetManager.php inc/SocialMediaAccounts/PostType.php
+msgid "Link Title"
+msgstr "Link-Titel"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "SVG Icon"
+msgstr "SVG-Symbol"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Done"
+msgstr "Fertig"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Are you sure you want to remove this custom link?"
+msgstr "Möchtest du diesen benutzerdefinierten Link wirklich entfernen?"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "All Roles"
+msgstr "Alle Rollen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "1 Role"
+msgstr "1 Rolle"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Roles"
+msgstr "Rollen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Group Title"
+msgstr "Gruppentitel"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "+ Add Link"
+msgstr "+ Link hinzufügen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Remove Group"
+msgstr "Gruppe entfernen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Are you sure you want to remove this group and all its links?"
+msgstr "Möchtest du diese Gruppe und alle ihre Links wirklich entfernen?"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Collapse/Expand"
+msgstr "Ein-/Ausklappen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Both title and URL are required"
+msgstr "Titel und URL sind erforderlich"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Title is too long (max 100 characters)"
+msgstr "Titel ist zu lang (max. 100 Zeichen)"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Invalid URL protocol"
+msgstr "Ungültiges URL-Protokoll"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Invalid SVG (must include <svg> tags)"
+msgstr "Ungültiges SVG (muss <svg>-Tags enthalten)"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Select a WordPress Link"
+msgstr "WordPress-Link auswählen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Search links..."
+msgstr "Links suchen..."
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Browse WordPress Links"
+msgstr "WordPress-Links durchsuchen"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Close"
+msgstr "Schließen"
+
+# ============================================
+# Custom Dashboard - Dashboard Renderer
+# ============================================
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "%d issue(s) need attention"
+msgstr "%d Problem(e) benötigen Aufmerksamkeit"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "All up to date"
+msgstr "Alles aktuell"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Updates required"
+msgstr "Updates erforderlich"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Published Posts"
+msgstr "Veröffentlichte Beiträge"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Site Health Status"
+msgstr "Website-Zustand"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "At a Glance"
+msgstr "Auf einen Blick"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Activity"
+msgstr "Aktivität"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Quick Draft"
+msgstr "Schnellentwurf"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "WordPress Events and News"
+msgstr "WordPress-Events und -News"
+
+# ============================================
+# Custom Dashboard - System Info Provider
+# ============================================
+#: inc/CustomDashboard/SystemInfoProvider.php
+msgid "Good"
+msgstr "Gut"
+
+#: inc/CustomDashboard/SystemInfoProvider.php
+msgid "Critical"
+msgstr "Kritisch"
+
+#: inc/CustomDashboard/SystemInfoProvider.php
+msgid "Should be improved"
+msgstr "Sollte verbessert werden"
+
+# ============================================
+# Import/Export Settings
+# ============================================
+#: inc/ImportExport/AdminPage.php
+msgid "Import/Export Settings"
+msgstr "Einstellungen importieren/exportieren"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Import/Export"
+msgstr "Import/Export"
+
+#: inc/ImportExport/AdminPage.php
+msgid ""
+"Export your theme settings and custom post type data to a JSON file, or "
+"import settings from a previously exported file."
+msgstr ""
+"Exportiere deine Theme-Einstellungen und benutzerdefinierte Beitragstyp-"
+"Daten in eine JSON-Datei oder importiere Einstellungen aus einer zuvor "
+"exportierten Datei."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Export Settings"
+msgstr "Einstellungen exportieren"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Select which settings and data you want to export."
+msgstr "Wähle, welche Einstellungen und Daten du exportieren möchtest."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Select All"
+msgstr "Alle auswählen"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Deselect All"
+msgstr "Alle abwählen"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Custom Post Types"
+msgstr "Benutzerdefinierte Beitragstypen"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Note:"
+msgstr "Hinweis:"
+
+#: inc/ImportExport/AdminPage.php
+msgid ""
+"The Image Optimizer excluded images list is not exported as attachment IDs "
+"are site-specific."
+msgstr ""
+"Die Liste der ausgeschlossenen Bilder des Bild-Optimierers wird nicht "
+"exportiert, da Anhang-IDs standortspezifisch sind."
+
+#: inc/ImportExport/AdminPage.php
+msgid ""
+"URLs (images, logos, links) are exported as-is. When importing to a "
+"different site, you may need to manually update these URLs."
+msgstr ""
+"URLs (Bilder, Logos, Links) werden unverändert exportiert. Beim Import auf "
+"eine andere Website musst du diese URLs möglicherweise manuell aktualisieren."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Export Selected"
+msgstr "Ausgewählte exportieren"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Import Settings"
+msgstr "Einstellungen importieren"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Upload a previously exported JSON file to import settings."
+msgstr ""
+"Lade eine zuvor exportierte JSON-Datei hoch, um Einstellungen zu importieren."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Select JSON File:"
+msgstr "JSON-Datei auswählen:"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Maximum file size: 2MB"
+msgstr "Maximale Dateigröße: 2MB"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Preview Import Data"
+msgstr "Importdaten-Vorschau"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Import Mode"
+msgstr "Import-Modus"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Merge"
+msgstr "Zusammenführen"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Keep existing data and add new items from the import file."
+msgstr ""
+"Bestehende Daten behalten und neue Elemente aus der Importdatei hinzufügen."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Replace"
+msgstr "Ersetzen"
+
+#: inc/ImportExport/AdminPage.php
+msgid "Delete existing data for selected items and replace with imported data."
+msgstr ""
+"Bestehende Daten für ausgewählte Elemente löschen und durch importierte "
+"Daten ersetzen."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Warning:"
+msgstr "Warnung:"
+
+#: inc/ImportExport/AdminPage.php
+msgid ""
+"Importing data will modify your site. Make sure you have a backup before "
+"proceeding."
+msgstr ""
+"Das Importieren von Daten wird deine Website ändern. Stelle sicher, dass du "
+"ein Backup hast, bevor du fortfährst."
+
+#: inc/ImportExport/AdminPage.php
+msgid ""
+"URLs from the export file (images, logos) will be imported as-is. If they "
+"point to a different domain, you may need to update them manually after "
+"import."
+msgstr ""
+"URLs aus der Exportdatei (Bilder, Logos) werden unverändert importiert. Wenn "
+"sie auf eine andere Domain verweisen, musst du sie möglicherweise nach dem "
+"Import manuell aktualisieren."
+
+#: inc/ImportExport/AdminPage.php
+msgid "Import Selected"
+msgstr "Ausgewählte importieren"
+
+#: inc/ImportExport/AdminPage.php
+msgid "%d items"
+msgstr "%d Elemente"
+
+#: inc/ImportExport/Controller.php
+msgid "Main theme feature toggles and settings"
+msgstr "Haupt-Theme-Funktionsschalter und -Einstellungen"
+
+#: inc/ImportExport/Controller.php
+msgid "WordPress performance and optimization settings"
+msgstr "WordPress-Leistungs- und Optimierungseinstellungen"
+
+#: inc/ImportExport/Controller.php
+msgid "Dashboard layout, branding, sections and styling"
+msgstr "Dashboard-Layout, Branding, Bereiche und Styling"
+
+#: inc/ImportExport/Controller.php
+msgid "HTTP security headers configuration"
+msgstr "HTTP-Sicherheits-Header-Konfiguration"
+
+#: inc/ImportExport/Controller.php
+msgid "Image conversion and optimization settings"
+msgstr "Bildkonvertierungs- und Optimierungseinstellungen"
+
+#: inc/ImportExport/Controller.php
+msgid "Bricks Builder HTML conversion settings"
+msgstr "Bricks Builder HTML-Konvertierungseinstellungen"
+
+#: inc/ImportExport/Controller.php
+msgid "Text snippets feature settings"
+msgstr "Text-Snippet-Funktionseinstellungen"
+
+# #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#
+# ============================================
+# Social Media Accounts
+# ============================================
+#: inc/ImportExport/Controller.php inc/SocialMediaAccounts/AdminPage.php
+msgid "Social Media Accounts"
+msgstr "Social-Media-Konten"
+
+#: inc/ImportExport/Controller.php
+msgid "Security check failed."
+msgstr "Sicherheitsprüfung fehlgeschlagen."
+
+#: inc/ImportExport/Controller.php
+msgid "You do not have permission to export settings."
+msgstr "Du hast keine Berechtigung, Einstellungen zu exportieren."
+
+#: inc/ImportExport/Controller.php
+msgid "Please select at least one item to export."
+msgstr "Bitte wähle mindestens ein Element zum Exportieren aus."
+
+#: inc/ImportExport/Controller.php
+msgid "You do not have permission to import settings."
+msgstr "Du hast keine Berechtigung, Einstellungen zu importieren."
+
+#: inc/ImportExport/Controller.php
+msgid "No file uploaded or upload error."
+msgstr "Keine Datei hochgeladen oder Upload-Fehler."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid JSON file."
+msgstr "Ungültige JSON-Datei."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid import data."
+msgstr "Ungültige Importdaten."
+
+#: inc/ImportExport/Controller.php
+msgid "Please select at least one item to import."
+msgstr "Bitte wähle mindestens ein Element zum Importieren aus."
+
+#: inc/ImportExport/Controller.php inc/ImportExport/AssetManager.php
+msgid "Import completed successfully!"
+msgstr "Import erfolgreich abgeschlossen!"
+
+#: inc/ImportExport/Controller.php inc/ImportExport/AssetManager.php
+msgid "File is too large. Maximum size is 2MB."
+msgstr "Datei ist zu groß. Maximale Größe ist 2MB."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid file type. Please upload a JSON file."
+msgstr "Ungültiger Dateityp. Bitte lade eine JSON-Datei hoch."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid file extension. Please upload a .json file."
+msgstr "Ungültige Dateierweiterung. Bitte lade eine .json-Datei hoch."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid export file: missing version information."
+msgstr "Ungültige Exportdatei: Versionsinformationen fehlen."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid export file: missing data section."
+msgstr "Ungültige Exportdatei: Datenbereich fehlt."
+
+#: inc/ImportExport/Controller.php
+msgid "Invalid export file: no settings or post type data found."
+msgstr ""
+"Ungültige Exportdatei: Keine Einstellungen oder Beitragstyp-Daten gefunden."
+
+#: inc/ImportExport/Controller.php
+msgid "%s imported successfully."
+msgstr "%s erfolgreich importiert."
+
+#: inc/ImportExport/Controller.php
+msgid "%1$s: %2$d options imported."
+msgstr "%1$s: %2$d Optionen importiert."
+
+#: inc/ImportExport/Controller.php
+msgid "%1$s: Import failed - %2$s"
+msgstr "%1$s: Import fehlgeschlagen - %2$s"
+
+#: inc/ImportExport/Controller.php
+msgid "Post type %s does not exist."
+msgstr "Beitragstyp %s existiert nicht."
+
+#: inc/ImportExport/Controller.php
+msgid "%d imported"
+msgstr "%d importiert"
+
+#: inc/ImportExport/Controller.php
+msgid "%d skipped (already exist)"
+msgstr "%d übersprungen (existieren bereits)"
+
+#: inc/ImportExport/Controller.php
+msgid "%d errors"
+msgstr "%d Fehler"
+
+#: inc/ImportExport/AssetManager.php
+msgid ""
+"This will REPLACE all existing data for the selected items. This action "
+"cannot be undone. Are you sure?"
+msgstr ""
+"Dies wird ALLE bestehenden Daten für die ausgewählten Elemente ERSETZEN. "
+"Diese Aktion kann nicht rückgängig gemacht werden. Bist du sicher?"
+
+#: inc/ImportExport/AssetManager.php
+msgid ""
+"This will MERGE imported data with existing data. Existing items will be "
+"kept. Continue?"
+msgstr ""
+"Dies wird importierte Daten mit bestehenden Daten ZUSAMMENFÜHREN. Bestehende "
+"Elemente werden beibehalten. Fortfahren?"
+
+#: inc/ImportExport/AssetManager.php
+msgid "Export completed successfully!"
+msgstr "Export erfolgreich abgeschlossen!"
+
+#: inc/ImportExport/AssetManager.php
+msgid "Export failed. Please try again."
+msgstr "Export fehlgeschlagen. Bitte versuche es erneut."
+
+#: inc/ImportExport/AssetManager.php
+msgid "Import failed. Please check the file and try again."
+msgstr ""
+"Import fehlgeschlagen. Bitte überprüfe die Datei und versuche es erneut."
+
+#: inc/ImportExport/AssetManager.php
+msgid "Please select at least one item to export/import."
+msgstr "Bitte wähle mindestens ein Element zum Exportieren/Importieren aus."
+
+#: inc/ImportExport/AssetManager.php
+msgid "Please select a valid JSON file."
+msgstr "Bitte wähle eine gültige JSON-Datei aus."
+
+#: inc/ImportExport/AssetManager.php
+msgid "Processing..."
+msgstr "Verarbeitung..."
+
+# ============================================
+# Text Snippets
+# ============================================
+#: inc/TextSnippets/Settings.php
+msgid "Configure and manage the text snippet options below."
+msgstr "Konfiguriere und verwalte die Text-Snippet-Optionen unten."
+
+# ============================================
+# Access Control
+# ============================================
+#: inc/AccessControl.php
+msgid ""
+"You do not have sufficient permissions to access this page. Theme settings "
+"access is restricted."
+msgstr ""
+"Du hast keine ausreichenden Berechtigungen, um auf diese Seite zuzugreifen. "
+"Der Zugriff auf Theme-Einstellungen ist eingeschränkt."
+
+#: inc/AccessControl.php
+msgid "Access Denied"
+msgstr "Zugriff verweigert"
+
+#: inc/AccessControl.php
+msgid ""
+"You do not have sufficient permissions to access this page. Dashboard "
+"settings access is restricted."
+msgstr ""
+"Du hast keine ausreichenden Berechtigungen, um auf diese Seite zuzugreifen. "
+"Der Zugriff auf Dashboard-Einstellungen ist eingeschränkt."
+
+#: inc/CustomScriptsManager/AdminPage.php
+msgid "Use the Custom Scripts post type to manage your scripts and styles."
+msgstr ""
+"Verwende den Beitragstyp Benutzerdefinierte Skripte, um deine Skripte und "
+"Styles zu verwalten."
+
+#: inc/CustomScriptsManager/AdminPage.php
+msgid "Manage Custom Scripts"
+msgstr "Benutzerdefinierte Skripte verwalten"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Custom Script"
+msgstr "Benutzerdefiniertes Skript"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Add New"
+msgstr "Neu hinzufügen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Add New Custom Script"
+msgstr "Neues benutzerdefiniertes Skript hinzufügen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Edit Custom Script"
+msgstr "Benutzerdefiniertes Skript bearbeiten"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "New Custom Script"
+msgstr "Neues benutzerdefiniertes Skript"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "View Custom Script"
+msgstr "Benutzerdefiniertes Skript ansehen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Search Custom Scripts"
+msgstr "Benutzerdefinierte Skripte durchsuchen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "No custom scripts found"
+msgstr "Keine benutzerdefinierten Skripte gefunden"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "No custom scripts found in Trash"
+msgstr "Keine benutzerdefinierten Skripte im Papierkorb gefunden"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "All Custom Scripts"
+msgstr "Alle benutzerdefinierten Skripte"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Categories"
+msgstr "Skript-Kategorien"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Category"
+msgstr "Skript-Kategorie"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Search Script Categories"
+msgstr "Skript-Kategorien durchsuchen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "All Script Categories"
+msgstr "Alle Skript-Kategorien"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Parent Category"
+msgstr "Übergeordnete Kategorie"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Parent Category:"
+msgstr "Übergeordnete Kategorie:"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Edit Category"
+msgstr "Kategorie bearbeiten"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Update Category"
+msgstr "Kategorie aktualisieren"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Add New Category"
+msgstr "Neue Kategorie hinzufügen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "New Category Name"
+msgstr "Neuer Kategoriename"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Configuration"
+msgstr "Skript-Konfiguration"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Type"
+msgstr "Skript-Typ"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "JavaScript"
+msgstr "JavaScript"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "CSS"
+msgstr "CSS"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Location"
+msgstr "Position"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Header"
+msgstr "Header"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Footer"
+msgstr "Footer"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Include Type"
+msgstr "Einbindungs-Typ"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Enqueue"
+msgstr "Enqueue"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Register"
+msgstr "Registrieren"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Frontend Only"
+msgstr "Nur Frontend"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Only load on frontend (not in admin)"
+msgstr "Nur im Frontend laden (nicht im Admin)"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Source Type"
+msgstr "Skript-Quelltyp"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Upload File"
+msgstr "Datei hochladen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "CDN Link"
+msgstr "CDN-Link"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Upload from CDN"
+msgstr "Von CDN hochladen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Inline Code"
+msgstr "Inline-Code"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script File"
+msgstr "Skript-Datei"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "CDN URL"
+msgstr "CDN-URL"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Script Content"
+msgstr "Skript-Inhalt"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Dependencies"
+msgstr "Abhängigkeiten"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Comma-separated list of script handles (e.g., jquery, wp-util)"
+msgstr "Kommagetrennte Liste von Skript-Handles (z.B. jquery, wp-util)"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Priority"
+msgstr "Priorität"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Loading priority (1 = highest, 999 = lowest). Lower numbers load first."
+msgstr ""
+"Ladepriorität (1 = höchste, 999 = niedrigste). Niedrigere Zahlen werden "
+"zuerst geladen."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Conditional Loading"
+msgstr "Bedingtes Laden"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid ""
+"Control when this script should be loaded based on specific pages or page "
+"types."
+msgstr ""
+"Steuere, wann dieses Skript basierend auf bestimmten Seiten oder Seitentypen "
+"geladen werden soll."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Include only for specific posts"
+msgstr "Nur für bestimmte Beiträge einbinden"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid ""
+"Select specific posts/pages where this script should be loaded. Leave empty "
+"to load on all pages."
+msgstr ""
+"Wähle bestimmte Beiträge/Seiten aus, auf denen dieses Skript geladen werden "
+"soll. Leer lassen, um auf allen Seiten zu laden."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Include only for specific page types"
+msgstr "Nur für bestimmte Seitentypen einbinden"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Front Page"
+msgstr "Startseite"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Blog Page"
+msgstr "Blog-Seite"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Single Posts"
+msgstr "Einzelne Beiträge"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "All Archives"
+msgstr "Alle Archive"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Search Results"
+msgstr "Suchergebnisse"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "404 Page"
+msgstr "404-Seite"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Standard Pages"
+msgstr "Standard-Seiten"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Single %s"
+msgstr "Einzelner %s"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "%s Archive"
+msgstr "%s-Archiv"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid ""
+"Select page types where this script should be loaded. Leave empty to load on "
+"all page types."
+msgstr ""
+"Wähle Seitentypen aus, auf denen dieses Skript geladen werden soll. Leer "
+"lassen, um auf allen Seitentypen zu laden."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Exclude for specific posts"
+msgstr "Für bestimmte Beiträge ausschließen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Select specific posts/pages where this script should NOT be loaded."
+msgstr ""
+"Wähle bestimmte Beiträge/Seiten aus, auf denen dieses Skript NICHT geladen "
+"werden soll."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Exclude for specific page types"
+msgstr "Für bestimmte Seitentypen ausschließen"
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Select page types where this script should NOT be loaded."
+msgstr ""
+"Wähle Seitentypen aus, auf denen dieses Skript NICHT geladen werden soll."
+
+#: inc/CustomScriptsManager/PostType.php
+msgid "Select options..."
+msgstr "Optionen auswählen..."
+
+#: inc/ContactInfos/AdminPage.php
+msgid ""
+"Use the Contact Information post type to manage your company details and "
+"contact informations."
+msgstr ""
+"Verwende den Beitragstyp Kontaktinformationen, um deine Firmendaten und "
+"Kontaktinformationen zu verwalten."
+
+#: inc/ContactInfos/AdminPage.php
+msgid "Manage Contact Informations"
+msgstr "Kontaktinformationen verwalten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Add New Contact Info"
+msgstr "Neue Kontaktdaten hinzufügen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Edit Contact Info"
+msgstr "Kontaktdaten bearbeiten"
+
+#: inc/ContactInfos/PostType.php
+msgid "New Contact Info"
+msgstr "Neue Kontaktdaten"
+
+#: inc/ContactInfos/PostType.php
+msgid "View Contact Info"
+msgstr "Kontaktdaten ansehen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Search Contact Info"
+msgstr "Kontaktdaten durchsuchen"
+
+#: inc/ContactInfos/PostType.php
+msgid "No contact info found"
+msgstr "Keine Kontaktdaten gefunden"
+
+#: inc/ContactInfos/PostType.php
+msgid "No contact info found in Trash"
+msgstr "Keine Kontaktdaten im Papierkorb gefunden"
+
+#: inc/ContactInfos/PostType.php
+msgid "All Contact Info"
+msgstr "Alle Kontaktdaten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Contact Information Configuration"
+msgstr "Kontaktinformationen-Konfiguration"
+
+#: inc/ContactInfos/PostType.php
+msgid "Contact Type"
+msgstr "Kontakttyp"
+
+#: inc/ContactInfos/PostType.php
+msgid "Main Contact"
+msgstr "Hauptkontakt"
+
+#: inc/ContactInfos/PostType.php
+msgid "Branch/Location"
+msgstr "Niederlassung/Standort"
+
+#: inc/ContactInfos/PostType.php
+msgid "Select whether this is the main contact or a branch/location."
+msgstr "Wähle, ob dies der Hauptkontakt oder eine Niederlassung/Standort ist."
+
+#: inc/ContactInfos/PostType.php
+msgid "Company Information"
+msgstr "Firmeninformationen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Name of the company"
+msgstr "Name der Firma"
+
+#: inc/ContactInfos/PostType.php
+msgid "Managing Director(s)"
+msgstr "Geschäftsführer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Name of the managing director(s)"
+msgstr "Name des/der Geschäftsführer(s)"
+
+#: inc/ContactInfos/PostType.php
+msgid "Address Information"
+msgstr "Adressinformationen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Street / No."
+msgstr "Straße / Nr."
+
+#: inc/ContactInfos/PostType.php
+msgid "Street name and number"
+msgstr "Straßenname und Hausnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "ZIP Code"
+msgstr "Postleitzahl"
+
+#: inc/ContactInfos/PostType.php
+msgid "Postal code"
+msgstr "Postleitzahl"
+
+#: inc/ContactInfos/PostType.php
+msgid "City"
+msgstr "Stadt"
+
+#: inc/ContactInfos/PostType.php
+msgid "City/Town"
+msgstr "Stadt/Ort"
+
+#: inc/ContactInfos/PostType.php
+msgid "Country"
+msgstr "Land"
+
+#: inc/ContactInfos/PostType.php
+msgid "Formatted Address"
+msgstr "Formatierte Adresse"
+
+#: inc/ContactInfos/PostType.php
+msgid "Formatted address for display"
+msgstr "Formatierte Adresse zur Anzeige"
+
+#: inc/ContactInfos/PostType.php
+msgid "Contact Details"
+msgstr "Kontaktdaten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Phone"
+msgstr "Telefon"
+
+#: inc/ContactInfos/PostType.php
+msgid "Phone number"
+msgstr "Telefonnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Mobile"
+msgstr "Mobil"
+
+#: inc/ContactInfos/PostType.php
+msgid "Mobile number"
+msgstr "Mobilnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Fax"
+msgstr "Fax"
+
+#: inc/ContactInfos/PostType.php
+msgid "Fax number"
+msgstr "Faxnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Email"
+msgstr "E-Mail"
+
+#: inc/ContactInfos/PostType.php
+msgid "Email address"
+msgstr "E-Mail-Adresse"
+
+#: inc/ContactInfos/PostType.php
+msgid "Business Information"
+msgstr "Geschäftsinformationen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Tax ID"
+msgstr "Steuer-ID"
+
+#: inc/ContactInfos/PostType.php
+msgid "Tax identification number"
+msgstr "Steueridentifikationsnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "VAT ID"
+msgstr "Umsatzsteuer-ID"
+
+#: inc/ContactInfos/PostType.php
+msgid "VAT identification number"
+msgstr "Umsatzsteuer-Identifikationsnummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Company Registration No."
+msgstr "Handelsregisternummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Commercial register number"
+msgstr "Handelsregisternummer"
+
+#: inc/ContactInfos/PostType.php
+msgid "Registration Court"
+msgstr "Registergericht"
+
+#: inc/ContactInfos/PostType.php
+msgid "Responsible registration court"
+msgstr "Zuständiges Registergericht"
+
+#: inc/ContactInfos/PostType.php
+msgid "Data Protection Officer"
+msgstr "Datenschutzbeauftragter"
+
+#: inc/ContactInfos/PostType.php
+msgid "Name of the data protection officer"
+msgstr "Name des Datenschutzbeauftragten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Additional Information"
+msgstr "Zusätzliche Informationen"
+
+#: inc/ContactInfos/PostType.php
+msgid "Opening Hours"
+msgstr "Öffnungszeiten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Business hours of the company"
+msgstr "Geschäftszeiten der Firma"
+
+#: inc/ContactInfos/PostType.php
+msgid "Google Maps Link"
+msgstr "Google Maps-Link"
+
+#: inc/ContactInfos/PostType.php
+msgid "Link to Google Maps"
+msgstr "Link zu Google Maps"
+
+#: inc/ContactInfos/PostType.php
+msgid "Type"
+msgstr "Typ"
+
+#: inc/ContactInfos/PostType.php
+msgid "Address"
+msgstr "Adresse"
+
+#: inc/ContactInfos/PostType.php
+msgid "Status"
+msgstr "Status"
+
+#: inc/ContactInfos/PostType.php
+msgid "Address:"
+msgstr "Adresse:"
+
+#: inc/ContactInfos/PostType.php
+msgid "No address data"
+msgstr "Keine Adressdaten"
+
+#: inc/ContactInfos/PostType.php
+msgid "No contact data"
+msgstr "Keine Kontaktdaten"
+
+#: inc/ContactInfos/PostType.php
+msgid "Active"
+msgstr "Aktiv"
+
+#: inc/ContactInfos/PostType.php
+msgid "Draft"
+msgstr "Entwurf"
+
+#: inc/ContactInfos/PostType.php
+msgid "Private"
+msgstr "Privat"
+
+#: inc/ContactInfos/PostType.php
+msgid "Contact Info cache cleared successfully!"
+msgstr "Kontaktdaten-Cache erfolgreich geleert!"
+
+#: inc/ContactInfos/PostType.php
+msgid "Clear Cache"
+msgstr "Cache leeren"
+
+#: inc/ContactInfos/Shortcode/SC_ContactInfos.php
+msgid "View on Map"
+msgstr "Auf Karte anzeigen"
+
+#: inc/SocialMediaAccounts/AdminPage.php
+msgid ""
+"Use the Social Media Accounts post type to manage your social media profiles."
+msgstr ""
+"Verwende den Beitragstyp Social-Media-Konten, um deine Social-Media-Profile "
+"zu verwalten."
+
+#: inc/SocialMediaAccounts/AdminPage.php
+msgid "Manage Social Media Accounts"
+msgstr "Social-Media-Konten verwalten"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Social Account"
+msgstr "Social-Media-Konto"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Add New Social Account"
+msgstr "Neues Social-Media-Konto hinzufügen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Edit Social Account"
+msgstr "Social-Media-Konto bearbeiten"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "New Social Account"
+msgstr "Neues Social-Media-Konto"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "View Social Account"
+msgstr "Social-Media-Konto ansehen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Search Social Accounts"
+msgstr "Social-Media-Konten durchsuchen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "No social accounts found"
+msgstr "Keine Social-Media-Konten gefunden"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "No social accounts found in Trash"
+msgstr "Keine Social-Media-Konten im Papierkorb gefunden"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "All Social Accounts"
+msgstr "Alle Social-Media-Konten"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Social Accounts"
+msgstr "Social-Media-Konten"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Social Account Configuration"
+msgstr "Social-Media-Konto-Konfiguration"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Icon Image"
+msgstr "Symbol-Bild"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Image URL"
+msgstr "Bild-URL"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Upload Image"
+msgstr "Bild hochladen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Upload an icon image (preferably SVG) for this social media account."
+msgstr ""
+"Lade ein Symbol-Bild (vorzugsweise SVG) für dieses Social-Media-Konto hoch."
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Icon Preview"
+msgstr "Symbol-Vorschau"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Link URL"
+msgstr "Link-URL"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "The URL to the social media profile."
+msgstr "Die URL zum Social-Media-Profil."
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Follow us on..."
+msgstr "Folge uns auf..."
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Optional title attribute for the link."
+msgstr "Optionaler Titel-Attribut für den Link."
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Link Target"
+msgstr "Link-Ziel"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Open in new tab"
+msgstr "In neuem Tab öffnen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Open in same tab"
+msgstr "Im gleichen Tab öffnen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "How the link should open when clicked."
+msgstr "Wie der Link beim Klicken geöffnet werden soll."
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Select Icon Image"
+msgstr "Symbol-Bild auswählen"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Use this image"
+msgstr "Dieses Bild verwenden"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "Link"
+msgstr "Link"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "No icon"
+msgstr "Kein Symbol"
+
+#: inc/SocialMediaAccounts/PostType.php
+msgid "No link"
+msgstr "Kein Link"
+
+# ============================================
+# HTML Copy/Paste
+# ============================================
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "HTML Copy/Paste Settings"
+msgstr "HTML Copy/Paste-Einstellungen"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "How to Use"
+msgstr "Verwendung"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Direct HTML Paste"
+msgstr "Direktes HTML-Einfügen"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid ""
+"Copy HTML from any source and paste it directly into Bricks Builder. The "
+"HTML will be automatically converted to Bricks Builder elements."
+msgstr ""
+"Kopiere HTML aus beliebiger Quelle und füge es direkt in Bricks Builder ein. "
+"Das HTML wird automatisch in Bricks Builder-Elemente umgewandelt."
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "HTML Editor"
+msgstr "HTML-Editor"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid ""
+"Use the HTML editor to modify your HTML before converting it to Bricks "
+"Builder elements. This is useful for cleaning up or modifying HTML before "
+"import."
+msgstr ""
+"Verwende den HTML-Editor, um dein HTML vor der Umwandlung in Bricks Builder-"
+"Elemente zu bearbeiten. Dies ist nützlich zum Bereinigen oder Bearbeiten von "
+"HTML vor dem Import."
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Supported Elements"
+msgstr "Unterstützte Elemente"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Div containers"
+msgstr "Div-Container"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Text elements (headings, paragraphs)"
+msgstr "Textelemente (Überschriften, Absätze)"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Images with proper src attributes"
+msgstr "Bilder mit korrekten src-Attributen"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Links with href attributes"
+msgstr "Links mit href-Attributen"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "SVG elements"
+msgstr "SVG-Elemente"
+
+#: inc/HtmlCopyPaste/AdminPage.php
+msgid "Custom attributes preservation"
+msgstr "Erhaltung benutzerdefinierter Attribute"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Paste HTML"
+msgstr "HTML einfügen"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Paste HTML with Editor"
+msgstr "HTML mit Editor einfügen"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Insert"
+msgstr "Einfügen"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Clipboard not allowed"
+msgstr "Zwischenablage nicht erlaubt"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Converting HTML..."
+msgstr "HTML wird konvertiert..."
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "HTML converted successfully"
+msgstr "HTML erfolgreich konvertiert"
+
+#: inc/HtmlCopyPaste/AssetManager.php
+msgid "Error converting HTML"
+msgstr "Fehler beim Konvertieren von HTML"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Main Settings"
+msgstr "Haupteinstellungen"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Enable HTML Copy/Paste"
+msgstr "HTML Copy/Paste aktivieren"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Enable the HTML copy/paste functionality in Bricks Builder."
+msgstr "HTML Copy/Paste-Funktionalität in Bricks Builder aktivieren."
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Enable HTML Editor"
+msgstr "HTML-Editor aktivieren"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Enable the HTML editor mode for advanced editing before conversion."
+msgstr ""
+"HTML-Editor-Modus für erweiterte Bearbeitung vor der Konvertierung "
+"aktivieren."
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Preserve Custom Attributes"
+msgstr "Benutzerdefinierte Attribute erhalten"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Preserve custom HTML attributes when converting to Bricks elements."
+msgstr ""
+"Benutzerdefinierte HTML-Attribute beim Konvertieren in Bricks-Elemente "
+"erhalten."
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Auto Convert Images"
+msgstr "Bilder automatisch konvertieren"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Automatically convert img tags to Bricks image elements."
+msgstr "img-Tags automatisch in Bricks-Bild-Elemente konvertieren."
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Auto Convert Links"
+msgstr "Links automatisch konvertieren"
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Automatically convert anchor tags to Bricks link elements."
+msgstr "Anker-Tags automatisch in Bricks-Link-Elemente konvertieren."
+
+#: inc/HtmlCopyPaste/Settings.php
+msgid "Configure the HTML copy/paste functionality for Bricks Builder."
+msgstr "HTML Copy/Paste-Funktionalität für Bricks Builder konfigurieren."
+
+#: inc/HtmlCopyPaste/Controller.php
+msgid ""
+"We have no permission for using clipboard data. Only Chrome supports fast "
+"pasting. If you are using Chrome, then give access to not show this window "
+"again. Paste text from your clipboard to input."
+msgstr ""
+"Wir haben keine Berechtigung für die Verwendung von Zwischenablage-Daten. "
+"Nur Chrome unterstützt schnelles Einfügen. Wenn du Chrome verwendest, gib "
+"Zugriff, damit dieses Fenster nicht mehr angezeigt wird. Füge Text aus "
+"deiner Zwischenablage in das Eingabefeld ein."
+
+# ============================================
+# Image Optimizer (wpturbo domain - will be fixed)
+# ============================================
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Image Optimizer - Size and Format Optimizer"
+msgstr "Bild-Optimierer - Größen- und Format-Optimierer"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "1. Convert/Scale"
+msgstr "1. Konvertieren/Skalieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "2. Cleanup Images"
+msgstr "2. Bilder bereinigen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "3. Fix URLs"
+msgstr "3. URLs korrigieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Run All (1-3)"
+msgstr "Alle ausführen (1-3)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Stop"
+msgstr "Stoppen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Clear Log"
+msgstr "Protokoll löschen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Reset Defaults"
+msgstr "Standardwerte zurücksetzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Export Media as ZIP"
+msgstr "Medien als ZIP exportieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Memory-optimized file cleanup (better for large sites)"
+msgstr "Speicher-optimierte Dateibereinigung (besser für große Websites)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Optimized Cleanup"
+msgstr "Optimierte Bereinigung"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Log (Last 500 Entries)"
+msgstr "Protokoll (letzte 500 Einträge)"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Uploads directory %s is not writable"
+msgstr "Fehler: Upload-Verzeichnis %s ist nicht beschreibbar"
+
+#: inc/ImageOptimizer/Controller.php inc/ImageOptimizer/Ajax.php
+msgid "Skipped: %s (size %s KB < %d KB)"
+msgstr "Übersprungen: %s (Größe %s KB < %d KB)"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Generated thumbnail: %s"
+msgstr "Miniaturansicht generiert: %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Conversion failed for %s, rolling back"
+msgstr "Fehler: Konvertierung für %s fehlgeschlagen, wird rückgängig gemacht"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Original preserved: %s"
+msgstr "Original erhalten: %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Regenerated missing thumbnail: %s"
+msgstr "Fehlende Miniaturansicht neu generiert: %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Metadata regeneration failed for %s - %s"
+msgstr "Fehler: Metadaten-Regenerierung für %s fehlgeschlagen - %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Cannot make %s writable after retry - skipping deletion"
+msgstr ""
+"Fehler: %s kann nach Wiederholung nicht beschreibbar gemacht werden - "
+"Löschen wird übersprungen"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Deleted original: %s"
+msgstr "Original gelöscht: %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Failed to delete original %s after 5 retries"
+msgstr "Fehler: Original %s konnte nach 5 Versuchen nicht gelöscht werden"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Building list of active files..."
+msgstr "Liste aktiver Dateien wird erstellt..."
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Memory usage high, garbage collection triggered (%d times)"
+msgstr "Speicherverbrauch hoch, Garbage Collection ausgelöst (%d Mal)"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Too many memory warnings, stopping process to avoid crash"
+msgstr ""
+"Zu viele Speicherwarnungen, Prozess wird gestoppt, um Absturz zu vermeiden"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Found %d active files to preserve"
+msgstr "%d aktive Dateien zum Erhalten gefunden"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Batch limit reached (%d files). Run cleanup again for remaining files."
+msgstr ""
+"Batch-Limit erreicht (%d Dateien). Bereinigung erneut ausführen für "
+"verbleibende Dateien."
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Cannot make %s writable - skipping deletion"
+msgstr ""
+"Fehler: %s kann nicht beschreibbar gemacht werden - Löschen wird übersprungen"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Cleanup: Deleted %s"
+msgstr "Bereinigung: %s gelöscht"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Cleanup: Failed to delete %s"
+msgstr "Bereinigung: %s konnte nicht gelöscht werden"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Cleanup Complete"
+msgstr "Bereinigung abgeschlossen"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Deleted %d files, %d failed, %d memory warnings"
+msgstr "%d Dateien gelöscht, %d fehlgeschlagen, %d Speicherwarnungen"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "(batch limit reached, more files may need processing)"
+msgstr ""
+"(Batch-Limit erreicht, weitere Dateien müssen möglicherweise verarbeitet "
+"werden)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Permission denied or invalid attachment ID"
+msgstr "Berechtigung verweigert oder ungültige Anhang-ID"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Image excluded successfully"
+msgstr "Bild erfolgreich ausgeschlossen"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Image already excluded or invalid ID"
+msgstr "Bild bereits ausgeschlossen oder ungültige ID"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Image removed from exclusion list"
+msgstr "Bild aus Ausschlussliste entfernt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Image not in exclusion list"
+msgstr "Bild nicht in Ausschlussliste"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Permission denied or invalid offset"
+msgstr "Berechtigung verweigert oder ungültiger Offset"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Conversion Complete"
+msgstr "Konvertierung abgeschlossen"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "No more images to process"
+msgstr "Keine weiteren Bilder zu verarbeiten"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped: File not found for Attachment ID %d"
+msgstr "Übersprungen: Datei für Anhang-ID %d nicht gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Error: Uploads directory %s is not writable for Attachment ID %d"
+msgstr "Fehler: Upload-Verzeichnis %s ist für Anhang-ID %d nicht beschreibbar"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Deleted outdated size: %s"
+msgstr "Veraltete Größe gelöscht: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Permission denied"
+msgstr "Berechtigung verweigert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "No media files found"
+msgstr "Keine Mediendateien gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Failed to create temporary file"
+msgstr "Temporäre Datei konnte nicht erstellt werden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Failed to create ZIP archive"
+msgstr "ZIP-Archiv konnte nicht erstellt werden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Deleted old file: %s"
+msgstr "Alte Datei gelöscht: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Cleanup complete. %d files deleted."
+msgstr "Bereinigung abgeschlossen. %d Dateien gelöscht."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Updated image URLs in post ID %d"
+msgstr "Bild-URLs in Beitrag-ID %d aktualisiert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Fix URLs complete. %d posts updated."
+msgstr "URLs korrigiert. %d Beiträge aktualisiert."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Invalid widths"
+msgstr "Ungültige Breiten"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Max widths set to: %spx"
+msgstr "Maximale Breiten auf: %spx gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Invalid heights"
+msgstr "Ungültige Höhen"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Max heights set to: %spx"
+msgstr "Maximale Höhen auf: %spx gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Log cleared."
+msgstr "Protokoll gelöscht."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "ImageOptimizer settings reset to defaults."
+msgstr "Bild-Optimierer-Einstellungen auf Standardwerte zurückgesetzt."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Min size set to: %dKB"
+msgstr "Mindestgröße auf: %dKB gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Use AVIF set to: %s"
+msgstr "AVIF verwenden auf: %s gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Preserve originals set to: %s"
+msgstr "Originale erhalten auf: %s gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Auto-conversion on upload set to: %s"
+msgstr "Automatische Konvertierung beim Upload auf: %s gesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Security verification failed. Try refreshing the page."
+msgstr "Sicherheitsüberprüfung fehlgeschlagen. Bitte Seite aktualisieren."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Starting optimized cleanup (memory-aware) at %s"
+msgstr "Optimierte Bereinigung wird gestartet (speicherbewusst) um %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid ""
+"Cleanup completed in %s seconds. Deleted: %d, Failed: %d, Processed: %d "
+"files, Memory warnings: %d"
+msgstr ""
+"Bereinigung abgeschlossen in %s Sekunden. Gelöscht: %d, Fehlgeschlagen: %d, "
+"Verarbeitet: %d Dateien, Speicherwarnungen: %d"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "More files need processing. Please run again."
+msgstr "Weitere Dateien müssen verarbeitet werden. Bitte erneut ausführen."
+
+# ============================================
+# WP Optimizer - Additional Settings
+# ============================================
+#: inc/WPOptimizer/AdminPage.php
+msgid "WP Optimizer Options"
+msgstr "WP Optimizer-Optionen"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Performance"
+msgstr "Leistung"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Admin Enhancements"
+msgstr "Admin-Verbesserungen"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Security & Privacy"
+msgstr "Sicherheit & Datenschutz"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Frontend Cleanup"
+msgstr "Frontend-Bereinigung"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Media & Uploads"
+msgstr "Medien & Uploads"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Select Post Types"
+msgstr "Beitragstypen auswählen"
+
+#: inc/WPOptimizer/AdminPage.php
+msgid ""
+"Leave all unchecked to apply to all supported post types. Only hierarchical "
+"post types and those supporting page attributes can be ordered."
+msgstr ""
+"Alle deaktiviert lassen, um auf alle unterstützten Beitragstypen anzuwenden. "
+"Nur hierarchische Beitragstypen und solche mit Seitenattributen können "
+"sortiert werden."
+
+#: inc/WPOptimizer/AdminPage.php
+msgid "Leave all unchecked to apply to all post types."
+msgstr "Alle deaktiviert lassen, um auf alle Beitragstypen anzuwenden."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Search"
+msgstr "Suche deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables the default WordPress search feature. Useful for brochure sites or "
+"when search is not needed. Not recommended for content-heavy or blog sites."
+msgstr ""
+"Deaktiviert die Standard-WordPress-Suchfunktion. Nützlich für Broschüren-"
+"Websites oder wenn Suche nicht benötigt wird. Nicht empfohlen für "
+"inhaltsreiche oder Blog-Websites."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Allow Lottie JSON Files"
+msgstr "Lottie JSON-Dateien erlauben"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Allows uploading of JSON files (e.g., for Lottie animations) and plain text "
+"files. Enable if you need to upload these file types. Only recommended if "
+"you trust your site's users, as JSON can contain sensitive data."
+msgstr ""
+"Erlaubt das Hochladen von JSON-Dateien (z.B. für Lottie-Animationen) und "
+"Klartext-Dateien. Aktivieren, wenn du diese Dateitypen hochladen musst. Nur "
+"empfohlen, wenn du den Benutzern deiner Website vertraust, da JSON sensible "
+"Daten enthalten kann."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable jQuery"
+msgstr "jQuery deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes jQuery from the frontend to improve performance. Only enable if your "
+"theme and plugins do not require jQuery. Not recommended unless you are "
+"certain no scripts depend on jQuery."
+msgstr ""
+"Entfernt jQuery vom Frontend zur Leistungsverbesserung. Nur aktivieren, wenn "
+"dein Theme und Plugins jQuery nicht benötigen. Nicht empfohlen, es sei denn, "
+"du bist sicher, dass keine Skripte von jQuery abhängen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Load jQuery in Footer"
+msgstr "jQuery im Footer laden"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Loads jQuery in the footer instead of the header, improving page load speed. "
+"Recommended if your scripts do not require jQuery to be loaded early."
+msgstr ""
+"Lädt jQuery im Footer statt im Header, verbessert die "
+"Seitenladegeschwindigkeit. Empfohlen, wenn deine Skripte jQuery nicht früh "
+"laden müssen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable jQuery Migrate"
+msgstr "jQuery Migrate deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes jQuery Migrate, which provides backward compatibility for older "
+"scripts. Recommended unless you use plugins or themes that require legacy "
+"jQuery features."
+msgstr ""
+"Entfernt jQuery Migrate, das Rückwärtskompatibilität für ältere Skripte "
+"bietet. Empfohlen, es sei denn, du verwendest Plugins oder Themes, die "
+"Legacy-jQuery-Funktionen benötigen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Remove Thumbnail Dimensions"
+msgstr "Miniaturansicht-Abmessungen entfernen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes width and height attributes from thumbnail images for better "
+"responsive design. Recommended for modern, responsive themes."
+msgstr ""
+"Entfernt width- und height-Attribute von Miniaturansicht-Bildern für "
+"besseres responsives Design. Empfohlen für moderne, responsive Themes."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Remove Nav Menu Container"
+msgstr "Navigationsmenü-Container entfernen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes the default <div> container from wp_nav_menu output. Useful for "
+"cleaner HTML and easier CSS styling."
+msgstr ""
+"Entfernt den Standard-<div>-Container aus wp_nav_menu-Ausgabe. Nützlich für "
+"saubereres HTML und einfacheres CSS-Styling."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Remove Caption Width"
+msgstr "Bildunterschrift-Breite entfernen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes inline width styling from image captions, allowing for more flexible "
+"and responsive layouts."
+msgstr ""
+"Entfernt Inline-Breiten-Styling von Bildunterschriften, ermöglicht "
+"flexiblere und responsive Layouts."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Handle Shortcode Formatting"
+msgstr "Shortcode-Formatierung behandeln"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Prevents WordPress from wrapping shortcodes in unwanted <p> or <br> tags, "
+"which can break layout. Recommended if you use shortcodes in content."
+msgstr ""
+"Verhindert, dass WordPress Shortcodes in unerwünschte <p>- oder <br>-Tags "
+"einpackt, was das Layout brechen kann. Empfohlen, wenn du Shortcodes im "
+"Inhalt verwendest."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Remove Archive Title Prefix"
+msgstr "Archiv-Titel-Präfix entfernen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes prefixes like \"Category:\" or \"Archive:\" from archive titles for "
+"cleaner headings."
+msgstr ""
+"Entfernt Präfixe wie \"Kategorie:\" oder \"Archiv:\" von Archiv-Titeln für "
+"sauberere Überschriften."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Add Slug to Body Class"
+msgstr "Slug zur Body-Klasse hinzufügen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Adds the post or page slug to the <body> class attribute. Useful for "
+"targeted CSS styling."
+msgstr ""
+"Fügt den Beitrags- oder Seiten-Slug zum <body>-class-Attribut hinzu. "
+"Nützlich für gezieltes CSS-Styling."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Block External HTTP"
+msgstr "Externe HTTP-Anfragen blockieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Blocks all outgoing HTTP requests from the frontend for security or privacy. "
+"Only enable if you do not need to fetch external resources (e.g., APIs, "
+"fonts)."
+msgstr ""
+"Blockiert alle ausgehenden HTTP-Anfragen vom Frontend für Sicherheit oder "
+"Datenschutz. Nur aktivieren, wenn du keine externen Ressourcen abrufen musst "
+"(z.B. APIs, Schriftarten)."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Defer CSS"
+msgstr "CSS verzögern"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Loads CSS files asynchronously to improve perceived page load speed. May "
+"cause a flash of unstyled content (FOUC). Recommended for advanced users."
+msgstr ""
+"Lädt CSS-Dateien asynchron, um die wahrgenommene Seitenladegeschwindigkeit "
+"zu verbessern. Kann einen Flash of Unstyled Content (FOUC) verursachen. "
+"Empfohlen für fortgeschrittene Benutzer."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Defer JS"
+msgstr "JS verzögern"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Adds the defer attribute to all scripts, improving page load performance. "
+"Not recommended if you have scripts that must run before page render."
+msgstr ""
+"Fügt das defer-Attribut zu allen Skripten hinzu, verbessert die "
+"Seitenladeleistung. Nicht empfohlen, wenn du Skripte hast, die vor dem "
+"Seitenrendern laufen müssen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Comments"
+msgstr "Kommentare deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables all comment features site-wide. Recommended for sites that do not "
+"use comments."
+msgstr ""
+"Deaktiviert alle Kommentarfunktionen site-weit. Empfohlen für Websites, die "
+"keine Kommentare verwenden."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Emoji"
+msgstr "Emoji deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes WordPress emoji scripts and styles to reduce page size. Recommended "
+"unless you need emoji support."
+msgstr ""
+"Entfernt WordPress-Emoji-Skripte und -Styles, um die Seitengröße zu "
+"reduzieren. Empfohlen, es sei denn, du benötigst Emoji-Unterstützung."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Feeds"
+msgstr "Feeds deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables all RSS and Atom feeds. Recommended for private or brochure sites. "
+"Not recommended for blogs or news sites."
+msgstr ""
+"Deaktiviert alle RSS- und Atom-Feeds. Empfohlen für private oder Broschüren-"
+"Websites. Nicht empfohlen für Blogs oder Nachrichten-Websites."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable REST API"
+msgstr "REST API deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables the REST API. Not recommended unless you are certain no plugins or "
+"integrations require the REST API. May break some features."
+msgstr ""
+"Deaktiviert die REST API. Nicht empfohlen, es sei denn, du bist sicher, dass "
+"keine Plugins oder Integrationen die REST API benötigen. Kann einige "
+"Funktionen beeinträchtigen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable RSD Links"
+msgstr "RSD-Links deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes the Really Simple Discovery (RSD) link from the header. Recommended "
+"for security."
+msgstr ""
+"Entfernt den Really Simple Discovery (RSD)-Link aus dem Header. Empfohlen "
+"für Sicherheit."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Shortlinks"
+msgstr "Shortlinks deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes the shortlink meta tag from the header. Recommended for privacy or "
+"SEO reasons."
+msgstr ""
+"Entfernt das Shortlink-Meta-Tag aus dem Header. Empfohlen aus Datenschutz- "
+"oder SEO-Gründen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Theme Editor"
+msgstr "Theme-Editor deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables the built-in theme and plugin editor in the admin for security. "
+"Recommended for production sites."
+msgstr ""
+"Deaktiviert den integrierten Theme- und Plugin-Editor im Admin für "
+"Sicherheit. Empfohlen für Produktions-Websites."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Version Query Args"
+msgstr "Versions-Query-Args deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes version query strings from scripts and styles to improve caching. "
+"May cause issues with cache busting."
+msgstr ""
+"Entfernt Versions-Query-Strings aus Skripten und Styles, um das Caching zu "
+"verbessern. Kann Probleme mit Cache-Busting verursachen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable WLW Manifest"
+msgstr "WLW-Manifest deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes the Windows Live Writer manifest link from the header. Recommended "
+"for security."
+msgstr ""
+"Entfernt den Windows Live Writer-Manifest-Link aus dem Header. Empfohlen für "
+"Sicherheit."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable WP Version"
+msgstr "WP-Version deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid "Removes the WordPress version meta tag for security."
+msgstr "Entfernt das WordPress-Versions-Meta-Tag für Sicherheit."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable XMLRPC"
+msgstr "XMLRPC deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables XML-RPC, which is often targeted by attackers. Recommended unless "
+"you use remote publishing or pingbacks."
+msgstr ""
+"Deaktiviert XML-RPC, das oft von Angreifern angegriffen wird. Empfohlen, es "
+"sei denn, du verwendest Remote-Publishing oder Pingbacks."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable DNS Prefetch"
+msgstr "DNS Prefetch deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes DNS prefetch resource hints from the header. May slightly reduce DNS "
+"lookups, but can impact performance for some resources."
+msgstr ""
+"Entfernt DNS Prefetch-Ressourcen-Hinweise aus dem Header. Kann DNS-Lookups "
+"leicht reduzieren, kann aber die Leistung für einige Ressourcen "
+"beeinträchtigen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Limit Revisions"
+msgstr "Revisionen begrenzen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Limits the number of post revisions to reduce database size. Recommended for "
+"performance."
+msgstr ""
+"Begrenzt die Anzahl der Beitragsrevisionen, um die Datenbankgröße zu "
+"reduzieren. Empfohlen für Leistung."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Revisions number"
+msgstr "Anzahl Revisionen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Sets the maximum number of post revisions to keep. Set to 0 to disable "
+"revisions. Recommended for performance on large sites."
+msgstr ""
+"Legt die maximale Anzahl der zu behaltenden Beitragsrevisionen fest. Auf 0 "
+"setzen, um Revisionen zu deaktivieren. Empfohlen für Leistung auf großen "
+"Websites."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Post Types for Revision Limiting"
+msgstr "Beitragstypen für Revisionsbegrenzung"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Select which post types should have revision limiting applied. Leave empty "
+"to apply to all post types."
+msgstr ""
+"Wähle, welche Beitragstypen Revisionsbegrenzung haben sollen. Leer lassen, "
+"um auf alle Beitragstypen anzuwenden."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable Heartbeat"
+msgstr "Heartbeat deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables the WordPress Heartbeat API in the admin, reducing AJAX requests. "
+"May affect autosave and real-time features."
+msgstr ""
+"Deaktiviert die WordPress Heartbeat API im Admin, reduziert AJAX-Anfragen. "
+"Kann Autosave und Echtzeit-Funktionen beeinträchtigen."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Slow Heartbeat"
+msgstr "Langsamer Heartbeat"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Increases the interval of the Heartbeat API to reduce server load. "
+"Recommended for high-traffic sites."
+msgstr ""
+"Erhöht das Intervall der Heartbeat API, um die Serverlast zu reduzieren. "
+"Empfohlen für hochfrequente Websites."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Remove WP Embed"
+msgstr "WP Embed entfernen"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Removes the WP Embed script, which enables embedding content from other "
+"sites. Recommended if you do not use embeds."
+msgstr ""
+"Entfernt das WP Embed-Skript, das das Einbetten von Inhalten von anderen "
+"Websites ermöglicht. Empfohlen, wenn du keine Embeds verwendest."
+
+#: inc/WPOptimizer/Settings.php
+msgid "Disable XML Sitemaps"
+msgstr "XML-Sitemaps deaktivieren"
+
+#: inc/WPOptimizer/Settings.php
+msgid ""
+"Disables the default WordPress XML sitemaps. Enable if you use a third-party "
+"SEO plugin or want to hide your sitemap for privacy."
+msgstr ""
+"Deaktiviert die Standard-WordPress-XML-Sitemaps. Aktivieren, wenn du ein "
+"Drittanbieter-SEO-Plugin verwendest oder deine Sitemap aus "
+"Datenschutzgründen verbergen möchtest."
+
+#: inc/WPOptimizer/Controller.php
+msgid "Request blocked by WP Optimize."
+msgstr "Anfrage von WP Optimizer blockiert."
+
+#: inc/WPOptimizer/Controller.php
+msgid "Feed disabled by WP Optimize."
+msgstr "Feed von WP Optimizer deaktiviert."
+
+#: inc/WPOptimizer/Controller.php
+msgid "REST API restricted to authenticated users."
+msgstr "REST API auf authentifizierte Benutzer beschränkt."
+
+#: inc/WPOptimizer/classes/MediaReplacement.php
+msgid "Replace Media"
+msgstr "Medien ersetzen"
+
+#: inc/WPOptimizer/classes/MediaReplacement.php
+msgid "Select New Media File"
+msgstr "Neue Mediendatei auswählen"
+
+#: inc/WPOptimizer/classes/MediaReplacement.php
+msgid ""
+"The current file will be replaced with the uploaded / selected file (of the "
+"same type) while retaining the current ID, publish date and file name. Thus, "
+"no existing links will break."
+msgstr ""
+"Die aktuelle Datei wird durch die hochgeladene / ausgewählte Datei (vom "
+"gleichen Typ) ersetzt, während die aktuelle ID, das Veröffentlichungsdatum "
+"und der Dateiname beibehalten werden. Somit werden keine bestehenden Links "
+"unterbrochen."
+
+# ============================================
+# Security Header - Additional Translations
+# ============================================
+#: inc/SecurityHeader/AdminPage.php
+msgid "Security Headers - HTTP Response Protection"
+msgstr "Sicherheits-Header - HTTP-Antwort-Schutz"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "HSTS Max-Age"
+msgstr "HSTS Max-Age"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"The Max-Age parameter specifies the period of time (in seconds) for which "
+"the browser should store the HSTS information. During this time period, the "
+"browser will always use HTTPS to communicate with the website, even if the "
+"visitor has entered \"http\" or an HTTP link in the address bar. This helps "
+"protect the website and its visitors from man-in-the-middle (MITM) attacks "
+"and other security threats."
+msgstr ""
+"Der Max-Age-Parameter gibt den Zeitraum (in Sekunden) an, für den der "
+"Browser die HSTS-Informationen speichern soll. Während dieses Zeitraums "
+"verwendet der Browser immer HTTPS zur Kommunikation mit der Website, auch "
+"wenn der Besucher \"http\" oder einen HTTP-Link in die Adressleiste "
+"eingegeben hat. Dies hilft, die Website und ihre Besucher vor Man-in-the-"
+"Middle (MITM)-Angriffen und anderen Sicherheitsbedrohungen zu schützen."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"It is advisable to set \"max-age\" to a high value, such as a full year "
+"(31536000 seconds). This ensures that browsers continue to store security "
+"information for a long period of time, which helps protect users from man-in-"
+"the-middle attacks. However, it is important to keep in mind that setting "
+"the value too high could cause problems if you need to change your site's "
+"SSL configuration in the future. Therefore, it is important to carefully "
+"consider your usage and security needs before setting the value."
+msgstr ""
+"Es ist ratsam, \"max-age\" auf einen hohen Wert zu setzen, z.B. ein volles "
+"Jahr (31536000 Sekunden). Dies stellt sicher, dass Browser "
+"Sicherheitsinformationen über einen langen Zeitraum speichern, was Benutzer "
+"vor Man-in-the-Middle-Angriffen schützt. Es ist jedoch wichtig zu bedenken, "
+"dass ein zu hoher Wert Probleme verursachen könnte, wenn du die SSL-"
+"Konfiguration deiner Website in Zukunft ändern musst. Daher ist es wichtig, "
+"deine Nutzung und Sicherheitsanforderungen sorgfältig zu berücksichtigen, "
+"bevor du den Wert festlegst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Include Subdomains"
+msgstr "Subdomains einbeziehen"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"The \"includeSubDomains\" flag specifies that the effect of the header "
+"should also be applied to subdomains of the domain. When this directive is "
+"present, all requests to any subdomains of your domain are automatically "
+"redirected to the HTTPS protocol, providing enhanced security for the "
+"website and the users who visit it."
+msgstr ""
+"Das Flag \"includeSubDomains\" gibt an, dass die Wirkung des Headers auch "
+"auf Subdomains der Domain angewendet werden soll. Wenn diese Direktive "
+"vorhanden ist, werden alle Anfragen an Subdomains deiner Domain automatisch "
+"auf das HTTPS-Protokoll umgeleitet, was erweiterte Sicherheit für die "
+"Website und die Benutzer bietet, die sie besuchen."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"We recommend enabling the \"includeSubDomains\" option in the HSTS header to "
+"ensure that all subsections of your site (subdomains) are only loaded via "
+"HTTPS. However, before enabling this flag, it is important to ensure that "
+"all subdomains, resources and web services working under your domain are "
+"available via HTTPS and that there are no compatibility issues with any "
+"external services used by your site."
+msgstr ""
+"Wir empfehlen, die Option \"includeSubDomains\" im HSTS-Header zu "
+"aktivieren, um sicherzustellen, dass alle Unterabschnitte deiner Website "
+"(Subdomains) nur über HTTPS geladen werden. Bevor du dieses Flag aktivierst, "
+"ist es jedoch wichtig sicherzustellen, dass alle Subdomains, Ressourcen und "
+"Webdienste, die unter deiner Domain arbeiten, über HTTPS verfügbar sind und "
+"dass es keine Kompatibilitätsprobleme mit externen Diensten gibt, die von "
+"deiner Website verwendet werden."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Preload"
+msgstr "Preload"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"The \"preload\" flag allows the website to be included in the %1$sHSTS "
+"preload list%2$s, which instructs browsers to always use HTTPS connection "
+"for the site and its subdomains, without ever making insecure HTTP requests."
+msgstr ""
+"Das Flag \"preload\" ermöglicht es, die Website in die %1$sHSTS Preload-"
+"Liste%2$s aufzunehmen, die Browser anweist, immer eine HTTPS-Verbindung für "
+"die Website und ihre Subdomains zu verwenden, ohne jemals unsichere HTTP-"
+"Anfragen zu stellen."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Enabling preload further helps prevent any potential man-in-the-middle "
+"attacks, thus improving connection security as far as it concerns HSTS. "
+"Please note that even if this flag is enabled, your website still needs to "
+"be manually submitted to the list. Please also note that inclusion in the "
+"preload list has permanent consequences and is not easy to undo, so you "
+"should only enable this flag and submit your website after making sure that "
+"all of the resources and services within your domain (and its subdomains, if "
+"includeSubDomains is also enabled) are indeed accessible and functional via "
+"HTTPS. %1$sLearn more%2$s."
+msgstr ""
+"Die Aktivierung von Preload hilft weiter, potenzielle Man-in-the-Middle-"
+"Angriffe zu verhindern und verbessert somit die Verbindungssicherheit in "
+"Bezug auf HSTS. Bitte beachte, dass auch wenn dieses Flag aktiviert ist, "
+"deine Website manuell zur Liste eingereicht werden muss. Bitte beachte auch, "
+"dass die Aufnahme in die Preload-Liste permanente Konsequenzen hat und nicht "
+"einfach rückgängig gemacht werden kann. Du solltest dieses Flag daher nur "
+"aktivieren und deine Website einreichen, nachdem du sichergestellt hast, "
+"dass alle Ressourcen und Dienste innerhalb deiner Domain (und ihrer "
+"Subdomains, wenn includeSubDomains ebenfalls aktiviert ist) tatsächlich über "
+"HTTPS zugänglich und funktionsfähig sind. %1$sMehr erfahren%2$s."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Content-Security-Policy (CSP)"
+msgstr "Content-Security-Policy (CSP)"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"HTTP Content-Security-Policy header controls website resources, reducing XSS "
+"risk by specifying allowed server origins and script endpoints."
+msgstr ""
+"Der HTTP Content-Security-Policy-Header kontrolliert Website-Ressourcen und "
+"reduziert das XSS-Risiko, indem er erlaubte Server-Ursprünge und Skript-"
+"Endpunkte angibt."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "CSP Report URI"
+msgstr "CSP Report URI"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Enter your custom URL (Sentry, URIports, Datadog, and Report URI) for CSP "
+"violation reports."
+msgstr ""
+"Gib deine benutzerdefinierte URL (Sentry, URIports, Datadog und Report URI) "
+"für CSP-Verletzungsberichte ein."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Permissions Policy"
+msgstr "Permissions Policy"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"The HTTP Permissions-Policy header provides a mechanism to allow and deny "
+"the use of browser features in a document or within any <iframe> elements in "
+"the document."
+msgstr ""
+"Der HTTP Permissions-Policy-Header bietet einen Mechanismus, um die "
+"Verwendung von Browser-Funktionen in einem Dokument oder innerhalb von "
+"<iframe>-Elementen im Dokument zu erlauben oder zu verweigern."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "X-Frame-Options"
+msgstr "X-Frame-Options"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"The X-Frame-Options HTTP response header can be used to indicate whether or "
+"not a browser should be allowed to render a page in a <frame>, <iframe>, "
+"<embed> or <object>. Sites can use this to avoid click-jacking attacks, by "
+"ensuring that their content is not embedded into other sites."
+msgstr ""
+"Der X-Frame-Options HTTP-Antwort-Header kann verwendet werden, um anzugeben, "
+"ob ein Browser eine Seite in einem <frame>, <iframe>, <embed> oder <object> "
+"rendern darf. Websites können dies verwenden, um Click-Jacking-Angriffe zu "
+"vermeiden, indem sie sicherstellen, dass ihr Inhalt nicht in andere Websites "
+"eingebettet wird."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Disable HSTS Header"
+msgstr "HSTS-Header deaktivieren"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Disable the Strict-Transport-Security header if you need to resolve "
+"conflicts or for debugging."
+msgstr ""
+"Deaktiviere den Strict-Transport-Security-Header, wenn du Konflikte lösen "
+"oder debuggen musst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Disable CSP Header"
+msgstr "CSP-Header deaktivieren"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Disable the Content-Security-Policy header if you need to resolve conflicts "
+"or for debugging."
+msgstr ""
+"Deaktiviere den Content-Security-Policy-Header, wenn du Konflikte lösen oder "
+"debuggen musst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Disable X-Content-Type-Options Header"
+msgstr "X-Content-Type-Options-Header deaktivieren"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Disable the X-Content-Type-Options header if you need to resolve conflicts "
+"or for debugging."
+msgstr ""
+"Deaktiviere den X-Content-Type-Options-Header, wenn du Konflikte lösen oder "
+"debuggen musst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Disable X-Frame-Options Header"
+msgstr "X-Frame-Options-Header deaktivieren"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Disable the X-Frame-Options header if you need to resolve conflicts or for "
+"debugging."
+msgstr ""
+"Deaktiviere den X-Frame-Options-Header, wenn du Konflikte lösen oder "
+"debuggen musst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid "Security Header Tips"
+msgstr "Sicherheits-Header-Tipps"
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Always test new header settings on a staging site before deploying to "
+"production."
+msgstr ""
+"Teste neue Header-Einstellungen immer auf einer Staging-Website, bevor du "
+"sie in die Produktion einführst."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Use the browser console and security tools to verify headers are set as "
+"expected."
+msgstr ""
+"Verwende die Browser-Konsole und Sicherheitstools, um zu überprüfen, dass "
+"Header wie erwartet gesetzt sind."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"If you experience issues with embedded content or third-party services, "
+"review your CSP and X-Frame-Options settings."
+msgstr ""
+"Wenn du Probleme mit eingebetteten Inhalten oder Drittanbieter-Diensten "
+"hast, überprüfe deine CSP- und X-Frame-Options-Einstellungen."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"For maximum security, enable HSTS with preload and includeSubDomains, but "
+"only if all subdomains use HTTPS."
+msgstr ""
+"Für maximale Sicherheit aktiviere HSTS mit Preload und includeSubDomains, "
+"aber nur wenn alle Subdomains HTTPS verwenden."
+
+#: inc/SecurityHeader/AdminPage.php
+msgid ""
+"Refer to Mozilla Observatory and securityheaders.com for header analysis."
+msgstr "Siehe Mozilla Observatory und securityheaders.com für Header-Analysen."
+
+# ============================================
+# Text Snippets
+# ============================================
+#: inc/TextSnippets/PostType.php
+msgid "Text Snippets"
+msgstr "Text-Snippets"
+
+#: inc/TextSnippets/PostType.php
+msgid "Text Snippet"
+msgstr "Text-Snippet"
+
+#: inc/TextSnippets/PostType.php
+msgid "Add New Text Snippet"
+msgstr "Neues Text-Snippet hinzufügen"
+
+#: inc/TextSnippets/PostType.php
+msgid "Edit Text Snippet"
+msgstr "Text-Snippet bearbeiten"
+
+#: inc/TextSnippets/PostType.php
+msgid "New Text Snippet"
+msgstr "Neues Text-Snippet"
+
+#: inc/TextSnippets/PostType.php
+msgid "View Text Snippet"
+msgstr "Text-Snippet ansehen"
+
+#: inc/TextSnippets/PostType.php
+msgid "Search Text Snippets"
+msgstr "Text-Snippets durchsuchen"
+
+#: inc/TextSnippets/PostType.php
+msgid "No text snippets found"
+msgstr "Keine Text-Snippets gefunden"
+
+#: inc/TextSnippets/PostType.php
+msgid "No text snippets found in Trash"
+msgstr "Keine Text-Snippets im Papierkorb gefunden"
+
+#: inc/TextSnippets/PostType.php
+msgid "All Text Snippets"
+msgstr "Alle Text-Snippets"
+
+#: inc/TextSnippets/PostType.php
+msgid "Snippet Categories"
+msgstr "Snippet-Kategorien"
+
+#: inc/TextSnippets/PostType.php
+msgid "Snippet Category"
+msgstr "Snippet-Kategorie"
+
+#: inc/TextSnippets/PostType.php
+msgid "Search Snippet Categories"
+msgstr "Snippet-Kategorien durchsuchen"
+
+#: inc/TextSnippets/PostType.php
+msgid "All Snippet Categories"
+msgstr "Alle Snippet-Kategorien"
+
+#: inc/TextSnippets/PostType.php
+msgid "Text Snippet Custom Fields"
+msgstr "Text-Snippet-Benutzerfelder"
+
+#: inc/TextSnippets/PostType.php
+msgid "Field Slug"
+msgstr "Feld-Slug"
+
+#: inc/TextSnippets/PostType.php
+msgid "Value"
+msgstr "Wert"
+
+#: inc/TextSnippets/PostType.php
+msgid "Add Field"
+msgstr "Feld hinzufügen"
+
+# ============================================
+# Image Optimizer - Additional Strings
+# ============================================
+#: inc/ImageOptimizer/Settings.php
+msgid "Excluded image added: Attachment ID %d"
+msgstr "Ausgeschlossenes Bild hinzugefügt: Anhang-ID %d"
+
+#: inc/ImageOptimizer/Settings.php
+msgid "Excluded image removed: Attachment ID %d"
+msgstr "Ausgeschlossenes Bild entfernt: Anhang-ID %d"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "Error: No image library (Imagick/GD) available for %s"
+msgstr "Fehler: Keine Bildbibliothek (Imagick/GD) verfügbar für %s"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "Error: AVIF not supported on this server for %s"
+msgstr "Fehler: AVIF wird auf diesem Server nicht unterstützt für %s"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "Error: Image editor failed for %s - %s"
+msgstr "Fehler: Bild-Editor fehlgeschlagen für %s - %s"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "Error: Conversion failed for %s - %s"
+msgstr "Fehler: Konvertierung fehlgeschlagen für %s - %s"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "Converted: %s → %s %s"
+msgstr "Konvertiert: %s → %s %s"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "(resized to %dpx %s, quality %d)"
+msgstr "(skaliert auf %dpx %s, Qualität %d)"
+
+#: inc/ImageOptimizer/FormatConverter.php
+msgid "(quality %d)"
+msgstr "(Qualität %d)"
+
+# ============================================
+# WP Optimizer - Content Order
+# ============================================
+#: inc/WPOptimizer/classes/ContentOrder.php
+msgid "Order"
+msgstr "Sortierung"
+
+#: inc/WPOptimizer/classes/ContentOrder.php
+msgid "%s Order"
+msgstr "%s Sortierung"
+
+#: inc/WPOptimizer/classes/ContentOrder.php
+msgid "Order updated!"
+msgstr "Sortierung aktualisiert!"
+
+#: inc/WPOptimizer/classes/ContentOrder.php
+msgid "There is nothing to sort for this post type."
+msgstr "Es gibt nichts zu sortieren für diesen Beitragstyp."
+
+# ============================================
+# Image Optimizer - Admin Page Strings
+# ============================================
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Optimize your images by converting them to modern formats (WebP, AVIF) and resizing them for improved page load speed and better Core Web Vitals scores."
+msgstr "Optimiere deine Bilder, indem du sie in moderne Formate (WebP, AVIF) konvertierst und ihre Größe für bessere Seitenladegeschwindigkeit und bessere Core Web Vitals-Werte anpasst."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Resize Mode:"
+msgstr "Größenänderungsmodus:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Width"
+msgstr "Breite"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Height"
+msgstr "Höhe"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Max Widths (up to 4, e.g., 1920, 1200, 600, 300) - 150 is set automatically:"
+msgstr "Maximale Breiten (bis zu 4, z.B. 1920, 1200, 600, 300) - 150 wird automatisch gesetzt:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Widths"
+msgstr "Breiten setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Max Heights (up to 4, e.g., 1080, 720, 480, 360) - 150 is set automatically:"
+msgstr "Maximale Höhen (bis zu 4, z.B. 1080, 720, 480, 360) - 150 wird automatisch gesetzt:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Heights"
+msgstr "Höhen setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Min Size for Conversion (KB, Set to 0 to disable):"
+msgstr "Mindestgröße für Konvertierung (KB, auf 0 setzen zum Deaktivieren):"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Min Size"
+msgstr "Mindestgröße setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set to AVIF Conversion (not WebP)"
+msgstr "Auf AVIF-Konvertierung setzen (nicht WebP)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Preserve Original Files"
+msgstr "Originaldateien erhalten"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Disable Auto-Conversion on Upload"
+msgstr "Automatische Konvertierung beim Upload deaktivieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Exclude Images"
+msgstr "Bilder ausschließen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Add from Media Library"
+msgstr "Aus Medienbibliothek hinzufügen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "How It Works"
+msgstr "So funktioniert es"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Refine images to WebP or AVIF, and remove excess files to save space."
+msgstr "Bilder auf WebP oder AVIF verfeinern und überschüssige Dateien entfernen, um Speicherplatz zu sparen."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Auto-Conversion for New Uploads:"
+msgstr "Automatische Konvertierung für neue Uploads einstellen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Pick if images shrink by width or height."
+msgstr "Wähle, ob Bilder nach Breite oder Höhe verkleinert werden."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Max Sizes:"
+msgstr "Maximale Größen setzen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Choose up to 4 sizes (150x150 thumbnail is automatic)."
+msgstr "Wähle bis zu 4 Größen (150x150 Miniaturansicht ist automatisch)."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Min Size for Conversion:"
+msgstr "Mindestgröße für Konvertierung:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Sizes below the min are not affected. Default is 0."
+msgstr "Größen unter dem Minimum werden nicht beeinflusst. Standard ist 0."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Conversion Format:"
+msgstr "Konvertierungsformat:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Check to use AVIF. WebP is default."
+msgstr "Aktivieren, um AVIF zu verwenden. WebP ist Standard."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Preserve Originals:"
+msgstr "Originale erhalten:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Check to stop original files from converting/deleting."
+msgstr "Aktivieren, um zu verhindern, dass Originaldateien konvertiert/gelöscht werden."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Disable Auto-Conversion:"
+msgstr "Automatische Konvertierung deaktivieren:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Images will convert on upload unless this is ticked."
+msgstr "Bilder werden beim Upload konvertiert, es sei denn, dies ist aktiviert."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Upload:"
+msgstr "Upload:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Upload to Media Library or via elements/widgets."
+msgstr "In Medienbibliothek hochladen oder über Elemente/Widgets."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Apply for Existing Images:"
+msgstr "Für bestehende Bilder anwenden:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Repeat:"
+msgstr "Wiederholen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set up steps 1-6 above."
+msgstr "Schritte 1-6 oben einrichten."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Run All:"
+msgstr "Alle ausführen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Hit \"Run All\" to do everything at once."
+msgstr "Klicke auf \"Alle ausführen\", um alles auf einmal zu erledigen."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Apply Manually for Existing Images:"
+msgstr "Manuell für bestehende Bilder anwenden:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Convert:"
+msgstr "Konvertieren:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Change image sizes and format."
+msgstr "Bildgrößen und Format ändern."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Cleanup:"
+msgstr "Bereinigung:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Delete old formats/sizes (if not preserved)."
+msgstr "Alte Formate/Größen löschen (wenn nicht erhalten)."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Fix Links:"
+msgstr "Links korrigieren:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Update image links to the new format."
+msgstr "Bild-Links auf das neue Format aktualisieren."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "IMPORTANT:"
+msgstr "WICHTIG:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Usability:"
+msgstr "Verwendbarkeit:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "This tool is ideal for New Sites. Using with Legacy Sites must be done with care as variation due to methods, systems, sizes, can affect the outcome. Please use this tool carefully and at your own risk, as I cannot be held responsible for any issues that may arise from its use."
+msgstr "Dieses Tool ist ideal für neue Websites. Die Verwendung mit Legacy-Websites muss mit Vorsicht erfolgen, da Variationen aufgrund von Methoden, Systemen und Größen das Ergebnis beeinflussen können. Bitte verwende dieses Tool sorgfältig und auf eigenes Risiko, da ich nicht für Probleme verantwortlich gemacht werden kann, die aus seiner Verwendung entstehen können."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Backups:"
+msgstr "Backups:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Use a strong backup tool like All-in-One WP Migration before using this tool. Check if your host saves backups - as some charge a fee to restore."
+msgstr "Verwende ein zuverlässiges Backup-Tool wie All-in-One WP Migration vor der Verwendung dieses Tools. Überprüfe, ob dein Host Backups speichert - manche berechnen eine Gebühr für die Wiederherstellung."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Export Media:"
+msgstr "Medien exportieren:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Export images as a Zipped Folder prior to running."
+msgstr "Bilder als ZIP-Ordner exportieren, bevor du startest."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Reset Defaults:"
+msgstr "Standardwerte zurücksetzen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Resets all Settings 1-6."
+msgstr "Setzt alle Einstellungen 1-6 zurück."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Speed:"
+msgstr "Geschwindigkeit:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Bigger sites take longer to run. This depends on your server."
+msgstr "Größere Websites benötigen länger. Dies hängt von deinem Server ab."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Log Wait:"
+msgstr "Protokoll-Wartezeit:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Updates show every 50 images."
+msgstr "Updates werden alle 50 Bilder angezeigt."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Stop Anytime:"
+msgstr "Jederzeit stoppen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Click \"Stop\" to pause."
+msgstr "Klicke auf \"Stoppen\", um zu pausieren."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "AVIF Needs:"
+msgstr "AVIF-Anforderungen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Your server must support AVIF. Check logs if it fails."
+msgstr "Dein Server muss AVIF unterstützen. Überprüfe die Protokolle, wenn es fehlschlägt."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Old Browsers:"
+msgstr "Alte Browser:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "AVIF might not work on older browsers, WebP is safer."
+msgstr "AVIF funktioniert möglicherweise nicht in älteren Browsern, WebP ist sicherer."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "MIME Types:"
+msgstr "MIME-Typen:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Server must support WebP/AVIF MIME (check with host)."
+msgstr "Server muss WebP/AVIF MIME unterstützen (mit Host überprüfen)."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Rollback:"
+msgstr "Rückgängig:"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "If conversion fails, then rollback occurs, and prevents deletion of the original, regardless of whether the Preserve Originals is checked or not."
+msgstr "Wenn die Konvertierung fehlschlägt, erfolgt ein Rollback und verhindert das Löschen des Originals, unabhängig davon, ob Originale erhalten aktiviert ist oder nicht."
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "The code for this feature is based and inspired by %s"
+msgstr "Der Code für diese Funktion basiert auf und ist inspiriert von %s"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Support Imran"
+msgstr "Imran unterstützen"

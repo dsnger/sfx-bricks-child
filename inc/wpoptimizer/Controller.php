@@ -404,7 +404,7 @@ class Controller
     {
         if (!is_admin()) {
             add_filter('pre_http_request', function () {
-                return new WP_Error('http_request_failed', __('Request blocked by WP Optimize.'));
+                return new WP_Error('http_request_failed', __('Request blocked by WP Optimize.', 'sfxtheme'));
             }, 100);
         }
     }
@@ -629,7 +629,7 @@ class Controller
 
     public function disable_feeds_hook()
     {
-        wp_die('<p>' . __('Feed disabled by WP Optimize.') . '</p>');
+        wp_die('<p>' . __('Feed disabled by WP Optimize.', 'sfxtheme') . '</p>');
     }
 
     private function disable_heartbeat()
@@ -951,7 +951,7 @@ class Controller
     {
         add_filter('rest_authentication_errors', function ($result) {
             if (!is_user_logged_in()) {
-                return new WP_Error('rest_cannot_access', __('REST API restricted to authenticated users.'), array('status' => 401));
+                return new WP_Error('rest_cannot_access', __('REST API restricted to authenticated users.', 'sfxtheme'), array('status' => 401));
             }
             return $result;
         });

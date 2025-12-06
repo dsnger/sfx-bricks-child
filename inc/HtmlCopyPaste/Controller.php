@@ -63,7 +63,7 @@ class Controller
                         <!-- Content -->
                         <div style="padding: 20px;">
                             <div id="sfx-msg" style="color: #d1d5db; margin-bottom: 15px; font-size: 14px; text-align: center; display: none;">
-                                <?php esc_html_e('We have no permission for using clipboard data. Only Chrome supports fast pasting. If you are using Chrome, then give access to not show this window again. Paste text from your clipboard to input.', 'sfx-bricks-child'); ?>
+                                <?php esc_html_e('We have no permission for using clipboard data. Only Chrome supports fast pasting. If you are using Chrome, then give access to not show this window again. Paste text from your clipboard to input.', 'sfxtheme'); ?>
                             </div>
                             
                             <div id="sfx-fast-paste" style="display: block;">
@@ -113,10 +113,10 @@ class Controller
                 if (menuItems) {
                     menuItems.insertAdjacentHTML('beforeend', `
                         <li id="sfx-paste-html" data-key="sfx_paste_html">
-                            <span class="label"><?php esc_html_e('Paste HTML', 'sfx-bricks-child'); ?></span>
+                            <span class="label"><?php esc_html_e('Paste HTML', 'sfxtheme'); ?></span>
                         </li>
                         <li id="sfx-paste-html-editor" data-key="sfx_paste_html_editor">
-                            <span class="label"><?php esc_html_e('Paste HTML with Editor', 'sfx-bricks-child'); ?></span>
+                            <span class="label"><?php esc_html_e('Paste HTML with Editor', 'sfxtheme'); ?></span>
                         </li>
                     `);
                 }

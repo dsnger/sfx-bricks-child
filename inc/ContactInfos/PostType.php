@@ -54,19 +54,19 @@ class PostType
     public static function register_post_type(): void
     {
         $labels = [
-            'name'                  => __('Contact Information', 'sfx-bricks-child'),
-            'singular_name'         => __('Contact Info', 'sfx-bricks-child'),
-            'add_new'               => __('Add New', 'sfx-bricks-child'),
-            'add_new_item'          => __('Add New Contact Info', 'sfx-bricks-child'),
-            'edit_item'             => __('Edit Contact Info', 'sfx-bricks-child'),
-            'new_item'              => __('New Contact Info', 'sfx-bricks-child'),
-            'view_item'             => __('View Contact Info', 'sfx-bricks-child'),
-            'search_items'          => __('Search Contact Info', 'sfx-bricks-child'),
-            'not_found'             => __('No contact info found', 'sfx-bricks-child'),
-            'not_found_in_trash'    => __('No contact info found in Trash', 'sfx-bricks-child'),
-            'all_items'             => __('All Contact Info', 'sfx-bricks-child'),
-            'menu_name'             => __('Contact Info', 'sfx-bricks-child'),
-            'name_admin_bar'        => __('Contact Info', 'sfx-bricks-child'),
+            'name'                  => __('Contact Information', 'sfxtheme'),
+            'singular_name'         => __('Contact Info', 'sfxtheme'),
+            'add_new'               => __('Add New', 'sfxtheme'),
+            'add_new_item'          => __('Add New Contact Info', 'sfxtheme'),
+            'edit_item'             => __('Edit Contact Info', 'sfxtheme'),
+            'new_item'              => __('New Contact Info', 'sfxtheme'),
+            'view_item'             => __('View Contact Info', 'sfxtheme'),
+            'search_items'          => __('Search Contact Info', 'sfxtheme'),
+            'not_found'             => __('No contact info found', 'sfxtheme'),
+            'not_found_in_trash'    => __('No contact info found in Trash', 'sfxtheme'),
+            'all_items'             => __('All Contact Info', 'sfxtheme'),
+            'menu_name'             => __('Contact Info', 'sfxtheme'),
+            'name_admin_bar'        => __('Contact Info', 'sfxtheme'),
         ];
 
         $args = [
@@ -161,7 +161,7 @@ class PostType
     {
         add_meta_box(
             'sfx_contact_info_config',
-            __('Contact Information Configuration', 'sfx-bricks-child'),
+            __('Contact Information Configuration', 'sfxtheme'),
             [self::class, 'render_meta_box'],
             self::$post_type,
             'normal',
@@ -213,92 +213,92 @@ class PostType
         <table class="form-table">
             <tr>
                 <th scope="row">
-                    <label for="contact_type"><?php esc_html_e('Contact Type', 'sfx-bricks-child'); ?></label>
+                    <label for="contact_type"><?php esc_html_e('Contact Type', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <select name="contact_type" id="contact_type">
-                        <option value="main" <?php selected($contact_type, 'main'); ?>><?php esc_html_e('Main Contact', 'sfx-bricks-child'); ?></option>
-                        <option value="branch" <?php selected($contact_type, 'branch'); ?>><?php esc_html_e('Branch/Location', 'sfx-bricks-child'); ?></option>
+                        <option value="main" <?php selected($contact_type, 'main'); ?>><?php esc_html_e('Main Contact', 'sfxtheme'); ?></option>
+                        <option value="branch" <?php selected($contact_type, 'branch'); ?>><?php esc_html_e('Branch/Location', 'sfxtheme'); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e('Select whether this is the main contact or a branch/location.', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Select whether this is the main contact or a branch/location.', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row" colspan="2">
-                    <h3><?php esc_html_e('Company Information', 'sfx-bricks-child'); ?></h3>
+                    <h3><?php esc_html_e('Company Information', 'sfxtheme'); ?></h3>
                 </th>
             </tr>
             
             <tr id="company-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="company"><?php esc_html_e('Company Name', 'sfx-bricks-child'); ?></label>
+                    <label for="company"><?php esc_html_e('Company Name', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="company" id="company" value="<?php echo esc_attr($company); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Name of the company', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Name of the company', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="director"><?php esc_html_e('Managing Director(s)', 'sfx-bricks-child'); ?></label>
+                    <label for="director"><?php esc_html_e('Managing Director(s)', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="director" id="director" value="<?php echo esc_attr($director); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Name of the managing director(s)', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Name of the managing director(s)', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row" colspan="2">
-                    <h3><?php esc_html_e('Address Information', 'sfx-bricks-child'); ?></h3>
+                    <h3><?php esc_html_e('Address Information', 'sfxtheme'); ?></h3>
                 </th>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="street"><?php esc_html_e('Street / No.', 'sfx-bricks-child'); ?></label>
+                    <label for="street"><?php esc_html_e('Street / No.', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="street" id="street" value="<?php echo esc_attr($street); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Street name and number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Street name and number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="zip"><?php esc_html_e('ZIP Code', 'sfx-bricks-child'); ?></label>
+                    <label for="zip"><?php esc_html_e('ZIP Code', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="zip" id="zip" value="<?php echo esc_attr($zip); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Postal code', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Postal code', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="city"><?php esc_html_e('City', 'sfx-bricks-child'); ?></label>
+                    <label for="city"><?php esc_html_e('City', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="city" id="city" value="<?php echo esc_attr($city); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('City/Town', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('City/Town', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="country"><?php esc_html_e('Country', 'sfx-bricks-child'); ?></label>
+                    <label for="country"><?php esc_html_e('Country', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="country" id="country" value="<?php echo esc_attr($country); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Country', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Country', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="address"><?php esc_html_e('Formatted Address', 'sfx-bricks-child'); ?></label>
+                    <label for="address"><?php esc_html_e('Formatted Address', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <?php 
@@ -318,121 +318,121 @@ class PostType
                         ]
                     );
                     ?>
-                    <p class="description"><?php esc_html_e('Formatted address for display', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Formatted address for display', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row" colspan="2">
-                    <h3><?php esc_html_e('Contact Details', 'sfx-bricks-child'); ?></h3>
+                    <h3><?php esc_html_e('Contact Details', 'sfxtheme'); ?></h3>
                 </th>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="phone"><?php esc_html_e('Phone', 'sfx-bricks-child'); ?></label>
+                    <label for="phone"><?php esc_html_e('Phone', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="phone" id="phone" value="<?php echo esc_attr($phone); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Phone number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Phone number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="mobile"><?php esc_html_e('Mobile', 'sfx-bricks-child'); ?></label>
+                    <label for="mobile"><?php esc_html_e('Mobile', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="mobile" id="mobile" value="<?php echo esc_attr($mobile); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Mobile number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Mobile number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="fax"><?php esc_html_e('Fax', 'sfx-bricks-child'); ?></label>
+                    <label for="fax"><?php esc_html_e('Fax', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="fax" id="fax" value="<?php echo esc_attr($fax); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Fax number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Fax number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="email"><?php esc_html_e('Email', 'sfx-bricks-child'); ?></label>
+                    <label for="email"><?php esc_html_e('Email', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="email" name="email" id="email" value="<?php echo esc_attr($email); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Email address', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Email address', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr id="business-section" class="conditional-field" data-show-for="main">
                 <th scope="row" colspan="2">
-                    <h3><?php esc_html_e('Business Information', 'sfx-bricks-child'); ?></h3>
+                    <h3><?php esc_html_e('Business Information', 'sfxtheme'); ?></h3>
                 </th>
             </tr>
             
             <tr id="tax-id-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="tax_id"><?php esc_html_e('Tax ID', 'sfx-bricks-child'); ?></label>
+                    <label for="tax_id"><?php esc_html_e('Tax ID', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="tax_id" id="tax_id" value="<?php echo esc_attr($tax_id); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Tax identification number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Tax identification number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr id="vat-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="vat"><?php esc_html_e('VAT ID', 'sfx-bricks-child'); ?></label>
+                    <label for="vat"><?php esc_html_e('VAT ID', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="vat" id="vat" value="<?php echo esc_attr($vat); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('VAT identification number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('VAT identification number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr id="hrb-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="hrb"><?php esc_html_e('Company Registration No.', 'sfx-bricks-child'); ?></label>
+                    <label for="hrb"><?php esc_html_e('Company Registration No.', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="hrb" id="hrb" value="<?php echo esc_attr($hrb); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Commercial register number', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Commercial register number', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr id="court-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="court"><?php esc_html_e('Registration Court', 'sfx-bricks-child'); ?></label>
+                    <label for="court"><?php esc_html_e('Registration Court', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="court" id="court" value="<?php echo esc_attr($court); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Responsible registration court', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Responsible registration court', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr id="dsb-fields" class="conditional-field" data-show-for="main">
                 <th scope="row">
-                    <label for="dsb"><?php esc_html_e('Data Protection Officer', 'sfx-bricks-child'); ?></label>
+                    <label for="dsb"><?php esc_html_e('Data Protection Officer', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="dsb" id="dsb" value="<?php echo esc_attr($dsb); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Name of the data protection officer', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Name of the data protection officer', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row" colspan="2">
-                    <h3><?php esc_html_e('Additional Information', 'sfx-bricks-child'); ?></h3>
+                    <h3><?php esc_html_e('Additional Information', 'sfxtheme'); ?></h3>
                 </th>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="opening"><?php esc_html_e('Opening Hours', 'sfx-bricks-child'); ?></label>
+                    <label for="opening"><?php esc_html_e('Opening Hours', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <?php 
@@ -452,17 +452,17 @@ class PostType
                         ]
                     );
                     ?>
-                    <p class="description"><?php esc_html_e('Business hours of the company', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Business hours of the company', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="maplink"><?php esc_html_e('Google Maps Link', 'sfx-bricks-child'); ?></label>
+                    <label for="maplink"><?php esc_html_e('Google Maps Link', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="url" name="maplink" id="maplink" value="<?php echo esc_url($maplink); ?>" class="regular-text" />
-                    <p class="description"><?php esc_html_e('Link to Google Maps', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Link to Google Maps', 'sfxtheme'); ?></p>
                 </td>
             </tr>
         </table>
@@ -540,7 +540,7 @@ class PostType
     {
         $date = $columns['date'] ?? null;
         unset($columns['date']);
-        $columns['contact_type'] = __('Type', 'sfx-bricks-child');
+        $columns['contact_type'] = __('Type', 'sfxtheme');
         if ($date !== null) {
             $columns['date'] = $date;
         }
@@ -555,7 +555,7 @@ class PostType
      */
     public static function add_address_column(array $columns): array
     {
-        $columns['address'] = __('Address', 'sfx-bricks-child');
+        $columns['address'] = __('Address', 'sfxtheme');
         return $columns;
     }
 
@@ -567,7 +567,7 @@ class PostType
      */
     public static function add_contact_column(array $columns): array
     {
-        $columns['contact'] = __('Contact', 'sfx-bricks-child');
+        $columns['contact'] = __('Contact', 'sfxtheme');
         return $columns;
     }
 
@@ -579,7 +579,7 @@ class PostType
      */
     public static function add_status_column(array $columns): array
     {
-        $columns['status'] = __('Status', 'sfx-bricks-child');
+        $columns['status'] = __('Status', 'sfxtheme');
         return $columns;
     }
 
@@ -594,8 +594,8 @@ class PostType
         if ($column === 'contact_type') {
             $contact_type = get_post_meta($post_id, '_contact_type', true) ?: 'main';
             $type_labels = [
-                'main' => __('Main Contact', 'sfx-bricks-child'),
-                'branch' => __('Branch/Location', 'sfx-bricks-child'),
+                'main' => __('Main Contact', 'sfxtheme'),
+                'branch' => __('Branch/Location', 'sfxtheme'),
             ];
             echo '<span class="contact-type-' . esc_attr($contact_type) . '">' . esc_html($type_labels[$contact_type] ?? $contact_type) . '</span>';
         }
@@ -628,11 +628,11 @@ class PostType
             
             if (!empty($address_parts)) {
                 echo '<div class="contact-address">';
-                echo '<strong>' . esc_html__('Address:', 'sfx-bricks-child') . '</strong><br>';
+                echo '<strong>' . esc_html__('Address:', 'sfxtheme') . '</strong><br>';
                 echo esc_html(implode(', ', $address_parts));
                 echo '</div>';
             } else {
-                echo '<span class="no-data">' . esc_html__('No address data', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-data">' . esc_html__('No address data', 'sfxtheme') . '</span>';
             }
         }
     }
@@ -666,7 +666,7 @@ class PostType
                 echo implode('<br>', $contact_parts);
                 echo '</div>';
             } else {
-                echo '<span class="no-data">' . esc_html__('No contact data', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-data">' . esc_html__('No contact data', 'sfxtheme') . '</span>';
             }
         }
     }
@@ -683,9 +683,9 @@ class PostType
             $post = get_post($post_id);
             $status = $post->post_status;
             $status_labels = [
-                'publish' => __('Active', 'sfx-bricks-child'),
-                'draft' => __('Draft', 'sfx-bricks-child'),
-                'private' => __('Private', 'sfx-bricks-child'),
+                'publish' => __('Active', 'sfxtheme'),
+                'draft' => __('Draft', 'sfxtheme'),
+                'private' => __('Private', 'sfxtheme'),
             ];
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
         }
@@ -889,7 +889,7 @@ class PostType
         if (isset($_GET['sfx_cache_cleared'])) {
             ?>
             <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e('Contact Info cache cleared successfully!', 'sfx-bricks-child'); ?></p>
+                <p><?php esc_html_e('Contact Info cache cleared successfully!', 'sfxtheme'); ?></p>
             </div>
             <?php
         }
@@ -909,7 +909,7 @@ class PostType
         <script type="text/javascript">
         jQuery(document).ready(function($) {
             // Add cache clear button after the page title
-            var cacheButton = $('<a href="<?php echo esc_url(wp_nonce_url(add_query_arg('sfx_clear_contact_cache', '1', admin_url('edit.php?post_type=' . self::$post_type)), 'sfx_clear_contact_cache')); ?>" class="page-title-action"><?php esc_html_e('Clear Cache', 'sfx-bricks-child'); ?></a>');
+            var cacheButton = $('<a href="<?php echo esc_url(wp_nonce_url(add_query_arg('sfx_clear_contact_cache', '1', admin_url('edit.php?post_type=' . self::$post_type)), 'sfx_clear_contact_cache')); ?>" class="page-title-action"><?php esc_html_e('Clear Cache', 'sfxtheme'); ?></a>');
             
             // Insert after the first page-title-action button or after the h1
             if ($('.page-title-action').length > 0) {

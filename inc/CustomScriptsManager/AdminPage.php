@@ -25,8 +25,8 @@ class AdminPage
     // Add main Custom Scripts page
     add_submenu_page(
       \SFX\SFXBricksChildAdmin::$menu_slug,
-      __(self::$page_title, 'sfx-bricks-child'),
-      __(self::$page_title, 'sfx-bricks-child'),
+      __(self::$page_title, 'sfxtheme'),
+      __(self::$page_title, 'sfxtheme'),
       'manage_options',
       'edit.php?post_type=' . PostType::$post_type
     );
@@ -38,9 +38,9 @@ class AdminPage
     <div class="wrap">
         <h1><?php echo esc_html(self::$page_title); ?></h1>
         <p><?php echo esc_html(self::$description); ?></p>
-        <p><?php esc_html_e('Use the Custom Scripts post type to manage your scripts and styles.', 'sfx-bricks-child'); ?></p>
+        <p><?php esc_html_e('Use the Custom Scripts post type to manage your scripts and styles.', 'sfxtheme'); ?></p>
         <a href="<?php echo esc_url(admin_url('edit.php?post_type=' . PostType::$post_type)); ?>" class="button button-primary">
-            <?php esc_html_e('Manage Custom Scripts', 'sfx-bricks-child'); ?>
+            <?php esc_html_e('Manage Custom Scripts', 'sfxtheme'); ?>
         </a>
     </div>
     <?php

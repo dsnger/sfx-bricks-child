@@ -25,8 +25,8 @@ class AdminPage
         // Add main Social Media Accounts page
         add_submenu_page(
             \SFX\SFXBricksChildAdmin::$menu_slug,
-            __(self::$page_title, 'sfx-bricks-child'),
-            __(self::$page_title, 'sfx-bricks-child'),
+            __(self::$page_title, 'sfxtheme'),
+            __(self::$page_title, 'sfxtheme'),
             'manage_options',
             'edit.php?post_type=' . PostType::$post_type
         );
@@ -38,9 +38,9 @@ class AdminPage
         <div class="wrap">
             <h1><?php echo esc_html(self::$page_title); ?></h1>
             <p><?php echo esc_html(self::$description); ?></p>
-            <p><?php esc_html_e('Use the Social Media Accounts post type to manage your social media profiles.', 'sfx-bricks-child'); ?></p>
+            <p><?php esc_html_e('Use the Social Media Accounts post type to manage your social media profiles.', 'sfxtheme'); ?></p>
             <a href="<?php echo esc_url(admin_url('edit.php?post_type=' . PostType::$post_type)); ?>" class="button button-primary">
-                <?php esc_html_e('Manage Social Media Accounts', 'sfx-bricks-child'); ?>
+                <?php esc_html_e('Manage Social Media Accounts', 'sfxtheme'); ?>
             </a>
         </div>
         <?php
