@@ -145,16 +145,4 @@ if ((!class_exists('SFX\\Environment') || !\SFX\Environment::is_dev_mode()) || (
 }
 
 
-// Ensure ACF is active before initializing the theme
-add_action('after_setup_theme', function () {
-    if (!class_exists('ACF')) {
-        // Display admin notice if ACF is not activated
-        add_action('admin_notices', function () {
-            echo '<div class="error"><p>The Advanced Custom Fields (ACF) plugin is required for this theme to function. Please activate ACF.</p></div>';
-        });
-        return;
-    }
-});
-
-
 

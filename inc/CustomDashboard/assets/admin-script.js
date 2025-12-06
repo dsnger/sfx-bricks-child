@@ -583,11 +583,15 @@
         
         // URL validation
         if (url) {
-            // Check for dangerous protocols
+            // Check for dangerous protocols (but allow placeholders)
             var urlLower = url.toLowerCase();
-            if (urlLower.indexOf('javascript:') === 0 || 
+            // Only check for dangerous protocols if URL doesn't contain placeholders
+            var hasPlaceholder = /\{admin_url\}|\{site_url\}|\{home_url\}/.test(url);
+            
+            if (!hasPlaceholder && (
+                urlLower.indexOf('javascript:') === 0 || 
                 urlLower.indexOf('data:') === 0 || 
-                urlLower.indexOf('vbscript:') === 0) {
+                urlLower.indexOf('vbscript:') === 0)) {
                 result.valid = false;
                 result.errors.push({
                     field: 'url',

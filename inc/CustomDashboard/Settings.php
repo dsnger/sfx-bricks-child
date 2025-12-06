@@ -2953,7 +2953,7 @@ CSS;
 
     /**
      * Validate and sanitize URL for quicklinks
-     * Allows admin URLs, relative paths, and external URLs
+     * Allows admin URLs, relative paths, external URLs, and placeholders
      *
      * @param string $url
      * @return string Sanitized URL or empty string if invalid
@@ -2976,6 +2976,15 @@ CSS;
             if (strpos($url_lower, $protocol) === 0) {
                 return '';
             }
+        }
+
+        // Preserve placeholders - check if URL contains placeholders
+        $has_placeholders = preg_match('/\{admin_url\}|\{site_url\}|\{home_url\}/', $url);
+        
+        if ($has_placeholders) {
+            // If placeholders are present, sanitize as text field to preserve them
+            // This allows placeholders to be replaced dynamically at render time
+            return sanitize_text_field($url);
         }
 
         // Handle relative admin URLs (most common use case)
