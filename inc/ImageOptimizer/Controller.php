@@ -218,14 +218,14 @@ class Controller
         self::clear_file_cache();
 
         if (!is_writable($uploads_dir)) {
-            $log[] = sprintf(__('Error: Uploads directory %s is not writable', 'wpturbo'), $uploads_dir);
+            $log[] = sprintf(__('Error: Uploads directory %s is not writable', 'sfxtheme'), $uploads_dir);
             update_option('webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
         $file_size_kb = filesize($file_path) / 1024;
         $min_size_kb = Settings::get_min_size_kb();
         if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
-            $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'wpturbo'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
+            $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
             update_option('webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
@@ -283,7 +283,7 @@ class Controller
                 $thumbnail_path = dirname($file_path) . '/' . pathinfo($file_path, PATHINFO_FILENAME) . '-150x150' . $extension;
                 $saved = $editor->save($thumbnail_path, $format, ['quality' => Settings::get_quality()]);
                 if (!is_wp_error($saved)) {
-                    $log[] = sprintf(__('Generated thumbnail: %s', 'wpturbo'), basename($thumbnail_path));
+                    $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
                     $new_files[] = $thumbnail_path;
                     // Add to file cache
                     self::$file_cache[$thumbnail_path] = true;
@@ -303,8 +303,8 @@ class Controller
                     self::$file_cache[$file] = false;
                 }
             }
-            $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'wpturbo'), basename($file_path));
-            $log[] = sprintf(__('Original preserved: %s', 'wpturbo'), basename($file_path));
+            $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
+            $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
             update_option('webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
@@ -346,7 +346,7 @@ class Controller
                                 'height' => 150,
                                 'mime-type' => $format
                             ];
-                            $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'wpturbo'), basename($thumbnail_file));
+                            $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'sfxtheme'), basename($thumbnail_file));
                             // Update file cache
                             self::$file_cache[$thumbnail_file] = true;
                         }
@@ -357,7 +357,7 @@ class Controller
                 wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
                 wp_update_attachment_metadata($attachment_id, $metadata);
             } else {
-                $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'wpturbo'), basename($file_path), $metadata->get_error_message());
+                $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($file_path), $metadata->get_error_message());
             }
         }
         // Delete original only if all conversions succeeded and not preserved
@@ -369,14 +369,14 @@ class Controller
                     @chmod($file_path, 0644);
                     if (!is_writable($file_path)) {
                         if ($chmod_failed) {
-                            $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'wpturbo'), basename($file_path));
+                            $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
                             break;
                         }
                         $chmod_failed = true;
                     }
                 }
                 if (@unlink($file_path)) {
-                    $log[] = sprintf(__('Deleted original: %s', 'wpturbo'), basename($file_path));
+                    $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
                     // Update file cache
                     self::$file_cache[$file_path] = false;
                     break;
@@ -385,7 +385,7 @@ class Controller
                 sleep(1);
             }
             if (self::file_exists_cached($file_path)) {
-                $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'wpturbo'), basename($file_path));
+                $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
             }
         }
         update_option('webp_conversion_log', array_slice((array)$log, -500));
@@ -561,7 +561,7 @@ class Controller
         $alternate_extension = $use_avif ? 'webp' : 'avif';
 
         // Build a list of active files first
-        $log[] = __('Building list of active files...', 'wpturbo');
+        $log[] = __('Building list of active files...', 'sfxtheme');
         update_option('webp_conversion_log', array_slice((array)$log, -500));
 
         $attachments = get_posts([
@@ -587,12 +587,12 @@ class Controller
                     if (function_exists('gc_collect_cycles')) {
                         gc_collect_cycles();
                     }
-                    $log[] = sprintf(__('Memory usage high, garbage collection triggered (%d times)', 'wpturbo'), $memory_warnings);
+                    $log[] = sprintf(__('Memory usage high, garbage collection triggered (%d times)', 'sfxtheme'), $memory_warnings);
                     update_option('webp_conversion_log', array_slice((array)$log, -500));
 
                     // If warnings are excessive, break to avoid crashes
                     if ($memory_warnings > 5) {
-                        $log[] = __('Too many memory warnings, stopping process to avoid crash', 'wpturbo');
+                        $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
                         update_option('webp_conversion_log', array_slice((array)$log, -500));
                         return [
                             'deleted' => $deleted,
@@ -673,7 +673,7 @@ class Controller
             }
         }
 
-        $log[] = sprintf(__('Found %d active files to preserve', 'wpturbo'), count($active_files));
+        $log[] = sprintf(__('Found %d active files to preserve', 'sfxtheme'), count($active_files));
         update_option('webp_conversion_log', array_slice((array)$log, -500));
 
         // Only proceed with deletion if we're not preserving originals
@@ -690,7 +690,7 @@ class Controller
 
                 // Process in batches to manage memory
                 if ($file_count > $max_files) {
-                    $log[] = sprintf(__('Batch limit reached (%d files). Run cleanup again for remaining files.', 'wpturbo'), $max_files);
+                    $log[] = sprintf(__('Batch limit reached (%d files). Run cleanup again for remaining files.', 'sfxtheme'), $max_files);
                     break;
                 }
 
@@ -706,7 +706,7 @@ class Controller
 
                         // If warnings are excessive, break to avoid crashes
                         if ($memory_warnings > 5) {
-                            $log[] = __('Too many memory warnings, stopping process to avoid crash', 'wpturbo');
+                            $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
                             update_option('webp_conversion_log', array_slice((array)$log, -500));
                             return [
                                 'deleted' => $deleted,
@@ -753,7 +753,7 @@ class Controller
                             @chmod($file_path, 0644);
                             if (!is_writable($file_path)) {
                                 if ($chmod_failed) {
-                                    $log[] = sprintf(__('Error: Cannot make %s writable - skipping deletion', 'wpturbo'), basename($file_path));
+                                    $log[] = sprintf(__('Error: Cannot make %s writable - skipping deletion', 'sfxtheme'), basename($file_path));
                                     $failed++;
                                     break;
                                 }
@@ -762,7 +762,7 @@ class Controller
                         }
 
                         if (@unlink($file_path)) {
-                            $log[] = sprintf(__('Cleanup: Deleted %s', 'wpturbo'), basename($file_path));
+                            $log[] = sprintf(__('Cleanup: Deleted %s', 'sfxtheme'), basename($file_path));
                             $deleted++;
                             // Update file cache
                             self::$file_cache[$file_path] = false;
@@ -774,23 +774,23 @@ class Controller
                     }
 
                     if (self::file_exists_cached($file_path)) {
-                        $log[] = sprintf(__('Cleanup: Failed to delete %s', 'wpturbo'), basename($file_path));
+                        $log[] = sprintf(__('Cleanup: Failed to delete %s', 'sfxtheme'), basename($file_path));
                         $failed++;
                     }
                 }
             }
         }
 
-        $summary = "<span style='font-weight: bold; color: #281E5D;'>" . __('Cleanup Complete', 'wpturbo') . "</span>: " .
+        $summary = "<span style='font-weight: bold; color: #281E5D;'>" . __('Cleanup Complete', 'sfxtheme') . "</span>: " .
             sprintf(
-                __('Deleted %d files, %d failed, %d memory warnings', 'wpturbo'),
+                __('Deleted %d files, %d failed, %d memory warnings', 'sfxtheme'),
                 $deleted,
                 $failed,
                 $memory_warnings
             );
 
         if ($file_count >= $batch_limit) {
-            $summary .= ' ' . __('(batch limit reached, more files may need processing)', 'wpturbo');
+            $summary .= ' ' . __('(batch limit reached, more files may need processing)', 'sfxtheme');
         }
 
         $log[] = $summary;

@@ -251,6 +251,8 @@ class SFXBricksChildTheme
     // Only load on Global Theme Settings pages and subpages, and custom post type pages
     if (strpos($hook_suffix, 'global-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-theme-settings') === false && 
+        strpos($hook_suffix, 'sfx-general-theme-options') === false &&
+        strpos($hook_suffix, 'sfx-html-copy-paste') === false &&
         strpos($hook_suffix, 'sfx-wp-optimizer') === false &&
         strpos($hook_suffix, 'sfx-custom-dashboard') === false &&
         strpos($hook_suffix, 'sfx-import-export') === false &&

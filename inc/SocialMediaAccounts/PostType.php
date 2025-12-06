@@ -44,19 +44,19 @@ class PostType
     public static function register_post_type(): void
     {
         $labels = [
-            'name'                  => __('Social Media Accounts', 'sfx-bricks-child'),
-            'singular_name'         => __('Social Account', 'sfx-bricks-child'),
-            'add_new'               => __('Add New', 'sfx-bricks-child'),
-            'add_new_item'          => __('Add New Social Account', 'sfx-bricks-child'),
-            'edit_item'             => __('Edit Social Account', 'sfx-bricks-child'),
-            'new_item'              => __('New Social Account', 'sfx-bricks-child'),
-            'view_item'             => __('View Social Account', 'sfx-bricks-child'),
-            'search_items'          => __('Search Social Accounts', 'sfx-bricks-child'),
-            'not_found'             => __('No social accounts found', 'sfx-bricks-child'),
-            'not_found_in_trash'    => __('No social accounts found in Trash', 'sfx-bricks-child'),
-            'all_items'             => __('All Social Accounts', 'sfx-bricks-child'),
-            'menu_name'             => __('Social Accounts', 'sfx-bricks-child'),
-            'name_admin_bar'        => __('Social Account', 'sfx-bricks-child'),
+            'name'                  => __('Social Media Accounts', 'sfxtheme'),
+            'singular_name'         => __('Social Account', 'sfxtheme'),
+            'add_new'               => __('Add New', 'sfxtheme'),
+            'add_new_item'          => __('Add New Social Account', 'sfxtheme'),
+            'edit_item'             => __('Edit Social Account', 'sfxtheme'),
+            'new_item'              => __('New Social Account', 'sfxtheme'),
+            'view_item'             => __('View Social Account', 'sfxtheme'),
+            'search_items'          => __('Search Social Accounts', 'sfxtheme'),
+            'not_found'             => __('No social accounts found', 'sfxtheme'),
+            'not_found_in_trash'    => __('No social accounts found in Trash', 'sfxtheme'),
+            'all_items'             => __('All Social Accounts', 'sfxtheme'),
+            'menu_name'             => __('Social Accounts', 'sfxtheme'),
+            'name_admin_bar'        => __('Social Account', 'sfxtheme'),
         ];
 
         $args = [
@@ -132,7 +132,7 @@ class PostType
     {
         add_meta_box(
             'sfx_social_account_config',
-            __('Social Account Configuration', 'sfx-bricks-child'),
+            __('Social Account Configuration', 'sfxtheme'),
             [self::class, 'render_meta_box'],
             self::$post_type,
             'normal',
@@ -159,17 +159,17 @@ class PostType
         <table class="form-table">
             <tr>
                 <th scope="row">
-                    <label for="icon_image"><?php esc_html_e('Icon Image', 'sfx-bricks-child'); ?></label>
+                    <label for="icon_image"><?php esc_html_e('Icon Image', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <div class="sfx-file-input-group">
-                        <input type="text" name="icon_image" id="icon_image" value="<?php echo esc_attr($icon_image); ?>" class="regular-text" placeholder="<?php esc_attr_e('Image URL', 'sfx-bricks-child'); ?>" />
-                        <button type="button" class="button" id="upload_icon_image"><?php esc_html_e('Upload Image', 'sfx-bricks-child'); ?></button>
+                        <input type="text" name="icon_image" id="icon_image" value="<?php echo esc_attr($icon_image); ?>" class="regular-text" placeholder="<?php esc_attr_e('Image URL', 'sfxtheme'); ?>" />
+                        <button type="button" class="button" id="upload_icon_image"><?php esc_html_e('Upload Image', 'sfxtheme'); ?></button>
                     </div>
-                    <p class="description"><?php esc_html_e('Upload an icon image (preferably SVG) for this social media account.', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('Upload an icon image (preferably SVG) for this social media account.', 'sfxtheme'); ?></p>
                     <?php if (!empty($icon_image)) : ?>
                         <div class="sfx-image-preview">
-                            <img src="<?php echo esc_url($icon_image); ?>" alt="<?php esc_attr_e('Icon Preview', 'sfx-bricks-child'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />
+                            <img src="<?php echo esc_url($icon_image); ?>" alt="<?php esc_attr_e('Icon Preview', 'sfxtheme'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />
                         </div>
                     <?php endif; ?>
                 </td>
@@ -177,34 +177,34 @@ class PostType
             
             <tr>
                 <th scope="row">
-                    <label for="link_url"><?php esc_html_e('Link URL', 'sfx-bricks-child'); ?></label>
+                    <label for="link_url"><?php esc_html_e('Link URL', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <input type="url" name="link_url" id="link_url" value="<?php echo esc_url($link_url); ?>" class="regular-text" placeholder="https://example.com" />
-                    <p class="description"><?php esc_html_e('The URL to the social media profile.', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('The URL to the social media profile.', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="link_title"><?php esc_html_e('Link Title', 'sfx-bricks-child'); ?></label>
+                    <label for="link_title"><?php esc_html_e('Link Title', 'sfxtheme'); ?></label>
                 </th>
                 <td>
-                    <input type="text" name="link_title" id="link_title" value="<?php echo esc_attr($link_title); ?>" class="regular-text" placeholder="<?php esc_attr_e('Follow us on...', 'sfx-bricks-child'); ?>" />
-                    <p class="description"><?php esc_html_e('Optional title attribute for the link.', 'sfx-bricks-child'); ?></p>
+                    <input type="text" name="link_title" id="link_title" value="<?php echo esc_attr($link_title); ?>" class="regular-text" placeholder="<?php esc_attr_e('Follow us on...', 'sfxtheme'); ?>" />
+                    <p class="description"><?php esc_html_e('Optional title attribute for the link.', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row">
-                    <label for="link_target"><?php esc_html_e('Link Target', 'sfx-bricks-child'); ?></label>
+                    <label for="link_target"><?php esc_html_e('Link Target', 'sfxtheme'); ?></label>
                 </th>
                 <td>
                     <select name="link_target" id="link_target">
-                        <option value="_blank" <?php selected($link_target, '_blank'); ?>><?php esc_html_e('Open in new tab', 'sfx-bricks-child'); ?></option>
-                        <option value="_self" <?php selected($link_target, '_self'); ?>><?php esc_html_e('Open in same tab', 'sfx-bricks-child'); ?></option>
+                        <option value="_blank" <?php selected($link_target, '_blank'); ?>><?php esc_html_e('Open in new tab', 'sfxtheme'); ?></option>
+                        <option value="_self" <?php selected($link_target, '_self'); ?>><?php esc_html_e('Open in same tab', 'sfxtheme'); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e('How the link should open when clicked.', 'sfx-bricks-child'); ?></p>
+                    <p class="description"><?php esc_html_e('How the link should open when clicked.', 'sfxtheme'); ?></p>
                 </td>
             </tr>
         </table>
@@ -217,9 +217,9 @@ class PostType
                 var fileInput = $('#icon_image');
                 
                 var frame = wp.media({
-                    title: '<?php esc_html_e('Select Icon Image', 'sfx-bricks-child'); ?>',
+                    title: '<?php esc_html_e('Select Icon Image', 'sfxtheme'); ?>',
                     button: {
-                        text: '<?php esc_html_e('Use this image', 'sfx-bricks-child'); ?>'
+                        text: '<?php esc_html_e('Use this image', 'sfxtheme'); ?>'
                     },
                     multiple: false
                 });
@@ -234,7 +234,7 @@ class PostType
                         preview = $('<div class="sfx-image-preview"></div>');
                         fileInput.parent().after(preview);
                     }
-                    preview.html('<img src="' + attachment.url + '" alt="<?php esc_attr_e('Icon Preview', 'sfx-bricks-child'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />');
+                    preview.html('<img src="' + attachment.url + '" alt="<?php esc_attr_e('Icon Preview', 'sfxtheme'); ?>" style="max-width: 50px; max-height: 50px; margin-top: 10px;" />');
                 });
                 
                 frame.open();
@@ -284,7 +284,7 @@ class PostType
     {
         $date = $columns['date'] ?? null;
         unset($columns['date']);
-        $columns['icon'] = __('Icon', 'sfx-bricks-child');
+        $columns['icon'] = __('Icon', 'sfxtheme');
         if ($date !== null) {
             $columns['date'] = $date;
         }
@@ -299,7 +299,7 @@ class PostType
      */
     public static function add_link_column(array $columns): array
     {
-        $columns['link'] = __('Link', 'sfx-bricks-child');
+        $columns['link'] = __('Link', 'sfxtheme');
         return $columns;
     }
 
@@ -311,7 +311,7 @@ class PostType
      */
     public static function add_status_column(array $columns): array
     {
-        $columns['status'] = __('Status', 'sfx-bricks-child');
+        $columns['status'] = __('Status', 'sfxtheme');
         return $columns;
     }
 
@@ -328,7 +328,7 @@ class PostType
             if (!empty($icon_image)) {
                 echo '<img src="' . esc_url($icon_image) . '" alt="Icon" style="max-width: 30px; max-height: 30px;" />';
             } else {
-                echo '<span class="no-icon">' . esc_html__('No icon', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-icon">' . esc_html__('No icon', 'sfxtheme') . '</span>';
             }
         }
     }
@@ -346,7 +346,7 @@ class PostType
             if (!empty($link_url)) {
                 echo '<a href="' . esc_url($link_url) . '" target="_blank" rel="noopener noreferrer">' . esc_url($link_url) . '</a>';
             } else {
-                echo '<span class="no-link">' . esc_html__('No link', 'sfx-bricks-child') . '</span>';
+                echo '<span class="no-link">' . esc_html__('No link', 'sfxtheme') . '</span>';
             }
         }
     }
@@ -363,9 +363,9 @@ class PostType
             $post = get_post($post_id);
             $status = $post->post_status;
             $status_labels = [
-                'publish' => __('Active', 'sfx-bricks-child'),
-                'draft' => __('Draft', 'sfx-bricks-child'),
-                'private' => __('Private', 'sfx-bricks-child'),
+                'publish' => __('Active', 'sfxtheme'),
+                'draft' => __('Draft', 'sfxtheme'),
+                'private' => __('Private', 'sfxtheme'),
             ];
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
         }

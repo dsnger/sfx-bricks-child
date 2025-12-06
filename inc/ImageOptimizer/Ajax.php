@@ -30,13 +30,13 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options') || !isset($_POST['attachment_id'])) {
-            wp_send_json_error(__('Permission denied or invalid attachment ID', 'wpturbo'));
+            wp_send_json_error(__('Permission denied or invalid attachment ID', 'sfxtheme'));
         }
         $attachment_id = absint($_POST['attachment_id']);
         if (Settings::add_excluded_image($attachment_id)) {
-            wp_send_json_success(['message' => __('Image excluded successfully', 'wpturbo')]);
+            wp_send_json_success(['message' => __('Image excluded successfully', 'sfxtheme')]);
         } else {
-            wp_send_json_error(__('Image already excluded or invalid ID', 'wpturbo'));
+            wp_send_json_error(__('Image already excluded or invalid ID', 'sfxtheme'));
         }
     }
 
@@ -44,13 +44,13 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options') || !isset($_POST['attachment_id'])) {
-            wp_send_json_error(__('Permission denied or invalid attachment ID', 'wpturbo'));
+            wp_send_json_error(__('Permission denied or invalid attachment ID', 'sfxtheme'));
         }
         $attachment_id = absint($_POST['attachment_id']);
         if (Settings::remove_excluded_image($attachment_id)) {
-            wp_send_json_success(['message' => __('Image removed from exclusion list', 'wpturbo')]);
+            wp_send_json_success(['message' => __('Image removed from exclusion list', 'sfxtheme')]);
         } else {
-            wp_send_json_error(__('Image not in exclusion list', 'wpturbo'));
+            wp_send_json_error(__('Image not in exclusion list', 'sfxtheme'));
         }
     }
 
@@ -58,7 +58,7 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options') || !isset($_POST['offset'])) {
-            wp_send_json_error(__('Permission denied or invalid offset', 'wpturbo'));
+            wp_send_json_error(__('Permission denied or invalid offset', 'sfxtheme'));
         }
         $offset = absint($_POST['offset']);
         $batch_size = Settings::get_batch_size();
@@ -83,24 +83,24 @@ class Ajax
         $format = $use_avif ? 'image/avif' : 'image/webp';
         if (empty($attachments)) {
             update_option('webp_conversion_complete', true);
-            $log[] = "<span style='font-weight: bold; color: #281E5D;'>" . __('Conversion Complete', 'wpturbo') . "</span>: " . __('No more images to process', 'wpturbo');
+            $log[] = "<span style='font-weight: bold; color: #281E5D;'>" . __('Conversion Complete', 'sfxtheme') . "</span>: " . __('No more images to process', 'sfxtheme');
             update_option('webp_conversion_log', array_slice((array)$log, -500));
             wp_send_json_success(['complete' => true]);
         }
         foreach ($attachments as $attachment_id) {
             $file_path = get_attached_file($attachment_id);
             if (!file_exists($file_path)) {
-                $log[] = sprintf(__('Skipped: File not found for Attachment ID %d', 'wpturbo'), $attachment_id);
+                $log[] = sprintf(__('Skipped: File not found for Attachment ID %d', 'sfxtheme'), $attachment_id);
                 continue;
             }
             $uploads_dir = dirname($file_path);
             if (!is_writable($uploads_dir)) {
-                $log[] = sprintf(__('Error: Uploads directory %s is not writable for Attachment ID %d', 'wpturbo'), $uploads_dir, $attachment_id);
+                $log[] = sprintf(__('Error: Uploads directory %s is not writable for Attachment ID %d', 'sfxtheme'), $uploads_dir, $attachment_id);
                 continue;
             }
             $file_size_kb = filesize($file_path) / 1024;
             if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
-                $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'wpturbo'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
+                $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
                 continue;
             }
             $metadata = wp_get_attachment_metadata($attachment_id);
@@ -130,7 +130,7 @@ class Ajax
                                 $old_file = "$dirname/$base_name-$old_dimension$extension";
                                 if (file_exists($old_file)) {
                                     @unlink($old_file);
-                                    $log[] = sprintf(__('Deleted outdated size: %s', 'wpturbo'), basename($old_file));
+                                    $log[] = sprintf(__('Deleted outdated size: %s', 'sfxtheme'), basename($old_file));
                                 }
                             }
                         }
@@ -162,7 +162,7 @@ class Ajax
                     $thumbnail_path = "$dirname/$base_name-150x150$extension";
                     $saved = $editor->save($thumbnail_path, $format, ['quality' => $current_quality]);
                     if (!is_wp_error($saved)) {
-                        $log[] = sprintf(__('Generated thumbnail: %s', 'wpturbo'), basename($thumbnail_path));
+                        $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
                         $new_files[] = $thumbnail_path;
                     } else {
                         $success = false;
@@ -176,8 +176,8 @@ class Ajax
                 foreach ($new_files as $file) {
                     if (file_exists($file)) @unlink($file);
                 }
-                $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'wpturbo'), basename($file_path));
-                $log[] = sprintf(__('Original preserved: %s', 'wpturbo'), basename($file_path));
+                $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
+                $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
                 continue;
             }
             // Step 4: Regenerate metadata with only current sizes
@@ -218,14 +218,14 @@ class Ajax
                                     'height' => 150,
                                     'mime-type' => $format
                                 ];
-                                $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'wpturbo'), basename($thumbnail_file));
+                                $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'sfxtheme'), basename($thumbnail_file));
                             }
                         }
                     }
                     $metadata['webp_quality'] = $current_quality;
                     wp_update_attachment_metadata($attachment_id, $metadata);
                 } else {
-                    $log[] = sprintf(__('Error: Metadata regeneration failed for %s', 'wpturbo'), basename($file_path));
+                    $log[] = sprintf(__('Error: Metadata regeneration failed for %s', 'sfxtheme'), basename($file_path));
                 }
             }
             // Step 5: Delete original if not preserved
@@ -237,21 +237,21 @@ class Ajax
                         @chmod($file_path, 0644);
                         if (!is_writable($file_path)) {
                             if ($chmod_failed) {
-                                $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'wpturbo'), basename($file_path));
+                                $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
                                 break;
                             }
                             $chmod_failed = true;
                         }
                     }
                     if (@unlink($file_path)) {
-                        $log[] = sprintf(__('Deleted original: %s', 'wpturbo'), basename($file_path));
+                        $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
                         break;
                     }
                     $attempts++;
                     sleep(1);
                 }
                 if (file_exists($file_path)) {
-                    $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'wpturbo'), basename($file_path));
+                    $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
                 }
             }
         }
@@ -263,7 +263,7 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         wp_raise_memory_limit('admin');
         set_time_limit(0);
@@ -275,16 +275,16 @@ class Ajax
         ];
         $attachments = get_posts($args);
         if (empty($attachments)) {
-            wp_send_json_error(__('No media files found', 'wpturbo'));
+            wp_send_json_error(__('No media files found', 'sfxtheme'));
         }
         $temp_file = tempnam(sys_get_temp_dir(), 'webp_media_export_');
         if (!$temp_file) {
-            wp_send_json_error(__('Failed to create temporary file', 'wpturbo'));
+            wp_send_json_error(__('Failed to create temporary file', 'sfxtheme'));
         }
         $zip = new \ZipArchive();
         if ($zip->open($temp_file, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             @unlink($temp_file);
-            wp_send_json_error(__('Failed to create ZIP archive', 'wpturbo'));
+            wp_send_json_error(__('Failed to create ZIP archive', 'sfxtheme'));
         }
         $upload_dir = wp_upload_dir()['basedir'];
         foreach ($attachments as $attachment_id) {
@@ -319,7 +319,7 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $log = get_option('webp_conversion_log', []);
         $mode = Settings::get_resize_mode();
@@ -366,20 +366,20 @@ class Ajax
                 if (!$is_current && file_exists($candidate)) {
                     @unlink($candidate);
                     $deleted++;
-                    $log[] = sprintf(__('Deleted old file: %s', 'wpturbo'), basename($candidate));
+                    $log[] = sprintf(__('Deleted old file: %s', 'sfxtheme'), basename($candidate));
                 }
             }
         }
-        $log[] = sprintf(__('Cleanup complete. %d files deleted.', 'wpturbo'), $deleted);
+        $log[] = sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted);
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => sprintf(__('Cleanup complete. %d files deleted.', 'wpturbo'), $deleted)]);
+        wp_send_json_success(['message' => sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted)]);
     }
 
     public static function fix_post_image_urls(): void
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $log = get_option('webp_conversion_log', []);
         $use_avif = Settings::get_use_avif();
@@ -408,30 +408,30 @@ class Ajax
                     'post_content' => $new_content,
                 ]);
                 $updated++;
-                $log[] = sprintf(__('Updated image URLs in post ID %d', 'wpturbo'), $post_id);
+                $log[] = sprintf(__('Updated image URLs in post ID %d', 'sfxtheme'), $post_id);
             }
         }
-        $log[] = sprintf(__('Fix URLs complete. %d posts updated.', 'wpturbo'), $updated);
+        $log[] = sprintf(__('Fix URLs complete. %d posts updated.', 'sfxtheme'), $updated);
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => sprintf(__('Fix URLs complete. %d posts updated.', 'wpturbo'), $updated)]);
+        wp_send_json_success(['message' => sprintf(__('Fix URLs complete. %d posts updated.', 'sfxtheme'), $updated)]);
     }
 
     public static function set_max_widths(): void
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $widths = isset($_POST['widths']) ? sanitize_text_field($_POST['widths']) : '';
         $widths_arr = array_map('absint', array_filter(explode(',', $widths)));
         $widths_arr = array_filter($widths_arr, function($w) { return $w > 0 && $w <= 9999; });
         if (empty($widths_arr)) {
-            wp_send_json_error(__('Invalid widths', 'wpturbo'));
+            wp_send_json_error(__('Invalid widths', 'sfxtheme'));
         }
         $final_widths = array_slice($widths_arr, 0, 4);
         update_option('sfx_webp_max_widths', implode(',', $final_widths));
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Max widths set to: %spx', 'wpturbo'), implode(', ', $final_widths));
+        $log_message = sprintf(__('Max widths set to: %spx', 'sfxtheme'), implode(', ', $final_widths));
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -441,18 +441,18 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $heights = isset($_POST['heights']) ? sanitize_text_field($_POST['heights']) : '';
         $heights_arr = array_map('absint', array_filter(explode(',', $heights)));
         $heights_arr = array_filter($heights_arr, function($h) { return $h > 0 && $h <= 9999; });
         if (empty($heights_arr)) {
-            wp_send_json_error(__('Invalid heights', 'wpturbo'));
+            wp_send_json_error(__('Invalid heights', 'sfxtheme'));
         }
         $final_heights = array_slice($heights_arr, 0, 4);
         update_option('sfx_webp_max_heights', implode(',', $final_heights));
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Max heights set to: %spx', 'wpturbo'), implode(', ', $final_heights));
+        $log_message = sprintf(__('Max heights set to: %spx', 'sfxtheme'), implode(', ', $final_heights));
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -462,17 +462,17 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         update_option('webp_conversion_log', []);
-        wp_send_json_success(['message' => __('Log cleared.', 'wpturbo')]);
+        wp_send_json_success(['message' => __('Log cleared.', 'sfxtheme')]);
     }
 
     public static function reset_defaults(): void
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         update_option('sfx_webp_max_widths', '1920,1200,600,300');
         update_option('sfx_webp_max_heights', '1080,720,480,360');
@@ -485,16 +485,16 @@ class Ajax
         update_option('sfx_webp_use_avif', false);
         update_option('sfx_webp_excluded_images', []);
         $log = get_option('sfx_webp_conversion_log', []);
-        $log[] = __('ImageOptimizer settings reset to defaults.', 'wpturbo');
+        $log[] = __('ImageOptimizer settings reset to defaults.', 'sfxtheme');
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => __('ImageOptimizer settings reset to defaults.', 'wpturbo')]);
+        wp_send_json_success(['message' => __('ImageOptimizer settings reset to defaults.', 'sfxtheme')]);
     }
 
     public static function get_excluded_images(): void
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $ids = Settings::get_excluded_images();
         wp_send_json_success($ids);
@@ -504,12 +504,12 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $min_size = isset($_POST['min_size_kb']) ? absint($_POST['min_size_kb']) : 0;
         update_option('sfx_webp_min_size_kb', $min_size);
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Min size set to: %dKB', 'wpturbo'), $min_size);
+        $log_message = sprintf(__('Min size set to: %dKB', 'sfxtheme'), $min_size);
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -519,12 +519,12 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $use_avif = isset($_POST['use_avif']) ? (bool)$_POST['use_avif'] : false;
         update_option('sfx_webp_use_avif', $use_avif);
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Use AVIF set to: %s', 'wpturbo'), $use_avif ? 'Yes' : 'No');
+        $log_message = sprintf(__('Use AVIF set to: %s', 'sfxtheme'), $use_avif ? 'Yes' : 'No');
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -534,12 +534,12 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $preserve_originals = isset($_POST['preserve_originals']) ? (bool)$_POST['preserve_originals'] : false;
         update_option('sfx_webp_preserve_originals', $preserve_originals);
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Preserve originals set to: %s', 'wpturbo'), $preserve_originals ? 'Yes' : 'No');
+        $log_message = sprintf(__('Preserve originals set to: %s', 'sfxtheme'), $preserve_originals ? 'Yes' : 'No');
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -549,12 +549,12 @@ class Ajax
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
         $disable_auto_conversion = isset($_POST['disable_auto_conversion']) ? (bool)$_POST['disable_auto_conversion'] : false;
         update_option('sfx_webp_disable_auto_conversion', $disable_auto_conversion);
         $log = get_option('sfx_webp_conversion_log', []);
-        $log_message = sprintf(__('Auto-conversion on upload set to: %s', 'wpturbo'), $disable_auto_conversion ? 'Disabled' : 'Enabled');
+        $log_message = sprintf(__('Auto-conversion on upload set to: %s', 'sfxtheme'), $disable_auto_conversion ? 'Disabled' : 'Enabled');
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -574,7 +574,7 @@ class Ajax
             $debug_info['nonce_error'] = true;
             $debug_info['provided_nonce'] = isset($_POST['nonce']) ? substr($_POST['nonce'], 0, 5) . '...' : 'missing';
             wp_send_json_error([
-                'message' => __('Security verification failed. Try refreshing the page.', 'wpturbo'),
+                'message' => __('Security verification failed. Try refreshing the page.', 'sfxtheme'),
                 'debug' => $debug_info
             ]);
             return;
@@ -582,7 +582,7 @@ class Ajax
         
         // Verify capabilities
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Permission denied', 'wpturbo'));
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
             return;
         }
         
@@ -594,7 +594,7 @@ class Ajax
         
         // Log start message
         $log = get_option('webp_conversion_log', []);
-        $log[] = sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'wpturbo'), date('Y-m-d H:i:s'));
+        $log[] = sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'sfxtheme'), date('Y-m-d H:i:s'));
         update_option('webp_conversion_log', array_slice((array)$log, -500));
         
         // Default batch size - can be adjusted via POST
@@ -618,7 +618,7 @@ class Ajax
                 'completed' => $results['completed'],
                 'execution_time' => $execution_time,
                 'message' => sprintf(
-                    __('Cleanup completed in %s seconds. Deleted: %d, Failed: %d, Processed: %d files, Memory warnings: %d', 'wpturbo'),
+                    __('Cleanup completed in %s seconds. Deleted: %d, Failed: %d, Processed: %d files, Memory warnings: %d', 'sfxtheme'),
                     $execution_time,
                     $results['deleted'],
                     $results['failed'],
@@ -630,17 +630,17 @@ class Ajax
             // Add next batch info if needed
             if (!$results['completed']) {
                 $response['need_next_batch'] = true;
-                $response['message'] .= ' ' . __('More files need processing. Please run again.', 'wpturbo');
+                $response['message'] .= ' ' . __('More files need processing. Please run again.', 'sfxtheme');
             }
             
             wp_send_json_success($response);
         } catch (\Throwable $e) {
             // Log and handle any exceptions
-            $log[] = sprintf(__('Error during optimized cleanup: %s', 'wpturbo'), $e->getMessage());
+            $log[] = sprintf(__('Error during optimized cleanup: %s', 'sfxtheme'), $e->getMessage());
             update_option('webp_conversion_log', array_slice((array)$log, -500));
             
             wp_send_json_error([
-                'message' => sprintf(__('Error: %s', 'wpturbo'), $e->getMessage()),
+                'message' => sprintf(__('Error: %s', 'sfxtheme'), $e->getMessage()),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);

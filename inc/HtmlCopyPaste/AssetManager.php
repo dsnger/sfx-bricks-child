@@ -78,14 +78,14 @@ class AssetManager
             'nonce' => wp_create_nonce('sfx_html_copy_paste_nonce'),
             'settings' => $options,
             'strings' => [
-                'pasteHtml' => __('Paste HTML', 'sfx-bricks-child'),
-                'pasteHtmlEditor' => __('Paste HTML with Editor', 'sfx-bricks-child'),
-                'insert' => __('Insert', 'sfx-bricks-child'),
-                'close' => __('Close', 'sfx-bricks-child'),
-                'clipboardNotAllowed' => __('Clipboard not allowed', 'sfx-bricks-child'),
-                'convertingHtml' => __('Converting HTML...', 'sfx-bricks-child'),
-                'htmlConverted' => __('HTML converted successfully', 'sfx-bricks-child'),
-                'errorConverting' => __('Error converting HTML', 'sfx-bricks-child'),
+                'pasteHtml' => __('Paste HTML', 'sfxtheme'),
+                'pasteHtmlEditor' => __('Paste HTML with Editor', 'sfxtheme'),
+                'insert' => __('Insert', 'sfxtheme'),
+                'close' => __('Close', 'sfxtheme'),
+                'clipboardNotAllowed' => __('Clipboard not allowed', 'sfxtheme'),
+                'convertingHtml' => __('Converting HTML...', 'sfxtheme'),
+                'htmlConverted' => __('HTML converted successfully', 'sfxtheme'),
+                'errorConverting' => __('Error converting HTML', 'sfxtheme'),
             ]
         ]);
     }

@@ -102,7 +102,7 @@ class Settings
             $excluded[] = $attachment_id;
             update_option('sfx_webp_excluded_images', array_unique($excluded));
             $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'wpturbo'), $attachment_id);
+            $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'sfxtheme'), $attachment_id);
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return true;
         }
@@ -117,7 +117,7 @@ class Settings
             unset($excluded[$index]);
             update_option('sfx_webp_excluded_images', array_values($excluded));
             $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image removed: Attachment ID %d', 'wpturbo'), $attachment_id);
+            $log[] = sprintf(__('Excluded image removed: Attachment ID %d', 'sfxtheme'), $attachment_id);
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return true;
         }

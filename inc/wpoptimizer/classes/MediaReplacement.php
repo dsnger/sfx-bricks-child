@@ -69,11 +69,11 @@ class MediaReplacement
                 'html' => '
                     <div id="media-replace-div" class="postbox attachment-id-' . $original_attachment_id . '" data-original-image-id="' . $original_attachment_id . '">
                         <div class="postbox-header">
-                            <h2 class="hndle ui-sortable-handle">' . __('Replace Media', 'sfx') . '</h2>
+                            <h2 class="hndle ui-sortable-handle">' . __('Replace Media', 'sfxtheme') . '</h2>
                         </div>
                         <div class="inside">
-                            <button type="button" id="sfx-media-replace" class="button-secondary button-large sfx-media-replace-button" data-old-image-mime-type="' . $image_mime_type . '" onclick="replaceMedia(\'' . $original_attachment_id . '\',\'' . $image_mime_type . '\');">' . __('Select New Media File', 'sfx') . '</button>
-                            <div class="sfx-media-replace-notes"><p>' . __('The current file will be replaced with the uploaded / selected file (of the same type) while retaining the current ID, publish date and file name. Thus, no existing links will break.', 'sfx') . '</p></div>
+                            <button type="button" id="sfx-media-replace" class="button-secondary button-large sfx-media-replace-button" data-old-image-mime-type="' . $image_mime_type . '" onclick="replaceMedia(\'' . $original_attachment_id . '\',\'' . $image_mime_type . '\');">' . __('Select New Media File', 'sfxtheme') . '</button>
+                            <div class="sfx-media-replace-notes"><p>' . __('The current file will be replaced with the uploaded / selected file (of the same type) while retaining the current ID, publish date and file name. Thus, no existing links will break.', 'sfxtheme') . '</p></div>
                         </div>
                     </div>
                 '

@@ -31,75 +31,75 @@ class Settings
 
         add_settings_section(
             'sfx_html_copy_paste_main',
-            __('Main Settings', 'sfx-bricks-child'),
+            __('Main Settings', 'sfxtheme'),
             [self::class, 'render_section_description'],
             Controller::OPTION_NAME
         );
 
         add_settings_field(
             'enable_html_copy_paste',
-            __('Enable HTML Copy/Paste', 'sfx-bricks-child'),
+            __('Enable HTML Copy/Paste', 'sfxtheme'),
             [self::class, 'render_checkbox_field'],
             Controller::OPTION_NAME,
             'sfx_html_copy_paste_main',
             [
                 'label_for' => 'enable_html_copy_paste',
-                'description' => __('Enable the HTML copy/paste functionality in Bricks Builder.', 'sfx-bricks-child'),
+                'description' => __('Enable the HTML copy/paste functionality in Bricks Builder.', 'sfxtheme'),
             ]
         );
 
         add_settings_field(
             'enable_editor_mode',
-            __('Enable HTML Editor', 'sfx-bricks-child'),
+            __('Enable HTML Editor', 'sfxtheme'),
             [self::class, 'render_checkbox_field'],
             Controller::OPTION_NAME,
             'sfx_html_copy_paste_main',
             [
                 'label_for' => 'enable_editor_mode',
-                'description' => __('Enable the HTML editor mode for advanced editing before conversion.', 'sfx-bricks-child'),
+                'description' => __('Enable the HTML editor mode for advanced editing before conversion.', 'sfxtheme'),
             ]
         );
 
         add_settings_field(
             'preserve_custom_attributes',
-            __('Preserve Custom Attributes', 'sfx-bricks-child'),
+            __('Preserve Custom Attributes', 'sfxtheme'),
             [self::class, 'render_checkbox_field'],
             Controller::OPTION_NAME,
             'sfx_html_copy_paste_main',
             [
                 'label_for' => 'preserve_custom_attributes',
-                'description' => __('Preserve custom HTML attributes when converting to Bricks elements.', 'sfx-bricks-child'),
+                'description' => __('Preserve custom HTML attributes when converting to Bricks elements.', 'sfxtheme'),
             ]
         );
 
         add_settings_field(
             'auto_convert_images',
-            __('Auto Convert Images', 'sfx-bricks-child'),
+            __('Auto Convert Images', 'sfxtheme'),
             [self::class, 'render_checkbox_field'],
             Controller::OPTION_NAME,
             'sfx_html_copy_paste_main',
             [
                 'label_for' => 'auto_convert_images',
-                'description' => __('Automatically convert img tags to Bricks image elements.', 'sfx-bricks-child'),
+                'description' => __('Automatically convert img tags to Bricks image elements.', 'sfxtheme'),
             ]
         );
 
         add_settings_field(
             'auto_convert_links',
-            __('Auto Convert Links', 'sfx-bricks-child'),
+            __('Auto Convert Links', 'sfxtheme'),
             [self::class, 'render_checkbox_field'],
             Controller::OPTION_NAME,
             'sfx_html_copy_paste_main',
             [
                 'label_for' => 'auto_convert_links',
-                'description' => __('Automatically convert anchor tags to Bricks link elements.', 'sfx-bricks-child'),
+                'description' => __('Automatically convert anchor tags to Bricks link elements.', 'sfxtheme'),
             ]
         );
     }
 
     public static function render_section_description(): void
     {
-        echo '<p>' . esc_html__('Configure the HTML copy/paste functionality for Bricks Builder.', 'sfx-bricks-child') . '</p>';
+        echo '<p>' . esc_html__('Configure the HTML copy/paste functionality for Bricks Builder.', 'sfxtheme') . '</p>';
     }
 
     public static function render_checkbox_field(array $args): void

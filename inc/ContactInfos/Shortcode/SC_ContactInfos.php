@@ -531,7 +531,7 @@ class SC_ContactInfos
             $output .= $icon;
         }
 
-        $output .= '<a href="' . esc_url($value) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View on Map', 'sfx-bricks-child') . '</a>';
+        $output .= '<a href="' . esc_url($value) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View on Map', 'sfxtheme') . '</a>';
 
         $output .= '</span>';
 
