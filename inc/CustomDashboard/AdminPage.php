@@ -549,13 +549,14 @@ class AdminPage
 
         // Get all tab fields to check against
         // For tabs with subtabs (sections, brand), their hidden fields are already rendered
-        // by their respective render_*_hidden_fields() methods, so we exclude them from
-        // $all_tab_fields to prevent any possibility of duplicate hidden fields
+        // by their respective render_*_hidden_fields() methods when THAT tab is active.
+        // We only exclude them when they are the CURRENT tab to avoid duplicates.
+        // When viewing OTHER tabs, we must include them so their values are preserved.
         $all_tab_fields = [];
         foreach ($tab_fields as $tab_key => $fields) {
-            // Skip ANY tab that handles its own hidden fields internally
-            // This prevents duplicate hidden fields regardless of which tab is currently active
-            if (in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
+            // Only skip the current tab if it handles its own hidden fields internally
+            // This prevents duplicates while ensuring other tabs' fields are preserved
+            if ($tab_key === $current_tab && in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
                 continue;
             }
             $all_tab_fields = array_merge($all_tab_fields, $fields);
