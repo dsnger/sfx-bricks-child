@@ -78,6 +78,9 @@ class Controller
      */
     public function __construct()
     {
+        // Migrate legacy options (deprecated, remove in v0.9.0+)
+        Settings::migrate_legacy_options();
+        
         // Register image size and conversion hooks
         add_filter('intermediate_image_sizes_advanced', [Settings::class, 'limit_image_sizes']);
         // --- Robust, high-priority thumbnail-only override (defensive) ---
@@ -212,21 +215,21 @@ class Controller
         $extension = $use_avif ? '.avif' : '.webp';
         $file_path = $upload['file'];
         $uploads_dir = dirname($file_path);
-        $log = get_option('webp_conversion_log', []);
+        $log = get_option('sfx_webp_conversion_log', []);
 
         // Clear file cache before starting
         self::clear_file_cache();
 
         if (!is_writable($uploads_dir)) {
             $log[] = sprintf(__('Error: Uploads directory %s is not writable', 'sfxtheme'), $uploads_dir);
-            update_option('webp_conversion_log', array_slice((array)$log, -500));
+            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
         $file_size_kb = filesize($file_path) / 1024;
         $min_size_kb = Settings::get_min_size_kb();
         if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
             $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
-            update_option('webp_conversion_log', array_slice((array)$log, -500));
+            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
         $mode = Settings::get_resize_mode();
@@ -305,7 +308,7 @@ class Controller
             }
             $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
             $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
-            update_option('webp_conversion_log', array_slice((array)$log, -500));
+            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return $upload;
         }
         // Update metadata only if all conversions succeeded
@@ -397,7 +400,7 @@ class Controller
                 $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
             }
         }
-        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         return $upload;
     }
 
@@ -561,7 +564,7 @@ class Controller
      */
     public static function cleanup_leftover_originals(int $batch_limit = 1000): array
     {
-        $log = get_option('webp_conversion_log', []);
+        $log = get_option('sfx_webp_conversion_log', []);
         $uploads_dir = wp_upload_dir()['basedir'];
 
         // Clear file cache before starting
@@ -580,7 +583,7 @@ class Controller
 
         // Build a list of active files first
         $log[] = __('Building list of active files...', 'sfxtheme');
-        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
 
         $attachments = get_posts([
             'post_type' => 'attachment',
@@ -606,12 +609,12 @@ class Controller
                         gc_collect_cycles();
                     }
                     $log[] = sprintf(__('Memory usage high, garbage collection triggered (%d times)', 'sfxtheme'), $memory_warnings);
-                    update_option('webp_conversion_log', array_slice((array)$log, -500));
+                    update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
 
                     // If warnings are excessive, break to avoid crashes
                     if ($memory_warnings > 5) {
                         $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
-                        update_option('webp_conversion_log', array_slice((array)$log, -500));
+                        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
                         return [
                             'deleted' => $deleted,
                             'failed' => $failed,
@@ -692,7 +695,7 @@ class Controller
         }
 
         $log[] = sprintf(__('Found %d active files to preserve', 'sfxtheme'), count($active_files));
-        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
 
         // Only proceed with deletion if we're not preserving originals
         if (!$preserve_originals) {
@@ -725,7 +728,7 @@ class Controller
                         // If warnings are excessive, break to avoid crashes
                         if ($memory_warnings > 5) {
                             $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
-                            update_option('webp_conversion_log', array_slice((array)$log, -500));
+                            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
                             return [
                                 'deleted' => $deleted,
                                 'failed' => $failed,
@@ -812,7 +815,7 @@ class Controller
         }
 
         $log[] = $summary;
-        update_option('webp_conversion_log', array_slice((array)$log, -500));
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
 
         return [
             'deleted' => $deleted,

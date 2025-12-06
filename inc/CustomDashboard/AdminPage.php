@@ -553,9 +553,9 @@ class AdminPage
         // $all_tab_fields to prevent any possibility of duplicate hidden fields
         $all_tab_fields = [];
         foreach ($tab_fields as $tab_key => $fields) {
-            // Skip the current tab's fields if it handles its own hidden fields
-            // This prevents any possibility of duplicate hidden fields
-            if ($tab_key === $current_tab && in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
+            // Skip ANY tab that handles its own hidden fields internally
+            // This prevents duplicate hidden fields regardless of which tab is currently active
+            if (in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
                 continue;
             }
             $all_tab_fields = array_merge($all_tab_fields, $fields);

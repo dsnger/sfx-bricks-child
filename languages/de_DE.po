@@ -3834,6 +3834,26 @@ msgid "Set Min Size"
 msgstr "Mindestgröße setzen"
 
 #: inc/ImageOptimizer/AdminPage.php
+msgid "Quality (1-100):"
+msgstr "Qualität (1-100):"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Quality"
+msgstr "Qualität setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Batch Size (images per request):"
+msgstr "Stapelgröße (Bilder pro Anfrage):"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Batch Size"
+msgstr "Stapelgröße setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "(Lower values for slower servers)"
+msgstr "(Niedrigere Werte für langsamere Server)"
+
+#: inc/ImageOptimizer/AdminPage.php
 msgid "Set to AVIF Conversion (not WebP)"
 msgstr "Auf AVIF-Konvertierung setzen (nicht WebP)"
 
@@ -3844,6 +3864,14 @@ msgstr "Originaldateien erhalten"
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Disable Auto-Conversion on Upload"
 msgstr "Automatische Konvertierung beim Upload deaktivieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Force Re-convert (ignore optimization stamp)"
+msgstr "Neukonvertierung erzwingen (Optimierungsstempel ignorieren)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Use this to re-process images that were already optimized with different settings."
+msgstr "Verwende dies, um Bilder, die bereits mit anderen Einstellungen optimiert wurden, erneut zu verarbeiten."
 
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Exclude Images"

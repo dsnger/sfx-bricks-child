@@ -2695,6 +2695,15 @@ CSS;
         $sanitized = [];
 
         foreach ($input as $item) {
+            // Handle legacy string format (just the widget ID)
+            if (is_string($item) && !empty($item)) {
+                $sanitized[] = [
+                    'id' => sanitize_key($item),
+                    'enabled' => true, // Default to enabled for legacy format
+                ];
+                continue;
+            }
+
             if (!is_array($item) || empty($item['id'])) {
                 continue;
             }
