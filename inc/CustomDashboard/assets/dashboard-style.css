@@ -10,11 +10,68 @@
 /* Full Page Background - applied via body class */
 body.index-php #wpcontent {
     background: hsl(var(--background));
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, margin-left 0.3s ease;
 }
 
 body.index-php #wpbody-content {
     padding-bottom: 0;
+}
+
+/* ========================================
+   Sidebar Offcanvas Toggle
+   ======================================== */
+
+/* Sidebar transition for smooth animation */
+body.index-php #adminmenuback,
+body.index-php #adminmenuwrap {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Collapsed sidebar state - support both html and body class for FOUC prevention */
+html.sfx-sidebar-collapsed #adminmenuback,
+html.sfx-sidebar-collapsed #adminmenuwrap,
+body.index-php.sfx-sidebar-collapsed #adminmenuback,
+body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+html.sfx-sidebar-collapsed #wpcontent,
+html.sfx-sidebar-collapsed #wpfooter,
+body.index-php.sfx-sidebar-collapsed #wpcontent,
+body.index-php.sfx-sidebar-collapsed #wpfooter {
+    margin-left: 0;
+}
+
+/* Prevent layout shift during transition */
+body.index-php.sfx-sidebar-transitioning #wpcontent,
+body.index-php.sfx-sidebar-transitioning #wpfooter {
+    transition: margin-left 0.3s ease;
+}
+
+/* Folded menu support */
+body.index-php.folded.sfx-sidebar-collapsed #wpcontent,
+body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
+    margin-left: 0;
+}
+
+/* Auto-fold menu support */
+@media screen and (max-width: 960px) {
+    body.index-php.auto-fold.sfx-sidebar-collapsed #wpcontent,
+    body.index-php.auto-fold.sfx-sidebar-collapsed #wpfooter {
+        margin-left: 0;
+    }
+}
+
+/* Mobile responsive - hide admin menu completely when collapsed */
+@media screen and (max-width: 782px) {
+    html.sfx-sidebar-collapsed #adminmenuback,
+    html.sfx-sidebar-collapsed #adminmenuwrap,
+    body.index-php.sfx-sidebar-collapsed #adminmenuback,
+    body.index-php.sfx-sidebar-collapsed #adminmenuwrap {
+        display: none;
+    }
 }
 
 /* Root wrapper */
@@ -294,17 +351,17 @@ body.index-php #wpbody-content {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: hsl(var(--muted));
+    background: hsl(var(--warning) / 0.15);
     border-radius: 20px;
     text-decoration: none;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--warning));
     font-size: 13px;
     transition: background 0.2s;
 }
 
 .sfx-update-item:hover {
-    background: hsl(var(--muted) / 0.8);
-    color: hsl(var(--foreground));
+    background: hsl(var(--warning) / 0.25);
+    color: hsl(var(--warning));
 }
 
 .sfx-update-item.sfx-update-critical {
@@ -410,11 +467,19 @@ body.index-php #wpbody-content {
     color: inherit;
 }
 
-/* Theme Toggle */
-.sfx-theme-toggle-wrapper {
+/* Welcome Toggles Container */
+.sfx-welcome-toggles {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Theme Toggle */
+.sfx-theme-toggle-wrapper {
+    display: flex;
 }
 
 .sfx-theme-toggle {
@@ -459,6 +524,52 @@ body.index-php #wpbody-content {
 }
 
 .sfx-dashboard-container[data-theme="system"] .sfx-theme-icon-system {
+    display: block;
+}
+
+/* Sidebar Toggle Button */
+.sfx-sidebar-toggle-wrapper {
+    display: flex;
+}
+
+.sfx-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: hsl(var(--primary-foreground) / 0.15);
+    border: 1px solid hsl(var(--primary-foreground) / 0.2);
+    border-radius: 50%;
+    color: hsl(var(--primary-foreground));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.sfx-sidebar-toggle:hover {
+    background: hsl(var(--primary-foreground) / 0.25);
+    transform: scale(1.05);
+}
+
+.sfx-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+.sfx-sidebar-icon {
+    width: 20px;
+    height: 20px;
+    display: none;
+}
+
+/* Show hamburger icon when sidebar is collapsed (to open it) */
+body.sfx-sidebar-collapsed .sfx-sidebar-icon-open {
+    display: block;
+}
+
+/* Show close icon when sidebar is visible (to close it) */
+body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: block;
 }
 
@@ -598,6 +709,7 @@ body.index-php #wpbody-content {
 }
 
 .sfx-quicklink-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -655,6 +767,90 @@ body.index-php #wpbody-content {
     transition: color 0.2s ease;
 }
 
+/* Role-restricted quicklink badges (visible to admins only) */
+.sfx-quicklink-role-badges {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    left: auto !important;
+    bottom: auto !important;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: flex-end;
+    max-width: 80%;
+    z-index: 10;
+}
+
+.sfx-quicklink-role-badge {
+    display: inline-block !important;
+    padding: 2px 5px !important;
+    font-size: 8px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px;
+    color: #fff !important;
+    background: rgba(59, 130, 246, 0.85) !important;
+    border-radius: 3px !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sfx-quicklink-card:hover .sfx-quicklink-role-badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #fff !important;
+}
+
+/* Quicklinks Groups - Stacked Layout */
+.sfx-quicklinks-group {
+    margin-bottom: 0;
+}
+
+.sfx-quicklinks-group-stacked {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid hsl(var(--border, 220 10% 85%) / 0.5);
+}
+
+.sfx-quicklinks-group-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: hsl(var(--foreground, 220 10% 10%));
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Group role badges (shown in group title - outlined style) */
+.sfx-group-role-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.sfx-group-role-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: hsl(var(--primary, 220 90% 50%));
+    background: transparent;
+    border: 1px solid hsl(var(--primary, 220 90% 50%) / 0.5);
+    border-radius: 3px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.sfx-group-role-badge:hover {
+    background: hsl(var(--primary, 220 90% 50%) / 0.1);
+    border-color: hsl(var(--primary, 220 90% 50%));
+}
+
 /* Info/Contact Section */
 .sfx-info-section {
     display: flex;
@@ -670,6 +866,89 @@ body.index-php #wpbody-content {
     border-radius: var(--sfx-radius, 8px);
     border: var(--sfx-border-width, 0px) solid hsl(var(--border));
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
+    box-sizing: border-box;
+}
+
+/* Tip Card - Secondary Color Schema */
+.sfx-tip-card {
+    background: hsl(var(--primary)/0.1);
+    border: 0.5px solid hsl(var(--primary)/0.4);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.sfx-tip-icon {
+    font-size: 2em;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.sfx-tip-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.sfx-tip-title {
+    margin: 0 0 8px 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: hsl(var(--secondary-foreground));
+}
+
+.sfx-tip-content {
+    color: hsl(var(--secondary-foreground));
+    font-size: 1.125em;
+    line-height: 1.6;
+}
+
+.sfx-tip-content kbd {
+    display: inline-block;
+    padding: 3px 8px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.85em;
+    line-height: 1;
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 4px;
+    box-shadow: 0 1px 1px hsl(var(--muted-foreground) / 0.1);
+}
+
+/* Clickable command shortcut button */
+.sfx-cmd-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-cmd-shortcut:hover {
+    transform: translateY(-1px);
+}
+
+.sfx-cmd-shortcut:hover kbd {
+    background: hsl(var(--primary) / 0.15);
+    border-color: hsl(var(--primary) / 0.4);
+    color: hsl(var(--primary));
+}
+
+.sfx-cmd-shortcut:active {
+    transform: translateY(0);
+}
+
+.sfx-cmd-shortcut:focus {
+    outline: 2px solid hsl(var(--primary) / 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .sfx-contact-logo {
@@ -975,11 +1254,18 @@ body.index-php #wpbody-content {
         font-size: 1em;
     }
     
-    .sfx-theme-toggle-wrapper {
+    .sfx-welcome-toggles {
         position: relative;
         top: 0;
         right: 0;
         margin-top: 15px;
+        justify-content: center;
+    }
+    
+    /* Adjust welcome section for mobile with toggles */
+    .sfx-welcome-section {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .sfx-quicklinks-grid {
@@ -1070,6 +1356,13 @@ body.index-php #wpbody-content {
     color: inherit;
 }
 
+.sfx-note-content h1,
+.sfx-note-content h2,
+.sfx-note-content h3 {
+    line-height: 1.2;
+}
+
+
 .sfx-note-content *:first-child {
     margin-top: 0;
 }
@@ -1139,4 +1432,38 @@ body.index-php #wpbody-content {
 .sfx-theme-transitioning,
 .sfx-theme-transitioning * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Sidebar transition effect */
+.sfx-sidebar-transitioning #adminmenuback,
+.sfx-sidebar-transitioning #adminmenuwrap,
+.sfx-sidebar-transitioning #wpcontent,
+.sfx-sidebar-transitioning #wpfooter {
+    transition: transform 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease !important;
+}
+
+/* Dashboard Footer */
+.sfx-dashboard-container .sfx-dashboard-footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid rgba(100, 105, 112, 0.25);
+    text-align: center;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sfx-text-muted, #646970);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s ease;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer a:hover {
+    color: #e91e63;
+}
+
+.sfx-dashboard-container .sfx-dashboard-footer svg {
+    color: #e91e63;
 }

@@ -61,6 +61,66 @@ class Controller
 
         // Inject custom dashboard
         add_action('admin_head-index.php', [$this, 'inject_custom_dashboard']);
+
+        // Add body class for sidebar state (prevent FOUC)
+        add_filter('admin_body_class', [$this, 'add_sidebar_body_class']);
+
+        // Add early inline script to prevent sidebar flash
+        add_action('admin_head-index.php', [$this, 'inject_sidebar_state_script'], 1);
+    }
+
+    /**
+     * Add sidebar collapsed class to body if needed
+     *
+     * @param string $classes
+     * @return string
+     */
+    public function add_sidebar_body_class(string $classes): string
+    {
+        global $pagenow;
+        
+        if ($pagenow !== 'index.php') {
+            return $classes;
+        }
+
+        $options = get_option(Settings::$option_name, []);
+        $sidebar_default = $options['sidebar_default_state'] ?? 'visible';
+        
+        if ($sidebar_default === 'collapsed') {
+            $classes .= ' sfx-sidebar-collapsed';
+        }
+
+        return $classes;
+    }
+
+    /**
+     * Inject early script to handle sidebar state from localStorage
+     *
+     * @return void
+     */
+    public function inject_sidebar_state_script(): void
+    {
+        $options = get_option(Settings::$option_name, []);
+        $sidebar_default = $options['sidebar_default_state'] ?? 'visible';
+        ?>
+        <script>
+        (function() {
+            var stored = localStorage.getItem('sfx-dashboard-sidebar');
+            var defaultState = '<?php echo esc_js($sidebar_default); ?>';
+            
+            // Use stored preference if available, otherwise fall back to default
+            var state = stored !== null ? stored : defaultState;
+            
+            if (state === 'collapsed') {
+                document.documentElement.classList.add('sfx-sidebar-collapsed');
+                document.body.classList.add('sfx-sidebar-collapsed');
+            } else if (state === 'visible') {
+                document.documentElement.classList.remove('sfx-sidebar-collapsed');
+                document.body.classList.remove('sfx-sidebar-collapsed');
+            }
+        })();
+        </script>
+        <?php
     }
 
     /**

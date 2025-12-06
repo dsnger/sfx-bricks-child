@@ -92,14 +92,16 @@ class DashboardRenderer
         // Determine which sections are visible
         $show_quicklinks = $this->is_enabled('show_quicklinks_section');
         $show_contact = $this->is_enabled('show_contact_section') && $this->has_contact_info();
+        $show_tip_card = $this->is_enabled('show_tip_card') && $this->has_tip_card_content();
+        $show_info_section = $show_contact || $show_tip_card;
         
         // Build grid classes
         $grid_classes = ['sfx-content-grid'];
-        if ($show_quicklinks && !$show_contact) {
+        if ($show_quicklinks && !$show_info_section) {
             $grid_classes[] = 'sfx-content-grid--quicklinks-only';
-        } elseif (!$show_quicklinks && $show_contact) {
+        } elseif (!$show_quicklinks && $show_info_section) {
             $grid_classes[] = 'sfx-content-grid--contact-only';
-        } elseif ($show_quicklinks && $show_contact) {
+        } elseif ($show_quicklinks && $show_info_section) {
             $grid_classes[] = 'sfx-content-grid--both';
         }
 
@@ -107,39 +109,48 @@ class DashboardRenderer
         $color_mode_default = $this->get_option('color_mode_default', 'light');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
 
+        // Get sidebar toggle settings
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
+        $sidebar_default_state = $this->get_option('sidebar_default_state', 'visible');
+
         ?>
         <!-- SFX Custom Dashboard -->
-        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>">
+        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
+            <?php $this->render_positioned_sections('below_header'); ?>
             <?php $this->render_status_bar(); ?>
+            <?php $this->render_positioned_sections('below_health_updates'); ?>
             <?php if ($this->is_enabled('show_stats_section')): ?>
                 <?php $this->render_stats_grid(); ?>
             <?php endif; ?>
+            <?php $this->render_positioned_sections('below_stats'); ?>
             
-            <?php if ($show_quicklinks || $show_contact): ?>
+            <?php if ($show_quicklinks || $show_info_section): ?>
             <div class="<?php echo esc_attr(implode(' ', $grid_classes)); ?>">
                 <?php if ($show_quicklinks): ?>
                     <?php $this->render_quicklinks(); ?>
                 <?php endif; ?>
                 
-                <?php if ($show_contact): ?>
-                    <?php $this->render_contact_info(); ?>
+                <?php if ($show_info_section): ?>
+                    <?php $this->render_info_section(); ?>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
+            <?php $this->render_positioned_sections('below_quicklinks'); ?>
 
             <?php if ($this->is_enabled('show_form_submissions_section')): ?>
                 <?php $this->render_form_submissions(); ?>
             <?php endif; ?>
 
-            <?php if ($this->is_enabled('show_note_section')): ?>
-                <?php $this->render_note_section(); ?>
-            <?php endif; ?>
+            <?php $this->render_positioned_sections('below_widgets'); ?>
 
-            <?php if ($this->is_enabled('show_dashboard_widgets')): ?>
-                <?php $this->render_dashboard_widgets(); ?>
-            <?php endif; ?>
+            <footer class="sfx-dashboard-footer">
+                <a href="https://smilefx.io" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg>
+                    <?php esc_html_e('Made by smilefx.io', 'sfxtheme'); ?>
+                </a>
+            </footer>
         </div>
         <?php
     }
@@ -307,6 +318,7 @@ class DashboardRenderer
         $subtitle = $this->get_option('dashboard_welcome_subtitle', __("Here's what's happening with your projects today.", 'sfxtheme'));
         $logo = $this->get_option('brand_logo', '');
         $allow_mode_switch = $this->is_enabled('allow_user_mode_switch');
+        $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
         
         // Replace placeholders with dynamic values
         $current_user = wp_get_current_user();
@@ -324,10 +336,40 @@ class DashboardRenderer
                 <h2 class="sfx-welcome-title"><?php echo esc_html($title); ?></h2>
                 <p class="sfx-welcome-subtitle"><?php echo esc_html($subtitle); ?></p>
             </div>
-            <?php if ($allow_mode_switch): ?>
-                <?php $this->render_theme_toggle(); ?>
+            <?php if ($allow_sidebar_toggle || $allow_mode_switch): ?>
+                <div class="sfx-welcome-toggles">
+                    <?php if ($allow_sidebar_toggle): ?>
+                        <?php $this->render_sidebar_toggle(); ?>
+                    <?php endif; ?>
+                    <?php if ($allow_mode_switch): ?>
+                        <?php $this->render_theme_toggle(); ?>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </section>
+        <?php
+    }
+
+    /**
+     * Render sidebar toggle button
+     *
+     * @return void
+     */
+    private function render_sidebar_toggle(): void
+    {
+        ?>
+        <div class="sfx-sidebar-toggle-wrapper">
+            <button type="button" class="sfx-sidebar-toggle" id="sfx-sidebar-toggle" aria-label="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>" title="<?php esc_attr_e('Toggle admin sidebar', 'sfxtheme'); ?>">
+                <!-- Hamburger icon (shown when sidebar is collapsed) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                <!-- Close icon (shown when sidebar is visible) -->
+                <svg class="sfx-sidebar-icon sfx-sidebar-icon-close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
         <?php
     }
 
@@ -506,42 +548,172 @@ class DashboardRenderer
     }
 
     /**
-     * Render quicklinks section
+     * Check if current user can see a quicklink based on role restrictions
+     *
+     * @param array<string, mixed> $link The quicklink data
+     * @return bool
+     */
+    private function user_can_see_quicklink(array $link): bool
+    {
+        $roles = $link['roles'] ?? [];
+
+        // Validate roles array is properly sanitized
+        if (!is_array($roles)) {
+            return false;
+        }
+
+        // If no roles specified or 'all' is selected, show to everyone
+        if (empty($roles) || in_array('all', $roles, true)) {
+            return true;
+        }
+
+        // Get current user's roles
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->exists()) {
+            return false;
+        }
+
+        $user_roles = (array) ($current_user->roles ?? []);
+        
+        // Sanitize user roles array
+        $user_roles = array_map('sanitize_key', $user_roles);
+        $roles = array_map('sanitize_key', $roles);
+        
+        // Check if user has at least one of the allowed roles
+        return !empty(array_intersect($roles, $user_roles));
+    }
+
+    /**
+     * Check if user can see a quicklink group
+     *
+     * @param array $group Group data with roles
+     * @return bool
+     */
+    private function user_can_see_group(array $group): bool
+    {
+        $roles = $group['roles'] ?? [];
+        
+        // Validate roles array is properly sanitized
+        if (!is_array($roles)) {
+            return false;
+        }
+        
+        // If no roles are specified, or 'all' is present, show to everyone
+        if (empty($roles) || in_array('all', $roles, true)) {
+            return true;
+        }
+
+        // Get current user's roles
+        $current_user = wp_get_current_user();
+        if (!$current_user || !$current_user->exists()) {
+            return false;
+        }
+
+        $user_roles = (array) ($current_user->roles ?? []);
+        
+        // Sanitize user roles array
+        $user_roles = array_map('sanitize_key', $user_roles);
+        $roles = array_map('sanitize_key', $roles);
+        
+        // Check if user has at least one of the allowed roles
+        return !empty(array_intersect($roles, $user_roles));
+    }
+
+    /**
+     * Render quicklinks section with groups support
      *
      * @return void
      */
     private function render_quicklinks(): void
     {
         $quicklinks_data = $this->get_option('quicklinks_sortable', []);
-        $all_quicklinks = Settings::get_ordered_quicklinks(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $groups = Settings::get_ordered_quicklink_groups(is_array($quicklinks_data) ? $quicklinks_data : []);
+        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
+        $available_roles = Settings::get_available_roles();
 
-        // Filter to only enabled links with valid title/url
-        $enabled_links = array_filter($all_quicklinks, function($link) {
-            return !empty($link['enabled']) && !empty($link['title']) && !empty($link['url']);
-        });
+        // Filter groups that user can see and have enabled links
+        $visible_groups = [];
+        foreach ($groups as $group) {
+            // Check group-level role restriction
+            if (!$this->user_can_see_group($group)) {
+                continue;
+            }
 
-        if (empty($enabled_links)) {
+            // Filter to only enabled links with valid title/url and user has permission
+            $enabled_links = array_filter($group['quicklinks'] ?? [], function($link) {
+                return !empty($link['enabled']) 
+                    && !empty($link['title']) 
+                    && !empty($link['url'])
+                    && $this->user_can_see_quicklink($link);
+            });
+
+            // Skip empty groups
+            if (!empty($enabled_links)) {
+                $visible_groups[] = [
+                    'group' => $group,
+                    'links' => $enabled_links,
+                ];
+            }
+        }
+
+        // Don't render anything if no visible groups
+        if (empty($visible_groups)) {
             return;
         }
 
-        $default_icon = Settings::DEFAULT_CUSTOM_ICON;
-
         ?>
         <section class="sfx-quicklinks-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Quick Actions', 'sfxtheme'); ?></h2>
-            <div class="sfx-quicklinks-grid">
-                <?php foreach ($enabled_links as $link): ?>
-                    <?php
-                    $url = $this->resolve_url($link['url'] ?? '');
-                    $icon = $link['icon'] ?? $default_icon;
-                    $title = $link['title'] ?? '';
-                    ?>
-                    <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card">
-                        <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
-                        <span class="sfx-quicklink-text"><?php echo esc_html($title); ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
+            <?php foreach ($visible_groups as $index => $group_data): 
+                $group = $group_data['group'];
+                $enabled_links = $group_data['links'];
+                $group_title = $group['title'] ?? __('Quick Actions', 'sfxtheme');
+                $group_roles = $group['roles'] ?? [];
+                $group_has_role_restriction = !empty($group_roles) && !in_array('all', $group_roles);
+            ?>
+                <div class="sfx-quicklinks-group<?php echo $index > 0 ? ' sfx-quicklinks-group-stacked' : ''; ?>">
+                    <h3 class="sfx-quicklinks-group-title">
+                        <?php echo esc_html($group_title); ?>
+                        <?php 
+                        // Show group role badges to admins
+                        if ($group_has_role_restriction && current_user_can('manage_options')): 
+                        ?>
+                            <span class="sfx-group-role-badges">
+                                <?php foreach ($group_roles as $role_slug): 
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                ?>
+                                    <span class="sfx-group-role-badge"><?php echo esc_html($role_name); ?></span>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
+                    </h3>
+                    <div class="sfx-quicklinks-grid">
+                        <?php foreach ($enabled_links as $link): 
+                            $url = $this->resolve_url($link['url'] ?? '');
+                            $icon = !empty($link['icon']) ? $link['icon'] : $default_icon;
+                            $title = $link['title'] ?? '';
+                            $roles = $link['roles'] ?? [];
+                            $has_role_restriction = !empty($roles) && !in_array('all', $roles);
+                            $role_badges = '';
+                            
+                            // Show role badges only to admins for restricted links
+                            if ($has_role_restriction && current_user_can('manage_options')) {
+                                $role_badges = '<div class="sfx-quicklink-role-badges">';
+                                foreach ($roles as $role_slug) {
+                                    $role_name = $available_roles[$role_slug] ?? $role_slug;
+                                    $role_badges .= '<span class="sfx-quicklink-role-badge">' . esc_html($role_name) . '</span>';
+                                }
+                                $role_badges .= '</div>';
+                            }
+                            ?>
+                            <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
+                                <?php echo $role_badges; ?>
+                                <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
+                                <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </section>
         <?php
     }
@@ -563,13 +735,39 @@ class DashboardRenderer
     }
 
     /**
+     * Check if tip card has content to display
+     *
+     * @return bool
+     */
+    private function has_tip_card_content(): bool
+    {
+        $content = $this->get_option('tip_card_content', __('You can use <button type="button" class="sfx-cmd-shortcut" data-shortcut="cmd+k"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to access the command tool to manage WordPress.', 'sfxtheme'));
+        return !empty($content);
+    }
+
+    /**
+     * Render info section (tip card and contact card wrapper)
+     *
+     * @return void
+     */
+    private function render_info_section(): void
+    {
+        ?>
+        <aside class="sfx-info-section">
+            <?php $this->render_tip_card(); ?>
+            <?php $this->render_contact_info(); ?>
+        </aside>
+        <?php
+    }
+
+    /**
      * Render contact info section
      *
      * @return void
      */
     private function render_contact_info(): void
     {
-        if (!$this->has_contact_info()) {
+        if (!$this->is_enabled('show_contact_section') || !$this->has_contact_info()) {
             return;
         }
 
@@ -580,14 +778,14 @@ class DashboardRenderer
         $phone = $this->get_option('contact_phone', '');
         $website = $this->get_option('contact_website', '');
         $address = $this->get_option('contact_address', '');
-        $logo = $this->get_option('brand_logo', '');
+        $logo = $this->get_option('contact_logo', '');
+        $logo_height = absint($this->get_option('contact_logo_height', 48));
 
         ?>
-        <aside class="sfx-info-section">
             <div class="sfx-info-card sfx-contact-info">
                 <?php if (!empty($logo)): ?>
                     <div class="sfx-contact-logo">
-                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" />
+                        <img src="<?php echo esc_url($logo); ?>" alt="<?php esc_attr_e('Agency Logo', 'sfxtheme'); ?>" style="height: <?php echo esc_attr($logo_height); ?>px; width: auto;" />
                     </div>
                 <?php endif; ?>
                 <h2 class="sfx-section-title"><?php echo esc_html($card_title); ?></h2>
@@ -647,7 +845,6 @@ class DashboardRenderer
                     <?php endif; ?>
                 </div>
             </div>
-        </aside>
         <?php
     }
 
@@ -711,9 +908,25 @@ class DashboardRenderer
      */
     private function render_dashboard_widgets(): void
     {
-        $enabled_widgets = $this->get_option('enabled_dashboard_widgets', []);
+        $widgets_data = $this->get_option('enabled_dashboard_widgets', []);
         
-        if (empty($enabled_widgets) || !is_array($enabled_widgets)) {
+        if (empty($widgets_data) || !is_array($widgets_data)) {
+            return;
+        }
+
+        // Extract enabled widget IDs in order
+        $enabled_widgets = [];
+        foreach ($widgets_data as $widget) {
+            // Support both old format (simple array of IDs) and new format (array of objects)
+            if (is_array($widget) && !empty($widget['enabled']) && !empty($widget['id'])) {
+                $enabled_widgets[] = $widget['id'];
+            } elseif (is_string($widget)) {
+                // Legacy format support
+                $enabled_widgets[] = $widget;
+            }
+        }
+
+        if (empty($enabled_widgets)) {
             return;
         }
 
@@ -724,7 +937,6 @@ class DashboardRenderer
 
         ?>
         <section class="sfx-wp-dashboard-widgets-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Dashboard Widgets', 'sfxtheme'); ?></h2>
             <div class="sfx-dashboard-widgets-grid">
                 <?php
                 foreach ($enabled_widgets as $widget_id) {
@@ -819,6 +1031,92 @@ class DashboardRenderer
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render the tip card
+     *
+     * @return void
+     */
+    private function render_tip_card(): void
+    {
+        if (!$this->is_enabled('show_tip_card')) {
+            return;
+        }
+
+        $title = $this->get_option('tip_card_title', __('Tip', 'sfxtheme'));
+        $content = $this->get_option('tip_card_content', __('You can use <button type="button" class="sfx-cmd-shortcut" data-shortcut="cmd+k"><kbd>Strg</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd></button> to access the command tool to manage WordPress.', 'sfxtheme'));
+
+        if (empty($content)) {
+            return;
+        }
+
+        ?>
+        <div class="sfx-info-card sfx-tip-card">
+            <span class="sfx-tip-icon">💡</span>
+            <div class="sfx-tip-body">
+                <?php if (!empty($title)): ?>
+                    <h3 class="sfx-tip-title"><?php echo esc_html($title); ?></h3>
+                <?php endif; ?>
+                <div class="sfx-tip-content">
+                    <?php echo wp_kses_post($content); ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render positioned sections (note and/or widgets) at a specific position
+     * 
+     * When both sections are positioned at the same location, note renders first,
+     * then widgets below it.
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_positioned_sections(string $position): void
+    {
+        $this->render_note_at_position($position);
+        $this->render_widgets_at_position($position);
+    }
+
+    /**
+     * Render note section at a specific position if enabled
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_note_at_position(string $position): void
+    {
+        if (!$this->is_enabled('show_note_section')) {
+            return;
+        }
+
+        $note_position = $this->get_option('note_position', 'below_quicklinks');
+        
+        if ($note_position === $position) {
+            $this->render_note_section();
+        }
+    }
+
+    /**
+     * Render dashboard widgets at a specific position if enabled
+     *
+     * @param string $position The position identifier
+     * @return void
+     */
+    private function render_widgets_at_position(string $position): void
+    {
+        if (!$this->is_enabled('show_dashboard_widgets')) {
+            return;
+        }
+
+        $widgets_position = $this->get_option('dashboard_widgets_position', 'below_widgets');
+        
+        if ($widgets_position === $position) {
+            $this->render_dashboard_widgets();
+        }
     }
 
     /**
