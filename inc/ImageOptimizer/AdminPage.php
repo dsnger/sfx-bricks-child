@@ -79,6 +79,20 @@ class AdminPage
                             <button id="set-min-size-kb" class="button"><?php esc_html_e('Set Min Size', 'sfxtheme'); ?></button>
                         </div>
                         <div style="margin-bottom: 20px;">
+                            <label for="quality-input" style="font-weight: bold;"><?php esc_html_e('Quality (1-100):', 'sfxtheme'); ?></label><br>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                                <input type="range" id="quality-slider" min="1" max="100" value="<?php echo esc_attr(Settings::get_quality()); ?>" style="width: 150px; height: 6px; cursor: pointer; -webkit-appearance: auto; appearance: auto;">
+                                <input type="number" id="quality-input" value="<?php echo esc_attr(Settings::get_quality()); ?>" min="1" max="100" style="width: 55px; padding: 5px; text-align: center;">
+                                <button id="set-quality" class="button"><?php esc_html_e('Set Quality', 'sfxtheme'); ?></button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label for="batch-size-input" style="font-weight: bold;"><?php esc_html_e('Batch Size (images per request):', 'sfxtheme'); ?></label><br>
+                            <input type="number" id="batch-size-input" value="<?php echo esc_attr(Settings::get_batch_size()); ?>" min="1" max="50" style="width: 50px; margin-right: 10px; padding: 5px;">
+                            <button id="set-batch-size" class="button"><?php esc_html_e('Set Batch Size', 'sfxtheme'); ?></button>
+                            <span style="color: #666; font-size: 12px; margin-left: 10px;"><?php esc_html_e('(Lower values for slower servers)', 'sfxtheme'); ?></span>
+                        </div>
+                        <div style="margin-bottom: 20px;">
                             <label><input type="checkbox" id="use-avif" <?php echo Settings::get_use_avif() ? 'checked' : ''; ?>> <?php esc_html_e('Set to AVIF Conversion (not WebP)', 'sfxtheme'); ?></label>
                         </div>
                         <div style="margin-bottom: 20px;">
@@ -86,6 +100,10 @@ class AdminPage
                         </div>
                         <div style="margin-bottom: 20px;">
                             <label><input type="checkbox" id="disable-auto-conversion" <?php echo Settings::get_disable_auto_conversion() ? 'checked' : ''; ?>> <?php esc_html_e('Disable Auto-Conversion on Upload', 'sfxtheme'); ?></label>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label><input type="checkbox" id="force-reconvert"> <?php esc_html_e('Force Re-convert (ignore optimization stamp)', 'sfxtheme'); ?></label>
+                            <span style="color: #666; font-size: 12px; display: block; margin-top: 3px;"><?php esc_html_e('Use this to re-process images that were already optimized with different settings.', 'sfxtheme'); ?></span>
                         </div>
                         <div style="margin-bottom: 20px; display: flex; gap: 10px;">
                             <button id="start-conversion" class="button"><?php _e('1. Convert/Scale', 'sfxtheme'); ?></button>

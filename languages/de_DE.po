@@ -4064,3 +4064,27 @@ msgstr "Der Code für diese Funktion basiert auf und ist inspiriert von %s"
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Support Imran"
 msgstr "Imran unterstützen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Create multiple groups of quick links. Drag groups to reorder them, or drag links between groups."
+msgstr "Erstellen Sie mehrere Gruppen von Schnelllinks. Ziehen Sie Gruppen, um sie neu anzuordnen, oder ziehen Sie Links zwischen Gruppen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Manage quick action links that appear on your dashboard."
+msgstr "Verwalten Sie Schnellaktions-Links, die auf Ihrem Dashboard angezeigt werden."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add contact information to display on your dashboard."
+msgstr "Fügen Sie Kontaktinformationen hinzu, die auf Ihrem Dashboard angezeigt werden."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Groups: Each group appears as a separate section on the dashboard. Set group roles to restrict who can see the entire group."
+msgstr "Gruppen: Jede Gruppe erscheint als separater Abschnitt im Dashboard. Legen Sie Gruppenrollen fest, um einzuschränken, wer die gesamte Gruppe sehen kann."
+
+#: inc/CustomDashboard/Settings.php
+msgid "URL: Use admin paths (e.g., \"edit.php\") or placeholders: {admin_url}, {site_url}, {home_url}"
+msgstr "URL: Verwenden Sie Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {admin_url}, {site_url}, {home_url}"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Icon: Paste SVG code. Heroicons (outline style, 24x24) recommended."
+msgstr "Icon: SVG-Code einfügen. Heroicons (Outline-Stil, 24x24) empfohlen."

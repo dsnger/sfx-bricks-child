@@ -54,8 +54,11 @@ if (file_exists($environment_file)) {
 // Load theme functionality
 require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
 
-$sfx_child_theme = new \SFX\SFXBricksChildTheme();
-$sfx_child_theme->init();
+// Initialize theme after WordPress is ready
+add_action('after_setup_theme', function() {
+    $sfx_child_theme = new \SFX\SFXBricksChildTheme();
+    $sfx_child_theme->init();
+}, 1); // Priority 1 to run early but after WordPress core setup
 
 // Initialize theme updater
 require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';

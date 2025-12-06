@@ -20,6 +20,8 @@ class Ajax
         add_action('wp_ajax_webp_reset_defaults', [self::class, 'reset_defaults']);
         add_action('wp_ajax_webp_get_excluded_images', [self::class, 'get_excluded_images']);
         add_action('wp_ajax_webp_set_min_size_kb', [self::class, 'set_min_size_kb']);
+        add_action('wp_ajax_webp_set_quality', [self::class, 'set_quality']);
+        add_action('wp_ajax_webp_set_batch_size', [self::class, 'set_batch_size']);
         add_action('wp_ajax_webp_set_use_avif', [self::class, 'set_use_avif']);
         add_action('wp_ajax_webp_set_preserve_originals', [self::class, 'set_preserve_originals']);
         add_action('wp_ajax_webp_set_disable_auto_conversion', [self::class, 'set_disable_auto_conversion']);
@@ -104,6 +106,25 @@ class Ajax
                 continue;
             }
             $metadata = wp_get_attachment_metadata($attachment_id);
+            
+            // Build expected stamp from current settings
+            $expected_stamp = [
+                'format'      => $use_avif ? 'avif' : 'webp',
+                'quality'     => $current_quality,
+                'resize_mode' => $mode,
+                'max_values'  => $max_values,
+            ];
+            
+            $existing_stamp = isset($metadata['pixrefiner_stamp']) ? $metadata['pixrefiner_stamp'] : null;
+            
+            // Skip if already optimized with current settings (unless force reconvert)
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified at method start
+            $force_reconvert = isset($_GET['force_reconvert']) && filter_var($_GET['force_reconvert'], FILTER_VALIDATE_BOOLEAN);
+            if (!empty($existing_stamp) && $existing_stamp === $expected_stamp && !$force_reconvert) {
+                $log[] = sprintf(__('Skipped: Already optimized with current settings - Attachment ID %d', 'sfxtheme'), $attachment_id);
+                continue;
+            }
+            
             $existing_quality = isset($metadata['webp_quality']) ? (int) $metadata['webp_quality'] : null;
             $current_extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
             $is_current_format = $current_extension === ($use_avif ? 'avif' : 'webp');
@@ -223,6 +244,10 @@ class Ajax
                         }
                     }
                     $metadata['webp_quality'] = $current_quality;
+                    
+                    // Add PixRefiner stamp to track optimization state
+                    $metadata['pixrefiner_stamp'] = $expected_stamp;
+                    
                     wp_update_attachment_metadata($attachment_id, $metadata);
                 } else {
                     $log[] = sprintf(__('Error: Metadata regeneration failed for %s', 'sfxtheme'), basename($file_path));
@@ -381,39 +406,91 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
+
         $log = get_option('webp_conversion_log', []);
         $use_avif = Settings::get_use_avif();
         $extension = $use_avif ? 'avif' : 'webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        
+        // Get all public post types + FSE templates
+        $public_post_types = get_post_types(['public' => true], 'names');
+        $fse_post_types = ['wp_template', 'wp_template_part', 'wp_block'];
+        $post_types = array_unique(array_merge($public_post_types, $fse_post_types));
+        
         $args = [
-            'post_type' => ['post', 'page'],
+            'post_type' => $post_types,
             'post_status' => 'any',
             'posts_per_page' => -1,
             'fields' => 'ids',
         ];
         $posts = get_posts($args);
-        $updated = 0;
+        
+        if (!$posts) {
+            $log[] = __('No posts/pages/templates found', 'sfxtheme');
+            update_option('webp_conversion_log', array_slice((array)$log, -500));
+            wp_send_json_success(['message' => __('No posts found', 'sfxtheme')]);
+            return;
+        }
+        
+        $upload_dir = wp_upload_dir();
+        $upload_baseurl = $upload_dir['baseurl'];
+        $upload_basedir = $upload_dir['basedir'];
+        $updated_count = 0;
+        $checked_images = 0;
+        $changed_links = 0;
+        
         foreach ($posts as $post_id) {
-            $content = get_post_field('post_content', $post_id);
-            $new_content = preg_replace_callback(
-                '/(wp-content\\/uploads\\/[^"\'>]+)\\.(jpg|jpeg|png|webp|avif)/i',
-                function ($matches) use ($extension) {
-                    return $matches[1] . '.' . $extension;
+            $type = get_post_type($post_id);
+            
+            // Skip Bricks Builder internal types
+            if (strpos($type, 'bricks_') === 0) {
+                continue;
+            }
+            
+            // Get clean title (strip HTML br tags properly)
+            $title_raw = get_the_title($post_id);
+            $clean_title_html = preg_replace('/<\/?br\s*\/?>/i', ' ', $title_raw);
+            $title = trim(preg_replace('/\s+/', ' ', wp_strip_all_tags($clean_title_html)));
+            
+            $original_content = get_post_field('post_content', $post_id);
+            $content = $original_content;
+            
+            // Replace image URLs in <img> tags
+            $content = preg_replace_callback(
+                '/<img[^>]+src=["\']([^"\']+\.(?:jpg|jpeg|png))["\'][^>]*>/i',
+                function ($matches) use (&$checked_images, $upload_baseurl, $upload_basedir, $extension) {
+                    return self::replace_image_url_in_tag($matches, $checked_images, $upload_baseurl, $upload_basedir, $extension);
                 },
                 $content
             );
-            if ($new_content !== $content) {
-                wp_update_post([
-                    'ID' => $post_id,
-                    'post_content' => $new_content,
-                ]);
-                $updated++;
-                $log[] = sprintf(__('Updated image URLs in post ID %d', 'sfxtheme'), $post_id);
+            
+            // Replace image URLs in <a> tags
+            $content = preg_replace_callback(
+                '/<a[^>]+href=["\']([^"\']+\.(?:jpg|jpeg|png))["\'][^>]*>/i',
+                function ($matches) use (&$checked_images, &$changed_links, $upload_baseurl, $upload_basedir, $extension) {
+                    return self::replace_image_url_in_link($matches, $checked_images, $changed_links, $upload_baseurl, $upload_basedir, $extension);
+                },
+                $content
+            );
+            
+            // Save if changed
+            if ($content !== $original_content) {
+                wp_update_post(['ID' => $post_id, 'post_content' => $content]);
+                $updated_count++;
+                $log[] = sprintf(__('Updated: %s - %s', 'sfxtheme'), esc_html($type), esc_html($title));
             }
+            
+            // Process custom post type meta fields
+            if (!in_array($type, ['post', 'page'], true)) {
+                $updated_count += self::fix_meta_field_urls($post_id, $upload_baseurl, $upload_basedir, $extension, $log, $checked_images, $changed_links);
+            }
+            
+            // Update post thumbnail if needed
+            self::fix_post_thumbnail($post_id, $extension, $use_avif, $log);
         }
-        $log[] = sprintf(__('Fix URLs complete. %d posts updated.', 'sfxtheme'), $updated);
+        
+        $log[] = sprintf(__('Checked %d images, updated %d items, changed %d links', 'sfxtheme'), $checked_images, $updated_count, $changed_links);
         update_option('webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['message' => sprintf(__('Fix URLs complete. %d posts updated.', 'sfxtheme'), $updated)]);
+        wp_send_json_success(['message' => sprintf(__('Checked %d images, updated %d items', 'sfxtheme'), $checked_images, $updated_count)]);
     }
 
     public static function set_max_widths(): void
@@ -510,6 +587,38 @@ class Ajax
         update_option('sfx_webp_min_size_kb', $min_size);
         $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Min size set to: %dKB', 'sfxtheme'), $min_size);
+        $log[] = $log_message;
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        wp_send_json_success(['message' => $log_message]);
+    }
+
+    public static function set_quality(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
+        }
+        $quality = isset($_POST['quality']) ? absint($_POST['quality']) : 80;
+        $quality = max(1, min(100, $quality)); // Clamp between 1-100
+        update_option('sfx_webp_quality', $quality);
+        $log = get_option('sfx_webp_conversion_log', []);
+        $log_message = sprintf(__('Quality set to: %d', 'sfxtheme'), $quality);
+        $log[] = $log_message;
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        wp_send_json_success(['message' => $log_message]);
+    }
+
+    public static function set_batch_size(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'sfxtheme'));
+        }
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 5;
+        $batch_size = max(1, min(50, $batch_size)); // Clamp between 1-50
+        update_option('sfx_webp_batch_size', $batch_size);
+        $log = get_option('sfx_webp_conversion_log', []);
+        $log_message = sprintf(__('Batch size set to: %d', 'sfxtheme'), $batch_size);
         $log[] = $log_message;
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
         wp_send_json_success(['message' => $log_message]);
@@ -644,6 +753,198 @@ class Ajax
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
+        }
+    }
+
+    /**
+     * Replace image URL in <img> tag, checking for -scaled variants
+     *
+     * @param array  $matches         Regex matches
+     * @param int    $checked_images  Counter for checked images (passed by reference)
+     * @param string $upload_baseurl  Base URL for uploads directory
+     * @param string $upload_basedir  Base directory for uploads
+     * @param string $extension       Target file extension (webp or avif)
+     * @return string Modified tag or original if no replacement found
+     */
+    private static function replace_image_url_in_tag(array $matches, int &$checked_images, string $upload_baseurl, string $upload_basedir, string $extension): string
+    {
+        $original_url = $matches[1];
+        
+        // Skip external images
+        if (strpos($original_url, $upload_baseurl) !== 0) {
+            return $matches[0];
+        }
+        
+        $checked_images++;
+        
+        $dirname = pathinfo($original_url, PATHINFO_DIRNAME);
+        $filename = pathinfo($original_url, PATHINFO_FILENAME);
+        
+        // Try direct replacement
+        $new_url = $dirname . '/' . $filename . '.' . $extension;
+        $scaled_url = $dirname . '/' . $filename . '-scaled.' . $extension;
+        
+        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $scaled_url))) {
+            return str_replace($original_url, $scaled_url, $matches[0]);
+        }
+        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $new_url))) {
+            return str_replace($original_url, $new_url, $matches[0]);
+        }
+        
+        // Try base name fallback (remove size suffix like -1920x1080)
+        $base_name = preg_replace('/(-\d+x\d+|-scaled)$/', '', $filename);
+        $fallback_url = $dirname . '/' . $base_name . '.' . $extension;
+        $fallback_scaled_url = $dirname . '/' . $base_name . '-scaled.' . $extension;
+        
+        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $fallback_scaled_url))) {
+            return str_replace($original_url, $fallback_scaled_url, $matches[0]);
+        }
+        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $fallback_url))) {
+            return str_replace($original_url, $fallback_url, $matches[0]);
+        }
+        
+        return $matches[0];
+    }
+
+    /**
+     * Replace image URL in <a> tag
+     *
+     * @param array  $matches         Regex matches
+     * @param int    $checked_images  Counter for checked images (passed by reference)
+     * @param int    $changed_links   Counter for changed links (passed by reference)
+     * @param string $upload_baseurl  Base URL for uploads directory
+     * @param string $upload_basedir  Base directory for uploads
+     * @param string $extension       Target file extension (webp or avif)
+     * @return string Modified tag or original if no replacement found
+     */
+    private static function replace_image_url_in_link(array $matches, int &$checked_images, int &$changed_links, string $upload_baseurl, string $upload_basedir, string $extension): string
+    {
+        $result = self::replace_image_url_in_tag($matches, $checked_images, $upload_baseurl, $upload_basedir, $extension);
+        if ($result !== $matches[0]) {
+            $changed_links++;
+        }
+        return $result;
+    }
+
+    /**
+     * Fix image URLs in custom post type meta fields
+     *
+     * @param int    $post_id         Post ID
+     * @param string $upload_baseurl  Base URL for uploads directory
+     * @param string $upload_basedir  Base directory for uploads
+     * @param string $extension       Target file extension (webp or avif)
+     * @param array  $log             Log array (passed by reference)
+     * @param int    $checked_images  Counter for checked images (passed by reference)
+     * @param int    $changed_links   Counter for changed links (passed by reference)
+     * @return int Number of updated meta fields
+     */
+    private static function fix_meta_field_urls(int $post_id, string $upload_baseurl, string $upload_basedir, string $extension, array &$log, int &$checked_images, int &$changed_links): int
+    {
+        $updated = 0;
+        $meta_fields = get_post_meta($post_id);
+        
+        foreach ($meta_fields as $meta_key => $meta_values) {
+            // Skip internal WordPress and Bricks meta keys
+            if (strpos($meta_key, '_') === 0 && strpos($meta_key, '_bricks_') !== 0) {
+                continue;
+            }
+            
+            foreach ($meta_values as $meta_value) {
+                // Only process strings with potential image URLs
+                if (!is_string($meta_value) || (stripos($meta_value, '.jpg') === false && stripos($meta_value, '.jpeg') === false && stripos($meta_value, '.png') === false)) {
+                    continue;
+                }
+                
+                $original_meta = $meta_value;
+                
+                // Replace URLs in meta value
+                $meta_value = preg_replace_callback(
+                    '/(https?:\/\/[^\s"\'<>]+\.(?:jpg|jpeg|png))/i',
+                    function ($matches) use (&$checked_images, &$changed_links, $upload_baseurl, $upload_basedir, $extension) {
+                        $original_url = $matches[1];
+                        
+                        // Skip external images
+                        if (strpos($original_url, $upload_baseurl) !== 0) {
+                            return $matches[0];
+                        }
+                        
+                        $checked_images++;
+                        
+                        $dirname = pathinfo($original_url, PATHINFO_DIRNAME);
+                        $filename = pathinfo($original_url, PATHINFO_FILENAME);
+                        $new_url = $dirname . '/' . $filename . '.' . $extension;
+                        $scaled_url = $dirname . '/' . $filename . '-scaled.' . $extension;
+                        
+                        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $scaled_url))) {
+                            $changed_links++;
+                            return $scaled_url;
+                        }
+                        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $new_url))) {
+                            $changed_links++;
+                            return $new_url;
+                        }
+                        
+                        // Try base name fallback
+                        $base_name = preg_replace('/(-\d+x\d+|-scaled)$/', '', $filename);
+                        $fallback_url = $dirname . '/' . $base_name . '.' . $extension;
+                        $fallback_scaled_url = $dirname . '/' . $base_name . '-scaled.' . $extension;
+                        
+                        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $fallback_scaled_url))) {
+                            $changed_links++;
+                            return $fallback_scaled_url;
+                        }
+                        if (file_exists(str_replace($upload_baseurl, $upload_basedir, $fallback_url))) {
+                            $changed_links++;
+                            return $fallback_url;
+                        }
+                        
+                        return $matches[0];
+                    },
+                    $meta_value
+                );
+                
+                if ($meta_value !== $original_meta) {
+                    update_post_meta($post_id, $meta_key, $meta_value);
+                    $updated++;
+                    $log[] = sprintf(__('Updated meta field "%s" in post ID %d', 'sfxtheme'), sanitize_key($meta_key), $post_id);
+                }
+            }
+        }
+        
+        return $updated;
+    }
+
+    /**
+     * Fix post thumbnail format
+     *
+     * @param int    $post_id    Post ID
+     * @param string $extension  Target file extension (webp or avif)
+     * @param bool   $use_avif   Whether to use AVIF format
+     * @param array  $log        Log array (passed by reference)
+     * @return void
+     */
+    private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log): void
+    {
+        $thumbnail_id = get_post_thumbnail_id($post_id);
+        
+        if (!$thumbnail_id || in_array($thumbnail_id, Settings::get_excluded_images(), true)) {
+            return;
+        }
+        
+        $thumbnail_path = get_attached_file($thumbnail_id);
+        
+        if (!$thumbnail_path || str_ends_with($thumbnail_path, '.' . $extension)) {
+            return;
+        }
+        
+        $new_path = preg_replace('/\.(jpg|jpeg|png)$/i', '.' . $extension, $thumbnail_path);
+        
+        if (file_exists($new_path)) {
+            update_attached_file($thumbnail_id, $new_path);
+            wp_update_post(['ID' => $thumbnail_id, 'post_mime_type' => $use_avif ? 'image/avif' : 'image/webp']);
+            $metadata = wp_generate_attachment_metadata($thumbnail_id, $new_path);
+            wp_update_attachment_metadata($thumbnail_id, $metadata);
+            $log[] = sprintf(__('Updated thumbnail: %s → %s', 'sfxtheme'), basename($thumbnail_path), basename($new_path));
         }
     }
 } 

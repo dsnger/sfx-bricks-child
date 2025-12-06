@@ -353,6 +353,15 @@ class Controller
                     }
                 }
                 $metadata['webp_quality'] = Settings::get_quality();
+                
+                // Add PixRefiner stamp to track optimization state
+                $metadata['pixrefiner_stamp'] = [
+                    'format'      => $use_avif ? 'avif' : 'webp',
+                    'quality'     => Settings::get_quality(),
+                    'resize_mode' => $mode,
+                    'max_values'  => array_values($valid_max_values),
+                ];
+                
                 update_attached_file($attachment_id, $upload['file']);
                 wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
                 wp_update_attachment_metadata($attachment_id, $metadata);
@@ -535,6 +544,15 @@ class Controller
                 'mime-type' => $format
             ];
         }
+
+        // Add PixRefiner stamp to track optimization state
+        $metadata['pixrefiner_stamp'] = [
+            'format'      => $use_avif ? 'avif' : 'webp',
+            'quality'     => Settings::get_quality(),
+            'resize_mode' => $mode,
+            'max_values'  => $max_values,
+        ];
+
         return $metadata;
     }
 

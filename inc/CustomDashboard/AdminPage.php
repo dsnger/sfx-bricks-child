@@ -117,10 +117,14 @@ class AdminPage
                 settings_fields(Settings::$option_group);
                 
                 // Render visible tab content
+                // Note: Tabs with subtabs (sections, brand) handle their own hidden fields
+                // internally via render_*_hidden_fields() methods
                 self::render_tab_content($current_tab);
                 
-                // Include hidden fields for all other tabs to preserve their values
-                self::render_hidden_fields($current_tab);
+                // Include hidden fields for OTHER tabs to preserve their values
+                // Tabs with subtabs handle their own fields, so we pass them to be excluded
+                $tabs_with_internal_hidden_fields = ['sections', 'brand'];
+                self::render_hidden_fields($current_tab, $tabs_with_internal_hidden_fields);
                 
                 submit_button();
                 ?>
@@ -530,19 +534,30 @@ class AdminPage
     /**
      * Render hidden fields for tabs not currently visible
      *
-     * @param string $current_tab
+     * @param string $current_tab Current active tab
+     * @param array $tabs_with_internal_hidden_fields Tabs that handle their own hidden fields
      * @return void
      */
-    private static function render_hidden_fields(string $current_tab): void
+    private static function render_hidden_fields(string $current_tab, array $tabs_with_internal_hidden_fields = []): void
     {
         $options = get_option(Settings::$option_name, []);
         $all_fields = Settings::get_fields();
         $tab_fields = Settings::get_tab_fields_map();
+        
+        // Start with current tab's fields as "already handled"
         $current_fields = $tab_fields[$current_tab] ?? [];
 
         // Get all tab fields to check against
+        // For tabs with subtabs (sections, brand), their hidden fields are already rendered
+        // by their respective render_*_hidden_fields() methods, so we exclude them from
+        // $all_tab_fields to prevent any possibility of duplicate hidden fields
         $all_tab_fields = [];
-        foreach ($tab_fields as $fields) {
+        foreach ($tab_fields as $tab_key => $fields) {
+            // Skip the current tab's fields if it handles its own hidden fields
+            // This prevents any possibility of duplicate hidden fields
+            if ($tab_key === $current_tab && in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
+                continue;
+            }
             $all_tab_fields = array_merge($all_tab_fields, $fields);
         }
 
