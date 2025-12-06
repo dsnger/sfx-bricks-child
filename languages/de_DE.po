@@ -3834,6 +3834,26 @@ msgid "Set Min Size"
 msgstr "Mindestgröße setzen"
 
 #: inc/ImageOptimizer/AdminPage.php
+msgid "Quality (1-100):"
+msgstr "Qualität (1-100):"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Quality"
+msgstr "Qualität setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Batch Size (images per request):"
+msgstr "Stapelgröße (Bilder pro Anfrage):"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Set Batch Size"
+msgstr "Stapelgröße setzen"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "(Lower values for slower servers)"
+msgstr "(Niedrigere Werte für langsamere Server)"
+
+#: inc/ImageOptimizer/AdminPage.php
 msgid "Set to AVIF Conversion (not WebP)"
 msgstr "Auf AVIF-Konvertierung setzen (nicht WebP)"
 
@@ -3844,6 +3864,14 @@ msgstr "Originaldateien erhalten"
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Disable Auto-Conversion on Upload"
 msgstr "Automatische Konvertierung beim Upload deaktivieren"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Force Re-convert (ignore optimization stamp)"
+msgstr "Neukonvertierung erzwingen (Optimierungsstempel ignorieren)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Use this to re-process images that were already optimized with different settings."
+msgstr "Verwende dies, um Bilder, die bereits mit anderen Einstellungen optimiert wurden, erneut zu verarbeiten."
 
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Exclude Images"
@@ -4064,3 +4092,27 @@ msgstr "Der Code für diese Funktion basiert auf und ist inspiriert von %s"
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Support Imran"
 msgstr "Imran unterstützen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Create multiple groups of quick links. Drag groups to reorder them, or drag links between groups."
+msgstr "Erstellen Sie mehrere Gruppen von Schnelllinks. Ziehen Sie Gruppen, um sie neu anzuordnen, oder ziehen Sie Links zwischen Gruppen."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Manage quick action links that appear on your dashboard."
+msgstr "Verwalten Sie Schnellaktions-Links, die auf Ihrem Dashboard angezeigt werden."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Add contact information to display on your dashboard."
+msgstr "Fügen Sie Kontaktinformationen hinzu, die auf Ihrem Dashboard angezeigt werden."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Groups: Each group appears as a separate section on the dashboard. Set group roles to restrict who can see the entire group."
+msgstr "Gruppen: Jede Gruppe erscheint als separater Abschnitt im Dashboard. Legen Sie Gruppenrollen fest, um einzuschränken, wer die gesamte Gruppe sehen kann."
+
+#: inc/CustomDashboard/Settings.php
+msgid "URL: Use admin paths (e.g., \"edit.php\") or placeholders: {admin_url}, {site_url}, {home_url}"
+msgstr "URL: Verwenden Sie Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {admin_url}, {site_url}, {home_url}"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Icon: Paste SVG code. Heroicons (outline style, 24x24) recommended."
+msgstr "Icon: SVG-Code einfügen. Heroicons (Outline-Stil, 24x24) empfohlen."
