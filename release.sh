@@ -387,11 +387,20 @@ main() {
     fi
     
     # Check if version is newer (compare base versions)
+    # Allow re-releasing same RC version (for rebuilds without version bump)
     local base_new_version="${new_version%_rc}"
     local base_current_version="${current_version%_rc}"
-    if [ "$base_new_version" = "$base_current_version" ] && [ "$new_version" = "$current_version" ]; then
+    if [ "$base_new_version" = "$base_current_version" ] && [ "$new_version" = "$current_version" ] && [ "$is_rc" != true ]; then
         print_error "Version ${new_version} is already the current version"
         exit 1
+    fi
+    
+    # For RC re-releases with same version, skip version update
+    if [ "$new_version" = "$current_version" ] && [ "$is_rc" = true ]; then
+        print_warning "Re-releasing RC version ${new_version} (no version update)"
+        SKIP_VERSION_UPDATE=true
+    else
+        SKIP_VERSION_UPDATE=false
     fi
     
     NEW_VERSION="$new_version"  # Make it available for rollback function
@@ -412,29 +421,33 @@ main() {
     # Check git status
     check_git_status
     
-    # Update version in style.css
-    print_status "Updating version in ${STYLE_FILE}..."
-    update_version "${new_version}"
-    
-    # Update changelog
-    print_status "Updating changelog..."
-    update_changelog "${new_version}" "$release_notes_arg"
-    
-    # Commit changes
-    print_status "Committing changes..."
-    git add "${STYLE_FILE}" "${CHANGELOG_FILE}"
-    local commit_msg="Release v${new_version}
+    # Update version in style.css (skip if re-releasing same RC version)
+    if [ "$SKIP_VERSION_UPDATE" != true ]; then
+        print_status "Updating version in ${STYLE_FILE}..."
+        update_version "${new_version}"
+        
+        # Update changelog
+        print_status "Updating changelog..."
+        update_changelog "${new_version}" "$release_notes_arg"
+        
+        # Commit changes
+        print_status "Committing changes..."
+        git add "${STYLE_FILE}" "${CHANGELOG_FILE}"
+        local commit_msg="Release v${new_version}
 
 - Updated version to ${new_version}
 - Updated changelog with release notes
 - Automated release process"
-    
-    if [ "$is_rc" = true ]; then
-        commit_msg="${commit_msg}
+        
+        if [ "$is_rc" = true ]; then
+            commit_msg="${commit_msg}
 - Release Candidate (not published)"
+        fi
+        
+        git commit -m "$commit_msg"
+    else
+        print_status "Skipping version and changelog updates (re-releasing same RC version)"
     fi
-    
-    git commit -m "$commit_msg"
 
     # Create git tag (skip push if RC)
     NEW_TAG="v${new_version}"
