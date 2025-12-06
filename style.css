@@ -450,8 +450,8 @@ body {
   }
 
   &.bricks-background-muted {
-    &:hover { background-color: color-mix(in oklab, var(--dark-gray) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--dark-gray) 75%, black); }
+    &:hover { background-color: color-mix(in oklab, var(--muted) 85%, black); }
+    &:active { background-color: color-mix(in oklab, var(--muted) 75%, black); }
   }
 
   &.bricks-background-info {
@@ -514,11 +514,11 @@ body {
     }
 
     &.bricks-color-muted {
-      border-color: var(--dark-gray);
-      color: var(--dark-gray);
+      border-color: var(--muted);
+      color: var(--muted);
 
       &:hover {
-        background-color: var(--dark-gray);
+        background-color: var(--muted);
         color: var(--dark, #1a1a1a);
       }
     }
