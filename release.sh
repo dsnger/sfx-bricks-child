@@ -154,15 +154,20 @@ check_git_status() {
 # Function to create git tag and push
 create_git_tag() {
     local version=$1
+    local skip_publish=$2
     local tag_name="v${version}"
     
     print_status "Creating git tag: ${tag_name}"
     git tag -a "${tag_name}" -m "${tag_name} - Release"
     
-    print_status "Pushing tag to remote..."
-    git push origin "${tag_name}"
-    
-    print_success "Git tag created and pushed: ${tag_name}"
+    if [ "$skip_publish" = "true" ]; then
+        print_warning "Skipping tag push (RC release - not publishing)"
+        print_success "Git tag created locally: ${tag_name}"
+    else
+        print_status "Pushing tag to remote..."
+        git push origin "${tag_name}"
+        print_success "Git tag created and pushed: ${tag_name}"
+    fi
 }
 
 # Function to build theme
@@ -265,12 +270,14 @@ EOF
 
 # Function to show usage
 show_usage() {
-    echo "Usage: $0 <version> [release_notes]"
+    echo "Usage: $0 <version> [release_notes] [--rc]"
     echo ""
     echo "Examples:"
     echo "  $0 0.4.61                                    # Interactive release notes"
     echo "  $0 0.4.61 \"Bug fixes and improvements\"      # Custom release notes"
     echo "  $0 1.0.0                                     # Interactive release notes"
+    echo "  $0 0.4.61 \"\" --rc                           # Release candidate (adds _rc suffix, no publish)"
+    echo "  $0 0.4.61_rc                                 # RC version (auto-detected, no publish)"
     echo "  $0 template 0.4.61                           # Create release notes template"
     echo ""
     echo "Release Notes Options:"
@@ -279,18 +286,25 @@ show_usage() {
     echo "  - Type 'auto': Generate automatic release notes"
     echo "  - Type 'template': Create a release notes template file"
     echo ""
+    echo "Release Candidate (RC) Mode:"
+    echo "  - Use --rc flag or include _rc in version (e.g., 0.4.61_rc)"
+    echo "  - Adds _rc suffix to version if not present"
+    echo "  - Creates local tag but does NOT push to remote"
+    echo "  - Does NOT create GitHub release"
+    echo "  - Still builds theme package locally"
+    echo ""
     echo "This script will:"
     echo "  1. Update version in style.css"
     echo "  2. Update changelog with new version entry"
     echo "  3. Commit changes"
-    echo "  4. Create and push git tag"
+    echo "  4. Create git tag (push only if not RC)"
     echo "  5. Build theme package"
-    echo "  6. Create GitHub release with zip file"
-    echo "  7. Clean up local zip file after upload"
+    echo "  6. Create GitHub release with zip file (skip if RC)"
+    echo "  7. Clean up local zip file after upload (if published)"
     echo ""
     echo "Prerequisites:"
     echo "  - Git repository with remote origin"
-    echo "  - GitHub CLI (gh) installed and authenticated"
+    echo "  - GitHub CLI (gh) installed and authenticated (only for non-RC releases)"
     echo "  - Clean git working directory"
 }
 
@@ -327,37 +341,70 @@ main() {
         exit 1
     fi
     
-    local new_version=$1
+    local new_version=""
+    local release_notes_arg=""
+    local is_rc=false
+    
+    # Parse arguments - handle --rc flag and extract version/notes
+    for arg in "$@"; do
+        if [ "$arg" = "--rc" ]; then
+            is_rc=true
+        elif [ -z "$new_version" ]; then
+            new_version="$arg"
+        elif [ -z "$release_notes_arg" ] && [ "$arg" != "--rc" ]; then
+            release_notes_arg="$arg"
+        fi
+    done
+    
     local current_version=$(get_current_version)
-    NEW_VERSION="$new_version"  # Make it available for rollback function
     
     # Check if user wants to create a template
     if [ "$new_version" = "template" ]; then
-        if [ $# -lt 2 ]; then
+        if [ -z "$release_notes_arg" ]; then
             print_error "Please provide a version for the template: ./release.sh template <version>"
             exit 1
         fi
-        create_release_template "$2"
+        create_release_template "$release_notes_arg"
         exit 0
     fi
     
-    # Validate version format
-    if [[ ! $new_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    # Check if version contains _rc or --rc flag was used
+    if [[ "$new_version" == *"_rc"* ]] || [ "$is_rc" = true ]; then
+        is_rc=true
+        # Ensure _rc suffix is present
+        if [[ ! "$new_version" == *"_rc"* ]]; then
+            new_version="${new_version}_rc"
+            print_status "Added _rc suffix: ${new_version}"
+        fi
+    fi
+    
+    # Validate version format (allow _rc suffix)
+    local version_pattern="^[0-9]+\.[0-9]+\.[0-9]+(_rc)?$"
+    if [[ ! $new_version =~ $version_pattern ]]; then
         print_error "Invalid version format: ${new_version}"
-        print_error "Version must be in format: X.Y.Z (e.g., 0.4.61)"
+        print_error "Version must be in format: X.Y.Z or X.Y.Z_rc (e.g., 0.4.61 or 0.4.61_rc)"
         exit 1
     fi
     
-    # Check if version is newer
-    if [ "$new_version" = "$current_version" ]; then
+    # Check if version is newer (compare base versions)
+    local base_new_version="${new_version%_rc}"
+    local base_current_version="${current_version%_rc}"
+    if [ "$base_new_version" = "$base_current_version" ] && [ "$new_version" = "$current_version" ]; then
         print_error "Version ${new_version} is already the current version"
         exit 1
     fi
     
+    NEW_VERSION="$new_version"  # Make it available for rollback function
+    
     # Set trap for rollback on error
     trap rollback ERR
     
-    print_status "Starting release process for version ${new_version}"
+    if [ "$is_rc" = true ]; then
+        print_status "Starting RELEASE CANDIDATE process for version ${new_version}"
+        print_warning "RC Release: Will NOT publish to remote (no push, no GitHub release)"
+    else
+        print_status "Starting release process for version ${new_version}"
+    fi
     print_status "Current version: ${current_version}"
     print_status "New version: ${new_version}"
     echo ""
@@ -371,45 +418,77 @@ main() {
     
     # Update changelog
     print_status "Updating changelog..."
-    update_changelog "${new_version}" "$2"
+    update_changelog "${new_version}" "$release_notes_arg"
     
     # Commit changes
     print_status "Committing changes..."
     git add "${STYLE_FILE}" "${CHANGELOG_FILE}"
-    git commit -m "Release v${new_version}
+    local commit_msg="Release v${new_version}
 
 - Updated version to ${new_version}
 - Updated changelog with release notes
 - Automated release process"
+    
+    if [ "$is_rc" = true ]; then
+        commit_msg="${commit_msg}
+- Release Candidate (not published)"
+    fi
+    
+    git commit -m "$commit_msg"
 
-    # Create git tag
+    # Create git tag (skip push if RC)
     NEW_TAG="v${new_version}"
-    create_git_tag "${new_version}"
+    if [ "$is_rc" = true ]; then
+        create_git_tag "${new_version}" "true"
+    else
+        create_git_tag "${new_version}" "false"
+    fi
     
     # Build theme
     build_theme "${new_version}"
     
-    # Create GitHub release
-    create_github_release "${new_version}"
-    
-    # Clean up zip file after successful release
-    local zip_file="${THEME_NAME}-v${new_version}.zip"
-    if [ -f "${zip_file}" ]; then
-        print_status "Cleaning up zip file..."
-        rm "${zip_file}"
-        print_success "Removed zip file: ${zip_file}"
+    # Create GitHub release (skip if RC)
+    if [ "$is_rc" = true ]; then
+        print_warning "Skipping GitHub release creation (RC release - not publishing)"
+        local zip_file="${THEME_NAME}-v${new_version}.zip"
+        print_status "RC release package available locally: ${zip_file}"
+    else
+        create_github_release "${new_version}"
+        
+        # Clean up zip file after successful release
+        local zip_file="${THEME_NAME}-v${new_version}.zip"
+        if [ -f "${zip_file}" ]; then
+            print_status "Cleaning up zip file..."
+            rm "${zip_file}"
+            print_success "Removed zip file: ${zip_file}"
+        fi
     fi
     
     # Success!
     echo ""
-    print_success "🎉 Release ${new_version} completed successfully!"
-    print_success "Release URL: https://github.com/dsnger/sfx-bricks-child/releases/tag/v${new_version}"
-    print_success "Zip file uploaded and cleaned up"
-    echo ""
-    print_status "Next steps:"
-    echo "  - Test the release on a staging site"
-    echo "  - Update documentation if needed"
-    echo "  - Notify users of the new release"
+    if [ "$is_rc" = true ]; then
+        print_success "🎉 Release Candidate ${new_version} created successfully!"
+        print_warning "RC Release: NOT published to remote"
+        print_status "Local tag created: v${new_version}"
+        local zip_file="${THEME_NAME}-v${new_version}.zip"
+        if [ -f "${zip_file}" ]; then
+            print_status "RC package available: ${zip_file}"
+        fi
+        echo ""
+        print_status "Next steps:"
+        echo "  - Test the RC release on a staging site"
+        echo "  - When ready, create final release without _rc suffix"
+        echo "  - Or push tag manually: git push origin v${new_version}"
+    else
+        print_success "🎉 Release ${new_version} completed successfully!"
+        print_success "Release URL: https://github.com/dsnger/sfx-bricks-child/releases/tag/v${new_version}"
+        print_success "Zip file uploaded and cleaned up"
+        echo ""
+        print_status "Next steps:"
+        echo "  - Test the release on a staging site"
+        echo "  - Update documentation if needed"
+        echo "  - Notify users of the new release"
+    fi
     
     # Remove error trap
     trap - ERR
