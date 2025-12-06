@@ -155,7 +155,19 @@ check_git_status() {
 create_git_tag() {
     local version=$1
     local skip_publish=$2
+    local force_recreate=$3
     local tag_name="v${version}"
+    
+    # Check if tag exists
+    if git rev-parse "${tag_name}" >/dev/null 2>&1; then
+        if [ "$force_recreate" = "true" ]; then
+            print_warning "Tag ${tag_name} already exists, deleting and recreating..."
+            git tag -d "${tag_name}" 2>/dev/null || true
+        else
+            print_warning "Tag ${tag_name} already exists, skipping tag creation"
+            return 0
+        fi
+    fi
     
     print_status "Creating git tag: ${tag_name}"
     git tag -a "${tag_name}" -m "${tag_name} - Release"
@@ -452,9 +464,10 @@ main() {
     # Create git tag (skip push if RC)
     NEW_TAG="v${new_version}"
     if [ "$is_rc" = true ]; then
-        create_git_tag "${new_version}" "true"
+        # For RC re-releases, force recreate the tag if it exists
+        create_git_tag "${new_version}" "true" "$SKIP_VERSION_UPDATE"
     else
-        create_git_tag "${new_version}" "false"
+        create_git_tag "${new_version}" "false" "false"
     fi
     
     # Build theme
