@@ -709,22 +709,21 @@ body {
 
 /* Animation direction variables */
 :root {
-  --animate-distance: 20px;
   --animate-fade-from-translate: 0, 0, 0;
   --animate-fade-to-translate: 0, 0, 0;
 }
 
 .animation--left-to-right {
-  --animate-fade-from-translate: calc(-1 * var(--animate-distance)), 0, 0;
+  --animate-fade-from-translate: calc(-1 * var(--animate-distance, 20px)), 0, 0;
 }
 .animation--right-to-left {
-  --animate-fade-from-translate: var(--animate-distance), 0, 0;
+  --animate-fade-from-translate: var(--animate-distance, 20px), 0, 0;
 }
 .animation--top-to-bottom {
-  --animate-fade-from-translate: 0, calc(-1 * var(--animate-distance)), 0;
+  --animate-fade-from-translate: 0, calc(-1 * var(--animate-distance, 20px)), 0;
 }
 .animation--bottom-to-top {
-  --animate-fade-from-translate: 0, var(--animate-distance), 0;
+  --animate-fade-from-translate: 0, var(--animate-distance, 20px), 0;
 }
 
 
