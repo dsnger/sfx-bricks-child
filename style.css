@@ -74,7 +74,7 @@ body {
       font-size: var(--form-label-font-size);
       line-height: var(--form-label-line-height);
       text-transform: none;
-      font-weight: 600;
+      font-weight: var(--form-label-font-weight);
       color: var(--primary);
     }
 
@@ -391,7 +391,7 @@ body {
   padding-block: var(--btn-padding-block, var(--space-3xs));
   padding-inline: var(--btn-padding-inline, var(--space-s));
   font-size: var(--btn-font-size, var(--text-m));
-  font-weight: var(--btn-font-weight, 800);
+  font-weight: var(--btn-font-weight, 700);
   line-height: var(--btn-line-height, var(--line-height-s));
   letter-spacing: var(--btn-letter-spacing, 0.01%);
   text-decoration: none;
@@ -430,36 +430,43 @@ body {
   }
 
   &.bricks-background-primary {
+    color: var(--primary-fg);
     &:hover { background-color: color-mix(in oklab, var(--primary) 85%, black); }
     &:active { background-color: color-mix(in oklab, var(--primary) 75%, black); }
   }
 
   &.bricks-background-secondary {
+    color: var(--secondary-fg);
     &:hover { background-color: color-mix(in oklab, var(--secondary) 85%, black); }
     &:active { background-color: color-mix(in oklab, var(--secondary) 75%, black); }
   }
 
   &.bricks-background-light {
+    color: var(--dark);
     &:hover { background-color: color-mix(in oklab, var(--light) 85%, black); }
     &:active { background-color: color-mix(in oklab, var(--light) 75%, black); }
   }
 
   &.bricks-background-dark {
+    color: var(--light);
     &:hover { background-color: color-mix(in oklab, var(--dark) 85%, white); }
     &:active { background-color: color-mix(in oklab, var(--dark) 75%, white); }
   }
 
   &.bricks-background-muted {
+    color: var(--muted-fg);
     &:hover { background-color: color-mix(in oklab, var(--muted) 85%, black); }
     &:active { background-color: color-mix(in oklab, var(--muted) 75%, black); }
   }
 
   &.bricks-background-info {
+    color: var(--info-fg);
     &:hover { background-color: color-mix(in oklab, var(--info) 90%, black); }
     &:active { background-color: color-mix(in oklab, var(--info) 85%, black); }
   }
 
   &.bricks-background-success {
+    color: var(--success-fg);
     &:hover { background-color: color-mix(in oklab, var(--success) 85%, black); }
     &:active { background-color: color-mix(in oklab, var(--success) 75%, black); }
   }
@@ -479,7 +486,7 @@ body {
 
       &:hover {
         background-color: var(--primary);
-        color: var(--white, #ffffff);
+        color: var(--primary-fg);
       }
     }
 
@@ -489,7 +496,7 @@ body {
 
       &:hover {
         background-color: var(--secondary);
-        color: var(--white, #ffffff);
+        color: var(--secondary-fg);
       }
     }
 
@@ -499,7 +506,7 @@ body {
 
       &:hover {
         background-color: var(--light);
-        color: var(--dark, #1a1a1a);
+        color: var(--dark);
       }
     }
 
@@ -509,7 +516,7 @@ body {
 
       &:hover {
         background-color: var(--dark);
-        color: var(--white, #ffffff);
+        color: var(--light);
       }
     }
 
@@ -519,7 +526,7 @@ body {
 
       &:hover {
         background-color: var(--muted);
-        color: var(--dark, #1a1a1a);
+        color: var(--muted-fg);
       }
     }
 
@@ -529,7 +536,7 @@ body {
 
       &:hover {
         background-color: var(--info);
-        color: var(--white, #ffffff);
+        color: var(--info-fg);
       }
     }
 
@@ -539,7 +546,7 @@ body {
 
       &:hover {
         background-color: var(--success);
-        color: var(--white, #ffffff);
+        color: var(--success-fg);
       }
     }
   }
