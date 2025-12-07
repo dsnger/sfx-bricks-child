@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.1_rc] - 2025-12-07
+
+### Enhanced
+- **Import/Export**: Granular dashboard settings export with 8 sub-groups (General, Sections, Stats, Quicklinks, Contact, Brand, Cards, CSS) - Export version 2.0.0
+- **TextSnippets Cache**: Improved cache invalidation with proper timeout cleanup and namespace-qualified hook callbacks
+
 ## [0.9.0_rc] - 2025-12-06
 
 ### Added

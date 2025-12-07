@@ -211,32 +211,17 @@
     }
 
     /**
-     * Get settings group label
+     * Get settings group label (uses localized data from PHP - single source of truth)
      */
     function getSettingsLabel(key) {
-        const labels = {
-            'general_options': 'General Theme Options',
-            'wpoptimizer_options': 'WP Optimizer Settings',
-            'custom_dashboard': 'Custom Dashboard Settings',
-            'security_header': 'Security Header Settings',
-            'image_optimizer': 'Image Optimizer Settings',
-            'html_copy_paste': 'HTML Copy/Paste Settings',
-            'text_snippets': 'Text Snippets Settings'
-        };
-        return labels[key] || null;
+        return sfxImportExport.settingsLabels[key] || null;
     }
 
     /**
-     * Get post type label
+     * Get post type label (uses localized data from PHP - single source of truth)
      */
     function getPostTypeLabel(postType) {
-        const labels = {
-            'sfx_custom_script': 'Custom Scripts',
-            'sfx_contact_info': 'Contact Information',
-            'sfx_social_account': 'Social Media Accounts',
-            'cpt_text_snippet': 'Text Snippets'
-        };
-        return labels[postType] || null;
+        return sfxImportExport.postTypeLabels[postType] || null;
     }
 
     /**

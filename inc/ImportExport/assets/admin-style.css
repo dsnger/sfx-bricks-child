@@ -332,6 +332,63 @@
     color: #d63638;
 }
 
+/* Dashboard Settings Subgroup */
+.sfx-checkbox-subgroup {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+}
+
+.sfx-checkbox-subgroup-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.sfx-checkbox-subgroup-header strong {
+    font-size: 14px;
+    color: #1d2327;
+}
+
+.sfx-checkbox-subgroup-header .description {
+    font-size: 12px;
+    color: #646970;
+}
+
+.sfx-checkbox-subgroup-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+}
+
+.sfx-checkbox-subgroup-items .sfx-checkbox-label {
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+/* Import preview: Dashboard subgroup styling */
+.sfx-import-preview .sfx-checkbox-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sfx-import-preview .sfx-checkbox-label {
+    margin: 0;
+}
+
+/* Dashboard settings in import preview - visual grouping */
+.sfx-import-preview .sfx-checkbox-label[id*="dashboard_"] {
+    margin-left: 0;
+    border-left: 3px solid var(--sfx-primary-color, #1cb1ab);
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
     .sfx-import-export-container {
@@ -345,5 +402,9 @@
     .sfx-preview-meta {
         flex-direction: column;
         gap: 8px;
+    }
+    
+    .sfx-checkbox-subgroup-items {
+        grid-template-columns: 1fr;
     }
 }

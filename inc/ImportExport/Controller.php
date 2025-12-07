@@ -16,7 +16,7 @@ use SFX\AccessControl;
  */
 class Controller
 {
-    public const EXPORT_VERSION = '1.0.0';
+    public const EXPORT_VERSION = '2.0.0';
     public const MAX_FILE_SIZE = 2097152; // 2MB in bytes
 
     /**
@@ -53,6 +53,121 @@ class Controller
     }
 
     /**
+     * Dashboard field groups for granular import/export.
+     * Maps each sub-group to the fields it contains.
+     * 
+     * @var array<string, array<string>>
+     */
+    private const DASHBOARD_FIELD_GROUPS = [
+        'dashboard_general' => [
+            'enable_custom_dashboard',
+            'dashboard_welcome_title',
+            'dashboard_welcome_subtitle',
+            'allow_sidebar_toggle',
+            'sidebar_default_state',
+        ],
+        'dashboard_sections' => [
+            'show_updates_section',
+            'show_site_health_section',
+            'show_stats_section',
+            'show_quicklinks_section',
+            'show_contact_section',
+            'show_form_submissions_section',
+            'form_submissions_limit',
+            'show_dashboard_widgets',
+            'enabled_dashboard_widgets',
+            'widgets_columns',
+            'dashboard_widgets_position',
+            'show_tip_card',
+            'tip_card_title',
+            'tip_card_content',
+            'show_note_section',
+            'note_title',
+            'note_content',
+            'note_position',
+        ],
+        'dashboard_stats' => [
+            'stats_items',
+            'stats_columns',
+        ],
+        'dashboard_quicklinks' => [
+            'quicklinks_sortable',
+            'quicklinks_columns',
+        ],
+        'dashboard_contact' => [
+            'contact_card_title',
+            'contact_card_subtitle',
+            'contact_logo',
+            'contact_logo_height',
+            'contact_company',
+            'contact_email',
+            'contact_phone',
+            'contact_website',
+            'contact_address',
+        ],
+        'dashboard_brand' => [
+            'color_mode_default',
+            'allow_user_mode_switch',
+            'brand_primary_color',
+            'brand_secondary_color',
+            'brand_accent_color',
+            'brand_success_color',
+            'brand_warning_color',
+            'brand_error_color',
+            'brand_border_radius',
+            'brand_border_width',
+            'brand_border_color',
+            'brand_shadow_enabled',
+            'brand_shadow_intensity',
+            'brand_header_gradient',
+            'brand_header_gradient_start',
+            'brand_header_gradient_end',
+            'brand_header_bg_color',
+            'brand_header_text_color',
+            'brand_logo',
+        ],
+        'dashboard_cards' => [
+            'card_background_color',
+            'card_text_color',
+            'card_border_width',
+            'card_border_color',
+            'card_border_radius',
+            'card_shadow_enabled',
+            'card_hover_background_color',
+            'card_hover_text_color',
+            'card_hover_border_color',
+            'dashboard_gap',
+        ],
+        'dashboard_css' => [
+            'dashboard_custom_css',
+        ],
+    ];
+
+    /**
+     * Get dashboard field groups for JS localization.
+     * 
+     * @return array<string, array<string>>
+     */
+    public static function get_dashboard_field_groups(): array
+    {
+        return self::DASHBOARD_FIELD_GROUPS;
+    }
+
+    /**
+     * Get settings labels for JS localization (DRY - single source of truth).
+     * 
+     * @return array<string, string>
+     */
+    public static function get_settings_labels(): array
+    {
+        $labels = [];
+        foreach (self::get_settings_groups() as $key => $group) {
+            $labels[$key] = $group['label'];
+        }
+        return $labels;
+    }
+
+    /**
      * Get all exportable settings groups.
      * 
      * @return array
@@ -72,11 +187,62 @@ class Controller
                 'option_key' => 'sfx_wpoptimizer_options',
                 'type' => 'single',
             ],
-            'custom_dashboard' => [
-                'label' => __('Custom Dashboard Settings', 'sfxtheme'),
-                'description' => __('Dashboard layout, branding, sections and styling', 'sfxtheme'),
+            // Dashboard sub-groups for granular control
+            'dashboard_general' => [
+                'label' => __('Dashboard: General Settings', 'sfxtheme'),
+                'description' => __('Enable/disable dashboard, welcome messages, sidebar toggle', 'sfxtheme'),
                 'option_key' => 'sfx_custom_dashboard',
-                'type' => 'single',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_general'],
+            ],
+            'dashboard_sections' => [
+                'label' => __('Dashboard: Section Visibility', 'sfxtheme'),
+                'description' => __('Which sections to show (updates, health, stats, widgets, etc.)', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_sections'],
+            ],
+            'dashboard_stats' => [
+                'label' => __('Dashboard: Statistics', 'sfxtheme'),
+                'description' => __('Stats items configuration and columns', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_stats'],
+            ],
+            'dashboard_quicklinks' => [
+                'label' => __('Dashboard: Quick Actions', 'sfxtheme'),
+                'description' => __('Quicklinks groups, ordering and configuration', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_quicklinks'],
+            ],
+            'dashboard_contact' => [
+                'label' => __('Dashboard: Contact Information', 'sfxtheme'),
+                'description' => __('Contact card details (company, email, phone, etc.)', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_contact'],
+            ],
+            'dashboard_brand' => [
+                'label' => __('Dashboard: Brand Colors', 'sfxtheme'),
+                'description' => __('Color scheme, logo, header styling', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_brand'],
+            ],
+            'dashboard_cards' => [
+                'label' => __('Dashboard: Card Styling', 'sfxtheme'),
+                'description' => __('Card colors, borders, hover states', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_cards'],
+            ],
+            'dashboard_css' => [
+                'label' => __('Dashboard: Custom CSS', 'sfxtheme'),
+                'description' => __('Custom CSS for dashboard styling', 'sfxtheme'),
+                'option_key' => 'sfx_custom_dashboard',
+                'type' => 'dashboard_subset',
+                'fields' => self::DASHBOARD_FIELD_GROUPS['dashboard_css'],
             ],
             'security_header' => [
                 'label' => __('Security Header Settings', 'sfxtheme'),
@@ -233,6 +399,7 @@ class Controller
     {
         $settings_groups = self::get_settings_groups();
         $data = [];
+        $option_cache = []; // Cache for repeated option fetches (e.g., dashboard subsets)
 
         foreach ($selected_groups as $group_key) {
             if (!isset($settings_groups[$group_key])) {
@@ -242,9 +409,24 @@ class Controller
             $group = $settings_groups[$group_key];
 
             if ($group['type'] === 'single') {
-                // Single option key
+                // Single option key - export entire option
                 $value = get_option($group['option_key'], []);
                 $data[$group_key] = $value;
+            } elseif ($group['type'] === 'dashboard_subset') {
+                // Dashboard subset - only export specific fields from the option
+                $option_key = $group['option_key'];
+                if (!isset($option_cache[$option_key])) {
+                    $option_cache[$option_key] = get_option($option_key, []);
+                }
+                $full_option = $option_cache[$option_key];
+                
+                $subset_data = [];
+                foreach ($group['fields'] as $field_key) {
+                    if (isset($full_option[$field_key])) {
+                        $subset_data[$field_key] = $full_option[$field_key];
+                    }
+                }
+                $data[$group_key] = $subset_data;
             } else {
                 // Multiple option keys
                 $group_data = [];
@@ -475,6 +657,19 @@ class Controller
             return new \WP_Error('missing_version', __('Invalid export file: missing version information.', 'sfxtheme'));
         }
 
+        // Check version compatibility (v2.0.0+ required due to granular dashboard settings)
+        if (version_compare($data['version'], '2.0.0', '<')) {
+            return new \WP_Error(
+                'incompatible_version',
+                sprintf(
+                    /* translators: 1: file version, 2: required version */
+                    __('This export file (v%1$s) is incompatible. Please export again using v%2$s or later.', 'sfxtheme'),
+                    esc_html($data['version']),
+                    self::EXPORT_VERSION
+                )
+            );
+        }
+
         if (!isset($data['data'])) {
             return new \WP_Error('missing_data', __('Invalid export file: missing data section.', 'sfxtheme'));
         }
@@ -558,11 +753,11 @@ class Controller
 
             try {
                 if ($group['type'] === 'single') {
-                    // Single option key
+                    // Single option key - use deep merge to preserve nested structures
                     if ($mode === 'merge') {
                         $existing = get_option($group['option_key'], []);
                         if (is_array($existing) && is_array($import_value)) {
-                            $import_value = array_merge($existing, $import_value);
+                            $import_value = $this->deep_merge_arrays($existing, $import_value);
                         }
                     }
                     
@@ -573,6 +768,41 @@ class Controller
                     $results[$group_key] = [
                         'status' => 'success',
                         'message' => sprintf(__('%s imported successfully.', 'sfxtheme'), $group['label']),
+                    ];
+                } elseif ($group['type'] === 'dashboard_subset') {
+                    // Dashboard subset - only import specific fields, preserve others
+                    $existing = get_option($group['option_key'], []);
+                    
+                    // Import only the fields for this subset
+                    $fields_imported = 0;
+                    foreach ($group['fields'] as $field_key) {
+                        if (isset($import_value[$field_key])) {
+                            $value_to_import = $import_value[$field_key];
+                            
+                            // For merge mode, do deep merge on complex fields
+                            if ($mode === 'merge' && isset($existing[$field_key])) {
+                                if (is_array($existing[$field_key]) && is_array($value_to_import)) {
+                                    $value_to_import = $this->deep_merge_arrays($existing[$field_key], $value_to_import);
+                                }
+                            }
+                            
+                            $existing[$field_key] = $value_to_import;
+                            $fields_imported++;
+                        }
+                    }
+                    
+                    // Sanitize and save the entire option
+                    $sanitized = $this->sanitize_option_value($group['option_key'], $existing);
+                    update_option($group['option_key'], $sanitized);
+                    
+                    $results[$group_key] = [
+                        'status' => 'success',
+                        'message' => sprintf(
+                            /* translators: 1: group label, 2: number of fields imported */
+                            __('%1$s: %2$d field(s) imported.', 'sfxtheme'),
+                            $group['label'],
+                            $fields_imported
+                        ),
                     ];
                 } else {
                     // Multiple option keys
@@ -610,6 +840,82 @@ class Controller
         }
 
         return $results;
+    }
+
+    /**
+     * Deep merge two arrays recursively.
+     * 
+     * This method properly merges nested arrays instead of just overwriting.
+     * It also preserves existing values when import values are empty.
+     * 
+     * @param array $existing Existing values.
+     * @param array $import Values to import.
+     * @return array Merged values.
+     */
+    private function deep_merge_arrays(array $existing, array $import): array
+    {
+        $merged = $existing;
+        
+        foreach ($import as $key => $value) {
+            // Skip empty values in import to preserve existing data
+            if ($this->is_empty_value($value)) {
+                continue;
+            }
+            
+            // If both are arrays and the key exists in existing
+            if (isset($merged[$key]) && is_array($merged[$key]) && is_array($value)) {
+                // Check if it's an indexed array (like quicklinks groups)
+                if ($this->is_indexed_array($value)) {
+                    // For indexed arrays, replace entirely (new quicklinks replace old)
+                    $merged[$key] = $value;
+                } else {
+                    // For associative arrays, merge recursively
+                    $merged[$key] = $this->deep_merge_arrays($merged[$key], $value);
+                }
+            } else {
+                // Direct assignment for non-array values or new keys
+                $merged[$key] = $value;
+            }
+        }
+        
+        return $merged;
+    }
+
+    /**
+     * Check if a value is considered "empty" for import purposes.
+     * 
+     * Empty values in import data should not overwrite existing data.
+     * 
+     * @param mixed $value Value to check.
+     * @return bool True if empty.
+     */
+    private function is_empty_value($value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+        if ($value === '') {
+            return true;
+        }
+        if (is_array($value) && empty($value)) {
+            return true;
+        }
+        // Booleans and numbers (including 0) are NOT considered empty
+        return false;
+    }
+
+    /**
+     * Check if array is indexed (sequential numeric keys starting at 0).
+     * 
+     * @param array $arr Array to check.
+     * @return bool True if indexed.
+     */
+    private function is_indexed_array(array $arr): bool
+    {
+        if (empty($arr)) {
+            return false;
+        }
+        return array_keys($arr) === range(0, count($arr) - 1);
     }
 
     /**
@@ -790,14 +1096,9 @@ class Controller
      */
     private function sanitize_option_value(string $option_key, $value)
     {
-        // Array options
+        // Array options - use recursive sanitization to preserve structure
         if (is_array($value)) {
-            return array_map(function ($v) {
-                if (is_array($v)) {
-                    return array_map('sanitize_text_field', $v);
-                }
-                return is_string($v) ? sanitize_text_field($v) : $v;
-            }, $value);
+            return $this->sanitize_array_recursive($value);
         }
 
         // Boolean options
@@ -834,6 +1135,142 @@ class Controller
 
         // Default: sanitize as text
         return is_string($value) ? sanitize_text_field($value) : $value;
+    }
+
+    /**
+     * Recursively sanitize array values while preserving structure.
+     * 
+     * This handles complex nested structures like quicklinks_sortable
+     * which contain multiple levels of arrays and objects.
+     * 
+     * @param array $arr Array to sanitize.
+     * @return array Sanitized array.
+     */
+    private function sanitize_array_recursive(array $arr): array
+    {
+        $result = [];
+        
+        foreach ($arr as $key => $value) {
+            // Sanitize the key (for associative arrays)
+            $sanitized_key = is_string($key) ? sanitize_key($key) : $key;
+            
+            if (is_array($value)) {
+                // Recurse for nested arrays
+                $result[$sanitized_key] = $this->sanitize_array_recursive($value);
+            } elseif (is_string($value)) {
+                // Check if the string contains HTML (like SVG icons)
+                if (preg_match('/<[^>]+>/', $value)) {
+                    // Allow safe HTML including SVG
+                    $result[$sanitized_key] = wp_kses($value, $this->get_extended_kses_allowed());
+                } else {
+                    $result[$sanitized_key] = sanitize_text_field($value);
+                }
+            } elseif (is_bool($value)) {
+                $result[$sanitized_key] = $value;
+            } elseif (is_int($value)) {
+                $result[$sanitized_key] = (int) $value;
+            } elseif (is_float($value)) {
+                $result[$sanitized_key] = (float) $value;
+            } elseif (is_null($value)) {
+                $result[$sanitized_key] = null;
+            } else {
+                // Unknown type, try to sanitize as string
+                $result[$sanitized_key] = sanitize_text_field((string) $value);
+            }
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get extended KSES allowed HTML including SVG elements.
+     * 
+     * @return array Allowed HTML elements and attributes.
+     */
+    private function get_extended_kses_allowed(): array
+    {
+        return [
+            'svg' => [
+                'xmlns' => true,
+                'fill' => true,
+                'viewbox' => true,
+                'stroke' => true,
+                'stroke-width' => true,
+                'stroke-linecap' => true,
+                'stroke-linejoin' => true,
+                'class' => true,
+                'width' => true,
+                'height' => true,
+                'aria-hidden' => true,
+                'role' => true,
+            ],
+            'path' => [
+                'd' => true,
+                'fill' => true,
+                'stroke' => true,
+                'stroke-width' => true,
+                'stroke-linecap' => true,
+                'stroke-linejoin' => true,
+            ],
+            'circle' => [
+                'cx' => true,
+                'cy' => true,
+                'r' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'rect' => [
+                'x' => true,
+                'y' => true,
+                'width' => true,
+                'height' => true,
+                'rx' => true,
+                'ry' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'line' => [
+                'x1' => true,
+                'y1' => true,
+                'x2' => true,
+                'y2' => true,
+                'stroke' => true,
+            ],
+            'polyline' => [
+                'points' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'polygon' => [
+                'points' => true,
+                'fill' => true,
+                'stroke' => true,
+            ],
+            'g' => [
+                'fill' => true,
+                'stroke' => true,
+                'transform' => true,
+            ],
+            // Standard HTML for tip card content etc.
+            'button' => [
+                'type' => true,
+                'class' => true,
+                'data-shortcut' => true,
+            ],
+            'kbd' => [],
+            'span' => [
+                'class' => true,
+            ],
+            'strong' => [],
+            'em' => [],
+            'br' => [],
+            'a' => [
+                'href' => true,
+                'target' => true,
+                'rel' => true,
+                'class' => true,
+            ],
+        ];
     }
 
     /**

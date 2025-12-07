@@ -152,9 +152,13 @@ function sfx_get_text_snippet_field(int $post_id, string $slug): ?string {
 }
 
 /**
- * Clear text snippet caches when posts are updated
+ * Clear text snippet caches when posts are updated.
  * 
- * @param int $post_id
+ * Clears both transient values and their timeout entries for:
+ * - sfx_text_snippet_{id}_{field} (from render_snippet)
+ * - sfx_text_snippet_field_{id}_{slug} (from sfx_get_text_snippet_field)
+ * 
+ * @param int $post_id The post ID.
  */
 function sfx_clear_text_snippet_caches(int $post_id): void {
     // Only clear caches if this is actually a text snippet post
@@ -162,19 +166,33 @@ function sfx_clear_text_snippet_caches(int $post_id): void {
         return;
     }
     
-    // Clear all text snippet caches for this post
     global $wpdb;
+    
+    // Escape the post_id for LIKE pattern (prevents SQL injection with special chars)
+    $escaped_id = $wpdb->esc_like((string) $post_id);
+    
+    // Build patterns for both cache key formats
+    $pattern1 = '_transient_sfx_text_snippet_' . $escaped_id . '_%';
+    $pattern2 = '_transient_sfx_text_snippet_field_' . $escaped_id . '_%';
+    $timeout_pattern1 = '_transient_timeout_sfx_text_snippet_' . $escaped_id . '_%';
+    $timeout_pattern2 = '_transient_timeout_sfx_text_snippet_field_' . $escaped_id . '_%';
+    
+    // Delete transients and their timeout entries in a single query
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     $wpdb->query(
         $wpdb->prepare(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            '_transient_sfx_text_snippet_' . $post_id . '_%'
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s",
+            $pattern1,
+            $pattern2,
+            $timeout_pattern1,
+            $timeout_pattern2
         )
     );
 }
 
-// Register cache invalidation hooks
-add_action('save_post_cpt_text_snippet', 'sfx_clear_text_snippet_caches');
-add_action('delete_post_cpt_text_snippet', 'sfx_clear_text_snippet_caches');
+// Register cache invalidation hooks (use fully qualified namespace)
+add_action('save_post_cpt_text_snippet', __NAMESPACE__ . '\\sfx_clear_text_snippet_caches');
+add_action('delete_post_cpt_text_snippet', __NAMESPACE__ . '\\sfx_clear_text_snippet_caches');
 
 // Register the shortcode
 new SC_Snippet();

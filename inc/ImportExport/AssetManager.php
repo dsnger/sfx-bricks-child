@@ -57,11 +57,14 @@ class AssetManager
             true
         );
 
-        // Localize script with AJAX data
+        // Localize script with AJAX data and shared constants
         wp_localize_script('sfx-import-export-admin', 'sfxImportExport', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'exportNonce' => wp_create_nonce('sfx_export_settings_nonce'),
             'importNonce' => wp_create_nonce('sfx_import_settings_nonce'),
+            'dashboardFieldGroups' => Controller::get_dashboard_field_groups(),
+            'settingsLabels' => Controller::get_settings_labels(),
+            'postTypeLabels' => Controller::get_exportable_post_types(),
             'strings' => [
                 'confirmReplace' => __('This will REPLACE all existing data for the selected items. This action cannot be undone. Are you sure?', 'sfxtheme'),
                 'confirmMerge' => __('This will MERGE imported data with existing data. Existing items will be kept. Continue?', 'sfxtheme'),

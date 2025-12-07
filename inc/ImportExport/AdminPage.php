@@ -220,7 +220,20 @@ class AdminPage
         $settings_groups = Controller::get_settings_groups();
         $prefix = $context === 'export' ? 'export' : 'import';
 
+        // Group dashboard settings together for better UX
+        $dashboard_groups = [];
+        $other_groups = [];
+        
         foreach ($settings_groups as $key => $group) {
+            if (strpos($key, 'dashboard_') === 0) {
+                $dashboard_groups[$key] = $group;
+            } else {
+                $other_groups[$key] = $group;
+            }
+        }
+
+        // Render other (non-dashboard) settings first
+        foreach ($other_groups as $key => $group) {
             $id = "{$prefix}_settings_{$key}";
             ?>
             <label class="sfx-checkbox-label">
@@ -236,6 +249,42 @@ class AdminPage
                     <?php endif; ?>
                 </span>
             </label>
+            <?php
+        }
+
+        // Render dashboard settings grouped together
+        if (!empty($dashboard_groups)) {
+            ?>
+            <div class="sfx-checkbox-subgroup">
+                <div class="sfx-checkbox-subgroup-header">
+                    <strong><?php echo esc_html__('Dashboard Settings', 'sfxtheme'); ?></strong>
+                    <span class="description"><?php echo esc_html__('Select specific dashboard sections to export/import', 'sfxtheme'); ?></span>
+                </div>
+                <div class="sfx-checkbox-subgroup-items">
+                    <?php
+                    foreach ($dashboard_groups as $key => $group) {
+                        $id = "{$prefix}_settings_{$key}";
+                        // Strip "Dashboard: " prefix from label for cleaner display in subgroup
+                        $label = str_replace('Dashboard: ', '', $group['label']);
+                        ?>
+                        <label class="sfx-checkbox-label">
+                            <input type="checkbox" 
+                                   name="<?php echo esc_attr($prefix); ?>_settings[]" 
+                                   value="<?php echo esc_attr($key); ?>" 
+                                   id="<?php echo esc_attr($id); ?>"
+                                   checked />
+                            <span class="sfx-checkbox-text">
+                                <strong><?php echo esc_html($label); ?></strong>
+                                <?php if (!empty($group['description'])): ?>
+                                    <span class="description"><?php echo esc_html($group['description']); ?></span>
+                                <?php endif; ?>
+                            </span>
+                        </label>
+                        <?php
+                    }
+                    ?>
+                </div>
+            </div>
             <?php
         }
     }
