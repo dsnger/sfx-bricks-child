@@ -336,17 +336,36 @@ class DashboardRenderer
                 <h2 class="sfx-welcome-title"><?php echo esc_html($title); ?></h2>
                 <p class="sfx-welcome-subtitle"><?php echo esc_html($subtitle); ?></p>
             </div>
-            <?php if ($allow_sidebar_toggle || $allow_mode_switch): ?>
-                <div class="sfx-welcome-toggles">
+            <div class="sfx-welcome-toggles">
+                <?php $this->render_home_link(); ?>
+                <?php if ($allow_sidebar_toggle || $allow_mode_switch): ?>
                     <?php if ($allow_sidebar_toggle): ?>
                         <?php $this->render_sidebar_toggle(); ?>
                     <?php endif; ?>
                     <?php if ($allow_mode_switch): ?>
                         <?php $this->render_theme_toggle(); ?>
                     <?php endif; ?>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </section>
+        <?php
+    }
+
+    /**
+     * Render home link button
+     *
+     * @return void
+     */
+    private function render_home_link(): void
+    {
+        ?>
+        <div class="sfx-home-link-wrapper">
+            <a href="<?php echo esc_url(home_url()); ?>" target="_blank" rel="noopener noreferrer" class="sfx-home-link" aria-label="<?php esc_attr_e('View site', 'sfxtheme'); ?>" title="<?php esc_attr_e('View site', 'sfxtheme'); ?>">
+                <svg class="sfx-home-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
+            </a>
+        </div>
         <?php
     }
 

@@ -556,6 +556,72 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
     display: block;
 }
 
+/* Home Link Button */
+.sfx-home-link-wrapper {
+    display: flex;
+}
+
+.sfx-home-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+    isolation: isolate;
+    z-index: 1;
+    text-decoration: none;
+}
+
+.sfx-home-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.1;
+    border-radius: 50%;
+    z-index: -1;
+    transition: opacity 0.2s ease;
+}
+
+.sfx-home-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.15;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.sfx-home-link:hover {
+    transform: translateY(-1px);
+}
+
+.sfx-home-link:hover::before {
+    opacity: 0.2;
+}
+
+.sfx-home-link:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.sfx-home-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    color: inherit;
+}
+
 /* Sidebar Toggle Button */
 .sfx-sidebar-toggle-wrapper {
     display: flex;
