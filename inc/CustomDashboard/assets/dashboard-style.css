@@ -956,7 +956,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
 .sfx-tip-content {
     color: hsl(var(--secondary-foreground));
-    font-size: 1.125em;
+    font-size: 1em;
     line-height: 1.6;
 }
 

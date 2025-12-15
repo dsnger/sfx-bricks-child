@@ -42,6 +42,128 @@ body {
   margin: 0;
 }
 
+/* =========================================
+   CONTENT GRID – Responsive Grid System
+   ========================================= */
+
+:root {
+  --cg-gutter: var(--container-padding-horizontal, 1.5rem);
+  --cg-content: var(--max-screen-width, 1400px);
+  --cg-feature: var(--container-xlarge, 2100px);
+  --cg-feature-max: var(--container-2xlarge, 2450px);
+  --cg-gap: var(--grid-gap, var(--space-m, 1.5rem));
+}
+
+/* Base: 3 columns - outer columns grow to center content */
+.content-grid {
+  display: grid;
+  row-gap: var(--cg-gap);
+  grid-template-columns:
+    [full-start] minmax(var(--cg-gutter), 1fr)
+    [content-start feature-start feature-max-start] minmax(0, calc(var(--cg-content) - 2 * var(--cg-gutter))) [content-end feature-end feature-max-end]
+    minmax(var(--cg-gutter), 1fr) [full-end];
+}
+
+.content-grid > * {
+  grid-column: content-start / content-end;
+}
+
+.content--feature,
+.content--feature-max {
+  grid-column: content-start / content-end;
+}
+
+.content--full {
+  grid-column: full-start / full-end;
+}
+
+.content--full-safe {
+  grid-column: full-start / full-end;
+  padding-inline: var(--cg-gutter);
+}
+
+.content--full-safe > .inner {
+  max-width: calc(var(--cg-content) - 2 * var(--cg-gutter));
+  margin-inline: auto;
+}
+
+.content--full-safe > .inner--feature {
+  max-width: calc(var(--cg-feature) - 2 * var(--cg-gutter));
+  margin-inline: auto;
+}
+
+.content--full-safe > .inner--feature-max {
+  max-width: calc(var(--cg-feature-max) - 2 * var(--cg-gutter));
+  margin-inline: auto;
+}
+
+.content--split-50-breakout {
+  grid-column: content-start / content-end;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--cg-gap);
+}
+
+@media (min-width: 768px) {
+  .content--split-50-breakout {
+    grid-column: content-start / full-end;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .content--split-50-breakout {
+    grid-template-columns: minmax(0, calc(((var(--cg-content) - 2 * var(--cg-gutter)) / 2) - var(--cg-gap))) minmax(0, 1fr);
+  }
+}
+
+/* Reverse modifier: Breaks out to LEFT instead of right */
+@media (min-width: 768px) {
+  .content--split-50-breakout.reverse {
+    grid-column: full-start / content-end;
+    direction: rtl;
+  }
+  
+  .content--split-50-breakout.reverse > * {
+    direction: ltr;
+  }
+}
+
+/* Viewport > feature width: Add feature columns (5 total) */
+@media (min-width: 2100px) {
+  .content-grid {
+    grid-template-columns:
+      [full-start] minmax(var(--cg-gutter), 1fr)
+      [feature-start feature-max-start] calc((var(--cg-feature) - var(--cg-content)) / 2)
+      [content-start] calc(var(--cg-content) - 2 * var(--cg-gutter)) [content-end]
+      calc((var(--cg-feature) - var(--cg-content)) / 2) [feature-end feature-max-end]
+      minmax(var(--cg-gutter), 1fr) [full-end];
+  }
+
+  .content--feature {
+    grid-column: feature-start / feature-end;
+  }
+}
+
+/* Viewport > feature-max width: Add feature-max columns (7 total) */
+@media (min-width: 2450px) {
+  .content-grid {
+    grid-template-columns:
+      [full-start] minmax(var(--cg-gutter), 1fr)
+      [feature-max-start] calc((var(--cg-feature-max) - var(--cg-feature)) / 2)
+      [feature-start] calc((var(--cg-feature) - var(--cg-content)) / 2)
+      [content-start] calc(var(--cg-content) - 2 * var(--cg-gutter)) [content-end]
+      calc((var(--cg-feature) - var(--cg-content)) / 2) [feature-end]
+      calc((var(--cg-feature-max) - var(--cg-feature)) / 2) [feature-max-end]
+      minmax(var(--cg-gutter), 1fr) [full-end];
+  }
+
+  .content--feature-max {
+    grid-column: feature-max-start / feature-max-end;
+  }
+}
+
+
 /* ========================================
    FORM STYLES (nested)
    ======================================== */
@@ -79,11 +201,11 @@ body {
     }
 
     & input {
-      padding-top: var(--form-padding-v);
-      padding-right: var(--form-padding-h);
-      padding-bottom: var(--form-padding-v);
-      padding-left: var(--form-padding-h);
-      border: var(--form-border-width) solid var(--primary);
+      padding-top: var(--form-padding-block);
+      padding-right: var(--form-padding-inline);
+      padding-bottom: var(--form-padding-block);
+      padding-left: var(--form-padding-inline);
+      border: var(--form-border-width) solid var(--form-border-color);
       border-radius: var(--form-border-radius);
       font-size: var(--form-font-size);
       line-height: var(--form-line-height);
@@ -94,9 +216,10 @@ body {
       display: flex;
       gap: var(--space-xs);
 
-      & > li:has([type=radio]) {
+      &>li:has([type=radio], [type=checkbox]) {
+        display: flex;
         align-items: center !important;
-        gap: 0.5rem !important;
+        gap: var(--space-3xs);
 
         & label {
           margin: 0 !important;
@@ -110,15 +233,20 @@ body {
     font-weight: 400;
     line-height: var(--form-placeholder-line-height);
     color: var(--primary);
+    transition: opacity 0.2s ease;
+  }
+
+  & :is(input, textarea):focus::placeholder {
+    opacity: 0;
   }
 
   & .bricks-button {
-    padding-top: var(--btn-padding-v);
-    padding-right: var(--btn-padding-h);
-    padding-bottom: var(--btn-padding-v);
-    padding-left: var(--btn-padding-h);
-    border: var(--form-border-width) solid var(--primary);
-    border-radius: var(--form-border-radius);
+    padding-top: var(--btn-padding-block);
+    padding-right: var(--btn-padding-inline);
+    padding-bottom: var(--btn-padding-block);
+    padding-left: var(--btn-padding-inline);
+    border: var(--btn-border-width) solid var(--btn-border-color);
+    border-radius: var(--btn-radius);
   }
 
   /* File upload styles */
@@ -130,7 +258,7 @@ body {
     overflow: hidden;
     z-index: -1;
 
-    &:focus + .choose-files {
+    &:focus+.choose-files {
       outline: var(--form-focus-width, 2px) solid var(--form-focus-color, #2563eb);
       outline-offset: var(--form-focus-offset, 2px);
       box-shadow: var(--form-focus-ring);
@@ -321,9 +449,43 @@ body {
     overflow: auto;
   }
 
+  & .form-group textarea {
+    padding-top: var(--form-padding-block);
+    padding-right: var(--form-padding-inline);
+    padding-bottom: var(--form-padding-block);
+    padding-left: var(--form-padding-inline);
+    border: var(--form-border-width) solid var(--form-border-color);
+    border-radius: var(--form-border-radius);
+    font-size: var(--form-font-size);
+    line-height: var(--form-line-height);
+    background-color: var(--bg-surface);
+  }
+
   /* Messages & submit feedback */
   & .message {
     border-radius: var(--form-border-radius, .5rem);
+  }
+
+  /* Form group error message */
+  & .form-group .form-group-error-message {
+    position: relative;
+    width: 100%;
+    margin-block-start: var(--form-error-margin-block-start, var(--form-padding-block));
+    padding: var(--form-error-padding-block, var(--form-padding-block)) var(--form-error-padding-inline, var(--form-padding-inline));
+    background-color: var(--form-error-bg, var(--error-bg, var(--bricks-bg-danger)));
+    color: var(--form-error-color, var(--error-bg-fg, var(--bricks-text-danger)));
+    border-radius: var(--form-error-border-radius, var(--form-border-radius));
+    font-size: var(--form-error-font-size, var(--text-2xs));
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: calc(-1 * var(--form-error-triangle-size, 6px));
+      left: var(--form-error-triangle-offset, 12px);
+      border-left: var(--form-error-triangle-size, 6px) solid transparent;
+      border-right: var(--form-error-triangle-size, 6px) solid transparent;
+      border-bottom: var(--form-error-triangle-size, 6px) solid var(--form-error-bg, var(--error, var(--bricks-bg-danger)));
+    }
   }
 
   & button[type="submit"].sending,
@@ -383,7 +545,7 @@ body {
    BUTTON STYLES (nested)
    ======================================== */
 
-:is(.brxe-button.bricks-button, .brxe-button.btn) {
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -431,44 +593,107 @@ body {
 
   &.bricks-background-primary {
     color: var(--primary-fg);
-    &:hover { background-color: color-mix(in oklab, var(--primary) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--primary) 75%, black); }
+    border-color: var(--primary);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--primary) 85%, black);
+      border-color: color-mix(in oklab, var(--primary) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--primary) 75%, black);
+      border-color: color-mix(in oklab, var(--primary) 75%, black);
+    }
   }
 
   &.bricks-background-secondary {
     color: var(--secondary-fg);
-    &:hover { background-color: color-mix(in oklab, var(--secondary) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--secondary) 75%, black); }
+    border-color: var(--secondary);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--secondary) 85%, black);
+      border-color: color-mix(in oklab, var(--secondary) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--secondary) 75%, black);
+      border-color: color-mix(in oklab, var(--secondary) 75%, black);
+    }
   }
 
   &.bricks-background-light {
     color: var(--dark);
-    &:hover { background-color: color-mix(in oklab, var(--light) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--light) 75%, black); }
+    border-color: var(--light);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--light) 85%, black);
+      border-color: color-mix(in oklab, var(--light) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--light) 75%, black);
+      border-color: color-mix(in oklab, var(--light) 75%, black);
+    }
   }
 
   &.bricks-background-dark {
     color: var(--light);
-    &:hover { background-color: color-mix(in oklab, var(--dark) 85%, white); }
-    &:active { background-color: color-mix(in oklab, var(--dark) 75%, white); }
+    border-color: var(--dark);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--dark) 85%, white);
+      border-color: color-mix(in oklab, var(--dark) 85%, white);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--dark) 75%, white);
+      border-color: color-mix(in oklab, var(--dark) 75%, white);
+    }
   }
 
   &.bricks-background-muted {
     color: var(--muted-fg);
-    &:hover { background-color: color-mix(in oklab, var(--muted) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--muted) 75%, black); }
+    border-color: var(--muted);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--muted) 85%, black);
+      border-color: color-mix(in oklab, var(--muted) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--muted) 75%, black);
+      border-color: color-mix(in oklab, var(--muted) 75%, black);
+    }
   }
 
   &.bricks-background-info {
     color: var(--info-fg);
-    &:hover { background-color: color-mix(in oklab, var(--info) 90%, black); }
-    &:active { background-color: color-mix(in oklab, var(--info) 85%, black); }
+    border-color: var(--info);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--info) 90%, black);
+      border-color: color-mix(in oklab, var(--info) 90%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--info) 85%, black);
+      border-color: color-mix(in oklab, var(--info) 85%, black);
+    }
   }
 
   &.bricks-background-success {
     color: var(--success-fg);
-    &:hover { background-color: color-mix(in oklab, var(--success) 85%, black); }
-    &:active { background-color: color-mix(in oklab, var(--success) 75%, black); }
+    border-color: var(--success);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--success) 85%, black);
+      border-color: color-mix(in oklab, var(--success) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--success) 75%, black);
+      border-color: color-mix(in oklab, var(--success) 75%, black);
+    }
   }
 
   /* Outline variants */
@@ -486,6 +711,7 @@ body {
 
       &:hover {
         background-color: var(--primary);
+        border-color: var(--primary);
         color: var(--primary-fg);
       }
     }
@@ -496,6 +722,7 @@ body {
 
       &:hover {
         background-color: var(--secondary);
+        border-color: var(--secondary);
         color: var(--secondary-fg);
       }
     }
@@ -506,6 +733,7 @@ body {
 
       &:hover {
         background-color: var(--light);
+        border-color: var(--light);
         color: var(--dark);
       }
     }
@@ -516,6 +744,7 @@ body {
 
       &:hover {
         background-color: var(--dark);
+        border-color: var(--dark);
         color: var(--light);
       }
     }
@@ -526,6 +755,7 @@ body {
 
       &:hover {
         background-color: var(--muted);
+        border-color: var(--muted);
         color: var(--muted-fg);
       }
     }
@@ -536,6 +766,7 @@ body {
 
       &:hover {
         background-color: var(--info);
+        border-color: var(--info);
         color: var(--info-fg);
       }
     }
@@ -546,6 +777,7 @@ body {
 
       &:hover {
         background-color: var(--success);
+        border-color: var(--success);
         color: var(--success-fg);
       }
     }
@@ -611,20 +843,46 @@ body {
   &.rounded-full {
     border-radius: 9999px;
   }
+
+  /* Text button variant */
+  &.btn--text {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+/* Text button - higher specificity to override size classes without !important */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).btn--text {
+  --btn-padding-block: 0;
+  --btn-padding-inline: 0;
+  --btn-s-padding-block: 0;
+  --btn-s-padding-inline: 0;
+  --btn-l-padding-block: 0;
+  --btn-l-padding-inline: 0;
+  padding-block: 0;
+  padding-inline: 0;
 }
 
 @keyframes button-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Arrow icon animation */
-:is(.brxe-button.bricks-button, .btn--text) {
-  & > i.fa-arrow-right {
+:is(.brxe-button.bricks-button, button.bricks-button, .btn--text) {
+  &>i.fa-arrow-right,
+  &>svg {
     transition: all .3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  &:hover > i.fa-arrow-right {
-    padding-left: 4px;
+  &:hover>i.fa-arrow-right,
+  &:hover>svg {
+    margin-inline-start: 4px;
   }
 }
 
@@ -650,10 +908,10 @@ body {
 
 :is(.list--icon, .brxe-text) li {
   display: grid;
-  grid-template-columns: auto minmax(0,1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--icon-gap);
   margin-block-start: 0;
-  
+
   &::before {
     content: '';
     display: var(--icon-display);
@@ -663,9 +921,10 @@ body {
     -webkit-mask-image: var(--icon-url);
     mask-image: var(--icon-url);
     mask-size: cover;
-    translate: var(--icon-offset); 
+    translate: var(--icon-offset);
     z-index: 1;
-   }
+  }
+
   &::after {
     content: '';
     position: absolute;
@@ -704,7 +963,7 @@ body {
 .bricks-is-frontend .animation-trigger {
   opacity: 0;
 }
- 
+
 /* Animated Class*/
 .animate {
   animation-name: fadeAnimation;
@@ -723,41 +982,85 @@ body {
 .animation--left-to-right {
   --animate-fade-from-translate: calc(-1 * var(--animate-distance, 20px)), 0, 0;
 }
+
 .animation--right-to-left {
   --animate-fade-from-translate: var(--animate-distance, 20px), 0, 0;
 }
+
 .animation--top-to-bottom {
   --animate-fade-from-translate: 0, calc(-1 * var(--animate-distance, 20px)), 0;
 }
+
 .animation--bottom-to-top {
   --animate-fade-from-translate: 0, var(--animate-distance, 20px), 0;
 }
 
 
-:where(.stagger) { --animate-delay-step: 200ms; }
-.stagger > * { --animate-delay: 0; }
+:where(.stagger) {
+  --animate-delay-step: 200ms;
+}
+
+.stagger>* {
+  --animate-delay: 0;
+}
 
 /* vorwärts */
-.stagger > *:nth-child(1)  { --animate-delay: 0 }
-.stagger > *:nth-child(2)  { --animate-delay: 1 }
-.stagger > *:nth-child(3)  { --animate-delay: 2 }
-.stagger > *:nth-child(4)  { --animate-delay: 3 }
-.stagger > *:nth-child(5)  { --animate-delay: 4 }
-.stagger > *:nth-child(6)  { --animate-delay: 5 }
-.stagger > *:nth-child(7)  { --animate-delay: 6 }
-.stagger > *:nth-child(8)  { --animate-delay: 7 }
-.stagger > *:nth-child(9)  { --animate-delay: 8 }
-.stagger > *:nth-child(10) { --animate-delay: 9 }
-.stagger > *:nth-child(11) { --animate-delay: 10 }
-.stagger > *:nth-child(12) { --animate-delay: 11 }
+.stagger>*:nth-child(1) {
+  --animate-delay: 0
+}
 
- 
+.stagger>*:nth-child(2) {
+  --animate-delay: 1
+}
+
+.stagger>*:nth-child(3) {
+  --animate-delay: 2
+}
+
+.stagger>*:nth-child(4) {
+  --animate-delay: 3
+}
+
+.stagger>*:nth-child(5) {
+  --animate-delay: 4
+}
+
+.stagger>*:nth-child(6) {
+  --animate-delay: 5
+}
+
+.stagger>*:nth-child(7) {
+  --animate-delay: 6
+}
+
+.stagger>*:nth-child(8) {
+  --animate-delay: 7
+}
+
+.stagger>*:nth-child(9) {
+  --animate-delay: 8
+}
+
+.stagger>*:nth-child(10) {
+  --animate-delay: 9
+}
+
+.stagger>*:nth-child(11) {
+  --animate-delay: 10
+}
+
+.stagger>*:nth-child(12) {
+  --animate-delay: 11
+}
+
+
 /* Keyframes */
 @keyframes fadeAnimation {
   from {
     transform: translate3d(var(--animate-fade-from-translate));
     opacity: 0;
   }
+
   to {
     opacity: 1;
     transform: translate3d(var(--animate-fade-to-translate));
