@@ -797,7 +797,11 @@ class DashboardRenderer
         $phone = $this->get_option('contact_phone', '');
         $website = $this->get_option('contact_website', '');
         $address = $this->get_option('contact_address', '');
+        // Fallback to brand_logo for backwards compatibility
         $logo = $this->get_option('contact_logo', '');
+        if (empty($logo)) {
+            $logo = $this->get_option('brand_logo', '');
+        }
         $logo_height = absint($this->get_option('contact_logo_height', 48));
 
         ?>
