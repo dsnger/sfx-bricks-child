@@ -2682,6 +2682,17 @@ $stats['orders'] = [
                 $users = count_users();
                 return isset($users['total_users']) ? (int) $users['total_users'] : 0;
             default:
+                // Custom stat (registered via sfx_custom_dashboard_stats filter)
+                if (strpos($id, 'custom_') === 0) {
+                    $config = $item['config'] ?? [];
+                    if (empty($config)) {
+                        return 0;
+                    }
+                    // Add stat ID to config (without 'custom_' prefix) for StatsProvider
+                    $custom_id = str_replace('custom_', '', $id);
+                    $config['id'] = $custom_id;
+                    return StatsProvider::get_custom_stat_count($config);
+                }
                 // Custom post type
                 if (strpos($id, 'cpt_') === 0) {
                     $post_type = $item['post_type'] ?? str_replace('cpt_', '', $id);
