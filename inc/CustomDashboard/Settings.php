@@ -1625,6 +1625,141 @@ CSS;
         echo '<p>' . esc_html__('Choose which statistics to display on your dashboard.', 'sfxtheme') . '</p>';
     }
 
+    /**
+     * Render compact help box for custom statistics
+     *
+     * @return void
+     */
+    private static function render_custom_stats_help_box(): void
+    {
+        ?>
+        <div class="sfx-dev-panel">
+            <div class="sfx-dev-panel-header">
+                <span class="dashicons dashicons-editor-code"></span>
+                <span class="sfx-dev-panel-title"><?php esc_html_e('Developer API', 'sfxtheme'); ?></span>
+            </div>
+            
+            <div class="sfx-dev-panel-body">
+                <p class="sfx-dev-intro"><?php esc_html_e('Register custom statistics via filter:', 'sfxtheme'); ?></p>
+                
+                <pre class="sfx-code-block"><code>add_filter('sfx_custom_dashboard_stats', function($stats) {
+    $stats['my_stat'] = [
+        'label'      => 'My Stat',
+        'query_type' => 'callback',
+        'callback'   => fn() => 42,
+        'url'        => admin_url('...'),
+    ];
+    return $stats;
+});</code></pre>
+
+                <div class="sfx-dev-sections">
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-list-view"></span>
+                            <?php esc_html_e('Query Types', 'sfxtheme'); ?>
+                        </summary>
+                        <div class="sfx-dev-section-content">
+                            <table class="sfx-dev-table">
+                                <tbody>
+                                    <tr><td><code>callback</code></td><td><?php esc_html_e('Custom function', 'sfxtheme'); ?></td></tr>
+                                    <tr><td><code>wp_count_posts</code></td><td>post_type, status</td></tr>
+                                    <tr><td><code>wp_count_comments</code></td><td>status</td></tr>
+                                    <tr><td><code>wp_query</code></td><td>query_args</td></tr>
+                                    <tr><td><code>user_query</code></td><td>query_args</td></tr>
+                                    <tr><td><code>database</code></td><td>sql_callback</td></tr>
+                                    <tr><td><code>woocommerce</code></td><td>wc_query_type, query_args</td></tr>
+                                    <tr><td><code>external_api</code></td><td>api_callback</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-clock"></span>
+                            <?php esc_html_e('Pending Posts', 'sfxtheme'); ?>
+                        </summary>
+                        <pre class="sfx-code-block"><code>$stats['pending'] = [
+    'label'      => 'Pending Posts',
+    'query_type' => 'wp_count_posts',
+    'post_type'  => 'post',
+    'status'     => 'pending',
+];</code></pre>
+                    </details>
+
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-admin-comments"></span>
+                            <?php esc_html_e('Comments Count', 'sfxtheme'); ?>
+                        </summary>
+                        <pre class="sfx-code-block"><code>$stats['comments'] = [
+    'label'      => 'Approved Comments',
+    'query_type' => 'wp_count_comments',
+    'status'     => 'approved',
+];</code></pre>
+                    </details>
+
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-products"></span>
+                            <?php esc_html_e('WooCommerce', 'sfxtheme'); ?>
+                        </summary>
+                        <pre class="sfx-code-block"><code>$stats['products'] = [
+    'label'         => 'Products',
+    'query_type'    => 'woocommerce',
+    'wc_query_type' => 'products',
+];
+
+$stats['orders'] = [
+    'label'         => 'Completed Orders',
+    'query_type'    => 'woocommerce',
+    'wc_query_type' => 'orders',
+    'query_args'    => ['status' => ['completed']],
+];</code></pre>
+                    </details>
+
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-database"></span>
+                            <?php esc_html_e('Database Query', 'sfxtheme'); ?>
+                        </summary>
+                        <pre class="sfx-code-block"><code>$stats['submissions'] = [
+    'label'        => 'Form Submissions',
+    'query_type'   => 'database',
+    'sql_callback' => function() {
+        global $wpdb;
+        return (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}entries"
+        );
+    },
+];</code></pre>
+                    </details>
+
+                    <details class="sfx-dev-section">
+                        <summary>
+                            <span class="dashicons dashicons-admin-users"></span>
+                            <?php esc_html_e('User Query', 'sfxtheme'); ?>
+                        </summary>
+                        <pre class="sfx-code-block"><code>$stats['premium'] = [
+    'label'      => 'Premium Users',
+    'query_type' => 'user_query',
+    'query_args' => [
+        'meta_key'   => 'membership',
+        'meta_value' => 'premium',
+    ],
+];</code></pre>
+                    </details>
+                </div>
+
+                <div class="sfx-dev-footer">
+                    <span class="dashicons dashicons-info-outline"></span>
+                    <?php esc_html_e('Stats cached 5 min. Auto-clears on content changes.', 'sfxtheme'); ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
     public static function render_quicklinks_section(): void
     {
         echo '<p>' . esc_html__('Manage quick action links that appear on your dashboard.', 'sfxtheme') . '</p>';
@@ -2392,6 +2527,30 @@ CSS;
             ];
         }
 
+        // Add hook-defined custom stats
+        // Filter: sfx_custom_dashboard_stats
+        // Allows developers to register custom statistics via PHP
+        $custom_stats = apply_filters('sfx_custom_dashboard_stats', []);
+
+        if (is_array($custom_stats)) {
+            foreach ($custom_stats as $custom_id => $config) {
+                // Validate configuration - label is required
+                if (empty($config['label'])) {
+                    continue;
+                }
+
+                // Sanitize ID
+                $stat_id = 'custom_' . sanitize_key($custom_id);
+
+                $stats[$stat_id] = [
+                    'id' => $stat_id,
+                    'label' => sanitize_text_field($config['label']),
+                    'type' => 'custom',
+                    'config' => $config, // Store full config for later use
+                ];
+            }
+        }
+
         return $stats;
     }
 
@@ -2455,35 +2614,46 @@ CSS;
         }
 
         ?>
-        <div class="sfx-stats-items-container">
-            <p class="description" style="margin-bottom: 15px;">
-                <?php esc_html_e('Drag to reorder. Check to enable/disable each stat card.', 'sfxtheme'); ?>
-            </p>
-            <ul class="sfx-stats-sortable" id="sfx-stats-sortable">
-                <?php foreach ($ordered_items as $index => $item): ?>
-                    <?php
-                    $count = self::get_stat_count($item);
-                    $type_badge = $item['type'] === 'cpt' ? '<span class="sfx-stat-badge">CPT</span>' : '';
-                    ?>
-                    <li class="sfx-stat-item" data-id="<?php echo esc_attr($item['id']); ?>">
-                        <span class="sfx-stat-drag-handle">☰</span>
-                        <label class="sfx-stat-checkbox">
-                            <input type="checkbox" 
-                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
-                                   value="1" 
-                                   <?php checked(!empty($item['enabled'])); ?> />
-                            <input type="hidden" 
-                                   name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
-                                   value="<?php echo esc_attr($item['id']); ?>" />
-                        </label>
-                        <span class="sfx-stat-label">
-                            <?php echo esc_html($item['label']); ?>
-                            <?php echo $type_badge; ?>
-                        </span>
-                        <span class="sfx-stat-count"><?php echo absint($count); ?></span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+        <div class="sfx-stats-field-wrapper">
+            <div class="sfx-stats-list-column">
+                <p class="description" style="margin-bottom: 15px;">
+                    <?php esc_html_e('Drag to reorder. Check to enable/disable each stat card.', 'sfxtheme'); ?>
+                </p>
+                <ul class="sfx-stats-sortable" id="sfx-stats-sortable">
+                    <?php foreach ($ordered_items as $index => $item): ?>
+                        <?php
+                        $count = self::get_stat_count($item);
+                        $type_badge = '';
+                        if (($item['type'] ?? '') === 'cpt') {
+                            $type_badge = '<span class="sfx-stat-badge">CPT</span>';
+                        } elseif (($item['type'] ?? '') === 'custom') {
+                            $type_badge = '<span class="sfx-stat-badge sfx-badge-custom">' . __('Custom', 'sfxtheme') . '</span>';
+                        }
+                        ?>
+                        <li class="sfx-stat-item" data-id="<?php echo esc_attr($item['id']); ?>">
+                            <span class="sfx-stat-drag-handle">☰</span>
+                            <label class="sfx-stat-checkbox">
+                                <input type="checkbox" 
+                                       class="sfx-toggle"
+                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][enabled]" 
+                                       value="1" 
+                                       <?php checked(!empty($item['enabled'])); ?> />
+                                <input type="hidden" 
+                                       name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][<?php echo $index; ?>][id]" 
+                                       value="<?php echo esc_attr($item['id']); ?>" />
+                            </label>
+                            <span class="sfx-stat-label">
+                                <?php echo esc_html($item['label']); ?>
+                                <?php echo $type_badge; ?>
+                            </span>
+                            <span class="sfx-stat-count"><?php echo absint($count); ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <div class="sfx-stats-help-column">
+                <?php self::render_custom_stats_help_box(); ?>
+            </div>
         </div>
         <?php
     }

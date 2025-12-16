@@ -98,390 +98,29 @@
     background: #fff;
     border-color: #2271b1;
     outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
 }
 
-/* Icon Input Wrapper with Preview */
-.sfx-icon-input-wrapper {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-}
-
-.sfx-icon-preview {
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f0f1;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 8px;
-}
-
-.sfx-icon-preview svg {
-    width: 28px;
-    height: 28px;
-    color: #333;
-}
-
-.sfx-icon-preview:empty::before {
-    content: '?';
-    color: #999;
-    font-size: 18px;
-}
-
-/* Custom Link Row */
-.sfx-custom-link-row {
-    transition: background 0.2s ease;
-}
-
-.sfx-custom-link-row:hover {
-    background: #f9f9f9;
-}
-
-.sfx-remove-link {
-    color: #b32d2e;
-    border-color: #b32d2e;
-}
-
-.sfx-remove-link:hover {
-    background: #b32d2e;
-    color: #fff;
-}
-
-/* Add Custom Link Button */
-#sfx-add-custom-link {
-    margin-top: 10px;
-}
-
-/* Dashboard Header */
-.sfx-dashboard-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.sfx-dashboard-header-content {
-    flex: 1;
-}
-
-.sfx-dashboard-header-content h1 {
-    margin: 0 0 10px 0;
-}
-
-.sfx-dashboard-header-content p {
-    margin: 0;
-    color: #646970;
-}
-
-.sfx-dashboard-header-actions {
-    flex-shrink: 0;
-    padding-top: 5px;
-}
-
-.sfx-dashboard-header-actions .button-primary {
-    height: auto;
-    padding: 8px 16px;
-    font-size: 14px;
-}
-
-@media (max-width: 782px) {
-    .sfx-dashboard-header {
-        flex-direction: column;
-    }
-
-    .sfx-dashboard-header-actions {
-        width: 100%;
-    }
-
-    .sfx-dashboard-header-actions .button-primary {
-        width: 100%;
-        text-align: center;
-    }
-}
-
-/* Settings Sections */
-.form-table {
-    margin-top: 20px;
-}
-
-.form-table th {
-    font-weight: 600;
-}
-
-/* Empty State for Custom Links */
-.sfx-custom-quicklinks-empty {
-    padding: 20px;
-    text-align: center;
-    color: #666;
-    font-style: italic;
-}
-
-/* Tab System */
-.nav-tab-wrapper {
-    margin: 20px 0;
-    border-bottom: 1px solid #ccc;
-}
-
-.sfx-dashboard-settings-form {
-    margin-top: 20px;
-    background: #fff;
-    padding: 20px;
-    border: 1px solid #ccd0d4;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
-}
-
-/* Sub-tab Navigation */
-.sfx-subtab-wrapper {
-    margin-top: 0;
-}
-
-.sfx-subtab-nav {
-    display: flex;
-    gap: 5px;
-    padding: 0 0 15px 0;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 20px;
-}
-
-.sfx-subtab {
-    padding: 8px 16px;
-    text-decoration: none;
-    color: #50575e;
-    background: #f0f0f1;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.sfx-subtab:hover {
-    background: #e0e0e0;
-    color: #1d2327;
-}
-
-.sfx-subtab-active {
-    background: #2271b1;
-    color: #fff;
-}
-
-.sfx-subtab-active:hover {
-    background: #135e96;
-    color: #fff;
-}
-
-.sfx-subtab-content {
-    padding-top: 10px;
-}
-
-.sfx-settings-section {
-    margin-bottom: 30px;
-}
-
-.sfx-settings-section:last-child {
-    margin-bottom: 0;
-}
-
-.sfx-settings-section h2 {
-    margin-top: 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e5e5e5;
-}
-
-.sfx-settings-section p.description {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: #646970;
-}
-
-/* Logo Upload Styling */
-.sfx-logo-upload {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.sfx-logo-preview {
-    flex-basis: 100%;
-}
-
-.sfx-logo-preview img {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 5px;
-    background: #f9f9f9;
-}
-
-.sfx-upload-logo-button {
-    background: #2271b1;
-    border-color: #2271b1;
-    color: #fff;
-}
-
-.sfx-upload-logo-button:hover {
-    background: #135e96;
-    border-color: #135e96;
-    color: #fff;
-}
-
-/* Color Picker Styling */
-input[type="color"] {
-    width: 100px;
-    height: 40px;
-    padding: 2px;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-/* Dashboard Widgets Sortable */
-.sfx-widgets-items-container {
-    max-width: 600px;
-}
-
-.sfx-widgets-sortable {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.sfx-widget-item {
-    display: grid;
-    grid-template-columns: 30px 50px 1fr;
-    align-items: center;
-    gap: 8px 20px;
-    padding: 12px 15px;
-    background: #fff;
-    border-bottom: 1px solid #eee;
-    cursor: grab;
-    user-select: none;
-}
-
-.sfx-widget-item:last-child {
-    border-bottom: none;
-}
-
-.sfx-widget-item:hover {
-    background: #f7f7f7;
-}
-
-.sfx-widget-item.ui-sortable-helper {
-    background: #fff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    z-index: 9999;
-    cursor: grabbing !important;
-}
-
-.sfx-widget-drag-handle {
-    color: #999;
-    font-size: 18px;
-    cursor: grab;
-    transition: color 0.2s ease;
-}
-
-.sfx-widget-item:hover .sfx-widget-drag-handle {
-    color: #333;
-}
-
-.sfx-widget-checkbox-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.sfx-widget-checkbox-label input[type="checkbox"] {
-    cursor: pointer;
-}
-
-.sfx-widget-label {
-    font-weight: 500;
-    color: #333;
-}
-
-.sfx-widget-placeholder {
-    background: #e8f4fc !important;
-    border: 2px dashed #2271b1 !important;
-    border-radius: 4px;
-    visibility: visible !important;
-    min-height: 50px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    box-sizing: border-box;
-}
-
-/* Custom Post Types Selection */
-.sfx-custom-post-types-selection {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.sfx-cpt-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    background: #fff;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.sfx-cpt-checkbox:hover {
-    background: #f0f6fc;
-}
-
-.sfx-cpt-checkbox input[type="checkbox"] {
-    margin: 0;
-}
-
-.sfx-cpt-checkbox span {
-    font-size: 14px;
-    color: #333;
-}
-
-/* Stats Items Sortable */
+/* Stats Sortable List */
 .sfx-stats-items-container {
     max-width: 600px;
 }
 
 .sfx-stats-sortable {
     list-style: none;
-    margin: 0;
     padding: 0;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
+    margin: 0;
+    border: 1px solid #ccc;
+    background: #fff;
     border-radius: 4px;
 }
 
 .sfx-stat-item {
-    display: grid;
-    grid-template-columns: 30px 50px 1fr auto;
+    display: flex;
     align-items: center;
-    gap: 8px 20px;
-    padding: 12px 15px;
-    background: #fff;
+    padding: 10px 15px;
     border-bottom: 1px solid #eee;
-    transition: background 0.2s ease;
-    position: relative;
-    cursor: move;
-    cursor: grab;
+    background: #fff;
+    transition: background 0.2s;
 }
 
 .sfx-stat-item:last-child {
@@ -489,1012 +128,532 @@ input[type="color"] {
 }
 
 .sfx-stat-item:hover {
-    background: #f7f7f7;
-}
-
-.sfx-stat-item.ui-sortable-helper {
-    background: #fff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    z-index: 9999;
-    cursor: grabbing !important;
-}
-
-.sfx-stat-placeholder {
-    background: #e8f4fc !important;
-    border: 2px dashed #2271b1 !important;
-    border-radius: 4px;
-    visibility: visible !important;
-    min-height: 50px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    box-sizing: border-box;
+    background: #f8f8f8;
 }
 
 .sfx-stat-drag-handle {
-    color: #999;
-    font-size: 18px;
-    user-select: none;
-    line-height: 1;
+    cursor: move;
+    color: #aaa;
+    margin-right: 15px;
+    font-size: 16px;
+    width: 20px;
     text-align: center;
 }
 
-.sfx-stat-item:hover .sfx-stat-drag-handle {
-    color: #333;
+.sfx-stat-item.ui-sortable-helper {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
 }
 
 .sfx-stat-checkbox {
+    margin-right: 15px;
     display: flex;
     align-items: center;
-    justify-content: center;
 }
 
 .sfx-stat-label {
-    font-size: 14px;
+    flex-grow: 1;
+    font-weight: 500;
     color: #333;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.sfx-stat-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    background: #e0e0e0;
-    color: #666;
-    font-size: 10px;
-    font-weight: 600;
-    border-radius: 3px;
-    text-transform: uppercase;
 }
 
 .sfx-stat-count {
-    flex-shrink: 0;
-    padding: 4px 10px;
-    background: #f0f0f0;
-    color: #666;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 12px;
+    background: #e0e0e0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #555;
+    min-width: 24px;
+    text-align: center;
 }
 
-/* Color Select with Preview */
-.sfx-color-select-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.sfx-color-preview {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
+/* Color Picker */
+.wp-picker-container .wp-color-result.button {
+    height: 30px;
+    padding: 0 30px 0 10px;
+    font-size: 13px;
     border-radius: 4px;
-    border: 2px solid #ddd;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    flex-shrink: 0;
 }
 
-.sfx-color-select {
-    min-width: 150px;
+.wp-picker-container .wp-color-result-text {
+    line-height: 28px;
 }
 
-/* ==========================================================================
-   Sortable Quicklinks Groups
-   ========================================================================== */
-
-.sfx-quicklinks-groups-container {
-    max-width: 1100px;
+/* Settings Sections */
+.sfx-settings-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    border-radius: 4px;
 }
 
-/* Groups Sortable Container */
-.sfx-quicklink-groups-sortable {
+.sfx-settings-section h2 {
+    margin-top: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.3em;
+    margin-bottom: 20px;
+}
+
+.sfx-dashboard-header {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-left: 4px solid #009688;
+    padding: 20px 30px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Individual Group */
+.sfx-dashboard-header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 24px;
+    line-height: 1.3;
+}
+
+.sfx-dashboard-header p {
+    margin: 5px 0 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Range Input */
+.sfx-range-input {
+    vertical-align: middle;
+    width: 200px;
+}
+
+.sfx-range-value {
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+    font-weight: bold;
+    background: #f0f0f1;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 10px;
+    font-size: 12px;
+}
+
+/* Sub-tabs */
+.sfx-subtab-wrapper {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.sfx-subtab-nav {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.sfx-subtab {
+    padding: 15px 20px;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    border-right: 1px solid #eee;
+    transition: all 0.2s;
+}
+
+.sfx-subtab:hover {
+    background: #fff;
+    color: #000;
+}
+
+.sfx-subtab-active {
+    background: #fff;
+    color: #009688;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    border-top: 3px solid #009688;
+    padding-top: 12px; /* Compensate for border-top */
+}
+
+.sfx-subtab-content {
+    border: none;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.sfx-reset-section {
+    padding: 20px 30px;
+    background: #fcfcfc;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+/* Preset Cards */
+.sfx-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.sfx-preset-card {
+    border: 2px solid #eee;
+    border-radius: 6px;
+    padding: 15px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.sfx-preset-card:hover {
+    border-color: #009688;
+    background: #f9fdfd;
+}
+
+.sfx-preset-card.active {
+    border-color: #009688;
+    background: #eef9f8;
+    box-shadow: 0 2px 8px rgba(0,150,136,0.15);
+}
+
+.sfx-preset-preview {
+    height: 80px;
+    background: #eee;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.sfx-preset-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.sfx-preset-desc {
+    font-size: 12px;
+    color: #777;
+    margin: 0;
+}
+
+/* Gradient Preview */
+.sfx-gradient-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 3px;
+}
+
+/* Code Editor */
+.sfx-code-editor {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #2d2d2d;
+    color: #ccc;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+/* Select2 Customization */
+.select2-container .select2-selection--multiple {
+    min-height: 32px;
+    border-color: #8c8f94;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #f0f0f1;
+    border: 1px solid #8c8f94;
+    border-radius: 3px;
+    padding: 2px 6px;
+    margin-top: 6px;
+}
+
+/* Sortable Lists in General */
+.ui-sortable-placeholder {
+    border: 1px dashed #009688;
+    background: #eef9f8;
+    height: 45px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+/* Dashboard Widget Toggle */
+.sfx-widget-toggles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.sfx-widget-toggle {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+}
+
+/* Quicklinks Groups */
 .sfx-quicklink-group {
     background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 6px;
-    overflow: visible;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
 }
 
-.sfx-quicklink-group-header {
-    border-radius: 6px 6px 0 0;
-}
-
-.sfx-quicklink-group-content {
-    border-radius: 0 0 6px 6px;
-}
-
-.sfx-quicklink-group.ui-sortable-helper {
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    z-index: 9999;
-}
-
-.sfx-quicklink-group-placeholder {
-    background: #e8f4fc !important;
-    border: 2px dashed #2271b1 !important;
-    border-radius: 6px;
-    min-height: 100px;
-    margin: 10px 0;
-}
-
-.sfx-quicklink-group-new {
-    animation: sfx-group-highlight 1s ease;
-}
-
-@keyframes sfx-group-highlight {
-    0% { background: #fff9c4; }
-    100% { background: #fff; }
-}
-
-/* Group Header */
-.sfx-quicklink-group-header {
+.sfx-group-header {
+    background: #f5f5f5;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ccc;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 15px 20px;
-    background: linear-gradient(to bottom, #f9f9f9, #f3f3f3);
-    border-bottom: 1px solid #ddd;
-}
-
-.sfx-group-drag-handle {
-    color: #999;
-    font-size: 20px;
-    user-select: none;
-    cursor: move;
-    cursor: grab;
-    padding: 5px;
-}
-
-.sfx-quicklink-group:hover .sfx-group-drag-handle {
-    color: #666;
+    justify-content: space-between;
 }
 
 .sfx-group-title-input {
-    flex: 1;
-    font-size: 15px;
     font-weight: 600;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #fff;
-    min-width: 200px;
-}
-
-.sfx-group-title-input:focus {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
-    outline: none;
-}
-
-.sfx-quicklink-group-header .sfx-group-roles {
-    flex-shrink: 0;
-}
-
-.button.sfx-toggle-group,
-.button.sfx-remove-group {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.sfx-toggle-group,
-.sfx-remove-group {
-    padding: 4px 8px !important;
-    min-height: 30px !important;
-}
-
-.sfx-toggle-group .dashicons,
-.sfx-remove-group .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    vertical-align: middle;
-}
-
-.sfx-remove-group {
-    color: #b32d2e !important;
-    border-color: #b32d2e !important;
-}
-
-.sfx-remove-group:hover {
-    background: #b32d2e !important;
-    color: #fff !important;
-}
-
-/* Group Content */
-.sfx-quicklink-group-content {
-    padding: 15px;
-    background: #fafafa;
-}
-
-/* Quicklinks list within groups */
-.sfx-quicklinks-sortable {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    min-height: 50px;
-}
-
-.sfx-quicklinks-sortable:empty::before {
-    content: 'Drag links here or click "+ Add Link"';
-    display: block;
-    padding: 20px;
-    text-align: center;
-    color: #999;
-    font-style: italic;
-}
-
-.sfx-quicklink-item {
-    display: grid;
-    grid-template-columns: 30px 40px 40px minmax(100px, 1fr) minmax(80px, 150px) auto auto auto;
-    align-items: center;
-    gap: 8px 12px;
-    padding: 12px 15px;
-    background: #fff;
-    border-bottom: 1px solid #eee;
-    transition: background 0.2s ease;
-    position: relative;
-}
-
-.sfx-quicklink-item:last-child {
-    border-bottom: none;
-}
-
-/* Hide actions column for predefined links (they don't have edit/remove) */
-.sfx-quicklink-item:not(.sfx-quicklink-item-custom) {
-    grid-template-columns: 30px 40px 40px minmax(100px, 1fr) minmax(80px, 150px) auto auto;
-}
-
-.sfx-quicklink-item:hover {
-    background: #f7f7f7;
-}
-
-.sfx-quicklink-item.ui-sortable-helper {
-    background: #fff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    z-index: 9999;
-    cursor: grabbing !important;
-}
-
-.sfx-quicklink-placeholder {
-    background: #e8f4fc !important;
-    border: 2px dashed #2271b1 !important;
-    border-radius: 4px;
-    visibility: visible !important;
-    min-height: 50px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    box-sizing: border-box;
-}
-
-.sfx-quicklink-drag-handle {
-    color: #999;
-    font-size: 18px;
-    user-select: none;
-    line-height: 1;
-    text-align: center;
-    cursor: move;
-    cursor: grab;
-}
-
-.sfx-quicklink-item:hover .sfx-quicklink-drag-handle {
-    color: #333;
-}
-
-/* Toggle Switch Style for Quicklink Checkboxes */
-.sfx-quicklink-checkbox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    width: 36px;
-    height: 20px;
-    flex-shrink: 0;
-}
-
-.sfx-quicklink-checkbox input[type="checkbox"] {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    position: absolute;
-}
-
-.sfx-quicklink-checkbox::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 36px;
-    height: 20px;
-    background: #ccc;
-    border-radius: 10px;
-    transition: background 0.2s ease;
-    cursor: pointer;
-}
-
-.sfx-quicklink-checkbox::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s ease;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.sfx-quicklink-checkbox:has(input:checked)::before {
-    background: #2271b1;
-}
-
-.sfx-quicklink-checkbox:has(input:checked)::after {
-    transform: translateX(16px);
-}
-
-.sfx-quicklink-checkbox:has(input:focus-visible)::before {
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2271b1;
-}
-
-.sfx-quicklink-icon-preview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: #f0f0f1;
-    border-radius: 4px;
-    padding: 4px;
-}
-
-.sfx-quicklink-icon-preview svg {
-    width: 20px;
-    height: 20px;
-    color: #333;
-}
-
-.sfx-quicklink-label {
     font-size: 14px;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 250px;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
 }
 
-.sfx-quicklink-url {
-    font-size: 11px;
+.sfx-group-title-input:hover,
+.sfx-group-title-input:focus {
+    background: #fff;
+    border-color: #8c8f94;
+}
+
+.sfx-group-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.sfx-group-roles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 15px;
+    font-size: 12px;
     color: #666;
-    background: #f5f5f5;
+}
+
+.sfx-group-body {
+    padding: 15px;
+}
+
+.sfx-quicklinks-sortable {
+    min-height: 50px;
+}
+
+.sfx-add-quicklink-btn {
+    margin-top: 10px !important;
+}
+
+.sfx-group-drag-handle {
+    cursor: move;
+    color: #999;
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+/* Stat badges */
+.sfx-stat-badge {
+    display: inline-block;
+    font-size: 10px;
     padding: 2px 6px;
     border-radius: 3px;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.sfx-quicklink-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    background: #dbeafe;
-    color: #1e40af;
-    font-size: 10px;
-    font-weight: 600;
-    border-radius: 3px;
+    background: #f0f0f1;
+    color: #555;
+    margin-left: 8px;
     text-transform: uppercase;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-/* Custom Quicklink Item - same grid as predefined, with edit form */
-.sfx-quicklink-item-custom {
-    background: #fafbfc;
-    border-left: 3px solid #2271b1;
-}
-
-.sfx-quicklink-item-custom:hover {
-    background: #f5f7f9;
-}
-
-.sfx-quicklink-item-custom.is-editing {
-    background: #f0f6fc;
-}
-
-/* Action buttons group */
-.sfx-quicklink-actions {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-.sfx-edit-quicklink,
-.sfx-remove-quicklink {
-    padding: 4px 8px !important;
-    min-height: 28px !important;
-    line-height: 1 !important;
-}
-
-.sfx-edit-quicklink .dashicons,
-.sfx-remove-quicklink .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
-}
-
-.sfx-edit-quicklink {
-    color: #2271b1 !important;
-    border-color: #2271b1 !important;
-}
-
-.sfx-edit-quicklink:hover {
-    background: #2271b1 !important;
-    color: #fff !important;
-}
-
-.sfx-remove-quicklink {
-    color: #b32d2e !important;
-    border-color: #b32d2e !important;
-}
-
-.sfx-remove-quicklink:hover {
-    background: #b32d2e !important;
-    color: #fff !important;
-}
-
-/* Edit form - slides down from top */
-.sfx-quicklink-edit-form {
-    grid-column: 1 / -1;
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
-    padding: 16px;
-    margin-top: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.sfx-quicklink-edit-fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.sfx-edit-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.sfx-edit-field label {
     font-weight: 600;
-    font-size: 12px;
-    color: #1d2327;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.sfx-edit-field-full {
-    grid-column: 1 / -1;
+/* Modal Styles */
+.sfx-modal-open {
+    overflow: hidden;
 }
 
-.sfx-quicklink-title-input,
-.sfx-quicklink-url-input {
-    width: 100%;
-    font-size: 14px;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #fff;
-}
-
-.sfx-quicklink-title-input:focus,
-.sfx-quicklink-url-input:focus {
-    border-color: #2271b1;
-    outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
-}
-
-.sfx-quicklink-icon-input {
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    padding: 10px 12px;
-    resize: vertical;
-    min-height: 70px;
-    max-height: 150px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-}
-
-.sfx-quicklink-icon-input:focus {
-    background: #fff;
-    border-color: #2271b1;
-    outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
-}
-
-.sfx-quicklink-edit-actions {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #e0e0e0;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.sfx-save-quicklink {
-    min-width: 80px;
-}
-
-/* Validation Feedback Styles */
-.sfx-field-error {
-    border-color: #d63638 !important;
-    box-shadow: 0 0 0 1px #d63638 !important;
-}
-
-.sfx-field-error:focus {
-    border-color: #d63638 !important;
-    box-shadow: 0 0 0 2px rgba(214, 54, 56, 0.25) !important;
-}
-
-.sfx-field-error-message {
-    display: block;
-    color: #d63638;
-    font-size: 12px;
-    margin-top: 4px;
-    padding: 4px 8px;
-    background: #fcf0f1;
-    border-radius: 3px;
-}
-
-/* New item animation */
-.sfx-quicklink-item-new {
-    animation: sfx-highlight-new 1s ease-out;
-}
-
-@keyframes sfx-highlight-new {
-    0% {
-        background: #dbeafe;
-    }
-    100% {
-        background: #fff;
-    }
-}
-
-/* ==========================================================================
-   Role Selector for Quick Links
-   ========================================================================== */
-
-.sfx-quicklink-roles {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.sfx-quicklink-roles-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: #f0f0f1;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #50575e;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.sfx-quicklink-roles-toggle:hover {
-    background: #e5e5e5;
-    border-color: #c3c4c7;
-}
-
-.sfx-quicklink-roles-toggle:focus {
-    outline: none;
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
-}
-
-.sfx-quicklink-roles-toggle[aria-expanded="true"] {
-    background: #2271b1;
-    color: #fff;
-    border-color: #2271b1;
-}
-
-.sfx-quicklink-roles-toggle[aria-expanded="true"] .sfx-roles-toggle-icon {
-    transform: rotate(180deg);
-}
-
-.sfx-roles-toggle-icon {
-    font-size: 8px;
-    transition: transform 0.2s ease;
-    line-height: 1;
-}
-
-.sfx-roles-toggle-label {
-    font-weight: 500;
-}
-
-.sfx-quicklink-roles-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 1000;
-    min-width: 180px;
-    max-height: 280px;
-    overflow-y: auto;
-    margin-top: 4px;
-    padding: 8px 0;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.sfx-role-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 13px;
-    color: #333;
-    transition: background 0.15s ease;
-}
-
-.sfx-role-checkbox:hover {
-    background: #f0f6fc;
-}
-
-.sfx-role-checkbox input[type="checkbox"] {
-    margin: 0;
-    cursor: pointer;
-}
-
-.sfx-role-checkbox input[type="checkbox"]:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.sfx-role-checkbox input[type="checkbox"]:disabled + span {
-    opacity: 0.5;
-}
-
-.sfx-role-checkbox span {
-    flex: 1;
-    user-select: none;
-}
-
-.sfx-role-checkbox-all {
-    background: #f8f9fa;
-    font-weight: 600;
-}
-
-.sfx-role-checkbox-all:hover {
-    background: #e8f4fc;
-}
-
-.sfx-roles-divider {
-    height: 1px;
-    background: #e0e0e0;
-    margin: 6px 0;
-}
-
-/* Update quicklink item grid to accommodate roles */
-.sfx-quicklink-item:not(.sfx-quicklink-item-custom) {
-    grid-template-columns: 30px 40px 40px 1fr auto auto auto;
-}
-
-/* Responsive adjustments for roles */
-@media (max-width: 1200px) {
-    .sfx-quicklink-roles-dropdown {
-        right: 0;
-        left: auto;
-    }
-}
-
-@media (max-width: 782px) {
-    .sfx-quicklink-item:not(.sfx-quicklink-item-custom) {
-        grid-template-columns: 30px 40px 1fr auto auto;
-    }
-    
-    .sfx-quicklink-item:not(.sfx-quicklink-item-custom) .sfx-quicklink-roles {
-        grid-column: span 2;
-        justify-self: start;
-        margin-top: 8px;
-    }
-}
-
-/* Quicklinks Actions (within group) */
-.sfx-quicklinks-actions {
-    margin-top: 12px;
-    padding-top: 0;
-}
-
-.sfx-add-custom-quicklink {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Global Group Actions */
-.sfx-quicklink-groups-actions {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #ddd;
-}
-
-#sfx-add-quicklink-group {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Responsive adjustments for quicklinks */
-@media (max-width: 900px) {
-    .sfx-quicklink-item {
-        grid-template-columns: 30px 40px 40px 1fr auto auto !important;
-    }
-    
-    .sfx-quicklink-item .sfx-quicklink-url {
-        display: none;
-    }
-    
-    .sfx-quicklink-item .sfx-quicklink-actions {
-        gap: 2px;
-    }
-    
-    .sfx-quicklink-edit-fields {
-        grid-template-columns: 1fr;
-    }
-    
-    .sfx-edit-field-full {
-        grid-column: 1;
-    }
-}
-
-@media (max-width: 600px) {
-    .sfx-quicklink-item {
-        grid-template-columns: 30px 40px 1fr auto !important;
-    }
-    
-    .sfx-quicklink-item .sfx-quicklink-icon-preview {
-        display: none;
-    }
-    
-    .sfx-quicklink-item .sfx-quicklink-badge {
-        display: none;
-    }
-}
-
-/* ==========================================================================
-   URL Suggestions Modal
-   ========================================================================== */
-
-/* Modal Overlay */
 .sfx-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 100100;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    box-sizing: border-box;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(2px);
 }
 
-/* Prevent body scroll when modal is open */
-body.sfx-modal-open {
-    overflow: hidden;
+.sfx-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Modal Container */
 .sfx-modal-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    max-height: calc(100vh - 100px);
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    animation: sfx-modal-slide-in 0.25s ease-out;
+    max-height: 90vh;
 }
 
-@keyframes sfx-modal-slide-in {
-    from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.sfx-modal-overlay.active .sfx-modal-container {
+    transform: translateY(0);
 }
 
-/* Modal Header */
 .sfx-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f8fafc;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
 }
 
 .sfx-modal-title {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: #1d2327;
 }
 
 .sfx-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #646970;
+    padding: 4px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    font-size: 24px;
-    line-height: 1;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s;
 }
 
 .sfx-modal-close:hover {
-    background: #e2e8f0;
-    color: #1e293b;
+    background: #f0f0f1;
+    color: #d63638;
 }
 
-/* Modal Search */
-.sfx-modal-search {
-    padding: 12px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #fff;
-}
-
-.sfx-modal-search-input {
-    display: block;
-    width: 100%;
-    padding: 10px 14px;
-    font-size: 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    outline: none;
-    transition: all 0.15s ease;
-    box-sizing: border-box;
-}
-
-.sfx-modal-search-input:focus {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.15);
-}
-
-.sfx-modal-search-input::placeholder {
-    color: #94a3b8;
-}
-
-/* Modal Body */
 .sfx-modal-body {
-    flex: 1;
-    overflow-y: auto;
     padding: 20px;
+    overflow-y: auto;
 }
 
-/* Suggestions Grid */
-.sfx-suggestions-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-/* Category */
 .sfx-suggestion-category {
-    background: #f8fafc;
-    border-radius: 10px;
-    padding: 16px;
+    margin-bottom: 24px;
 }
 
-.sfx-suggestion-category-title {
-    margin: 0 0 12px 0;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-}
-
-/* Items Grid */
-.sfx-suggestion-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-}
-
-/* Individual Item */
-.sfx-suggestion-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.sfx-suggestion-item:hover {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-}
-
-.sfx-suggestion-item:active {
-    transform: translateY(0);
-}
-
-.sfx-suggestion-icon {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: #f1f5f9;
-    border-radius: 6px;
-    color: #475569;
-}
-
-.sfx-suggestion-icon svg {
-    width: 18px;
-    height: 18px;
+.sfx-suggestion-category:last-child {
+    margin-bottom: 0;
 }
 
 .sfx-suggestion-title {
-    flex: 1;
     font-size: 13px;
+    font-weight: 600;
+    color: #646970;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sfx-suggestion-items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.sfx-suggestion-item {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.sfx-suggestion-item:hover {
+    border-color: #2271b1;
+    background: #f0f6fc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.sfx-suggestion-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #50575e;
+    flex-shrink: 0;
+}
+
+.sfx-suggestion-item:hover .sfx-suggestion-icon {
+    color: #2271b1;
+}
+
+.sfx-suggestion-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.sfx-suggestion-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sfx-suggestion-name {
+    display: block;
     font-weight: 500;
-    color: #334155;
+    color: #1d2327;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.sfx-suggestion-desc {
+    display: block;
+    font-size: 12px;
+    color: #646970;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Browse URL Button */
+/* Browse Button */
 .sfx-browse-url-button {
     display: inline-flex;
     align-items: center;
@@ -1564,4 +723,226 @@ body.sfx-modal-open {
     }
 }
 
+/* ========================================
+   Developer Panel - Custom Stats Help
+   ======================================== */
 
+/* Stats Field Layout */
+.sfx-stats-field-wrapper {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.sfx-stats-list-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+.sfx-stats-help-column {
+    flex: 0 0 420px;
+    max-width: 100%;
+}
+
+@media (max-width: 1200px) {
+    .sfx-stats-help-column {
+        flex: 1;
+        width: 100%;
+    }
+}
+
+/* Developer Panel */
+.sfx-dev-panel {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.sfx-dev-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+.sfx-dev-panel-header .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
+}
+
+.sfx-dev-panel-title {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.sfx-dev-panel-body {
+    padding: 16px;
+}
+
+.sfx-dev-intro {
+    margin: 0 0 12px;
+    color: #50575e;
+    font-size: 13px;
+}
+
+.sfx-dev-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* Code Block */
+.sfx-code-block {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 12px 14px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.sfx-code-block code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace;
+    white-space: pre;
+}
+
+/* Developer Sections (Accordions) */
+.sfx-dev-section {
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.sfx-dev-section summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1d2327;
+    outline: none;
+    list-style: none;
+    transition: background 0.15s;
+}
+
+.sfx-dev-section summary::-webkit-details-marker {
+    display: none;
+}
+
+.sfx-dev-section summary::after {
+    content: '';
+    margin-left: auto;
+    width: 0;
+    height: 0;
+    border: 4px solid transparent;
+    border-left: 5px solid #646970;
+    transition: transform 0.2s;
+}
+
+.sfx-dev-section[open] summary::after {
+    transform: rotate(90deg);
+}
+
+.sfx-dev-section summary:hover {
+    background: #f0f0f1;
+}
+
+.sfx-dev-section summary .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #646970;
+}
+
+.sfx-dev-section[open] summary {
+    border-bottom: 1px solid #e2e4e7;
+    background: #f0f0f1;
+}
+
+.sfx-dev-section-content {
+    padding: 0;
+}
+
+.sfx-dev-section .sfx-code-block {
+    margin: 0;
+    border-radius: 0;
+    font-size: 11px;
+}
+
+/* Developer Table */
+.sfx-dev-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.sfx-dev-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.sfx-dev-table tr:last-child td {
+    border-bottom: none;
+}
+
+.sfx-dev-table td:first-child {
+    width: 120px;
+    font-weight: 500;
+}
+
+.sfx-dev-table td:first-child code {
+    background: #e8f0fe;
+    color: #1a56db;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.sfx-dev-table td:last-child {
+    color: #646970;
+}
+
+/* Developer Footer */
+.sfx-dev-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #646970;
+}
+
+.sfx-dev-footer .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #dba617;
+}
+
+/* Custom Badge */
+.sfx-badge-custom {
+    background: #e5e5f7;
+    color: #4f46e5;
+    border: 1px solid #c7c7f1;
+}

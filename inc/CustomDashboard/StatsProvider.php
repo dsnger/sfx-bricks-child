@@ -102,6 +102,140 @@ class StatsProvider
     }
 
     /**
+     * Get count for custom stat with flexible query types
+     *
+     * Supports multiple data sources: WordPress native, WooCommerce, custom tables,
+     * meta queries, and external APIs via callbacks.
+     *
+     * @param array<string, mixed> $config Stat configuration array
+     * @return int
+     */
+    public static function get_custom_stat_count(array $config): int
+    {
+        $stat_id = $config['id'] ?? 'unknown';
+        $cache_key = self::CACHE_PREFIX . 'custom_' . sanitize_key($stat_id);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return (int) $cached;
+        }
+
+        $count = 0;
+        $query_type = $config['query_type'] ?? 'callback';
+
+        switch ($query_type) {
+            case 'wp_count_posts':
+                // Count posts by type and status
+                $post_type = $config['post_type'] ?? 'post';
+                $status = $config['status'] ?? 'publish';
+                $count_obj = wp_count_posts($post_type);
+                $count = isset($count_obj->{$status}) ? (int) $count_obj->{$status} : 0;
+                break;
+
+            case 'wp_count_comments':
+                // Count comments by status
+                $comments = wp_count_comments();
+                $status = $config['status'] ?? 'approved';
+                $count = isset($comments->{$status}) ? (int) $comments->{$status} : 0;
+                break;
+
+            case 'wp_query':
+                // WP_Query for complex post queries
+                $args = $config['query_args'] ?? [];
+                $args['fields'] = 'ids';
+                $args['posts_per_page'] = -1;
+                $query = new \WP_Query($args);
+                $count = $query->found_posts;
+                wp_reset_postdata();
+                break;
+
+            case 'user_query':
+                // WP_User_Query for user counts
+                $args = $config['query_args'] ?? [];
+                $args['fields'] = 'ID';
+                $query = new \WP_User_Query($args);
+                $count = $query->get_total();
+                break;
+
+            case 'database':
+                // Direct database query via callback (for security)
+                if (!empty($config['sql_callback']) && is_callable($config['sql_callback'])) {
+                    $count = (int) call_user_func($config['sql_callback']);
+                }
+                break;
+
+            case 'woocommerce':
+                // WooCommerce-specific queries
+                if (function_exists('wc_get_products') && !empty($config['wc_query_type'])) {
+                    $count = self::get_woocommerce_count($config);
+                }
+                break;
+
+            case 'external_api':
+                // External API calls via callback
+                if (!empty($config['api_callback']) && is_callable($config['api_callback'])) {
+                    $count = (int) call_user_func($config['api_callback']);
+                }
+                break;
+
+            case 'callback':
+            default:
+                // Custom callback function (most flexible)
+                if (isset($config['callback']) && is_callable($config['callback'])) {
+                    $count = (int) call_user_func($config['callback']);
+                }
+                break;
+        }
+
+        // Ensure count is non-negative integer
+        $count = max(0, (int) $count);
+
+        set_transient($cache_key, $count, self::CACHE_DURATION);
+        return $count;
+    }
+
+    /**
+     * Get WooCommerce-specific count
+     *
+     * @param array<string, mixed> $config Configuration array with wc_query_type and optional query_args
+     * @return int
+     */
+    private static function get_woocommerce_count(array $config): int
+    {
+        $wc_type = $config['wc_query_type'] ?? 'products';
+
+        switch ($wc_type) {
+            case 'products':
+                $args = $config['query_args'] ?? [];
+                $args['return'] = 'ids';
+                $args['limit'] = -1;
+                $products = wc_get_products($args);
+                return count($products);
+
+            case 'orders':
+                if (!class_exists('WC_Order_Query')) {
+                    return 0;
+                }
+                $args = $config['query_args'] ?? ['status' => ['completed']];
+                $args['return'] = 'ids';
+                $args['limit'] = -1;
+                $query = new \WC_Order_Query($args);
+                return count($query->get_orders());
+
+            case 'customers':
+                $args = $config['query_args'] ?? [];
+                $query = new \WP_User_Query(array_merge([
+                    'role' => 'customer',
+                    'fields' => 'ID',
+                ], $args));
+                return $query->get_total();
+
+            default:
+                return 0;
+        }
+    }
+
+    /**
      * Clear all cached statistics
      *
      * @return void
@@ -160,18 +294,24 @@ class StatsProvider
     }
 
     /**
-     * Clear all cached statistics including custom post types
+     * Clear all cached statistics including custom post types and custom stats
      *
      * @param array<string> $custom_post_types Optional array of custom post types to clear
+     * @param array<string> $custom_stat_ids Optional array of custom stat IDs to clear
      * @return void
      */
-    public static function clear_all_cache(array $custom_post_types = []): void
+    public static function clear_all_cache(array $custom_post_types = [], array $custom_stat_ids = []): void
     {
         self::clear_cache();
-        
+
         // Clear custom post type caches
         foreach ($custom_post_types as $post_type) {
             delete_transient(self::CACHE_PREFIX . 'cpt_' . $post_type);
+        }
+
+        // Clear custom stat caches
+        foreach ($custom_stat_ids as $stat_id) {
+            delete_transient(self::CACHE_PREFIX . 'custom_' . sanitize_key($stat_id));
         }
     }
 }
