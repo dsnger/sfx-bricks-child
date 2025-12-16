@@ -144,15 +144,3 @@ function sfx_get_theme_post_types(): array
 if ((!class_exists('SFX\\Environment') || !\SFX\Environment::is_dev_mode()) || (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_updater']))) {
     $updater->initialize();
 }
-
-
-add_filter('sfx_custom_dashboard_stats', function($stats) {
-    
-    $stats['pending'] = [
-        'label'      => 'Pending Posts',
-        'query_type' => 'wp_count_posts',
-        'post_type'  => 'post',
-        'status'     => 'pending',
-    ];
-    return $stats;
-});
