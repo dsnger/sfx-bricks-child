@@ -498,8 +498,21 @@ class DashboardRenderer
             ],
         ];
 
+        // Allow filtering default stat configs (icons, labels, URLs, etc.)
+        $configs = apply_filters('sfx_dashboard_stat_configs', $configs, $stat_id);
+
         if (isset($configs[$stat_id])) {
-            return $configs[$stat_id];
+            $config = $configs[$stat_id];
+            
+            // Allow filtering individual stat config
+            $config = apply_filters('sfx_dashboard_stat_config', $config, $stat_id);
+            
+            // Sanitize icon if it was modified
+            if (isset($config['icon'])) {
+                $config['icon'] = wp_kses($config['icon'], Settings::get_allowed_svg_tags());
+            }
+            
+            return $config;
         }
 
         // Handle custom post types (cpt_*)

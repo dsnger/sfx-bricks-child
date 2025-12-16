@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SFX Bricks Child Theme Functions
  *
@@ -55,7 +56,7 @@ if (file_exists($environment_file)) {
 require_once get_stylesheet_directory() . '/inc/SFXBricksChildTheme.php';
 
 // Initialize theme after WordPress is ready
-add_action('after_setup_theme', function() {
+add_action('after_setup_theme', function () {
     $sfx_child_theme = new \SFX\SFXBricksChildTheme();
     $sfx_child_theme->init();
 }, 1); // Priority 1 to run early but after WordPress core setup
@@ -66,7 +67,7 @@ $updater = new \SFX\GitHubThemeUpdater();
 
 // Debug: Show development mode status
 if (is_admin() && current_user_can('manage_options') && class_exists('SFX\\Environment') && \SFX\Environment::is_dev_mode()) {
-    add_action('admin_notices', function() {
+    add_action('admin_notices', function () {
         $current_screen = get_current_screen();
         if (!$current_screen) {
             return;
@@ -74,7 +75,7 @@ if (is_admin() && current_user_can('manage_options') && class_exists('SFX\\Envir
 
         // Dynamic detection of theme-related pages
         $is_theme_page = sfx_is_theme_related_page($current_screen);
-        
+
         if ($is_theme_page) {
             echo '<div class="notice notice-info"><p>';
             echo '<strong>SFX Theme Status:</strong> ';
@@ -121,10 +122,10 @@ function sfx_get_theme_post_types(): array
     // Auto-discover post types by scanning the inc directory
     $post_types = [];
     $inc_dir = get_stylesheet_directory() . '/inc/';
-    
+
     if (is_dir($inc_dir)) {
         $directories = glob($inc_dir . '*', GLOB_ONLYDIR);
-        
+
         foreach ($directories as $dir) {
             $post_type_file = $dir . '/PostType.php';
             if (file_exists($post_type_file)) {
@@ -145,4 +146,13 @@ if ((!class_exists('SFX\\Environment') || !\SFX\Environment::is_dev_mode()) || (
 }
 
 
-
+add_filter('sfx_custom_dashboard_stats', function($stats) {
+    
+    $stats['pending'] = [
+        'label'      => 'Pending Posts',
+        'query_type' => 'wp_count_posts',
+        'post_type'  => 'post',
+        'status'     => 'pending',
+    ];
+    return $stats;
+});

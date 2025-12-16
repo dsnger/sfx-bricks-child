@@ -199,29 +199,36 @@
 }
 
 .sfx-dashboard-header {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    border-left: 4px solid #009688;
-    padding: 20px 30px;
-    margin-bottom: 20px;
     margin-top: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.sfx-dashboard-header-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .sfx-dashboard-header h1 {
-    margin: 0;
+    margin: 0 0 5px 0;
     padding: 0;
-    font-size: 24px;
+    font-size: 23px;
     line-height: 1.3;
+    font-weight: 400;
 }
 
 .sfx-dashboard-header p {
-    margin: 5px 0 0;
-    color: #666;
+    margin: 0;
+    color: #646970;
     font-size: 14px;
+}
+
+.sfx-dashboard-header-actions {
+    flex-shrink: 0;
 }
 
 /* Range Input */
