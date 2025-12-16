@@ -50,19 +50,19 @@ class PostType
     public static function register_post_type(): void
     {
         $labels = [
-            'name'                  => __('Text Snippets', 'sfx-bricks-child'),
-            'singular_name'         => __('Text Snippet', 'sfx-bricks-child'),
-            'add_new'               => __('Add New', 'sfx-bricks-child'),
-            'add_new_item'          => __('Add New Text Snippet', 'sfx-bricks-child'),
-            'edit_item'             => __('Edit Text Snippet', 'sfx-bricks-child'),
-            'new_item'              => __('New Text Snippet', 'sfx-bricks-child'),
-            'view_item'             => __('View Text Snippet', 'sfx-bricks-child'),
-            'search_items'          => __('Search Text Snippets', 'sfx-bricks-child'),
-            'not_found'             => __('No text snippets found', 'sfx-bricks-child'),
-            'not_found_in_trash'    => __('No text snippets found in Trash', 'sfx-bricks-child'),
-            'all_items'             => __('All Text Snippets', 'sfx-bricks-child'),
-            'menu_name'             => __('Text Snippets', 'sfx-bricks-child'),
-            'name_admin_bar'        => __('Text Snippet', 'sfx-bricks-child'),
+            'name'                  => __('Text Snippets', 'sfxtheme'),
+            'singular_name'         => __('Text Snippet', 'sfxtheme'),
+            'add_new'               => __('Add New', 'sfxtheme'),
+            'add_new_item'          => __('Add New Text Snippet', 'sfxtheme'),
+            'edit_item'             => __('Edit Text Snippet', 'sfxtheme'),
+            'new_item'              => __('New Text Snippet', 'sfxtheme'),
+            'view_item'             => __('View Text Snippet', 'sfxtheme'),
+            'search_items'          => __('Search Text Snippets', 'sfxtheme'),
+            'not_found'             => __('No text snippets found', 'sfxtheme'),
+            'not_found_in_trash'    => __('No text snippets found in Trash', 'sfxtheme'),
+            'all_items'             => __('All Text Snippets', 'sfxtheme'),
+            'menu_name'             => __('Text Snippets', 'sfxtheme'),
+            'name_admin_bar'        => __('Text Snippet', 'sfxtheme'),
         ];
 
         $args = [
@@ -87,17 +87,17 @@ class PostType
     public static function register_taxonomy(): void
     {
         $labels = [
-            'name'              => __('Snippet Categories', 'sfx-bricks-child'),
-            'singular_name'     => __('Snippet Category', 'sfx-bricks-child'),
-            'search_items'      => __('Search Snippet Categories', 'sfx-bricks-child'),
-            'all_items'         => __('All Snippet Categories', 'sfx-bricks-child'),
-            'parent_item'       => __('Parent Category', 'sfx-bricks-child'),
-            'parent_item_colon' => __('Parent Category:', 'sfx-bricks-child'),
-            'edit_item'         => __('Edit Category', 'sfx-bricks-child'),
-            'update_item'       => __('Update Category', 'sfx-bricks-child'),
-            'add_new_item'      => __('Add New Category', 'sfx-bricks-child'),
-            'new_item_name'     => __('New Category Name', 'sfx-bricks-child'),
-            'menu_name'         => __('Snippet Categories', 'sfx-bricks-child'),
+            'name'              => __('Snippet Categories', 'sfxtheme'),
+            'singular_name'     => __('Snippet Category', 'sfxtheme'),
+            'search_items'      => __('Search Snippet Categories', 'sfxtheme'),
+            'all_items'         => __('All Snippet Categories', 'sfxtheme'),
+            'parent_item'       => __('Parent Category', 'sfxtheme'),
+            'parent_item_colon' => __('Parent Category:', 'sfxtheme'),
+            'edit_item'         => __('Edit Category', 'sfxtheme'),
+            'update_item'       => __('Update Category', 'sfxtheme'),
+            'add_new_item'      => __('Add New Category', 'sfxtheme'),
+            'new_item_name'     => __('New Category Name', 'sfxtheme'),
+            'menu_name'         => __('Snippet Categories', 'sfxtheme'),
         ];
 
         $args = [
@@ -123,7 +123,7 @@ class PostType
     {
         add_meta_box(
             'sfx_text_snippet_fields',
-            __('Text Snippet Custom Fields', 'sfx-bricks-child'),
+            __('Text Snippet Custom Fields', 'sfxtheme'),
             [self::class, 'render_meta_box'],
             self::$post_type,
             'normal',
@@ -148,8 +148,8 @@ class PostType
             <table class="widefat">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e('Field Slug', 'sfx-bricks-child'); ?></th>
-                        <th><?php esc_html_e('Value', 'sfx-bricks-child'); ?></th>
+                        <th><?php esc_html_e('Field Slug', 'sfxtheme'); ?></th>
+                        <th><?php esc_html_e('Value', 'sfxtheme'); ?></th>
                         <th></th>
                     </tr>
                 </thead>
@@ -169,7 +169,7 @@ class PostType
                 </tbody>
             </table>
             <p>
-                <button type="button" class="button" id="sfx-add-field"><?php esc_html_e('Add Field', 'sfx-bricks-child'); ?></button>
+                <button type="button" class="button" id="sfx-add-field"><?php esc_html_e('Add Field', 'sfxtheme'); ?></button>
             </p>
         </div>
         <script>
@@ -233,7 +233,7 @@ class PostType
      */
     public static function add_snippet_type_column(array $columns): array
     {
-        $columns['snippet_type'] = __('Type', 'sfx-bricks-child');
+        $columns['snippet_type'] = __('Type', 'sfxtheme');
         return $columns;
     }
 
@@ -247,7 +247,7 @@ class PostType
     {
         if ($column === 'snippet_type') {
             $snippet_type = get_post_meta($post_id, '_sfx_text_snippet_type', true);
-            echo esc_html($snippet_type ?: __('Text Snippet', 'sfx-bricks-child'));
+            echo esc_html($snippet_type ?: __('Text Snippet', 'sfxtheme'));
         }
     }
 
@@ -259,7 +259,7 @@ class PostType
      */
     public static function add_status_column(array $columns): array
     {
-        $columns['snippet_status'] = __('Status', 'sfx-bricks-child');
+        $columns['snippet_status'] = __('Status', 'sfxtheme');
         return $columns;
     }
 
@@ -273,7 +273,7 @@ class PostType
     {
         if ($column === 'snippet_status') {
             $snippet_status = get_post_meta($post_id, '_sfx_text_snippet_status', true);
-            echo esc_html($snippet_status ?: __('Active', 'sfx-bricks-child'));
+            echo esc_html($snippet_status ?: __('Active', 'sfxtheme'));
         }
     }
 

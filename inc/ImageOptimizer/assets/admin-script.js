@@ -3,25 +3,112 @@ jQuery(function($){
         $('#log').prepend(msg + "\n");
     }
 
-    // 1. Convert/Scale
+    // Conversion state tracking
+    var retryCounts = {};
+    var isConverting = false;
+    var currentOffset = 0;
+    var batchSize = 5; // Default batch size
+
+    // 1. Convert/Scale with retry logic
     $('#start-conversion').on('click', function(){
+        if (isConverting) {
+            alert('Conversion already in progress');
+            return;
+        }
+        
+        isConverting = true;
+        retryCounts = {};
+        currentOffset = 0;
+        
         var $btn = $(this);
+        var $stopBtn = $('#stop-conversion');
+        
         $btn.prop('disabled', true).text('Converting...');
-        $.post(ImageOptimizerAjax.ajax_url, {
-            action: 'webp_convert_single',
-            nonce: ImageOptimizerAjax.nonce,
-            offset: 0
-        }, function(response){
-            $btn.prop('disabled', false).text('1. Convert/Scale');
-            if(response.success) {
-                logMessage(response.data && response.data.message ? response.data.message : 'Success');
-            } else {
-                logMessage(response.data && response.data.message ? response.data.message : 'Error');
-            }
-        }).fail(function(xhr){
-            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
-        });
+        $stopBtn.show();
+        
+        logMessage('Starting batch conversion...');
+        convertNextBatch();
     });
+
+    // Stop conversion
+    $('#stop-conversion').on('click', function(){
+        isConverting = false;
+        $(this).hide();
+        $('#start-conversion').prop('disabled', false).text('1. Convert/Scale');
+        logMessage('Conversion stopped by user.');
+    });
+
+    // Batch conversion with retry logic
+    function convertNextBatch() {
+        if (!isConverting) {
+            return;
+        }
+        
+        var forceReconvert = $('#force-reconvert').is(':checked') ? '1' : '0';
+        
+        $.ajax({
+            url: ImageOptimizerAjax.ajax_url + (forceReconvert === '1' ? '?force_reconvert=1' : ''),
+            type: 'POST',
+            data: {
+                action: 'webp_convert_single',
+                nonce: ImageOptimizerAjax.nonce,
+                offset: currentOffset
+            },
+            success: function(response){
+                if (response.success) {
+                    retryCounts[currentOffset] = 0; // Reset retry count on success
+                    
+                    if (response.data && response.data.message) {
+                        logMessage(response.data.message);
+                    }
+                    
+                    if (response.data && response.data.complete) {
+                        // Conversion complete
+                        isConverting = false;
+                        $('#stop-conversion').hide();
+                        $('#start-conversion').prop('disabled', false).text('1. Convert/Scale');
+                        logMessage('Conversion completed successfully!');
+                    } else if (response.data && response.data.offset !== undefined) {
+                        // Continue with next batch
+                        currentOffset = response.data.offset;
+                        if (isConverting) {
+                            convertNextBatch();
+                        }
+                    }
+                } else {
+                    // Retry logic on failure
+                    retryCounts[currentOffset] = (retryCounts[currentOffset] || 0) + 1;
+                    
+                    if (retryCounts[currentOffset] <= 2) {
+                        logMessage('Retry attempt ' + retryCounts[currentOffset] + ' for offset ' + currentOffset);
+                        setTimeout(convertNextBatch, 1000); // Wait 1s before retry
+                    } else {
+                        logMessage('Failed after 3 attempts at offset ' + currentOffset + '. Skipping to next batch.');
+                        currentOffset += batchSize;
+                        if (isConverting) {
+                            convertNextBatch();
+                        }
+                    }
+                }
+            },
+            error: function(xhr){
+                logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+                
+                // Retry on AJAX failure
+                retryCounts[currentOffset] = (retryCounts[currentOffset] || 0) + 1;
+                
+                if (retryCounts[currentOffset] <= 2) {
+                    logMessage('Retrying after AJAX error... (attempt ' + retryCounts[currentOffset] + ')');
+                    setTimeout(convertNextBatch, 1000);
+                } else {
+                    isConverting = false;
+                    $('#stop-conversion').hide();
+                    $('#start-conversion').prop('disabled', false).text('1. Convert/Scale');
+                    logMessage('Conversion stopped due to repeated errors.');
+                }
+            }
+        });
+    }
 
     // 2. Cleanup Images
     $('#cleanup-originals').on('click', function(){
@@ -118,12 +205,123 @@ jQuery(function($){
         });
     });
 
-    // Run All (1-3)
+    // Run All (1-3) with proper sequencing
     $('#run-all').on('click', function(){
-        $('#start-conversion').trigger('click');
-        setTimeout(function(){ $('#cleanup-originals').trigger('click'); }, 2000);
-        setTimeout(function(){ $('#convert-post-images').trigger('click'); }, 4000);
+        if (isConverting) {
+            alert('Conversion already in progress');
+            return;
+        }
+        
+        if (!confirm('Run all optimization steps?\n\n1. Convert/Scale images\n2. Cleanup old files\n3. Fix URLs in content')) {
+            return;
+        }
+        
+        var $runAllBtn = $(this);
+        $runAllBtn.prop('disabled', true).text('Running...');
+        
+        // Start conversion
+        isConverting = true;
+        retryCounts = {};
+        currentOffset = 0;
+        
+        var $btn = $('#start-conversion');
+        var $stopBtn = $('#stop-conversion');
+        
+        $btn.prop('disabled', true).text('Converting...');
+        $stopBtn.show();
+        
+        logMessage('=== Run All Started ===');
+        logMessage('Step 1: Starting batch conversion...');
+        
+        runAllConvertBatch(function() {
+            // Step 2: Cleanup
+            logMessage('Step 2: Running cleanup...');
+            $.post(ImageOptimizerAjax.ajax_url, {
+                action: 'webp_cleanup_originals',
+                nonce: ImageOptimizerAjax.nonce
+            }, function(response){
+                logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Cleanup complete') : 'Cleanup error');
+                
+                // Step 3: Fix URLs
+                logMessage('Step 3: Fixing URLs...');
+                $.post(ImageOptimizerAjax.ajax_url, {
+                    action: 'webp_fix_post_image_urls',
+                    nonce: ImageOptimizerAjax.nonce
+                }, function(response){
+                    logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'URLs fixed') : 'URL fix error');
+                    logMessage('=== Run All Completed ===');
+                    $runAllBtn.prop('disabled', false).text('Run All (1-3)');
+                }).fail(function(xhr){
+                    logMessage('URL fix AJAX error: ' + xhr.status);
+                    $runAllBtn.prop('disabled', false).text('Run All (1-3)');
+                });
+            }).fail(function(xhr){
+                logMessage('Cleanup AJAX error: ' + xhr.status);
+                $runAllBtn.prop('disabled', false).text('Run All (1-3)');
+            });
+        });
     });
+    
+    // Helper for Run All batch conversion
+    function runAllConvertBatch(onComplete) {
+        if (!isConverting) {
+            onComplete();
+            return;
+        }
+        
+        var forceReconvert = $('#force-reconvert').is(':checked') ? '1' : '0';
+        
+        $.ajax({
+            url: ImageOptimizerAjax.ajax_url + (forceReconvert === '1' ? '?force_reconvert=1' : ''),
+            type: 'POST',
+            data: {
+                action: 'webp_convert_single',
+                nonce: ImageOptimizerAjax.nonce,
+                offset: currentOffset
+            },
+            success: function(response){
+                if (response.success) {
+                    if (response.data && response.data.complete) {
+                        isConverting = false;
+                        $('#stop-conversion').hide();
+                        $('#start-conversion').prop('disabled', false).text('1. Convert/Scale');
+                        logMessage('Conversion completed!');
+                        onComplete();
+                    } else if (response.data && response.data.offset !== undefined) {
+                        currentOffset = response.data.offset;
+                        if (isConverting) {
+                            runAllConvertBatch(onComplete);
+                        } else {
+                            onComplete();
+                        }
+                    }
+                } else {
+                    retryCounts[currentOffset] = (retryCounts[currentOffset] || 0) + 1;
+                    if (retryCounts[currentOffset] <= 2) {
+                        setTimeout(function(){ runAllConvertBatch(onComplete); }, 1000);
+                    } else {
+                        currentOffset += batchSize;
+                        if (isConverting) {
+                            runAllConvertBatch(onComplete);
+                        } else {
+                            onComplete();
+                        }
+                    }
+                }
+            },
+            error: function(){
+                retryCounts[currentOffset] = (retryCounts[currentOffset] || 0) + 1;
+                if (retryCounts[currentOffset] <= 2) {
+                    setTimeout(function(){ runAllConvertBatch(onComplete); }, 1000);
+                } else {
+                    isConverting = false;
+                    $('#stop-conversion').hide();
+                    $('#start-conversion').prop('disabled', false).text('1. Convert/Scale');
+                    onComplete();
+                }
+            }
+        });
+    }
 
     // Set Max Widths
     $('#set-max-width').on('click', function(){
@@ -157,6 +355,60 @@ jQuery(function($){
             logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Heights updated') : (response.data && response.data.message ? response.data.message : 'Error updating heights'));
         }).fail(function(xhr){
             $btn.prop('disabled', false).text('Set Heights');
+            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+        });
+    });
+
+    // Quality slider and input sync - using document delegation for reliability
+    $(document).on('input change', '#quality-slider', function(){
+        var newVal = $(this).val();
+        $('#quality-input').val(newVal);
+    });
+    $(document).on('input change', '#quality-input', function(){
+        var val = Math.min(100, Math.max(1, parseInt($(this).val()) || 80));
+        $(this).val(val);
+        $('#quality-slider').val(val);
+    });
+
+    // Set Quality
+    $('#set-quality').on('click', function(){
+        var $btn = $(this);
+        var quality = parseInt($('#quality-input').val()) || 80;
+        $btn.prop('disabled', true).text('Saving...');
+        $.post(ImageOptimizerAjax.ajax_url, {
+            action: 'webp_set_quality',
+            nonce: ImageOptimizerAjax.nonce,
+            quality: quality
+        }, function(response){
+            $btn.prop('disabled', false).text('Set Quality');
+            logMessage(response.success ? (response.data && response.data.message ? response.data.message : 'Quality updated to ' + quality) : (response.data && response.data.message ? response.data.message : 'Error updating quality'));
+        }).fail(function(xhr){
+            $btn.prop('disabled', false).text('Set Quality');
+            logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
+        });
+    });
+
+    // Set Batch Size
+    $('#set-batch-size').on('click', function(){
+        var $btn = $(this);
+        var batchSizeVal = parseInt($('#batch-size-input').val()) || 5;
+        batchSizeVal = Math.min(50, Math.max(1, batchSizeVal));
+        $('#batch-size-input').val(batchSizeVal);
+        $btn.prop('disabled', true).text('Saving...');
+        $.post(ImageOptimizerAjax.ajax_url, {
+            action: 'webp_set_batch_size',
+            nonce: ImageOptimizerAjax.nonce,
+            batch_size: batchSizeVal
+        }, function(response){
+            $btn.prop('disabled', false).text('Set Batch Size');
+            if (response.success) {
+                batchSize = batchSizeVal; // Update JS variable
+                logMessage(response.data && response.data.message ? response.data.message : 'Batch size updated to ' + batchSizeVal);
+            } else {
+                logMessage(response.data && response.data.message ? response.data.message : 'Error updating batch size');
+            }
+        }).fail(function(xhr){
+            $btn.prop('disabled', false).text('Set Batch Size');
             logMessage('AJAX error: ' + xhr.status + ' ' + xhr.statusText);
         });
     });

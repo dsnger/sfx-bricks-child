@@ -111,13 +111,41 @@ class AssetManager
             wp_localize_script('sfx-custom-dashboard-admin', 'sfxDashboardAdmin', [
                 'optionName' => Settings::$option_name,
                 'defaultIcon' => Settings::DEFAULT_CUSTOM_ICON,
+                'availableRoles' => Settings::get_available_roles(),
+                'urlSuggestions' => Settings::get_wordpress_url_suggestions(),
                 'strings' => [
+                    // General
                     'remove' => __('Remove', 'sfxtheme'),
+                    'edit' => __('Edit', 'sfxtheme'),
                     'icon' => __('Icon', 'sfxtheme'),
                     'title' => __('Title', 'sfxtheme'),
                     'url' => __('URL', 'sfxtheme'),
                     'custom' => __('Custom', 'sfxtheme'),
+                    'untitled' => __('Untitled', 'sfxtheme'),
+                    'linkTitle' => __('Link Title', 'sfxtheme'),
+                    'svgIcon' => __('SVG Icon', 'sfxtheme'),
+                    'done' => __('Done', 'sfxtheme'),
                     'confirmRemove' => __('Are you sure you want to remove this custom link?', 'sfxtheme'),
+                    // Roles
+                    'allRoles' => __('All Roles', 'sfxtheme'),
+                    'oneRole' => __('1 Role', 'sfxtheme'),
+                    'roles' => __('Roles', 'sfxtheme'),
+                    // Groups
+                    'groupTitle' => __('Group Title', 'sfxtheme'),
+                    'addLink' => __('+ Add Link', 'sfxtheme'),
+                    'removeGroup' => __('Remove Group', 'sfxtheme'),
+                    'confirmRemoveGroup' => __('Are you sure you want to remove this group and all its links?', 'sfxtheme'),
+                    'collapseExpand' => __('Collapse/Expand', 'sfxtheme'),
+                    // Validation messages
+                    'errorTitleAndUrl' => __('Both title and URL are required', 'sfxtheme'),
+                    'errorTitleTooLong' => __('Title is too long (max 100 characters)', 'sfxtheme'),
+                    'errorInvalidUrl' => __('Invalid URL protocol', 'sfxtheme'),
+                    'errorInvalidSvg' => __('Invalid SVG (must include <svg> tags)', 'sfxtheme'),
+                    // URL Suggestions Modal
+                    'selectLink' => __('Select a WordPress Link', 'sfxtheme'),
+                    'searchLinks' => __('Search links...', 'sfxtheme'),
+                    'browseLinks' => __('Browse WordPress Links', 'sfxtheme'),
+                    'close' => __('Close', 'sfxtheme'),
                 ],
             ]);
         }
@@ -240,6 +268,52 @@ class AssetManager
     {
         $options = get_option(Settings::$option_name, []);
         
+        // Generate cache key from relevant options
+        $cache_keys = [
+            'brand_primary_color',
+            'brand_secondary_color',
+            'brand_accent_color',
+            'brand_success_color',
+            'brand_warning_color',
+            'brand_error_color',
+            'brand_border_radius',
+            'brand_border_width',
+            'brand_shadow_enabled',
+            'brand_shadow_intensity',
+            'brand_header_gradient',
+            'brand_header_gradient_start',
+            'brand_header_gradient_end',
+            'brand_header_bg_color',
+            'brand_header_text_color',
+            'brand_border_color',
+            'card_border_width',
+            'card_border_radius',
+            'card_shadow_enabled',
+            'card_background_color',
+            'card_text_color',
+            'card_border_color',
+            'card_hover_background_color',
+            'card_hover_text_color',
+            'card_hover_border_color',
+            'dashboard_gap',
+            'stats_columns',
+            'quicklinks_columns',
+            'widgets_columns',
+        ];
+        
+        $cache_data = [];
+        foreach ($cache_keys as $key) {
+            $cache_data[$key] = $options[$key] ?? '';
+        }
+        $cache_key = 'sfx_brand_css_' . md5(serialize($cache_data));
+        
+        // Try to get cached CSS
+        $cached_css = get_transient($cache_key);
+        if ($cached_css !== false) {
+            wp_add_inline_style('sfx-custom-dashboard', $cached_css);
+            return;
+        }
+        
         $defaults = Settings::get_default_brand_colors();
         $primary = $options['brand_primary_color'] ?? $defaults['brand_primary_color'];
         $secondary = $options['brand_secondary_color'] ?? $defaults['brand_secondary_color'];
@@ -299,6 +373,7 @@ class AssetManager
         $dashboard_gap = max(10, min(50, absint($options['dashboard_gap'] ?? 15)));
         $stats_columns = max(2, min(6, absint($options['stats_columns'] ?? 4)));
         $quicklinks_columns = max(2, min(6, absint($options['quicklinks_columns'] ?? 4)));
+        $widgets_columns = max(1, min(4, absint($options['widgets_columns'] ?? 3)));
 
         // Build shared variables array
         $shared_vars = [
@@ -369,6 +444,7 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
     gap: var(--sfx-dashboard-gap);
 }
 .sfx-dashboard-widgets-grid {
+    grid-template-columns: repeat({$widgets_columns}, 1fr);
     gap: var(--sfx-dashboard-gap);
 }
 .sfx-status-bar {
@@ -414,6 +490,9 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
 }
         ";
 
+        // Cache generated CSS for 12 hours
+        set_transient($cache_key, $custom_css, 12 * HOUR_IN_SECONDS);
+        
         wp_add_inline_style('sfx-custom-dashboard', $custom_css);
     }
 

@@ -69,8 +69,9 @@ class Controller
       if (function_exists('bricks_is_builder') && bricks_is_builder()) {
         return;
       }
-      // Use ACF option via class method
-      $disable_bricks_js = $this->get_acf_option('disable_bricks_js', false);
+      // Use WordPress option
+      $options = get_option(self::OPTION_NAME, []);
+      $disable_bricks_js = !empty($options['disable_bricks_js']);
       if ($disable_bricks_js) {
         wp_dequeue_script('bricks-scripts');
         wp_deregister_script('bricks-scripts');
@@ -82,8 +83,9 @@ class Controller
   private function disable_bricks_css(): void
   {
     add_action('wp_enqueue_scripts', function () {
-      // Use ACF option via class method
-      $disable_bricks_css = $this->get_acf_option('disable_bricks_css', false);
+      // Use WordPress option
+      $options = get_option(self::OPTION_NAME, []);
+      $disable_bricks_css = !empty($options['disable_bricks_css']);
       if ($disable_bricks_css && !(function_exists('bricks_is_builder') && bricks_is_builder())) {
         $style_handles = [
           'bricks-frontend',

@@ -5,6 +5,69 @@ namespace SFX\ImageOptimizer;
 
 class Settings
 {
+    /**
+     * Migrate legacy option names to new prefixed names.
+     * 
+     * @deprecated 0.8.0 This migration function should be removed in version 0.9.0 or later
+     *             once all users have had sufficient time to update.
+     * @todo Remove this function in version 0.9.0+
+     * 
+     * @return void
+     */
+    public static function migrate_legacy_options(): void
+    {
+        // Check if migration has already been performed
+        if (get_option('sfx_webp_migration_complete', false)) {
+            return;
+        }
+
+        // Map of old option names to new option names
+        $option_map = [
+            'webp_max_widths'             => 'sfx_webp_max_widths',
+            'webp_max_heights'            => 'sfx_webp_max_heights',
+            'webp_resize_mode'            => 'sfx_webp_resize_mode',
+            'webp_quality'                => 'sfx_webp_quality',
+            'webp_batch_size'             => 'sfx_webp_batch_size',
+            'webp_preserve_originals'     => 'sfx_webp_preserve_originals',
+            'webp_disable_auto_conversion'=> 'sfx_webp_disable_auto_conversion',
+            'webp_min_size_kb'            => 'sfx_webp_min_size_kb',
+            'webp_use_avif'               => 'sfx_webp_use_avif',
+            'webp_excluded_images'        => 'sfx_webp_excluded_images',
+            'webp_conversion_log'         => 'sfx_webp_conversion_log',
+        ];
+
+        $migrated_count = 0;
+
+        foreach ($option_map as $old_key => $new_key) {
+            $old_value = get_option($old_key, null);
+            
+            // Only migrate if old option exists and new option doesn't
+            if ($old_value !== null && get_option($new_key, null) === null) {
+                update_option($new_key, $old_value);
+                $migrated_count++;
+            }
+            
+            // Delete old option after migration (cleanup)
+            if ($old_value !== null) {
+                delete_option($old_key);
+            }
+        }
+
+        // Log migration if any options were migrated
+        if ($migrated_count > 0) {
+            $log = get_option('sfx_webp_conversion_log', []);
+            $log[] = sprintf(
+                /* translators: %d: number of migrated options */
+                __('Migration complete: %d legacy options migrated to new format.', 'sfxtheme'),
+                $migrated_count
+            );
+            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        }
+
+        // Mark migration as complete
+        update_option('sfx_webp_migration_complete', true);
+    }
+
     public static function limit_image_sizes(array $sizes): array
     {
         if (self::get_disable_auto_conversion()) {
@@ -102,7 +165,7 @@ class Settings
             $excluded[] = $attachment_id;
             update_option('sfx_webp_excluded_images', array_unique($excluded));
             $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'wpturbo'), $attachment_id);
+            $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'sfxtheme'), $attachment_id);
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return true;
         }
@@ -117,7 +180,7 @@ class Settings
             unset($excluded[$index]);
             update_option('sfx_webp_excluded_images', array_values($excluded));
             $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image removed: Attachment ID %d', 'wpturbo'), $attachment_id);
+            $log[] = sprintf(__('Excluded image removed: Attachment ID %d', 'sfxtheme'), $attachment_id);
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             return true;
         }

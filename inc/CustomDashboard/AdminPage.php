@@ -72,8 +72,12 @@ class AdminPage
         // Block direct URL access for unauthorized users
         \SFX\AccessControl::die_if_unauthorized_dashboard();
 
-        // Get current tab
+        // Get current tab and validate it exists
+        $tabs = self::get_tabs();
         $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
+        if (!isset($tabs[$current_tab])) {
+            $current_tab = 'general';
+        }
 
         ?>
         <div class="wrap">
@@ -95,7 +99,6 @@ class AdminPage
             <!-- Tab Navigation -->
             <nav class="nav-tab-wrapper wp-clearfix">
                 <?php
-                $tabs = self::get_tabs();
                 foreach ($tabs as $tab_key => $tab_label) {
                     $active = $current_tab === $tab_key ? 'nav-tab-active' : '';
                     $url = add_query_arg(['page' => self::$menu_slug, 'tab' => $tab_key], admin_url('admin.php'));
@@ -114,10 +117,14 @@ class AdminPage
                 settings_fields(Settings::$option_group);
                 
                 // Render visible tab content
+                // Note: Tabs with subtabs (sections, brand) handle their own hidden fields
+                // internally via render_*_hidden_fields() methods
                 self::render_tab_content($current_tab);
                 
-                // Include hidden fields for all other tabs to preserve their values
-                self::render_hidden_fields($current_tab);
+                // Include hidden fields for OTHER tabs to preserve their values
+                // Tabs with subtabs handle their own fields, so we pass them to be excluded
+                $tabs_with_internal_hidden_fields = ['sections', 'brand'];
+                self::render_hidden_fields($current_tab, $tabs_with_internal_hidden_fields);
                 
                 submit_button();
                 ?>
@@ -133,14 +140,31 @@ class AdminPage
      */
     private static function get_tabs(): array
     {
-        return [
+        $options = get_option(Settings::$option_name, []);
+        
+        $tabs = [
             'general' => __('General', 'sfxtheme'),
             'sections' => __('Sections', 'sfxtheme'),
-            'stats' => __('Statistics', 'sfxtheme'),
-            'quicklinks' => __('Quick Actions', 'sfxtheme'),
-            'contact' => __('Contact Info', 'sfxtheme'),
-            'brand' => __('Brand & Styling', 'sfxtheme'),
         ];
+
+        // Only show stats tab if stats section is enabled
+        if (!empty($options['show_stats_section'])) {
+            $tabs['stats'] = __('Statistics', 'sfxtheme');
+        }
+
+        // Only show quicklinks tab if quicklinks section is enabled
+        if (!empty($options['show_quicklinks_section'])) {
+            $tabs['quicklinks'] = __('Quick Actions', 'sfxtheme');
+        }
+
+        // Only show contact tab if contact section is enabled
+        if (!empty($options['show_contact_section'])) {
+            $tabs['contact'] = __('Contact Info', 'sfxtheme');
+        }
+
+        $tabs['brand'] = __('Brand & Styling', 'sfxtheme');
+
+        return $tabs;
     }
 
     /**
@@ -157,6 +181,21 @@ class AdminPage
             'cards' => __('Quick Action Boxes', 'sfxtheme'),
             'general_style' => __('Dashboard Layout', 'sfxtheme'),
             'custom_css' => __('Custom CSS', 'sfxtheme'),
+        ];
+    }
+
+    /**
+     * Get sections sub-tabs configuration
+     *
+     * @return array<string, string>
+     */
+    private static function get_sections_subtabs(): array
+    {
+        return [
+            'toggles' => __('Section Toggles', 'sfxtheme'),
+            'widgets' => __('Widgets', 'sfxtheme'),
+            'tip_card' => __('Tip Card', 'sfxtheme'),
+            'note' => __('Note', 'sfxtheme'),
         ];
     }
 
@@ -182,10 +221,15 @@ class AdminPage
             return;
         }
 
+        // Special handling for sections tab with sub-tabs
+        if ($tab === 'sections') {
+            self::render_sections_tab_content();
+            return;
+        }
+
         // Map tabs to their sections
         $sections_map = [
             'general' => [Settings::$option_name . '_main'],
-            'sections' => [Settings::$option_name . '_sections'],
             'stats' => [Settings::$option_name . '_stats'],
             'quicklinks' => [Settings::$option_name . '_quicklinks'],
             'contact' => [Settings::$option_name . '_contact'],
@@ -314,22 +358,102 @@ class AdminPage
             $all_brand_fields = array_merge($all_brand_fields, $fields);
         }
         
-        foreach ($all_fields as $field) {
-            $field_id = $field['id'];
-            
-            // Only process brand fields not in current subtab
-            if (!in_array($field_id, $all_brand_fields) || in_array($field_id, $current_fields)) {
-                continue;
-            }
-            
-            $value = $options[$field_id] ?? $field['default'];
-            
-            if (is_array($value)) {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" />';
-            } else {
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
-            }
+        self::render_hidden_fields_generic($all_fields, $all_brand_fields, $current_fields, $options, true);
+    }
+
+    /**
+     * Render sections tab content with sub-tabs
+     *
+     * @return void
+     */
+    private static function render_sections_tab_content(): void
+    {
+        global $wp_settings_fields;
+
+        $page = Settings::$option_group;
+        $section = Settings::$option_name . '_sections';
+        $subtabs = self::get_sections_subtabs();
+        $subtab_fields = Settings::get_sections_subtab_fields();
+        $options = get_option(Settings::$option_name, []);
+        
+        // Get current subtab
+        $current_subtab = isset($_GET['subtab']) ? sanitize_key($_GET['subtab']) : 'toggles';
+        if (!isset($subtabs[$current_subtab])) {
+            $current_subtab = 'toggles';
         }
+
+        // Render sub-tab navigation
+        echo '<div class="sfx-subtab-wrapper">';
+        echo '<nav class="sfx-subtab-nav">';
+        foreach ($subtabs as $subtab_key => $subtab_label) {
+            $active = $current_subtab === $subtab_key ? 'sfx-subtab-active' : '';
+            $url = add_query_arg([
+                'page' => self::$menu_slug, 
+                'tab' => 'sections', 
+                'subtab' => $subtab_key
+            ], admin_url('admin.php'));
+            printf(
+                '<a href="%s" class="sfx-subtab %s">%s</a>',
+                esc_url($url),
+                esc_attr($active),
+                esc_html($subtab_label)
+            );
+        }
+        echo '</nav>';
+
+        // Get fields for current subtab
+        $current_subtab_fields = $subtab_fields[$current_subtab] ?? [];
+
+        echo '<div class="sfx-settings-section sfx-subtab-content">';
+        echo '<h2>' . esc_html($subtabs[$current_subtab]) . '</h2>';
+
+        if (isset($wp_settings_fields[$page][$section])) {
+            echo '<table class="form-table" role="presentation">';
+            foreach ($wp_settings_fields[$page][$section] as $field_id => $field) {
+                if (in_array($field_id, $current_subtab_fields)) {
+                    echo '<tr>';
+                    echo '<th scope="row">';
+                    if (!empty($field['title'])) {
+                        echo '<label for="' . esc_attr($field_id) . '">' . esc_html($field['title']) . '</label>';
+                    }
+                    echo '</th>';
+                    echo '<td>';
+                    call_user_func($field['callback'], $field['args']);
+                    echo '</td>';
+                    echo '</tr>';
+                }
+            }
+            echo '</table>';
+        }
+
+        echo '</div>';
+        
+        // Render hidden fields for other sub-tabs to preserve their values
+        self::render_sections_hidden_fields($current_subtab, $subtab_fields, $options);
+        
+        echo '</div>';
+    }
+
+    /**
+     * Render hidden fields for sections sub-tabs not currently visible
+     *
+     * @param string $current_subtab
+     * @param array $subtab_fields
+     * @param array $options
+     * @return void
+     */
+    private static function render_sections_hidden_fields(string $current_subtab, array $subtab_fields, array $options): void
+    {
+        $all_fields = Settings::get_fields();
+        $current_fields = $subtab_fields[$current_subtab] ?? [];
+        
+        // Get all sections fields that are not in current subtab
+        $all_sections_fields = [];
+        foreach ($subtab_fields as $fields) {
+            $all_sections_fields = array_merge($all_sections_fields, $fields);
+        }
+        
+        self::render_hidden_fields_generic($all_fields, $all_sections_fields, $current_fields, $options, true);
     }
 
     /**
@@ -410,41 +534,72 @@ class AdminPage
     /**
      * Render hidden fields for tabs not currently visible
      *
-     * @param string $current_tab
+     * @param string $current_tab Current active tab
+     * @param array $tabs_with_internal_hidden_fields Tabs that handle their own hidden fields
      * @return void
      */
-    private static function render_hidden_fields(string $current_tab): void
+    private static function render_hidden_fields(string $current_tab, array $tabs_with_internal_hidden_fields = []): void
     {
         $options = get_option(Settings::$option_name, []);
-        
-        // Get all fields
         $all_fields = Settings::get_fields();
-        
-        // Use centralized tab-fields mapping
         $tab_fields = Settings::get_tab_fields_map();
-
-        // Get fields for current tab
+        
+        // Start with current tab's fields as "already handled"
         $current_fields = $tab_fields[$current_tab] ?? [];
 
-        // Render hidden fields for all other tabs
+        // Get all tab fields to check against
+        // For tabs with subtabs (sections, brand), their hidden fields are already rendered
+        // by their respective render_*_hidden_fields() methods when THAT tab is active.
+        // We only exclude them when they are the CURRENT tab to avoid duplicates.
+        // When viewing OTHER tabs, we must include them so their values are preserved.
+        $all_tab_fields = [];
+        foreach ($tab_fields as $tab_key => $fields) {
+            // Only skip the current tab if it handles its own hidden fields internally
+            // This prevents duplicates while ensuring other tabs' fields are preserved
+            if ($tab_key === $current_tab && in_array($tab_key, $tabs_with_internal_hidden_fields, true)) {
+                continue;
+            }
+            $all_tab_fields = array_merge($all_tab_fields, $fields);
+        }
+
+        self::render_hidden_fields_generic($all_fields, $all_tab_fields, $current_fields, $options, true);
+    }
+
+    /**
+     * Generic method to render hidden fields for non-visible sections
+     * DRY principle: eliminates duplication across tab/subtab rendering
+     *
+     * @param array $all_fields All field definitions
+     * @param array $scope_fields Fields within the current scope (e.g., all brand fields)
+     * @param array $current_fields Fields currently visible
+     * @param array $options Current option values
+     * @param bool $mark_json Whether to add data-sfx-json-field attribute for arrays
+     * @return void
+     */
+    private static function render_hidden_fields_generic(
+        array $all_fields,
+        array $scope_fields,
+        array $current_fields,
+        array $options,
+        bool $mark_json = false
+    ): void {
         foreach ($all_fields as $field) {
             $field_id = $field['id'];
             
-            // Skip if this field belongs to current tab
-            if (in_array($field_id, $current_fields)) {
+            // Only process fields in scope that are not currently visible
+            if (!in_array($field_id, $scope_fields) || in_array($field_id, $current_fields)) {
                 continue;
             }
-
-            // Get current value
+            
             $value = $options[$field_id] ?? $field['default'];
-
-            // Render as hidden field based on type
-            if ($field['type'] === 'quicklinks_sortable' || $field['type'] === 'stats_items' || $field['type'] === 'dashboard_widgets' || is_array($value)) {
-                // For complex array fields, serialize as JSON in hidden input
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr(wp_json_encode($value)) . '" data-sfx-json-field="true" />';
+            $name = esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']';
+            
+            if (is_array($value)) {
+                $encoded_value = esc_attr(wp_json_encode($value));
+                $json_attr = $mark_json ? ' data-sfx-json-field="true"' : '';
+                echo '<input type="hidden" name="' . $name . '" value="' . $encoded_value . '"' . $json_attr . ' />';
             } else {
-                // For simple fields
-                echo '<input type="hidden" name="' . esc_attr(Settings::$option_name) . '[' . esc_attr($field_id) . ']" value="' . esc_attr((string) $value) . '" />';
+                echo '<input type="hidden" name="' . $name . '" value="' . esc_attr((string) $value) . '" />';
             }
         }
     }

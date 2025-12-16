@@ -52,7 +52,7 @@ class ContentOrder
 			}
 			$label_plural = $post_type_object->labels->name;
 			$capability = 'edit_others_posts';
-			$menu_title = __('Order', 'sfx');
+			$menu_title = __('Order', 'sfxtheme');
 			// Add under the CPT menu
 			add_submenu_page(
 				'edit.php?post_type=' . $post_type_slug,
@@ -92,13 +92,13 @@ class ContentOrder
 		$posts = get_posts($args);
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html(sprintf(__('%s Order', 'sfx'), get_post_type_object($post_type_slug)->labels->name ?? '')); ?></h1>
+			<h1><?php echo esc_html(sprintf(__('%s Order', 'sfxtheme'), get_post_type_object($post_type_slug)->labels->name ?? '')); ?></h1>
 			
 			<!-- Updating order notice template (hidden by default) -->
 			<div id="updating-order-notice" class="updating-order-notice" style="display: none;">
 				<img id="spinner-img" class="spinner-img" src="<?php echo admin_url('images/spinner.gif'); ?>" alt="Loading...">
 				<span class="dashicons dashicons-saved"></span>
-				<?php _e('Order updated!', 'sfx'); ?>
+				<?php _e('Order updated!', 'sfxtheme'); ?>
 			</div>
 			
 			<?php if (!empty($posts)) : ?>
@@ -115,7 +115,7 @@ class ContentOrder
 					<?php endforeach; ?>
 				</ul>
 			<?php else : ?>
-				<h3><?php esc_html_e('There is nothing to sort for this post type.', 'sfx'); ?></h3>
+				<h3><?php esc_html_e('There is nothing to sort for this post type.', 'sfxtheme'); ?></h3>
 			<?php endif; ?>
 		</div>
 		<?php

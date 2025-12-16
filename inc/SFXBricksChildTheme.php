@@ -58,13 +58,13 @@ class SFXBricksChildTheme
   public function init()
   {
 
+    // Load text domains early
+    $this->load_textdomains();
+
     $this->auto_register_features();
 
     add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
     add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
-
-    // Load text domains
-    add_action('after_setup_theme', [$this, 'load_textdomains']);
 
     $this->load_dependencies();
 
@@ -251,8 +251,11 @@ class SFXBricksChildTheme
     // Only load on Global Theme Settings pages and subpages, and custom post type pages
     if (strpos($hook_suffix, 'global-theme-settings') === false && 
         strpos($hook_suffix, 'sfx-theme-settings') === false && 
+        strpos($hook_suffix, 'sfx-general-theme-options') === false &&
+        strpos($hook_suffix, 'sfx-html-copy-paste') === false &&
         strpos($hook_suffix, 'sfx-wp-optimizer') === false &&
         strpos($hook_suffix, 'sfx-custom-dashboard') === false &&
+        strpos($hook_suffix, 'sfx-import-export') === false &&
         strpos($hook_suffix, 'sfx_custom_script') === false &&
         strpos($hook_suffix, 'sfx_social_account') === false &&
         strpos($hook_suffix, 'sfx_contact_info') === false &&

@@ -2,6 +2,51 @@
 
 A WordPress child theme for Bricks Builder with enhanced features.
 
+This child theme extends Bricks Builder with powerful content management tools, performance optimizations, security enhancements, and developer utilities. It provides a comprehensive suite of features for managing contact information, social media accounts, text snippets, custom scripts, image optimization, and WordPress performance tuning.
+
+## Features & Functions
+
+### Core Features
+- **GitHub Theme Updater** - Automatic theme updates from GitHub repository
+- **Development Mode** - Disable updates during local development
+- **Access Control** - Two-tier permission system for theme and dashboard settings
+- **Cache Management** - Automatic cache clearing on theme/plugin updates
+
+### Content Management
+- **Contact Infos** - Custom post type for managing contact information with shortcode `[contact_info]` and Bricks dynamic tags `{contact_info:field}`
+- **Social Media Accounts** - Custom post type for social media links with shortcode `[social_accounts]`
+- **Text Snippets** - Reusable text content with shortcode `[snippet]` and Bricks dynamic tag `{snippet_content:ID}`
+- **Custom Scripts Manager** - Manage and enqueue custom JavaScript/CSS files with conditional loading
+
+### Optimization
+- **Image Optimizer** - Automatic WebP/AVIF conversion on upload with quality control and size management
+- **WP Optimizer** - Comprehensive WordPress performance optimizations:
+  - Disable jQuery/jQuery Migrate, Emoji, Embeds, Feeds, XML-RPC, REST API
+  - Remove version numbers, RSD links, shortlinks, wlwmanifest
+  - Defer JavaScript/CSS loading
+  - Limit post revisions and autosave intervals
+  - Disable comments, search, author archives, attachment pages
+  - Content ordering and media replacement utilities
+  - Remove thumbnail dimensions, navigation containers, caption widths
+  - Shortcode formatting improvements
+
+### Security
+- **Security Headers** - Configurable HTTP security headers (HSTS, CSP, X-Frame-Options, Permissions Policy, etc.)
+
+### Builder Integration
+- **HTML Copy/Paste** - Advanced HTML editing tool for Bricks Builder
+- **Shortcodes** - Iconify icon shortcode support
+- **Dynamic Tags** - Custom Bricks dynamic data tags for contact info and text snippets
+
+### Admin Features
+- **Custom Dashboard** - Customizable WordPress dashboard with stats, system info, and form submissions
+- **General Theme Options** - Global theme configuration settings
+- **Import/Export** - Export/import theme settings and custom post type data with preview, selective import, and merge/replace modes
+
+### Utilities
+- **Environment Handler** - Development/production environment detection
+- **Text Domain Support** - Internationalization ready
+
 ## Development Mode
 
 This theme supports a development mode that disables GitHub updates during local development, preventing your development version from being overwritten by GitHub updates.
@@ -76,5 +121,3 @@ define('SFX_THEME_DASHBOARD', 'agency_user,agency_dev');
 | Defined | Not defined | By role/cap | Locked |
 | Not defined | Defined | Locked | By username |
 | Defined | Defined | By role/cap | By username |
-
-## Other Documentation

@@ -81,11 +81,11 @@ class AdminPage
             }
 
             $items = $filtered_items;
-            $help_text = __('Leave all unchecked to apply to all supported post types. Only hierarchical post types and those supporting page attributes can be ordered.', 'sfx');
+            $help_text = __('Leave all unchecked to apply to all supported post types. Only hierarchical post types and those supporting page attributes can be ordered.', 'sfxtheme');
         } else {
             // For other post type fields (like revisions): all public post types
             $items = get_post_types(['public' => true], 'objects');
-            $help_text = __('Leave all unchecked to apply to all post types.', 'sfx');
+            $help_text = __('Leave all unchecked to apply to all post types.', 'sfxtheme');
         }
 
         $selected_items = [];
@@ -128,7 +128,7 @@ class AdminPage
     ?>
         <details class="post-types-accordion" style="margin-top: 10px;">
             <summary>
-                <?php _e('Select Post Types', 'sfx'); ?>
+                <?php _e('Select Post Types', 'sfxtheme'); ?>
                 <span>▼</span>
             </summary>
             <div style="border: 1px solid #ddd; border-top: none; padding: 10px; background: #f9f9f9;">
@@ -170,11 +170,11 @@ class AdminPage
             <h1><?php esc_html_e('WP Optimizer Options', 'sfxtheme'); ?></h1>
             <?php
             $groups = [
-                'performance' => __('Performance', 'sfx'),
-                'admin'       => __('Admin Enhancements', 'sfx'),
-                'security'    => __('Security & Privacy', 'sfx'),
-                'frontend'    => __('Frontend Cleanup', 'sfx'),
-                'media'       => __('Media & Uploads', 'sfx'),
+                'performance' => __('Performance', 'sfxtheme'),
+                'admin'       => __('Admin Enhancements', 'sfxtheme'),
+                'security'    => __('Security & Privacy', 'sfxtheme'),
+                'frontend'    => __('Frontend Cleanup', 'sfxtheme'),
+                'media'       => __('Media & Uploads', 'sfxtheme'),
             ];
             $fields = \SFX\WPOptimizer\Settings::get_fields();
             $options = get_option('sfx_wpoptimizer_options', []);

@@ -16,19 +16,19 @@ class FormatConverter
         $mode = Settings::get_resize_mode();
 
         if (!(extension_loaded('imagick') || extension_loaded('gd'))) {
-            if ($log !== null) $log[] = sprintf(__('Error: No image library (Imagick/GD) available for %s', 'wpturbo'), basename($file_path));
+            if ($log !== null) $log[] = sprintf(__('Error: No image library (Imagick/GD) available for %s', 'sfxtheme'), basename($file_path));
             return false;
         }
 
         $has_avif_support = (extension_loaded('imagick') && class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats())) || (extension_loaded('gd') && function_exists('imageavif'));
         if ($use_avif && !$has_avif_support) {
-            if ($log !== null) $log[] = sprintf(__('Error: AVIF not supported on this server for %s', 'wpturbo'), basename($file_path));
+            if ($log !== null) $log[] = sprintf(__('Error: AVIF not supported on this server for %s', 'sfxtheme'), basename($file_path));
             return false;
         }
 
         $editor = wp_get_image_editor($file_path);
         if (is_wp_error($editor)) {
-            if ($log !== null) $log[] = sprintf(__('Error: Image editor failed for %s - %s', 'wpturbo'), basename($file_path), $editor->get_error_message());
+            if ($log !== null) $log[] = sprintf(__('Error: Image editor failed for %s - %s', 'sfxtheme'), basename($file_path), $editor->get_error_message());
             return false;
         }
 
@@ -44,16 +44,16 @@ class FormatConverter
 
         $result = $editor->save($new_file_path, $format, ['quality' => $quality]);
         if (is_wp_error($result)) {
-            if ($log !== null) $log[] = sprintf(__('Error: Conversion failed for %s - %s', 'wpturbo'), basename($file_path), $result->get_error_message());
+            if ($log !== null) $log[] = sprintf(__('Error: Conversion failed for %s - %s', 'sfxtheme'), basename($file_path), $result->get_error_message());
             return false;
         }
 
         if ($log !== null) {
             $log[] = sprintf(
-                __('Converted: %s → %s %s', 'wpturbo'),
+                __('Converted: %s → %s %s', 'sfxtheme'),
                 basename($file_path),
                 basename($new_file_path),
-                $resized ? sprintf(__('(resized to %dpx %s, quality %d)', 'wpturbo'), $dimension, $mode, $quality) : sprintf(__('(quality %d)', 'wpturbo'), $quality)
+                $resized ? sprintf(__('(resized to %dpx %s, quality %d)', 'sfxtheme'), $dimension, $mode, $quality) : sprintf(__('(quality %d)', 'sfxtheme'), $quality)
             );
         }
 

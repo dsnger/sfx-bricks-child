@@ -8,7 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.7.5] - 2025-12-04
+## [0.9.1_rc] - 2025-12-07
+
+### Enhanced
+- **Import/Export**: Granular dashboard settings export with 8 sub-groups (General, Sections, Stats, Quicklinks, Contact, Brand, Cards, CSS) - Export version 2.0.0
+- **TextSnippets Cache**: Improved cache invalidation with proper timeout cleanup and namespace-qualified hook callbacks
+
+## [0.9.0_rc] - 2025-12-06
+
+### Added
+- **Import/Export**: Complete module for theme settings backup/restore with JSON export/import
+- **Custom Dashboard**: Widget management, sidebar toggle, quicklink groups with role-based visibility, URL suggestions modal
+- **Localization**: German translation (de_DE) support with 4,000+ translated strings
+
+### Enhanced
+- **Image Optimizer**: Refactored settings, improved legacy support, enhanced AdminPage logic
+- **Form Styles**: Major CSS improvements for forms and button interactions (733 lines)
+- **Theme Initialization**: Refactored for better performance and maintainability
+
+### Fixed
+- **Security**: Escaped attributes in quicklink input placeholders
+- **Release Script**: Added Release Candidate (RC) support for testing
+
 
 ### Refactored
 

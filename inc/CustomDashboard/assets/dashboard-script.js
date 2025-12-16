@@ -4,6 +4,7 @@
  * Includes:
  * - Stat counter animations
  * - Theme mode switching (light/dark/system)
+ * - Sidebar toggle (offcanvas)
  * - Local storage persistence for user preferences
  *
  * @package SFX_Bricks_Child_Theme
@@ -12,8 +13,9 @@
 (function() {
     'use strict';
 
-    // Storage key for theme preference
+    // Storage keys for preferences
     const THEME_STORAGE_KEY = 'sfx-dashboard-theme';
+    const SIDEBAR_STORAGE_KEY = 'sfx-dashboard-sidebar';
 
     /**
      * Get the dashboard container element
@@ -156,6 +158,123 @@
         });
     }
 
+    // ========================================
+    // Sidebar Toggle Functionality
+    // ========================================
+
+    /**
+     * Get the current sidebar state from various sources
+     * Priority: localStorage > data-sidebar-default attribute > 'visible'
+     * @returns {string} 'visible' or 'collapsed'
+     */
+    function getSidebarState() {
+        // Check localStorage first (user preference)
+        const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+        if (stored && ['visible', 'collapsed'].includes(stored)) {
+            return stored;
+        }
+
+        // Fall back to default from server
+        const container = getDashboardContainer();
+        if (container) {
+            const defaultState = container.getAttribute('data-sidebar-default');
+            if (defaultState && ['visible', 'collapsed'].includes(defaultState)) {
+                return defaultState;
+            }
+        }
+
+        return 'visible';
+    }
+
+    /**
+     * Apply sidebar state to the page
+     * @param {string} state - 'visible' or 'collapsed'
+     * @param {boolean} animate - Whether to animate the transition
+     */
+    function applySidebarState(state, animate = true) {
+        const body = document.body;
+        const html = document.documentElement;
+        
+        if (animate) {
+            body.classList.add('sfx-sidebar-transitioning');
+        }
+
+        if (state === 'collapsed') {
+            body.classList.add('sfx-sidebar-collapsed');
+            html.classList.add('sfx-sidebar-collapsed');
+        } else {
+            body.classList.remove('sfx-sidebar-collapsed');
+            html.classList.remove('sfx-sidebar-collapsed');
+        }
+
+        // Update ARIA label on toggle button
+        const toggleBtn = document.getElementById('sfx-sidebar-toggle');
+        if (toggleBtn) {
+            const label = state === 'collapsed' ? 'Show admin sidebar' : 'Hide admin sidebar';
+            toggleBtn.setAttribute('aria-label', label);
+            toggleBtn.setAttribute('title', label);
+            toggleBtn.setAttribute('aria-expanded', state === 'visible' ? 'true' : 'false');
+        }
+
+        // Remove transitioning class after animation completes
+        if (animate) {
+            setTimeout(function() {
+                body.classList.remove('sfx-sidebar-transitioning');
+            }, 300);
+        }
+    }
+
+    /**
+     * Save sidebar preference to localStorage
+     * @param {string} state - 'visible' or 'collapsed'
+     */
+    function saveSidebarPreference(state) {
+        try {
+            localStorage.setItem(SIDEBAR_STORAGE_KEY, state);
+        } catch (e) {
+            // localStorage might be disabled or full
+            console.warn('Could not save sidebar preference:', e);
+        }
+    }
+
+    /**
+     * Toggle sidebar state
+     * @returns {string} The new state
+     */
+    function toggleSidebar() {
+        const currentState = getSidebarState();
+        return currentState === 'visible' ? 'collapsed' : 'visible';
+    }
+
+    /**
+     * Initialize sidebar toggle functionality
+     */
+    function initSidebarToggle() {
+        const toggleBtn = document.getElementById('sfx-sidebar-toggle');
+        if (!toggleBtn) return;
+
+        // Apply initial state without animation
+        const initialState = getSidebarState();
+        applySidebarState(initialState, false);
+
+        // Handle toggle click
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const newState = toggleSidebar();
+            applySidebarState(newState, true);
+            saveSidebarPreference(newState);
+        });
+
+        // Handle keyboard accessibility
+        toggleBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleBtn.click();
+            }
+        });
+    }
+
     /**
      * Animate counter from 0 to target value
      * @param {HTMLElement} element - The element to animate
@@ -212,12 +331,42 @@
     }
 
     /**
+     * Initialize command shortcut click handler
+     * Triggers Ctrl+K / Cmd+K when clicking on the shortcut button
+     */
+    function initCommandShortcut() {
+        document.addEventListener('click', function(e) {
+            const shortcutBtn = e.target.closest('.sfx-cmd-shortcut');
+            if (!shortcutBtn) return;
+
+            e.preventDefault();
+
+            // Create and dispatch keyboard event for Cmd+K / Ctrl+K
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const keyboardEvent = new KeyboardEvent('keydown', {
+                key: 'k',
+                code: 'KeyK',
+                keyCode: 75,
+                which: 75,
+                ctrlKey: !isMac,
+                metaKey: isMac,
+                bubbles: true,
+                cancelable: true
+            });
+
+            document.dispatchEvent(keyboardEvent);
+        });
+    }
+
+    /**
      * Initialize all dashboard functionality
      */
     function initDashboard() {
         initThemeToggle();
         initSystemPreferenceListener();
+        initSidebarToggle();
         initStatCounters();
+        initCommandShortcut();
     }
 
     // Initialize when DOM is ready
@@ -241,6 +390,23 @@
             applyTheme(newTheme, true);
             saveThemePreference(newTheme);
             return newTheme;
+        }
+    };
+
+    // Expose sidebar API for external use if needed
+    window.sfxDashboardSidebar = {
+        get: getSidebarState,
+        set: function(state) {
+            if (['visible', 'collapsed'].includes(state)) {
+                applySidebarState(state, true);
+                saveSidebarPreference(state);
+            }
+        },
+        toggle: function() {
+            const newState = toggleSidebar();
+            applySidebarState(newState, true);
+            saveSidebarPreference(newState);
+            return newState;
         }
     };
 })();
