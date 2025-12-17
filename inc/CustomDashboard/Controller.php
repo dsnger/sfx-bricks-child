@@ -291,18 +291,24 @@ class Controller
     {
         $options = get_option(Settings::$option_name, []);
         $stats_items = $options['stats_items'] ?? [];
-        
-        // Extract enabled custom post types from stats configuration
+
+        // Extract enabled custom post types and custom stats from configuration
         $enabled_cpts = [];
+        $custom_stat_ids = [];
+
         if (is_array($stats_items)) {
             foreach ($stats_items as $item) {
-                if (!empty($item['enabled']) && !empty($item['id']) && strpos($item['id'], 'cpt_') === 0) {
-                    $enabled_cpts[] = str_replace('cpt_', '', $item['id']);
+                if (!empty($item['enabled']) && !empty($item['id'])) {
+                    if (strpos($item['id'], 'cpt_') === 0) {
+                        $enabled_cpts[] = str_replace('cpt_', '', $item['id']);
+                    } elseif (strpos($item['id'], 'custom_') === 0) {
+                        $custom_stat_ids[] = str_replace('custom_', '', $item['id']);
+                    }
                 }
             }
         }
-        
-        StatsProvider::clear_all_cache($enabled_cpts);
+
+        StatsProvider::clear_all_cache($enabled_cpts, $custom_stat_ids);
         FormSubmissionsProvider::clear_cache();
     }
 

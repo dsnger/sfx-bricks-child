@@ -8,11 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.9.1_rc] - 2025-12-07
+## [0.9.1] - 2025-12-07
+
+### Added
+- **Custom Dashboard**: Custom statistics support with flexible data retrieval, home link button
 
 ### Enhanced
-- **Import/Export**: Granular dashboard settings export with 8 sub-groups (General, Sections, Stats, Quicklinks, Contact, Brand, Cards, CSS) - Export version 2.0.0
-- **TextSnippets Cache**: Improved cache invalidation with proper timeout cleanup and namespace-qualified hook callbacks
+- **Import/Export**: Granular dashboard settings export with 8 sub-groups (Export v2.0.0)
+- **Custom Dashboard**: Improved logo handling, enhanced statistics styling
+- **TextSnippets**: Cache invalidation with proper timeout cleanup and namespace fixes
+- **CSS**: Responsive content grid, refactored color variables, animation distance handling
+
+### Refactored
+- Removed ACF dependency, enhanced URL validation in quicklinks
 
 ## [0.9.0_rc] - 2025-12-06
 

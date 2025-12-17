@@ -498,15 +498,28 @@ class DashboardRenderer
             ],
         ];
 
+        // Allow filtering default stat configs (icons, labels, URLs, etc.)
+        $configs = apply_filters('sfx_dashboard_stat_configs', $configs, $stat_id);
+
         if (isset($configs[$stat_id])) {
-            return $configs[$stat_id];
+            $config = $configs[$stat_id];
+            
+            // Allow filtering individual stat config
+            $config = apply_filters('sfx_dashboard_stat_config', $config, $stat_id);
+            
+            // Sanitize icon if it was modified
+            if (isset($config['icon'])) {
+                $config['icon'] = wp_kses($config['icon'], Settings::get_allowed_svg_tags());
+            }
+            
+            return $config;
         }
 
         // Handle custom post types (cpt_*)
         if (strpos($stat_id, 'cpt_') === 0) {
             $post_type = str_replace('cpt_', '', $stat_id);
             $post_type_object = get_post_type_object($post_type);
-            
+
             if ($post_type_object) {
                 $count_obj = wp_count_posts($post_type);
                 return [
@@ -514,6 +527,29 @@ class DashboardRenderer
                     'label' => $post_type_object->labels->name ?? $post_type_object->label,
                     'url' => admin_url('edit.php?post_type=' . $post_type),
                     'count' => isset($count_obj->publish) ? (int) $count_obj->publish : 0,
+                ];
+            }
+        }
+
+        // Handle custom stats (custom_*) - registered via sfx_custom_dashboard_stats filter
+        if (strpos($stat_id, 'custom_') === 0) {
+            $custom_stats = apply_filters('sfx_custom_dashboard_stats', []);
+            $custom_id = str_replace('custom_', '', $stat_id);
+
+            if (isset($custom_stats[$custom_id])) {
+                $config = $custom_stats[$custom_id];
+
+                // Default icon for custom stats (bar chart)
+                $default_icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>';
+
+                // Merge stat_id into config for StatsProvider
+                $config['id'] = $custom_id;
+
+                return [
+                    'icon' => wp_kses($config['icon'] ?? $default_icon, Settings::get_allowed_svg_tags()),
+                    'label' => sanitize_text_field($config['label']),
+                    'url' => esc_url_raw($config['url'] ?? admin_url()),
+                    'count' => StatsProvider::get_custom_stat_count($config),
                 ];
             }
         }
