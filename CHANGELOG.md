@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.2] - 2025-12-21
+
+### Fixed
+- **Custom Dashboard**: Restored quicklinks admin styles accidentally removed during statistics refactoring
+
+### Changed
+- **CSS**: Button icon slide animation now opt-in via `.btn--icon-slide` modifier class
+
 ## [0.9.1] - 2025-12-07
 
 ### Added
