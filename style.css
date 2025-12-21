@@ -880,8 +880,9 @@ body {
     justify-content: center;
   }
 
-  &:hover>i.fa-arrow-right,
-  &:hover>svg {
+  /* Opt-in icon slide animation on hover */
+  &.btn--icon-slide:hover>i.fa-arrow-right,
+  &.btn--icon-slide:hover>svg {
     margin-inline-start: 4px;
   }
 }

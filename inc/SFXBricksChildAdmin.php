@@ -54,6 +54,11 @@ class SFXBricksChildAdmin
         continue;
       }
       
+      // Skip Custom Dashboard if user doesn't have dashboard settings access
+      if ($feature['menu_slug'] === 'sfx-custom-dashboard' && !AccessControl::can_access_dashboard_settings()) {
+        continue;
+      }
+      
       // Use custom URL if provided, otherwise construct from menu_slug
       $url = !empty($feature['url']) ? $feature['url'] : admin_url('admin.php?page=' . $feature['menu_slug']);
       
