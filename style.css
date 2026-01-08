@@ -892,11 +892,15 @@ body {
 :is(.list--icon, .brxe-text) ul {
   list-style: none;
   padding: 0;
-  margin-block: var(--global-gutter);
+  margin-block: var(--list-gutter);
   margin-inline-start: var(--list-indent);
   display: flex;
   flex-direction: column;
   gap: var(--list-gap);
+}
+
+:is(.list--icon, .brxe-text) ul:first-child {
+  margin-block-start: 0;
 }
 
 :is(.list--icon, .brxe-text) ul:last-child {
@@ -904,25 +908,25 @@ body {
 }
 
 :is(.list--icon, .brxe-text) ul li+li {
-  margin-block-start: var(--article-gutter-vertical-xsmall);
+  margin-block-start: var(--article-gutter-xs);
 }
 
 :is(.list--icon, .brxe-text) li {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--icon-gap);
+  gap: var(--list-icon-gap);
   margin-block-start: 0;
 
   &::before {
     content: '';
-    display: var(--icon-display);
-    width: var(--icon-size);
-    height: var(--icon-size);
-    background-color: var(--icon-color);
-    -webkit-mask-image: var(--icon-url);
-    mask-image: var(--icon-url);
+    display: var(--list-icon-display);
+    width: var(--list-icon-size);
+    height: var(--list-icon-size);
+    background-color: var(--list-icon-color);
+    -webkit-mask-image: var(--list-icon-url);
+    mask-image: var(--list-icon-url);
     mask-size: cover;
-    translate: var(--icon-offset);
+    translate: var(--list-icon-offset);
     z-index: 1;
   }
 
@@ -930,10 +934,10 @@ body {
     content: '';
     position: absolute;
     z-index: 0;
-    width: calc(var(--icon-size) + 8px);
-    height: calc(var(--icon-size) + 8px);
-    background-color: var(--icon-bg-color);
-    translate: var(--icon-bg-offset);
+    width: calc(var(--list-icon-size) + 8px);
+    height: calc(var(--list-icon-size) + 8px);
+    background-color: var(--list-icon-bg-color);
+    translate: var(--list-icon-bg-offset);
     border-radius: var(--radius-full);
   }
 }
@@ -941,22 +945,22 @@ body {
 
 
 /* custom list icon types */
-:is(.list--icon, .brxe-text).is-check {
-  --icon-url: var(--list-check-icon-url, url(''));
-  --icon-color: var(--list-check-icon-color, var(--secondary));
-  --icon-offset: var(--list-check-icon-offset, 0 .5ex);
-  --icon-size: var(--list-check-icon-size, 1em);
-  --icon-gap: var(--list-check-icon-gap, 15px);
-  --icon-display: var(--list-check-icon-display, flex);
-  --list-indent: var(--list-check-indent, .5em);
-  --list-gap: var(--list-check-gap, var(--space-3));
-  --icon-bg-offset: var(--list-check-icon-bg-offset, -.4ex 0);
-  --icon-bg-color: var(--list-check-icon-bg-color, var(--tertiary-l-4));
+:is(.list--icon, .brxe-text).is-check  {
+  --list-icon-url: var(--list-check-icon-url, url(''));
+  --list-icon-color: var(--list-check-icon-color, var(--secondary));
+  --list-icon-offset: var(--list-check-icon-offset, 0 .5ex);
+  --list-icon-size: var(--list-check-icon-size, 1em);
+  --list-icon-gap: var(--list-check-icon-icon-gap, 15px);
+  --list-icon-display: var(--list-check-icon-display, flex);
+  --list-indent: var(--list-check-icon-indent, .5em);
+  --list-gap: var(--list-check-icon-gap, var(--space-2xs));
+  --list-icon-bg-offset: var(--list-check-icon-bg-offset, -.4ex 0);
+  --list-icon-bg-color: var(--list-check-icon-bg-color, var(--tertiary-l-4));
 }
 
 .card[class*="bg-secondary"] :is(.list--icon, .brxe-text).is-check {
-  --icon-color: var(--list-check-icon-color, var(--secondary));
-  --icon-bg-color: var(--list-check-icon-bg-color-alt, var(--secondary-10));
+  --list-icon-color: var(--list-check-icon-color, var(--secondary));
+  --list-icon-bg-color: var(--list-check-icon-bg-color-alt, var(--secondary-10));
 }
 
 
