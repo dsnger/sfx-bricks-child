@@ -48,7 +48,8 @@ class AssetManager
             // Localize the script with AJAX data
             wp_localize_script('sfx-image-optimizer-admin', 'ImageOptimizerAjax', [
                 'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('webp_converter_nonce')
+                'rest_url' => esc_url_raw(rest_url()),
+                'nonce'    => wp_create_nonce('webp_converter_nonce'),
             ]);
         }
     }

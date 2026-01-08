@@ -471,7 +471,7 @@ jQuery(function($){
             }
             // Use WP REST API to fetch attachment details
             $.ajax({
-                url: '/wp-json/wp/v2/media?include=' + ids.join(',') + '&per_page=100',
+                url: ImageOptimizerAjax.rest_url + 'wp/v2/media?include=' + ids.join(',') + '&per_page=100',
                 method: 'GET'
             }).done(function(items){
                 // Deduplicate by ID

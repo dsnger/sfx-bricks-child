@@ -163,7 +163,7 @@ class Settings
         $excluded = self::get_excluded_images();
         if (!in_array($attachment_id, $excluded, true)) {
             $excluded[] = $attachment_id;
-            update_option('sfx_webp_excluded_images', array_unique($excluded));
+            update_option('sfx_webp_excluded_images', array_values(array_unique($excluded)));
             $log = get_option('sfx_webp_conversion_log', []);
             $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'sfxtheme'), $attachment_id);
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
