@@ -77,15 +77,15 @@ class Ajax
         $attachments = get_posts($args);
         $log = get_option('sfx_webp_conversion_log', []);
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $max_values = Settings::get_max_values();
         $current_quality = Settings::get_quality();
         $min_size_kb = Settings::get_min_size_kb();
         $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? '.avif' : '.webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $extension = Settings::get_extension();
+        $format = Settings::get_format();
         if (empty($attachments)) {
-            update_option('webp_conversion_complete', true);
-            $log[] = "<span style='font-weight: bold; color: #281E5D;'>" . __('Conversion Complete', 'sfxtheme') . "</span>: " . __('No more images to process', 'sfxtheme');
+            update_option('sfx_webp_conversion_complete', true);
+            $log[] = __('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme');
             update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
             wp_send_json_success(['complete' => true]);
         }
@@ -348,10 +348,8 @@ class Ajax
         }
         $log = get_option('sfx_webp_conversion_log', []);
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
-        $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? '.avif' : '.webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $max_values = Settings::get_max_values();
+        $extension = Settings::get_extension();
         $preserve_originals = Settings::get_preserve_originals();
         $args = [
             'post_type' => 'attachment',
@@ -409,7 +407,10 @@ class Ajax
 
         $log = get_option('sfx_webp_conversion_log', []);
         $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? 'avif' : 'webp';
+        $extension = Settings::get_extension_name();
+        
+        // Cache excluded images for performance (used in fix_post_thumbnail loop)
+        $excluded_images = Settings::get_excluded_images();
         
         // Get all public post types + FSE templates
         $public_post_types = get_post_types(['public' => true], 'names');
@@ -485,7 +486,7 @@ class Ajax
             }
             
             // Update post thumbnail if needed
-            self::fix_post_thumbnail($post_id, $extension, $use_avif, $log);
+            self::fix_post_thumbnail($post_id, $extension, $use_avif, $log, $excluded_images);
         }
         
         $log[] = sprintf(__('Checked %d images, updated %d items, changed %d links', 'sfxtheme'), $checked_images, $updated_count, $changed_links);
@@ -674,22 +675,8 @@ class Ajax
      */
     public static function cleanup_optimized(): void
     {
-        // Debug info
-        $debug_info = [];
-        $debug_info['ajax_called'] = true;
+        check_ajax_referer('webp_converter_nonce', 'nonce');
         
-        // Verify nonce with detailed error if it fails
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'webp_converter_nonce')) {
-            $debug_info['nonce_error'] = true;
-            $debug_info['provided_nonce'] = isset($_POST['nonce']) ? substr($_POST['nonce'], 0, 5) . '...' : 'missing';
-            wp_send_json_error([
-                'message' => __('Security verification failed. Try refreshing the page.', 'sfxtheme'),
-                'debug' => $debug_info
-            ]);
-            return;
-        }
-        
-        // Verify capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
             return;
@@ -917,17 +904,18 @@ class Ajax
     /**
      * Fix post thumbnail format
      *
-     * @param int    $post_id    Post ID
-     * @param string $extension  Target file extension (webp or avif)
-     * @param bool   $use_avif   Whether to use AVIF format
-     * @param array  $log        Log array (passed by reference)
+     * @param int    $post_id         Post ID
+     * @param string $extension       Target file extension (webp or avif)
+     * @param bool   $use_avif        Whether to use AVIF format
+     * @param array  $log             Log array (passed by reference)
+     * @param array  $excluded_images Pre-cached array of excluded image IDs
      * @return void
      */
-    private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log): void
+    private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log, array $excluded_images = []): void
     {
         $thumbnail_id = get_post_thumbnail_id($post_id);
         
-        if (!$thumbnail_id || in_array($thumbnail_id, Settings::get_excluded_images(), true)) {
+        if (!$thumbnail_id || in_array($thumbnail_id, $excluded_images, true)) {
             return;
         }
         

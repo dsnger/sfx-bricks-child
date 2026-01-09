@@ -5,11 +5,21 @@ namespace SFX\ImageOptimizer;
 
 class FormatConverter
 {
+    /**
+     * Convert an image to WebP or AVIF format.
+     *
+     * @param string     $file_path     Path to the source image file
+     * @param int        $dimension     Target dimension (width or height based on mode)
+     * @param array|null $log           Reference to log array for status messages
+     * @param int|null   $attachment_id WordPress attachment ID (optional)
+     * @param string     $suffix        Filename suffix for resized versions
+     * @return string|false New file path on success, false on failure
+     */
     public static function convert_to_format(string $file_path, int $dimension, ?array &$log = null, ?int $attachment_id = null, string $suffix = ''): string|false
     {
         $use_avif = Settings::get_use_avif();
-        $format = $use_avif ? 'image/avif' : 'image/webp';
-        $extension = $use_avif ? '.avif' : '.webp';
+        $format = Settings::get_format();
+        $extension = Settings::get_extension();
         $path_info = pathinfo($file_path);
         $new_file_path = $path_info['dirname'] . '/' . $path_info['filename'] . $suffix . $extension;
         $quality = Settings::get_quality();

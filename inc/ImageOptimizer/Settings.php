@@ -152,6 +152,48 @@ class Settings
         return (bool) get_option('sfx_webp_use_avif', false);
     }
 
+    /**
+     * Get the target image format MIME type.
+     *
+     * @return string MIME type (image/webp or image/avif)
+     */
+    public static function get_format(): string
+    {
+        return self::get_use_avif() ? 'image/avif' : 'image/webp';
+    }
+
+    /**
+     * Get the target image file extension (with dot).
+     *
+     * @return string Extension (.webp or .avif)
+     */
+    public static function get_extension(): string
+    {
+        return self::get_use_avif() ? '.avif' : '.webp';
+    }
+
+    /**
+     * Get the target image file extension (without dot).
+     *
+     * @return string Extension (webp or avif)
+     */
+    public static function get_extension_name(): string
+    {
+        return self::get_use_avif() ? 'avif' : 'webp';
+    }
+
+    /**
+     * Get max dimension values based on current resize mode.
+     *
+     * @return array Array of max dimension values
+     */
+    public static function get_max_values(): array
+    {
+        return (self::get_resize_mode() === 'width') 
+            ? self::get_max_widths() 
+            : self::get_max_heights();
+    }
+
     public static function get_excluded_images(): array
     {
         $excluded = get_option('sfx_webp_excluded_images', []);

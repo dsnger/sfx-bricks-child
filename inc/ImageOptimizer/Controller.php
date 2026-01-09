@@ -28,52 +28,6 @@ class Controller
     private static $memory_threshold = 0.85; // 85% of memory_limit
 
     /**
-     * Check if file exists with caching
-     * 
-     * @param string $file_path
-     * @return bool
-     */
-    private static function cached_file_exists(string $file_path): bool
-    {
-        $cache_key = 'sfx_image_optimizer_file_exists_' . md5($file_path);
-        $cached_result = get_transient($cache_key);
-        
-        if ($cached_result !== false) {
-            return (bool) $cached_result;
-        }
-        
-        $exists = file_exists($file_path);
-        
-        // Cache for 1 hour
-        set_transient($cache_key, $exists, HOUR_IN_SECONDS);
-        
-        return $exists;
-    }
-
-    /**
-     * Get image format with caching
-     * 
-     * @param string $file_path
-     * @return string|null
-     */
-    private static function get_cached_image_format(string $file_path): ?string
-    {
-        $cache_key = 'sfx_image_optimizer_format_' . md5($file_path);
-        $cached_format = get_transient($cache_key);
-        
-        if ($cached_format !== false) {
-            return $cached_format;
-        }
-        
-        $format = self::get_image_format($file_path);
-        
-        // Cache for 1 hour
-        set_transient($cache_key, $format, HOUR_IN_SECONDS);
-        
-        return $format;
-    }
-
-    /**
      * Initialize the controller by registering all hooks
      */
     public function __construct()
@@ -101,7 +55,7 @@ class Controller
         add_filter('wp_handle_upload', [self::class, 'handle_upload_convert_to_format'], 10, 1);
         // Register .htaccess/MIME type update on theme activation and option change
         add_action('after_switch_theme', [self::class, 'ensure_mime_types']);
-        add_action('update_option_webp_use_avif', [self::class, 'ensure_mime_types']);
+        add_action('update_option_sfx_webp_use_avif', [self::class, 'ensure_mime_types']);
         // Register attachment deletion cleanup
         add_action('delete_attachment', [self::class, 'delete_attachment_files'], 10, 1);
         // Register custom srcset filter
@@ -211,8 +165,8 @@ class Controller
             return $upload;
         }
         $use_avif = Settings::get_use_avif();
-        $format = $use_avif ? 'image/avif' : 'image/webp';
-        $extension = $use_avif ? '.avif' : '.webp';
+        $format = Settings::get_format();
+        $extension = Settings::get_extension();
         $file_path = $upload['file'];
         $uploads_dir = dirname($file_path);
         $log = get_option('sfx_webp_conversion_log', []);
@@ -448,7 +402,7 @@ class Controller
             }
         }
 
-        // --- DEBUG LOGGING FOR ORIGINAL FILE DELETION ---
+        // Clean up original format files that may remain after conversion
         if ($file) {
             $dir = dirname($file);
             $base = pathinfo($file, PATHINFO_FILENAME);
@@ -456,10 +410,7 @@ class Controller
             foreach ($possible_exts as $ext) {
                 $original = "$dir/$base.$ext";
                 if (file_exists($original)) {
-                    error_log('Deleting original: ' . $original);
                     @unlink($original);
-                } else {
-                    error_log('File does not exist: ' . $original);
                 }
             }
         }
@@ -467,16 +418,22 @@ class Controller
 
     /**
      * Custom srcset to include all sizes in current format
+     *
+     * @param array       $sources       Source array for srcset
+     * @param array       $size_array    Size array
+     * @param string      $image_src     Image source URL
+     * @param array       $image_meta    Image metadata
+     * @param int         $attachment_id Attachment ID
+     * @return array Modified sources array
      */
-    public static function custom_srcset($sources, $size_array, $image_src, $image_meta, $attachment_id)
+    public static function custom_srcset($sources, $size_array, $image_src, $image_meta, $attachment_id): array
     {
         if (in_array($attachment_id, Settings::get_excluded_images(), true)) {
             return $sources;
         }
-        $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? '.avif' : '.webp';
+        $extension = Settings::get_extension();
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $max_values = Settings::get_max_values();
         $upload_dir = wp_upload_dir();
         $base_path = $upload_dir['basedir'] . '/' . dirname($image_meta['file']);
         $base_name = pathinfo($image_meta['file'], PATHINFO_FILENAME);
@@ -508,11 +465,18 @@ class Controller
     /**
      * Custom metadata for converted images
      */
-    public static function fix_format_metadata($metadata, $attachment_id)
+    /**
+     * Custom metadata for converted images
+     *
+     * @param array $metadata    Attachment metadata
+     * @param int   $attachment_id Attachment ID
+     * @return array Modified metadata
+     */
+    public static function fix_format_metadata($metadata, $attachment_id): array
     {
         $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? 'avif' : 'webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $extension = Settings::get_extension_name();
+        $format = Settings::get_format();
         $file = get_attached_file($attachment_id);
         if (pathinfo($file, PATHINFO_EXTENSION) !== $extension) {
             return $metadata;
@@ -523,7 +487,7 @@ class Controller
         $dirname = dirname($file_path);
         $base_name = pathinfo($file_name, PATHINFO_FILENAME);
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $max_values = Settings::get_max_values();
         $metadata['file'] = str_replace($uploads['basedir'] . '/', '', $file_path);
         $metadata['mime_type'] = $format;
         foreach ($max_values as $index => $dimension) {
@@ -577,9 +541,8 @@ class Controller
         $memory_warnings = 0;
 
         $preserve_originals = Settings::get_preserve_originals();
-        $use_avif = Settings::get_use_avif();
-        $current_extension = $use_avif ? 'avif' : 'webp';
-        $alternate_extension = $use_avif ? 'webp' : 'avif';
+        $current_extension = Settings::get_extension_name();
+        $alternate_extension = Settings::get_use_avif() ? 'webp' : 'avif';
 
         // Build a list of active files first
         $log[] = __('Building list of active files...', 'sfxtheme');
@@ -594,7 +557,7 @@ class Controller
 
         $active_files = [];
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $max_values = Settings::get_max_values();
         $excluded_images = Settings::get_excluded_images();
 
         // Process attachments to build active files list
