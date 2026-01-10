@@ -25,6 +25,7 @@ class Ajax
         add_action('wp_ajax_webp_set_use_avif', [self::class, 'set_use_avif']);
         add_action('wp_ajax_webp_set_preserve_originals', [self::class, 'set_preserve_originals']);
         add_action('wp_ajax_webp_set_disable_auto_conversion', [self::class, 'set_disable_auto_conversion']);
+        add_action('wp_ajax_webp_revert_to_original', [self::class, 'revert_to_original']);
         // Add other AJAX handlers as needed
     }
 
@@ -161,13 +162,13 @@ class Ajax
             // Step 2: Generate new sizes with rollback on failure
             $new_files = [];
             $success = true;
+            $main_converted_file = null;
             foreach ($max_values as $index => $dimension) {
                 $suffix = ($index === 0) ? '' : "-{$dimension}";
                 $new_file_path = FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
                 if ($new_file_path) {
                     if ($index === 0) {
-                        update_attached_file($attachment_id, $new_file_path);
-                        wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
+                        $main_converted_file = $new_file_path;
                     }
                     $new_files[] = $new_file_path;
                 } else {
@@ -175,9 +176,16 @@ class Ajax
                     break;
                 }
             }
-            // Step 3: Generate thumbnail
-            if ($success) {
-                $editor = wp_get_image_editor($file_path);
+            
+            // Update dirname and base_name based on converted file for thumbnail generation
+            if ($main_converted_file) {
+                $dirname = dirname($main_converted_file);
+                $base_name = pathinfo($main_converted_file, PATHINFO_FILENAME);
+            }
+            
+            // Step 3: Generate thumbnail using the converted file
+            if ($success && $main_converted_file) {
+                $editor = wp_get_image_editor($main_converted_file);
                 if (!is_wp_error($editor)) {
                     $editor->resize(150, 150, true);
                     $thumbnail_path = "$dirname/$base_name-150x150$extension";
@@ -187,9 +195,11 @@ class Ajax
                         $new_files[] = $thumbnail_path;
                     } else {
                         $success = false;
+                        $log[] = sprintf(__('Error: Thumbnail generation failed - %s', 'sfxtheme'), $saved->get_error_message());
                     }
                 } else {
                     $success = false;
+                    $log[] = sprintf(__('Error: Image editor failed for thumbnail - %s', 'sfxtheme'), $editor->get_error_message());
                 }
             }
             // Rollback if any conversion failed
@@ -203,8 +213,23 @@ class Ajax
             }
             // Step 4: Regenerate metadata with only current sizes
             if ($attachment_id && !empty($new_files)) {
+                // Verify the new file exists before generating metadata
+                if (!file_exists($new_files[0])) {
+                    $log[] = sprintf(__('Error: Converted file does not exist: %s', 'sfxtheme'), basename($new_files[0]));
+                    continue;
+                }
+
+                // Update the attachment file path FIRST, before generating metadata
+                update_attached_file($attachment_id, $new_files[0]);
+                wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
+
+                // Now generate metadata using the updated file path
                 $metadata = wp_generate_attachment_metadata($attachment_id, $new_files[0]);
                 if (!is_wp_error($metadata)) {
+                    // Explicitly set the file path in metadata to the converted file (relative to uploads dir)
+                    $upload_dir = wp_upload_dir();
+                    $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $new_files[0]);
+                    
                     $metadata['sizes'] = [];
                     foreach ($max_values as $index => $dimension) {
                         if ($index === 0) continue;
@@ -250,7 +275,7 @@ class Ajax
                     
                     wp_update_attachment_metadata($attachment_id, $metadata);
                 } else {
-                    $log[] = sprintf(__('Error: Metadata regeneration failed for %s', 'sfxtheme'), basename($file_path));
+                    $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($file_path), $metadata->get_error_message());
                 }
             }
             // Step 5: Delete original if not preserved

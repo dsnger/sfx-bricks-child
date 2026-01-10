@@ -207,11 +207,13 @@ class Controller
                 }, ARRAY_FILTER_USE_BOTH);
             }
         }
+        $main_converted_file = null;
         foreach ($valid_max_values as $index => $dimension) {
             $suffix = ($index === 0) ? '' : "-{$dimension}";
             $new_file_path = \SFX\ImageOptimizer\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
             if ($new_file_path) {
                 if ($index === 0) {
+                    $main_converted_file = $new_file_path;
                     $upload['file'] = $new_file_path;
                     $upload['url'] = str_replace(basename($file_path), basename($new_file_path), $upload['url']);
                     $upload['type'] = $format;
@@ -232,12 +234,12 @@ class Controller
                 }
             }
         }
-        // Generate thumbnail
-        if ($success) {
-            $editor = wp_get_image_editor($file_path);
+        // Generate thumbnail using the converted file
+        if ($success && $main_converted_file) {
+            $editor = wp_get_image_editor($main_converted_file);
             if (!is_wp_error($editor)) {
                 $editor->resize(150, 150, true);
-                $thumbnail_path = dirname($file_path) . '/' . pathinfo($file_path, PATHINFO_FILENAME) . '-150x150' . $extension;
+                $thumbnail_path = dirname($main_converted_file) . '/' . pathinfo($main_converted_file, PATHINFO_FILENAME) . '-150x150' . $extension;
                 $saved = $editor->save($thumbnail_path, $format, ['quality' => Settings::get_quality()]);
                 if (!is_wp_error($saved)) {
                     $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
@@ -246,9 +248,11 @@ class Controller
                     self::$file_cache[$thumbnail_path] = true;
                 } else {
                     $success = false;
+                    $log[] = sprintf(__('Error: Thumbnail generation failed - %s', 'sfxtheme'), $saved->get_error_message());
                 }
             } else {
                 $success = false;
+                $log[] = sprintf(__('Error: Image editor failed for thumbnail - %s', 'sfxtheme'), $editor->get_error_message());
             }
         }
         // Rollback if any conversion failed
@@ -267,10 +271,28 @@ class Controller
         }
         // Update metadata only if all conversions succeeded
         if ($attachment_id && !empty($new_files)) {
+            // Verify the new file exists before generating metadata
+            if (!self::file_exists_cached($upload['file'])) {
+                $log[] = sprintf(__('Error: Converted file does not exist: %s', 'sfxtheme'), basename($upload['file']));
+                update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+                return $upload;
+            }
+
+            // Update the attachment file path FIRST, before generating metadata
+            update_attached_file($attachment_id, $upload['file']);
+            wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
+
+            // Now generate metadata using the updated file path
             $metadata = wp_generate_attachment_metadata($attachment_id, $upload['file']);
             if (!is_wp_error($metadata)) {
-                $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-                $dirname = dirname($file_path);
+                // Use the converted file path for base_name and dirname, not the original
+                $base_name = pathinfo($upload['file'], PATHINFO_FILENAME);
+                $dirname = dirname($upload['file']);
+                
+                // Explicitly set the file path in metadata to the converted file (relative to uploads dir)
+                $upload_dir = wp_upload_dir();
+                $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $upload['file']);
+                
                 foreach ($max_values as $index => $dimension) {
                     if ($index === 0) continue;
                     $size_file = "$dirname/$base_name-$dimension$extension";
@@ -319,11 +341,9 @@ class Controller
                     'max_values'  => array_values($valid_max_values),
                 ];
                 
-                update_attached_file($attachment_id, $upload['file']);
-                wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
                 wp_update_attachment_metadata($attachment_id, $metadata);
             } else {
-                $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($file_path), $metadata->get_error_message());
+                $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($upload['file']), $metadata->get_error_message());
             }
         }
         // Delete original only if all conversions succeeded and not preserved
@@ -463,13 +483,11 @@ class Controller
     }
 
     /**
-     * Custom metadata for converted images
-     */
-    /**
-     * Custom metadata for converted images
-     *
-     * @param array $metadata    Attachment metadata
-     * @param int   $attachment_id Attachment ID
+     * Fix metadata for attachments that have been converted but still reference old file paths
+     * This fixes the "Failed to open stream" errors for existing converted images
+     * 
+     * @param array       $metadata      Current metadata
+     * @param int         $attachment_id Attachment ID
      * @return array Modified metadata
      */
     public static function fix_format_metadata($metadata, $attachment_id): array
@@ -478,6 +496,40 @@ class Controller
         $extension = Settings::get_extension_name();
         $format = Settings::get_format();
         $file = get_attached_file($attachment_id);
+        
+        // If the attached file doesn't exist, try to find the converted version
+        if (!file_exists($file)) {
+            $path_info = pathinfo($file);
+            $dirname = $path_info['dirname'];
+            $basename = $path_info['filename'];
+            
+            // Try to find the converted file (webp or avif)
+            $converted_extensions = ['webp', 'avif'];
+            foreach ($converted_extensions as $ext) {
+                $converted_file = "$dirname/$basename.$ext";
+                if (file_exists($converted_file)) {
+                    // Update the attachment file path to the existing converted file
+                    update_attached_file($attachment_id, $converted_file);
+                    wp_update_post(['ID' => $attachment_id, 'post_mime_type' => "image/$ext"]);
+                    $file = $converted_file;
+                    $extension = $ext;
+                    $format = "image/$ext";
+                    
+                    // Update metadata file path
+                    $upload_dir = wp_upload_dir();
+                    $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $converted_file);
+                    
+                    error_log("ImageOptimizer: Fixed attachment $attachment_id - updated to $converted_file");
+                    break;
+                }
+            }
+            
+            // If still not found, return original metadata
+            if (!file_exists($file)) {
+                return $metadata;
+            }
+        }
+        
         if (pathinfo($file, PATHINFO_EXTENSION) !== $extension) {
             return $metadata;
         }
