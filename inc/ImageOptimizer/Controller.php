@@ -153,19 +153,21 @@ class Controller
 
     /**
      * Convert uploaded images to WebP/AVIF on upload
+     * 
+     * Uses ImageConversionService for core conversion logic while handling
+     * upload-specific concerns like the $upload array modification.
      */
     public static function handle_upload_convert_to_format(array $upload): array
     {
         if (Settings::get_disable_auto_conversion()) {
             return $upload;
         }
+        
         $file_extension = strtolower(pathinfo($upload['file'], PATHINFO_EXTENSION));
         if (!in_array($file_extension, Constants::ALLOWED_EXTENSIONS, true)) {
             return $upload;
         }
-        $use_avif = Settings::get_use_avif();
-        $format = Settings::get_format();
-        $extension = Settings::get_extension();
+        
         $file_path = $upload['file'];
         $uploads_dir = dirname($file_path);
         $log = [];
@@ -173,235 +175,109 @@ class Controller
         // Clear file cache before starting
         self::clear_file_cache();
 
+        // Validate upload directory
         if (!is_writable($uploads_dir)) {
             Settings::append_log(sprintf(__('Error: Uploads directory %s is not writable', 'sfxtheme'), $uploads_dir));
             return $upload;
         }
+        
+        // Check minimum size threshold
         $file_size_kb = filesize($file_path) / 1024;
         $min_size_kb = Settings::get_min_size_kb();
         if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
             Settings::append_log(sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb));
             return $upload;
         }
+        
+        // Get settings
+        $use_avif = Settings::get_use_avif();
+        $format = Settings::get_format();
+        $extension = Settings::get_extension();
+        $quality = Settings::get_quality();
         $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
+        $max_values = Settings::get_max_values();
+        
+        // Get attachment ID if available
         $attachment_id = function_exists('attachment_url_to_postid') ? attachment_url_to_postid($upload['url']) : null;
-        $new_files = [];
-        $success = true;
 
         // Check memory usage before processing
         self::check_memory_usage();
         
-        // CRITICAL FIX: Check if a backup already exists BEFORE conversion
-        // This tells us if this is a first upload or a re-upload/re-optimization
-        $backup_existed_before = false;
-        $dirname = dirname($file_path);
-        $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-        foreach (Constants::CONVERTED_EXTENSIONS as $conv_ext) {
-            $potential_backup = "$dirname/$base_name.$conv_ext";
-            if (file_exists($potential_backup)) {
-                $backup_existed_before = true;
-                break;
-            }
-        }
+        // Check if a backup already exists (for original deletion logic)
+        $backup_existed_before = ImageConversionService::backupExists($file_path);
 
-        // --- v3.6 improvement: avoid upscaling in width mode ---
-        $valid_max_values = $max_values;
-        if ($mode === 'width') {
-            $editor = wp_get_image_editor($file_path);
-            if (!is_wp_error($editor)) {
-                $dimensions = $editor->get_size();
-                $original_width = $dimensions['width'];
-                $valid_max_values = array_filter($max_values, function($width, $index) use ($original_width) {
-                    return $index === 0 || $width <= $original_width;
-                }, ARRAY_FILTER_USE_BOTH);
-            }
-        }
-        $main_converted_file = null;
-        foreach ($valid_max_values as $index => $dimension) {
-            $suffix = ($index === 0) ? '' : "-{$dimension}";
-            $new_file_path = \SFX\ImageOptimizer\FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
-            if ($new_file_path) {
-                if ($index === 0) {
-                    $main_converted_file = $new_file_path;
-                    $upload['file'] = $new_file_path;
-                    $upload['url'] = str_replace(basename($file_path), basename($new_file_path), $upload['url']);
-                    $upload['type'] = $format;
-                }
-                $new_files[] = $new_file_path;
-                // Add to file cache
-                self::$file_cache[$new_file_path] = true;
-            } else {
-                $success = false;
-                break;
-            }
-
-            // Check memory after each dimension
-            if (self::check_memory_usage()) {
-                // Force garbage collection if available
-                if (function_exists('gc_collect_cycles')) {
-                    gc_collect_cycles();
-                }
-            }
-        }
-        // Generate thumbnail using the converted file
-        if ($success && $main_converted_file) {
-            $editor = wp_get_image_editor($main_converted_file);
-            if (!is_wp_error($editor)) {
-                $thumb_size = Constants::THUMBNAIL_SIZE;
-                $editor->resize($thumb_size, $thumb_size, true);
-                $thumbnail_path = dirname($main_converted_file) . '/' . pathinfo($main_converted_file, PATHINFO_FILENAME) . "-{$thumb_size}x{$thumb_size}" . $extension;
-                $saved = $editor->save($thumbnail_path, $format, ['quality' => Settings::get_quality()]);
-                if (!is_wp_error($saved)) {
-                    $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
-                    $new_files[] = $thumbnail_path;
-                    // Add to file cache
-                    self::$file_cache[$thumbnail_path] = true;
-                } else {
-                    $success = false;
-                    $log[] = sprintf(__('Error: Thumbnail generation failed - %s', 'sfxtheme'), $saved->get_error_message());
-                }
-            } else {
-                $success = false;
-                $log[] = sprintf(__('Error: Image editor failed for thumbnail - %s', 'sfxtheme'), $editor->get_error_message());
-            }
-        }
-        // Rollback if any conversion failed
-        if (!$success) {
-            foreach ($new_files as $file) {
-                if (self::file_exists_cached($file)) {
-                    @unlink($file);
-                    // Update cache
-                    self::$file_cache[$file] = false;
-                }
-            }
-            $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
-            $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
+        // Perform conversion using service
+        $result = ImageConversionService::convertImage($file_path, $attachment_id, [
+            'use_avif' => $use_avif,
+            'quality' => $quality,
+            'mode' => $mode,
+            'max_values' => $max_values,
+        ]);
+        
+        // Merge service log with local log
+        $log = array_merge($log, $result['log']);
+        
+        // Handle conversion failure
+        if ($result['status'] !== ImageConversionService::STATUS_SUCCESS) {
             Settings::append_log($log);
             return $upload;
         }
-        // Update metadata only if all conversions succeeded
-        if ($attachment_id && !empty($new_files)) {
-            // Verify the new file exists before generating metadata
-            if (!self::file_exists_cached($upload['file'])) {
-                $log[] = sprintf(__('Error: Converted file does not exist: %s', 'sfxtheme'), basename($upload['file']));
+        
+        // Update file cache with new files
+        foreach ($result['files'] as $file) {
+            self::$file_cache[$file] = true;
+        }
+        
+        // Update upload array with converted file info
+        $main_converted_file = $result['main_file'];
+        if ($main_converted_file) {
+            $upload['file'] = $main_converted_file;
+            $upload['url'] = str_replace(basename($file_path), basename($main_converted_file), $upload['url']);
+            $upload['type'] = $format;
+        }
+        
+        // Update metadata if we have an attachment ID
+        if ($attachment_id && !empty($result['files'])) {
+            $metadata_updated = ImageConversionService::updateAttachmentMetadata(
+                $attachment_id,
+                $main_converted_file,
+                [
+                    'format' => $format,
+                    'extension' => $extension,
+                    'quality' => $quality,
+                    'max_values' => $max_values,
+                    'mode' => $mode,
+                    'use_avif' => $use_avif,
+                ],
+                $log
+            );
+            
+            if (!$metadata_updated) {
                 Settings::append_log($log);
                 return $upload;
             }
-
-            // Update the attachment file path FIRST, before generating metadata
-            update_attached_file($attachment_id, $upload['file']);
-            wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
-
-            // Now generate metadata using the updated file path
-            $metadata = wp_generate_attachment_metadata($attachment_id, $upload['file']);
-            if (!is_wp_error($metadata)) {
-                // Use the converted file path for base_name and dirname, not the original
-                $base_name = pathinfo($upload['file'], PATHINFO_FILENAME);
-                $dirname = dirname($upload['file']);
-                
-                // Explicitly set the file path in metadata to the converted file (relative to uploads dir)
-                $upload_dir = wp_upload_dir();
-                $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $upload['file']);
-                
-                foreach ($max_values as $index => $dimension) {
-                    if ($index === 0) continue;
-                    $size_file = "$dirname/$base_name-$dimension$extension";
-                    if (self::file_exists_cached($size_file)) {
-                        $metadata['sizes']["custom-$dimension"] = [
-                            'file' => "$base_name-$dimension$extension",
-                            'width' => ($mode === 'width') ? $dimension : 0,
-                            'height' => ($mode === 'height') ? $dimension : 0,
-                            'mime-type' => $format
-                        ];
-                    }
-                }
-                $thumbnail_file = "$dirname/$base_name-150x150$extension";
-                if (self::file_exists_cached($thumbnail_file)) {
-                    $metadata['sizes']['thumbnail'] = [
-                        'file' => "$base_name-150x150$extension",
-                        'width' => 150,
-                        'height' => 150,
-                        'mime-type' => $format
-                    ];
-                } else {
-                    $editor = wp_get_image_editor($upload['file']);
-                    if (!is_wp_error($editor)) {
-                        $editor->resize(150, 150, true);
-                        $saved = $editor->save($thumbnail_file, $format, ['quality' => Settings::get_quality()]);
-                        if (!is_wp_error($saved)) {
-                            $metadata['sizes']['thumbnail'] = [
-                                'file' => "$base_name-150x150$extension",
-                                'width' => 150,
-                                'height' => 150,
-                                'mime-type' => $format
-                            ];
-                            $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'sfxtheme'), basename($thumbnail_file));
-                            // Update file cache
-                            self::$file_cache[$thumbnail_file] = true;
-                        }
-                    }
-                }
-                $metadata['webp_quality'] = Settings::get_quality();
-                
-                // Add PixRefiner stamp to track optimization state
-                $metadata['pixrefiner_stamp'] = [
-                    'format'      => $use_avif ? 'avif' : 'webp',
-                    'quality'     => Settings::get_quality(),
-                    'resize_mode' => $mode,
-                    'max_values'  => array_values($valid_max_values),
-                ];
-                
-                wp_update_attachment_metadata($attachment_id, $metadata);
-            } else {
-                $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($upload['file']), $metadata->get_error_message());
+        }
+        
+        // Handle original file deletion
+        $target_ext = $use_avif ? 'avif' : 'webp';
+        if ($file_extension !== $target_ext && self::file_exists_cached($file_path)) {
+            $was_restored = (bool) get_post_meta($attachment_id ?? 0, '_sfx_was_restored', true);
+            
+            ImageConversionService::handleOriginalDeletion(
+                $file_path,
+                $attachment_id,
+                Settings::get_preserve_originals(),
+                $was_restored,
+                $backup_existed_before,
+                $log
+            );
+            
+            // Update file cache if deleted
+            if (!file_exists($file_path)) {
+                self::$file_cache[$file_path] = false;
             }
         }
         
-        // Delete original only if all conversions succeeded and not preserved
-        // CRITICAL: With preserve_originals ON, NEVER delete originals - period.
-        if ($file_extension !== ($use_avif ? 'avif' : 'webp') && self::file_exists_cached($file_path) && $success) {
-            $preserve_originals = Settings::get_preserve_originals();
-            
-            // SAFETY CHECK: If preserve_originals is ON, skip deletion entirely
-            if ($preserve_originals) {
-                $log[] = sprintf(__('Preserved original: %s', 'sfxtheme'), basename($file_path));
-            } else {
-                // preserve_originals is OFF - check if we should still keep it
-                // Delete only if this is a first-time optimization (no backup existed before)
-                $should_delete = !$backup_existed_before;
-                
-                if ($should_delete) {
-                    $attempts = 0;
-                    $chmod_failed = false;
-                    while ($attempts < 5 && self::file_exists_cached($file_path)) {
-                        if (!is_writable($file_path)) {
-                            @chmod($file_path, 0644);
-                            if (!is_writable($file_path)) {
-                                if ($chmod_failed) {
-                                    $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
-                                    break;
-                                }
-                                $chmod_failed = true;
-                            }
-                        }
-                        if (@unlink($file_path)) {
-                            $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
-                            // Update file cache
-                            self::$file_cache[$file_path] = false;
-                            break;
-                        }
-                        $attempts++;
-                        sleep(1);
-                    }
-                    if (self::file_exists_cached($file_path)) {
-                        $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
-                    }
-                } elseif ($backup_existed_before) {
-                    $log[] = sprintf(__('Preserved original: %s (was previously optimized)', 'sfxtheme'), basename($file_path));
-                }
-            }
-        }
         Settings::append_log($log);
         return $upload;
     }

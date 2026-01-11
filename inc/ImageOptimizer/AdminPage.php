@@ -125,7 +125,7 @@ class AdminPage
                             <?php esc_html_e('Exclude images from conversion. If already optimized, use "Revert" button to restore original format (requires Preserve Originals).', 'sfxtheme'); ?>
                         </p>
                         <button id="open-media-library" class="button io-form-group"><?php esc_html_e('Add from Media Library', 'sfxtheme'); ?></button>
-                        <div id="excluded-images">
+                        <div id="excluded-images" style="margin-top: 10px;">
                             <h3 class="io-subsection-title"><?php esc_html_e('Excluded Images', 'sfxtheme'); ?></h3>
                             <ul id="excluded-images-list"></ul>
                         </div>
