@@ -25,7 +25,7 @@ class Controller
      * 
      * @var float
      */
-    private static $memory_threshold = 0.85; // 85% of memory_limit
+    private static $memory_threshold = Constants::MEMORY_THRESHOLD;
 
     /**
      * Initialize the controller by registering all hooks
@@ -160,8 +160,7 @@ class Controller
             return $upload;
         }
         $file_extension = strtolower(pathinfo($upload['file'], PATHINFO_EXTENSION));
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
-        if (!in_array($file_extension, $allowed_extensions, true)) {
+        if (!in_array($file_extension, Constants::ALLOWED_EXTENSIONS, true)) {
             return $upload;
         }
         $use_avif = Settings::get_use_avif();
@@ -169,21 +168,19 @@ class Controller
         $extension = Settings::get_extension();
         $file_path = $upload['file'];
         $uploads_dir = dirname($file_path);
-        $log = get_option('sfx_webp_conversion_log', []);
+        $log = [];
 
         // Clear file cache before starting
         self::clear_file_cache();
 
         if (!is_writable($uploads_dir)) {
-            $log[] = sprintf(__('Error: Uploads directory %s is not writable', 'sfxtheme'), $uploads_dir);
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(sprintf(__('Error: Uploads directory %s is not writable', 'sfxtheme'), $uploads_dir));
             return $upload;
         }
         $file_size_kb = filesize($file_path) / 1024;
         $min_size_kb = Settings::get_min_size_kb();
         if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
-            $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb));
             return $upload;
         }
         $mode = Settings::get_resize_mode();
@@ -200,8 +197,7 @@ class Controller
         $backup_existed_before = false;
         $dirname = dirname($file_path);
         $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-        $converted_extensions = ['webp', 'avif'];
-        foreach ($converted_extensions as $conv_ext) {
+        foreach (Constants::CONVERTED_EXTENSIONS as $conv_ext) {
             $potential_backup = "$dirname/$base_name.$conv_ext";
             if (file_exists($potential_backup)) {
                 $backup_existed_before = true;
@@ -252,8 +248,9 @@ class Controller
         if ($success && $main_converted_file) {
             $editor = wp_get_image_editor($main_converted_file);
             if (!is_wp_error($editor)) {
-                $editor->resize(150, 150, true);
-                $thumbnail_path = dirname($main_converted_file) . '/' . pathinfo($main_converted_file, PATHINFO_FILENAME) . '-150x150' . $extension;
+                $thumb_size = Constants::THUMBNAIL_SIZE;
+                $editor->resize($thumb_size, $thumb_size, true);
+                $thumbnail_path = dirname($main_converted_file) . '/' . pathinfo($main_converted_file, PATHINFO_FILENAME) . "-{$thumb_size}x{$thumb_size}" . $extension;
                 $saved = $editor->save($thumbnail_path, $format, ['quality' => Settings::get_quality()]);
                 if (!is_wp_error($saved)) {
                     $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
@@ -280,7 +277,7 @@ class Controller
             }
             $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
             $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log($log);
             return $upload;
         }
         // Update metadata only if all conversions succeeded
@@ -288,7 +285,7 @@ class Controller
             // Verify the new file exists before generating metadata
             if (!self::file_exists_cached($upload['file'])) {
                 $log[] = sprintf(__('Error: Converted file does not exist: %s', 'sfxtheme'), basename($upload['file']));
-                update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+                Settings::append_log($log);
                 return $upload;
             }
 
@@ -405,7 +402,7 @@ class Controller
                 }
             }
         }
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         return $upload;
     }
 
@@ -609,9 +606,13 @@ class Controller
     /**
      * Recursively clean up leftover originals and alternate formats
      */
-    public static function cleanup_leftover_originals(int $batch_limit = 1000): array
+    public static function cleanup_leftover_originals(int $batch_limit = 0): array
     {
-        $log = get_option('sfx_webp_conversion_log', []);
+        if ($batch_limit === 0) {
+            $batch_limit = Constants::DEFAULT_CLEANUP_BATCH_SIZE;
+        }
+        
+        $log = [];
         $uploads_dir = wp_upload_dir()['basedir'];
 
         // Clear file cache before starting
@@ -629,7 +630,8 @@ class Controller
 
         // Build a list of active files first
         $log[] = __('Building list of active files...', 'sfxtheme');
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
+        $log = [];
 
         $attachments = get_posts([
             'post_type' => 'attachment',
@@ -655,12 +657,12 @@ class Controller
                         gc_collect_cycles();
                     }
                     $log[] = sprintf(__('Memory usage high, garbage collection triggered (%d times)', 'sfxtheme'), $memory_warnings);
-                    update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+                    Settings::append_log($log);
+                    $log = [];
 
                     // If warnings are excessive, break to avoid crashes
-                    if ($memory_warnings > 5) {
-                        $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
-                        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+                    if ($memory_warnings > Constants::MAX_MEMORY_WARNINGS) {
+                        Settings::append_log(__('Too many memory warnings, stopping process to avoid crash', 'sfxtheme'));
                         return [
                             'deleted' => $deleted,
                             'failed' => $failed,
@@ -768,7 +770,8 @@ class Controller
         }
 
         $log[] = sprintf(__('Found %d active files to preserve', 'sfxtheme'), count($active_files));
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
+        $log = [];
 
         // Only proceed with deletion if we're not preserving originals
         if (!$preserve_originals) {
@@ -799,9 +802,9 @@ class Controller
                         }
 
                         // If warnings are excessive, break to avoid crashes
-                        if ($memory_warnings > 5) {
+                        if ($memory_warnings > Constants::MAX_MEMORY_WARNINGS) {
                             $log[] = __('Too many memory warnings, stopping process to avoid crash', 'sfxtheme');
-                            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+                            Settings::append_log($log);
                             return [
                                 'deleted' => $deleted,
                                 'failed' => $failed,
@@ -888,7 +891,7 @@ class Controller
         }
 
         $log[] = $summary;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
 
         return [
             'deleted' => $deleted,
@@ -896,7 +899,7 @@ class Controller
             'processed' => $processed,
             'file_count' => $file_count ?? 0,
             'memory_warnings' => $memory_warnings,
-            'completed' => ($file_count < $batch_limit)
+            'completed' => (($file_count ?? 0) < $batch_limit)
         ];
     }
 

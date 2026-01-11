@@ -76,7 +76,7 @@ class Ajax
             'post__not_in' => Settings::get_excluded_images(),
         ];
         $attachments = get_posts($args);
-        $log = get_option('sfx_webp_conversion_log', []);
+        $log = [];
         $mode = Settings::get_resize_mode();
         $max_values = Settings::get_max_values();
         $current_quality = Settings::get_quality();
@@ -86,8 +86,7 @@ class Ajax
         $format = Settings::get_format();
         if (empty($attachments)) {
             update_option('sfx_webp_conversion_complete', true);
-            $log[] = __('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme');
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(__('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme'));
             wp_send_json_success(['complete' => true]);
         }
         foreach ($attachments as $attachment_id) {
@@ -341,7 +340,7 @@ class Ajax
                 }
             }
         }
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         wp_send_json_success(['complete' => false, 'offset' => $offset + $batch_size]);
     }
 
@@ -407,12 +406,11 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $log = get_option('sfx_webp_conversion_log', []);
-        $mode = Settings::get_resize_mode();
+        $log = [];
         $max_values = Settings::get_max_values();
         $extension = Settings::get_extension();
         $preserve_originals = Settings::get_preserve_originals();
-        $original_extensions = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+        $thumb_size = Constants::THUMBNAIL_SIZE;
         
         $args = [
             'post_type' => 'attachment',
@@ -443,7 +441,7 @@ class Ajax
                     }
                 }
                 // Keep thumbnail
-                $thumb = $dirname . '/' . $base_name . '-150x150' . $extension;
+                $thumb = $dirname . '/' . $base_name . "-{$thumb_size}x{$thumb_size}" . $extension;
                 if ($candidate === $thumb) {
                     $is_current = true;
                 }
@@ -453,7 +451,7 @@ class Ajax
                 }
                 // CRITICAL FIX: If preserve_originals is ON, keep ALL original format files (jpg/png)
                 // This ensures originals are kept even when the attachment now points to webp/avif
-                if ($preserve_originals && in_array($candidate_ext, ['jpg', 'jpeg', 'png'])) {
+                if ($preserve_originals && in_array($candidate_ext, Constants::ORIGINAL_EXTENSIONS, true)) {
                     $is_current = true;
                 }
                 
@@ -465,7 +463,7 @@ class Ajax
             }
         }
         $log[] = sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted);
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         wp_send_json_success(['message' => sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted)]);
     }
 
@@ -476,7 +474,7 @@ class Ajax
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
 
-        $log = get_option('sfx_webp_conversion_log', []);
+        $log = [];
         $use_avif = Settings::get_use_avif();
         $extension = Settings::get_extension_name();
         
@@ -497,8 +495,7 @@ class Ajax
         $posts = get_posts($args);
         
         if (!$posts) {
-            $log[] = __('No posts/pages/templates found', 'sfxtheme');
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(__('No posts/pages/templates found', 'sfxtheme'));
             wp_send_json_success(['message' => __('No posts found', 'sfxtheme')]);
             return;
         }
@@ -561,7 +558,7 @@ class Ajax
         }
         
         $log[] = sprintf(__('Checked %d images, updated %d items, changed %d links', 'sfxtheme'), $checked_images, $updated_count, $changed_links);
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         wp_send_json_success(['message' => sprintf(__('Checked %d images, updated %d items', 'sfxtheme'), $checked_images, $updated_count)]);
     }
 
@@ -573,16 +570,14 @@ class Ajax
         }
         $widths = isset($_POST['widths']) ? sanitize_text_field($_POST['widths']) : '';
         $widths_arr = array_map('absint', array_filter(explode(',', $widths)));
-        $widths_arr = array_filter($widths_arr, function($w) { return $w > 0 && $w <= 9999; });
+        $widths_arr = array_filter($widths_arr, fn($w) => $w > 0 && $w <= Constants::MAX_DIMENSION);
         if (empty($widths_arr)) {
             wp_send_json_error(__('Invalid widths', 'sfxtheme'));
         }
-        $final_widths = array_slice($widths_arr, 0, 4);
+        $final_widths = array_slice($widths_arr, 0, Constants::MAX_CUSTOM_SIZES);
         update_option('sfx_webp_max_widths', implode(',', $final_widths));
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Max widths set to: %spx', 'sfxtheme'), implode(', ', $final_widths));
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -594,16 +589,14 @@ class Ajax
         }
         $heights = isset($_POST['heights']) ? sanitize_text_field($_POST['heights']) : '';
         $heights_arr = array_map('absint', array_filter(explode(',', $heights)));
-        $heights_arr = array_filter($heights_arr, function($h) { return $h > 0 && $h <= 9999; });
+        $heights_arr = array_filter($heights_arr, fn($h) => $h > 0 && $h <= Constants::MAX_DIMENSION);
         if (empty($heights_arr)) {
             wp_send_json_error(__('Invalid heights', 'sfxtheme'));
         }
-        $final_heights = array_slice($heights_arr, 0, 4);
+        $final_heights = array_slice($heights_arr, 0, Constants::MAX_CUSTOM_SIZES);
         update_option('sfx_webp_max_heights', implode(',', $final_heights));
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Max heights set to: %spx', 'sfxtheme'), implode(', ', $final_heights));
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -613,7 +606,7 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        update_option('sfx_webp_conversion_log', []);
+        Settings::clear_log();
         wp_send_json_success(['message' => __('Log cleared.', 'sfxtheme')]);
     }
 
@@ -623,19 +616,17 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        update_option('sfx_webp_max_widths', '1920,1200,600,300');
-        update_option('sfx_webp_max_heights', '1080,720,480,360');
-        update_option('sfx_webp_resize_mode', 'width');
-        update_option('sfx_webp_quality', 80);
-        update_option('sfx_webp_batch_size', 5);
+        update_option('sfx_webp_max_widths', Constants::DEFAULT_MAX_WIDTHS);
+        update_option('sfx_webp_max_heights', Constants::DEFAULT_MAX_HEIGHTS);
+        update_option('sfx_webp_resize_mode', Constants::DEFAULT_RESIZE_MODE);
+        update_option('sfx_webp_quality', Constants::DEFAULT_QUALITY);
+        update_option('sfx_webp_batch_size', Constants::DEFAULT_BATCH_SIZE);
         update_option('sfx_webp_preserve_originals', false);
         update_option('sfx_webp_disable_auto_conversion', false);
         update_option('sfx_webp_min_size_kb', 0);
         update_option('sfx_webp_use_avif', false);
         update_option('sfx_webp_excluded_images', []);
-        $log = get_option('sfx_webp_conversion_log', []);
-        $log[] = __('ImageOptimizer settings reset to defaults.', 'sfxtheme');
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log(__('ImageOptimizer settings reset to defaults.', 'sfxtheme'));
         wp_send_json_success(['message' => __('ImageOptimizer settings reset to defaults.', 'sfxtheme')]);
     }
 
@@ -657,10 +648,8 @@ class Ajax
         }
         $min_size = isset($_POST['min_size_kb']) ? absint($_POST['min_size_kb']) : 0;
         update_option('sfx_webp_min_size_kb', $min_size);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Min size set to: %dKB', 'sfxtheme'), $min_size);
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -670,13 +659,11 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $quality = isset($_POST['quality']) ? absint($_POST['quality']) : 80;
-        $quality = max(1, min(100, $quality)); // Clamp between 1-100
+        $quality = isset($_POST['quality']) ? absint($_POST['quality']) : Constants::DEFAULT_QUALITY;
+        $quality = max(Constants::MIN_QUALITY, min(Constants::MAX_QUALITY, $quality));
         update_option('sfx_webp_quality', $quality);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Quality set to: %d', 'sfxtheme'), $quality);
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -686,13 +673,11 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 5;
-        $batch_size = max(1, min(50, $batch_size)); // Clamp between 1-50
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : Constants::DEFAULT_BATCH_SIZE;
+        $batch_size = max(Constants::MIN_BATCH_SIZE, min(Constants::MAX_BATCH_SIZE, $batch_size));
         update_option('sfx_webp_batch_size', $batch_size);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Batch size set to: %d', 'sfxtheme'), $batch_size);
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -704,10 +689,8 @@ class Ajax
         }
         $use_avif = isset($_POST['use_avif']) ? (bool)$_POST['use_avif'] : false;
         update_option('sfx_webp_use_avif', $use_avif);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Use AVIF set to: %s', 'sfxtheme'), $use_avif ? 'Yes' : 'No');
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -719,10 +702,8 @@ class Ajax
         }
         $preserve_originals = isset($_POST['preserve_originals']) ? (bool)$_POST['preserve_originals'] : false;
         update_option('sfx_webp_preserve_originals', $preserve_originals);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Preserve originals set to: %s', 'sfxtheme'), $preserve_originals ? 'Yes' : 'No');
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -734,10 +715,8 @@ class Ajax
         }
         $disable_auto_conversion = isset($_POST['disable_auto_conversion']) ? (bool)$_POST['disable_auto_conversion'] : false;
         update_option('sfx_webp_disable_auto_conversion', $disable_auto_conversion);
-        $log = get_option('sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Auto-conversion on upload set to: %s', 'sfxtheme'), $disable_auto_conversion ? 'Disabled' : 'Enabled');
-        $log[] = $log_message;
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -754,19 +733,17 @@ class Ajax
         }
         
         wp_raise_memory_limit('admin');
-        set_time_limit(300); // 5 minutes timeout
+        set_time_limit(Constants::CLEANUP_TIMEOUT_SECONDS);
         
         // Start time to track execution
         $start_time = microtime(true);
         
         // Log start message
-        $log = get_option('sfx_webp_conversion_log', []);
-        $log[] = sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'sfxtheme'), date('Y-m-d H:i:s'));
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log(sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'sfxtheme'), date('Y-m-d H:i:s')));
         
         // Default batch size - can be adjusted via POST
-        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 1000;
-        $batch_size = min(5000, max(100, $batch_size)); // Between 100 and 5000
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : Constants::DEFAULT_CLEANUP_BATCH_SIZE;
+        $batch_size = min(Constants::MAX_CLEANUP_BATCH_SIZE, max(Constants::MIN_CLEANUP_BATCH_SIZE, $batch_size));
         
         try {
             // Run the optimized cleanup
@@ -803,8 +780,7 @@ class Ajax
             wp_send_json_success($response);
         } catch (\Throwable $e) {
             // Log and handle any exceptions
-            $log[] = sprintf(__('Error during optimized cleanup: %s', 'sfxtheme'), $e->getMessage());
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(sprintf(__('Error during optimized cleanup: %s', 'sfxtheme'), $e->getMessage()));
             
             wp_send_json_error([
                 'message' => sprintf(__('Error: %s', 'sfxtheme'), $e->getMessage()),
@@ -986,7 +962,7 @@ class Ajax
         }
 
         $attachment_id = absint($_POST['attachment_id']);
-        $log = get_option('sfx_webp_conversion_log', []);
+        $log = [];
 
         $converted_file = get_attached_file($attachment_id);
         
@@ -1110,7 +1086,7 @@ class Ajax
             );
         }
 
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
 
         wp_send_json_success([
             'message' => sprintf(
