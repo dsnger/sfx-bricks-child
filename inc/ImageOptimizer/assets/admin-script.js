@@ -471,7 +471,7 @@ jQuery(function($){
             }
             // Use WP REST API to fetch attachment details
             $.ajax({
-                url: '/wp-json/wp/v2/media?include=' + ids.join(',') + '&per_page=100',
+                url: ImageOptimizerAjax.rest_url + 'wp/v2/media?include=' + ids.join(',') + '&per_page=100',
                 method: 'GET'
             }).done(function(items){
                 // Deduplicate by ID
@@ -500,14 +500,25 @@ jQuery(function($){
                     : (item.source_url || '');
                 var name = item.title && item.title.rendered ? item.title.rendered : '';
                 var id = item.id;
+                var mimeType = item.mime_type || '';
+                var isOptimized = (mimeType === 'image/webp' || mimeType === 'image/avif');
+                
+                var revertButton = '';
+                if (isOptimized) {
+                    revertButton = '<button class="button revert-to-original" data-id="'+id+'" style="margin-left: 5px; background: #2271b1; color: white;">Revert to Original</button>';
+                }
+                
                 $list.append(
-                    '<li data-id="'+id+'" style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #eee; width: 100%;">'
-                    + '<img src="'+thumb+'" alt="" style="max-width: 60px; max-height: 60px; border-radius: 4px; margin-right: 16px;" />'
-                    + '<div style="flex:1; font-size: 15px;">'
+                    '<li data-id="'+id+'" style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; width: 100%;">'
+                    + '<img src="'+thumb+'" alt="" style="max-width: 60px; max-height: 60px; border-radius: 4px;" />'
+                    + '<div style="flex:1; font-size: 14px;">'
                     + '<div><strong>'+name+'</strong></div>'
-                    + '<div style="color: #888; font-size: 13px;">ID: '+id+'</div>'
+                    + '<div style="color: #888; font-size: 12px;">ID: '+id+' | ' + (isOptimized ? '<span style="color: #d63638;">WebP/AVIF</span>' : '<span style="color: #46b450;">Original</span>') + '</div>'
                     + '</div>'
-                    + '<button class="button remove-excluded-image" style="margin-left: auto;">Remove</button>'
+                    + '<div style="display: flex; gap: 5px; margin-left: auto;">'
+                    + revertButton
+                    + '<button class="button remove-excluded-image">Remove</button>'
+                    + '</div>'
                     + '</li>'
                 );
             });
@@ -517,10 +528,11 @@ jQuery(function($){
     }
 
     // Remove excluded image
+    // Remove from exclusion list
     $('#excluded-images-list').on('click', '.remove-excluded-image', function(){
         var $li = $(this).closest('li');
         var id = $li.data('id');
-        var $btn = $li.find('button');
+        var $btn = $(this);
         $btn.prop('disabled', true).text('Removing...');
         $.post(ImageOptimizerAjax.ajax_url, {
             action: 'webp_remove_excluded_image',
@@ -533,6 +545,46 @@ jQuery(function($){
                 logMessage(response.data && response.data.message ? response.data.message : 'Error removing image');
             }
             refreshExcludedImages();
+        });
+    });
+
+    // Revert to original format
+    $('#excluded-images-list').on('click', '.revert-to-original', function(){
+        var $btn = $(this);
+        var id = $btn.data('id');
+        var $li = $btn.closest('li');
+        
+        if (!confirm('Revert this image back to original PNG/JPG format?\n\nThis will:\n- Delete the WebP/AVIF version\n- Restore the original file (if preserved)\n- Keep it in the exclusion list\n\nThis action cannot be undone.')) {
+            return;
+        }
+        
+        $btn.prop('disabled', true).text('Reverting...');
+        
+        $.post(ImageOptimizerAjax.ajax_url, {
+            action: 'webp_revert_to_original',
+            nonce: ImageOptimizerAjax.nonce,
+            attachment_id: id
+        }, function(response){
+            if(response.success) {
+                var data = response.data || {};
+                logMessage('✓ Reverted ID ' + id + ' to ' + (data.original_format || 'original') + ' format');
+                if (data.original_size && data.converted_size) {
+                    logMessage('  Size change: ' + data.converted_size + ' KB → ' + data.original_size + ' KB');
+                }
+                if (data.files_deleted) {
+                    logMessage('  Deleted ' + data.files_deleted + ' converted file(s)');
+                }
+                refreshExcludedImages();
+            } else {
+                var errorMsg = response.data || 'Unknown error';
+                logMessage('✗ Revert failed for ID ' + id + ': ' + errorMsg);
+                alert('Revert failed:\n\n' + errorMsg + '\n\nMake sure "Preserve Originals" was enabled when the image was converted.');
+                $btn.prop('disabled', false).text('Revert to Original');
+            }
+        }).fail(function(){
+            logMessage('✗ Network error reverting ID ' + id);
+            alert('Network error. Please check your connection and try again.');
+            $btn.prop('disabled', false).text('Revert to Original');
         });
     });
 

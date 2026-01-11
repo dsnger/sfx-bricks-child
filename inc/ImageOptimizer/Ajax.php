@@ -25,6 +25,7 @@ class Ajax
         add_action('wp_ajax_webp_set_use_avif', [self::class, 'set_use_avif']);
         add_action('wp_ajax_webp_set_preserve_originals', [self::class, 'set_preserve_originals']);
         add_action('wp_ajax_webp_set_disable_auto_conversion', [self::class, 'set_disable_auto_conversion']);
+        add_action('wp_ajax_webp_revert_to_original', [self::class, 'revert_to_original']);
         // Add other AJAX handlers as needed
     }
 
@@ -56,16 +57,34 @@ class Ajax
         }
     }
 
+    /**
+     * Convert images in batches via AJAX.
+     * 
+     * Uses ImageConversionService for core conversion logic while handling
+     * batch-specific concerns like optimization stamps and force reconvert.
+     */
     public static function convert_single_image(): void
     {
         check_ajax_referer('webp_converter_nonce', 'nonce');
         if (!current_user_can('manage_options') || !isset($_POST['offset'])) {
             wp_send_json_error(__('Permission denied or invalid offset', 'sfxtheme'));
         }
+        
         $offset = absint($_POST['offset']);
         $batch_size = Settings::get_batch_size();
         wp_raise_memory_limit('image');
         set_time_limit(max(30, 10 * $batch_size));
+        
+        // Get current settings
+        $mode = Settings::get_resize_mode();
+        $max_values = Settings::get_max_values();
+        $current_quality = Settings::get_quality();
+        $min_size_kb = Settings::get_min_size_kb();
+        $use_avif = Settings::get_use_avif();
+        $extension = Settings::get_extension();
+        $format = Settings::get_format();
+        
+        // Query attachments
         $args = [
             'post_type' => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
@@ -75,213 +94,188 @@ class Ajax
             'post__not_in' => Settings::get_excluded_images(),
         ];
         $attachments = get_posts($args);
-        $log = get_option('sfx_webp_conversion_log', []);
-        $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
-        $current_quality = Settings::get_quality();
-        $min_size_kb = Settings::get_min_size_kb();
-        $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? '.avif' : '.webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $log = [];
+        
         if (empty($attachments)) {
-            update_option('webp_conversion_complete', true);
-            $log[] = "<span style='font-weight: bold; color: #281E5D;'>" . __('Conversion Complete', 'sfxtheme') . "</span>: " . __('No more images to process', 'sfxtheme');
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            update_option('sfx_webp_conversion_complete', true);
+            Settings::append_log(__('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme'));
             wp_send_json_success(['complete' => true]);
         }
+        
+        // Check for force reconvert flag
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified at method start
+        $force_reconvert = isset($_GET['force_reconvert']) && filter_var($_GET['force_reconvert'], FILTER_VALIDATE_BOOLEAN);
+        
+        // Build expected optimization stamp
+        $expected_stamp = [
+            'format' => $use_avif ? 'avif' : 'webp',
+            'quality' => $current_quality,
+            'resize_mode' => $mode,
+            'max_values' => $max_values,
+        ];
+        
         foreach ($attachments as $attachment_id) {
             $file_path = get_attached_file($attachment_id);
+            
+            // Validate file exists
             if (!file_exists($file_path)) {
                 $log[] = sprintf(__('Skipped: File not found for Attachment ID %d', 'sfxtheme'), $attachment_id);
                 continue;
             }
+            
+            // Validate directory is writable
             $uploads_dir = dirname($file_path);
             if (!is_writable($uploads_dir)) {
                 $log[] = sprintf(__('Error: Uploads directory %s is not writable for Attachment ID %d', 'sfxtheme'), $uploads_dir, $attachment_id);
                 continue;
             }
+            
+            // Check minimum size threshold
             $file_size_kb = filesize($file_path) / 1024;
             if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
                 $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
                 continue;
             }
-            $metadata = wp_get_attachment_metadata($attachment_id);
             
-            // Build expected stamp from current settings
-            $expected_stamp = [
-                'format'      => $use_avif ? 'avif' : 'webp',
-                'quality'     => $current_quality,
-                'resize_mode' => $mode,
-                'max_values'  => $max_values,
-            ];
-            
-            $existing_stamp = isset($metadata['pixrefiner_stamp']) ? $metadata['pixrefiner_stamp'] : null;
-            
-            // Skip if already optimized with current settings (unless force reconvert)
-            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified at method start
-            $force_reconvert = isset($_GET['force_reconvert']) && filter_var($_GET['force_reconvert'], FILTER_VALIDATE_BOOLEAN);
-            if (!empty($existing_stamp) && $existing_stamp === $expected_stamp && !$force_reconvert) {
+            // Check optimization stamp (skip if already optimized with current settings)
+            if (!$force_reconvert && !ImageConversionService::needsReprocessing($attachment_id, [
+                'use_avif' => $use_avif,
+                'quality' => $current_quality,
+                'mode' => $mode,
+                'max_values' => $max_values,
+            ])) {
                 $log[] = sprintf(__('Skipped: Already optimized with current settings - Attachment ID %d', 'sfxtheme'), $attachment_id);
                 continue;
             }
             
-            $existing_quality = isset($metadata['webp_quality']) ? (int) $metadata['webp_quality'] : null;
+            // Check if current format matches target
             $current_extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-            $is_current_format = $current_extension === ($use_avif ? 'avif' : 'webp');
+            $target_extension = $use_avif ? 'avif' : 'webp';
+            $is_current_format = $current_extension === $target_extension;
+            
+            // Additional reprocessing checks
+            $metadata = wp_get_attachment_metadata($attachment_id);
+            $existing_quality = isset($metadata['webp_quality']) ? (int) $metadata['webp_quality'] : null;
             $reprocess = !$is_current_format || $existing_quality !== $current_quality;
+            
             if ($is_current_format && !$reprocess) {
                 $editor = wp_get_image_editor($file_path);
                 if (!is_wp_error($editor)) {
                     $current_size = $editor->get_size();
                     $current_dimension = ($mode === 'width') ? $current_size['width'] : $current_size['height'];
-                    $reprocess = !in_array($current_dimension, $max_values);
+                    $reprocess = !in_array($current_dimension, $max_values, true);
                 }
             }
-            if (!$reprocess) continue;
-            $dirname = dirname($file_path);
-            $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-            // Step 1: Delete old additional sizes not in current max_values
-            if ($is_current_format) {
-                $old_metadata = wp_get_attachment_metadata($attachment_id);
-                if (isset($old_metadata['sizes'])) {
-                    foreach ($old_metadata['sizes'] as $size_name => $size_data) {
-                        if (preg_match('/custom-(\d+)/', $size_name, $matches)) {
-                            $old_dimension = (int) $matches[1];
-                            if (!in_array($old_dimension, $max_values)) {
-                                $old_file = "$dirname/$base_name-$old_dimension$extension";
-                                if (file_exists($old_file)) {
-                                    @unlink($old_file);
-                                    $log[] = sprintf(__('Deleted outdated size: %s', 'sfxtheme'), basename($old_file));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // Step 2: Generate new sizes with rollback on failure
-            $new_files = [];
-            $success = true;
-            foreach ($max_values as $index => $dimension) {
-                $suffix = ($index === 0) ? '' : "-{$dimension}";
-                $new_file_path = FormatConverter::convert_to_format($file_path, $dimension, $log, $attachment_id, $suffix);
-                if ($new_file_path) {
-                    if ($index === 0) {
-                        update_attached_file($attachment_id, $new_file_path);
-                        wp_update_post(['ID' => $attachment_id, 'post_mime_type' => $format]);
-                    }
-                    $new_files[] = $new_file_path;
-                } else {
-                    $success = false;
-                    break;
-                }
-            }
-            // Step 3: Generate thumbnail
-            if ($success) {
-                $editor = wp_get_image_editor($file_path);
-                if (!is_wp_error($editor)) {
-                    $editor->resize(150, 150, true);
-                    $thumbnail_path = "$dirname/$base_name-150x150$extension";
-                    $saved = $editor->save($thumbnail_path, $format, ['quality' => $current_quality]);
-                    if (!is_wp_error($saved)) {
-                        $log[] = sprintf(__('Generated thumbnail: %s', 'sfxtheme'), basename($thumbnail_path));
-                        $new_files[] = $thumbnail_path;
-                    } else {
-                        $success = false;
-                    }
-                } else {
-                    $success = false;
-                }
-            }
-            // Rollback if any conversion failed
-            if (!$success) {
-                foreach ($new_files as $file) {
-                    if (file_exists($file)) @unlink($file);
-                }
-                $log[] = sprintf(__('Error: Conversion failed for %s, rolling back', 'sfxtheme'), basename($file_path));
-                $log[] = sprintf(__('Original preserved: %s', 'sfxtheme'), basename($file_path));
+            
+            if (!$reprocess && !$force_reconvert) {
                 continue;
             }
-            // Step 4: Regenerate metadata with only current sizes
-            if ($attachment_id && !empty($new_files)) {
-                $metadata = wp_generate_attachment_metadata($attachment_id, $new_files[0]);
-                if (!is_wp_error($metadata)) {
-                    $metadata['sizes'] = [];
-                    foreach ($max_values as $index => $dimension) {
-                        if ($index === 0) continue;
-                        $size_file = "$dirname/$base_name-$dimension$extension";
-                        if (file_exists($size_file)) {
-                            $metadata['sizes']["custom-$dimension"] = [
-                                'file' => "$base_name-$dimension$extension",
-                                'width' => ($mode === 'width') ? $dimension : 0,
-                                'height' => ($mode === 'height') ? $dimension : 0,
-                                'mime-type' => $format
-                            ];
-                        }
-                    }
-                    // Ensure thumbnail metadata is always updated
-                    $thumbnail_file = "$dirname/$base_name-150x150$extension";
-                    if (file_exists($thumbnail_file)) {
-                        $metadata['sizes']['thumbnail'] = [
-                            'file' => "$base_name-150x150$extension",
-                            'width' => 150,
-                            'height' => 150,
-                            'mime-type' => $format
-                        ];
-                    } else {
-                        $editor = wp_get_image_editor($new_files[0]);
-                        if (!is_wp_error($editor)) {
-                            $editor->resize(150, 150, true);
-                            $saved = $editor->save($thumbnail_file, $format, ['quality' => $current_quality]);
-                            if (!is_wp_error($saved)) {
-                                $metadata['sizes']['thumbnail'] = [
-                                    'file' => "$base_name-150x150$extension",
-                                    'width' => 150,
-                                    'height' => 150,
-                                    'mime-type' => $format
-                                ];
-                                $log[] = sprintf(__('Regenerated missing thumbnail: %s', 'sfxtheme'), basename($thumbnail_file));
-                            }
-                        }
-                    }
-                    $metadata['webp_quality'] = $current_quality;
-                    
-                    // Add PixRefiner stamp to track optimization state
-                    $metadata['pixrefiner_stamp'] = $expected_stamp;
-                    
-                    wp_update_attachment_metadata($attachment_id, $metadata);
-                } else {
-                    $log[] = sprintf(__('Error: Metadata regeneration failed for %s', 'sfxtheme'), basename($file_path));
+            
+            $dirname = dirname($file_path);
+            $base_name = pathinfo($file_path, PATHINFO_FILENAME);
+            
+            // Check if backup exists before conversion
+            $backup_existed_before = !$is_current_format && ImageConversionService::backupExists($file_path);
+            
+            // Clean up old sizes not in current max_values
+            if ($is_current_format) {
+                self::cleanupOutdatedSizes($attachment_id, $dirname, $base_name, $extension, $max_values, $log);
+            }
+            
+            // Perform conversion using service
+            $result = ImageConversionService::convertImage($file_path, $attachment_id, [
+                'use_avif' => $use_avif,
+                'quality' => $current_quality,
+                'mode' => $mode,
+                'max_values' => $max_values,
+            ]);
+            
+            // Merge service log with local log
+            $log = array_merge($log, $result['log']);
+            
+            // Handle conversion failure
+            if ($result['status'] !== ImageConversionService::STATUS_SUCCESS) {
+                    continue;
+                }
+
+            $main_converted_file = $result['main_file'];
+            
+            // Update metadata
+            if ($attachment_id && !empty($result['files'])) {
+                $metadata_updated = ImageConversionService::updateAttachmentMetadata(
+                    $attachment_id,
+                    $main_converted_file,
+                    [
+                        'format' => $format,
+                        'extension' => $extension,
+                        'quality' => $current_quality,
+                        'max_values' => $max_values,
+                        'mode' => $mode,
+                        'use_avif' => $use_avif,
+                    ],
+                    $log
+                );
+                
+                if (!$metadata_updated) {
+                    continue;
                 }
             }
-            // Step 5: Delete original if not preserved
-            if (!$is_current_format && file_exists($file_path) && !Settings::get_preserve_originals()) {
-                $attempts = 0;
-                $chmod_failed = false;
-                while ($attempts < 5 && file_exists($file_path)) {
-                    if (!is_writable($file_path)) {
-                        @chmod($file_path, 0644);
-                        if (!is_writable($file_path)) {
-                            if ($chmod_failed) {
-                                $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
-                                break;
-                            }
-                            $chmod_failed = true;
-                        }
+            
+            // Handle original file deletion
+            if (!$is_current_format && file_exists($file_path)) {
+                $was_restored = (bool) get_post_meta($attachment_id, '_sfx_was_restored', true);
+                
+                ImageConversionService::handleOriginalDeletion(
+                    $file_path,
+                    $attachment_id,
+                    Settings::get_preserve_originals(),
+                    $was_restored,
+                    $backup_existed_before,
+                    $log
+                );
+            }
+        }
+        
+        Settings::append_log($log);
+        wp_send_json_success(['complete' => false, 'offset' => $offset + $batch_size]);
+    }
+
+    /**
+     * Clean up outdated custom sizes that are not in current max_values.
+     * 
+     * @param int    $attachment_id Attachment ID
+     * @param string $dirname       Directory path
+     * @param string $base_name     Base filename without extension
+     * @param string $extension     File extension (e.g., '.webp')
+     * @param array  $max_values    Current max dimension values
+     * @param array  $log           Reference to log array
+     * @return void
+     */
+    private static function cleanupOutdatedSizes(
+        int $attachment_id,
+        string $dirname,
+        string $base_name,
+        string $extension,
+        array $max_values,
+        array &$log
+    ): void {
+        $old_metadata = wp_get_attachment_metadata($attachment_id);
+        if (!isset($old_metadata['sizes'])) {
+            return;
+        }
+        
+        foreach ($old_metadata['sizes'] as $size_name => $size_data) {
+            if (preg_match('/custom-(\d+)/', $size_name, $matches)) {
+                $old_dimension = (int) $matches[1];
+                if (!in_array($old_dimension, $max_values, true)) {
+                    $old_file = "{$dirname}/{$base_name}-{$old_dimension}{$extension}";
+                    if (file_exists($old_file)) {
+                        @unlink($old_file);
+                        $log[] = sprintf(__('Deleted outdated size: %s', 'sfxtheme'), basename($old_file));
                     }
-                    if (@unlink($file_path)) {
-                        $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
-                        break;
-                    }
-                    $attempts++;
-                    sleep(1);
-                }
-                if (file_exists($file_path)) {
-                    $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
                 }
             }
         }
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
-        wp_send_json_success(['complete' => false, 'offset' => $offset + $batch_size]);
     }
 
     public static function export_media_zip(): void
@@ -346,13 +340,12 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $log = get_option('sfx_webp_conversion_log', []);
-        $mode = Settings::get_resize_mode();
-        $max_values = ($mode === 'width') ? Settings::get_max_widths() : Settings::get_max_heights();
-        $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? '.avif' : '.webp';
-        $format = $use_avif ? 'image/avif' : 'image/webp';
+        $log = [];
+        $max_values = Settings::get_max_values();
+        $extension = Settings::get_extension();
         $preserve_originals = Settings::get_preserve_originals();
+        $thumb_size = Constants::THUMBNAIL_SIZE;
+        
         $args = [
             'post_type' => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
@@ -370,6 +363,8 @@ class Ajax
             $all_files = glob($dirname . '/' . $base_name . '*');
             foreach ($all_files as $candidate) {
                 $is_current = false;
+                $candidate_ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
+                
                 // Keep current format and sizes
                 foreach ($max_values as $index => $dimension) {
                     $suffix = ($index === 0) ? '' : "-{$dimension}";
@@ -380,14 +375,20 @@ class Ajax
                     }
                 }
                 // Keep thumbnail
-                $thumb = $dirname . '/' . $base_name . '-150x150' . $extension;
+                $thumb = $dirname . '/' . $base_name . "-{$thumb_size}x{$thumb_size}" . $extension;
                 if ($candidate === $thumb) {
                     $is_current = true;
                 }
-                // Optionally keep original
-                if ($preserve_originals && $candidate === $file_path) {
+                // Keep the attached file itself
+                if ($candidate === $file_path) {
                     $is_current = true;
                 }
+                // CRITICAL FIX: If preserve_originals is ON, keep ALL original format files (jpg/png)
+                // This ensures originals are kept even when the attachment now points to webp/avif
+                if ($preserve_originals && in_array($candidate_ext, Constants::ORIGINAL_EXTENSIONS, true)) {
+                    $is_current = true;
+                }
+                
                 if (!$is_current && file_exists($candidate)) {
                     @unlink($candidate);
                     $deleted++;
@@ -396,7 +397,7 @@ class Ajax
             }
         }
         $log[] = sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted);
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         wp_send_json_success(['message' => sprintf(__('Cleanup complete. %d files deleted.', 'sfxtheme'), $deleted)]);
     }
 
@@ -407,9 +408,12 @@ class Ajax
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
 
-        $log = get_option('sfx_webp_conversion_log', []);
+        $log = [];
         $use_avif = Settings::get_use_avif();
-        $extension = $use_avif ? 'avif' : 'webp';
+        $extension = Settings::get_extension_name();
+        
+        // Cache excluded images for performance (used in fix_post_thumbnail loop)
+        $excluded_images = Settings::get_excluded_images();
         
         // Get all public post types + FSE templates
         $public_post_types = get_post_types(['public' => true], 'names');
@@ -425,8 +429,7 @@ class Ajax
         $posts = get_posts($args);
         
         if (!$posts) {
-            $log[] = __('No posts/pages/templates found', 'sfxtheme');
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(__('No posts/pages/templates found', 'sfxtheme'));
             wp_send_json_success(['message' => __('No posts found', 'sfxtheme')]);
             return;
         }
@@ -485,11 +488,11 @@ class Ajax
             }
             
             // Update post thumbnail if needed
-            self::fix_post_thumbnail($post_id, $extension, $use_avif, $log);
+            self::fix_post_thumbnail($post_id, $extension, $use_avif, $log, $excluded_images);
         }
         
         $log[] = sprintf(__('Checked %d images, updated %d items, changed %d links', 'sfxtheme'), $checked_images, $updated_count, $changed_links);
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log);
         wp_send_json_success(['message' => sprintf(__('Checked %d images, updated %d items', 'sfxtheme'), $checked_images, $updated_count)]);
     }
 
@@ -501,16 +504,14 @@ class Ajax
         }
         $widths = isset($_POST['widths']) ? sanitize_text_field($_POST['widths']) : '';
         $widths_arr = array_map('absint', array_filter(explode(',', $widths)));
-        $widths_arr = array_filter($widths_arr, function($w) { return $w > 0 && $w <= 9999; });
+        $widths_arr = array_filter($widths_arr, fn($w) => $w > 0 && $w <= Constants::MAX_DIMENSION);
         if (empty($widths_arr)) {
             wp_send_json_error(__('Invalid widths', 'sfxtheme'));
         }
-        $final_widths = array_slice($widths_arr, 0, 4);
+        $final_widths = array_slice($widths_arr, 0, Constants::MAX_CUSTOM_SIZES);
         update_option('sfx_webp_max_widths', implode(',', $final_widths));
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Max widths set to: %spx', 'sfxtheme'), implode(', ', $final_widths));
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -522,16 +523,14 @@ class Ajax
         }
         $heights = isset($_POST['heights']) ? sanitize_text_field($_POST['heights']) : '';
         $heights_arr = array_map('absint', array_filter(explode(',', $heights)));
-        $heights_arr = array_filter($heights_arr, function($h) { return $h > 0 && $h <= 9999; });
+        $heights_arr = array_filter($heights_arr, fn($h) => $h > 0 && $h <= Constants::MAX_DIMENSION);
         if (empty($heights_arr)) {
             wp_send_json_error(__('Invalid heights', 'sfxtheme'));
         }
-        $final_heights = array_slice($heights_arr, 0, 4);
+        $final_heights = array_slice($heights_arr, 0, Constants::MAX_CUSTOM_SIZES);
         update_option('sfx_webp_max_heights', implode(',', $final_heights));
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Max heights set to: %spx', 'sfxtheme'), implode(', ', $final_heights));
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -541,7 +540,7 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        update_option('sfx_webp_conversion_log', []);
+        Settings::clear_log();
         wp_send_json_success(['message' => __('Log cleared.', 'sfxtheme')]);
     }
 
@@ -551,19 +550,17 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        update_option('sfx_webp_max_widths', '1920,1200,600,300');
-        update_option('sfx_webp_max_heights', '1080,720,480,360');
-        update_option('sfx_webp_resize_mode', 'width');
-        update_option('sfx_webp_quality', 80);
-        update_option('sfx_webp_batch_size', 5);
+        update_option('sfx_webp_max_widths', Constants::DEFAULT_MAX_WIDTHS);
+        update_option('sfx_webp_max_heights', Constants::DEFAULT_MAX_HEIGHTS);
+        update_option('sfx_webp_resize_mode', Constants::DEFAULT_RESIZE_MODE);
+        update_option('sfx_webp_quality', Constants::DEFAULT_QUALITY);
+        update_option('sfx_webp_batch_size', Constants::DEFAULT_BATCH_SIZE);
         update_option('sfx_webp_preserve_originals', false);
         update_option('sfx_webp_disable_auto_conversion', false);
         update_option('sfx_webp_min_size_kb', 0);
         update_option('sfx_webp_use_avif', false);
         update_option('sfx_webp_excluded_images', []);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
-        $log[] = __('ImageOptimizer settings reset to defaults.', 'sfxtheme');
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log(__('ImageOptimizer settings reset to defaults.', 'sfxtheme'));
         wp_send_json_success(['message' => __('ImageOptimizer settings reset to defaults.', 'sfxtheme')]);
     }
 
@@ -585,10 +582,8 @@ class Ajax
         }
         $min_size = isset($_POST['min_size_kb']) ? absint($_POST['min_size_kb']) : 0;
         update_option('sfx_webp_min_size_kb', $min_size);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Min size set to: %dKB', 'sfxtheme'), $min_size);
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -598,13 +593,11 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $quality = isset($_POST['quality']) ? absint($_POST['quality']) : 80;
-        $quality = max(1, min(100, $quality)); // Clamp between 1-100
+        $quality = isset($_POST['quality']) ? absint($_POST['quality']) : Constants::DEFAULT_QUALITY;
+        $quality = max(Constants::MIN_QUALITY, min(Constants::MAX_QUALITY, $quality));
         update_option('sfx_webp_quality', $quality);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Quality set to: %d', 'sfxtheme'), $quality);
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -614,13 +607,11 @@ class Ajax
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
         }
-        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 5;
-        $batch_size = max(1, min(50, $batch_size)); // Clamp between 1-50
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : Constants::DEFAULT_BATCH_SIZE;
+        $batch_size = max(Constants::MIN_BATCH_SIZE, min(Constants::MAX_BATCH_SIZE, $batch_size));
         update_option('sfx_webp_batch_size', $batch_size);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Batch size set to: %d', 'sfxtheme'), $batch_size);
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -632,10 +623,8 @@ class Ajax
         }
         $use_avif = isset($_POST['use_avif']) ? (bool)$_POST['use_avif'] : false;
         update_option('sfx_webp_use_avif', $use_avif);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Use AVIF set to: %s', 'sfxtheme'), $use_avif ? 'Yes' : 'No');
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -647,10 +636,8 @@ class Ajax
         }
         $preserve_originals = isset($_POST['preserve_originals']) ? (bool)$_POST['preserve_originals'] : false;
         update_option('sfx_webp_preserve_originals', $preserve_originals);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Preserve originals set to: %s', 'sfxtheme'), $preserve_originals ? 'Yes' : 'No');
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -662,10 +649,8 @@ class Ajax
         }
         $disable_auto_conversion = isset($_POST['disable_auto_conversion']) ? (bool)$_POST['disable_auto_conversion'] : false;
         update_option('sfx_webp_disable_auto_conversion', $disable_auto_conversion);
-        $log = get_option('sfx_sfx_webp_conversion_log', []);
         $log_message = sprintf(__('Auto-conversion on upload set to: %s', 'sfxtheme'), $disable_auto_conversion ? 'Disabled' : 'Enabled');
-        $log[] = $log_message;
-        update_option('sfx_sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log($log_message);
         wp_send_json_success(['message' => $log_message]);
     }
 
@@ -674,41 +659,25 @@ class Ajax
      */
     public static function cleanup_optimized(): void
     {
-        // Debug info
-        $debug_info = [];
-        $debug_info['ajax_called'] = true;
+        check_ajax_referer('webp_converter_nonce', 'nonce');
         
-        // Verify nonce with detailed error if it fails
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'webp_converter_nonce')) {
-            $debug_info['nonce_error'] = true;
-            $debug_info['provided_nonce'] = isset($_POST['nonce']) ? substr($_POST['nonce'], 0, 5) . '...' : 'missing';
-            wp_send_json_error([
-                'message' => __('Security verification failed. Try refreshing the page.', 'sfxtheme'),
-                'debug' => $debug_info
-            ]);
-            return;
-        }
-        
-        // Verify capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Permission denied', 'sfxtheme'));
             return;
         }
         
         wp_raise_memory_limit('admin');
-        set_time_limit(300); // 5 minutes timeout
+        set_time_limit(Constants::CLEANUP_TIMEOUT_SECONDS);
         
         // Start time to track execution
         $start_time = microtime(true);
         
         // Log start message
-        $log = get_option('sfx_webp_conversion_log', []);
-        $log[] = sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'sfxtheme'), date('Y-m-d H:i:s'));
-        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+        Settings::append_log(sprintf(__('Starting optimized cleanup (memory-aware) at %s', 'sfxtheme'), date('Y-m-d H:i:s')));
         
         // Default batch size - can be adjusted via POST
-        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : 1000;
-        $batch_size = min(5000, max(100, $batch_size)); // Between 100 and 5000
+        $batch_size = isset($_POST['batch_size']) ? absint($_POST['batch_size']) : Constants::DEFAULT_CLEANUP_BATCH_SIZE;
+        $batch_size = min(Constants::MAX_CLEANUP_BATCH_SIZE, max(Constants::MIN_CLEANUP_BATCH_SIZE, $batch_size));
         
         try {
             // Run the optimized cleanup
@@ -745,8 +714,7 @@ class Ajax
             wp_send_json_success($response);
         } catch (\Throwable $e) {
             // Log and handle any exceptions
-            $log[] = sprintf(__('Error during optimized cleanup: %s', 'sfxtheme'), $e->getMessage());
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            Settings::append_log(sprintf(__('Error during optimized cleanup: %s', 'sfxtheme'), $e->getMessage()));
             
             wp_send_json_error([
                 'message' => sprintf(__('Error: %s', 'sfxtheme'), $e->getMessage()),
@@ -915,19 +883,162 @@ class Ajax
     }
 
     /**
-     * Fix post thumbnail format
-     *
-     * @param int    $post_id    Post ID
-     * @param string $extension  Target file extension (webp or avif)
-     * @param bool   $use_avif   Whether to use AVIF format
-     * @param array  $log        Log array (passed by reference)
-     * @return void
+     * Revert an excluded image back to its original format (PNG/JPG)
+     * Only works if original was preserved on disk
      */
-    private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log): void
+    public static function revert_to_original(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options') || !isset($_POST['attachment_id'])) {
+            wp_send_json_error(__('Permission denied or invalid attachment ID', 'sfxtheme'));
+            return;
+        }
+
+        $attachment_id = absint($_POST['attachment_id']);
+        $log = [];
+
+        $converted_file = get_attached_file($attachment_id);
+        
+        if (!$converted_file || !file_exists($converted_file)) {
+            wp_send_json_error(__('Attachment file not found', 'sfxtheme'));
+            return;
+        }
+
+        $path_info = pathinfo($converted_file);
+        $dirname = $path_info['dirname'];
+        $basename = $path_info['filename'];
+        $current_ext = $path_info['extension'];
+
+        // Check if it's already in original format
+        if (!in_array($current_ext, ['webp', 'avif'], true)) {
+            wp_send_json_error(sprintf(
+                __('Image is already in original format (%s)', 'sfxtheme'),
+                strtoupper($current_ext)
+            ));
+            return;
+        }
+
+        // Try to find original file
+        $original_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG'];
+        $original_file = null;
+        $original_ext = null;
+
+        foreach ($original_extensions as $ext) {
+            $potential_original = "$dirname/$basename.$ext";
+            if (file_exists($potential_original)) {
+                $original_file = $potential_original;
+                $original_ext = $ext;
+                break;
+            }
+        }
+
+        if (!$original_file) {
+            wp_send_json_error(sprintf(
+                __('Original file not found. It may have been deleted. Preserve Originals must be enabled before conversion to use this feature.', 'sfxtheme')
+            ));
+            return;
+        }
+
+        // Get file sizes for logging
+        $original_size = filesize($original_file) / 1024;
+        $converted_size = filesize($converted_file) / 1024;
+
+        // Update attachment to point to original
+        update_attached_file($attachment_id, $original_file);
+        
+        // Update MIME type
+        $mime_type = wp_check_filetype($original_file)['type'];
+        wp_update_post([
+            'ID' => $attachment_id,
+            'post_mime_type' => $mime_type
+        ]);
+
+        // Regenerate metadata for the original
+        $metadata = wp_generate_attachment_metadata($attachment_id, $original_file);
+        if (!is_wp_error($metadata)) {
+            wp_update_attachment_metadata($attachment_id, $metadata);
+        }
+
+        // Delete the converted WebP/AVIF files
+        $files_deleted = [];
+        
+        // Delete main converted file
+        if (file_exists($converted_file)) {
+            @unlink($converted_file);
+            $files_deleted[] = basename($converted_file);
+        }
+
+        // Delete converted size variations
+        $mode = Settings::get_resize_mode();
+        $max_values = Settings::get_max_values();
+        $extension = Settings::get_extension();
+
+        foreach ($max_values as $index => $dimension) {
+            if ($index === 0) continue;
+            $size_file = "$dirname/$basename-$dimension$extension";
+            if (file_exists($size_file)) {
+                @unlink($size_file);
+                $files_deleted[] = basename($size_file);
+            }
+        }
+
+        // Delete thumbnail
+        $thumbnail_file = "$dirname/$basename-150x150$extension";
+        if (file_exists($thumbnail_file)) {
+            @unlink($thumbnail_file);
+            $files_deleted[] = basename($thumbnail_file);
+        }
+
+        // Ensure it's in exclusion list
+        Settings::add_excluded_image($attachment_id);
+        
+        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original
+        // Store this in attachment metadata to persist across exclusion changes
+        $meta = wp_get_attachment_metadata($attachment_id);
+        if (!is_array($meta)) {
+            $meta = [];
+        }
+        $meta['_sfx_was_restored'] = true;
+        wp_update_attachment_metadata($attachment_id, $meta);
+
+        // Log the reversion
+        $log[] = sprintf(
+            __('Reverted: %s (ID %d) from %s back to %s (%.1f KB → %.1f KB)', 'sfxtheme'),
+            basename($original_file),
+            $attachment_id,
+            strtoupper($current_ext),
+            strtoupper($original_ext),
+            $converted_size,
+            $original_size
+        );
+        
+        if (!empty($files_deleted)) {
+            $log[] = sprintf(
+                __('Deleted converted files: %s', 'sfxtheme'),
+                implode(', ', $files_deleted)
+            );
+        }
+
+        Settings::append_log($log);
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('Successfully reverted to original %s format. Converted files deleted.', 'sfxtheme'),
+                strtoupper($original_ext)
+            ),
+            'original_format' => strtoupper($original_ext),
+            'original_size' => round($original_size, 1),
+            'converted_size' => round($converted_size, 1),
+            'files_deleted' => count($files_deleted)
+        ]);
+    }
+
+    private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log, array $excluded_images = []): void
     {
         $thumbnail_id = get_post_thumbnail_id($post_id);
         
-        if (!$thumbnail_id || in_array($thumbnail_id, Settings::get_excluded_images(), true)) {
+        if (!$thumbnail_id || in_array($thumbnail_id, $excluded_images, true)) {
             return;
         }
         

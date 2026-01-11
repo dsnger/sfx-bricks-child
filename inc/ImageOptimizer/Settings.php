@@ -55,13 +55,11 @@ class Settings
 
         // Log migration if any options were migrated
         if ($migrated_count > 0) {
-            $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(
+            self::append_log(sprintf(
                 /* translators: %d: number of migrated options */
                 __('Migration complete: %d legacy options migrated to new format.', 'sfxtheme'),
                 $migrated_count
-            );
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            ));
         }
 
         // Mark migration as complete
@@ -103,33 +101,33 @@ class Settings
 
     public static function get_max_widths(): array
     {
-        $value = get_option('sfx_webp_max_widths', '1920,1200,600,300');
+        $value = get_option('sfx_webp_max_widths', Constants::DEFAULT_MAX_WIDTHS);
         $widths = array_map('absint', array_filter(explode(',', $value)));
-        $widths = array_filter($widths, fn($w) => $w > 0 && $w <= 9999);
-        return array_slice($widths, 0, 4);
+        $widths = array_filter($widths, fn($w) => $w > 0 && $w <= Constants::MAX_DIMENSION);
+        return array_slice($widths, 0, Constants::MAX_CUSTOM_SIZES);
     }
 
     public static function get_max_heights(): array
     {
-        $value = get_option('sfx_webp_max_heights', '1080,720,480,360');
+        $value = get_option('sfx_webp_max_heights', Constants::DEFAULT_MAX_HEIGHTS);
         $heights = array_map('absint', array_filter(explode(',', $value)));
-        $heights = array_filter($heights, fn($h) => $h > 0 && $h <= 9999);
-        return array_slice($heights, 0, 4);
+        $heights = array_filter($heights, fn($h) => $h > 0 && $h <= Constants::MAX_DIMENSION);
+        return array_slice($heights, 0, Constants::MAX_CUSTOM_SIZES);
     }
 
     public static function get_resize_mode(): string
     {
-        return get_option('sfx_webp_resize_mode', 'width');
+        return get_option('sfx_webp_resize_mode', Constants::DEFAULT_RESIZE_MODE);
     }
 
     public static function get_quality(): int
     {
-        return (int) get_option('sfx_webp_quality', 80);
+        return (int) get_option('sfx_webp_quality', Constants::DEFAULT_QUALITY);
     }
 
     public static function get_batch_size(): int
     {
-        return (int) get_option('sfx_webp_batch_size', 5);
+        return (int) get_option('sfx_webp_batch_size', Constants::DEFAULT_BATCH_SIZE);
     }
 
     public static function get_preserve_originals(): bool
@@ -152,6 +150,48 @@ class Settings
         return (bool) get_option('sfx_webp_use_avif', false);
     }
 
+    /**
+     * Get the target image format MIME type.
+     *
+     * @return string MIME type (image/webp or image/avif)
+     */
+    public static function get_format(): string
+    {
+        return self::get_use_avif() ? 'image/avif' : 'image/webp';
+    }
+
+    /**
+     * Get the target image file extension (with dot).
+     *
+     * @return string Extension (.webp or .avif)
+     */
+    public static function get_extension(): string
+    {
+        return self::get_use_avif() ? '.avif' : '.webp';
+    }
+
+    /**
+     * Get the target image file extension (without dot).
+     *
+     * @return string Extension (webp or avif)
+     */
+    public static function get_extension_name(): string
+    {
+        return self::get_use_avif() ? 'avif' : 'webp';
+    }
+
+    /**
+     * Get max dimension values based on current resize mode.
+     *
+     * @return array Array of max dimension values
+     */
+    public static function get_max_values(): array
+    {
+        return (self::get_resize_mode() === 'width') 
+            ? self::get_max_widths() 
+            : self::get_max_heights();
+    }
+
     public static function get_excluded_images(): array
     {
         $excluded = get_option('sfx_webp_excluded_images', []);
@@ -163,10 +203,8 @@ class Settings
         $excluded = self::get_excluded_images();
         if (!in_array($attachment_id, $excluded, true)) {
             $excluded[] = $attachment_id;
-            update_option('sfx_webp_excluded_images', array_unique($excluded));
-            $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image added: Attachment ID %d', 'sfxtheme'), $attachment_id);
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            update_option('sfx_webp_excluded_images', array_values(array_unique($excluded)));
+            self::append_log(sprintf(__('Excluded image added: Attachment ID %d', 'sfxtheme'), $attachment_id));
             return true;
         }
         return false;
@@ -179,12 +217,120 @@ class Settings
         if ($index !== false) {
             unset($excluded[$index]);
             update_option('sfx_webp_excluded_images', array_values($excluded));
-            $log = get_option('sfx_webp_conversion_log', []);
-            $log[] = sprintf(__('Excluded image removed: Attachment ID %d', 'sfxtheme'), $attachment_id);
-            update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+            self::append_log(sprintf(__('Excluded image removed: Attachment ID %d', 'sfxtheme'), $attachment_id));
             return true;
         }
         return false;
+    }
+
+    /**
+     * Append message(s) to the conversion log.
+     * Handles both single messages and arrays of messages.
+     * 
+     * @param string|array $messages Single message string or array of messages
+     * @return void
+     */
+    public static function append_log(string|array $messages): void
+    {
+        $log = get_option(Constants::LOG_OPTION_KEY, []);
+        
+        if (is_string($messages)) {
+            $log[] = $messages;
+        } else {
+            $log = array_merge($log, $messages);
+        }
+        
+        update_option(Constants::LOG_OPTION_KEY, array_slice($log, -Constants::LOG_LIMIT));
+    }
+
+    /**
+     * Get the current log entries.
+     * 
+     * @return array
+     */
+    public static function get_log(): array
+    {
+        return get_option(Constants::LOG_OPTION_KEY, []);
+    }
+
+    /**
+     * Clear the conversion log.
+     * 
+     * @return void
+     */
+    public static function clear_log(): void
+    {
+        update_option(Constants::LOG_OPTION_KEY, []);
+    }
+
+    /**
+     * Attempt to delete a file with retry logic.
+     * 
+     * @param string     $file_path   Path to file to delete
+     * @param array|null $log         Reference to log array for status messages
+     * @param int        $max_retries Maximum number of retry attempts
+     * @return bool True if file was deleted or doesn't exist, false on failure
+     */
+    public static function delete_file_with_retry(string $file_path, ?array &$log = null, int $max_retries = 0): bool
+    {
+        if ($max_retries === 0) {
+            $max_retries = Constants::MAX_DELETE_RETRIES;
+        }
+
+        // If file doesn't exist, consider it a success
+        if (!file_exists($file_path)) {
+            return true;
+        }
+
+        $attempts = 0;
+        $chmod_failed = false;
+        $basename = basename($file_path);
+
+        while ($attempts < $max_retries && file_exists($file_path)) {
+            // Try to make file writable if it isn't
+            if (!is_writable($file_path)) {
+                @chmod($file_path, 0644);
+                if (!is_writable($file_path)) {
+                    if ($chmod_failed) {
+                        if ($log !== null) {
+                            $log[] = sprintf(
+                                __('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'),
+                                $basename
+                            );
+                        }
+                        return false;
+                    }
+                    $chmod_failed = true;
+                }
+            }
+
+            // Attempt deletion
+            if (@unlink($file_path)) {
+                if ($log !== null) {
+                    $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), $basename);
+                }
+                return true;
+            }
+
+            $attempts++;
+            if ($attempts < $max_retries) {
+                sleep(Constants::RETRY_DELAY_SECONDS);
+            }
+        }
+
+        // If we get here, all retries failed
+        if (file_exists($file_path)) {
+            if ($log !== null) {
+                $log[] = sprintf(
+                    __('Error: Failed to delete original %s after %d retries', 'sfxtheme'),
+                    $basename,
+                    $max_retries
+                );
+            }
+            return false;
+        }
+
+        return true;
     }
 
     /**

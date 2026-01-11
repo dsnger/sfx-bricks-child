@@ -4116,3 +4116,291 @@ msgstr "URL: Verwenden Sie Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {ad
 #: inc/CustomDashboard/Settings.php
 msgid "Icon: Paste SVG code. Heroicons (outline style, 24x24) recommended."
 msgstr "Icon: SVG-Code einfügen. Heroicons (Outline-Stil, 24x24) empfohlen."
+
+#: inc/ImageOptimizer/Ajax.php inc/ImageOptimizer/Controller.php
+msgid "Preserved original: %s"
+msgstr "Original erhalten: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Preserved original: %s (previously restored)"
+msgstr "Original erhalten: %s (zuvor wiederhergestellt)"
+
+#: inc/ImageOptimizer/Ajax.php inc/ImageOptimizer/Controller.php
+msgid "Preserved original: %s (was previously optimized)"
+msgstr "Original erhalten: %s (zuvor optimiert)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Exclude images from conversion. If already optimized, use \"Revert\" button to restore original format (requires Preserve Originals)."
+msgstr "Bilder von der Konvertierung ausschließen. Wenn bereits optimiert, verwenden Sie die Schaltfläche \"Wiederherstellen\", um das ursprüngliche Format wiederherzustellen (erfordert Originale erhalten)."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Add to Excluded List"
+msgstr "Zur Ausschlussliste hinzufügen"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Added to ZIP: %s (Attachment ID %d)"
+msgstr "Zum ZIP hinzugefügt: %s (Anhang-ID %d)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Added to ZIP: %s (size: %s, Attachment ID %d)"
+msgstr "Zum ZIP hinzugefügt: %s (Größe: %s, Anhang-ID %d)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Added to ZIP: Related file %s (Attachment ID %d)"
+msgstr "Zum ZIP hinzugefügt: Zugehörige Datei %s (Anhang-ID %d)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Added to ZIP: Related size %s (Attachment ID %d)"
+msgstr "Zum ZIP hinzugefügt: Zugehörige Größe %s (Anhang-ID %d)"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "All steps completed!"
+msgstr "Alle Schritte abgeschlossen!"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Attachment file not found"
+msgstr "Anhangdatei nicht gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Batch size set to: %d"
+msgstr "Stapelgröße gesetzt auf: %d"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Checked %d images (including BG and links), updated %d items, changed %d links"
+msgstr "%d Bilder geprüft (inkl. Hintergründe und Links), %d Elemente aktualisiert, %d Links geändert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Checked %d images (including BG), updated %d items"
+msgstr "%d Bilder geprüft (inkl. Hintergründe), %d Elemente aktualisiert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Checked %d images, updated %d items"
+msgstr "%d Bilder geprüft, %d Elemente aktualisiert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Checked %d images, updated %d items, changed %d links"
+msgstr "%d Bilder geprüft, %d Elemente aktualisiert, %d Links geändert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Conversion format set to: %s"
+msgstr "Konvertierungsformat gesetzt auf: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Conversion format updated. Please reconvert all images."
+msgstr "Konvertierungsformat aktualisiert. Bitte alle Bilder neu konvertieren."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Conversion started. Monitor progress in Media."
+msgstr "Konvertierung gestartet. Fortschritt in Medien überwachen."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Converted Attachment ID %d successfully."
+msgstr "Anhang-ID %d erfolgreich konvertiert."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Deleted converted files: %s"
+msgstr "Gelöschte konvertierte Dateien: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Deleted duplicate or outdated size: %s"
+msgstr "Gelöschte doppelte oder veraltete Größe: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Disabled"
+msgstr "Deaktiviert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Error during optimized cleanup: %s"
+msgstr "Fehler bei der optimierten Bereinigung: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Error: %s"
+msgstr "Fehler: %s"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Conversion failed for %s, rolled back."
+msgstr "Fehler: Konvertierung fehlgeschlagen für %s, zurückgesetzt."
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Converted file does not exist: %s"
+msgstr "Fehler: Konvertierte Datei existiert nicht: %s"
+
+#: inc/ImageOptimizer/Settings.php
+msgid "Error: Failed to delete original %s after %d retries"
+msgstr "Fehler: Original %s konnte nach %d Versuchen nicht gelöscht werden"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Image editor failed for thumbnail - %s"
+msgstr "Fehler: Bildeditor für Miniaturansicht fehlgeschlagen - %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Error: Invalid attachment count detected"
+msgstr "Fehler: Ungültige Anhanganzahl erkannt"
+
+#: inc/ImageOptimizer/Controller.php
+msgid "Error: Thumbnail generation failed - %s"
+msgstr "Fehler: Miniaturansicht-Generierung fehlgeschlagen - %s"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Export all media as a ZIP file?"
+msgstr "Alle Medien als ZIP-Datei exportieren?"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Failed to convert Attachment ID %d."
+msgstr "Konvertierung der Anhang-ID %d fehlgeschlagen."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Height %dpx"
+msgstr "Höhe %dpx"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Image is already in original format (%s)"
+msgstr "Bild ist bereits im Originalformat (%s)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Invalid attachment count"
+msgstr "Ungültige Anhanganzahl"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Max heights updated."
+msgstr "Maximale Höhen aktualisiert."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Max widths updated."
+msgstr "Maximale Breiten aktualisiert."
+
+#: inc/ImageOptimizer/Settings.php
+msgid "Migration complete: %d legacy options migrated to new format."
+msgstr "Migration abgeschlossen: %d alte Optionen in neues Format migriert."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Minimum size threshold set to: %d KB"
+msgstr "Mindestgrößenschwelle gesetzt auf: %d KB"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Minimum size threshold updated."
+msgstr "Mindestgrößenschwelle aktualisiert."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "No posts found"
+msgstr "Keine Beiträge gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "No posts/pages/FSE-templates found"
+msgstr "Keine Beiträge/Seiten/FSE-Vorlagen gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "No posts/pages/templates found"
+msgstr "Keine Beiträge/Seiten/Vorlagen gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Original file not found. It may have been deleted. Preserve Originals must be enabled before conversion to use this feature."
+msgstr "Originaldatei nicht gefunden. Sie wurde möglicherweise gelöscht. Originale erhalten muss vor der Konvertierung aktiviert sein, um diese Funktion zu nutzen."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Please reconvert all images to ensure consistency after changing formats."
+msgstr "Bitte konvertieren Sie alle Bilder neu, um Konsistenz nach dem Formatwechsel zu gewährleisten."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Quality set to: %d"
+msgstr "Qualität gesetzt auf: %d"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Regenerated thumbnail for %s"
+msgstr "Miniaturansicht für %s neu generiert"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Reset all settings to defaults?"
+msgstr "Alle Einstellungen auf Standardwerte zurücksetzen?"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Resize mode set to: %s"
+msgstr "Größenänderungsmodus gesetzt auf: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Reverted: %s (ID %d) from %s back to %s (%.1f KB → %.1f KB)"
+msgstr "Wiederhergestellt: %s (ID %d) von %s zurück zu %s (%.1f KB → %.1f KB)"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Run all steps?"
+msgstr "Alle Schritte ausführen?"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Select Images to Exclude"
+msgstr "Bilder zum Ausschließen auswählen"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Settings reset to defaults"
+msgstr "Einstellungen auf Standardwerte zurückgesetzt"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Settings reset to defaults."
+msgstr "Einstellungen auf Standardwerte zurückgesetzt."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped sizes %s for %s (original width %dpx)"
+msgstr "Übersprungene Größen %s für %s (Originalbreite %dpx)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped: Already optimized Attachment ID %d"
+msgstr "Übersprungen: Anhang-ID %d bereits optimiert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped: Already optimized with current settings - Attachment ID %d"
+msgstr "Übersprungen: Mit aktuellen Einstellungen bereits optimiert - Anhang-ID %d"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped: Main file not found for Attachment ID %d"
+msgstr "Übersprungen: Hauptdatei für Anhang-ID %d nicht gefunden"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Skipped: Missing or original format (%s) for Attachment ID %d"
+msgstr "Übersprungen: Fehlendes oder Originalformat (%s) für Anhang-ID %d"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Starting post/page/FSE-template image conversion to %s..."
+msgstr "Starte Beitrags-/Seiten-/FSE-Vorlagen-Bildkonvertierung zu %s..."
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Successfully reverted to original %s format. Converted files deleted."
+msgstr "Erfolgreich zum Original-%s-Format wiederhergestellt. Konvertierte Dateien gelöscht."
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Switching to AVIF requires reconverting all images for consistency. Continue?"
+msgstr "Der Wechsel zu AVIF erfordert die Neukonvertierung aller Bilder für Konsistenz. Fortfahren?"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Thumbnail (150x150)"
+msgstr "Miniaturansicht (150x150)"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Thumbnail Regeneration Complete"
+msgstr "Miniaturansicht-Regenerierung abgeschlossen"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Update all post images to the selected format?"
+msgstr "Alle Beitragsbilder auf das ausgewählte Format aktualisieren?"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Updated meta field"
+msgstr "Meta-Feld aktualisiert"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Updated thumbnail: %s → %s"
+msgstr "Miniaturansicht aktualisiert: %s → %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Updated: %s - %s"
+msgstr "Aktualisiert: %s - %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Width %dpx"
+msgstr "Breite %dpx"
+
+#: inc/ImageOptimizer/assets/admin-script.js
+msgid "Yes"
+msgstr "Ja"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Enabled"
+msgstr "Aktiviert"
