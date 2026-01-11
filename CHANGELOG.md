@@ -8,19 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.9.3] - 2026-01-11
-
-### Added
-- **Image Optimizer**: Centralized `ImageConversionService` class for shared conversion logic
-- **Image Optimizer**: WordPress hooks for extensibility (`sfx_image_before_convert`, `sfx_image_after_convert`, etc.)
-
-### Refactored
-- **Image Optimizer**: Extracted shared conversion logic from `Controller.php` and `Ajax.php` into service class
-
-### Fixed
-- **Image Optimizer**: Fixed `_sfx_was_restored` protection in batch processing (was checking wrong location)
-- **Image Optimizer**: Fixed responsive button layout on smaller screens
-
 ## [0.9.2] - 2025-12-21
 
 ### Fixed
