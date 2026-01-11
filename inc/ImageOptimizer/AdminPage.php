@@ -121,6 +121,9 @@ class AdminPage
                     </div>
                     <div style="background: #FFFFFF; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <h2 style="font-size: 16px; margin: 0 0 15px 0;"><?php esc_html_e('Exclude Images', 'sfxtheme'); ?></h2>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                            <?php esc_html_e('Exclude images from conversion. If already optimized, use "Revert" button to restore original format (requires Preserve Originals).', 'sfxtheme'); ?>
+                        </p>
                         <button id="open-media-library" class="button" style="margin-bottom: 20px;"><?php esc_html_e('Add from Media Library', 'sfxtheme'); ?></button>
                         <div id="excluded-images">
                             <h3 style="font-size: 14px; margin: 0 0 10px 0;"><?php esc_html_e('Excluded Images', 'sfxtheme'); ?></h3>

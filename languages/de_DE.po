@@ -4116,3 +4116,19 @@ msgstr "URL: Verwenden Sie Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {ad
 #: inc/CustomDashboard/Settings.php
 msgid "Icon: Paste SVG code. Heroicons (outline style, 24x24) recommended."
 msgstr "Icon: SVG-Code einfügen. Heroicons (Outline-Stil, 24x24) empfohlen."
+
+#: inc/ImageOptimizer/Ajax.php inc/ImageOptimizer/Controller.php
+msgid "Preserved original: %s"
+msgstr "Original erhalten: %s"
+
+#: inc/ImageOptimizer/Ajax.php
+msgid "Preserved original: %s (previously restored)"
+msgstr "Original erhalten: %s (zuvor wiederhergestellt)"
+
+#: inc/ImageOptimizer/Ajax.php inc/ImageOptimizer/Controller.php
+msgid "Preserved original: %s (was previously optimized)"
+msgstr "Original erhalten: %s (zuvor optimiert)"
+
+#: inc/ImageOptimizer/AdminPage.php
+msgid "Exclude images from conversion. If already optimized, use \"Revert\" button to restore original format (requires Preserve Originals)."
+msgstr "Bilder von der Konvertierung ausschließen. Wenn bereits optimiert, verwenden Sie die Schaltfläche \"Wiederherstellen\", um das ursprüngliche Format wiederherzustellen (erfordert Originale erhalten)."

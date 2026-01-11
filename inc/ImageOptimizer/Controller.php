@@ -194,6 +194,20 @@ class Controller
 
         // Check memory usage before processing
         self::check_memory_usage();
+        
+        // CRITICAL FIX: Check if a backup already exists BEFORE conversion
+        // This tells us if this is a first upload or a re-upload/re-optimization
+        $backup_existed_before = false;
+        $dirname = dirname($file_path);
+        $base_name = pathinfo($file_path, PATHINFO_FILENAME);
+        $converted_extensions = ['webp', 'avif'];
+        foreach ($converted_extensions as $conv_ext) {
+            $potential_backup = "$dirname/$base_name.$conv_ext";
+            if (file_exists($potential_backup)) {
+                $backup_existed_before = true;
+                break;
+            }
+        }
 
         // --- v3.6 improvement: avoid upscaling in width mode ---
         $valid_max_values = $max_values;
@@ -346,32 +360,49 @@ class Controller
                 $log[] = sprintf(__('Error: Metadata regeneration failed for %s - %s', 'sfxtheme'), basename($upload['file']), $metadata->get_error_message());
             }
         }
+        
         // Delete original only if all conversions succeeded and not preserved
-        if ($file_extension !== ($use_avif ? 'avif' : 'webp') && self::file_exists_cached($file_path) && !Settings::get_preserve_originals()) {
-            $attempts = 0;
-            $chmod_failed = false;
-            while ($attempts < 5 && self::file_exists_cached($file_path)) {
-                if (!is_writable($file_path)) {
-                    @chmod($file_path, 0644);
-                    if (!is_writable($file_path)) {
-                        if ($chmod_failed) {
-                            $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
+        // CRITICAL: With preserve_originals ON, NEVER delete originals - period.
+        if ($file_extension !== ($use_avif ? 'avif' : 'webp') && self::file_exists_cached($file_path) && $success) {
+            $preserve_originals = Settings::get_preserve_originals();
+            
+            // SAFETY CHECK: If preserve_originals is ON, skip deletion entirely
+            if ($preserve_originals) {
+                $log[] = sprintf(__('Preserved original: %s', 'sfxtheme'), basename($file_path));
+            } else {
+                // preserve_originals is OFF - check if we should still keep it
+                // Delete only if this is a first-time optimization (no backup existed before)
+                $should_delete = !$backup_existed_before;
+                
+                if ($should_delete) {
+                    $attempts = 0;
+                    $chmod_failed = false;
+                    while ($attempts < 5 && self::file_exists_cached($file_path)) {
+                        if (!is_writable($file_path)) {
+                            @chmod($file_path, 0644);
+                            if (!is_writable($file_path)) {
+                                if ($chmod_failed) {
+                                    $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
+                                    break;
+                                }
+                                $chmod_failed = true;
+                            }
+                        }
+                        if (@unlink($file_path)) {
+                            $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
+                            // Update file cache
+                            self::$file_cache[$file_path] = false;
                             break;
                         }
-                        $chmod_failed = true;
+                        $attempts++;
+                        sleep(1);
                     }
+                    if (self::file_exists_cached($file_path)) {
+                        $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
+                    }
+                } elseif ($backup_existed_before) {
+                    $log[] = sprintf(__('Preserved original: %s (was previously optimized)', 'sfxtheme'), basename($file_path));
                 }
-                if (@unlink($file_path)) {
-                    $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
-                    // Update file cache
-                    self::$file_cache[$file_path] = false;
-                    break;
-                }
-                $attempts++;
-                sleep(1);
-            }
-            if (self::file_exists_cached($file_path)) {
-                $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
             }
         }
         update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
@@ -706,6 +737,33 @@ class Controller
             $thumbnail_file = "$dirname/$base_name-150x150.$current_extension";
             if (self::file_exists_cached($thumbnail_file)) {
                 $active_files[$thumbnail_file] = true;
+            }
+            
+            // CRITICAL FIX: If preserve_originals is ON, also mark original files as active
+            if ($preserve_originals) {
+                $original_extensions = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+                foreach ($original_extensions as $orig_ext) {
+                    // Check for original file (main)
+                    $original_file = "$dirname/$base_name.$orig_ext";
+                    if (self::file_exists_cached($original_file)) {
+                        $active_files[$original_file] = true;
+                    }
+                    
+                    // Check for original size variations
+                    foreach ($max_values as $index => $dimension) {
+                        $suffix = ($index === 0) ? '' : "-{$dimension}";
+                        $original_size_file = "$dirname/$base_name$suffix.$orig_ext";
+                        if (self::file_exists_cached($original_size_file)) {
+                            $active_files[$original_size_file] = true;
+                        }
+                    }
+                    
+                    // Check for original thumbnail
+                    $original_thumb = "$dirname/$base_name-150x150.$orig_ext";
+                    if (self::file_exists_cached($original_thumb)) {
+                        $active_files[$original_thumb] = true;
+                    }
+                }
             }
         }
 

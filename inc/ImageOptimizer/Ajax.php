@@ -141,6 +141,20 @@ class Ajax
             if (!$reprocess) continue;
             $dirname = dirname($file_path);
             $base_name = pathinfo($file_path, PATHINFO_FILENAME);
+            
+            // CRITICAL FIX: Check if a backup already exists BEFORE conversion
+            // This tells us if the original should be preserved after conversion
+            $backup_existed_before = false;
+            if (!$is_current_format) {
+                $converted_extensions = ['webp', 'avif'];
+                foreach ($converted_extensions as $conv_ext) {
+                    $potential_backup = "$dirname/$base_name.$conv_ext";
+                    if (file_exists($potential_backup)) {
+                        $backup_existed_before = true;
+                        break;
+                    }
+                }
+            }
             // Step 1: Delete old additional sizes not in current max_values
             if ($is_current_format) {
                 $old_metadata = wp_get_attachment_metadata($attachment_id);
@@ -279,29 +293,51 @@ class Ajax
                 }
             }
             // Step 5: Delete original if not preserved
-            if (!$is_current_format && file_exists($file_path) && !Settings::get_preserve_originals()) {
-                $attempts = 0;
-                $chmod_failed = false;
-                while ($attempts < 5 && file_exists($file_path)) {
-                    if (!is_writable($file_path)) {
-                        @chmod($file_path, 0644);
-                        if (!is_writable($file_path)) {
-                            if ($chmod_failed) {
-                                $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
+            // CRITICAL: With preserve_originals ON, NEVER delete originals - period.
+            if (!$is_current_format && file_exists($file_path) && $success) {
+                $preserve_originals = Settings::get_preserve_originals();
+                
+                // SAFETY CHECK: If preserve_originals is ON, skip deletion entirely
+                if ($preserve_originals) {
+                    $log[] = sprintf(__('Preserved original: %s', 'sfxtheme'), basename($file_path));
+                } else {
+                    // preserve_originals is OFF - check if we should still keep it
+                    $was_restored = isset($metadata['_sfx_was_restored']) && $metadata['_sfx_was_restored'] === true;
+                    
+                    // Delete only if:
+                    // - This is a first-time optimization (no backup existed before), AND
+                    // - This image was never restored by user
+                    $should_delete = !$backup_existed_before && !$was_restored;
+                    
+                    if ($should_delete) {
+                        $attempts = 0;
+                        $chmod_failed = false;
+                        while ($attempts < 5 && file_exists($file_path)) {
+                            if (!is_writable($file_path)) {
+                                @chmod($file_path, 0644);
+                                if (!is_writable($file_path)) {
+                                    if ($chmod_failed) {
+                                        $log[] = sprintf(__('Error: Cannot make %s writable after retry - skipping deletion', 'sfxtheme'), basename($file_path));
+                                        break;
+                                    }
+                                    $chmod_failed = true;
+                                }
+                            }
+                            if (@unlink($file_path)) {
+                                $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
                                 break;
                             }
-                            $chmod_failed = true;
+                            $attempts++;
+                            sleep(1);
                         }
+                        if (file_exists($file_path)) {
+                            $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
+                        }
+                    } elseif ($was_restored) {
+                        $log[] = sprintf(__('Preserved original: %s (previously restored)', 'sfxtheme'), basename($file_path));
+                    } elseif ($backup_existed_before) {
+                        $log[] = sprintf(__('Preserved original: %s (was previously optimized)', 'sfxtheme'), basename($file_path));
                     }
-                    if (@unlink($file_path)) {
-                        $log[] = sprintf(__('Deleted original: %s', 'sfxtheme'), basename($file_path));
-                        break;
-                    }
-                    $attempts++;
-                    sleep(1);
-                }
-                if (file_exists($file_path)) {
-                    $log[] = sprintf(__('Error: Failed to delete original %s after 5 retries', 'sfxtheme'), basename($file_path));
                 }
             }
         }
@@ -376,6 +412,8 @@ class Ajax
         $max_values = Settings::get_max_values();
         $extension = Settings::get_extension();
         $preserve_originals = Settings::get_preserve_originals();
+        $original_extensions = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+        
         $args = [
             'post_type' => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
@@ -393,6 +431,8 @@ class Ajax
             $all_files = glob($dirname . '/' . $base_name . '*');
             foreach ($all_files as $candidate) {
                 $is_current = false;
+                $candidate_ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
+                
                 // Keep current format and sizes
                 foreach ($max_values as $index => $dimension) {
                     $suffix = ($index === 0) ? '' : "-{$dimension}";
@@ -407,10 +447,16 @@ class Ajax
                 if ($candidate === $thumb) {
                     $is_current = true;
                 }
-                // Optionally keep original
-                if ($preserve_originals && $candidate === $file_path) {
+                // Keep the attached file itself
+                if ($candidate === $file_path) {
                     $is_current = true;
                 }
+                // CRITICAL FIX: If preserve_originals is ON, keep ALL original format files (jpg/png)
+                // This ensures originals are kept even when the attachment now points to webp/avif
+                if ($preserve_originals && in_array($candidate_ext, ['jpg', 'jpeg', 'png'])) {
+                    $is_current = true;
+                }
+                
                 if (!$is_current && file_exists($candidate)) {
                     @unlink($candidate);
                     $deleted++;
@@ -927,15 +973,157 @@ class Ajax
     }
 
     /**
-     * Fix post thumbnail format
-     *
-     * @param int    $post_id         Post ID
-     * @param string $extension       Target file extension (webp or avif)
-     * @param bool   $use_avif        Whether to use AVIF format
-     * @param array  $log             Log array (passed by reference)
-     * @param array  $excluded_images Pre-cached array of excluded image IDs
-     * @return void
+     * Revert an excluded image back to its original format (PNG/JPG)
+     * Only works if original was preserved on disk
      */
+    public static function revert_to_original(): void
+    {
+        check_ajax_referer('webp_converter_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options') || !isset($_POST['attachment_id'])) {
+            wp_send_json_error(__('Permission denied or invalid attachment ID', 'sfxtheme'));
+            return;
+        }
+
+        $attachment_id = absint($_POST['attachment_id']);
+        $log = get_option('sfx_webp_conversion_log', []);
+
+        $converted_file = get_attached_file($attachment_id);
+        
+        if (!$converted_file || !file_exists($converted_file)) {
+            wp_send_json_error(__('Attachment file not found', 'sfxtheme'));
+            return;
+        }
+
+        $path_info = pathinfo($converted_file);
+        $dirname = $path_info['dirname'];
+        $basename = $path_info['filename'];
+        $current_ext = $path_info['extension'];
+
+        // Check if it's already in original format
+        if (!in_array($current_ext, ['webp', 'avif'], true)) {
+            wp_send_json_error(sprintf(
+                __('Image is already in original format (%s)', 'sfxtheme'),
+                strtoupper($current_ext)
+            ));
+            return;
+        }
+
+        // Try to find original file
+        $original_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG'];
+        $original_file = null;
+        $original_ext = null;
+
+        foreach ($original_extensions as $ext) {
+            $potential_original = "$dirname/$basename.$ext";
+            if (file_exists($potential_original)) {
+                $original_file = $potential_original;
+                $original_ext = $ext;
+                break;
+            }
+        }
+
+        if (!$original_file) {
+            wp_send_json_error(sprintf(
+                __('Original file not found. It may have been deleted. Preserve Originals must be enabled before conversion to use this feature.', 'sfxtheme')
+            ));
+            return;
+        }
+
+        // Get file sizes for logging
+        $original_size = filesize($original_file) / 1024;
+        $converted_size = filesize($converted_file) / 1024;
+
+        // Update attachment to point to original
+        update_attached_file($attachment_id, $original_file);
+        
+        // Update MIME type
+        $mime_type = wp_check_filetype($original_file)['type'];
+        wp_update_post([
+            'ID' => $attachment_id,
+            'post_mime_type' => $mime_type
+        ]);
+
+        // Regenerate metadata for the original
+        $metadata = wp_generate_attachment_metadata($attachment_id, $original_file);
+        if (!is_wp_error($metadata)) {
+            wp_update_attachment_metadata($attachment_id, $metadata);
+        }
+
+        // Delete the converted WebP/AVIF files
+        $files_deleted = [];
+        
+        // Delete main converted file
+        if (file_exists($converted_file)) {
+            @unlink($converted_file);
+            $files_deleted[] = basename($converted_file);
+        }
+
+        // Delete converted size variations
+        $mode = Settings::get_resize_mode();
+        $max_values = Settings::get_max_values();
+        $extension = Settings::get_extension();
+
+        foreach ($max_values as $index => $dimension) {
+            if ($index === 0) continue;
+            $size_file = "$dirname/$basename-$dimension$extension";
+            if (file_exists($size_file)) {
+                @unlink($size_file);
+                $files_deleted[] = basename($size_file);
+            }
+        }
+
+        // Delete thumbnail
+        $thumbnail_file = "$dirname/$basename-150x150$extension";
+        if (file_exists($thumbnail_file)) {
+            @unlink($thumbnail_file);
+            $files_deleted[] = basename($thumbnail_file);
+        }
+
+        // Ensure it's in exclusion list
+        Settings::add_excluded_image($attachment_id);
+        
+        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original
+        // Store this in attachment metadata to persist across exclusion changes
+        $meta = wp_get_attachment_metadata($attachment_id);
+        if (!is_array($meta)) {
+            $meta = [];
+        }
+        $meta['_sfx_was_restored'] = true;
+        wp_update_attachment_metadata($attachment_id, $meta);
+
+        // Log the reversion
+        $log[] = sprintf(
+            __('Reverted: %s (ID %d) from %s back to %s (%.1f KB → %.1f KB)', 'sfxtheme'),
+            basename($original_file),
+            $attachment_id,
+            strtoupper($current_ext),
+            strtoupper($original_ext),
+            $converted_size,
+            $original_size
+        );
+        
+        if (!empty($files_deleted)) {
+            $log[] = sprintf(
+                __('Deleted converted files: %s', 'sfxtheme'),
+                implode(', ', $files_deleted)
+            );
+        }
+
+        update_option('sfx_webp_conversion_log', array_slice((array)$log, -500));
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('Successfully reverted to original %s format. Converted files deleted.', 'sfxtheme'),
+                strtoupper($original_ext)
+            ),
+            'original_format' => strtoupper($original_ext),
+            'original_size' => round($original_size, 1),
+            'converted_size' => round($converted_size, 1),
+            'files_deleted' => count($files_deleted)
+        ]);
+    }
+
     private static function fix_post_thumbnail(int $post_id, string $extension, bool $use_avif, array &$log, array $excluded_images = []): void
     {
         $thumbnail_id = get_post_thumbnail_id($post_id);
