@@ -224,6 +224,7 @@
 .io-button-group {
     margin-bottom: 20px;
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
@@ -304,5 +305,32 @@ select {
     .io-main {
         height: calc(100vh - 46px);
         min-height: unset;
+    }
+    
+    .io-button-group {
+        gap: 8px;
+    }
+    
+    .io-button-group .button {
+        flex: 1 1 auto;
+        min-width: 140px;
+        text-align: center;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .io-button-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .io-button-group .button {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .io-input-text {
+        width: 100%;
+        max-width: 200px;
     }
 }
