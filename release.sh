@@ -228,7 +228,7 @@ create_github_release() {
     local release_notes=$(awk '/^## \['"${version}"'\]/,/^## \[/ {if (!/^## \[/ || /^## \['"${version}"'\]/) print}' "${CHANGELOG_FILE}" | sed '1d' | sed '/^## \[/q' | sed '$d')
     
     gh release create "${tag_name}" \
-        --title "${tag_name} - Release" \
+        --title "${tag_name}" \
         --notes "${release_notes}"
     
     print_success "GitHub release created: ${tag_name}"
