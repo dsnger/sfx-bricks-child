@@ -916,6 +916,7 @@ CSS;
                             'icon' => !empty($item['icon']) ? $item['icon'] : self::DEFAULT_CUSTOM_ICON,
                             'enabled' => !empty($item['enabled']),
                             'roles' => $item['roles'] ?? [],
+                            'target' => $item['target'] ?? '_self',
                         ];
                     }
                 }
@@ -2346,6 +2347,13 @@ $stats['orders'] = [
                                                     </button>
                                                 </div>
                                             </div>
+                                            <div class="sfx-edit-field">
+                                                <label><?php esc_html_e('Open in', 'sfxtheme'); ?></label>
+                                                <select name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][target]" class="sfx-quicklink-target-input">
+                                                    <option value="_self" <?php selected(($link['target'] ?? '_self'), '_self'); ?>><?php esc_html_e('Same Tab', 'sfxtheme'); ?></option>
+                                                    <option value="_blank" <?php selected(($link['target'] ?? '_self'), '_blank'); ?>><?php esc_html_e('New Tab', 'sfxtheme'); ?></option>
+                                                </select>
+                                            </div>
                                             <div class="sfx-edit-field sfx-edit-field-full">
                                                 <label><?php esc_html_e('SVG Icon', 'sfxtheme'); ?></label>
                                                 <textarea name="<?php echo esc_attr(self::$option_name); ?>[<?php echo esc_attr($id); ?>][groups][<?php echo $group_index; ?>][quicklinks][<?php echo $link_index; ?>][icon]" 
@@ -3353,6 +3361,9 @@ $stats['orders'] = [
                         $id = sanitize_key($id);
                     }
                     
+                    // Sanitize target - only allow _self or _blank
+                    $target = ($item['target'] ?? '_self') === '_blank' ? '_blank' : '_self';
+                    
                     $sanitized[] = [
                         'type' => 'custom',
                         'id' => $id,
@@ -3361,6 +3372,7 @@ $stats['orders'] = [
                         'icon' => !empty($icon) ? $icon : self::DEFAULT_CUSTOM_ICON,
                         'enabled' => !empty($item['enabled']),
                         'roles' => $roles,
+                        'target' => $target,
                     ];
                 }
             }

@@ -124,6 +124,9 @@ class AssetManager
                     'untitled' => __('Untitled', 'sfxtheme'),
                     'linkTitle' => __('Link Title', 'sfxtheme'),
                     'svgIcon' => __('SVG Icon', 'sfxtheme'),
+                    'openIn' => __('Open in', 'sfxtheme'),
+                    'sameTab' => __('Same Tab', 'sfxtheme'),
+                    'newTab' => __('New Tab', 'sfxtheme'),
                     'done' => __('Done', 'sfxtheme'),
                     'confirmRemove' => __('Are you sure you want to remove this custom link?', 'sfxtheme'),
                     // Roles

@@ -23,8 +23,10 @@ class SystemInfoProvider
     /**
      * Get site health status
      *
-     * Reads WordPress's site health status directly from core functions
+     * Reads WordPress's site health status directly from core functions.
+     * Calculates status using WordPress's score-based percentage system.
      *
+     * @see wp-admin/includes/class-wp-site-health.php
      * @return array{status: string, label: string, critical: int, recommended: int, total: int, issues: int}
      */
     public static function get_site_health_status(): array
@@ -51,33 +53,26 @@ class SystemInfoProvider
                 $result['issues'] = $result['critical'] + $result['recommended'];
                 $result['total'] = $good + $result['issues'];
                 
-                // Use WordPress's actual status if available (most reliable)
-                if (isset($health_data['status'])) {
-                    $wp_status = $health_data['status'];
-                    $result['status'] = $wp_status;
-                    
-                    // Set label based on WordPress's status
-                    $result['label'] = match($wp_status) {
-                        'critical' => __('Critical', 'sfxtheme'),
-                        'recommended' => __('Should be improved', 'sfxtheme'),
-                        'good' => __('Good', 'sfxtheme'),
-                        default => __('Good', 'sfxtheme'),
-                    };
+                // Calculate percentage score the same way WordPress does
+                // WordPress determines status by: (good_tests / total_tests) * 100
+                // Thresholds: >= 80 = Good, >= 60 = Should be improved, < 60 = Critical
+                if ($result['total'] > 0) {
+                    $score = ($good / $result['total']) * 100;
                 } else {
-                    // Fallback: Calculate status based on critical issues
-                    // WordPress logic: Any critical issue = critical status
-                    // Any recommended issue (no critical) = recommended status  
-                    // No issues = good status
-                    if ($result['critical'] > 0) {
-                        $result['status'] = 'critical';
-                        $result['label'] = __('Critical', 'sfxtheme');
-                    } elseif ($result['recommended'] > 0) {
-                        $result['status'] = 'recommended';
-                        $result['label'] = __('Should be improved', 'sfxtheme');
-                    } else {
-                        $result['status'] = 'good';
-                        $result['label'] = __('Good', 'sfxtheme');
-                    }
+                    // No tests run yet, default to good
+                    $score = 100;
+                }
+                
+                // Apply WordPress's status thresholds
+                if ($score >= 80) {
+                    $result['status'] = 'good';
+                    $result['label'] = __('Good', 'sfxtheme');
+                } elseif ($score >= 60) {
+                    $result['status'] = 'recommended';
+                    $result['label'] = __('Should be improved', 'sfxtheme');
+                } else {
+                    $result['status'] = 'critical';
+                    $result['label'] = __('Critical', 'sfxtheme');
                 }
             }
         }

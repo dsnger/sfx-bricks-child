@@ -1333,6 +1333,18 @@ msgstr "Link-Titel"
 msgid "SVG Icon"
 msgstr "SVG-Symbol"
 
+#: inc/CustomDashboard/AssetManager.php inc/CustomDashboard/Settings.php
+msgid "Open in"
+msgstr "Öffnen in"
+
+#: inc/CustomDashboard/AssetManager.php inc/CustomDashboard/Settings.php
+msgid "Same Tab"
+msgstr "Gleicher Tab"
+
+#: inc/CustomDashboard/AssetManager.php inc/CustomDashboard/Settings.php
+msgid "New Tab"
+msgstr "Neuer Tab"
+
 #: inc/CustomDashboard/AssetManager.php
 msgid "Done"
 msgstr "Fertig"

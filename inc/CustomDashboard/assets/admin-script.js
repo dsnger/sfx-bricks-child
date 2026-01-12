@@ -340,6 +340,13 @@
                                     '</button>' +
                                 '</div>' +
                             '</div>' +
+                            '<div class="sfx-edit-field">' +
+                                '<label>' + (strings.openIn || 'Open in') + '</label>' +
+                                '<select name="' + namePrefix + '[target]" class="sfx-quicklink-target-input">' +
+                                    '<option value="_self">' + (strings.sameTab || 'Same Tab') + '</option>' +
+                                    '<option value="_blank">' + (strings.newTab || 'New Tab') + '</option>' +
+                                '</select>' +
+                            '</div>' +
                             '<div class="sfx-edit-field sfx-edit-field-full">' +
                                 '<label>' + (strings.svgIcon || 'SVG Icon') + '</label>' +
                                 '<textarea name="' + namePrefix + '[icon]" class="sfx-quicklink-icon-input" placeholder="<svg>...</svg>" rows="3">' + defaultSvgIcon + '</textarea>' +

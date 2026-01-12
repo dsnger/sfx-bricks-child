@@ -746,6 +746,7 @@ class DashboardRenderer
                             $url = $this->resolve_url($link['url'] ?? '');
                             $icon = !empty($link['icon']) ? $link['icon'] : $default_icon;
                             $title = $link['title'] ?? '';
+                            $target = $link['target'] ?? '_self';
                             $roles = $link['roles'] ?? [];
                             $has_role_restriction = !empty($roles) && !in_array('all', $roles);
                             $role_badges = '';
@@ -760,7 +761,7 @@ class DashboardRenderer
                                 $role_badges .= '</div>';
                             }
                             ?>
-                            <a href="<?php echo esc_url($url); ?>" class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
+                            <a href="<?php echo esc_url($url); ?>"<?php if ($target === '_blank'): ?> target="_blank" rel="noopener noreferrer"<?php endif; ?> class="sfx-quicklink-card<?php echo $has_role_restriction ? ' sfx-quicklink-restricted' : ''; ?>">
                                 <?php echo $role_badges; ?>
                                 <span class="sfx-quicklink-icon"><?php echo $this->render_icon($icon); ?></span>
                                 <span class="sfx-quicklink-text"><?php echo wp_kses($title, Settings::get_allowed_title_tags()); ?></span>
