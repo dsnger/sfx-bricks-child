@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.4] - 2026-01-12
+
+### Added
+- **Custom Dashboard**: Target options for quicklinks (open in new tab/same window)
+
+### Enhanced
+- **Custom Dashboard**: Improved site health dashboard card
+
 ## [0.9.3] - 2026-01-11
 
 ### Added
