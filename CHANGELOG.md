@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.6] - 2026-01-12
+
+### Fixed
+- **Custom Dashboard**: Site health status calculation now matches WordPress native weighted formula
+
 ## [0.9.5] - 2026-01-12
 
 ### Fixed
