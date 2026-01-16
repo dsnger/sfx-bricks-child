@@ -24,10 +24,10 @@ class SystemInfoProvider
      * Get site health status
      *
      * Reads WordPress's site health status directly from core functions.
-     * Status is determined by presence of issues (matching WordPress native behavior):
-     * - Critical issues present → "Critical"
-     * - Only recommended issues → "Should be improved"
-     * - No issues → "Good"
+     * Status is calculated the same way as Site Health screen:
+     * - Weighted score based on issue counts
+     * - "Good" only when score >= 80 and no critical issues
+     * - Otherwise "Should be improved"
      *
      * @see wp-admin/includes/class-wp-site-health.php
      * @return array{status: string, label: string, critical: int, recommended: int, total: int, issues: int}
@@ -56,17 +56,21 @@ class SystemInfoProvider
                 $result['issues'] = $result['critical'] + $result['recommended'];
                 $result['total'] = $good + $result['issues'];
                 
-                // Determine status based on presence of issues (WordPress native behavior)
-                // This matches how WordPress displays status on the dashboard widget
-                if ($result['critical'] > 0) {
-                    $result['status'] = 'critical';
-                    $result['label'] = __('Critical', 'sfxtheme');
-                } elseif ($result['recommended'] > 0) {
-                    $result['status'] = 'recommended';
-                    $result['label'] = __('Should be improved', 'sfxtheme');
+                // Match WP Site Health screen calculation (wp-admin/js/site-health.js)
+                $total_tests = $good + $result['recommended'] + ($result['critical'] * 1.5);
+                if ($total_tests > 0) {
+                    $failed_tests = ($result['recommended'] * 0.5) + ($result['critical'] * 1.5);
+                    $score = 100 - (int) ceil(($failed_tests / $total_tests) * 100);
                 } else {
+                    $score = 100;
+                }
+
+                if ($score >= 80 && $result['critical'] === 0) {
                     $result['status'] = 'good';
                     $result['label'] = __('Good', 'sfxtheme');
+                } else {
+                    $result['status'] = 'recommended';
+                    $result['label'] = __('Should be improved', 'sfxtheme');
                 }
             }
         }
