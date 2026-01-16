@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.7] - 2026-01-12
+
+### Added
+- **Localization**: German translations for dashboard updates section (View Updates, updates available, Plugin/Plugins, Theme/Themes)
+
 ## [0.9.6] - 2026-01-12
 
 ### Fixed
