@@ -1433,6 +1433,28 @@ msgid "Updates required"
 msgstr "Updates erforderlich"
 
 #: inc/CustomDashboard/DashboardRenderer.php
+msgid "View Updates"
+msgstr "Updates anzeigen"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "%d update available"
+msgid_plural "%d updates available"
+msgstr[0] "%d Update verfügbar"
+msgstr[1] "%d Updates verfügbar"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Plugin"
+msgid_plural "Plugins"
+msgstr[0] "Plugin"
+msgstr[1] "Plugins"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Theme"
+msgid_plural "Themes"
+msgstr[0] "Theme"
+msgstr[1] "Themes"
+
+#: inc/CustomDashboard/DashboardRenderer.php
 msgid "Published Posts"
 msgstr "Veröffentlichte Beiträge"
 
