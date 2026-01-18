@@ -1,55 +1,49 @@
 ---
-description: 
-globs: 
+description: Feature registry and auto-discovery for SFX theme
+globs:
 alwaysApply: false
 ---
-// Example for a dependency with a custom callback:
-      // [
-      //   'class' => '\Vendor\SpecialClass',
-      //   'error' => 'Missing SpecialClass',
-      //   'activation_option_key' => 'special_option',
-      //   'hook'  => 'init',
-      //   'callback' => function ($class) { $instance = new $class('foo'); $instance->init(); },
-      // ],
+# Feature registry (SFX child theme)
 
-    $dependencies = [
+## Entry points
+- `functions.php` boots autoloading, then `SFX\SFXBricksChildTheme->init()`.
+- `inc/SFXBricksChildTheme.php` auto-discovers features and initializes them.
 
-      [
-        'class' => '\SFX\Options\AdminOptionsController',
-        'error' => 'Missing AdminOptionsController class in theme',
-        'hook'  => null, // load immediately
-        // 'callback' => function ($class) { new $class('arg1', 'arg2'); }, // Example custom callback
-      ],
-      [
-        'class' => '\SFX\GeneralThemeOptions\Controller',
-        'error' => 'Missing GeneralThemeOptionsController class in theme',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\Shortcodes\Controller',
-        'error' => 'Missing ShortcodeController class in theme',
-        'hook'  => 'acf/init', // load after ACF is ready
-      ],
-      [
-        'class' => '\SFX\ImageOptimizer\Controller',
-        'error' => 'Missing ImageOptimizerController class in theme',
-        'activation_option_name' => 'sfx_general_options',
-        'activation_option_key' => 'enable_image_optimizer',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\SecurityHeader\Controller',
-        'error' => 'Missing SecurityHeaderController class in theme',
-        'activation_option_name' => 'sfx_general_options',
-        'activation_option_key' => 'enable_security_header',
-        'hook'  => null, // load immediately
-      ],
-      [
-        'class' => '\SFX\WPOptimizer\Controller',
-        'error' => 'Missing WPOptimizerController class in theme',
-        'activation_option_name' => 'sfx_general_options',
-        'activation_option_key' => 'enable_wp_optimizer',
-        'hook'  => null, // load immediately
-      ],
+## Auto-discovery
+- `auto_register_features()` scans `inc/*/Controller.php`.
+- Each controller must implement `public static function get_feature_config(): array`.
+- The registry key is the lowercased folder name (e.g., `ImageOptimizer` -> `imageoptimizer`).
+- The registry is read via `SFXBricksChildTheme::get_registered_features()`.
+- In admin, `AccessControl::can_access_theme_settings()` gates the registry (returns empty when denied).
 
-    ];
+## Initialization flow
+- `load_dependencies()` instantiates each feature:
+  - If `activation_option_name` + `activation_option_key` are set, the option must be truthy.
+  - If `hook` is set, initialization is deferred to that hook.
+  - If `callback` is provided, it is called with the class; otherwise `new $class()` is used.
+- Consolidated hooks exist for feature initialization phases:
+  - `sfx_init_core_features`, `sfx_init_post_types`, `sfx_init_settings`, `sfx_init_admin_features`, `sfx_init_advanced_features`.
+
+## Feature config schema (current usage)
+- `class` (string, required)
+- `menu_slug`, `page_title`, `description` (strings, optional)
+- `url` (string, optional) for CPT-based features
+- `show_in_theme_settings` (bool, optional)
+- `activation_option_name` + `activation_option_key` (strings, optional)
+- `hook` (string|null, optional)
+- `callback` (callable, optional)
+- `error` (string, used for error_log on missing class)
+
+## Current registered features (summary)
+- `GeneralThemeOptions` (always on)
+- `ImageOptimizer` (gated by `sfx_general_options.enable_image_optimizer`)
+- `SecurityHeader` (gated by `sfx_general_options.enable_security_header`)
+- `WPOptimizer` (gated by `sfx_general_options.enable_wp_optimizer`)
+- `CustomDashboard` (AccessControl also restricts access to its settings UI)
+- `HtmlCopyPaste` (feature-level enable flag in its options)
+- `ImportExport` (theme settings import/export)
+- `ContactInfos` (CPT-based, has Bricks dynamic tag `{contact_info:field}`)
+- `SocialMediaAccounts` (CPT-based, shortcode)
+- `CustomScriptsManager` (CPT-based, conditional script injection)
+- `TextSnippets` (standalone; `show_in_theme_settings` false)
+- `Shortcodes` (no menu; initializes on `acf/init`)

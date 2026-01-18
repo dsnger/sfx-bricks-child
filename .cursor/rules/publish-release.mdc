@@ -1,54 +1,37 @@
-# Release Process Rules
-
-## Before Making Any Release
-
-### 1. **Ask for Permission**
-- **ALWAYS** ask the user before making a release
-- Only proceed with release **on demand** from the user
-- Never automatically create releases
-
-### 2. **Check Changelog and Version**
-- Verify `style.css` version is updated for the latest changes
-- Verify `CHANGELOG.md` has an entry for the current version
-- If either is missing, update them first:
-  - Update version in `style.css`
-  - Add changelog entry with proper format and details
-
-### 3. **Check Git Status**
-- Verify all changes are committed to git
-- If uncommitted changes exist, commit them first:
-  - `git add .`
-  - `git commit -m "vX.X.X: [description of changes]"`
-  - `git push`
-
-### 4. **Release Process Checklist**
-After user approval, follow this order:
-1. ✅ Confirm changelog and version are updated
-2. ✅ Confirm all changes are committed and pushed
-3. ✅ Build theme: `./build-theme.sh`
-4. ✅ Create git tag: `git tag vX.X.X`
-5. ✅ Push tag: `git push origin vX.X.X`
-6. ✅ Create GitHub release with zip file
-7. ✅ Clean up local zip file
-
-### 5. **Never Skip Steps**
-- Always follow the checklist in order
-- Never assume anything is already done
-- Always verify each step before proceeding to the next
-
-### 6. **User Communication**
-- Keep user informed of each step
-- Report any issues immediately
-- Confirm completion of release process
-
-### 7. **Release Notes Formatting**
-- **NEVER use emoticons or Unicode symbols** in release notes
-- Use only ASCII characters for compatibility
-- Avoid emojis (, ✨, 🔧, 📥, 📋, etc.) in GitHub CLI commands
-- Use plain text formatting: `->` instead of `→`
-- Test release notes in terminal before publishing
-- If using GitHub CLI, ensure notes display properly without encoding issues
-description: Rules for publishing a release
-globs:
+---
+description: Release workflow for SFX Bricks Child theme
+globs: release.sh
 alwaysApply: true
 ---
+# Release workflow (manual only)
+
+## Permission and safety
+- Always ask the user before any release action.
+- Never run release steps automatically or without explicit approval.
+- Release notes must be ASCII only (no emojis or Unicode symbols).
+
+## Preferred path
+- Use `./release.sh <version> [release_notes] [--rc]` from the theme root.
+- The script owns versioning, changelog, tagging, and release publishing.
+
+## Preflight checks
+- Git working tree must be clean (the script enforces this).
+- GitHub CLI (`gh`) must be installed and authenticated for non-RC releases.
+- `build-theme.sh` must exist and be executable.
+
+## What `release.sh` does
+- Updates `style.css` version (unless re-releasing same RC).
+- Prepends a new entry to `CHANGELOG.md`.
+- Commits the version + changelog changes.
+- Creates a git tag `vX.Y.Z`.
+- Builds the theme zip via `build-theme.sh`.
+- Creates a GitHub release and uploads the zip (skipped for RC).
+- Cleans up the local zip after upload (skipped for RC).
+
+## RC (release candidate) behavior
+- Use `--rc` or include `_rc` in the version (e.g., `1.2.3_rc`).
+- No tag push and no GitHub release; zip is kept locally.
+
+## Critical warning
+- On failure, `release.sh` runs `git reset --hard` and `git clean -fd`.
+- Do not run the script if there are untracked files you want to keep.
