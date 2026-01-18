@@ -8,7 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.9.8] - 2026-01-18
+## [0.9.9] - 2026-01-18
+
+### Added
+- Optional CSS style modules (Content Grid, Forms, Buttons, Lists, Animations) with admin toggles in General Theme Options
+- German translations for style module settings
+
+### Changed
+- Theme styles split into optional modules; style.css contains only theme header and base styles
+- General Theme Options: new Style Modules section with per-module toggles
+
+### Fixed
+- WPOptimizer: Settings now use field defaults for backwards compatibility (options work without saving)
+
 
 ### Fixed
 - **WPOptimizer**: Settings now use field defaults for backwards compatibility (options work without saving)
