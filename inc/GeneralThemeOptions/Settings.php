@@ -123,6 +123,56 @@ class Settings
     }
 
     /**
+     * Extract CSS variables from a CSS file.
+     * Results are cached using transients for performance.
+     *
+     * @param string $filename The CSS filename (e.g., 'buttons.css')
+     * @return array List of unique CSS variable names
+     */
+    public static function get_css_variables(string $filename): array {
+        $transient_key = 'sfx_css_vars_' . sanitize_key($filename);
+        $cached = get_transient($transient_key);
+        
+        if ($cached !== false) {
+            return $cached;
+        }
+        
+        $file_path = get_stylesheet_directory() . '/assets/css/frontend/modules/' . $filename;
+        
+        if (!file_exists($file_path)) {
+            return [];
+        }
+        
+        $css_content = file_get_contents($file_path);
+        if ($css_content === false) {
+            return [];
+        }
+        
+        $variables = [];
+        
+        // Match var(--variable-name) - variables being used
+        if (preg_match_all('/var\(\s*(--[\w-]+)/', $css_content, $matches)) {
+            $variables = array_merge($variables, $matches[1]);
+        }
+        
+        // Match --variable-name: (variable definitions, but exclude the internal ones defined and used only within the file)
+        // We want variables that are expected to come from outside (framework/theme)
+        if (preg_match_all('/[\s{;](--[\w-]+)\s*:/', $css_content, $matches)) {
+            // These are definitions - we'll include them as they show what can be customized
+            $variables = array_merge($variables, $matches[1]);
+        }
+        
+        // Remove duplicates and sort
+        $variables = array_unique($variables);
+        sort($variables);
+        
+        // Cache for 1 week (cleared on theme update via clear_all_theme_caches)
+        set_transient($transient_key, $variables, WEEK_IN_SECONDS);
+        
+        return $variables;
+    }
+
+    /**
      * Get all fields (general + styles) for sanitization.
      */
     public static function get_all_fields(): array {
@@ -184,6 +234,8 @@ class Settings
     public static function render_styles_section(): void
     {
       echo '<p>' . esc_html__('Enable or disable optional CSS style modules. All modules are enabled by default. Disabling unused modules can reduce page size.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('These styles are presets designed to work with CSS custom properties (variables). They integrate seamlessly with CSS frameworks like CoreFramework, ACSS, or your own custom variable definitions. Define the variables in your framework or theme settings, and the styles will automatically adapt.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Use the "Copy CSS" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet.', 'sfxtheme') . '</p>';
     }
 
     public static function render_field(array $args): void
@@ -195,6 +247,43 @@ class Settings
         <input type="checkbox" id="<?php echo $id; ?>" name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" value="1" <?php checked($value, 1); ?> />
         <label for="<?php echo $id; ?>"><?php echo esc_html($args['description']); ?></label>
         <?php
+        // Add "Copy CSS" button for style module fields
+        if (!empty($args['file'])) {
+            $css_url = get_stylesheet_directory_uri() . '/assets/css/frontend/modules/' . $args['file'];
+            ?>
+            <button type="button" 
+                    class="sfx-copy-css-btn button button-small" 
+                    data-css-file="<?php echo esc_url($css_url); ?>"
+                    data-label-copy="<?php esc_attr_e('Copy CSS', 'sfxtheme'); ?>"
+                    data-label-copied="<?php esc_attr_e('Copied!', 'sfxtheme'); ?>"
+                    data-label-error="<?php esc_attr_e('Error', 'sfxtheme'); ?>">
+                <?php esc_html_e('Copy CSS', 'sfxtheme'); ?>
+            </button>
+            <?php
+        }
+        
+        // Show CSS variables list (parsed dynamically from CSS file)
+        if (!empty($args['file'])) {
+            $variables = self::get_css_variables($args['file']);
+            if (!empty($variables)) {
+                $variables_text = implode(', ', $variables);
+                ?>
+                <details class="sfx-css-variables">
+                    <summary><?php esc_html_e('CSS Variables', 'sfxtheme'); ?> (<?php echo count($variables); ?>)</summary>
+                    <div class="sfx-variables-wrapper">
+                        <code class="sfx-variables-list"><?php echo esc_html($variables_text); ?></code>
+                        <button type="button" 
+                                class="sfx-copy-vars-btn button button-small" 
+                                data-variables="<?php echo esc_attr($variables_text); ?>"
+                                data-label-copy="<?php esc_attr_e('Copy', 'sfxtheme'); ?>"
+                                data-label-copied="<?php esc_attr_e('Copied!', 'sfxtheme'); ?>">
+                            <?php esc_html_e('Copy', 'sfxtheme'); ?>
+                        </button>
+                    </div>
+                </details>
+                <?php
+            }
+        }
     }
 
     public static function sanitize_options($input): array

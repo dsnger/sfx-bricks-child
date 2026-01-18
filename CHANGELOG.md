@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.0] - 2026-01-18
+
+### Added
+- Style Modules: Copy CSS and Copy Variables buttons for easy customization
+- Style Modules: Dynamic CSS variable detection from module files (auto-updates on theme update)
+- Transient caching for parsed CSS variables (cleared on theme update)
+
+### Changed
+- Style Modules section description now explains CSS variable-based presets
+
+### Fixed
+- German translations: use informal "du" consistently
+
 ## [0.9.9] - 2026-01-18
 
 ### Added
@@ -20,13 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - WPOptimizer: Settings now use field defaults for backwards compatibility (options work without saving)
-
-
-### Fixed
-- **WPOptimizer**: Settings now use field defaults for backwards compatibility (options work without saving)
-
-### Changed
-- **Documentation**: Updated feature registry structure and PixRefiner documentation
 
 ## [0.9.7] - 2026-01-12
 

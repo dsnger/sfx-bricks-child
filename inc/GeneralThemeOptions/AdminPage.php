@@ -73,7 +73,170 @@ class AdminPage
         font-style: italic;
         margin: 0 0 15px;
       }
+      /* Copy CSS button styles */
+      .sfx-copy-css-btn {
+        margin-left: 10px !important;
+        vertical-align: middle;
+        transition: background-color 0.2s, border-color 0.2s;
+      }
+      .sfx-copy-css-btn.copied {
+        background-color: #00a32a !important;
+        border-color: #00a32a !important;
+        color: #fff !important;
+      }
+      .sfx-copy-css-btn.error {
+        background-color: #d63638 !important;
+        border-color: #d63638 !important;
+        color: #fff !important;
+      }
+      /* CSS Variables display */
+      .sfx-css-variables {
+        margin-top: 8px;
+      }
+      .sfx-css-variables summary {
+        cursor: pointer;
+        color: #2271b1;
+        font-size: 12px;
+        user-select: none;
+      }
+      .sfx-css-variables summary:hover {
+        color: #135e96;
+      }
+      .sfx-css-variables[open] summary {
+        margin-bottom: 6px;
+      }
+      .sfx-variables-wrapper {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .sfx-variables-list {
+        display: block;
+        flex: 1;
+        background: #f6f7f7;
+        border: 1px solid #c3c4c7;
+        border-radius: 3px;
+        padding: 8px 10px;
+        font-size: 11px;
+        line-height: 1.6;
+        color: #1e1e1e;
+        word-break: break-word;
+        max-width: 500px;
+      }
+      .sfx-copy-vars-btn {
+        flex-shrink: 0;
+        transition: background-color 0.2s, border-color 0.2s;
+      }
+      .sfx-copy-vars-btn.copied {
+        background-color: #00a32a !important;
+        border-color: #00a32a !important;
+        color: #fff !important;
+      }
     </style>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Helper function to copy text to clipboard
+      function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        } else {
+          // Fallback for older browsers
+          return new Promise(function(resolve, reject) {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            var success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (success) {
+              resolve();
+            } else {
+              reject(new Error('Fallback copy failed'));
+            }
+          });
+        }
+      }
+      
+      // Copy CSS file content
+      document.querySelectorAll('.sfx-copy-css-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var button = this;
+          var cssUrl = button.dataset.cssFile;
+          var labelCopy = button.dataset.labelCopy;
+          var labelCopied = button.dataset.labelCopied;
+          var labelError = button.dataset.labelError;
+          
+          button.disabled = true;
+          
+          fetch(cssUrl)
+            .then(function(response) {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.text();
+            })
+            .then(function(css) {
+              return copyToClipboard(css);
+            })
+            .then(function() {
+              button.textContent = labelCopied;
+              button.classList.add('copied');
+              button.classList.remove('error');
+              
+              setTimeout(function() {
+                button.textContent = labelCopy;
+                button.classList.remove('copied');
+                button.disabled = false;
+              }, 2000);
+            })
+            .catch(function(err) {
+              console.error('Copy CSS error:', err);
+              button.textContent = labelError;
+              button.classList.add('error');
+              button.classList.remove('copied');
+              
+              setTimeout(function() {
+                button.textContent = labelCopy;
+                button.classList.remove('error');
+                button.disabled = false;
+              }, 2000);
+            });
+        });
+      });
+      
+      // Copy CSS variables
+      document.querySelectorAll('.sfx-copy-vars-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var button = this;
+          var variables = button.dataset.variables;
+          var labelCopy = button.dataset.labelCopy;
+          var labelCopied = button.dataset.labelCopied;
+          
+          button.disabled = true;
+          
+          copyToClipboard(variables)
+            .then(function() {
+              button.textContent = labelCopied;
+              button.classList.add('copied');
+              
+              setTimeout(function() {
+                button.textContent = labelCopy;
+                button.classList.remove('copied');
+                button.disabled = false;
+              }, 2000);
+            })
+            .catch(function(err) {
+              console.error('Copy variables error:', err);
+              button.disabled = false;
+            });
+        });
+      });
+    });
+    </script>
     <?php
   }
 
