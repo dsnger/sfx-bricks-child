@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.8] - 2026-01-18
+
+### Fixed
+- **WPOptimizer**: Settings now use field defaults for backwards compatibility (options work without saving)
+
+### Changed
+- **Documentation**: Updated feature registry structure and PixRefiner documentation
+
 ## [0.9.7] - 2026-01-12
 
 ### Added

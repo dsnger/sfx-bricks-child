@@ -459,6 +459,8 @@ class Settings
     /**
      * Get a specific setting value
      * 
+     * Uses field's defined default if no value saved (backwards compatibility)
+     * 
      * @param string $key
      * @param mixed $default
      * @return mixed
@@ -466,7 +468,25 @@ class Settings
     public static function get(string $key, $default = null)
     {
         $options = get_option('sfx_wpoptimizer_options', []);
-        return $options[$key] ?? $default;
+        
+        // If value exists in saved options, return it
+        if (isset($options[$key])) {
+            return $options[$key];
+        }
+        
+        // If explicit default provided, use it
+        if ($default !== null) {
+            return $default;
+        }
+        
+        // Look up field's defined default for backwards compatibility
+        foreach (self::get_fields() as $field) {
+            if ($field['id'] === $key) {
+                return $field['default'] ?? null;
+            }
+        }
+        
+        return null;
     }
 
     /**

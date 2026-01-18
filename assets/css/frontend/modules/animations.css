@@ -1,0 +1,118 @@
+/* ========================================
+   ANIMATION STYLES
+   ======================================== */
+
+/* Avoid FUC on frontend*/
+.bricks-is-frontend .animation-trigger {
+  opacity: 0;
+}
+
+/* Animated Class*/
+.animate {
+  animation-name: fadeAnimation;
+  animation-delay: calc(var(--animate-delay, 0) * var(--animate-delay-step, 200ms));
+  animation-duration: var(--animate-duration, 400ms);
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
+/* Animation direction variables */
+:root {
+  --animate-fade-from-translate: 0, 0, 0;
+  --animate-fade-to-translate: 0, 0, 0;
+}
+
+.animation--left-to-right {
+  --animate-fade-from-translate: calc(-1 * var(--animate-distance, 20px)), 0, 0;
+}
+
+.animation--right-to-left {
+  --animate-fade-from-translate: var(--animate-distance, 20px), 0, 0;
+}
+
+.animation--top-to-bottom {
+  --animate-fade-from-translate: 0, calc(-1 * var(--animate-distance, 20px)), 0;
+}
+
+.animation--bottom-to-top {
+  --animate-fade-from-translate: 0, var(--animate-distance, 20px), 0;
+}
+
+
+:where(.stagger) {
+  --animate-delay-step: 200ms;
+}
+
+.stagger>* {
+  --animate-delay: 0;
+}
+
+/* vorwärts */
+.stagger>*:nth-child(1) {
+  --animate-delay: 0
+}
+
+.stagger>*:nth-child(2) {
+  --animate-delay: 1
+}
+
+.stagger>*:nth-child(3) {
+  --animate-delay: 2
+}
+
+.stagger>*:nth-child(4) {
+  --animate-delay: 3
+}
+
+.stagger>*:nth-child(5) {
+  --animate-delay: 4
+}
+
+.stagger>*:nth-child(6) {
+  --animate-delay: 5
+}
+
+.stagger>*:nth-child(7) {
+  --animate-delay: 6
+}
+
+.stagger>*:nth-child(8) {
+  --animate-delay: 7
+}
+
+.stagger>*:nth-child(9) {
+  --animate-delay: 8
+}
+
+.stagger>*:nth-child(10) {
+  --animate-delay: 9
+}
+
+.stagger>*:nth-child(11) {
+  --animate-delay: 10
+}
+
+.stagger>*:nth-child(12) {
+  --animate-delay: 11
+}
+
+
+/* Keyframes */
+@keyframes fadeAnimation {
+  from {
+    transform: translate3d(var(--animate-fade-from-translate));
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(var(--animate-fade-to-translate));
+  }
+}
+
+
+@keyframes simpleParallax {
+  100% {
+    transform: translateY(var(--animate-parallax, 0));
+  }
+}

@@ -1268,11 +1268,78 @@ msgstr "Allgemeine Theme-Optionen"
 
 #: inc/GeneralThemeOptions/AdminPage.php
 msgid ""
-"Enable or disable core scripts and styles (like jQuery, Bricks JS, Bricks "
-"styling) for performance and customization."
+"Enable or disable core scripts, styles, and optional CSS modules for "
+"performance and customization."
 msgstr ""
-"Kern-Skripte und -Styles (wie jQuery, Bricks JS, Bricks-Styling) für "
-"Leistung und Anpassung aktivieren oder deaktivieren."
+"Kern-Skripte, -Styles und optionale CSS-Module für Leistung und Anpassung "
+"aktivieren oder deaktivieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Selectively enable or disable theme features."
+msgstr "Theme-Funktionen selektiv aktivieren oder deaktivieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Style Modules"
+msgstr "Style-Module"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Enable or disable optional CSS style modules. All modules are enabled by "
+"default. Disabling unused modules can reduce page size."
+msgstr ""
+"Optionale CSS-Style-Module aktivieren oder deaktivieren. Alle Module sind "
+"standardmäßig aktiviert. Das Deaktivieren ungenutzter Module kann die "
+"Seitengröße reduzieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Content Grid"
+msgstr "Content Grid"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Responsive content grid classes (.content-grid, .content--full, "
+".content--feature, etc.)"
+msgstr ""
+"Responsive Content-Grid-Klassen (.content-grid, .content--full, "
+".content--feature, etc.)"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Form Styles"
+msgstr "Formular-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Form inputs, checkboxes, radios, file uploads, error states, and focus "
+"styles."
+msgstr ""
+"Formular-Eingabefelder, Checkboxen, Radio-Buttons, Datei-Uploads, "
+"Fehlerzustände und Fokus-Styles."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Button Styles"
+msgstr "Button-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Button variants, sizes, outline, loading states, and icon animations."
+msgstr ""
+"Button-Varianten, Größen, Outline, Ladezustände und Icon-Animationen."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "List Styles"
+msgstr "Listen-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Icon list styles (.list--icon, .is-check) with custom icons."
+msgstr "Icon-Listen-Styles (.list--icon, .is-check) mit benutzerdefinierten Icons."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Animation Styles"
+msgstr "Animations-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Fade animations, stagger effects, and parallax keyframes."
+msgstr "Fade-Animationen, Stagger-Effekte und Parallax-Keyframes."
 
 # ============================================
 # Global Theme Settings
