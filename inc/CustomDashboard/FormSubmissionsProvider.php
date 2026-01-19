@@ -411,21 +411,27 @@ class FormSubmissionsProvider
             }
 
             // Check if this is a form element
-            $name = $element['name'] ?? '';
-            if ($name === 'form') {
+            $element_name = $element['name'] ?? '';
+            if ($element_name === 'form') {
+                // In Bricks, the element 'id' IS the form_id used in submissions
+                $form_id = $element['id'] ?? '';
                 $settings = $element['settings'] ?? [];
-                $form_id = $settings['formId'] ?? '';
-                $form_name = $settings['formName'] ?? '';
+                
+                // Form name is stored in 'submissionFormName' setting
+                $form_name = $settings['submissionFormName'] ?? '';
+                
+                // Fallback to element label if no submissionFormName
+                if (empty($form_name)) {
+                    $form_name = $element['label'] ?? '';
+                }
                 
                 if (!empty($form_id) && !empty($form_name)) {
                     $form_names[$form_id] = $form_name;
                 }
             }
 
-            // Check nested elements
-            if (!empty($element['children']) && is_array($element['children'])) {
-                self::extract_form_names($element['children'], $form_names);
-            }
+            // Check nested elements (Bricks uses numeric array, not 'children' key)
+            // Elements are at the top level, nested via parent references
         }
     }
 
