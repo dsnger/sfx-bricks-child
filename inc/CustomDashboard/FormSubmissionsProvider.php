@@ -317,10 +317,10 @@ class FormSubmissionsProvider
             return [];
         }
 
-        // Get all submissions and aggregate in PHP for maximum compatibility
+        // Get submissions grouped by form_id with count
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $results = $wpdb->get_results(
-            "SELECT * FROM {$table_name} ORDER BY created_at DESC",
+            "SELECT form_id, COUNT(*) as count FROM {$table_name} GROUP BY form_id ORDER BY count DESC",
             ARRAY_A
         );
 
@@ -328,36 +328,105 @@ class FormSubmissionsProvider
             return [];
         }
 
-        // Aggregate by form_id
+        // Build forms array and look up names from Bricks elements
         $forms = [];
+        $form_names = self::get_form_names_from_bricks();
+        
         foreach ($results as $row) {
             $form_id = $row['form_id'] ?? 'unknown';
-            $form_name = $row['form_name'] ?? '';
+            $form_name = $form_names[$form_id] ?? '';
             
-            if (!isset($forms[$form_id])) {
-                $forms[$form_id] = [
-                    'form_id' => $form_id,
-                    'form_name' => !empty($form_name) ? $form_name : $form_id,
-                    'count' => 0,
-                ];
-            }
-            
-            // Update form_name if this row has one and we didn't have one before
-            if (!empty($form_name) && $forms[$form_id]['form_name'] === $form_id) {
-                $forms[$form_id]['form_name'] = $form_name;
-            }
-            
-            $forms[$form_id]['count']++;
+            $forms[$form_id] = [
+                'form_id' => $form_id,
+                'form_name' => !empty($form_name) ? $form_name : '',
+                'count' => (int) $row['count'],
+            ];
         }
-
-        // Sort by count descending
-        uasort($forms, function($a, $b) {
-            return $b['count'] - $a['count'];
-        });
 
         set_transient($cache_key, $forms, self::CACHE_DURATION);
 
         return $forms;
+    }
+
+    /**
+     * Get form names from Bricks element data
+     * 
+     * Bricks stores form names in the element settings, not in the submissions table.
+     * This searches through Bricks page content to find form elements and their names.
+     *
+     * @return array<string, string> Map of form_id => form_name
+     */
+    private static function get_form_names_from_bricks(): array
+    {
+        global $wpdb;
+
+        $cache_key = self::CACHE_PREFIX . 'form_names';
+        $cached = get_transient($cache_key);
+
+        if (false !== $cached && is_array($cached)) {
+            return $cached;
+        }
+
+        $form_names = [];
+
+        // Search for Bricks content in postmeta (stored as _bricks_page_content_2)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $bricks_content = $wpdb->get_results(
+            "SELECT post_id, meta_value FROM {$wpdb->postmeta} 
+             WHERE meta_key LIKE '_bricks_page_content%' 
+             AND meta_value LIKE '%form%'",
+            ARRAY_A
+        );
+
+        if (!empty($bricks_content)) {
+            foreach ($bricks_content as $row) {
+                $elements = maybe_unserialize($row['meta_value']);
+                if (!is_array($elements)) {
+                    continue;
+                }
+                
+                // Recursively search for form elements
+                self::extract_form_names($elements, $form_names);
+            }
+        }
+
+        // Cache for longer since form element settings don't change often
+        set_transient($cache_key, $form_names, HOUR_IN_SECONDS);
+
+        return $form_names;
+    }
+
+    /**
+     * Recursively extract form names from Bricks elements
+     *
+     * @param array $elements Bricks elements array
+     * @param array $form_names Reference to form names array to populate
+     * @return void
+     */
+    private static function extract_form_names(array $elements, array &$form_names): void
+    {
+        foreach ($elements as $element) {
+            if (!is_array($element)) {
+                continue;
+            }
+
+            // Check if this is a form element
+            $name = $element['name'] ?? '';
+            if ($name === 'form') {
+                $settings = $element['settings'] ?? [];
+                $form_id = $settings['formId'] ?? '';
+                $form_name = $settings['formName'] ?? '';
+                
+                if (!empty($form_id) && !empty($form_name)) {
+                    $form_names[$form_id] = $form_name;
+                }
+            }
+
+            // Check nested elements
+            if (!empty($element['children']) && is_array($element['children'])) {
+                self::extract_form_names($element['children'], $form_names);
+            }
+        }
     }
 
     /**
@@ -367,21 +436,11 @@ class FormSubmissionsProvider
      */
     public static function clear_cache(): void
     {
-        global $wpdb;
-
-        // Delete all transients with our prefix
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $result = $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-                $wpdb->esc_like('_transient_' . self::CACHE_PREFIX) . '%',
-                $wpdb->esc_like('_transient_timeout_' . self::CACHE_PREFIX) . '%'
-            )
-        );
-
-        // Log error if query failed
-        if ($result === false && !empty($wpdb->last_error)) {
-            error_log('SFX Dashboard: Failed to clear form submissions cache - ' . $wpdb->last_error);
-        }
+        delete_transient(self::CACHE_PREFIX . 'forms_summary');
+        delete_transient(self::CACHE_PREFIX . 'total_count');
+        delete_transient(self::CACHE_PREFIX . 'form_names');
+        delete_transient(self::CACHE_PREFIX . 'recent_5');
+        delete_transient(self::CACHE_PREFIX . 'recent_10');
+        delete_transient(self::CACHE_PREFIX . 'recent_20');
     }
 }
