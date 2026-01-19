@@ -317,22 +317,56 @@ class FormSubmissionsProvider
             return [];
         }
 
+        // First, check what columns exist in the table
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $results = $wpdb->get_results(
-            "SELECT form_id, form_name, COUNT(*) as count 
-             FROM {$table_name} 
-             GROUP BY form_id, form_name 
-             ORDER BY count DESC",
-            ARRAY_A
-        );
+        $columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}");
+        
+        $has_form_name = in_array('form_name', $columns, true);
+        $has_form_id = in_array('form_id', $columns, true);
+
+        // Build query based on available columns
+        if ($has_form_id && $has_form_name) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $results = $wpdb->get_results(
+                "SELECT form_id, form_name, COUNT(*) as count 
+                 FROM {$table_name} 
+                 GROUP BY form_id, form_name 
+                 ORDER BY count DESC",
+                ARRAY_A
+            );
+        } elseif ($has_form_id) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $results = $wpdb->get_results(
+                "SELECT form_id, COUNT(*) as count 
+                 FROM {$table_name} 
+                 GROUP BY form_id 
+                 ORDER BY count DESC",
+                ARRAY_A
+            );
+        } else {
+            // Fallback: just count all submissions
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $total = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+            if ($total > 0) {
+                return [
+                    'all' => [
+                        'form_id' => '',
+                        'form_name' => __('All Forms', 'sfxtheme'),
+                        'count' => (int) $total,
+                    ],
+                ];
+            }
+            return [];
+        }
 
         $summary = [];
         if ($results) {
             foreach ($results as $row) {
                 $form_id = $row['form_id'] ?? '';
+                $form_name = $row['form_name'] ?? '';
                 $summary[$form_id] = [
                     'form_id' => $form_id,
-                    'form_name' => $row['form_name'] ?: $form_id,
+                    'form_name' => !empty($form_name) ? $form_name : $form_id,
                     'count' => (int) $row['count'],
                 ];
             }
