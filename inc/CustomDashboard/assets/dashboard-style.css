@@ -1149,10 +1149,93 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
 }
 
+.sfx-form-submissions-section .sfx-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .sfx-form-submissions-section .sfx-section-title {
-    margin: 0 0 20px 0;
+    margin: 0;
     font-size: 1.3em;
     color: hsl(var(--card-foreground));
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sfx-section-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.sfx-section-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: var(--sfx-radius, 6px);
+    font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sfx-section-action:hover {
+    background: hsl(var(--ring));
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+}
+
+.sfx-section-action svg {
+    flex-shrink: 0;
+}
+
+/* Empty state */
+.sfx-submissions-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-submissions-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 15px;
+    background: hsl(var(--muted));
+    border-radius: 50%;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-submissions-empty-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.sfx-submissions-empty p {
+    margin: 0;
+    font-size: 0.95em;
 }
 
 .sfx-submissions-list {
@@ -1178,26 +1261,66 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid hsl(var(--border));
+    gap: 15px;
+}
+
+.sfx-submission-form-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: hsl(var(--card-foreground));
+    text-decoration: none;
+    transition: color 0.2s ease;
+    min-width: 0;
+}
+
+.sfx-submission-form-link:hover {
+    color: hsl(var(--primary));
+}
+
+.sfx-submission-form-link:hover .sfx-submission-form-name {
+    text-decoration: underline;
+}
+
+.sfx-submission-form-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: hsl(var(--primary) / 0.1);
+    border-radius: 6px;
+    color: hsl(var(--primary));
+}
+
+.sfx-submission-form-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .sfx-submission-form-name {
     font-weight: 600;
-    color: hsl(var(--card-foreground));
     font-size: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sfx-submission-date {
     font-size: 0.85em;
     color: hsl(var(--muted-foreground));
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .sfx-submission-content {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid hsl(var(--border));
 }
 
 .sfx-submission-field {
@@ -1210,7 +1333,8 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-submission-icon {
     display: flex;
     align-items: center;
-    color: hsl(var(--primary));
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
 }
 
 .sfx-submission-icon svg {
@@ -1221,6 +1345,13 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
 .sfx-submission-value {
     color: hsl(var(--muted-foreground));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sfx-submission-subject .sfx-submission-value {
+    font-style: italic;
 }
 
 .sfx-submission-link {
@@ -1232,6 +1363,46 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-submission-link:hover {
     color: hsl(var(--ring));
     text-decoration: underline;
+}
+
+.sfx-submission-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid hsl(var(--border));
+}
+
+.sfx-submission-meta {
+    font-size: 0.8em;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-submission-view-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: transparent;
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.3);
+    border-radius: var(--sfx-radius, 4px);
+    font-size: 0.8em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sfx-submission-view-link:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+    text-decoration: none;
+}
+
+.sfx-submission-view-link svg {
+    flex-shrink: 0;
 }
 
 /* WordPress Dashboard Widgets Section */
@@ -1407,6 +1578,42 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     .sfx-stat-value {
         font-size: 1.8em;
     }
+
+    /* Form submissions responsive */
+    .sfx-form-submissions-section {
+        padding: 20px;
+    }
+
+    .sfx-form-submissions-section .sfx-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sfx-section-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .sfx-submission-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .sfx-submission-date {
+        font-size: 0.8em;
+    }
+
+    .sfx-submission-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .sfx-submission-view-link {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1420,6 +1627,16 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
     .sfx-dashboard-widgets-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Form submissions mobile */
+    .sfx-submission-form-link {
+        flex-wrap: wrap;
+    }
+
+    .sfx-submission-form-name {
+        width: 100%;
+        white-space: normal;
     }
 }
 
