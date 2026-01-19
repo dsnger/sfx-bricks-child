@@ -1268,11 +1268,121 @@ msgstr "Allgemeine Theme-Optionen"
 
 #: inc/GeneralThemeOptions/AdminPage.php
 msgid ""
-"Enable or disable core scripts and styles (like jQuery, Bricks JS, Bricks "
-"styling) for performance and customization."
+"Enable or disable core scripts, styles, and optional CSS modules for "
+"performance and customization."
 msgstr ""
-"Kern-Skripte und -Styles (wie jQuery, Bricks JS, Bricks-Styling) für "
-"Leistung und Anpassung aktivieren oder deaktivieren."
+"Kern-Skripte, -Styles und optionale CSS-Module für Leistung und Anpassung "
+"aktivieren oder deaktivieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Selectively enable or disable theme features."
+msgstr "Theme-Funktionen selektiv aktivieren oder deaktivieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Style Modules"
+msgstr "Style-Module"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Enable or disable optional CSS style modules. All modules are enabled by "
+"default. Disabling unused modules can reduce page size."
+msgstr ""
+"Optionale CSS-Style-Module aktivieren oder deaktivieren. Alle Module sind "
+"standardmäßig aktiviert. Das Deaktivieren ungenutzter Module kann die "
+"Seitengröße reduzieren."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Content Grid"
+msgstr "Content Grid"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Responsive content grid classes (.content-grid, .content--full, "
+".content--feature, etc.)"
+msgstr ""
+"Responsive Content-Grid-Klassen (.content-grid, .content--full, "
+".content--feature, etc.)"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Form Styles"
+msgstr "Formular-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Form inputs, checkboxes, radios, file uploads, error states, and focus "
+"styles."
+msgstr ""
+"Formular-Eingabefelder, Checkboxen, Radio-Buttons, Datei-Uploads, "
+"Fehlerzustände und Fokus-Styles."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Button Styles"
+msgstr "Button-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Button variants, sizes, outline, loading states, and icon animations."
+msgstr ""
+"Button-Varianten, Größen, Outline, Ladezustände und Icon-Animationen."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "List Styles"
+msgstr "Listen-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Icon list styles (.list--icon, .is-check) with custom icons."
+msgstr "Icon-Listen-Styles (.list--icon, .is-check) mit benutzerdefinierten Icons."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Animation Styles"
+msgstr "Animations-Styles"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Fade animations, stagger effects, and parallax keyframes."
+msgstr "Fade-Animationen, Stagger-Effekte und Parallax-Keyframes."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Copy CSS"
+msgstr "CSS kopieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Copied!"
+msgstr "Kopiert!"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Error"
+msgstr "Fehler"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "CSS Variables"
+msgstr "CSS-Variablen"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Copy"
+msgstr "Kopieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"These styles are presets designed to work with CSS custom properties "
+"(variables). They integrate seamlessly with CSS frameworks like "
+"CoreFramework, ACSS, or your own custom variable definitions. Define the "
+"variables in your framework or theme settings, and the styles will "
+"automatically adapt."
+msgstr ""
+"Diese Styles sind Presets, die mit CSS Custom Properties (Variablen) "
+"arbeiten. Sie integrieren sich nahtlos mit CSS-Frameworks wie CoreFramework, "
+"ACSS oder eigenen Variablen-Definitionen. Definiere die Variablen in deinem "
+"Framework oder den Theme-Einstellungen, und die Styles passen sich "
+"automatisch an."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid ""
+"Use the \"Copy CSS\" button to copy the module source code before disabling "
+"it, allowing you to customize it in your own stylesheet."
+msgstr ""
+"Verwende den \"CSS kopieren\"-Button, um den Modul-Quellcode zu kopieren, "
+"bevor du ihn deaktivierst. So kannst du ihn in deinem eigenen Stylesheet "
+"anpassen."
 
 # ============================================
 # Global Theme Settings
@@ -4129,23 +4239,23 @@ msgstr "Imran unterstützen"
 
 #: inc/CustomDashboard/Settings.php
 msgid "Create multiple groups of quick links. Drag groups to reorder them, or drag links between groups."
-msgstr "Erstellen Sie mehrere Gruppen von Schnelllinks. Ziehen Sie Gruppen, um sie neu anzuordnen, oder ziehen Sie Links zwischen Gruppen."
+msgstr "Erstelle mehrere Gruppen von Schnelllinks. Ziehe Gruppen, um sie neu anzuordnen, oder ziehe Links zwischen Gruppen."
 
 #: inc/CustomDashboard/Settings.php
 msgid "Manage quick action links that appear on your dashboard."
-msgstr "Verwalten Sie Schnellaktions-Links, die auf Ihrem Dashboard angezeigt werden."
+msgstr "Verwalte Schnellaktions-Links, die auf deinem Dashboard angezeigt werden."
 
 #: inc/CustomDashboard/Settings.php
 msgid "Add contact information to display on your dashboard."
-msgstr "Fügen Sie Kontaktinformationen hinzu, die auf Ihrem Dashboard angezeigt werden."
+msgstr "Füge Kontaktinformationen hinzu, die auf deinem Dashboard angezeigt werden."
 
 #: inc/CustomDashboard/Settings.php
 msgid "Groups: Each group appears as a separate section on the dashboard. Set group roles to restrict who can see the entire group."
-msgstr "Gruppen: Jede Gruppe erscheint als separater Abschnitt im Dashboard. Legen Sie Gruppenrollen fest, um einzuschränken, wer die gesamte Gruppe sehen kann."
+msgstr "Gruppen: Jede Gruppe erscheint als separater Abschnitt im Dashboard. Lege Gruppenrollen fest, um einzuschränken, wer die gesamte Gruppe sehen kann."
 
 #: inc/CustomDashboard/Settings.php
 msgid "URL: Use admin paths (e.g., \"edit.php\") or placeholders: {admin_url}, {site_url}, {home_url}"
-msgstr "URL: Verwenden Sie Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {admin_url}, {site_url}, {home_url}"
+msgstr "URL: Verwende Admin-Pfade (z.B. \"edit.php\") oder Platzhalter: {admin_url}, {site_url}, {home_url}"
 
 #: inc/CustomDashboard/Settings.php
 msgid "Icon: Paste SVG code. Heroicons (outline style, 24x24) recommended."
@@ -4165,7 +4275,7 @@ msgstr "Original erhalten: %s (zuvor optimiert)"
 
 #: inc/ImageOptimizer/AdminPage.php
 msgid "Exclude images from conversion. If already optimized, use \"Revert\" button to restore original format (requires Preserve Originals)."
-msgstr "Bilder von der Konvertierung ausschließen. Wenn bereits optimiert, verwenden Sie die Schaltfläche \"Wiederherstellen\", um das ursprüngliche Format wiederherzustellen (erfordert Originale erhalten)."
+msgstr "Bilder von der Konvertierung ausschließen. Wenn bereits optimiert, verwende die Schaltfläche \"Wiederherstellen\", um das ursprüngliche Format wiederherzustellen (erfordert Originale erhalten)."
 
 #: inc/ImageOptimizer/Ajax.php
 msgid "Add to Excluded List"
@@ -4333,7 +4443,7 @@ msgstr "Originaldatei nicht gefunden. Sie wurde möglicherweise gelöscht. Origi
 
 #: inc/ImageOptimizer/Ajax.php
 msgid "Please reconvert all images to ensure consistency after changing formats."
-msgstr "Bitte konvertieren Sie alle Bilder neu, um Konsistenz nach dem Formatwechsel zu gewährleisten."
+msgstr "Bitte konvertiere alle Bilder neu, um Konsistenz nach dem Formatwechsel zu gewährleisten."
 
 #: inc/ImageOptimizer/Ajax.php
 msgid "Quality set to: %d"

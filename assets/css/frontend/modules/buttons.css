@@ -1,0 +1,345 @@
+/* ========================================
+   BUTTON STYLES (nested)
+   ======================================== */
+
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap, var(--space-4xs));
+  padding-block: var(--btn-padding-block, var(--space-3xs));
+  padding-inline: var(--btn-padding-inline, var(--space-s));
+  font-size: var(--btn-font-size, var(--text-m));
+  font-weight: var(--btn-font-weight, 700);
+  line-height: var(--btn-line-height, var(--line-height-s));
+  letter-spacing: var(--btn-letter-spacing, 0.01%);
+  text-decoration: none;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  border-width: var(--btn-border-width, 1px);
+  border-style: var(--btn-border-style, solid);
+  border-radius: var(--btn-radius, var(--radius-m));
+  box-shadow: var(--btn-shadow, var(--shadow-s));
+  transition: var(--btn-transition, all 0.25s ease-in-out);
+  cursor: pointer;
+  user-select: none;
+  outline: 0;
+
+  &:focus-visible {
+    outline: var(--btn-outline-border-width, 2px) solid var(--secondary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Solid background hover states */
+  &[class*="bricks-background-"] {
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--btn-shadow--hover, var(--shadow-m));
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &.bricks-background-primary {
+    color: var(--primary-fg);
+    border-color: var(--primary);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--primary) 85%, black);
+      border-color: color-mix(in oklab, var(--primary) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--primary) 75%, black);
+      border-color: color-mix(in oklab, var(--primary) 75%, black);
+    }
+  }
+
+  &.bricks-background-secondary {
+    color: var(--secondary-fg);
+    border-color: var(--secondary);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--secondary) 85%, black);
+      border-color: color-mix(in oklab, var(--secondary) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--secondary) 75%, black);
+      border-color: color-mix(in oklab, var(--secondary) 75%, black);
+    }
+  }
+
+  &.bricks-background-light {
+    color: var(--dark);
+    border-color: var(--light);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--light) 85%, black);
+      border-color: color-mix(in oklab, var(--light) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--light) 75%, black);
+      border-color: color-mix(in oklab, var(--light) 75%, black);
+    }
+  }
+
+  &.bricks-background-dark {
+    color: var(--light);
+    border-color: var(--dark);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--dark) 85%, white);
+      border-color: color-mix(in oklab, var(--dark) 85%, white);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--dark) 75%, white);
+      border-color: color-mix(in oklab, var(--dark) 75%, white);
+    }
+  }
+
+  &.bricks-background-muted {
+    color: var(--muted-fg);
+    border-color: var(--muted);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--muted) 85%, black);
+      border-color: color-mix(in oklab, var(--muted) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--muted) 75%, black);
+      border-color: color-mix(in oklab, var(--muted) 75%, black);
+    }
+  }
+
+  &.bricks-background-info {
+    color: var(--info-fg);
+    border-color: var(--info);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--info) 90%, black);
+      border-color: color-mix(in oklab, var(--info) 90%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--info) 85%, black);
+      border-color: color-mix(in oklab, var(--info) 85%, black);
+    }
+  }
+
+  &.bricks-background-success {
+    color: var(--success-fg);
+    border-color: var(--success);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--success) 85%, black);
+      border-color: color-mix(in oklab, var(--success) 85%, black);
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--success) 75%, black);
+      border-color: color-mix(in oklab, var(--success) 75%, black);
+    }
+  }
+
+  /* Outline variants */
+  &.outline {
+    background-color: transparent;
+    border-width: var(--btn-border-width, 1px);
+
+    &[class*="bricks-color-"]:hover {
+      transform: translateY(-1px);
+    }
+
+    &.bricks-color-primary {
+      border-color: var(--primary);
+      color: var(--primary);
+
+      &:hover {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-fg);
+      }
+    }
+
+    &.bricks-color-secondary {
+      border-color: var(--secondary);
+      color: var(--secondary);
+
+      &:hover {
+        background-color: var(--secondary);
+        border-color: var(--secondary);
+        color: var(--secondary-fg);
+      }
+    }
+
+    &.bricks-color-light {
+      border-color: var(--light);
+      color: var(--light);
+
+      &:hover {
+        background-color: var(--light);
+        border-color: var(--light);
+        color: var(--dark);
+      }
+    }
+
+    &.bricks-color-dark {
+      border-color: var(--dark);
+      color: var(--dark);
+
+      &:hover {
+        background-color: var(--dark);
+        border-color: var(--dark);
+        color: var(--light);
+      }
+    }
+
+    &.bricks-color-muted {
+      border-color: var(--muted);
+      color: var(--muted);
+
+      &:hover {
+        background-color: var(--muted);
+        border-color: var(--muted);
+        color: var(--muted-fg);
+      }
+    }
+
+    &.bricks-color-info {
+      border-color: var(--info);
+      color: var(--info);
+
+      &:hover {
+        background-color: var(--info);
+        border-color: var(--info);
+        color: var(--info-fg);
+      }
+    }
+
+    &.bricks-color-success {
+      border-color: var(--success);
+      color: var(--success);
+
+      &:hover {
+        background-color: var(--success);
+        border-color: var(--success);
+        color: var(--success-fg);
+      }
+    }
+  }
+
+  /* Sizes */
+  &.sm {
+    padding-block: var(--btn-s-padding-block, var(--space-4xs));
+    padding-inline: var(--btn-s-padding-inline, var(--space-xs));
+    font-size: var(--btn-s-font-size, var(--text-s));
+    border-radius: var(--btn-s-radius, var(--radius-s));
+  }
+
+  &.md {
+    padding-block: var(--btn-padding-block, var(--space-3xs));
+    padding-inline: var(--btn-padding-inline, var(--space-s));
+    font-size: var(--btn-font-size, var(--text-m));
+    border-radius: var(--btn-radius, var(--radius-m));
+  }
+
+  &.lg {
+    padding-block: var(--btn-l-padding-block, var(--space-2xs));
+    padding-inline: var(--btn-l-padding-inline, var(--space-m));
+    font-size: var(--btn-l-font-size, var(--text-l));
+    border-radius: var(--btn-l-radius, var(--radius-m));
+  }
+
+  &.xl {
+    padding-block: var(--space-xs, 0.75rem);
+    padding-inline: var(--space-l, 2rem);
+    font-size: var(--text-xl, 1.25rem);
+  }
+
+  /* Modifiers */
+  &.full-width {
+    width: 100%;
+  }
+
+  &.icon-only {
+    padding-inline: var(--btn-padding-block, var(--space-3xs));
+    aspect-ratio: 1;
+  }
+
+  &.loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      width: 1em;
+      height: 1em;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: button-spin 0.6s linear infinite;
+      inset: 0;
+      margin: auto;
+    }
+  }
+
+  &.rounded-full {
+    border-radius: 9999px;
+  }
+
+  /* Text button variant */
+  &.btn--text {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+/* Text button - higher specificity to override size classes without !important */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).btn--text {
+  --btn-padding-block: 0;
+  --btn-padding-inline: 0;
+  --btn-s-padding-block: 0;
+  --btn-s-padding-inline: 0;
+  --btn-l-padding-block: 0;
+  --btn-l-padding-inline: 0;
+  padding-block: 0;
+  padding-inline: 0;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Arrow icon animation */
+:is(.brxe-button.bricks-button, button.bricks-button, .btn--text) {
+  &>i.fa-arrow-right,
+  &>svg {
+    transition: all .3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Opt-in icon slide animation on hover */
+  &.btn--icon-slide:hover>i.fa-arrow-right,
+  &.btn--icon-slide:hover>svg {
+    margin-inline-start: 4px;
+  }
+}

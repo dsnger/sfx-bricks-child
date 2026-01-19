@@ -10,14 +10,27 @@ class Controller
 
   public const OPTION_NAME = 'sfx_general_options';
 
+  /**
+   * Cache for style modules directory path.
+   */
+  private string $modules_dir;
+  private string $modules_uri;
+
   public function __construct()
   {
+    // Initialize paths
+    $this->modules_dir = get_stylesheet_directory() . '/assets/css/frontend/modules/';
+    $this->modules_uri = get_stylesheet_directory_uri() . '/assets/css/frontend/modules/';
+
     // Initialize components
     AdminPage::register();
     Settings::register();
 
     // Register hooks through consolidated system
     add_action('sfx_init_settings', [$this, 'handle_options']);
+
+    // Enqueue optional style modules
+    add_action('wp_enqueue_scripts', [$this, 'enqueue_optional_styles'], 20);
   }
 
 
@@ -114,6 +127,49 @@ class Controller
   }
 
 
+  /**
+   * Enqueue optional style modules based on settings.
+   */
+  public function enqueue_optional_styles(): void
+  {
+    // Skip in Bricks Builder
+    if (function_exists('bricks_is_builder_main') && bricks_is_builder_main()) {
+      return;
+    }
+
+    // Get options once (WordPress caches this)
+    $options = get_option(self::OPTION_NAME, []);
+
+    // Get style module definitions
+    $style_fields = Settings::get_style_fields();
+
+    foreach ($style_fields as $field) {
+      $option_key = $field['id'];
+      $file = $field['file'];
+      $default = $field['default'] ?? 1;
+
+      // Check if enabled (default is enabled)
+      $is_enabled = isset($options[$option_key]) ? (bool) $options[$option_key] : (bool) $default;
+
+      if ($is_enabled) {
+        $file_path = $this->modules_dir . $file;
+        
+        // Only enqueue if file exists
+        if (file_exists($file_path)) {
+          $handle = 'sfx-style-' . str_replace('.css', '', $file);
+          
+          wp_enqueue_style(
+            $handle,
+            $this->modules_uri . $file,
+            ['bricks-child'], // Depend on main child theme styles
+            filemtime($file_path)
+          );
+        }
+      }
+    }
+  }
+
+
   private function is_option_enabled(string $option_key): bool
   {
     $options = get_option(self::OPTION_NAME, []);
@@ -136,7 +192,7 @@ class Controller
   public static function maybe_set_default_options(): void {
     if (false === get_option(self::OPTION_NAME, false)) {
         $defaults = [];
-        foreach (Settings::get_fields() as $field) {
+        foreach (Settings::get_all_fields() as $field) {
             $defaults[$field['id']] = $field['default'];
         }
         add_option(self::OPTION_NAME, $defaults);

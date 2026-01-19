@@ -64,7 +64,7 @@ class SystemInfoProvider
                 } else {
                     $score = 100;
                 }
-
+                
                 if ($score >= 80 && $result['critical'] === 0) {
                     $result['status'] = 'good';
                     $result['label'] = __('Good', 'sfxtheme');
