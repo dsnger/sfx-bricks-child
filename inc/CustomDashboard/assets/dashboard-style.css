@@ -1238,171 +1238,84 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     font-size: 0.95em;
 }
 
-.sfx-submissions-list {
+/* Forms list - one row per form */
+.sfx-forms-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
-.sfx-submission-card {
-    padding: 15px;
+.sfx-form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
     background: hsl(var(--muted));
     border-radius: var(--sfx-radius, 8px);
     border-left: 3px solid hsl(var(--primary));
+    text-decoration: none;
+    color: hsl(var(--card-foreground));
     transition: all 0.2s ease;
 }
 
-.sfx-submission-card:hover {
+.sfx-form-row:hover {
     background: hsl(var(--accent));
-    box-shadow: 0 2px 4px hsl(var(--foreground) / 0.05);
-}
-
-.sfx-submission-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-}
-
-.sfx-submission-form-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
     color: hsl(var(--card-foreground));
     text-decoration: none;
-    transition: color 0.2s ease;
-    min-width: 0;
+    transform: translateX(3px);
 }
 
-.sfx-submission-form-link:hover {
-    color: hsl(var(--primary));
-}
-
-.sfx-submission-form-link:hover .sfx-submission-form-name {
-    text-decoration: underline;
-}
-
-.sfx-submission-form-icon {
+.sfx-form-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     background: hsl(var(--primary) / 0.1);
     border-radius: 6px;
     color: hsl(var(--primary));
 }
 
-.sfx-submission-form-icon svg {
-    width: 16px;
-    height: 16px;
+.sfx-form-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
-.sfx-submission-form-name {
+.sfx-form-name {
+    flex: 1;
     font-weight: 600;
-    font-size: 1em;
+    font-size: 0.95em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.sfx-submission-date {
-    font-size: 0.85em;
-    color: hsl(var(--muted-foreground));
-    white-space: nowrap;
+.sfx-form-count {
     flex-shrink: 0;
-}
-
-.sfx-submission-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid hsl(var(--border));
-}
-
-.sfx-submission-field {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9em;
-}
-
-.sfx-submission-icon {
-    display: flex;
-    align-items: center;
-    color: hsl(var(--muted-foreground));
-    flex-shrink: 0;
-}
-
-.sfx-submission-icon svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-}
-
-.sfx-submission-value {
-    color: hsl(var(--muted-foreground));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.sfx-submission-subject .sfx-submission-value {
-    font-style: italic;
-}
-
-.sfx-submission-link {
+    padding: 4px 10px;
+    background: hsl(var(--primary) / 0.1);
     color: hsl(var(--primary));
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.sfx-submission-link:hover {
-    color: hsl(var(--ring));
-    text-decoration: underline;
-}
-
-.sfx-submission-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid hsl(var(--border));
-}
-
-.sfx-submission-meta {
-    font-size: 0.8em;
-    color: hsl(var(--muted-foreground));
-}
-
-.sfx-submission-view-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    background: transparent;
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.3);
-    border-radius: var(--sfx-radius, 4px);
+    border-radius: 12px;
     font-size: 0.8em;
     font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s ease;
 }
 
-.sfx-submission-view-link:hover {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-color: hsl(var(--primary));
-    text-decoration: none;
+.sfx-form-arrow {
+    display: flex;
+    align-items: center;
+    color: hsl(var(--muted-foreground));
+    transition: transform 0.2s ease;
 }
 
-.sfx-submission-view-link svg {
-    flex-shrink: 0;
+.sfx-form-row:hover .sfx-form-arrow {
+    color: hsl(var(--primary));
+    transform: translateX(3px);
+}
+
+.sfx-form-arrow svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* WordPress Dashboard Widgets Section */
@@ -1593,27 +1506,6 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
         width: 100%;
         justify-content: center;
     }
-
-    .sfx-submission-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .sfx-submission-date {
-        font-size: 0.8em;
-    }
-
-    .sfx-submission-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .sfx-submission-view-link {
-        width: 100%;
-        justify-content: center;
-    }
 }
 
 @media (max-width: 480px) {
@@ -1629,14 +1521,29 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
         grid-template-columns: 1fr;
     }
 
-    /* Form submissions mobile */
-    .sfx-submission-form-link {
+    /* Form rows mobile */
+    .sfx-form-row {
         flex-wrap: wrap;
+        gap: 8px;
     }
 
-    .sfx-submission-form-name {
-        width: 100%;
-        white-space: normal;
+    .sfx-form-name {
+        flex-basis: calc(100% - 50px);
+        order: 1;
+    }
+
+    .sfx-form-icon {
+        order: 0;
+    }
+
+    .sfx-form-count {
+        order: 3;
+        margin-left: 44px;
+    }
+
+    .sfx-form-arrow {
+        order: 2;
+        margin-left: auto;
     }
 }
 
