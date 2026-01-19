@@ -1282,13 +1282,26 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     height: 18px;
 }
 
-.sfx-form-name {
+.sfx-form-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sfx-form-name {
     font-weight: 600;
     font-size: 0.95em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sfx-form-id {
+    font-size: 0.75em;
+    color: hsl(var(--muted-foreground));
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
 .sfx-form-count {
@@ -1527,7 +1540,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
         gap: 8px;
     }
 
-    .sfx-form-name {
+    .sfx-form-info {
         flex-basis: calc(100% - 50px);
         order: 1;
     }

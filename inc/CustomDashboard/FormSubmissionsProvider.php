@@ -307,7 +307,7 @@ class FormSubmissionsProvider
         $cache_key = self::CACHE_PREFIX . 'forms_summary';
         $cached = get_transient($cache_key);
 
-        if (false !== $cached) {
+        if (false !== $cached && is_array($cached) && !empty($cached)) {
             return $cached;
         }
 
@@ -317,64 +317,47 @@ class FormSubmissionsProvider
             return [];
         }
 
-        // First, check what columns exist in the table
+        // Get all submissions and aggregate in PHP for maximum compatibility
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}");
-        
-        $has_form_name = in_array('form_name', $columns, true);
-        $has_form_id = in_array('form_id', $columns, true);
+        $results = $wpdb->get_results(
+            "SELECT * FROM {$table_name} ORDER BY created_at DESC",
+            ARRAY_A
+        );
 
-        // Build query based on available columns
-        if ($has_form_id && $has_form_name) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $results = $wpdb->get_results(
-                "SELECT form_id, form_name, COUNT(*) as count 
-                 FROM {$table_name} 
-                 GROUP BY form_id, form_name 
-                 ORDER BY count DESC",
-                ARRAY_A
-            );
-        } elseif ($has_form_id) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $results = $wpdb->get_results(
-                "SELECT form_id, COUNT(*) as count 
-                 FROM {$table_name} 
-                 GROUP BY form_id 
-                 ORDER BY count DESC",
-                ARRAY_A
-            );
-        } else {
-            // Fallback: just count all submissions
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $total = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
-            if ($total > 0) {
-                return [
-                    'all' => [
-                        'form_id' => '',
-                        'form_name' => __('All Forms', 'sfxtheme'),
-                        'count' => (int) $total,
-                    ],
-                ];
-            }
+        if (empty($results)) {
             return [];
         }
 
-        $summary = [];
-        if ($results) {
-            foreach ($results as $row) {
-                $form_id = $row['form_id'] ?? '';
-                $form_name = $row['form_name'] ?? '';
-                $summary[$form_id] = [
+        // Aggregate by form_id
+        $forms = [];
+        foreach ($results as $row) {
+            $form_id = $row['form_id'] ?? 'unknown';
+            $form_name = $row['form_name'] ?? '';
+            
+            if (!isset($forms[$form_id])) {
+                $forms[$form_id] = [
                     'form_id' => $form_id,
                     'form_name' => !empty($form_name) ? $form_name : $form_id,
-                    'count' => (int) $row['count'],
+                    'count' => 0,
                 ];
             }
+            
+            // Update form_name if this row has one and we didn't have one before
+            if (!empty($form_name) && $forms[$form_id]['form_name'] === $form_id) {
+                $forms[$form_id]['form_name'] = $form_name;
+            }
+            
+            $forms[$form_id]['count']++;
         }
 
-        set_transient($cache_key, $summary, self::CACHE_DURATION);
+        // Sort by count descending
+        uasort($forms, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
 
-        return $summary;
+        set_transient($cache_key, $forms, self::CACHE_DURATION);
+
+        return $forms;
     }
 
     /**
