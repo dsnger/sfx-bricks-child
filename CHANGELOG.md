@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.10.1_rc] - 2026-01-19
+## [0.10.1] - 2026-01-19
+
+Form Submissions Dashboard: displays form name and ID with submission count, clickable links to Bricks admin
+
 
 Enhanced Dashboard Form Submissions: clickable links to Bricks admin, parsed form fields (name, email, subject), total count badge, View All button, improved card layout with form icons and view actions, responsive styles, empty state handling
 
