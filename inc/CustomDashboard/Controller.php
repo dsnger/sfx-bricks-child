@@ -38,6 +38,9 @@ class Controller
         add_action('sfx_init_settings', [$this, 'handle_dashboard']);
         add_action('sfx_init_admin_features', [$this, 'setup_admin_hooks']);
 
+        // Register AJAX handlers for user notes
+        add_action('wp_ajax_sfx_save_user_note', [$this, 'ajax_save_user_note']);
+
         // Clear stats cache on content changes
         $this->register_cache_clearing_hooks();
     }
@@ -111,12 +114,16 @@ class Controller
             // Use stored preference if available, otherwise fall back to default
             var state = stored !== null ? stored : defaultState;
             
+            // Safely access classList with null checks
+            var html = document.documentElement;
+            var body = document.body;
+            
             if (state === 'collapsed') {
-                document.documentElement.classList.add('sfx-sidebar-collapsed');
-                document.body.classList.add('sfx-sidebar-collapsed');
+                if (html) html.classList.add('sfx-sidebar-collapsed');
+                if (body) body.classList.add('sfx-sidebar-collapsed');
             } else if (state === 'visible') {
-                document.documentElement.classList.remove('sfx-sidebar-collapsed');
-                document.body.classList.remove('sfx-sidebar-collapsed');
+                if (html) html.classList.remove('sfx-sidebar-collapsed');
+                if (body) body.classList.remove('sfx-sidebar-collapsed');
             }
         })();
         </script>
@@ -260,6 +267,65 @@ class Controller
                 }
             }, 99);
         }
+    }
+
+    /**
+     * AJAX handler for saving user note
+     *
+     * @return void
+     */
+    public function ajax_save_user_note(): void
+    {
+        // Verify nonce
+        if (!check_ajax_referer('sfx_user_note_nonce', 'nonce', false)) {
+            wp_send_json_error(['message' => __('Security check failed.', 'sfxtheme')], 403);
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'sfxtheme')], 401);
+        }
+
+        // Check if user notes are enabled
+        $options = get_option(Settings::$option_name, []);
+        if (empty($options['allow_user_notes'])) {
+            wp_send_json_error(['message' => __('User notes are not enabled.', 'sfxtheme')], 403);
+        }
+
+        // Get and sanitize the note content
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $note_content = isset($_POST['note_content']) ? wp_kses_post(wp_unslash($_POST['note_content'])) : '';
+
+        // Save to user meta
+        $user_id = get_current_user_id();
+        update_user_meta($user_id, 'sfx_dashboard_user_note', $note_content);
+
+        wp_send_json_success([
+            'message' => __('Note saved successfully.', 'sfxtheme'),
+            'content' => $note_content,
+        ]);
+    }
+
+    /**
+     * Get user's personal note content
+     *
+     * @param int|null $user_id User ID or null for current user
+     * @return string|null User's note content or null if not set
+     */
+    public static function get_user_note(?int $user_id = null): ?string
+    {
+        if ($user_id === null) {
+            $user_id = get_current_user_id();
+        }
+
+        if (!$user_id) {
+            return null;
+        }
+
+        $note = get_user_meta($user_id, 'sfx_dashboard_user_note', true);
+        
+        // Return null if no user note exists (to allow fallback to global)
+        return $note !== '' ? $note : null;
     }
 
     /**

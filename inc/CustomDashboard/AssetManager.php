@@ -222,16 +222,66 @@ class AssetManager
             }
         }
 
+        // Check if user notes are enabled to load Pell editor
+        $options = get_option(Settings::$option_name, []);
+        $user_notes_enabled = !empty($options['allow_user_notes']);
+
+        // Load Pell editor if user notes are enabled
+        if ($user_notes_enabled) {
+            $pell_css = get_stylesheet_directory() . '/inc/CustomDashboard/assets/pell.min.css';
+            $pell_js = get_stylesheet_directory() . '/inc/CustomDashboard/assets/pell.min.js';
+
+            if (file_exists($pell_css)) {
+                wp_enqueue_style(
+                    'sfx-pell-editor',
+                    get_stylesheet_directory_uri() . '/inc/CustomDashboard/assets/pell.min.css',
+                    [],
+                    filemtime($pell_css)
+                );
+            }
+
+            if (file_exists($pell_js)) {
+                wp_enqueue_script(
+                    'sfx-pell-editor',
+                    get_stylesheet_directory_uri() . '/inc/CustomDashboard/assets/pell.min.js',
+                    [],
+                    filemtime($pell_js),
+                    true
+                );
+            }
+        }
+
         $js_file = get_stylesheet_directory() . '/inc/CustomDashboard/assets/dashboard-script.js';
         
         if (file_exists($js_file)) {
+            $deps = $user_notes_enabled ? ['sfx-pell-editor'] : [];
+            
             wp_enqueue_script(
                 'sfx-custom-dashboard',
                 get_stylesheet_directory_uri() . '/inc/CustomDashboard/assets/dashboard-script.js',
-                [],
+                $deps,
                 filemtime($js_file),
                 true
             );
+
+            // Pass data to dashboard script
+            wp_localize_script('sfx-custom-dashboard', 'sfxDashboard', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'userNotesEnabled' => $user_notes_enabled,
+                'strings' => [
+                    'saving' => __('Saving...', 'sfxtheme'),
+                    'saved' => __('Saved!', 'sfxtheme'),
+                    'error' => __('Error saving note.', 'sfxtheme'),
+                    'confirmReset' => __('Reset to the default note? Your personal note will be deleted.', 'sfxtheme'),
+                    'enterLink' => __('Enter the link URL:', 'sfxtheme'),
+                    'openNewTab' => __('Open link in new tab?', 'sfxtheme'),
+                    'yes' => __('Yes', 'sfxtheme'),
+                    'no' => __('No', 'sfxtheme'),
+                    'codeView' => __('HTML Code', 'sfxtheme'),
+                    'save' => __('Save', 'sfxtheme'),
+                    'placeholder' => __('Click edit to add your personal note...', 'sfxtheme'),
+                ],
+            ]);
         }
     }
 
@@ -452,6 +502,7 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
 }
 .sfx-status-bar {
     gap: var(--sfx-dashboard-gap);
+    margin-bottom: var(--sfx-dashboard-gap);
 }
 .sfx-welcome-section {
     margin-bottom: var(--sfx-dashboard-gap);
@@ -463,9 +514,12 @@ body.index-php:has([data-theme=\"dark\"]) #wpcontent,
     margin-bottom: var(--sfx-dashboard-gap);
 }
 .sfx-form-submissions-section,
-.sfx-wp-dashboard-widgets-section,
+.sfx-wp-dashboard-widgets-section {
+    margin-top: var(--sfx-dashboard-gap);
+}
 .sfx-note-section {
     margin-top: var(--sfx-dashboard-gap);
+    margin-bottom: var(--sfx-dashboard-gap);
 }
 @media (max-width: 1024px) {
     .sfx-stats-grid, .sfx-quicklinks-grid {

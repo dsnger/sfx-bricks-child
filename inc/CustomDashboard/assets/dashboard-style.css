@@ -115,9 +115,8 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 .sfx-status-bar {
     display: flex;
     align-items: stretch;
-    gap: 15px;
-    margin-bottom: var(--sfx-dashboard-gap);
-    margin-top: var(--sfx-dashboard-gap);
+    gap: var(--sfx-dashboard-gap, 15px);
+    margin-bottom: var(--sfx-dashboard-gap, 15px);
 }
 
 /* Site Health Section */
@@ -426,7 +425,7 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 
 /* Welcome Section */
 .sfx-welcome-section {
-    margin-bottom: 30px;
+    margin-bottom: var(--sfx-dashboard-gap, 15px);
     padding: 30px;
     background: var(--sfx-header-bg, hsl(var(--primary)));
     border-radius: var(--sfx-radius, 12px);
@@ -701,8 +700,8 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: var(--sfx-dashboard-gap, 15px);
+    margin-bottom: var(--sfx-dashboard-gap, 15px);
 }
 
 .sfx-stat-card {
@@ -765,8 +764,8 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 /* Content Grid (Quicklinks + Contact) */
 .sfx-content-grid {
     display: grid;
-    gap: 30px;
-    margin-bottom: 30px;
+    gap: var(--sfx-dashboard-gap, 15px);
+    margin-bottom: var(--sfx-dashboard-gap, 15px);
     width: 100%;
     box-sizing: border-box;
 }
@@ -828,7 +827,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-quicklinks-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
+    gap: var(--sfx-dashboard-gap, 15px);
     max-width: 100%;
 }
 
@@ -979,7 +978,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-info-section {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--sfx-dashboard-gap, 15px);
     width: 100%;
     box-sizing: border-box;
 }
@@ -991,6 +990,16 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     border: var(--sfx-border-width, 0px) solid hsl(var(--border));
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
     box-sizing: border-box;
+}
+
+/* Note section when inside sidebar */
+.sfx-info-section .sfx-note-section {
+    margin: 0;
+}
+
+/* Widgets section when inside sidebar */
+.sfx-info-section .sfx-wp-dashboard-widgets-section {
+    margin-top: 0;
 }
 
 /* Tip Card - Secondary Color Schema */
@@ -1141,7 +1150,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
 /* Form Submissions Section */
 .sfx-form-submissions-section {
-    margin-top: 30px;
+    margin-top: var(--sfx-dashboard-gap, 15px);
     background: hsl(var(--card));
     padding: 25px;
     border-radius: var(--sfx-radius, 8px);
@@ -1333,7 +1342,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
 /* WordPress Dashboard Widgets Section */
 .sfx-wp-dashboard-widgets-section {
-    margin-top: 30px;
+    margin-top: var(--sfx-dashboard-gap, 15px);
 }
 
 .sfx-wp-dashboard-widgets-section .sfx-section-title {
@@ -1345,7 +1354,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-dashboard-widgets-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
+    gap: var(--sfx-dashboard-gap, 15px);
 }
 
 .sfx-dashboard-widget-card {
@@ -1576,9 +1585,10 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     animation: countUp 0.5s ease;
 }
 
-/* Note Section */
+/* Note Section - needs both margins to work at any position */
 .sfx-note-section {
-    margin-top: 30px;
+    margin-top: var(--sfx-dashboard-gap, 15px);
+    margin-bottom: var(--sfx-dashboard-gap, 15px);
     padding: 25px;
     background: hsl(var(--card));
     border-radius: var(--sfx-radius, 8px);
@@ -1651,12 +1661,22 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
 .sfx-note-content ul,
 .sfx-note-content ol {
-    margin: 0 0 1em 1.5em;
-    padding: 0;
+    margin: 0 0 1em 0;
+    padding: 0 0 0 1.5em;
+    list-style-position: outside;
+}
+
+.sfx-note-content ul {
+    list-style-type: disc;
+}
+
+.sfx-note-content ol {
+    list-style-type: decimal;
 }
 
 .sfx-note-content li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0.1em;
+    display: list-item;
 }
 
 .sfx-note-content code {
@@ -1687,6 +1707,215 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
+}
+
+/* Editable Note Section */
+.sfx-note-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.sfx-note-header .sfx-section-title {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.sfx-note-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sfx-note-edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sfx-note-edit-btn:hover {
+    background: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.sfx-note-placeholder {
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* Note Editor */
+.sfx-note-editor {
+    display: none;
+}
+
+.sfx-note-editing .sfx-note-editor {
+    display: block;
+}
+
+/* Pell Editor Container */
+.sfx-note-pell-container {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sfx-note-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.sfx-note-cancel-btn,
+.sfx-note-save-btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sfx-note-cancel-btn {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-note-cancel-btn:hover {
+    background: hsl(var(--muted-foreground) / 0.1);
+    color: hsl(var(--foreground));
+}
+
+.sfx-note-save-btn {
+    background: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.sfx-note-save-btn:hover {
+    opacity: 0.9;
+}
+
+.sfx-note-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Note section without title - adjust header */
+.sfx-note-header:not(:has(.sfx-section-title)) {
+    justify-content: flex-end;
+    margin-bottom: 0;
+}
+
+.sfx-note-editable:not(:has(.sfx-section-title)) .sfx-note-header {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    margin-bottom: 0;
+}
+
+.sfx-note-editable:not(:has(.sfx-section-title)) {
+    position: relative;
+    padding-top: 50px;
+}
+
+/* Custom Confirm Dialog */
+.sfx-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+}
+
+.sfx-confirm-dialog {
+    background: hsl(var(--card));
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: sfx-dialog-appear 0.15s ease-out;
+}
+
+@keyframes sfx-dialog-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.sfx-confirm-message {
+    margin: 0 0 20px;
+    font-size: 1em;
+    color: hsl(var(--foreground));
+    text-align: center;
+}
+
+.sfx-confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.sfx-confirm-yes,
+.sfx-confirm-no {
+    padding: 10px 24px;
+    font-size: 0.95em;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 80px;
+}
+
+.sfx-confirm-no {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-confirm-no:hover {
+    background: hsl(var(--muted-foreground) / 0.1);
+    color: hsl(var(--foreground));
+}
+
+.sfx-confirm-yes {
+    background: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.sfx-confirm-yes:hover {
+    opacity: 0.9;
+}
+
+.sfx-confirm-yes:focus,
+.sfx-confirm-no:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.3);
 }
 
 /* Theme transition effect */

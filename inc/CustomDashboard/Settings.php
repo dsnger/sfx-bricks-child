@@ -83,6 +83,7 @@ class Settings
                 'note_title',
                 'note_content',
                 'note_position',
+                'allow_user_notes',
             ],
             'stats' => [
                 'stats_items',
@@ -190,6 +191,7 @@ class Settings
                 'note_title',
                 'note_content',
                 'note_position',
+                'allow_user_notes',
             ],
         ];
     }
@@ -1140,6 +1142,9 @@ CSS;
                     'below_stats' => __('Below Statistics Row', 'sfxtheme'),
                     'below_quicklinks' => __('Below Quicklinks & Sidebar Row', 'sfxtheme'),
                     'below_widgets' => __('Bottom (Default Position)', 'sfxtheme'),
+                    'sidebar_top' => __('Right Sidebar - Top (above Tip Card)', 'sfxtheme'),
+                    'sidebar_middle' => __('Right Sidebar - Middle (between Tip & Contact)', 'sfxtheme'),
+                    'sidebar_bottom' => __('Right Sidebar - Bottom (below Contact)', 'sfxtheme'),
                 ],
             ],
             [
@@ -1491,7 +1496,17 @@ CSS;
                     'below_stats' => __('Below Statistics Row', 'sfxtheme'),
                     'below_quicklinks' => __('Below Quicklinks & Sidebar Row', 'sfxtheme'),
                     'below_widgets' => __('Below Widget Row', 'sfxtheme'),
+                    'sidebar_top' => __('Right Sidebar - Top (above Tip Card)', 'sfxtheme'),
+                    'sidebar_middle' => __('Right Sidebar - Middle (between Tip & Contact)', 'sfxtheme'),
+                    'sidebar_bottom' => __('Right Sidebar - Bottom (below Contact)', 'sfxtheme'),
                 ],
+            ],
+            [
+                'id' => 'allow_user_notes',
+                'label' => __('Allow User Notes', 'sfxtheme'),
+                'description' => __('Allow each user to write their own personal notes on the dashboard. User notes are stored separately and override the global note content.', 'sfxtheme'),
+                'type' => 'checkbox',
+                'default' => 0,
             ],
             [
                 'id' => 'quicklinks_sortable',
@@ -1589,7 +1604,7 @@ CSS;
                 $section = self::$option_name . '_quicklinks';
             } elseif (in_array($field['id'], ['enabled_dashboard_widgets', 'show_dashboard_widgets', 'widgets_columns', 'dashboard_widgets_position'])) {
                 $section = self::$option_name . '_sections';
-            } elseif (in_array($field['id'], ['note_title', 'note_content', 'note_position', 'show_note_section', 'form_submissions_limit', 'show_tip_card', 'tip_card_title', 'tip_card_content'])) {
+            } elseif (in_array($field['id'], ['note_title', 'note_content', 'note_position', 'show_note_section', 'allow_user_notes', 'form_submissions_limit', 'show_tip_card', 'tip_card_title', 'tip_card_content'])) {
                 $section = self::$option_name . '_sections';
             } elseif (strpos($field['id'], 'brand_') === 0 || strpos($field['id'], 'card_') === 0 || strpos($field['id'], 'color_mode') === 0 || in_array($field['id'], ['dashboard_gap', 'stats_columns', 'quicklinks_columns', 'allow_user_mode_switch', 'dashboard_custom_css'])) {
                 $section = self::$option_name . '_brand';
