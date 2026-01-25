@@ -247,6 +247,18 @@ msgstr "Unten (Standard-Position)"
 msgid "Below Widget Row"
 msgstr "Unter der Widget-Zeile"
 
+#: inc/CustomDashboard/Settings.php
+msgid "Right Sidebar - Top (above Tip Card)"
+msgstr "Rechte Seitenleiste - Oben (über Tipp-Karte)"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Right Sidebar - Middle (between Tip & Contact)"
+msgstr "Rechte Seitenleiste - Mitte (zwischen Tipp & Kontakt)"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Right Sidebar - Bottom (below Contact)"
+msgstr "Rechte Seitenleiste - Unten (unter Kontakt)"
+
 # ============================================
 # Custom Dashboard - Contact Settings
 # ============================================
@@ -683,6 +695,78 @@ msgstr "Notiz-Position"
 #: inc/CustomDashboard/Settings.php
 msgid "Choose where to display the note section on the dashboard."
 msgstr "Wähle, wo der Notiz-Bereich im Dashboard angezeigt werden soll."
+
+#: inc/CustomDashboard/Settings.php
+msgid "Allow User Notes"
+msgstr "Benutzernotizen erlauben"
+
+#: inc/CustomDashboard/Settings.php
+msgid "Allow each user to write their own personal notes on the dashboard. User notes are stored separately and override the global note content."
+msgstr "Erlaubt jedem Benutzer, eigene persönliche Notizen im Dashboard zu schreiben. Benutzernotizen werden separat gespeichert und überschreiben den globalen Notizinhalt."
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Reset to default note"
+msgstr "Auf Standardnotiz zurücksetzen"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Edit note"
+msgstr "Notiz bearbeiten"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Click edit to add your personal note..."
+msgstr "Klicke auf Bearbeiten, um deine persönliche Notiz hinzuzufügen..."
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Write your note here... HTML is supported."
+msgstr "Schreibe hier deine Notiz... HTML wird unterstützt."
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: inc/CustomDashboard/DashboardRenderer.php
+msgid "Save"
+msgstr "Speichern"
+
+#: inc/CustomDashboard/Controller.php
+msgid "You must be logged in."
+msgstr "Du musst angemeldet sein."
+
+#: inc/CustomDashboard/Controller.php
+msgid "User notes are not enabled."
+msgstr "Benutzernotizen sind nicht aktiviert."
+
+#: inc/CustomDashboard/Controller.php
+msgid "Note saved successfully."
+msgstr "Notiz erfolgreich gespeichert."
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Saving..."
+msgstr "Speichern..."
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Saved!"
+msgstr "Gespeichert!"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Error saving note."
+msgstr "Fehler beim Speichern der Notiz."
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Reset to the default note? Your personal note will be deleted."
+msgstr "Auf die Standardnotiz zurücksetzen? Deine persönliche Notiz wird gelöscht."
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Enter the link URL:"
+msgstr "Link-URL eingeben:"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "Open link in new tab?"
+msgstr "Link in neuem Tab öffnen?"
+
+#: inc/CustomDashboard/AssetManager.php
+msgid "HTML Code"
+msgstr "HTML-Code"
 
 # ============================================
 # Custom Dashboard - Quick Links Settings

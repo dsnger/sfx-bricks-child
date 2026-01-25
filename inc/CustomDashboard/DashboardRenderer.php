@@ -810,8 +810,11 @@ class DashboardRenderer
     {
         ?>
         <aside class="sfx-info-section">
+            <?php $this->render_positioned_sections('sidebar_top'); ?>
             <?php $this->render_tip_card(); ?>
+            <?php $this->render_positioned_sections('sidebar_middle'); ?>
             <?php $this->render_contact_info(); ?>
+            <?php $this->render_positioned_sections('sidebar_bottom'); ?>
         </aside>
         <?php
     }
@@ -1212,20 +1215,60 @@ class DashboardRenderer
     private function render_note_section(): void
     {
         $title = $this->get_option('note_title', '');
-        $content = $this->get_option('note_content', '');
+        $global_content = $this->get_option('note_content', '');
+        $allow_user_notes = $this->is_enabled('allow_user_notes');
+        
+        // Check for user-specific note first
+        $user_note = null;
+        $is_user_note = false;
+        if ($allow_user_notes) {
+            $user_note = Controller::get_user_note();
+            if ($user_note !== null) {
+                $is_user_note = true;
+            }
+        }
+        
+        // Use user note if available, otherwise fall back to global
+        $content = $is_user_note ? $user_note : $global_content;
 
-        if (empty($content)) {
+        // If user notes are enabled, always show the section (even if empty) so users can add notes
+        if (!$allow_user_notes && empty($content)) {
             return;
         }
 
         ?>
-        <section class="sfx-note-section">
-            <?php if (!empty($title)): ?>
-                <h2 class="sfx-section-title"><?php echo esc_html($title); ?></h2>
-            <?php endif; ?>
-            <div class="sfx-note-content">
-                <?php echo wp_kses_post($content); ?>
+        <section class="sfx-note-section<?php echo $allow_user_notes ? ' sfx-note-editable' : ''; ?>">
+            <div class="sfx-note-header">
+                <?php if (!empty($title)): ?>
+                    <h2 class="sfx-section-title"><?php echo esc_html($title); ?></h2>
+                <?php endif; ?>
+                <?php if ($allow_user_notes): ?>
+                    <div class="sfx-note-actions">
+                        <button type="button" class="sfx-note-edit-btn" title="<?php esc_attr_e('Edit note', 'sfxtheme'); ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                        </button>
+                    </div>
+                <?php endif; ?>
             </div>
+            <div class="sfx-note-content sfx-note-view">
+                <?php if (!empty($content)): ?>
+                    <?php echo wp_kses_post($content); ?>
+                <?php else: ?>
+                    <p class="sfx-note-placeholder"><?php esc_html_e('Click edit to add your personal note...', 'sfxtheme'); ?></p>
+                <?php endif; ?>
+            </div>
+            <?php if ($allow_user_notes): ?>
+                <div class="sfx-note-editor" style="display: none;">
+                    <div class="sfx-note-pell-container" data-initial-content="<?php echo esc_attr($content); ?>"></div>
+                    <div class="sfx-note-editor-actions">
+                        <button type="button" class="sfx-note-cancel-btn"><?php esc_html_e('Cancel', 'sfxtheme'); ?></button>
+                        <button type="button" class="sfx-note-save-btn"><?php esc_html_e('Save', 'sfxtheme'); ?></button>
+                    </div>
+                </div>
+                <?php wp_nonce_field('sfx_user_note_nonce', 'sfx_user_note_nonce', false); ?>
+            <?php endif; ?>
         </section>
         <?php
     }
