@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.2] - 2026-01-25
+
+### Added
+- Custom Dashboard: User notes widget for personal reminders and quick notes
+
 ## [0.10.1] - 2026-01-19
 
 Form Submissions Dashboard: displays form name and ID with submission count, clickable links to Bricks admin
