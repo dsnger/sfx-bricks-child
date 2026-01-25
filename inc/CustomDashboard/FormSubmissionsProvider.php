@@ -22,6 +22,48 @@ class FormSubmissionsProvider
     private const CACHE_DURATION = 300;
 
     /**
+     * Common field keys that might contain a name
+     */
+    private const NAME_FIELD_KEYS = ['name', 'full_name', 'fullname', 'your-name', 'your_name', 'vorname', 'nachname', 'firstname', 'first_name', 'lastname', 'last_name'];
+
+    /**
+     * Common field keys that might contain an email
+     */
+    private const EMAIL_FIELD_KEYS = ['email', 'e-mail', 'your-email', 'your_email', 'mail', 'user_email', 'contact_email'];
+
+    /**
+     * Common field keys that might contain a subject/message preview
+     */
+    private const SUBJECT_FIELD_KEYS = ['subject', 'betreff', 'topic', 'reason', 'inquiry_type'];
+
+    /**
+     * Get Bricks form submissions admin URL
+     *
+     * @param string|null $form_id Optional form ID to filter by
+     * @return string
+     */
+    public static function get_admin_url(?string $form_id = null): string
+    {
+        $url = admin_url('admin.php?page=bricks-form-submissions');
+        if ($form_id) {
+            $url = add_query_arg('form_id', $form_id, $url);
+        }
+        return $url;
+    }
+
+    /**
+     * Check if Bricks form submissions table exists
+     *
+     * @return bool
+     */
+    public static function table_exists(): bool
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'bricks_form_submissions';
+        return $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
+    }
+
+    /**
      * Get recent form submissions
      *
      * @param int $limit Number of submissions to retrieve
@@ -36,103 +78,191 @@ class FormSubmissionsProvider
             return $cached;
         }
 
-        $submissions = self::fetch_submissions($limit);
+        $submissions = self::fetch_from_bricks_table($limit);
         set_transient($cache_key, $submissions, self::CACHE_DURATION);
 
         return $submissions;
     }
 
     /**
-     * Fetch form submissions from database
+     * Fetch form submissions from Bricks custom table
      *
      * @param int $limit
      * @return array<int, array<string, mixed>>
      */
-    private static function fetch_submissions(int $limit): array
+    private static function fetch_from_bricks_table(int $limit): array
     {
         global $wpdb;
 
-        // Check if Bricks stores submissions in custom table or post type
-        // First, check for custom post type 'bricks_form_submission' or similar
-        $post_type = 'bricks_form_submission';
-        
-        $submissions = [];
+        $table_name = $wpdb->prefix . 'bricks_form_submissions';
 
-        // Try to get submissions from custom post type
-        $args = [
-            'post_type' => $post_type,
-            'posts_per_page' => $limit,
-            'post_status' => 'any',
-            'orderby' => 'date',
-            'order' => 'DESC',
-        ];
-
-        $query = new \WP_Query($args);
-
-        if ($query->have_posts()) {
-            while ($query->have_posts()) {
-                $query->the_post();
-                $post_id = get_the_ID();
-                
-                $submissions[] = [
-                    'id' => $post_id,
-                    'date' => get_the_date('Y-m-d H:i:s'),
-                    'form_name' => get_post_meta($post_id, 'form_name', true) ?: __('Unnamed Form', 'sfxtheme'),
-                    'email' => get_post_meta($post_id, 'email', true) ?: get_post_meta($post_id, 'user_email', true),
-                    'name' => get_post_meta($post_id, 'name', true) ?: get_post_meta($post_id, 'user_name', true),
-                    'status' => get_post_status(),
-                ];
-            }
-            wp_reset_postdata();
-        } else {
-            // If no submissions found, try checking in options or custom table
-            // Bricks might store form data differently
-            $submissions = self::check_alternative_storage($limit);
+        if (!self::table_exists()) {
+            return [];
         }
 
-        return $submissions;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT %d",
+                $limit
+            ),
+            ARRAY_A
+        );
+
+        if (!$results) {
+            return [];
+        }
+
+        return array_map([self::class, 'parse_submission_row'], $results);
     }
 
     /**
-     * Check alternative storage methods for form submissions
+     * Parse a single submission row from the database
      *
-     * @param int $limit
-     * @return array<int, array<string, mixed>>
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
      */
-    private static function check_alternative_storage(int $limit): array
+    private static function parse_submission_row(array $row): array
     {
-        global $wpdb;
-
-        // Check for custom table (example: wp_bricks_form_submissions)
-        $table_name = $wpdb->prefix . 'bricks_form_submissions';
+        $form_id = $row['form_id'] ?? '';
+        $form_name = $row['form_name'] ?? '';
         
-        // Check if table exists
-        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
+        // Parse the fields JSON
+        $fields_raw = $row['fields'] ?? '';
+        $fields = self::parse_fields_json($fields_raw);
+        
+        // Extract common field values
+        $extracted = self::extract_common_fields($fields);
+        
+        // Build display name: prefer form_name, fall back to form_id
+        $display_name = !empty($form_name) ? $form_name : $form_id;
+        if (empty($display_name)) {
+            $display_name = __('Unnamed Form', 'sfxtheme');
+        }
 
-        if ($table_exists) {
-            $results = $wpdb->get_results(
-                $wpdb->prepare(
-                    "SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT %d",
-                    $limit
-                ),
-                ARRAY_A
-            );
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'form_id' => $form_id,
+            'form_name' => $display_name,
+            'date' => $row['created_at'] ?? '',
+            'email' => $extracted['email'],
+            'name' => $extracted['name'],
+            'subject' => $extracted['subject'],
+            'fields' => $fields,
+            'fields_count' => count($fields),
+            'user_id' => (int) ($row['user_id'] ?? 0),
+            'referrer' => $row['referrer'] ?? '',
+            'post_id' => (int) ($row['post_id'] ?? 0),
+        ];
+    }
 
-            if ($results) {
-                return array_map(function($row) {
-                    return [
-                        'id' => $row['id'] ?? 0,
-                        'date' => $row['created_at'] ?? $row['date'] ?? '',
-                        'form_name' => $row['form_name'] ?? $row['form_id'] ?? __('Form Submission', 'sfxtheme'),
-                        'email' => $row['email'] ?? '',
-                        'name' => $row['name'] ?? '',
-                        'status' => $row['status'] ?? 'received',
-                    ];
-                }, $results);
+    /**
+     * Parse fields JSON string into array
+     *
+     * @param string $fields_raw
+     * @return array<string, mixed>
+     */
+    private static function parse_fields_json(string $fields_raw): array
+    {
+        if (empty($fields_raw)) {
+            return [];
+        }
+
+        $fields = json_decode($fields_raw, true);
+        
+        if (!is_array($fields)) {
+            return [];
+        }
+
+        // Clean up field keys (remove 'form-field-' prefix if present)
+        $cleaned = [];
+        foreach ($fields as $key => $value) {
+            // Skip internal Bricks fields
+            if (in_array($key, ['formId', 'postId', 'referrer', 'nonce'], true)) {
+                continue;
+            }
+            
+            // Remove common prefixes to get cleaner field names
+            $clean_key = preg_replace('/^(form-field-|field-|form_field_)/', '', $key);
+            $cleaned[$clean_key] = $value;
+        }
+
+        return $cleaned;
+    }
+
+    /**
+     * Extract common field values (name, email, subject) from fields array
+     *
+     * @param array<string, mixed> $fields
+     * @return array{name: string, email: string, subject: string}
+     */
+    private static function extract_common_fields(array $fields): array
+    {
+        $result = [
+            'name' => '',
+            'email' => '',
+            'subject' => '',
+        ];
+
+        // Normalize field keys for comparison
+        $normalized_fields = [];
+        foreach ($fields as $key => $value) {
+            $normalized_key = strtolower(str_replace(['-', ' '], '_', $key));
+            $normalized_fields[$normalized_key] = $value;
+        }
+
+        // Find name
+        foreach (self::NAME_FIELD_KEYS as $key) {
+            $normalized_key = str_replace('-', '_', $key);
+            if (!empty($normalized_fields[$normalized_key])) {
+                $result['name'] = sanitize_text_field((string) $normalized_fields[$normalized_key]);
+                break;
             }
         }
 
-        return [];
+        // If we have firstname/lastname but no full name, combine them
+        if (empty($result['name'])) {
+            $first = '';
+            $last = '';
+            foreach (['firstname', 'first_name', 'vorname'] as $key) {
+                if (!empty($normalized_fields[$key])) {
+                    $first = sanitize_text_field((string) $normalized_fields[$key]);
+                    break;
+                }
+            }
+            foreach (['lastname', 'last_name', 'nachname'] as $key) {
+                if (!empty($normalized_fields[$key])) {
+                    $last = sanitize_text_field((string) $normalized_fields[$key]);
+                    break;
+                }
+            }
+            if ($first || $last) {
+                $result['name'] = trim($first . ' ' . $last);
+            }
+        }
+
+        // Find email
+        foreach (self::EMAIL_FIELD_KEYS as $key) {
+            $normalized_key = str_replace('-', '_', $key);
+            if (!empty($normalized_fields[$normalized_key])) {
+                $email = sanitize_email((string) $normalized_fields[$normalized_key]);
+                if (is_email($email)) {
+                    $result['email'] = $email;
+                    break;
+                }
+            }
+        }
+
+        // Find subject
+        foreach (self::SUBJECT_FIELD_KEYS as $key) {
+            $normalized_key = str_replace('-', '_', $key);
+            if (!empty($normalized_fields[$normalized_key])) {
+                $result['subject'] = sanitize_text_field((string) $normalized_fields[$normalized_key]);
+                break;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -142,6 +272,8 @@ class FormSubmissionsProvider
      */
     public static function get_total_count(): int
     {
+        global $wpdb;
+
         $cache_key = self::CACHE_PREFIX . 'total_count';
         $cached = get_transient($cache_key);
 
@@ -149,18 +281,158 @@ class FormSubmissionsProvider
             return (int) $cached;
         }
 
-        $count = wp_count_posts('bricks_form_submission');
-        $total = 0;
+        $table_name = $wpdb->prefix . 'bricks_form_submissions';
 
-        if ($count) {
-            foreach ($count as $status => $num) {
-                $total += $num;
-            }
+        if (!self::table_exists()) {
+            return 0;
         }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
 
         set_transient($cache_key, $total, self::CACHE_DURATION);
 
         return $total;
+    }
+
+    /**
+     * Get submissions count grouped by form
+     *
+     * @return array<string, array{form_id: string, form_name: string, count: int}>
+     */
+    public static function get_forms_summary(): array
+    {
+        global $wpdb;
+
+        $cache_key = self::CACHE_PREFIX . 'forms_summary';
+        $cached = get_transient($cache_key);
+
+        if (false !== $cached && is_array($cached) && !empty($cached)) {
+            return $cached;
+        }
+
+        $table_name = $wpdb->prefix . 'bricks_form_submissions';
+
+        if (!self::table_exists()) {
+            return [];
+        }
+
+        // Get submissions grouped by form_id with count
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $results = $wpdb->get_results(
+            "SELECT form_id, COUNT(*) as count FROM {$table_name} GROUP BY form_id ORDER BY count DESC",
+            ARRAY_A
+        );
+
+        if (empty($results)) {
+            return [];
+        }
+
+        // Build forms array and look up names from Bricks elements
+        $forms = [];
+        $form_names = self::get_form_names_from_bricks();
+        
+        foreach ($results as $row) {
+            $form_id = $row['form_id'] ?? 'unknown';
+            $form_name = $form_names[$form_id] ?? '';
+            
+            $forms[$form_id] = [
+                'form_id' => $form_id,
+                'form_name' => !empty($form_name) ? $form_name : '',
+                'count' => (int) $row['count'],
+            ];
+        }
+
+        set_transient($cache_key, $forms, self::CACHE_DURATION);
+
+        return $forms;
+    }
+
+    /**
+     * Get form names from Bricks element data
+     * 
+     * Bricks stores form names in the element settings, not in the submissions table.
+     * This searches through Bricks page content to find form elements and their names.
+     *
+     * @return array<string, string> Map of form_id => form_name
+     */
+    private static function get_form_names_from_bricks(): array
+    {
+        global $wpdb;
+
+        $cache_key = self::CACHE_PREFIX . 'form_names';
+        $cached = get_transient($cache_key);
+
+        if (false !== $cached && is_array($cached)) {
+            return $cached;
+        }
+
+        $form_names = [];
+
+        // Search for Bricks content in postmeta (stored as _bricks_page_content_2)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $bricks_content = $wpdb->get_results(
+            "SELECT post_id, meta_value FROM {$wpdb->postmeta} 
+             WHERE meta_key LIKE '_bricks_page_content%' 
+             AND meta_value LIKE '%form%'",
+            ARRAY_A
+        );
+
+        if (!empty($bricks_content)) {
+            foreach ($bricks_content as $row) {
+                $elements = maybe_unserialize($row['meta_value']);
+                if (!is_array($elements)) {
+                    continue;
+                }
+                
+                // Recursively search for form elements
+                self::extract_form_names($elements, $form_names);
+            }
+        }
+
+        // Cache for longer since form element settings don't change often
+        set_transient($cache_key, $form_names, HOUR_IN_SECONDS);
+
+        return $form_names;
+    }
+
+    /**
+     * Recursively extract form names from Bricks elements
+     *
+     * @param array $elements Bricks elements array
+     * @param array $form_names Reference to form names array to populate
+     * @return void
+     */
+    private static function extract_form_names(array $elements, array &$form_names): void
+    {
+        foreach ($elements as $element) {
+            if (!is_array($element)) {
+                continue;
+            }
+
+            // Check if this is a form element
+            $element_name = $element['name'] ?? '';
+            if ($element_name === 'form') {
+                // In Bricks, the element 'id' IS the form_id used in submissions
+                $form_id = $element['id'] ?? '';
+                $settings = $element['settings'] ?? [];
+                
+                // Form name is stored in 'submissionFormName' setting
+                $form_name = $settings['submissionFormName'] ?? '';
+                
+                // Fallback to element label if no submissionFormName
+                if (empty($form_name)) {
+                    $form_name = $element['label'] ?? '';
+                }
+                
+                if (!empty($form_id) && !empty($form_name)) {
+                    $form_names[$form_id] = $form_name;
+                }
+            }
+
+            // Check nested elements (Bricks uses numeric array, not 'children' key)
+            // Elements are at the top level, nested via parent references
+        }
     }
 
     /**
@@ -170,19 +442,11 @@ class FormSubmissionsProvider
      */
     public static function clear_cache(): void
     {
-        global $wpdb;
-
-        // Delete all transients with our prefix
-        $result = $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-                $wpdb->esc_like('_transient_' . self::CACHE_PREFIX) . '%'
-            )
-        );
-
-        // Log error if query failed
-        if ($result === false && !empty($wpdb->last_error)) {
-            error_log('SFX Dashboard: Failed to clear form submissions cache - ' . $wpdb->last_error);
-        }
+        delete_transient(self::CACHE_PREFIX . 'forms_summary');
+        delete_transient(self::CACHE_PREFIX . 'total_count');
+        delete_transient(self::CACHE_PREFIX . 'form_names');
+        delete_transient(self::CACHE_PREFIX . 'recent_5');
+        delete_transient(self::CACHE_PREFIX . 'recent_10');
+        delete_transient(self::CACHE_PREFIX . 'recent_20');
     }
 }

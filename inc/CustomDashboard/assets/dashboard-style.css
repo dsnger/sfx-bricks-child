@@ -1149,89 +1149,186 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
 }
 
-.sfx-form-submissions-section .sfx-section-title {
-    margin: 0 0 20px 0;
-    font-size: 1.3em;
-    color: hsl(var(--card-foreground));
-}
-
-.sfx-submissions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.sfx-submission-card {
-    padding: 15px;
-    background: hsl(var(--muted));
-    border-radius: var(--sfx-radius, 8px);
-    border-left: 3px solid hsl(var(--primary));
-    transition: all 0.2s ease;
-}
-
-.sfx-submission-card:hover {
-    background: hsl(var(--accent));
-    box-shadow: 0 2px 4px hsl(var(--foreground) / 0.05);
-}
-
-.sfx-submission-header {
+.sfx-form-submissions-section .sfx-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid hsl(var(--border));
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.sfx-submission-form-name {
-    font-weight: 600;
+.sfx-form-submissions-section .sfx-section-title {
+    margin: 0;
+    font-size: 1.3em;
     color: hsl(var(--card-foreground));
-    font-size: 1em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.sfx-submission-date {
+.sfx-section-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.sfx-section-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: var(--sfx-radius, 6px);
     font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sfx-section-action:hover {
+    background: hsl(var(--ring));
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+}
+
+.sfx-section-action svg {
+    flex-shrink: 0;
+}
+
+/* Empty state */
+.sfx-submissions-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
     color: hsl(var(--muted-foreground));
 }
 
-.sfx-submission-content {
+.sfx-submissions-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 15px;
+    background: hsl(var(--muted));
+    border-radius: 50%;
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-submissions-empty-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.sfx-submissions-empty p {
+    margin: 0;
+    font-size: 0.95em;
+}
+
+/* Forms list - one row per form */
+.sfx-forms-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.sfx-submission-field {
+.sfx-form-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.9em;
+    gap: 12px;
+    padding: 12px 15px;
+    background: hsl(var(--muted));
+    border-radius: var(--sfx-radius, 8px);
+    border-left: 3px solid hsl(var(--primary));
+    text-decoration: none;
+    color: hsl(var(--card-foreground));
+    transition: all 0.2s ease;
 }
 
-.sfx-submission-icon {
+.sfx-form-row:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--card-foreground));
+    text-decoration: none;
+    transform: translateX(3px);
+}
+
+.sfx-form-icon {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: hsl(var(--primary) / 0.1);
+    border-radius: 6px;
     color: hsl(var(--primary));
 }
 
-.sfx-submission-icon svg {
+.sfx-form-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sfx-form-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sfx-form-name {
+    font-weight: 600;
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sfx-form-id {
+    font-size: 0.75em;
+    color: hsl(var(--muted-foreground));
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.sfx-form-count {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    background: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.sfx-form-arrow {
+    display: flex;
+    align-items: center;
+    color: hsl(var(--muted-foreground));
+    transition: transform 0.2s ease;
+}
+
+.sfx-form-row:hover .sfx-form-arrow {
+    color: hsl(var(--primary));
+    transform: translateX(3px);
+}
+
+.sfx-form-arrow svg {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
-}
-
-.sfx-submission-value {
-    color: hsl(var(--muted-foreground));
-}
-
-.sfx-submission-link {
-    color: hsl(var(--primary));
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.sfx-submission-link:hover {
-    color: hsl(var(--ring));
-    text-decoration: underline;
 }
 
 /* WordPress Dashboard Widgets Section */
@@ -1407,6 +1504,21 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     .sfx-stat-value {
         font-size: 1.8em;
     }
+
+    /* Form submissions responsive */
+    .sfx-form-submissions-section {
+        padding: 20px;
+    }
+
+    .sfx-form-submissions-section .sfx-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sfx-section-action {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1420,6 +1532,31 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 
     .sfx-dashboard-widgets-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Form rows mobile */
+    .sfx-form-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .sfx-form-info {
+        flex-basis: calc(100% - 50px);
+        order: 1;
+    }
+
+    .sfx-form-icon {
+        order: 0;
+    }
+
+    .sfx-form-count {
+        order: 3;
+        margin-left: 44px;
+    }
+
+    .sfx-form-arrow {
+        order: 2;
+        margin-left: auto;
     }
 }
 

@@ -50,4 +50,4 @@ Thumbs.db
 !wp-content/plugins/**
 
 # Ignore .env.local file (for development environments)
-.sh
+.sh*.zip

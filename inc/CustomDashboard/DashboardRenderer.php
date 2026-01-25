@@ -915,48 +915,73 @@ class DashboardRenderer
      */
     private function render_form_submissions(): void
     {
-        $limit = absint($this->get_option('form_submissions_limit', 5));
-        $limit = min(max($limit, 1), 20); // Ensure between 1 and 20
-
-        $submissions = FormSubmissionsProvider::get_recent_submissions($limit);
-
-        if (empty($submissions)) {
+        // Check if Bricks form submissions table exists
+        if (!FormSubmissionsProvider::table_exists()) {
             return;
         }
 
+        $forms_summary = FormSubmissionsProvider::get_forms_summary();
+        $total_count = FormSubmissionsProvider::get_total_count();
+        $all_submissions_url = FormSubmissionsProvider::get_admin_url();
+
         ?>
         <section class="sfx-form-submissions-section">
-            <h2 class="sfx-section-title"><?php esc_html_e('Recent Form Submissions', 'sfxtheme'); ?></h2>
-            <div class="sfx-submissions-list">
-                <?php foreach ($submissions as $submission): ?>
-                    <div class="sfx-submission-card">
-                        <div class="sfx-submission-header">
-                            <span class="sfx-submission-form-name"><?php echo esc_html($submission['form_name']); ?></span>
-                            <span class="sfx-submission-date"><?php echo esc_html(human_time_diff(strtotime($submission['date']), current_time('timestamp')) . ' ago'); ?></span>
-                        </div>
-                        <div class="sfx-submission-content">
-                            <?php if (!empty($submission['name'])): ?>
-                                <div class="sfx-submission-field">
-                                    <span class="sfx-submission-icon">
-                                        <?php echo $this->render_icon('<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>'); ?>
-                                    </span>
-                                    <span class="sfx-submission-value"><?php echo esc_html($submission['name']); ?></span>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (!empty($submission['email'])): ?>
-                                <div class="sfx-submission-field">
-                                    <span class="sfx-submission-icon">
-                                        <?php echo $this->render_icon('<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>'); ?>
-                                    </span>
-                                    <a href="mailto:<?php echo esc_attr($submission['email']); ?>" class="sfx-submission-link">
-                                        <?php echo esc_html($submission['email']); ?>
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+            <div class="sfx-section-header">
+                <h2 class="sfx-section-title">
+                    <?php esc_html_e('Form Submissions', 'sfxtheme'); ?>
+                    <?php if ($total_count > 0): ?>
+                        <span class="sfx-section-badge"><?php echo esc_html((string) $total_count); ?></span>
+                    <?php endif; ?>
+                </h2>
+                <a href="<?php echo esc_url($all_submissions_url); ?>" class="sfx-section-action">
+                    <?php esc_html_e('View All', 'sfxtheme'); ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </a>
             </div>
+
+            <?php if (empty($forms_summary)): ?>
+                <div class="sfx-submissions-empty">
+                    <span class="sfx-submissions-empty-icon">
+                        <?php echo $this->render_icon('<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>'); ?>
+                    </span>
+                    <p><?php esc_html_e('No form submissions yet.', 'sfxtheme'); ?></p>
+                </div>
+            <?php else: ?>
+                <div class="sfx-forms-list">
+                    <?php foreach ($forms_summary as $form): 
+                        $form_url = FormSubmissionsProvider::get_admin_url($form['form_id']);
+                        $form_id = $form['form_id'];
+                        $form_name = $form['form_name'];
+                        $has_different_name = !empty($form_name) && $form_name !== $form_id;
+                    ?>
+                        <a href="<?php echo esc_url($form_url); ?>" class="sfx-form-row" title="<?php esc_attr_e('View submissions', 'sfxtheme'); ?>">
+                            <span class="sfx-form-icon">
+                                <?php echo $this->render_icon('<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>'); ?>
+                            </span>
+                            <span class="sfx-form-info">
+                                <?php if ($has_different_name): ?>
+                                    <span class="sfx-form-name"><?php echo esc_html($form_name); ?></span>
+                                    <span class="sfx-form-id"><?php echo esc_html($form_id); ?></span>
+                                <?php else: ?>
+                                    <span class="sfx-form-name"><?php echo esc_html($form_id); ?></span>
+                                <?php endif; ?>
+                            </span>
+                            <span class="sfx-form-count">
+                                <?php 
+                                printf(
+                                    /* translators: %d: number of submissions */
+                                    esc_html(_n('%d entry', '%d entries', $form['count'], 'sfxtheme')),
+                                    $form['count']
+                                );
+                                ?>
+                            </span>
+                            <span class="sfx-form-arrow">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                            </span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </section>
         <?php
     }
