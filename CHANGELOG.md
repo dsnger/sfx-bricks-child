@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.3] - 2026-03-11
+
+### Fixed
+- Form error text color variable reference for improved styling consistency
+
 ## [0.10.2] - 2026-01-25
 
 ### Added
