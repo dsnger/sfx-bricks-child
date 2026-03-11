@@ -28,6 +28,9 @@ class Controller
      */
     public function __construct()
     {
+        // Initialize default options if they don't exist
+        self::maybe_set_default_options();
+        
         // Register components
         AdminPage::register();
         AssetManager::register();
