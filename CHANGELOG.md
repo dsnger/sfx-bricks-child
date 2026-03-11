@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.10.3] - 2026-03-11
+## [0.10.4] - 2026-03-11
+
+Fix comments menu and editor role access - Comments menu now correctly hidden when disable_comments is enabled; init, admin_menu, and admin_init hooks moved to constructor to fire at the right time. Editors now see the Global Theme Settings menu and can access Contact Infos. Feature controllers load for all admin users regardless of role.
+
 
 ### Fixed
 - Form error text color variable reference for improved styling consistency
