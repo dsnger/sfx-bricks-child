@@ -6,6 +6,7 @@ class SFXBricksChildAdmin
 {
 
   public static $menu_slug = 'sfx-theme-settings';
+  private const EDITOR_ACCESS_CAP = 'edit_others_posts';
 
   public function __construct()
   {
@@ -14,15 +15,14 @@ class SFXBricksChildAdmin
 
   public static function register_admin_menu()
   {
-    // Only register menu if user has theme settings access
-    if (!AccessControl::can_access_theme_settings()) {
+    if (!AccessControl::can_access_theme_settings() && !current_user_can(self::EDITOR_ACCESS_CAP)) {
       return;
     }
 
     add_menu_page(
       __('Global Theme Settings', 'sfxtheme'),
       __('Global Theme Settings', 'sfxtheme'),
-      'manage_options',
+      self::EDITOR_ACCESS_CAP,
       self::$menu_slug,
       [self::class, 'render_theme_settings_page'],
       'dashicons-admin-generic',
@@ -30,38 +30,50 @@ class SFXBricksChildAdmin
     );
   }
 
+  /**
+   * Slugs accessible to editor-level users without full theme-settings access.
+   */
+  private static array $editor_visible_slugs = [
+      'sfx-contact-infos',
+  ];
+
   public static function render_theme_settings_page()
   {
-    // Block direct URL access for unauthorized users
-    AccessControl::die_if_unauthorized_theme();
+    if (!AccessControl::can_access_theme_settings() && !current_user_can(self::EDITOR_ACCESS_CAP)) {
+      wp_die(
+        esc_html__('You do not have sufficient permissions to access this page.', 'sfxtheme'),
+        esc_html__('Access Denied', 'sfxtheme'),
+        ['response' => 403, 'back_link' => true]
+      );
+    }
+
+    $has_full_access = AccessControl::can_access_theme_settings();
 
     echo '<div class="wrap">';
     echo '<h1>' . esc_html__('Global Theme Settings', 'sfxtheme') . '</h1>';
-
-    // General introduction
     echo '<p>' . esc_html__('Welcome to the SFX Theme Options! Here you can configure some basic global settings and features for your website. Use the quick links below to jump directly to each section. Each area is designed to help you optimize, brand, and manage your site easily.', 'sfxtheme') . '</p>';
 
-    // Dynamically generate feature cards from the feature registry
     $features = \SFX\SFXBricksChildTheme::get_registered_features();
     echo '<div style="display: flex; flex-wrap: wrap; gap: 24px; margin-top: 32px;">';
     foreach ($features as $feature) {
       if (empty($feature['menu_slug']) || empty($feature['page_title'])) {
-        continue; // Only show features with a menu_slug and page_title
+        continue;
       }
-      
-      // Skip features that are explicitly excluded from theme settings page
+
       if (isset($feature['show_in_theme_settings']) && $feature['show_in_theme_settings'] === false) {
         continue;
       }
-      
-      // Skip Custom Dashboard if user doesn't have dashboard settings access
+
       if ($feature['menu_slug'] === 'sfx-custom-dashboard' && !AccessControl::can_access_dashboard_settings()) {
         continue;
       }
-      
-      // Use custom URL if provided, otherwise construct from menu_slug
+
+      if (!$has_full_access && !in_array($feature['menu_slug'], self::$editor_visible_slugs, true)) {
+        continue;
+      }
+
       $url = !empty($feature['url']) ? $feature['url'] : admin_url('admin.php?page=' . $feature['menu_slug']);
-      
+
       echo '<div class="sfx-feature-card" style="flex: 1 1 33%; flex-wrap: wrap; min-width: 200px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">';
       echo '<h2 style="margin-top:0; font-size: 1.2em;">' . esc_html($feature['page_title']) . '</h2>';
       if (!empty($feature['description'])) {

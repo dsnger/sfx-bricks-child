@@ -828,7 +828,7 @@ class PostType
             return;
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('edit_others_posts')) {
             return;
         }
 

@@ -236,6 +236,15 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
     height: 16px;
 }
 
+.sfx-health-action-muted {
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+}
+
+.sfx-health-action-muted:hover {
+    color: hsl(var(--foreground));
+}
+
 .sfx-health-recommended .sfx-health-action {
     background: hsl(var(--warning));
     color: hsl(var(--warning-foreground));
@@ -404,6 +413,28 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 
 .sfx-updates-action svg {
     flex-shrink: 0;
+}
+
+.sfx-updates-note {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--background));
+    font-size: 12px;
+    line-height: 1.2;
+    color: hsl(var(--muted-foreground));
+    white-space: nowrap;
+}
+
+.sfx-updates-action-muted {
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+}
+
+.sfx-updates-action-muted:hover {
+    color: hsl(var(--foreground));
 }
 
 @media (max-width: 768px) {

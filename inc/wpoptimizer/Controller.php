@@ -53,15 +53,27 @@ class Controller
 		add_action('init', [$this, 'handle_context_sensitive_options'], 1);
         add_action('wp_loaded', [$this, 'handle_options']);
 
+        // Master kill switch for optimizer behavior. handle_options() enforces this
+        // later on wp_loaded, but early constructor-time hooks must honor it here too.
+        $optimizer_disabled = $this->is_option_enabled('disable_wp_optimizer');
+
 		// Define theme/plugin editor restriction as early as possible if enabled
-		if ($this->is_option_enabled('disable_theme_editor') && !defined('DISALLOW_FILE_EDIT')) {
+		if (!$optimizer_disabled && $this->is_option_enabled('disable_theme_editor') && !defined('DISALLOW_FILE_EDIT')) {
 			define('DISALLOW_FILE_EDIT', true);
 		}
 
-        // Immediate check for comments disabling
-        if ($this->is_option_enabled('disable_comments')) {
+        // Hooks that must register before init/admin_menu/admin_init fire.
+        // disable_comments() is called later via handle_options (wp_loaded),
+        // but by then those hooks have already passed — so register them here.
+        if (!$optimizer_disabled && $this->is_option_enabled('disable_comments')) {
+            add_action('init', function () {
+                foreach (get_post_types() as $pt) {
+                    remove_post_type_support($pt, 'comments');
+                    remove_post_type_support($pt, 'trackbacks');
+                }
+            });
+
 			add_action('admin_menu', function () {
-                // Defensive check: ensure $menu and $submenu are arrays before calling removal functions
                 global $menu, $submenu;
                 if (is_array($menu)) {
                     remove_menu_page('edit-comments.php');
@@ -69,7 +81,23 @@ class Controller
                 if (is_array($submenu) && isset($submenu['options-general.php'])) {
                     remove_submenu_page('options-general.php', 'options-discussion.php');
                 }
-			}, 999); // Run late to ensure menus are registered
+			}, 999);
+
+            add_action('admin_init', function () {
+                $roles = ['administrator', 'editor', 'author', 'contributor', 'subscriber'];
+                foreach ($roles as $role_name) {
+                    $role = get_role($role_name);
+                    if ($role) {
+                        $role->remove_cap('moderate_comments');
+                        $role->remove_cap('edit_comment');
+                        $role->remove_cap('edit_comments');
+                        $role->remove_cap('delete_comment');
+                        $role->remove_cap('delete_comments');
+                        $role->remove_cap('approve_comment');
+                        $role->remove_cap('approve_comments');
+                    }
+                }
+            });
         }
 
         // Clear caches when settings are updated
@@ -494,40 +522,23 @@ class Controller
         }, 100);
     }
 
+    /**
+     * Disable comments site-wide.
+     *
+     * Early hooks (init, admin_menu, admin_init) are registered in the
+     * constructor so they fire in time. This method handles the remaining
+     * filters/actions that still work when registered on wp_loaded.
+     */
     private function disable_comments()
     {
-        // Disable comments at the database level
         update_option('default_comment_status', 'closed');
         update_option('default_ping_status', 'closed');
 
-        // Disable comments on all post types
-        add_action('init', function () {
-            $post_types = get_post_types();
-            foreach ($post_types as $post_type) {
-                remove_post_type_support($post_type, 'comments');
-                remove_post_type_support($post_type, 'trackbacks');
-            }
-        });
-
-        // Disable all comment functionality
         add_filter('comments_open', '__return_false', 20, 2);
         add_filter('pings_open', '__return_false', 20, 2);
         add_filter('comments_template', '__return_empty_string');
         add_filter('get_comments_number', '__return_zero');
 
-		// Remove Comments menu
-		add_action('admin_menu', function () {
-            // Defensive check: ensure $menu and $submenu are arrays before calling removal functions
-            global $menu, $submenu;
-            if (is_array($menu)) {
-                remove_menu_page('edit-comments.php');
-            }
-            if (is_array($submenu) && isset($submenu['options-general.php'])) {
-                remove_submenu_page('options-general.php', 'options-discussion.php');
-            }
-		}, 999); // Run late to ensure menus are registered
-
-        // Remove from admin bar
         add_action('wp_before_admin_bar_render', function () {
             global $wp_admin_bar;
             if ($wp_admin_bar && $wp_admin_bar->get_node('comments')) {
@@ -535,34 +546,14 @@ class Controller
             }
         });
 
-        // Remove all comment capabilities from all user roles
-        add_action('admin_init', function () {
-            $roles = ['administrator', 'editor', 'author', 'contributor', 'subscriber'];
-            foreach ($roles as $role_name) {
-                $role = get_role($role_name);
-                if ($role) {
-                    $role->remove_cap('moderate_comments');
-                    $role->remove_cap('edit_comment');
-                    $role->remove_cap('edit_comments');
-                    $role->remove_cap('delete_comment');
-                    $role->remove_cap('delete_comments');
-                    $role->remove_cap('approve_comment');
-                    $role->remove_cap('approve_comments');
-                }
-            }
-        });
-
-        // Disable comment feeds
         add_action('do_feed_rss2_comments', '__return_false', 1);
         add_action('do_feed_atom_comments', '__return_false', 1);
         add_filter('feed_links_show_comments_feed', '__return_false');
 
-        // Remove comment-reply.js script
         add_action('wp_print_scripts', function () {
             wp_dequeue_script('comment-reply');
         }, 100);
 
-        // Remove inline CSS from Recent Comments widget
         add_action('widgets_init', function () {
             global $wp_widget_factory;
             if (isset($wp_widget_factory->widgets['WP_Widget_Recent_Comments'])) {
