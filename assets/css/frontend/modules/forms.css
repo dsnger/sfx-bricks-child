@@ -307,7 +307,7 @@
     margin-block-start: var(--form-error-margin-block-start, var(--form-padding-block));
     padding: var(--form-error-padding-block, var(--form-padding-block)) var(--form-error-padding-inline, var(--form-padding-inline));
     background-color: var(--form-error-bg, var(--error-bg, var(--bricks-bg-danger)));
-    color: var(--form-error-color, var(--error-bg-fg, var(--bricks-text-danger)));
+    color: var(--form-error-color, var(--error-fg, var(--bricks-text-danger)));
     border-radius: var(--form-error-border-radius, var(--form-border-radius));
     font-size: var(--form-error-font-size, var(--text-2xs));
 
