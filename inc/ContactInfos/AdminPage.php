@@ -21,7 +21,7 @@ class AdminPage
             \SFX\SFXBricksChildAdmin::$menu_slug,
             __(self::$page_title, 'sfxtheme'),
             __(self::$page_title, 'sfxtheme'),
-            'edit_posts',
+            'edit_others_posts',
             'edit.php?post_type=' . PostType::$post_type
         );
     }

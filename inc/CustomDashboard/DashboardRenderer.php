@@ -204,6 +204,8 @@ class DashboardRenderer
     private function render_site_health_section(): void
     {
         $health = SystemInfoProvider::get_site_health_status();
+        $can_view_site_health = current_user_can('view_site_health_checks');
+        $admin_email = (string) get_option('admin_email');
         
         $status = $health['status']; // 'good', 'recommended', 'critical'
         $icon = match($status) {
@@ -228,11 +230,23 @@ class DashboardRenderer
                     </span>
                 <?php endif; ?>
             </div>
-            
-            <a href="<?php echo esc_url(admin_url('site-health.php')); ?>" class="sfx-health-action">
-                <?php esc_html_e('View Details', 'sfxtheme'); ?>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-            </a>
+
+            <?php if ($can_view_site_health): ?>
+                <a href="<?php echo esc_url(admin_url('site-health.php')); ?>" class="sfx-health-action">
+                    <?php esc_html_e('View Details', 'sfxtheme'); ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </a>
+            <?php else: ?>
+                <?php if (!empty($admin_email) && is_email($admin_email)): ?>
+                    <a
+                        href="<?php echo esc_url('mailto:' . antispambot($admin_email) . '?subject=' . rawurlencode(__('Site health assistance needed', 'sfxtheme'))); ?>"
+                        class="sfx-health-action sfx-health-action-muted"
+                    >
+                        <?php esc_html_e('Contact Admin', 'sfxtheme'); ?>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                    </a>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
         <?php
     }
@@ -246,6 +260,11 @@ class DashboardRenderer
     {
         // Get update data
         $update_data = wp_get_update_data();
+        $admin_email = (string) get_option('admin_email');
+        $can_update_core = current_user_can('update_core');
+        $can_update_plugins = current_user_can('update_plugins');
+        $can_update_themes = current_user_can('update_themes');
+        $can_manage_any_updates = $can_update_core || $can_update_plugins || $can_update_themes;
         
         $plugin_updates = $update_data['counts']['plugins'] ?? 0;
         $theme_updates = $update_data['counts']['themes'] ?? 0;
@@ -276,32 +295,48 @@ class DashboardRenderer
             
             <?php if ($total_updates > 0): ?>
             <div class="sfx-updates-details">
-                <?php if ($wp_updates > 0): ?>
+                <?php if ($wp_updates > 0 && $can_update_core): ?>
                     <a href="<?php echo esc_url(admin_url('update-core.php')); ?>" class="sfx-update-item sfx-update-critical">
                         <span class="sfx-update-count"><?php echo esc_html($wp_updates); ?></span>
                         <span class="sfx-update-label"><?php esc_html_e('WordPress', 'sfxtheme'); ?></span>
                     </a>
                 <?php endif; ?>
                 
-                <?php if ($plugin_updates > 0): ?>
+                <?php if ($plugin_updates > 0 && $can_update_plugins): ?>
                     <a href="<?php echo esc_url(admin_url('plugins.php?plugin_status=upgrade')); ?>" class="sfx-update-item">
                         <span class="sfx-update-count"><?php echo esc_html($plugin_updates); ?></span>
                         <span class="sfx-update-label"><?php echo esc_html(_n('Plugin', 'Plugins', $plugin_updates, 'sfxtheme')); ?></span>
                     </a>
                 <?php endif; ?>
                 
-                <?php if ($theme_updates > 0): ?>
+                <?php if ($theme_updates > 0 && $can_update_themes): ?>
                     <a href="<?php echo esc_url(admin_url('themes.php')); ?>" class="sfx-update-item">
                         <span class="sfx-update-count"><?php echo esc_html($theme_updates); ?></span>
                         <span class="sfx-update-label"><?php echo esc_html(_n('Theme', 'Themes', $theme_updates, 'sfxtheme')); ?></span>
                     </a>
                 <?php endif; ?>
+
+                <?php if (!$can_manage_any_updates): ?>
+                    <span class="sfx-updates-note">
+                        <?php esc_html_e('No update permissions. Contact an admin.', 'sfxtheme'); ?>
+                    </span>
+                <?php endif; ?>
             </div>
-            
-            <a href="<?php echo esc_url(admin_url('update-core.php')); ?>" class="sfx-updates-action">
-                <?php esc_html_e('View Updates', 'sfxtheme'); ?>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-            </a>
+
+            <?php if ($can_manage_any_updates): ?>
+                <a href="<?php echo esc_url(admin_url('update-core.php')); ?>" class="sfx-updates-action">
+                    <?php esc_html_e('View Updates', 'sfxtheme'); ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </a>
+            <?php elseif (!empty($admin_email) && is_email($admin_email)): ?>
+                <a
+                    href="<?php echo esc_url('mailto:' . antispambot($admin_email) . '?subject=' . rawurlencode(__('Plugin and theme update assistance needed', 'sfxtheme'))); ?>"
+                    class="sfx-updates-action sfx-updates-action-muted"
+                >
+                    <?php esc_html_e('Contact Admin', 'sfxtheme'); ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                </a>
+            <?php endif; ?>
             <?php endif; ?>
         </div>
         <?php
@@ -1018,6 +1053,11 @@ class DashboardRenderer
             return;
         }
 
+        $visible_widgets = array_values(array_filter($enabled_widgets, [$this, 'can_render_dashboard_widget']));
+        if (empty($visible_widgets)) {
+            return;
+        }
+
         // Load dashboard functions if not already loaded
         if (!function_exists('wp_dashboard_right_now')) {
             require_once ABSPATH . 'wp-admin/includes/dashboard.php';
@@ -1027,7 +1067,7 @@ class DashboardRenderer
         <section class="sfx-wp-dashboard-widgets-section">
             <div class="sfx-dashboard-widgets-grid">
                 <?php
-                foreach ($enabled_widgets as $widget_id) {
+                foreach ($visible_widgets as $widget_id) {
                     $this->render_single_widget($widget_id);
                 }
                 ?>
@@ -1119,6 +1159,35 @@ class DashboardRenderer
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Check if current user can view a specific core dashboard widget.
+     *
+     * @param string $widget_id
+     * @return bool
+     */
+    private function can_render_dashboard_widget(string $widget_id): bool
+    {
+        $required_capabilities = [
+            // Core widget capability gates.
+            'dashboard_site_health' => 'view_site_health_checks',
+            'dashboard_quick_press' => 'edit_posts',
+            'dashboard_activity' => 'edit_posts',
+            'dashboard_right_now' => 'read',
+            'dashboard_primary' => 'read',
+        ];
+
+        $required_cap = $required_capabilities[$widget_id] ?? 'read';
+        $can_render = current_user_can($required_cap);
+
+        /**
+         * Filter widget visibility for current user role/capability.
+         *
+         * @param bool   $can_render Whether widget should be rendered.
+         * @param string $widget_id  Dashboard widget ID.
+         */
+        return (bool) apply_filters('sfx/custom_dashboard/can_render_widget', $can_render, $widget_id);
     }
 
     /**

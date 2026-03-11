@@ -53,15 +53,19 @@ class Controller
 		add_action('init', [$this, 'handle_context_sensitive_options'], 1);
         add_action('wp_loaded', [$this, 'handle_options']);
 
+        // Master kill switch for optimizer behavior. handle_options() enforces this
+        // later on wp_loaded, but early constructor-time hooks must honor it here too.
+        $optimizer_disabled = $this->is_option_enabled('disable_wp_optimizer');
+
 		// Define theme/plugin editor restriction as early as possible if enabled
-		if ($this->is_option_enabled('disable_theme_editor') && !defined('DISALLOW_FILE_EDIT')) {
+		if (!$optimizer_disabled && $this->is_option_enabled('disable_theme_editor') && !defined('DISALLOW_FILE_EDIT')) {
 			define('DISALLOW_FILE_EDIT', true);
 		}
 
         // Hooks that must register before init/admin_menu/admin_init fire.
         // disable_comments() is called later via handle_options (wp_loaded),
         // but by then those hooks have already passed — so register them here.
-        if ($this->is_option_enabled('disable_comments')) {
+        if (!$optimizer_disabled && $this->is_option_enabled('disable_comments')) {
             add_action('init', function () {
                 foreach (get_post_types() as $pt) {
                     remove_post_type_support($pt, 'comments');
