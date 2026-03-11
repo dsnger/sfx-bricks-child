@@ -39,11 +39,6 @@ class SFXBricksChildTheme
    */
   public static function get_registered_features(): array
   {
-    // If in admin, check theme settings access
-    if (is_admin() && !AccessControl::can_access_theme_settings()) {
-      return []; // Return empty array for unauthorized users
-    }
-    
     return self::$feature_registry;
   }
 

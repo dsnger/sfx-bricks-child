@@ -17,20 +17,14 @@ class AdminPage
 
     public static function add_submenu_pages(): void
     {
-        // Only register menu if user has theme settings access
-        if (!\SFX\AccessControl::can_access_theme_settings()) {
-            return;
-        }
-
-        // Add main Contact Information page
-    add_submenu_page(
-      \SFX\SFXBricksChildAdmin::$menu_slug,
+        add_submenu_page(
+            \SFX\SFXBricksChildAdmin::$menu_slug,
             __(self::$page_title, 'sfxtheme'),
             __(self::$page_title, 'sfxtheme'),
-      'manage_options',
+            'edit_posts',
             'edit.php?post_type=' . PostType::$post_type
-    );
-  }
+        );
+    }
 
     public static function render_page(): void
   {
