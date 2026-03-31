@@ -74,13 +74,23 @@
     opacity: 0;
   }
 
-  & .bricks-button {
+  & .bricks-button,
+  & button[type="submit"],
+  & input[type="submit"] {
+    box-sizing: border-box;
+    min-height: var(--form-input-height, 42px);
     padding-top: var(--btn-padding-block);
     padding-right: var(--btn-padding-inline);
     padding-bottom: var(--btn-padding-block);
     padding-left: var(--btn-padding-inline);
     border: var(--btn-border-width) solid var(--btn-border-color);
     border-radius: var(--btn-radius);
+  }
+
+  & button[type="submit"]:not(.bricks-button) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* File upload styles */
