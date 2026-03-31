@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Frontend Forms module: submit controls (.bricks-button, button[type=submit], input[type=submit]) share the same min-height as fields via --form-input-height (42px fallback), with border-box sizing and inline-flex alignment for plain submit buttons.
 
 
+## [0.10.5] - 2026-03-14
+
 Update form input background color for consistency
 
 
