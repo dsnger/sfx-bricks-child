@@ -21,7 +21,7 @@ alwaysApply: true
 
 ## What `release.sh` does
 - Updates `style.css` version (unless re-releasing same RC).
-- Prepends a new entry to `CHANGELOG.md`.
+- Prepends a new entry to `CHANGELOG.md` and re-appends all older version sections (do not change the 10-line changelog intro without updating `release.sh` `tail` offset in `update_changelog`).
 - Commits the version + changelog changes.
 - Creates a git tag `vX.Y.Z`.
 - Builds the theme zip via `build-theme.sh`.

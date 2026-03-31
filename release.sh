@@ -131,8 +131,9 @@ ${release_notes}
 
 EOF
 
-    # Add the rest of the existing changelog
-    tail -n +12 "${CHANGELOG_FILE}" >> "${temp_file}"
+    # Append prior releases: Keep a Changelog header is exactly 10 lines; line 11 is the
+    # first ## [version] block. Using +12 dropped that heading and corrupted history.
+    tail -n +11 "${CHANGELOG_FILE}" >> "${temp_file}"
     
     # Replace the original changelog
     mv "${temp_file}" "${CHANGELOG_FILE}"
