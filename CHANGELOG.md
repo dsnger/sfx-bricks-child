@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.10.5] - 2026-03-14
+## [0.10.6] - 2026-03-31
+
+### Changed
+
+- Frontend Buttons module: refactored solid and outline styles to use shared custom properties (--btn-color, --btn-color-fg, --btn-mix) for hover and active color-mix behavior; extended selectors so btn-- utility classes match Bricks background variants; consolidated duplicate per-variant rules.
+- Frontend Forms module: submit controls (.bricks-button, button[type=submit], input[type=submit]) share the same min-height as fields via --form-input-height (42px fallback), with border-box sizing and inline-flex alignment for plain submit buttons.
+
 
 Update form input background color for consistency
 
