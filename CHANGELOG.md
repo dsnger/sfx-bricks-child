@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.8] - 2026-04-09
+
+### Changed
+
+- Frontend Content Grid module: Removed .content--split-50-breakout.no-breakout rules (full-bleed column, gutter padding, 768px two-column, reverse variant, and large-screen adjustments) to simplify layout handling and reduce maintenance.
+
 ## [0.10.7] - 2026-04-09
 
 ### Changed
