@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.7] - 2026-04-09
+
+### Changed
+
+- Frontend Buttons module: Commented out default display and justify-content on .brxe-button / button.bricks-button so upstream layout can apply; exclude .bricks-background-text from the solid background hover and active color-mix rules.
+- Frontend Content Grid module: Styles for .content--split-50-breakout.no-breakout (full-width grid column, --cg-gutter inline padding, two-column template from 768px) and .content--split-50-breakout.no-breakout.reverse.
+
+### Fixed
+
+- release.sh: Changelog prepend keeps the prior version section heading (correct tail offset when merging Keep a Changelog).
+
 ## [0.10.6] - 2026-03-31
 
 ### Changed
