@@ -119,7 +119,6 @@
   }
 }
 
-
 .content--split-50-breakout.no-breakout {
   grid-column: full-start / full-end;
   padding-inline: var(--cg-gutter);
@@ -129,6 +128,12 @@
   .content--split-50-breakout.no-breakout {
       grid-column: full-start / full-end;
       padding-inline: var(--cg-gutter);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .content--split-50-breakout.no-breakout {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
