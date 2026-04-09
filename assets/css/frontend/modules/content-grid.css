@@ -118,3 +118,21 @@
     grid-column: feature-max-start / feature-max-end;
   }
 }
+
+
+.content--split-50-breakout.no-breakout {
+  grid-column: full-start / full-end;
+  padding-inline: var(--cg-gutter);
+}
+
+@media (min-width: 768px) {
+  .content--split-50-breakout.no-breakout {
+      grid-column: full-start / full-end;
+      padding-inline: var(--cg-gutter);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.content--split-50-breakout.no-breakout.reverse {
+  grid-column: full-start / full-end;
+}

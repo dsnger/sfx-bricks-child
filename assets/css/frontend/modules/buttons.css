@@ -4,9 +4,9 @@
 .brxe-button.bricks-button,
 .brxe-button.btn,
 button.bricks-button {
-  display: inline-flex;
+/*   display: inline-flex; */
   align-items: center;
-  justify-content: center;
+/*   justify-content: center; */
   gap: var(--btn-gap, var(--space-4xs));
   padding-block: var(--btn-padding-block, var(--space-3xs));
   padding-inline: var(--btn-padding-inline, var(--space-s));
@@ -37,7 +37,7 @@ button.bricks-button {
     pointer-events: none;
   }
 
-  &[class*="bricks-background-"],
+  &[class*="bricks-background-"]:not(.bricks-background-text),
   &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
     --_mix: var(--btn-mix, black);
     background-color: var(--btn-color);
