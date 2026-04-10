@@ -1,11 +1,12 @@
 /* ========================================
    BUTTON STYLES (nested)
    ======================================== */
-
-:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
-  display: inline-flex;
+.brxe-button.bricks-button,
+.brxe-button.btn,
+button.bricks-button {
+/*   display: inline-flex; */
   align-items: center;
-  justify-content: center;
+/*   justify-content: center; */
   gap: var(--btn-gap, var(--space-4xs));
   padding-block: var(--btn-padding-block, var(--space-3xs));
   padding-inline: var(--btn-padding-inline, var(--space-s));
@@ -36,211 +37,147 @@
     pointer-events: none;
   }
 
-  /* Solid background hover states */
-  &[class*="bricks-background-"] {
+  &[class*="bricks-background-"]:not(.bricks-background-text),
+  &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
+    --_mix: var(--btn-mix, black);
+    background-color: var(--btn-color);
+    color: var(--btn-color-fg);
+    border-color: var(--btn-color);
+
     &:hover {
       transform: translateY(-1px);
       box-shadow: var(--btn-shadow--hover, var(--shadow-m));
+      background-color: color-mix(in oklab, var(--btn-color) 85%, var(--_mix));
+      border-color: color-mix(in oklab, var(--btn-color) 85%, var(--_mix));
     }
 
     &:active {
       transform: translateY(0);
+      background-color: color-mix(in oklab, var(--btn-color) 75%, var(--_mix));
+      border-color: color-mix(in oklab, var(--btn-color) 75%, var(--_mix));
     }
   }
 
   &.bricks-background-primary {
-    color: var(--primary-fg);
-    border-color: var(--primary);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--primary) 85%, black);
-      border-color: color-mix(in oklab, var(--primary) 85%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--primary) 75%, black);
-      border-color: color-mix(in oklab, var(--primary) 75%, black);
-    }
+    --btn-color: var(--primary);
+    --btn-color-fg: var(--primary-fg);
   }
 
   &.bricks-background-secondary {
-    color: var(--secondary-fg);
-    border-color: var(--secondary);
+    --btn-color: var(--secondary);
+    --btn-color-fg: var(--secondary-fg);
+    --btn-mix: white;
+  }
 
-    &:hover {
-      background-color: color-mix(in oklab, var(--secondary) 85%, black);
-      border-color: color-mix(in oklab, var(--secondary) 85%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--secondary) 75%, black);
-      border-color: color-mix(in oklab, var(--secondary) 75%, black);
-    }
+  &.bricks-background-accent {
+    --btn-color: var(--accent);
+    --btn-color-fg: var(--accent-fg);
   }
 
   &.bricks-background-light {
-    color: var(--dark);
-    border-color: var(--light);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--light) 85%, black);
-      border-color: color-mix(in oklab, var(--light) 85%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--light) 75%, black);
-      border-color: color-mix(in oklab, var(--light) 75%, black);
-    }
+    --btn-color: var(--light);
+    --btn-color-fg: var(--dark);
   }
 
   &.bricks-background-dark {
-    color: var(--light);
-    border-color: var(--dark);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--dark) 85%, white);
-      border-color: color-mix(in oklab, var(--dark) 85%, white);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--dark) 75%, white);
-      border-color: color-mix(in oklab, var(--dark) 75%, white);
-    }
+    --btn-color: var(--dark);
+    --btn-color-fg: var(--light);
+    --btn-mix: white;
   }
 
   &.bricks-background-muted {
-    color: var(--muted-fg);
-    border-color: var(--muted);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--muted) 85%, black);
-      border-color: color-mix(in oklab, var(--muted) 85%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--muted) 75%, black);
-      border-color: color-mix(in oklab, var(--muted) 75%, black);
-    }
+    --btn-color: var(--muted);
+    --btn-color-fg: var(--muted-fg);
   }
 
   &.bricks-background-info {
-    color: var(--info-fg);
-    border-color: var(--info);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--info) 90%, black);
-      border-color: color-mix(in oklab, var(--info) 90%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--info) 85%, black);
-      border-color: color-mix(in oklab, var(--info) 85%, black);
-    }
+    --btn-color: var(--info);
+    --btn-color-fg: var(--info-fg);
   }
 
   &.bricks-background-success {
-    color: var(--success-fg);
-    border-color: var(--success);
-
-    &:hover {
-      background-color: color-mix(in oklab, var(--success) 85%, black);
-      border-color: color-mix(in oklab, var(--success) 85%, black);
-    }
-
-    &:active {
-      background-color: color-mix(in oklab, var(--success) 75%, black);
-      border-color: color-mix(in oklab, var(--success) 75%, black);
-    }
+    --btn-color: var(--success);
+    --btn-color-fg: var(--success-fg);
   }
 
-  /* Outline variants */
+  &.bricks-background-danger {
+    --btn-color: var(--danger);
+    --btn-color-fg: var(--danger-fg);
+  }
+
+  &.bricks-background-warning {
+    --btn-color: var(--warning);
+    --btn-color-fg: var(--warning-fg);
+  }
+
   &.outline {
     background-color: transparent;
     border-width: var(--btn-border-width, 1px);
 
-    &[class*="bricks-color-"]:hover {
-      transform: translateY(-1px);
+    &[class*="bricks-color-"],
+    &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
+      color: var(--btn-color);
+      border-color: var(--btn-color);
+
+      &:hover {
+        transform: translateY(-1px);
+        background-color: var(--btn-color);
+        border-color: var(--btn-color);
+        color: var(--btn-color-fg);
+      }
     }
 
     &.bricks-color-primary {
-      border-color: var(--primary);
-      color: var(--primary);
-
-      &:hover {
-        background-color: var(--primary);
-        border-color: var(--primary);
-        color: var(--primary-fg);
-      }
+      --btn-color: var(--primary);
+      --btn-color-fg: var(--primary-fg);
     }
 
     &.bricks-color-secondary {
-      border-color: var(--secondary);
-      color: var(--secondary);
+      --btn-color: var(--secondary);
+      --btn-color-fg: var(--secondary-fg);
+    }
 
-      &:hover {
-        background-color: var(--secondary);
-        border-color: var(--secondary);
-        color: var(--secondary-fg);
-      }
+    &.bricks-color-accent {
+      --btn-color: var(--accent);
+      --btn-color-fg: var(--accent-fg);
     }
 
     &.bricks-color-light {
-      border-color: var(--light);
-      color: var(--light);
-
-      &:hover {
-        background-color: var(--light);
-        border-color: var(--light);
-        color: var(--dark);
-      }
+      --btn-color: var(--light);
+      --btn-color-fg: var(--dark);
     }
 
     &.bricks-color-dark {
-      border-color: var(--dark);
-      color: var(--dark);
-
-      &:hover {
-        background-color: var(--dark);
-        border-color: var(--dark);
-        color: var(--light);
-      }
+      --btn-color: var(--dark);
+      --btn-color-fg: var(--light);
     }
 
     &.bricks-color-muted {
-      border-color: var(--muted);
-      color: var(--muted);
-
-      &:hover {
-        background-color: var(--muted);
-        border-color: var(--muted);
-        color: var(--muted-fg);
-      }
+      --btn-color: var(--muted);
+      --btn-color-fg: var(--muted-fg);
     }
 
     &.bricks-color-info {
-      border-color: var(--info);
-      color: var(--info);
-
-      &:hover {
-        background-color: var(--info);
-        border-color: var(--info);
-        color: var(--info-fg);
-      }
+      --btn-color: var(--info);
+      --btn-color-fg: var(--info-fg);
     }
 
     &.bricks-color-success {
-      border-color: var(--success);
-      color: var(--success);
+      --btn-color: var(--success);
+      --btn-color-fg: var(--success-fg);
+    }
 
-      &:hover {
-        background-color: var(--success);
-        border-color: var(--success);
-        color: var(--success-fg);
-      }
+    &.bricks-color-danger {
+      --btn-color: var(--danger);
+      --btn-color-fg: var(--danger-fg);
+    }
+
+    &.bricks-color-warning {
+      --btn-color: var(--warning);
+      --btn-color-fg: var(--warning-fg);
     }
   }
 
-  /* Sizes */
   &.sm {
     padding-block: var(--btn-s-padding-block, var(--space-4xs));
     padding-inline: var(--btn-s-padding-inline, var(--space-xs));
@@ -268,7 +205,6 @@
     font-size: var(--text-xl, 1.25rem);
   }
 
-  /* Modifiers */
   &.full-width {
     width: 100%;
   }
@@ -301,7 +237,6 @@
     border-radius: 9999px;
   }
 
-  /* Text button variant */
   &.btn--text {
     border: none;
     border-radius: 0;
@@ -309,8 +244,9 @@
   }
 }
 
-/* Text button - higher specificity to override size classes without !important */
-:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).btn--text {
+.brxe-button.bricks-button.btn--text,
+.brxe-button.btn.btn--text,
+button.bricks-button.btn--text {
   --btn-padding-block: 0;
   --btn-padding-inline: 0;
   --btn-s-padding-block: 0;
@@ -327,8 +263,10 @@
   }
 }
 
-/* Arrow icon animation */
-:is(.brxe-button.bricks-button, button.bricks-button, .btn--text) {
+.brxe-button.bricks-button,
+button.bricks-button,
+.btn--text {
+
   &>i.fa-arrow-right,
   &>svg {
     transition: all .3s ease;
@@ -337,7 +275,6 @@
     justify-content: center;
   }
 
-  /* Opt-in icon slide animation on hover */
   &.btn--icon-slide:hover>i.fa-arrow-right,
   &.btn--icon-slide:hover>svg {
     margin-inline-start: 4px;

@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.8] - 2026-04-09
+
+### Changed
+
+- Frontend Content Grid module: Removed .content--split-50-breakout.no-breakout rules (full-bleed column, gutter padding, 768px two-column, reverse variant, and large-screen adjustments) to simplify layout handling and reduce maintenance.
+
+## [0.10.7] - 2026-04-09
+
+### Changed
+
+- Frontend Buttons module: Commented out default display and justify-content on .brxe-button / button.bricks-button so upstream layout can apply; exclude .bricks-background-text from the solid background hover and active color-mix rules.
+- Frontend Content Grid module: Styles for .content--split-50-breakout.no-breakout (full-width grid column, --cg-gutter inline padding, two-column template from 768px) and .content--split-50-breakout.no-breakout.reverse.
+
+### Fixed
+
+- release.sh: Changelog prepend keeps the prior version section heading (correct tail offset when merging Keep a Changelog).
+
+## [0.10.6] - 2026-03-31
+
+### Changed
+
+- Frontend Buttons module: refactored solid and outline styles to use shared custom properties (--btn-color, --btn-color-fg, --btn-mix) for hover and active color-mix behavior; extended selectors so btn-- utility classes match Bricks background variants; consolidated duplicate per-variant rules.
+- Frontend Forms module: submit controls (.bricks-button, button[type=submit], input[type=submit]) share the same min-height as fields via --form-input-height (42px fallback), with border-box sizing and inline-flex alignment for plain submit buttons.
+
+
 ## [0.10.5] - 2026-03-14
 
 Update form input background color for consistency
