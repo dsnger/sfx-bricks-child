@@ -280,12 +280,6 @@ class Controller
                 ],
                 'type' => 'multiple',
             ],
-            'html_copy_paste' => [
-                'label' => __('HTML Copy/Paste Settings', 'sfxtheme'),
-                'description' => __('Bricks Builder HTML conversion settings', 'sfxtheme'),
-                'option_key' => 'sfx_html_copy_paste_options',
-                'type' => 'single',
-            ],
             'text_snippets' => [
                 'label' => __('Text Snippets Settings', 'sfxtheme'),
                 'description' => __('Text snippets feature settings', 'sfxtheme'),
