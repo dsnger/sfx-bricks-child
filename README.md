@@ -34,7 +34,6 @@ This child theme extends Bricks Builder with powerful content management tools, 
 - **Security Headers** - Configurable HTTP security headers (HSTS, CSP, X-Frame-Options, Permissions Policy, etc.)
 
 ### Builder Integration
-- **HTML Copy/Paste** - Advanced HTML editing tool for Bricks Builder
 - **Shortcodes** - Iconify icon shortcode support
 - **Dynamic Tags** - Custom Bricks dynamic data tags for contact info and text snippets
 

@@ -40,7 +40,6 @@ alwaysApply: false
 - `SecurityHeader` (gated by `sfx_general_options.enable_security_header`)
 - `WPOptimizer` (gated by `sfx_general_options.enable_wp_optimizer`)
 - `CustomDashboard` (AccessControl also restricts access to its settings UI)
-- `HtmlCopyPaste` (feature-level enable flag in its options)
 - `ImportExport` (theme settings import/export)
 - `ContactInfos` (CPT-based, has Bricks dynamic tag `{contact_info:field}`)
 - `SocialMediaAccounts` (CPT-based, shortcode)

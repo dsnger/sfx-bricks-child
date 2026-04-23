@@ -982,10 +982,6 @@ msgstr "Bild-Optimierer"
 msgid "Security Headers"
 msgstr "Sicherheits-Header"
 
-#: inc/CustomDashboard/Settings.php
-msgid "HTML Copy/Paste"
-msgstr "HTML Copy/Paste"
-
 # #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#
 # ============================================
 # Contact Infos
@@ -1846,10 +1842,6 @@ msgid "Image conversion and optimization settings"
 msgstr "Bildkonvertierungs- und Optimierungseinstellungen"
 
 #: inc/ImportExport/Controller.php
-msgid "Bricks Builder HTML conversion settings"
-msgstr "Bricks Builder HTML-Konvertierungseinstellungen"
-
-#: inc/ImportExport/Controller.php
 msgid "Text snippets feature settings"
 msgstr "Text-Snippet-Funktionseinstellungen"
 
@@ -2699,162 +2691,6 @@ msgstr "Kein Symbol"
 #: inc/SocialMediaAccounts/PostType.php
 msgid "No link"
 msgstr "Kein Link"
-
-# ============================================
-# HTML Copy/Paste
-# ============================================
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "HTML Copy/Paste Settings"
-msgstr "HTML Copy/Paste-Einstellungen"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "How to Use"
-msgstr "Verwendung"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Direct HTML Paste"
-msgstr "Direktes HTML-Einfügen"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid ""
-"Copy HTML from any source and paste it directly into Bricks Builder. The "
-"HTML will be automatically converted to Bricks Builder elements."
-msgstr ""
-"Kopiere HTML aus beliebiger Quelle und füge es direkt in Bricks Builder ein. "
-"Das HTML wird automatisch in Bricks Builder-Elemente umgewandelt."
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "HTML Editor"
-msgstr "HTML-Editor"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid ""
-"Use the HTML editor to modify your HTML before converting it to Bricks "
-"Builder elements. This is useful for cleaning up or modifying HTML before "
-"import."
-msgstr ""
-"Verwende den HTML-Editor, um dein HTML vor der Umwandlung in Bricks Builder-"
-"Elemente zu bearbeiten. Dies ist nützlich zum Bereinigen oder Bearbeiten von "
-"HTML vor dem Import."
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Supported Elements"
-msgstr "Unterstützte Elemente"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Div containers"
-msgstr "Div-Container"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Text elements (headings, paragraphs)"
-msgstr "Textelemente (Überschriften, Absätze)"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Images with proper src attributes"
-msgstr "Bilder mit korrekten src-Attributen"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Links with href attributes"
-msgstr "Links mit href-Attributen"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "SVG elements"
-msgstr "SVG-Elemente"
-
-#: inc/HtmlCopyPaste/AdminPage.php
-msgid "Custom attributes preservation"
-msgstr "Erhaltung benutzerdefinierter Attribute"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Paste HTML"
-msgstr "HTML einfügen"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Paste HTML with Editor"
-msgstr "HTML mit Editor einfügen"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Insert"
-msgstr "Einfügen"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Clipboard not allowed"
-msgstr "Zwischenablage nicht erlaubt"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Converting HTML..."
-msgstr "HTML wird konvertiert..."
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "HTML converted successfully"
-msgstr "HTML erfolgreich konvertiert"
-
-#: inc/HtmlCopyPaste/AssetManager.php
-msgid "Error converting HTML"
-msgstr "Fehler beim Konvertieren von HTML"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Main Settings"
-msgstr "Haupteinstellungen"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Enable HTML Copy/Paste"
-msgstr "HTML Copy/Paste aktivieren"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Enable the HTML copy/paste functionality in Bricks Builder."
-msgstr "HTML Copy/Paste-Funktionalität in Bricks Builder aktivieren."
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Enable HTML Editor"
-msgstr "HTML-Editor aktivieren"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Enable the HTML editor mode for advanced editing before conversion."
-msgstr ""
-"HTML-Editor-Modus für erweiterte Bearbeitung vor der Konvertierung "
-"aktivieren."
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Preserve Custom Attributes"
-msgstr "Benutzerdefinierte Attribute erhalten"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Preserve custom HTML attributes when converting to Bricks elements."
-msgstr ""
-"Benutzerdefinierte HTML-Attribute beim Konvertieren in Bricks-Elemente "
-"erhalten."
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Auto Convert Images"
-msgstr "Bilder automatisch konvertieren"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Automatically convert img tags to Bricks image elements."
-msgstr "img-Tags automatisch in Bricks-Bild-Elemente konvertieren."
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Auto Convert Links"
-msgstr "Links automatisch konvertieren"
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Automatically convert anchor tags to Bricks link elements."
-msgstr "Anker-Tags automatisch in Bricks-Link-Elemente konvertieren."
-
-#: inc/HtmlCopyPaste/Settings.php
-msgid "Configure the HTML copy/paste functionality for Bricks Builder."
-msgstr "HTML Copy/Paste-Funktionalität für Bricks Builder konfigurieren."
-
-#: inc/HtmlCopyPaste/Controller.php
-msgid ""
-"We have no permission for using clipboard data. Only Chrome supports fast "
-"pasting. If you are using Chrome, then give access to not show this window "
-"again. Paste text from your clipboard to input."
-msgstr ""
-"Wir haben keine Berechtigung für die Verwendung von Zwischenablage-Daten. "
-"Nur Chrome unterstützt schnelles Einfügen. Wenn du Chrome verwendest, gib "
-"Zugriff, damit dieses Fenster nicht mehr angezeigt wird. Füge Text aus "
-"deiner Zwischenablage in das Eingabefeld ein."
 
 # ============================================
 # Image Optimizer (wpturbo domain - will be fixed)
