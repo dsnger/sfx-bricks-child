@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.9] - 2026-04-10
+
+### Removed
+
+- HTML Copy/Paste (Bricks Builder) feature: removed `inc/HtmlCopyPaste/`, related admin settings and assets, custom dashboard shortcut, and import/export bundle. Option `sfx_html_copy_paste_options` is still deleted on theme uninstall for sites that had the feature enabled.
+
 ## [0.10.8] - 2026-04-09
 
 ### Changed
