@@ -1,10 +1,46 @@
 /* ========================================
    LIST ICON STYLES
+   ----------------------------------------
+   Two opt-in triggers. Plain <ul> elements with neither trigger are NOT
+   affected (regular browser markers remain intact).
+
+   1. Per-list trigger — add `.list--icon` directly to a <ul> to convert
+      just that one list into an icon list. Pair with a variant class on the
+      same <ul> (currently: `.is-check`) to pick the icon style.
+
+   2. Wrapper trigger — add `.has-list-icons` to any ancestor (e.g. a Bricks
+      Text element or a rich-content container) to convert every <ul> inside
+      it into an icon list. Pair with a variant class on the same wrapper to
+      apply that icon style to all descendant lists.
+
+   Examples:
+     <ul class="list--icon is-check"> … </ul>
+     <div class="brxe-text has-list-icons is-check"> <ul> … </ul> </div>
    ======================================== */
 
-/* base list icon styles */
+/* scoped tokens: external theme tokens chained with literal fallbacks for
+   spacing/sizing/radius/display so the module renders without the parent
+   theme. Colors intentionally have no literal fallback. Tokens are declared
+   on either trigger so they cascade to the ul that needs them. */
+:is(ul.list--icon, .has-list-icons) {
+  --list-gutter: var(--space-s, 1rem);
+  --list-indent: 0;
+  --list-gap: var(--space-2xs, 0.5rem);
+  --list-item-gutter: var(--article-gutter-xs, var(--space-2xs, 0.5rem));
+  --list-icon-gap: var(--space-2xs, 0.5rem);
+  --list-icon-size: 1em;
+  --list-icon-offset: 0;
+  --list-icon-display: block;
+  --list-icon-bg-offset: 0;
+  --list-icon-bg-size-pad: 8px;
+  --list-icon-bg-radius: var(--radius-full, 9999px);
+  --list-icon-color: var(--secondary);
+  --list-icon-bg-color: var(--tertiary-l-4);
+}
 
-:is(.list--icon, .brxe-text) ul {
+/* base list styles — target a <ul> that carries `.list--icon` directly, or
+   any <ul> that sits inside a `.has-list-icons` wrapper */
+:is(ul.list--icon, .has-list-icons ul) {
   list-style: none;
   padding: 0;
   margin-block: var(--list-gutter);
@@ -14,19 +50,19 @@
   gap: var(--list-gap);
 }
 
-:is(.list--icon, .brxe-text) ul:first-child {
+:is(ul.list--icon, .has-list-icons ul):first-child {
   margin-block-start: 0;
 }
 
-:is(.list--icon, .brxe-text) ul:last-child {
+:is(ul.list--icon, .has-list-icons ul):last-child {
   margin-block-end: 0;
 }
 
-:is(.list--icon, .brxe-text) ul li+li {
-  margin-block-start: var(--article-gutter-xs);
+:is(ul.list--icon, .has-list-icons ul) li + li {
+  margin-block-start: var(--list-item-gutter);
 }
 
-:is(.list--icon, .brxe-text) li {
+:is(ul.list--icon, .has-list-icons ul) li {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--list-icon-gap);
@@ -49,18 +85,20 @@
     content: '';
     position: absolute;
     z-index: 0;
-    width: calc(var(--list-icon-size) + 8px);
-    height: calc(var(--list-icon-size) + 8px);
+    width: calc(var(--list-icon-size) + var(--list-icon-bg-size-pad));
+    height: calc(var(--list-icon-size) + var(--list-icon-bg-size-pad));
     background-color: var(--list-icon-bg-color);
     translate: var(--list-icon-bg-offset);
-    border-radius: var(--radius-full);
+    border-radius: var(--list-icon-bg-radius);
   }
 }
 
-
-
-/* custom list icon types */
-:is(.list--icon, .brxe-text).is-check  {
+/* --- variants ----------------------------------------------------------
+   Apply the variant class on the same element as its trigger:
+     - on a <ul class="list--icon is-check">
+     - on a wrapper <div class="has-list-icons is-check">
+   Tokens set here override the base tokens via the cascade. */
+:is(ul.list--icon, .has-list-icons).is-check {
   --list-icon-url: var(--list-check-icon-url, url(''));
   --list-icon-color: var(--list-check-icon-color, var(--secondary));
   --list-icon-offset: var(--list-check-icon-offset, 0 .5ex);
@@ -68,12 +106,12 @@
   --list-icon-gap: var(--list-check-icon-icon-gap, 15px);
   --list-icon-display: var(--list-check-icon-display, flex);
   --list-indent: var(--list-check-icon-indent, .5em);
-  --list-gap: var(--list-check-icon-gap, var(--space-2xs));
+  --list-gap: var(--list-check-icon-gap, var(--space-2xs, 0.5rem));
   --list-icon-bg-offset: var(--list-check-icon-bg-offset, -.4ex 0);
   --list-icon-bg-color: var(--list-check-icon-bg-color, var(--tertiary-l-4));
 }
 
-.card[class*="bg-secondary"] :is(.list--icon, .brxe-text).is-check {
+.card[class*="bg-secondary"] :is(ul.list--icon, .has-list-icons).is-check {
   --list-icon-color: var(--list-check-icon-color, var(--secondary));
   --list-icon-bg-color: var(--list-check-icon-bg-color-alt, var(--secondary-10));
 }
