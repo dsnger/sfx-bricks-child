@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.10] - 2026-04-25
+
+### Added
+
+- Contact Infos shortcode and Bricks dynamic tag: new `wrap` attribute (default `false`) to opt out of the wrapping element, returning bare output suitable for use inside custom markup.
+- Contact Infos shortcode and Bricks dynamic tag: new `tag` attribute to choose the wrapper element (default `span`); allowed tags are alphanumeric only and fall back to `span` for invalid values. Setting `tag` implicitly enables wrapping.
+
+### Changed
+
+- Contact Infos renderers (email, phone, default field, map link, address fallback) now route through a single `wrap_output()` helper for consistent behavior across the shortcode and the `{contact_info:field}` Bricks dynamic tag.
+- Default output behavior: `[contact_info ...]` and `{contact_info:...}` no longer emit a wrapping `<span class="contact-info-...">` by default. Existing usages that rely on those classes for styling must opt back in by adding `wrap=true`, `tag=...`, or any `class=...` attribute (each implicitly enables wrapping).
+
 ## [0.10.9] - 2026-04-10
 
 ### Removed
