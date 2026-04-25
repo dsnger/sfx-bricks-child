@@ -77,8 +77,10 @@ class SC_ContactInfos
                 'icon'       => null,     // Icon to display before the field
                 'icon_class' => null,     // CSS classes for the icon
                 'text'       => null,     // Custom text instead of the field value
-                'class'      => null,     // CSS classes for the wrapper
+                'class'      => null,     // CSS classes for the wrapper (implicitly enables wrap)
                 'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
+                'wrap'       => 'false',  // Whether to wrap the output in a tag (default: bare output)
+                'tag'        => null,     // Wrapper tag (default 'span'); setting this implicitly enables wrap
                 'debug'      => null,     // Debug mode to show raw value
             ],
             $atts,
@@ -200,6 +202,49 @@ class SC_ContactInfos
         $classes = array_filter($classes);
 
         return $classes;
+    }
+
+    /**
+     * Wrap inner HTML in a configurable tag (or return it bare).
+     *
+     * Wrap is enabled when any of the following is true:
+     * - `wrap` is truthy (true, 1, yes, on)
+     * - `tag` attribute is provided (non-empty)
+     * - `class` attribute is provided (non-empty)
+     *
+     * @param string $inner       Inner HTML already escaped/safe.
+     * @param array  $atts        Full shortcode attributes.
+     * @param string $field_class Field-specific class added to the wrapper (e.g. 'contact-info-email').
+     * @return string
+     */
+    private function wrap_output(string $inner, array $atts, string $field_class): string
+    {
+        $tag_raw = isset($atts['tag']) ? trim((string) $atts['tag']) : '';
+        $has_custom_tag = $tag_raw !== '';
+
+        $wrap_raw = $atts['wrap'] ?? 'false';
+        if (is_bool($wrap_raw)) {
+            $wrap_truthy = $wrap_raw;
+        } else {
+            $wrap_truthy = in_array(strtolower((string) $wrap_raw), ['true', '1', 'yes', 'on'], true);
+        }
+
+        $has_class = !empty($atts['class']);
+
+        $do_wrap = $wrap_truthy || $has_custom_tag || $has_class;
+
+        if (!$do_wrap) {
+            return $inner;
+        }
+
+        $tag = $has_custom_tag && preg_match('/^[a-zA-Z][a-zA-Z0-9]{0,15}$/', $tag_raw)
+            ? strtolower($tag_raw)
+            : 'span';
+
+        $classes = $this->process_classes($atts['class'] ?? '');
+        $classes[] = $field_class;
+
+        return '<' . $tag . ' class="' . esc_attr(implode(' ', $classes)) . '">' . $inner . '</' . $tag . '>';
     }
 
     /**
@@ -338,25 +383,16 @@ class SC_ContactInfos
      */
     private function render_email_field(string $value, array $atts, string $icon, ?string $text, bool $has_link): string
     {
-        $classes = $this->process_classes($atts['class']);
-        $classes[] = 'contact-info-email';
-
         $display_text = $text ?: $value;
-        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
 
-        if ($icon) {
-            $output .= $icon;
-        }
-
+        $inner = $icon;
         if ($has_link) {
-            $output .= '<a href="mailto:' . esc_attr($value) . '">' . esc_html($display_text) . '</a>';
+            $inner .= '<a href="mailto:' . esc_attr($value) . '">' . esc_html($display_text) . '</a>';
         } else {
-            $output .= esc_html($display_text);
+            $inner .= esc_html($display_text);
         }
 
-        $output .= '</span>';
-
-        return $output;
+        return $this->wrap_output($inner, $atts, 'contact-info-email');
     }
 
     /**
@@ -370,24 +406,14 @@ class SC_ContactInfos
      */
     private function render_phone_field(string $value, array $atts, string $icon, bool $has_link): string
     {
-        $classes = $this->process_classes($atts['class']);
-        $classes[] = 'contact-info-phone';
-
-        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
-
-        if ($icon) {
-            $output .= $icon;
-        }
-
+        $inner = $icon;
         if ($has_link) {
-            $output .= '<a href="tel:' . esc_attr($value) . '">' . esc_html($value) . '</a>';
+            $inner .= '<a href="tel:' . esc_attr($value) . '">' . esc_html($value) . '</a>';
         } else {
-            $output .= esc_html($value);
+            $inner .= esc_html($value);
         }
 
-        $output .= '</span>';
-
-        return $output;
+        return $this->wrap_output($inner, $atts, 'contact-info-phone');
     }
 
     /**
@@ -409,9 +435,6 @@ class SC_ContactInfos
             }
         }
         
-        $classes = $this->process_classes($atts['class']);
-        $classes[] = 'contact-info-address';
-
         $output = '';
 
         if ($icon) {
@@ -477,11 +500,9 @@ class SC_ContactInfos
                 if ($country) $address_parts[] = $country;
             }
             
-            // For non-WYSIWYG address, wrap in span with classes
             if (!empty($address_parts)) {
-                $output .= '<span class="' . esc_attr(implode(' ', $classes)) . '">';
-                $output .= implode('<br>', array_map('esc_html', $address_parts));
-                $output .= '</span>';
+                $inner = implode('<br>', array_map('esc_html', $address_parts));
+                $output .= $this->wrap_output($inner, $atts, 'contact-info-address');
             }
         }
 
@@ -522,20 +543,10 @@ class SC_ContactInfos
      */
     private function render_maplink_field(string $value, array $atts, string $icon): string
     {
-        $classes = $this->process_classes($atts['class']);
-        $classes[] = 'contact-info-maplink';
+        $inner  = $icon;
+        $inner .= '<a href="' . esc_url($value) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View on Map', 'sfxtheme') . '</a>';
 
-        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
-
-        if ($icon) {
-            $output .= $icon;
-        }
-
-        $output .= '<a href="' . esc_url($value) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View on Map', 'sfxtheme') . '</a>';
-
-        $output .= '</span>';
-
-        return $output;
+        return $this->wrap_output($inner, $atts, 'contact-info-maplink');
     }
 
     /**
@@ -548,22 +559,10 @@ class SC_ContactInfos
      */
     private function render_default_field(string $value, array $atts, string $icon): string
     {
-        $classes = $this->process_classes($atts['class']);
-        $classes[] = 'contact-info-field';
+        $inner  = $icon;
+        $inner .= esc_html($value);
 
-
-
-        $output = '<span class="' . esc_attr(implode(' ', $classes)) . '">';
-
-        if ($icon) {
-            $output .= $icon;
-        }
-
-        $output .= esc_html($value);
-
-        $output .= '</span>';
-
-        return $output;
+        return $this->wrap_output($inner, $atts, 'contact-info-field');
     }
 
 }
