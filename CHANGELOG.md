@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.11] - 2026-04-26
+
+### Fixed
+
+- Image Optimizer Settings: guard against missing `thumbnail` key in `limit_image_sizes()` to prevent PHP warning "Undefined array key 'thumbnail'" when another plugin or filter has removed the default thumbnail size; the original sizes array is returned unchanged in that case.
+
 ## [0.10.10] - 2026-04-25
 
 ### Added
