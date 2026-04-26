@@ -71,6 +71,9 @@ class Settings
         if (self::get_disable_auto_conversion()) {
             return $sizes;
         }
+        if (!isset($sizes['thumbnail'])) {
+            return $sizes;
+        }
         return ['thumbnail' => $sizes['thumbnail']];
     }
 
