@@ -38,7 +38,7 @@ final class Constants
     public const MIN_QUALITY = 1;
     public const MAX_QUALITY = 100;
     public const MAX_DIMENSION = 9999;
-    public const MAX_CUSTOM_SIZES = 4;
+    public const MAX_CUSTOM_SIZES = 5;
 
     /**
      * Default values

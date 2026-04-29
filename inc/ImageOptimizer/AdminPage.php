@@ -136,7 +136,7 @@ class AdminPage
                             <?php esc_html_e('Refine images to WebP or AVIF, and remove excess files to save space.', 'sfxtheme'); ?><br><br>
                             <b><?php esc_html_e('Set Auto-Conversion for New Uploads:', 'sfxtheme'); ?></b><br>
                             <b>1. <?php esc_html_e('Resize Mode:', 'sfxtheme'); ?></b> <?php esc_html_e('Pick if images shrink by width or height.', 'sfxtheme'); ?><br>
-                            <b>2. <?php esc_html_e('Set Max Sizes:', 'sfxtheme'); ?></b> <?php esc_html_e('Choose up to 4 sizes (150x150 thumbnail is automatic).', 'sfxtheme'); ?><br>
+                            <b>2. <?php esc_html_e('Set Max Sizes:', 'sfxtheme'); ?></b> <?php printf(esc_html__('Choose up to %d sizes (150x150 thumbnail is automatic).', 'sfxtheme'), Constants::MAX_CUSTOM_SIZES); ?><br>
                             <b>3. <?php esc_html_e('Min Size for Conversion:', 'sfxtheme'); ?></b> <?php esc_html_e('Sizes below the min are not affected. Default is 0.', 'sfxtheme'); ?><br>
                             <b>4. <?php esc_html_e('Conversion Format:', 'sfxtheme'); ?></b> <?php esc_html_e('Check to use AVIF. WebP is default.', 'sfxtheme'); ?><br>
                             <b>5. <?php esc_html_e('Preserve Originals:', 'sfxtheme'); ?></b> <?php esc_html_e('Check to stop original files from converting/deleting.', 'sfxtheme'); ?><br>

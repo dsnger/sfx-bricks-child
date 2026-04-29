@@ -89,13 +89,13 @@ class Settings
         $mode = self::get_resize_mode();
         if ($mode === 'width') {
             $max_values = self::get_max_widths();
-            $additional_values = array_slice($max_values, 1, 3);
+            $additional_values = array_slice($max_values, 1, Constants::MAX_CUSTOM_SIZES - 1);
             foreach ($additional_values as $width) {
                 add_image_size("custom-$width", $width, 0, false);
             }
         } else {
             $max_values = self::get_max_heights();
-            $additional_values = array_slice($max_values, 1, 3);
+            $additional_values = array_slice($max_values, 1, Constants::MAX_CUSTOM_SIZES - 1);
             foreach ($additional_values as $height) {
                 add_image_size("custom-$height", 0, $height, false);
             }
