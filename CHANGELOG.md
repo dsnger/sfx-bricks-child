@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.12] - 2026-04-29
+
+### Fixed
+
+- Custom Dashboard: Brand color pickers (Secondary, Accent, Border) had no visible effect because they emitted `--secondary-color`, `--accent-color`, `--border-color` CSS variables that no rule consumed; the dashboard rendered using auto-derived `--secondary` / `--accent` / `--border` values from the primary color only. The user-picked Secondary and Accent now override the corresponding palette entries (with contrast-based foregrounds and dark-mode lightness clamping to 12-30); the Border color picker overrides `--border` / `--input` when it resolves to a hex value. Inline-CSS cache key bumped so existing cached output is invalidated on first load.
+
+### Changed
+
+- Image Optimizer: Increased the maximum number of custom image sizes from 4 to 5 (`Constants::MAX_CUSTOM_SIZES`). Defaults remain at four widths (`1920,1200,600,300`) and four heights (`1080,720,480,360`); users can now configure a fifth size in the settings UI. The previously hardcoded slice in `Settings::register_custom_sizes()` now derives from the constant instead of a literal `3`, and the admin help text uses the constant.
+
 ## [0.10.11] - 2026-04-26
 
 ### Fixed
