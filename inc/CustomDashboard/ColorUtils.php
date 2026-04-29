@@ -171,9 +171,10 @@ class ColorUtils
      * @param string $primaryHex Primary brand color
      * @param string $mode 'light' or 'dark'
      * @param array<string, string> $statusColors Optional custom status colors (success, warning, error hex values)
+     * @param array<string, string> $brandOverrides Optional brand overrides: 'secondary' and/or 'accent' hex values
      * @return array<string, array{h: float, s: float, l: float}> Semantic color palette
      */
-    public static function generatePalette(string $primaryHex, string $mode = 'light', array $statusColors = []): array
+    public static function generatePalette(string $primaryHex, string $mode = 'light', array $statusColors = [], array $brandOverrides = []): array
     {
         $primary = self::hexToHsl($primaryHex);
         $isDark = $mode === 'dark';
@@ -205,7 +206,7 @@ class ColorUtils
         
         if ($isDark) {
             // Dark mode palette
-            return [
+            $palette = [
                 // Background colors
                 'background' => ['h' => $baseHue, 's' => $baseSat, 'l' => 7],
                 'foreground' => ['h' => $baseHue, 's' => 5, 'l' => 95],
@@ -268,7 +269,7 @@ class ColorUtils
             ];
         } else {
             // Light mode palette
-            return [
+            $palette = [
                 // Background colors
                 'background' => ['h' => $baseHue, 's' => $baseSat, 'l' => 100],
                 'foreground' => ['h' => $baseHue, 's' => 50, 'l' => 10],
@@ -328,6 +329,28 @@ class ColorUtils
                 'info-foreground' => ['h' => 0, 's' => 0, 'l' => 98],
             ];
         }
+
+        // Apply user-picked secondary/accent overrides so the dashboard's
+        // semantic --secondary / --accent reflect the brand pickers, not just
+        // tints derived from primary.
+        foreach (['secondary', 'accent'] as $key) {
+            if (empty($brandOverrides[$key])) {
+                continue;
+            }
+            $hex = $brandOverrides[$key];
+            $hsl = self::hexToHsl($hex);
+            if ($isDark) {
+                // Keep user's hue/saturation, clamp lightness to a usable
+                // dark-mode surface range so light picks don't blow out.
+                $hsl['l'] = max(12, min($hsl['l'], 30));
+            }
+            $palette[$key] = $hsl;
+            $palette[$key . '-foreground'] = self::hexToHsl(self::getContrastingForeground(
+                self::hslToHex($hsl['h'], $hsl['s'], $hsl['l'])
+            ));
+        }
+
+        return $palette;
     }
 
     /**

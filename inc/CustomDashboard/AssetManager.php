@@ -354,7 +354,7 @@ class AssetManager
             'widgets_columns',
         ];
         
-        $cache_data = [];
+        $cache_data = ['__v' => 2];
         foreach ($cache_keys as $key) {
             $cache_data[$key] = $options[$key] ?? '';
         }
@@ -383,10 +383,28 @@ class AssetManager
             'error' => $options['brand_error_color'] ?? $defaults['brand_error_color'],
         ];
         
+        // Apply user-picked secondary/accent so they actually drive --secondary / --accent
+        $brand_overrides = [
+            'secondary' => $secondary,
+            'accent' => $accent,
+        ];
+
         // Generate semantic color palettes with custom status colors
-        $light_palette = ColorUtils::generatePalette($primary, 'light', $statusColors);
-        $dark_palette = ColorUtils::generatePalette($primary, 'dark', $statusColors);
-        
+        $light_palette = ColorUtils::generatePalette($primary, 'light', $statusColors, $brand_overrides);
+        $dark_palette = ColorUtils::generatePalette($primary, 'dark', $statusColors, $brand_overrides);
+
+        // If brand_border_color resolves to a hex, override --border / --input
+        // in both palettes so the picker actually changes border colors.
+        $brand_colors_for_border = Settings::get_brand_colors();
+        $border_resolved = self::resolve_color($options['brand_border_color'] ?? 'border', $brand_colors_for_border, '');
+        if ($border_resolved !== '' && $border_resolved[0] === '#') {
+            $border_hsl = ColorUtils::hexToHsl($border_resolved);
+            $light_palette['border'] = $border_hsl;
+            $light_palette['input'] = $border_hsl;
+            $dark_palette['border'] = $border_hsl;
+            $dark_palette['input'] = $border_hsl;
+        }
+
         // Color map for brand color selections
         $brand_colors = Settings::get_brand_colors();
         
