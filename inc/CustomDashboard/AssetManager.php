@@ -308,8 +308,31 @@ class AssetManager
         if (!empty($color_data['is_variable'])) {
             return 'hsl(' . $color . ')';
         }
-        
+
         return $color;
+    }
+
+    /**
+     * Adapt a resolved color value for dark-mode use.
+     *
+     * Semantic CSS-variable strings (e.g. "hsl(var(--secondary))") pass
+     * through unchanged because the underlying var auto-adapts when the
+     * dashboard switches theme. Hex values are darkened so user picks
+     * intended for light backgrounds stay legible against a dark surface.
+     *
+     * @param string $value Either a hex color (#rrggbb) or a CSS color string
+     * @return string Dark-mode-adjusted value
+     */
+    private static function adapt_for_dark_mode(string $value): string
+    {
+        if ($value === '' || $value[0] !== '#') {
+            return $value;
+        }
+
+        $hsl = ColorUtils::hexToHsl($value);
+        $hsl['l'] = min($hsl['l'], 45);
+        $hsl['s'] = min($hsl['s'], 80);
+        return ColorUtils::hslToHex($hsl['h'], $hsl['s'], $hsl['l']);
     }
 
     /**
@@ -417,13 +440,21 @@ class AssetManager
         $gradient_end = self::resolve_color($header_gradient_end_key, $brand_colors, $secondary);
         $header_bg_solid = self::resolve_color($header_bg_key, $brand_colors, $primary);
         
-        // Generate header backgrounds (gradient or solid)
-        $header_bg_light = $header_gradient 
+        // Generate header backgrounds (gradient or solid).
+        // Dark-mode reuses the same user picks: semantic CSS-var picks
+        // (e.g. hsl(var(--secondary))) auto-adapt; hex picks are darkened
+        // via adapt_for_dark_mode() so they remain readable in dark mode.
+        $header_bg_light = $header_gradient
             ? "linear-gradient(135deg, {$gradient_start} 0%, {$gradient_end} 100%)"
             : $header_bg_solid;
-        $header_bg_dark = $header_gradient 
-            ? ColorUtils::generateHeaderGradient($primary, 'dark')
-            : ColorUtils::hslToHex($dark_palette['primary']['h'], $dark_palette['primary']['s'], $dark_palette['primary']['l']);
+
+        $gradient_start_dark = self::adapt_for_dark_mode($gradient_start);
+        $gradient_end_dark   = self::adapt_for_dark_mode($gradient_end);
+        $header_bg_solid_dark = self::adapt_for_dark_mode($header_bg_solid);
+
+        $header_bg_dark = $header_gradient
+            ? "linear-gradient(135deg, {$gradient_start_dark} 0%, {$gradient_end_dark} 100%)"
+            : $header_bg_solid_dark;
 
         // Card styling options
         $card_border_width = $options['card_border_width'] ?? 2;

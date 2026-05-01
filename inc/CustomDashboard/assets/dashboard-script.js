@@ -763,9 +763,91 @@
     }
 
     /**
+     * Move admin notices into the dashboard's notice container.
+     *
+     * Notices echoed by plugins during admin_notices / all_admin_notices
+     * land directly in #wpbody-content (they are NOT captured server-side).
+     * The CSS rule in Controller.php::inject_custom_dashboard() hides them
+     * in their original location to prevent FOUC; this function relocates
+     * them into .sfx-admin-notices, where dashboard-style.css overrides
+     * the hide rule so they actually display.
+     *
+     * appendChild() moves the live DOM node, so event delegation set up
+     * by wp-admin/js/common.js (the .notice-dismiss "X" button) and any
+     * inline links inside the notice keep working.
+     */
+    function getNoticeContainer() {
+        const container = document.querySelector('.sfx-dashboard-container');
+        if (!container) return null;
+
+        let noticeContainer = container.querySelector(':scope > .sfx-admin-notices');
+        if (!noticeContainer) {
+            noticeContainer = document.createElement('div');
+            noticeContainer.className = 'sfx-admin-notices';
+            container.insertBefore(noticeContainer, container.firstChild);
+        }
+        return noticeContainer;
+    }
+
+    function relocateAdminNotices() {
+        const noticeContainer = getNoticeContainer();
+        if (!noticeContainer) return;
+
+        const candidates = document.querySelectorAll(
+            '.notice, .updated, .error, .update-nag'
+        );
+        candidates.forEach(function(node) {
+            if (!node.closest('.sfx-admin-notices')) {
+                node.setAttribute('data-sfx-relocated', '1');
+                noticeContainer.appendChild(node);
+            }
+        });
+    }
+
+    /**
+     * Watch #wpbody-content for late-injected notices (plugins that add
+     * notices via AJAX or other JS after DOMContentLoaded) and relocate
+     * them as soon as they appear. The observer ignores subtree changes
+     * inside .sfx-dashboard-container so it doesn't react to its own
+     * appendChild moves.
+     */
+    function observeLateAdminNotices() {
+        if (typeof MutationObserver === 'undefined') return;
+
+        const target = document.getElementById('wpbody-content');
+        if (!target) return;
+
+        const observer = new MutationObserver(function(mutations) {
+            let needsRelocate = false;
+            for (const mutation of mutations) {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType !== 1) continue;
+                    if (node.closest && node.closest('.sfx-admin-notices')) continue;
+                    if (node.matches && node.matches('.notice, .updated, .error, .update-nag')) {
+                        needsRelocate = true;
+                        break;
+                    }
+                    if (node.querySelector && node.querySelector('.notice, .updated, .error, .update-nag')) {
+                        needsRelocate = true;
+                        break;
+                    }
+                }
+                if (needsRelocate) break;
+            }
+            if (needsRelocate) {
+                relocateAdminNotices();
+            }
+        });
+
+        observer.observe(target, { childList: true, subtree: true });
+    }
+
+    /**
      * Initialize all dashboard functionality
      */
     function initDashboard() {
+        relocateAdminNotices();
+        observeLateAdminNotices();
         initThemeToggle();
         initSystemPreferenceListener();
         initSidebarToggle();

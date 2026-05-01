@@ -231,42 +231,31 @@ class Controller
             return $show_screen;
         }, 10, 2);
 
-        // Capture admin notices
-        add_action('admin_notices', [$this, 'capture_admin_notices'], 1);
-        add_action('all_admin_notices', [$this, 'capture_admin_notices'], 1);
-
-        // Render custom dashboard after page load
-        add_action('in_admin_header', function() {
-            if ($this->renderer) {
-                echo '<div id="sfx-custom-dashboard-root">';
-                $this->renderer->render_dashboard();
-                echo '</div>';
-            }
-        }, 100);
+        // Render the dashboard at the very end of `all_admin_notices`.
+        // Earlier notice callbacks have already echoed into `#wpbody-content`
+        // by then; the dashboard sits below them. JS in dashboard-script.js
+        // (`relocateAdminNotices()` + MutationObserver) moves any `.notice`
+        // outside `.sfx-admin-notices` into the dashboard's notice container.
+        // CSS in inject_custom_dashboard() keeps un-relocated notices hidden
+        // until JS runs so there is no flash of mis-positioned content.
+        add_action('all_admin_notices', [$this, 'render_dashboard_wrapper'], PHP_INT_MAX);
     }
 
     /**
-     * Capture admin notices for display in custom dashboard
+     * Render the dashboard wrapper. Hooked at the tail of `all_admin_notices`
+     * so it is positioned inside `#wpbody-content` after standard notices.
      *
      * @return void
      */
-    public function capture_admin_notices(): void
+    public function render_dashboard_wrapper(): void
     {
-        // Start output buffering to capture notices
-        if (!isset($GLOBALS['sfx_notices_captured'])) {
-            $GLOBALS['sfx_notices_captured'] = true;
-            ob_start();
-            
-            // Register shutdown function to capture the notices
-            add_action('in_admin_header', function() {
-                if (ob_get_level() > 0) {
-                    $notices = ob_get_clean();
-                    if (!empty(trim($notices))) {
-                        $GLOBALS['sfx_admin_notices'] = $notices;
-                    }
-                }
-            }, 99);
+        if (!$this->renderer) {
+            return;
         }
+
+        echo '<div id="sfx-custom-dashboard-root">';
+        $this->renderer->render_dashboard();
+        echo '</div>';
     }
 
     /**

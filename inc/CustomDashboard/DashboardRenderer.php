@@ -156,18 +156,18 @@ class DashboardRenderer
     }
 
     /**
-     * Render captured admin notices
+     * Render the admin-notices mount point. Always emitted (even empty)
+     * so JS in dashboard-script.js has a stable target to relocate
+     * stray .notice / .updated / .error / .update-nag elements into.
+     * `.sfx-admin-notices:empty { display: none }` in dashboard-style.css
+     * keeps the placeholder from reserving vertical space when no notices
+     * are present.
      *
      * @return void
      */
     private function render_admin_notices(): void
     {
-        if (!empty($GLOBALS['sfx_admin_notices'])) {
-            echo '<div class="sfx-admin-notices">';
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Notices are already escaped by WordPress
-            echo $GLOBALS['sfx_admin_notices'];
-            echo '</div>';
-        }
+        echo '<div class="sfx-admin-notices"></div>';
     }
 
     /**
