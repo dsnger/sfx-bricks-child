@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.14] - 2026-05-01
+
+### Fixed
+
+- Custom Dashboard: Headings inside admin notices (e.g. the `<h3>` in UpdraftPlus's "Thanks for installing" dashboard notice) now adopt the dashboard's theme-aware foreground color instead of staying black on a dark background. Extended the inherit-color rule inside `.sfx-admin-notices` to cover `h1`–`h6`, `li`, `dt`, `dd`, `em`, and `code` across `.notice`, `.updated`, `.error`, and `.update-nag` containers.
+
 ## [0.10.13] - 2026-05-01
 
 ### Fixed
