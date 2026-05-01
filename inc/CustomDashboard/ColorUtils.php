@@ -340,9 +340,10 @@ class ColorUtils
             $hex = $brandOverrides[$key];
             $hsl = self::hexToHsl($hex);
             if ($isDark) {
-                // Keep user's hue/saturation, clamp lightness to a usable
-                // dark-mode surface range so light picks don't blow out.
-                $hsl['l'] = max(12, min($hsl['l'], 30));
+                // Keep user's hue/saturation, clamp lightness near the
+                // auto-derived dark surface baseline (l=18) so user picks
+                // sit alongside muted/secondary surfaces without blowing out.
+                $hsl['l'] = max(15, min($hsl['l'], 25));
             }
             $palette[$key] = $hsl;
             $palette[$key . '-foreground'] = self::hexToHsl(self::getContrastingForeground(

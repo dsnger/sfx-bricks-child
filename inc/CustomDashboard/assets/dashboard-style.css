@@ -95,6 +95,10 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
     margin-bottom: 20px;
 }
 
+.sfx-admin-notices:empty {
+    display: none;
+}
+
 .sfx-admin-notices .notice,
 .sfx-admin-notices .updated,
 .sfx-admin-notices .error,
@@ -103,6 +107,41 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
     margin: 0 0 10px 0;
     border-radius: var(--sfx-radius, 8px);
     box-shadow: var(--sfx-shadow, 0 2px 4px rgba(0, 0, 0, 0.08));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+}
+
+/* Inherit theme-aware foreground for nested text so dark mode never
+   produces white-on-white. Status border-left colors set by core
+   (.notice-success, .notice-warning, .notice-error, .notice-info)
+   are intentionally left untouched. */
+.sfx-admin-notices .notice p,
+.sfx-admin-notices .notice li,
+.sfx-admin-notices .notice strong,
+.sfx-admin-notices .notice span:not([style*="color"]),
+.sfx-admin-notices .updated p,
+.sfx-admin-notices .error p,
+.sfx-admin-notices .update-nag p {
+    color: inherit;
+}
+
+.sfx-admin-notices .notice a {
+    color: hsl(var(--primary));
+}
+
+.sfx-admin-notices .notice a:hover,
+.sfx-admin-notices .notice a:focus {
+    color: hsl(var(--primary));
+    opacity: 0.85;
+}
+
+.sfx-admin-notices .notice-dismiss::before {
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-admin-notices .notice-dismiss:hover::before,
+.sfx-admin-notices .notice-dismiss:focus::before {
+    color: hsl(var(--foreground));
 }
 
 .sfx-admin-notices .notice:last-child,
