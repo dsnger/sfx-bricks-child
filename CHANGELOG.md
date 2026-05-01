@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.13] - 2026-05-01
+
+### Fixed
+
+- Custom Dashboard: Welcome header gradient and solid background now honor user-picked `brand_header_gradient_start` / `brand_header_gradient_end` / `brand_header_bg_color` settings in dark mode. Previously dark mode ignored those settings and called `ColorUtils::generateHeaderGradient($primary, 'dark')`, which derived the gradient solely from the primary color. Hex picks are darkened via a new `AssetManager::adapt_for_dark_mode()` helper for legibility; semantic CSS-variable picks pass through unchanged so the underlying var auto-adapts between modes.
+- Custom Dashboard: Admin notices (e.g. from User Switching) now reliably appear at the top of the dashboard. The previous `ob_start` / `ob_get_clean` capture chain was brittle — any plugin nesting an output buffer failed the strict level check and dropped the captured notices. Replaced with a JS-driven relocation: `.sfx-admin-notices` is always rendered as an empty mount point, and stray `.notice` / `.updated` / `.error` / `.update-nag` elements are moved into it on `DOMContentLoaded` plus via a `MutationObserver` for late-injected notices.
+- Custom Dashboard: Notices now use theme-aware colors inside `.sfx-admin-notices` (`--card` background, `--card-foreground` text, `--primary` link color, themed dismiss button). Eliminates white-on-white and dark-on-dark contrast issues in dark mode.
+
+### Changed
+
+- Custom Dashboard: Dark-mode lightness clamp for user-picked Secondary / Accent narrowed from `[12, 30]` to `[15, 25]` so brand picks sit closer to the auto-derived dark surface baseline (l=18) and don't visually overpower neighboring muted surfaces.
+
 ## [0.10.12] - 2026-04-29
 
 ### Fixed
