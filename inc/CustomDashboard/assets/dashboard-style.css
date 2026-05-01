@@ -112,16 +112,52 @@ body.index-php.folded.sfx-sidebar-collapsed #wpfooter {
 }
 
 /* Inherit theme-aware foreground for nested text so dark mode never
-   produces white-on-white. Status border-left colors set by core
-   (.notice-success, .notice-warning, .notice-error, .notice-info)
-   are intentionally left untouched. */
+   produces white-on-white or black-on-black. Status border-left colors
+   set by core (.notice-success, .notice-warning, .notice-error,
+   .notice-info) are intentionally left untouched. Inline color overrides
+   (e.g. plugin-specific accent spans) are preserved via the
+   :not([style*="color"]) guard. */
+.sfx-admin-notices .notice h1,
+.sfx-admin-notices .notice h2,
+.sfx-admin-notices .notice h3,
+.sfx-admin-notices .notice h4,
+.sfx-admin-notices .notice h5,
+.sfx-admin-notices .notice h6,
 .sfx-admin-notices .notice p,
 .sfx-admin-notices .notice li,
+.sfx-admin-notices .notice dt,
+.sfx-admin-notices .notice dd,
 .sfx-admin-notices .notice strong,
+.sfx-admin-notices .notice em,
+.sfx-admin-notices .notice code,
 .sfx-admin-notices .notice span:not([style*="color"]),
+.sfx-admin-notices .updated h1,
+.sfx-admin-notices .updated h2,
+.sfx-admin-notices .updated h3,
+.sfx-admin-notices .updated h4,
+.sfx-admin-notices .updated h5,
+.sfx-admin-notices .updated h6,
 .sfx-admin-notices .updated p,
+.sfx-admin-notices .updated li,
+.sfx-admin-notices .updated strong,
+.sfx-admin-notices .error h1,
+.sfx-admin-notices .error h2,
+.sfx-admin-notices .error h3,
+.sfx-admin-notices .error h4,
+.sfx-admin-notices .error h5,
+.sfx-admin-notices .error h6,
 .sfx-admin-notices .error p,
-.sfx-admin-notices .update-nag p {
+.sfx-admin-notices .error li,
+.sfx-admin-notices .error strong,
+.sfx-admin-notices .update-nag h1,
+.sfx-admin-notices .update-nag h2,
+.sfx-admin-notices .update-nag h3,
+.sfx-admin-notices .update-nag h4,
+.sfx-admin-notices .update-nag h5,
+.sfx-admin-notices .update-nag h6,
+.sfx-admin-notices .update-nag p,
+.sfx-admin-notices .update-nag li,
+.sfx-admin-notices .update-nag strong {
     color: inherit;
 }
 
