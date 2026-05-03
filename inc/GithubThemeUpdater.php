@@ -510,10 +510,14 @@ class GitHubThemeUpdater
     $transient = get_site_transient('update_themes');
     if (isset($transient->response[$this->theme_slug])) {
       $update_data = $transient->response[$this->theme_slug];
+      $update_url = wp_nonce_url(
+        self_admin_url('update.php?action=upgrade-theme&theme=' . urlencode($this->theme_slug)),
+        'upgrade-theme_' . $this->theme_slug
+      );
       echo '<div class="notice notice-info">';
       echo '<p><strong>Theme Update Available:</strong> ';
       echo esc_html($this->theme_name) . ' version ' . esc_html($update_data['new_version']) . ' is available. ';
-      echo '<a href="' . admin_url('themes.php') . '">Update now</a></p>';
+      echo '<a href="' . esc_url($update_url) . '">Update now</a></p>';
       echo '</div>';
     }
 
