@@ -173,6 +173,7 @@ class AdminPage
                 'performance' => __('Performance', 'sfxtheme'),
                 'admin'       => __('Admin Enhancements', 'sfxtheme'),
                 'security'    => __('Security & Privacy', 'sfxtheme'),
+                'users'       => __('Users & Authors', 'sfxtheme'),
                 'frontend'    => __('Frontend Cleanup', 'sfxtheme'),
                 'media'       => __('Media & Uploads', 'sfxtheme'),
             ];
