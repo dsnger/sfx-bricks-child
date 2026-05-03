@@ -135,6 +135,9 @@ class Controller
 			// Ensure REST-related restrictions are registered early
 			'disable_rest_api',
 			'disable_rest_api_non_authenticated',
+			'block_rest_users_anonymous',
+			// Sitemap providers are registered on init priority 10; we need to filter earlier
+			'remove_users_sitemap',
 			// Content order needs to run early in admin
 			'enable_content_order',
 			// Media replacement needs to run early in admin
@@ -158,7 +161,7 @@ class Controller
         
         foreach ($this->fields as $field) {
             // Skip context-sensitive options (handled separately)
-            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order', 'enable_media_replacement'])) {
+            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order', 'enable_media_replacement', 'block_rest_users_anonymous', 'remove_users_sitemap'])) {
                 continue;
             }
             
@@ -949,6 +952,62 @@ class Controller
             }
             return $result;
         });
+    }
+
+    private function block_rest_users_anonymous()
+    {
+        add_filter('rest_endpoints', function ($endpoints) {
+            if (is_user_logged_in()) {
+                return $endpoints;
+            }
+            foreach (array_keys($endpoints) as $route) {
+                if (strpos($route, '/wp/v2/users') === 0) {
+                    unset($endpoints[$route]);
+                }
+            }
+            return $endpoints;
+        });
+    }
+
+    private function block_author_query()
+    {
+        add_action('parse_request', function ($wp) {
+            if (is_admin()) {
+                return;
+            }
+            if (isset($wp->query_vars['author']) || isset($_GET['author'])) {
+                unset($wp->query_vars['author']);
+                wp_safe_redirect(home_url('/'), 301);
+                exit;
+            }
+        });
+    }
+
+    private function remove_users_sitemap()
+    {
+        add_filter('wp_sitemaps_add_provider', function ($provider, $name) {
+            return ($name === 'users') ? false : $provider;
+        }, 10, 2);
+    }
+
+    private function generic_login_errors()
+    {
+        add_filter('login_errors', function () {
+            return __('Invalid login.', 'sfxtheme');
+        });
+    }
+
+    private function enforce_display_name_not_login()
+    {
+        add_action('user_profile_update_errors', function ($errors, $update, $user) {
+            if (!empty($user->display_name) && !empty($user->user_login)
+                && strcasecmp($user->display_name, $user->user_login) === 0) {
+                $errors->add(
+                    'display_name_equals_login',
+                    __('Display name must differ from username for security reasons.', 'sfxtheme')
+                );
+            }
+        }, 10, 3);
     }
 
 
