@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.0] - 2026-05-05
+
+### Added
+
+- Image Optimizer: Direct libwebp encoder (`WebpEncoder`) that bypasses WordPress's `WP_Image_Editor::save()` for WebP output. The quality slider now has visible effect across its full range — `quality=100` produces lossless WebP; values 1–99 use libwebp encoder method 6 for smaller files at the same perceptual quality. On any encoder failure (Imagick without libwebp, GD without `imagewebp`, etc.) the code falls back to the WP editor so behavior is never worse than before.
+- Image Optimizer: Atomic write — encoded WebP files are written to a `.tmp` path first, verified for non-empty + decodable bytes via `getimagesize`, then atomically renamed to the live path. Prevents partial/corrupt `.webp` files from being left behind by mid-write timeouts or fatals.
+- Image Optimizer: Live conversion log — both the standard "Convert/Scale" and "Run All" batch flows now stream per-image log lines (skipped, converted, fallback notices, "Using preserved original as source") into the on-page log panel. Previously only start/end markers appeared.
+- Image Optimizer: Auto-upgrade existing images when a max width/height is increased. When the batch encounters a converted attachment whose preserved JPG/PNG sibling on disk is larger than the current converted file, it now uses the original as the source and forces a reprocess (bypassing the optimization stamp). The rediscovered original is preserved regardless of the current "Preserve Originals" toggle so it stays available for future bumps.
+
+### Fixed
+
+- Image Optimizer: Quality slider produced near-identical file sizes regardless of value because the underlying encoder was not tuned for libwebp. The new direct encoder honors the slider faithfully and gives a clear progression in size and quality across the range.
+- Image Optimizer: 50-second batch timeout on lossless WebP encoding of high-resolution images. Each batch image now resets the time budget via `set_time_limit(60)` instead of sharing one batch-wide budget across five images.
+- Image Optimizer: Cropped thumbnails in the Media Library showed blank previews after WebP conversion because Imagick's leftover page geometry from the crop survived into `writeImage`. Encoder now resets the page rectangle before writing, mirroring `WP_Image_Editor_Imagick::_save`.
+- Image Optimizer: Some uploaded images (especially those not requiring a resize) produced corrupt WebP files because the encoder was cloning the Imagick instance, which has subtle bugs across PHP/Imagick versions. Encoder now operates on the editor's image directly, matching WordPress core's pattern.
+
+### Changed
+
+- Image Optimizer: Bumped optimization stamp shape with a new `enc` key (`Constants::ENCODER_VERSION`). On the first batch run after upgrade, every existing optimized image is flagged for one-time reprocessing so legacy files pick up the new encoder. Subsequent batch runs skip them as before.
+
 ## [0.10.14] - 2026-05-01
 
 ### Fixed
