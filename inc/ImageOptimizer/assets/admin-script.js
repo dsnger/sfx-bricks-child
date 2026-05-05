@@ -57,11 +57,15 @@ jQuery(function($){
             success: function(response){
                 if (response.success) {
                     retryCounts[currentOffset] = 0; // Reset retry count on success
-                    
+
                     if (response.data && response.data.message) {
                         logMessage(response.data.message);
                     }
-                    
+
+                    if (response.data && Array.isArray(response.data.log)) {
+                        response.data.log.forEach(function(line){ logMessage(line); });
+                    }
+
                     if (response.data && response.data.complete) {
                         // Conversion complete
                         isConverting = false;
@@ -281,6 +285,9 @@ jQuery(function($){
             },
             success: function(response){
                 if (response.success) {
+                    if (response.data && Array.isArray(response.data.log)) {
+                        response.data.log.forEach(function(line){ logMessage(line); });
+                    }
                     if (response.data && response.data.complete) {
                         isConverting = false;
                         $('#stop-conversion').hide();

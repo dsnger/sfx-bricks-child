@@ -474,6 +474,7 @@ class Controller
             'quality'     => Settings::get_quality(),
             'resize_mode' => $mode,
             'max_values'  => $max_values,
+            'enc'         => Constants::ENCODER_VERSION,
         ];
 
         return $metadata;

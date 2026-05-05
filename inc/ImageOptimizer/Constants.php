@@ -48,6 +48,12 @@ final class Constants
     public const DEFAULT_RESIZE_MODE = 'width';
 
     /**
+     * Encoder version. Bump when WebP/AVIF encoder behavior changes so existing
+     * images get re-flagged for reprocessing via pixrefiner_stamp comparison.
+     */
+    public const ENCODER_VERSION = 2;
+
+    /**
      * Cleanup configuration
      */
     public const DEFAULT_CLEANUP_BATCH_SIZE = 1000;

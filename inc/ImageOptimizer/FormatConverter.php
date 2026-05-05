@@ -52,7 +52,24 @@ class FormatConverter
             $resized = true;
         }
 
-        $result = $editor->save($new_file_path, $format, ['quality' => $quality]);
+        if ($format === 'image/webp') {
+            $encoded = WebpEncoder::encode($editor, $new_file_path, $quality);
+            if (is_wp_error($encoded)) {
+                if ($log !== null) {
+                    $log[] = sprintf(
+                        __('WebpEncoder fell back to WP editor for %s: %s', 'sfxtheme'),
+                        basename($file_path),
+                        $encoded->get_error_message()
+                    );
+                }
+                $result = $editor->save($new_file_path, $format, ['quality' => $quality]);
+            } else {
+                $result = ['path' => $new_file_path];
+            }
+        } else {
+            $result = $editor->save($new_file_path, $format, ['quality' => $quality]);
+        }
+
         if (is_wp_error($result)) {
             if ($log !== null) $log[] = sprintf(__('Error: Conversion failed for %s - %s', 'sfxtheme'), basename($file_path), $result->get_error_message());
             return false;

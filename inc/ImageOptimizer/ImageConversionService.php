@@ -197,8 +197,18 @@ class ImageConversionService
         }
         
         $editor->resize($thumb_size, $thumb_size, true);
-        $saved = $editor->save($thumbnail_path, $format, ['quality' => $quality]);
-        
+
+        if ($format === 'image/webp') {
+            $encoded = WebpEncoder::encode($editor, $thumbnail_path, $quality);
+            if (is_wp_error($encoded)) {
+                $saved = $editor->save($thumbnail_path, $format, ['quality' => $quality]);
+            } else {
+                $saved = ['path' => $thumbnail_path];
+            }
+        } else {
+            $saved = $editor->save($thumbnail_path, $format, ['quality' => $quality]);
+        }
+
         if (is_wp_error($saved)) {
             return [
                 'success' => false,
@@ -305,6 +315,7 @@ class ImageConversionService
             'quality' => $quality,
             'resize_mode' => $mode,
             'max_values' => $max_values,
+            'enc' => Constants::ENCODER_VERSION,
         ];
         
         // Allow filtering metadata before save
@@ -354,8 +365,9 @@ class ImageConversionService
             'quality' => $quality,
             'resize_mode' => $mode,
             'max_values' => $max_values,
+            'enc' => Constants::ENCODER_VERSION,
         ];
-        
+
         $existing_stamp = $metadata['pixrefiner_stamp'] ?? null;
         
         return empty($existing_stamp) || $existing_stamp !== $expected_stamp;

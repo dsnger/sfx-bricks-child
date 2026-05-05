@@ -98,8 +98,9 @@ class Ajax
         
         if (empty($attachments)) {
             update_option('sfx_webp_conversion_complete', true);
-            Settings::append_log(__('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme'));
-            wp_send_json_success(['complete' => true]);
+            $done_msg = __('Conversion Complete', 'sfxtheme') . ': ' . __('No more images to process', 'sfxtheme');
+            Settings::append_log($done_msg);
+            wp_send_json_success(['complete' => true, 'log' => [$done_msg]]);
         }
         
         // Check for force reconvert flag
@@ -112,40 +113,77 @@ class Ajax
             'quality' => $current_quality,
             'resize_mode' => $mode,
             'max_values' => $max_values,
+            'enc' => Constants::ENCODER_VERSION,
         ];
         
         foreach ($attachments as $attachment_id) {
+            // Reset the time budget per image. Lossless WebP at high resolution
+            // can take 8-15 seconds; a single batch-wide budget runs out fast.
+            @set_time_limit(60);
+
             $file_path = get_attached_file($attachment_id);
-            
+
             // Validate file exists
             if (!file_exists($file_path)) {
                 $log[] = sprintf(__('Skipped: File not found for Attachment ID %d', 'sfxtheme'), $attachment_id);
                 continue;
             }
-            
+
+            // Identify a preserved original (jpg/png) sitting next to a converted
+            // attached file. We don't switch the source yet — first decide whether
+            // we'll actually reprocess.
+            $original_candidate = null;
+            $attached_ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+            if (in_array($attached_ext, Constants::CONVERTED_EXTENSIONS, true)) {
+                $original_candidate = self::findOriginalSibling($file_path);
+            }
+
             // Validate directory is writable
             $uploads_dir = dirname($file_path);
             if (!is_writable($uploads_dir)) {
                 $log[] = sprintf(__('Error: Uploads directory %s is not writable for Attachment ID %d', 'sfxtheme'), $uploads_dir, $attachment_id);
                 continue;
             }
-            
+
             // Check minimum size threshold
             $file_size_kb = filesize($file_path) / 1024;
             if ($min_size_kb > 0 && $file_size_kb < $min_size_kb) {
                 $log[] = sprintf(__('Skipped: %s (size %s KB < %d KB)', 'sfxtheme'), basename($file_path), round($file_size_kb, 2), $min_size_kb);
                 continue;
             }
-            
+
+            // The optimization stamp captures encode settings, not source identity.
+            // If a larger preserved original is available, the stamp is effectively
+            // stale (it was written against a smaller source) — force a reprocess.
+            $force_due_to_bigger_source = $original_candidate !== null
+                && self::originalIsLargerThanConverted($original_candidate, $file_path, $mode);
+
             // Check optimization stamp (skip if already optimized with current settings)
-            if (!$force_reconvert && !ImageConversionService::needsReprocessing($attachment_id, [
-                'use_avif' => $use_avif,
-                'quality' => $current_quality,
-                'mode' => $mode,
-                'max_values' => $max_values,
-            ])) {
+            if (!$force_reconvert
+                && !$force_due_to_bigger_source
+                && !ImageConversionService::needsReprocessing($attachment_id, [
+                    'use_avif' => $use_avif,
+                    'quality' => $current_quality,
+                    'mode' => $mode,
+                    'max_values' => $max_values,
+                ])
+            ) {
                 $log[] = sprintf(__('Skipped: Already optimized with current settings - Attachment ID %d', 'sfxtheme'), $attachment_id);
                 continue;
+            }
+
+            // We're committing to a reprocess. If a preserved original is on disk,
+            // prefer it as the source (lossless, free of generation loss). Skipping
+            // the deletion call is handled below via $used_rediscovered_original.
+            $used_rediscovered_original = false;
+            if ($original_candidate !== null) {
+                $log[] = sprintf(
+                    __('Using preserved original as source: %s (replacing %s)', 'sfxtheme'),
+                    basename($original_candidate),
+                    basename($file_path)
+                );
+                $file_path = $original_candidate;
+                $used_rediscovered_original = true;
             }
             
             // Check if current format matches target
@@ -221,10 +259,12 @@ class Ajax
                 }
             }
             
-            // Handle original file deletion
-            if (!$is_current_format && file_exists($file_path)) {
+            // Handle original file deletion. Skip when we used a rediscovered
+            // preserved original — its presence on disk is an explicit signal
+            // from the user to keep it, regardless of the current toggle.
+            if (!$is_current_format && file_exists($file_path) && !$used_rediscovered_original) {
                 $was_restored = (bool) get_post_meta($attachment_id, '_sfx_was_restored', true);
-                
+
                 ImageConversionService::handleOriginalDeletion(
                     $file_path,
                     $attachment_id,
@@ -237,7 +277,48 @@ class Ajax
         }
         
         Settings::append_log($log);
-        wp_send_json_success(['complete' => false, 'offset' => $offset + $batch_size]);
+        wp_send_json_success(['complete' => false, 'offset' => $offset + $batch_size, 'log' => $log]);
+    }
+
+    /**
+     * Locate a preserved original (jpg/jpeg/png) sitting next to a converted file.
+     *
+     * @param string $converted_file Absolute path to a webp/avif file
+     * @return string|null Absolute path to the original, or null if none found
+     */
+    private static function findOriginalSibling(string $converted_file): ?string
+    {
+        $dirname = dirname($converted_file);
+        $basename = pathinfo($converted_file, PATHINFO_FILENAME);
+
+        foreach (Constants::ORIGINAL_EXTENSIONS_WITH_CASE as $ext) {
+            $candidate = "{$dirname}/{$basename}.{$ext}";
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Compare the relevant dimension of a preserved original against the current
+     * converted file. Used to detect a stale optimization stamp: if the original
+     * is bigger, the converted file was made from a smaller intermediate and we
+     * should regenerate it from the original.
+     *
+     * @param string $original_path  Path to jpg/jpeg/png
+     * @param string $converted_path Path to webp/avif
+     * @param string $mode           'width' or 'height'
+     * @return bool True when the original is larger in the relevant dimension
+     */
+    private static function originalIsLargerThanConverted(string $original_path, string $converted_path, string $mode): bool
+    {
+        $orig = @getimagesize($original_path);
+        $conv = @getimagesize($converted_path);
+        if (!$orig || !$conv) {
+            return false;
+        }
+        return $mode === 'width' ? $orig[0] > $conv[0] : $orig[1] > $conv[1];
     }
 
     /**
