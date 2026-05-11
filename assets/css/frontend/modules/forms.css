@@ -1,8 +1,64 @@
+@layer sfx.components {
+
 /* ========================================
    FORM STYLES (nested)
+   Longhands use --sfx-form-* / --sfx-form-submit-* only.
+   Define --form-* and --form-submit-* in Core Framework; theme maps with literals.
    ======================================== */
 
 :is(.brxe-form, .brxe-brf-pro-forms) {
+  --sfx-form-input-height: var(--form-input-height, 42px);
+  --sfx-form-label-margin-bottom: var(--form-label-margin-bottom, 0.625rem);
+  --sfx-form-label-font-size: var(--form-label-font-size, 0.875rem);
+  --sfx-form-label-line-height: var(--form-label-line-height, 1.4);
+  --sfx-form-label-font-weight: var(--form-label-font-weight, 500);
+  --sfx-form-label-color: var(--form-label-color, #111827);
+  --sfx-form-padding-block: var(--form-padding-block, 0.5rem);
+  --sfx-form-padding-inline: var(--form-padding-inline, 0.75rem);
+  --sfx-form-border-width: var(--form-border-width, 1px);
+  --sfx-form-border-color: var(--form-border-color, #e5e7eb);
+  --sfx-form-border-radius: var(--form-border-radius, 0.5rem);
+  --sfx-form-font-size: var(--form-font-size, 1rem);
+  --sfx-form-line-height: var(--form-line-height, 1.5);
+  --sfx-form-input-bg: var(--form-input-bg, #ffffff);
+  --sfx-form-color: var(--form-color, #111111);
+  --sfx-form-placeholder-font-size: var(--form-placeholder-font-size, 0.875rem);
+  --sfx-form-placeholder-line-height: var(--form-placeholder-line-height, 1.4);
+  --sfx-form-placeholder-color: var(--form-placeholder-color, #6b7280);
+  --sfx-form-options-gap: var(--form-options-gap, 0.75rem);
+  --sfx-form-option-row-gap: var(--form-option-row-gap, 0.25rem);
+  --sfx-form-radius-small: var(--form-radius-small, 0.35rem);
+  --sfx-form-focus-width: var(--form-focus-width, 2px);
+  --sfx-form-focus-color: var(--form-focus-color, #2563eb);
+  --sfx-form-focus-offset: var(--form-focus-offset, 2px);
+  --sfx-form-focus-ring: var(--form-focus-ring, none);
+  --sfx-form-radio-active-color: var(--form-radio-active-color, #2563eb);
+  --sfx-form-icon-color: var(--form-icon-color, #ffffff);
+  --sfx-form-icon-scale: var(--form-icon-scale, 70%);
+  --sfx-form-checkbox-icon: var(--form-checkbox-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='m14.914 4l-9.47 9.47L1.09 8.393L2.608 7.09l2.948 3.44L13.5 2.585z'/%3E%3C/svg%3E"));
+  --sfx-form-group-spacing: var(--form-group-spacing, 1.25rem);
+  --sfx-form-error-bg: var(--form-error-bg, #fee2e2);
+  --sfx-form-error-color: var(--form-error-color, #991b1b);
+  --sfx-form-error-font-size: var(--form-error-font-size, 0.75rem);
+  --sfx-form-error-margin-block-start: var(--form-error-margin-block-start, 0.5rem);
+  --sfx-form-error-padding-block: var(--form-error-padding-block, 0.5rem);
+  --sfx-form-error-padding-inline: var(--form-error-padding-inline, 0.75rem);
+  --sfx-form-error-border-radius: var(--form-error-border-radius, 0.5rem);
+  --sfx-form-error-triangle-size: var(--form-error-triangle-size, 6px);
+  --sfx-form-error-triangle-offset: var(--form-error-triangle-offset, 12px);
+  --sfx-form-error-triangle-color: var(--form-error-triangle-color, var(--form-error-bg, #fee2e2));
+  --sfx-form-file-remove-bg: var(--form-file-remove-bg, #fecaca);
+  --sfx-form-file-remove-border: var(--form-file-remove-border, #fecaca);
+  --sfx-form-file-remove-color: var(--form-file-remove-color, #dc2626);
+  --sfx-form-file-remove-hover-bg: var(--form-file-remove-hover-bg, #dc2626);
+  --sfx-form-file-remove-hover-color: var(--form-file-remove-hover-color, #ffffff);
+  --sfx-form-submit-padding-block: var(--form-submit-padding-block, 0.375rem);
+  --sfx-form-submit-padding-inline: var(--form-submit-padding-inline, 1rem);
+  --sfx-form-submit-border-width: var(--form-submit-border-width, 1px);
+  --sfx-form-submit-border-color: var(--form-submit-border-color, #e5e7eb);
+  --sfx-form-submit-border-radius: var(--form-submit-border-radius, 0.5rem);
+  --sfx-form-choose-files-padding-block: var(--form-choose-files-padding-block, 0);
+  --sfx-form-choose-files-padding-inline: var(--form-choose-files-padding-inline, 1rem);
 
   /* Base sizes for inputs/selects */
   & input[type="text"],
@@ -18,42 +74,42 @@
   & input[type="week"],
   & input[type="time"],
   & select {
-    min-height: var(--form-input-height, 42px);
+    min-height: var(--sfx-form-input-height);
   }
 
   & label {
-    margin-bottom: calc(var(--global-gutter-small) / 2) !important;
+    margin-bottom: var(--sfx-form-label-margin-bottom) !important;
   }
 
   & .form-group {
     & label {
-      font-size: var(--form-label-font-size);
-      line-height: var(--form-label-line-height);
+      font-size: var(--sfx-form-label-font-size);
+      line-height: var(--sfx-form-label-line-height);
       text-transform: none;
-      font-weight: var(--form-label-font-weight);
-      color: var(--primary);
+      font-weight: var(--sfx-form-label-font-weight);
+      color: var(--sfx-form-label-color);
     }
 
     & input {
-      padding-top: var(--form-padding-block);
-      padding-right: var(--form-padding-inline);
-      padding-bottom: var(--form-padding-block);
-      padding-left: var(--form-padding-inline);
-      border: var(--form-border-width) solid var(--form-border-color);
-      border-radius: var(--form-border-radius);
-      font-size: var(--form-font-size);
-      line-height: var(--form-line-height);
-      background-color: var(--form-input-bg);
+      padding-top: var(--sfx-form-padding-block);
+      padding-right: var(--sfx-form-padding-inline);
+      padding-bottom: var(--sfx-form-padding-block);
+      padding-left: var(--sfx-form-padding-inline);
+      border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
+      border-radius: var(--sfx-form-border-radius);
+      font-size: var(--sfx-form-font-size);
+      line-height: var(--sfx-form-line-height);
+      background-color: var(--sfx-form-input-bg);
     }
 
     & .options-wrapper {
       display: flex;
-      gap: var(--space-xs);
+      gap: var(--sfx-form-options-gap);
 
       &>li:has([type=radio], [type=checkbox]) {
         display: flex;
         align-items: center !important;
-        gap: var(--space-3xs);
+        gap: var(--sfx-form-option-row-gap);
 
         & label {
           margin: 0 !important;
@@ -63,10 +119,10 @@
   }
 
   & ::placeholder {
-    font-size: var(--form-placeholder-font-size);
+    font-size: var(--sfx-form-placeholder-font-size);
     font-weight: 400;
-    line-height: var(--form-placeholder-line-height);
-    color: var(--primary);
+    line-height: var(--sfx-form-placeholder-line-height);
+    color: var(--sfx-form-placeholder-color);
     transition: opacity 0.2s ease;
   }
 
@@ -78,13 +134,13 @@
   & button[type="submit"],
   & input[type="submit"] {
     box-sizing: border-box;
-    min-height: var(--form-input-height, 42px);
-    padding-top: var(--btn-padding-block);
-    padding-right: var(--btn-padding-inline);
-    padding-bottom: var(--btn-padding-block);
-    padding-left: var(--btn-padding-inline);
-    border: var(--btn-border-width) solid var(--btn-border-color);
-    border-radius: var(--btn-radius);
+    min-height: var(--sfx-form-input-height);
+    padding-top: var(--sfx-form-submit-padding-block);
+    padding-right: var(--sfx-form-submit-padding-inline);
+    padding-bottom: var(--sfx-form-submit-padding-block);
+    padding-left: var(--sfx-form-submit-padding-inline);
+    border: var(--sfx-form-submit-border-width) solid var(--sfx-form-submit-border-color);
+    border-radius: var(--sfx-form-submit-border-radius);
   }
 
   & button[type="submit"]:not(.bricks-button) {
@@ -103,10 +159,10 @@
     z-index: -1;
 
     &:focus+.choose-files {
-      outline: var(--form-focus-width, 2px) solid var(--form-focus-color, #2563eb);
-      outline-offset: var(--form-focus-offset, 2px);
-      box-shadow: var(--form-focus-ring);
-      border-color: var(--form-focus-color, #2563eb);
+      outline: var(--sfx-form-focus-width) solid var(--sfx-form-focus-color);
+      outline-offset: var(--sfx-form-focus-offset);
+      box-shadow: var(--sfx-form-focus-ring);
+      border-color: var(--sfx-form-focus-color);
     }
   }
 
@@ -114,12 +170,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: var(--form-input-height, 42px);
-    padding: 0 1rem;
-    border: var(--form-border-width, 1px) solid var(--form-border-color, #e5e7eb);
-    border-radius: var(--radius-s, .35rem);
-    background: var(--form-input-bg, #fff);
-    color: var(--form-color, #111);
+    min-height: var(--sfx-form-input-height);
+    padding: var(--sfx-form-choose-files-padding-block) var(--sfx-form-choose-files-padding-inline);
+    border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
+    border-radius: var(--sfx-form-radius-small);
+    background: var(--sfx-form-input-bg);
+    color: var(--sfx-form-color);
     cursor: pointer;
     transition: all .15s ease;
     font-size: inherit;
@@ -129,15 +185,15 @@
     user-select: none;
 
     &:hover {
-      border-color: var(--form-radio-active-color, #2563eb);
-      background: color-mix(in srgb, var(--form-radio-active-color, #2563eb) 5%, var(--form-input-bg, #fff));
+      border-color: var(--sfx-form-radio-active-color);
+      background: color-mix(in srgb, var(--sfx-form-radio-active-color) 5%, var(--sfx-form-input-bg));
     }
 
     &:focus {
-      outline: var(--form-focus-width, 2px) solid var(--form-focus-color, #2563eb);
-      outline-offset: var(--form-focus-offset, 2px);
-      box-shadow: var(--form-focus-ring);
-      border-color: var(--form-focus-color, #2563eb);
+      outline: var(--sfx-form-focus-width) solid var(--sfx-form-focus-color);
+      outline-offset: var(--sfx-form-focus-offset);
+      box-shadow: var(--sfx-form-focus-ring);
+      border-color: var(--sfx-form-focus-color);
     }
   }
 
@@ -146,9 +202,9 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    border: var(--form-border-width, 1px) solid var(--form-border-color, #e5e7eb);
-    border-radius: var(--radius-s, .35rem);
-    background: var(--form-input-bg, #fff);
+    border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
+    border-radius: var(--sfx-form-radius-small);
+    background: var(--sfx-form-input-bg);
     margin-bottom: 0.5rem;
     transition: all .15s ease;
 
@@ -158,7 +214,7 @@
 
     & .text {
       flex: 1;
-      color: var(--form-color, #111);
+      color: var(--sfx-form-color);
       font-size: 0.9em;
       word-break: break-all;
     }
@@ -168,10 +224,10 @@
       align-items: center;
       justify-content: center;
       padding: 0.5rem;
-      background: var(--error);
-      border: var(--form-border-width, 1px) solid var(--error);
-      border-radius: var(--radius-s, .35rem);
-      color: #dc2626;
+      background: var(--sfx-form-file-remove-bg);
+      border: var(--sfx-form-border-width) solid var(--sfx-form-file-remove-border);
+      border-radius: var(--sfx-form-radius-small);
+      color: var(--sfx-form-file-remove-color);
       cursor: pointer;
       transition: all .15s ease;
       font-size: 0.8em;
@@ -179,15 +235,15 @@
       margin: 0;
 
       &:hover {
-        background: #dc2626;
-        color: white;
-        border-color: #dc2626;
+        background: var(--sfx-form-file-remove-hover-bg);
+        color: var(--sfx-form-file-remove-hover-color);
+        border-color: var(--sfx-form-file-remove-hover-bg);
       }
 
       &:focus {
-        outline: var(--form-focus-width, 2px) solid var(--form-focus-color, #2563eb);
-        outline-offset: var(--form-focus-offset, 2px);
-        box-shadow: var(--form-focus-ring);
+        outline: var(--sfx-form-focus-width) solid var(--sfx-form-focus-color);
+        outline-offset: var(--sfx-form-focus-offset);
+        box-shadow: var(--sfx-form-focus-ring);
       }
     }
 
@@ -200,7 +256,7 @@
 
     &.error {
       border-color: #dc2626;
-      background: color-mix(in srgb, #dc2626 5%, var(--form-input-bg, #fff));
+      background: color-mix(in srgb, #dc2626 5%, var(--sfx-form-input-bg));
 
       & .text {
         color: #dc2626;
@@ -209,7 +265,7 @@
 
     &.success {
       border-color: #16a34a;
-      background: color-mix(in srgb, #16a34a 5%, var(--form-input-bg, #fff));
+      background: color-mix(in srgb, #16a34a 5%, var(--sfx-form-input-bg));
 
       & .text {
         color: #16a34a;
@@ -227,44 +283,44 @@
   & input[type="checkbox"],
   & input[type="radio"] {
     appearance: none;
-    inline-size: calc(var(--form-input-height, 42px) * .4);
-    block-size: calc(var(--form-input-height, 42px) * .4);
+    inline-size: calc(var(--sfx-form-input-height) * .4);
+    block-size: calc(var(--sfx-form-input-height) * .4);
     margin: 0;
     padding: 0;
     vertical-align: middle;
-    border: var(--form-border-width, 1px) solid var(--form-border-color, #e5e7eb);
-    background: var(--form-input-bg, #fff);
+    border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
+    background: var(--sfx-form-input-bg);
     position: relative;
     transition: background-color .15s, border-color .15s;
-    color: var(--form-color, #111);
+    color: var(--sfx-form-color);
     flex-shrink: 0;
 
     &:is(:focus, :focus-visible) {
-      outline: var(--form-focus-width) solid var(--form-focus-color);
-      outline-offset: var(--form-focus-offset);
-      box-shadow: var(--form-focus-ring);
-      border-color: var(--form-focus-color);
+      outline: var(--sfx-form-focus-width) solid var(--sfx-form-focus-color);
+      outline-offset: var(--sfx-form-focus-offset);
+      box-shadow: var(--sfx-form-focus-ring);
+      border-color: var(--sfx-form-focus-color);
     }
   }
 
   /* Checkbox specific */
   & input[type="checkbox"] {
-    border-radius: var(--radius-s, .35rem);
+    border-radius: var(--sfx-form-radius-small);
 
     &:checked {
-      background: var(--form-radio-active-color, #2563eb);
-      border-color: var(--form-radio-active-color, #2563eb);
-      color: var(--form-icon-color, #fff);
-      background-image: var(--form-checkbox-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='m14.914 4l-9.47 9.47L1.09 8.393L2.608 7.09l2.948 3.44L13.5 2.585z'/%3E%3C/svg%3E"));
+      background: var(--sfx-form-radio-active-color);
+      border-color: var(--sfx-form-radio-active-color);
+      color: var(--sfx-form-icon-color);
+      background-image: var(--sfx-form-checkbox-icon);
       background-repeat: no-repeat;
       background-position: center;
-      background-size: var(--form-icon-scale, 70%) var(--form-icon-scale, 70%);
+      background-size: var(--sfx-form-icon-scale) var(--sfx-form-icon-scale);
     }
 
     &:indeterminate {
-      background: var(--form-radio-active-color, #2563eb);
-      border-color: var(--form-radio-active-color, #2563eb);
-      color: var(--form-icon-color, #fff) !important;
+      background: var(--sfx-form-radio-active-color);
+      border-color: var(--sfx-form-radio-active-color);
+      color: var(--sfx-form-icon-color) !important;
       background-image: linear-gradient(currentColor, currentColor);
       background-repeat: no-repeat;
       background-position: center;
@@ -277,9 +333,9 @@
     border-radius: 50%;
 
     &:checked {
-      background: var(--form-radio-active-color, #2563eb);
-      border-color: var(--form-radio-active-color, #2563eb);
-      background-image: radial-gradient(circle, var(--form-icon-color, #fff) 0 50%, transparent 51%);
+      background: var(--sfx-form-radio-active-color);
+      border-color: var(--sfx-form-radio-active-color);
+      background-image: radial-gradient(circle, var(--sfx-form-icon-color) 0 50%, transparent 51%);
       background-repeat: no-repeat;
       background-position: center;
       background-size: 52% 52%;
@@ -294,47 +350,59 @@
   }
 
   & .form-group textarea {
-    padding-top: var(--form-padding-block);
-    padding-right: var(--form-padding-inline);
-    padding-bottom: var(--form-padding-block);
-    padding-left: var(--form-padding-inline);
-    border: var(--form-border-width) solid var(--form-border-color);
-    border-radius: var(--form-border-radius);
-    font-size: var(--form-font-size);
-    line-height: var(--form-line-height);
-    background-color: var(--form-input-bg);
+    padding-top: var(--sfx-form-padding-block);
+    padding-right: var(--sfx-form-padding-inline);
+    padding-bottom: var(--sfx-form-padding-block);
+    padding-left: var(--sfx-form-padding-inline);
+    border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
+    border-radius: var(--sfx-form-border-radius);
+    font-size: var(--sfx-form-font-size);
+    line-height: var(--sfx-form-line-height);
+    background-color: var(--sfx-form-input-bg);
   }
 
   /* Messages & submit feedback */
   & .message {
-    border-radius: var(--form-border-radius, .5rem);
+    border-radius: var(--sfx-form-border-radius);
   }
 
   /* Form group error message */
   & .form-group .form-group-error-message {
     position: relative;
     width: 100%;
-    margin-block-start: var(--form-error-margin-block-start, var(--form-padding-block));
-    padding: var(--form-error-padding-block, var(--form-padding-block)) var(--form-error-padding-inline, var(--form-padding-inline));
-    background-color: var(--form-error-bg, var(--error-bg, var(--bricks-bg-danger)));
-    color: var(--form-error-color, var(--error-fg, var(--bricks-text-danger)));
-    border-radius: var(--form-error-border-radius, var(--form-border-radius));
-    font-size: var(--form-error-font-size, var(--text-2xs));
+    margin-block-start: var(--sfx-form-error-margin-block-start);
+    padding: var(--sfx-form-error-padding-block) var(--sfx-form-error-padding-inline);
+    background-color: var(--sfx-form-error-bg);
+    color: var(--sfx-form-error-color);
+    border-radius: var(--sfx-form-error-border-radius);
+    font-size: var(--sfx-form-error-font-size);
 
     &::before {
       content: "";
       position: absolute;
-      top: calc(-1 * var(--form-error-triangle-size, 6px));
-      left: var(--form-error-triangle-offset, 12px);
-      border-left: var(--form-error-triangle-size, 6px) solid transparent;
-      border-right: var(--form-error-triangle-size, 6px) solid transparent;
-      border-bottom: var(--form-error-triangle-size, 6px) solid var(--form-error-bg, var(--error, var(--bricks-bg-danger)));
+      top: calc(-1 * var(--sfx-form-error-triangle-size));
+      left: var(--sfx-form-error-triangle-offset);
+      border-left: var(--sfx-form-error-triangle-size) solid transparent;
+      border-right: var(--sfx-form-error-triangle-size) solid transparent;
+      border-bottom: var(--sfx-form-error-triangle-size) solid var(--sfx-form-error-triangle-color);
     }
   }
 
   & button[type="submit"].sending,
   & input[type="submit"].sending {
     gap: 8px;
+  }
+
+  /* Focus: scoped to controls inside Bricks forms only */
+  & :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):is(:focus, :focus-visible) {
+    outline: var(--sfx-form-focus-width) solid var(--sfx-form-focus-color);
+    outline-offset: var(--sfx-form-focus-offset);
+    box-shadow: var(--sfx-form-focus-ring);
+  }
+
+  & :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
   }
 }
 
@@ -343,7 +411,7 @@
   & .form-group {
     display: flex;
     flex-direction: column;
-    padding: 0 0 var(--form-group-spacing, 20px);
+    padding: 0 0 var(--sfx-form-group-spacing, 1.25rem);
     width: 100%;
   }
 
@@ -353,34 +421,19 @@
   }
 }
 
-
-/* Global accessible focus (optional but recommended) */
-:where(input, select, textarea, button, [role="button"], .button) {
-  &:is(:focus, :focus-visible) {
-    outline: var(--form-focus-width) solid var(--form-focus-color);
-    outline-offset: var(--form-focus-offset);
-    box-shadow: var(--form-focus-ring);
-  }
-
-  &:focus:not(:focus-visible) {
-    outline: none;
-    box-shadow: none;
-  }
-}
-
-/* High contrast / Windows HC */
 @media (forced-colors: active) {
-  :where(input, select, textarea, button, [role="button"], .button):is(:focus, :focus-visible) {
+  :is(.brxe-form, .brxe-brf-pro-forms) :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):is(:focus, :focus-visible) {
     outline: 2px solid CanvasText;
     outline-offset: 2px;
     box-shadow: none;
   }
 }
 
-/* User prefers more contrast */
 @media (prefers-contrast: more) {
-  :where(input, select, textarea, button, [role="button"], .button):focus-visible {
-    outline-width: max(3px, var(--form-focus-width));
-    box-shadow: var(--form-focus-ring);
+  :is(.brxe-form, .brxe-brf-pro-forms) :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):focus-visible {
+    outline-width: max(3px, var(--sfx-form-focus-width, 2px));
+    box-shadow: var(--sfx-form-focus-ring, none);
   }
+}
+
 }

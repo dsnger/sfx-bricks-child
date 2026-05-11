@@ -90,7 +90,7 @@ class Settings
             [
                 'id'          => 'enable_style_forms',
                 'label'       => __('Form Styles', 'sfxtheme'),
-                'description' => __('Form inputs, checkboxes, radios, file uploads, error states, and focus styles.', 'sfxtheme'),
+                'description' => __('Form inputs and submit styling use scoped --sfx-form-* tokens wired from --form-* / --form-submit-* (define in Core Framework).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'forms.css',
@@ -98,7 +98,7 @@ class Settings
             [
                 'id'          => 'enable_style_buttons',
                 'label'       => __('Button Styles', 'sfxtheme'),
-                'description' => __('Button variants, sizes, outline, loading states, and icon animations.', 'sfxtheme'),
+                'description' => __('Buttons use scoped --sfx-btn-* wired from --btn-* (define in Core Framework). See Style Modules help for semantic keys.', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'buttons.css',
@@ -130,7 +130,7 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_' . sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v2_' . sanitize_key($filename);
         $cached = get_transient($transient_key);
         
         if ($cached !== false) {
@@ -234,8 +234,23 @@ class Settings
     public static function render_styles_section(): void
     {
       echo '<p>' . esc_html__('Enable or disable optional CSS style modules. All modules are enabled by default. Disabling unused modules can reduce page size.', 'sfxtheme') . '</p>';
-      echo '<p>' . esc_html__('These styles are presets designed to work with CSS custom properties (variables). They integrate seamlessly with CSS frameworks like CoreFramework, ACSS, or your own custom variable definitions. Define the variables in your framework or theme settings, and the styles will automatically adapt.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Buttons and Forms load after the main frontend sheet so cascade layers apply in order.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Token model: selectors consume scoped --sfx-* variables. Define matching --btn-* (buttons), --form-* and --form-submit-* (forms) in Core Framework, global CSS, or on a block—the theme ships literal fallbacks when those hooks are absent.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Optional: customize --sfx-* on a component root in Bricks to override computed values.', 'sfxtheme') . '</p>';
       echo '<p>' . esc_html__('Use the "Copy CSS" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet.', 'sfxtheme') . '</p>';
+      ?>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Buttons)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Semantic / layout: --btn-gap, --btn-padding-block|inline, --btn-font-* , --btn-border-*, --btn-radius, --btn-shadow(|-hover), --btn-transition, --btn-focus-outline-*, --btn-mix, --btn-s-* , --btn-l-* , --btn-xl-*, plus --btn-color / --btn-color-fg when setting a flat pair.'); ?></code></p>
+        <p><code><?php echo esc_html('Semantic backgrounds (filled + outline): --btn-primary-bg|fg, --btn-secondary-bg|fg|mix, --btn-accent-bg|fg, --btn-light-bg|fg, --btn-dark-bg|fg|mix, --btn-muted-bg|fg, --btn-info-bg|fg, --btn-success-bg|fg, --btn-danger-bg|fg, --btn-warning-bg|fg.'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption in module: every longhand uses var(--sfx-btn-*); root maps --sfx-btn-* from var(--btn-*, literal).'); ?></code></p>
+      </details>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Forms)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Layout & fields: --form-input-height, --form-label-*, --form-padding-block|inline, --form-border-*, --form-font-*, --form-input-bg, --form-color, --form-placeholder-*, --form-options-gap, --form-option-row-gap, --form-radius-small, --form-focus-*, --form-radio-active-color, --form-icon-*, --form-checkbox-icon, --form-group-spacing, --form-error-*, --form-file-remove-*, --form-submit-padding-*, --form-submit-border-*, --form-choose-files-padding-block|inline.'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption: longhands use var(--sfx-form-*); submit controls use var(--sfx-form-submit-*). No --btn-* in the forms module.'); ?></code></p>
+      </details>
+      <?php
     }
 
     public static function render_field(array $args): void

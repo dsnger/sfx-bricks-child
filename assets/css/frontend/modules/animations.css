@@ -1,3 +1,5 @@
+@layer sfx.components {
+
 /* ========================================
    ANIMATION STYLES
    ======================================== */
@@ -115,4 +117,6 @@
   100% {
     transform: translateY(var(--animate-parallax, 0));
   }
+}
+
 }

@@ -1,3 +1,5 @@
+@layer sfx.components {
+
 /* ========================================
    LIST ICON STYLES
    ----------------------------------------
@@ -114,4 +116,6 @@
 .card[class*="bg-secondary"] :is(ul.list--icon, .has-list-icons).is-check {
   --list-icon-color: var(--list-check-icon-color, var(--secondary));
   --list-icon-bg-color: var(--list-check-icon-bg-color-alt, var(--secondary-10));
+}
+
 }

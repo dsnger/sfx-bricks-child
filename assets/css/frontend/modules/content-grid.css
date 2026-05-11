@@ -1,3 +1,4 @@
+@layer sfx.components {
 /* =========================================
    CONTENT GRID – Responsive Grid System
    ========================================= */
@@ -117,4 +118,6 @@
   .content--feature-max {
     grid-column: feature-max-start / feature-max-end;
   }
+}
+
 }
