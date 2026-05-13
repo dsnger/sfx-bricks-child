@@ -20,10 +20,23 @@
   --sfx-form-border-radius: var(--form-border-radius, 0.5rem);
   --sfx-form-font-size: var(--form-font-size, 1rem);
   --sfx-form-line-height: var(--form-line-height, 1.5);
+  --sfx-form-font-family: var(--form-font-family, inherit);
+  --sfx-form-font-weight: var(--form-font-weight, 400);
+  --sfx-form-letter-spacing: var(--form-letter-spacing, normal);
   --sfx-form-input-bg: var(--form-input-bg, #ffffff);
   --sfx-form-color: var(--form-color, #111111);
-  --sfx-form-placeholder-font-size: var(--form-placeholder-font-size, 0.875rem);
-  --sfx-form-placeholder-line-height: var(--form-placeholder-line-height, 1.4);
+  /* Placeholders inherit field typography unless --form-placeholder-* overrides. */
+  --sfx-form-placeholder-font-family: var(--form-placeholder-font-family, var(--form-font-family, inherit));
+  --sfx-form-placeholder-font-weight: var(--form-placeholder-font-weight, var(--form-font-weight, 400));
+  --sfx-form-placeholder-letter-spacing: var(--form-placeholder-letter-spacing, var(--form-letter-spacing, normal));
+  /* Select inherits field typography unless --form-select-* overrides. */
+  --sfx-form-select-font-family: var(--form-select-font-family, var(--form-font-family, inherit));
+  --sfx-form-select-font-size: var(--form-select-font-size, var(--form-font-size, 1rem));
+  --sfx-form-select-font-weight: var(--form-select-font-weight, var(--form-font-weight, 400));
+  --sfx-form-select-line-height: var(--form-select-line-height, var(--form-line-height, 1.5));
+  --sfx-form-select-letter-spacing: var(--form-select-letter-spacing, var(--form-letter-spacing, normal));
+  --sfx-form-placeholder-font-size: var(--form-placeholder-font-size, var(--form-font-size, 0.875rem));
+  --sfx-form-placeholder-line-height: var(--form-placeholder-line-height, var(--form-line-height, 1.4));
   --sfx-form-placeholder-color: var(--form-placeholder-color, #6b7280);
   --sfx-form-options-gap: var(--form-options-gap, 0.75rem);
   --sfx-form-option-row-gap: var(--form-option-row-gap, 0.25rem);
@@ -59,6 +72,7 @@
   --sfx-form-submit-border-radius: var(--form-submit-border-radius, 0.5rem);
   --sfx-form-choose-files-padding-block: var(--form-choose-files-padding-block, 0);
   --sfx-form-choose-files-padding-inline: var(--form-choose-files-padding-inline, 1rem);
+  --sfx-form-select-padding-inline-end: var(--form-select-padding-inline-end, 2.25rem);
 
   /* Base sizes for inputs/selects */
   & input[type="text"],
@@ -90,16 +104,52 @@
       color: var(--sfx-form-label-color);
     }
 
-    & input {
+    /* Text-like fields: same chrome for inputs, textarea, and select (not checkbox/radio/file). */
+    & :is(
+      input[type="text"],
+      input[type="email"],
+      input[type="url"],
+      input[type="tel"],
+      input[type="search"],
+      input[type="password"],
+      input[type="number"],
+      input[type="date"],
+      input[type="datetime-local"],
+      input[type="month"],
+      input[type="week"],
+      input[type="time"],
+      select,
+      textarea
+    ) {
       padding-top: var(--sfx-form-padding-block);
       padding-right: var(--sfx-form-padding-inline);
       padding-bottom: var(--sfx-form-padding-block);
       padding-left: var(--sfx-form-padding-inline);
       border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
       border-radius: var(--sfx-form-border-radius);
+      font-family: var(--sfx-form-font-family);
       font-size: var(--sfx-form-font-size);
+      font-weight: var(--sfx-form-font-weight);
       line-height: var(--sfx-form-line-height);
+      letter-spacing: var(--sfx-form-letter-spacing);
       background-color: var(--sfx-form-input-bg);
+      color: var(--sfx-form-color);
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    /* Select typography: defaults match text fields; set --form-select-* only when diverging. */
+    & select {
+      font-family: var(--sfx-form-select-font-family);
+      font-size: var(--sfx-form-select-font-size);
+      font-weight: var(--sfx-form-select-font-weight);
+      line-height: var(--sfx-form-select-line-height);
+      letter-spacing: var(--sfx-form-select-letter-spacing);
+    }
+
+    /* Native dropdown arrow; multi-select keeps symmetric padding. */
+    & select:not([multiple]) {
+      padding-inline-end: var(--sfx-form-select-padding-inline-end);
     }
 
     & .options-wrapper {
@@ -119,9 +169,11 @@
   }
 
   & ::placeholder {
+    font-family: var(--sfx-form-placeholder-font-family);
     font-size: var(--sfx-form-placeholder-font-size);
-    font-weight: 400;
+    font-weight: var(--sfx-form-placeholder-font-weight);
     line-height: var(--sfx-form-placeholder-line-height);
+    letter-spacing: var(--sfx-form-placeholder-letter-spacing);
     color: var(--sfx-form-placeholder-color);
     transition: opacity 0.2s ease;
   }
@@ -347,18 +399,6 @@
     resize: vertical;
     max-width: 100%;
     overflow: auto;
-  }
-
-  & .form-group textarea {
-    padding-top: var(--sfx-form-padding-block);
-    padding-right: var(--sfx-form-padding-inline);
-    padding-bottom: var(--sfx-form-padding-block);
-    padding-left: var(--sfx-form-padding-inline);
-    border: var(--sfx-form-border-width) solid var(--sfx-form-border-color);
-    border-radius: var(--sfx-form-border-radius);
-    font-size: var(--sfx-form-font-size);
-    line-height: var(--sfx-form-line-height);
-    background-color: var(--sfx-form-input-bg);
   }
 
   /* Messages & submit feedback */

@@ -130,7 +130,7 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_v2_' . sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v5_' . sanitize_key($filename);
         $cached = get_transient($transient_key);
         
         if ($cached !== false) {
@@ -247,7 +247,8 @@ class Settings
       </details>
       <details class="sfx-token-mapping-summary">
         <summary><?php esc_html_e('External token mapping (Forms)', 'sfxtheme'); ?></summary>
-        <p><code><?php echo esc_html('Layout & fields: --form-input-height, --form-label-*, --form-padding-block|inline, --form-border-*, --form-font-*, --form-input-bg, --form-color, --form-placeholder-*, --form-options-gap, --form-option-row-gap, --form-radius-small, --form-focus-*, --form-radio-active-color, --form-icon-*, --form-checkbox-icon, --form-group-spacing, --form-error-*, --form-file-remove-*, --form-submit-padding-*, --form-submit-border-*, --form-choose-files-padding-block|inline.'); ?></code></p>
+        <p><code><?php echo esc_html('Layout & fields: --form-input-height, --form-label-*, --form-padding-block|inline, --form-border-*, --form-font-* (size, line-height, family, weight, letter-spacing), --form-input-bg, --form-color, --form-placeholder-* (optional; cascades from field typography when unset), --form-select-* typography (optional; cascades from field tokens), --form-options-gap, --form-option-row-gap, --form-radius-small, --form-focus-*, --form-radio-active-color, --form-icon-*, --form-checkbox-icon, --form-group-spacing, --form-error-*, --form-file-remove-*, --form-submit-padding-*, --form-submit-border-*, --form-choose-files-padding-block|inline, --form-select-padding-inline-end.'); ?></code></p>
+        <p><code><?php echo esc_html('Typographic cascade in CSS: placeholders use --form-placeholder-font-family|--form-placeholder-font-weight|--form-placeholder-letter-spacing defaulting to field --form-font-* ; placeholder font-size and line-height chain to --form-font-size|--form-line-height when their placeholder counterparts are omitted. Selects mirror this via --form-select-* chaining to --form-font-* .'); ?></code></p>
         <p><code><?php echo esc_html('Scoped consumption: longhands use var(--sfx-form-*); submit controls use var(--sfx-form-submit-*). No --btn-* in the forms module.'); ?></code></p>
       </details>
       <?php
