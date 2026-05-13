@@ -584,8 +584,10 @@ class Controller
             // If the attached file is missing on disk, the attachment is
             // already broken. Don't compound the damage: protect every
             // path the auto-recovery filter (fix_format_metadata) would
-            // try to rebind to, so the directory walk below doesn't
-            // @unlink the rescue candidates.
+            // try to rebind to, plus anything postmeta still references
+            // (intermediates can survive even when the main file is
+            // gone), so the directory walk below doesn't @unlink the
+            // rescue candidates.
             if (!self::file_exists_cached($file)) {
                 $orphan_dirname = dirname($file);
                 $orphan_base = pathinfo($file, PATHINFO_FILENAME);
@@ -600,6 +602,17 @@ class Controller
                     foreach ($max_values as $index => $dimension) {
                         if ($index === 0) continue;
                         $active_files["$orphan_dirname/$orphan_base-$dimension.$ext"] = true;
+                    }
+                }
+                // Protect anything postmeta still references — sizes
+                // are stored independently of file existence, and the
+                // intermediates they point at may still be on disk.
+                $orphan_metadata = wp_get_attachment_metadata($attachment_id);
+                if (is_array($orphan_metadata) && !empty($orphan_metadata['sizes']) && is_array($orphan_metadata['sizes'])) {
+                    foreach ($orphan_metadata['sizes'] as $size_data) {
+                        if (!empty($size_data['file'])) {
+                            $active_files["$orphan_dirname/" . $size_data['file']] = true;
+                        }
                     }
                 }
                 continue;
