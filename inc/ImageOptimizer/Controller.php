@@ -560,7 +560,31 @@ class Controller
             $processed++;
             $file = get_attached_file($attachment_id);
 
-            if (!$file || !self::file_exists_cached($file)) {
+            if (!$file) {
+                continue;
+            }
+
+            // If the attached file is missing on disk, the attachment is
+            // already broken. Don't compound the damage: protect every
+            // path the auto-recovery filter (fix_format_metadata) would
+            // try to rebind to, so the directory walk below doesn't
+            // @unlink the rescue candidates.
+            if (!self::file_exists_cached($file)) {
+                $orphan_dirname = dirname($file);
+                $orphan_base = pathinfo($file, PATHINFO_FILENAME);
+                $thumb_size = Constants::THUMBNAIL_SIZE;
+                $recovery_extensions = array_merge(
+                    Constants::ORIGINAL_EXTENSIONS_WITH_CASE,
+                    Constants::CONVERTED_EXTENSIONS
+                );
+                foreach ($recovery_extensions as $ext) {
+                    $active_files["$orphan_dirname/$orphan_base.$ext"] = true;
+                    $active_files["$orphan_dirname/$orphan_base-{$thumb_size}x{$thumb_size}.$ext"] = true;
+                    foreach ($max_values as $index => $dimension) {
+                        if ($index === 0) continue;
+                        $active_files["$orphan_dirname/$orphan_base-$dimension.$ext"] = true;
+                    }
+                }
                 continue;
             }
 
