@@ -402,38 +402,52 @@ class Controller
      */
     public static function fix_format_metadata($metadata, $attachment_id): array
     {
+        static $recovered_ids = [];
+
         $use_avif = Settings::get_use_avif();
         $extension = Settings::get_extension_name();
         $format = Settings::get_format();
         $file = get_attached_file($attachment_id);
-        
+
         // If the attached file doesn't exist, try to find the converted version
         if (!file_exists($file)) {
-            $path_info = pathinfo($file);
-            $dirname = $path_info['dirname'];
-            $basename = $path_info['filename'];
-            
-            // Try to find the converted file (webp or avif)
-            $converted_extensions = ['webp', 'avif'];
-            foreach ($converted_extensions as $ext) {
-                $converted_file = "$dirname/$basename.$ext";
-                if (file_exists($converted_file)) {
-                    // Update the attachment file path to the existing converted file
-                    update_attached_file($attachment_id, $converted_file);
-                    wp_update_post(['ID' => $attachment_id, 'post_mime_type' => "image/$ext"]);
-                    $file = $converted_file;
-                    $extension = $ext;
-                    $format = "image/$ext";
-                    
-                    // Update metadata file path
-                    $upload_dir = wp_upload_dir();
-                    $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $converted_file);
-                    
-                    error_log("ImageOptimizer: Fixed attachment $attachment_id - updated to $converted_file");
-                    break;
+            // Recovery writes to the DB (update_attached_file +
+            // wp_update_post). Restrict that to administrative contexts:
+            // running it on every public-facing read is wasteful and can
+            // surprise other code that doesn't expect filter-time writes.
+            // Also de-dupe per-request — if anything re-enters this
+            // filter for the same attachment, the second pass returns
+            // early.
+            $may_recover = (is_admin() || wp_doing_ajax() || wp_doing_cron())
+                && !isset($recovered_ids[$attachment_id]);
+
+            if ($may_recover) {
+                $recovered_ids[$attachment_id] = true;
+
+                $path_info = pathinfo($file);
+                $dirname = $path_info['dirname'];
+                $basename = $path_info['filename'];
+
+                // Try to find the converted file (webp or avif)
+                $converted_extensions = ['webp', 'avif'];
+                foreach ($converted_extensions as $ext) {
+                    $converted_file = "$dirname/$basename.$ext";
+                    if (file_exists($converted_file)) {
+                        update_attached_file($attachment_id, $converted_file);
+                        wp_update_post(['ID' => $attachment_id, 'post_mime_type' => "image/$ext"]);
+                        $file = $converted_file;
+                        $extension = $ext;
+                        $format = "image/$ext";
+
+                        $upload_dir = wp_upload_dir();
+                        $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $converted_file);
+
+                        error_log("ImageOptimizer: Fixed attachment $attachment_id - updated to $converted_file");
+                        break;
+                    }
                 }
             }
-            
+
             // If still not found, return original metadata
             if (!file_exists($file)) {
                 return $metadata;
