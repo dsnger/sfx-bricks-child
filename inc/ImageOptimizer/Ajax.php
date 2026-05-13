@@ -237,7 +237,16 @@ class Ajax
                 }
 
             $main_converted_file = $result['main_file'];
-            
+
+            // Defense in depth: a null main_file with SUCCESS status would
+            // let the original-deletion block below destroy data.
+            // ImageConversionService now rejects this state, but guard
+            // here so a future change can't reintroduce the bug.
+            if ($main_converted_file === null) {
+                $log[] = sprintf(__('Skipped: conversion produced no main file for Attachment ID %d', 'sfxtheme'), $attachment_id);
+                continue;
+            }
+
             // Update metadata
             if ($attachment_id && !empty($result['files'])) {
                 $metadata_updated = ImageConversionService::updateAttachmentMetadata(

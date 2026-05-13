@@ -230,12 +230,18 @@ class Controller
         
         // Update upload array with converted file info
         $main_converted_file = $result['main_file'];
-        if ($main_converted_file) {
-            $upload['file'] = $main_converted_file;
-            $upload['url'] = str_replace(basename($file_path), basename($main_converted_file), $upload['url']);
-            $upload['type'] = $format;
+        if ($main_converted_file === null) {
+            // Service reported success but produced no main file. Bail
+            // before the original-deletion block so we don't destroy the
+            // file that $upload['file'] still points at.
+            $log[] = sprintf(__('Aborted: conversion produced no main file for %s', 'sfxtheme'), basename($file_path));
+            Settings::append_log($log);
+            return $upload;
         }
-        
+        $upload['file'] = $main_converted_file;
+        $upload['url'] = str_replace(basename($file_path), basename($main_converted_file), $upload['url']);
+        $upload['type'] = $format;
+
         // Update metadata if we have an attachment ID
         if ($attachment_id && !empty($result['files'])) {
             $metadata_updated = ImageConversionService::updateAttachmentMetadata(
