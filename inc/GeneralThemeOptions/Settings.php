@@ -130,45 +130,49 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_v5_' . sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v6_' . sanitize_key($filename);
         $cached = get_transient($transient_key);
-        
+
         if ($cached !== false) {
             return $cached;
         }
-        
+
         $file_path = get_stylesheet_directory() . '/assets/css/frontend/modules/' . $filename;
-        
+
         if (!file_exists($file_path)) {
             return [];
         }
-        
+
         $css_content = file_get_contents($file_path);
         if ($css_content === false) {
             return [];
         }
-        
-        $variables = [];
-        
-        // Match var(--variable-name) - variables being used
+
+        // Strip /* ... */ comments so wildcard placeholders inside
+        // header comments (e.g. "var(--btn-*, literal)") don't surface
+        // as bogus tokens like "--btn-".
+        $css_content = preg_replace('!/\*.*?\*/!s', '', $css_content);
+
+        // Show only tokens the module *expects from outside* — i.e. referenced
+        // via var() but not defined in the file. Internal scoped tokens
+        // (--sfx-btn-*, --sfx-form-*, --cg-*, etc.) are both defined and used
+        // inside the module; they shouldn't be exposed for theme-option wiring.
+        $referenced = [];
         if (preg_match_all('/var\(\s*(--[\w-]+)/', $css_content, $matches)) {
-            $variables = array_merge($variables, $matches[1]);
+            $referenced = array_unique($matches[1]);
         }
-        
-        // Match --variable-name: (variable definitions, but exclude the internal ones defined and used only within the file)
-        // We want variables that are expected to come from outside (framework/theme)
+
+        $defined = [];
         if (preg_match_all('/[\s{;](--[\w-]+)\s*:/', $css_content, $matches)) {
-            // These are definitions - we'll include them as they show what can be customized
-            $variables = array_merge($variables, $matches[1]);
+            $defined = array_unique($matches[1]);
         }
-        
-        // Remove duplicates and sort
-        $variables = array_unique($variables);
+
+        $variables = array_values(array_diff($referenced, $defined));
         sort($variables);
-        
+
         // Cache for 1 week (cleared on theme update via clear_all_theme_caches)
         set_transient($transient_key, $variables, WEEK_IN_SECONDS);
-        
+
         return $variables;
     }
 
