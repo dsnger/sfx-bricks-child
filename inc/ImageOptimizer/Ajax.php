@@ -436,42 +436,76 @@ class Ajax
         ];
         $attachments = get_posts($args);
         $deleted = 0;
+        $all_extensions = array_merge(
+            Constants::ORIGINAL_EXTENSIONS_WITH_CASE,
+            Constants::CONVERTED_EXTENSIONS
+        );
+
         foreach ($attachments as $attachment_id) {
             $file_path = get_attached_file($attachment_id);
             if (!$file_path || !file_exists($file_path)) continue;
             $dirname = dirname($file_path);
             $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-            $all_files = glob($dirname . '/' . $base_name . '*');
-            foreach ($all_files as $candidate) {
-                $is_current = false;
-                $candidate_ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
-                
-                // Keep current format and sizes
-                foreach ($max_values as $index => $dimension) {
-                    $suffix = ($index === 0) ? '' : "-{$dimension}";
-                    $expected = $dirname . '/' . $base_name . $suffix . $extension;
-                    if ($candidate === $expected) {
-                        $is_current = true;
-                        break;
+
+            // Build an explicit per-attachment candidate set. Never use a
+            // wildcard like glob("$base_name*") here: filenames in WP
+            // routinely share prefixes (e.g. "photo" vs "photo-portrait"),
+            // and a prefix match would silently sweep up files that belong
+            // to other attachments and leave their DB rows pointing at
+            // deleted files.
+            $candidates = [];
+            $candidates[$file_path] = true;
+
+            // Anything WP currently tracks as a size for this attachment
+            // (catches legacy sizes whose dimension is no longer in
+            // max_values — they're exactly what we want to clean up).
+            $metadata = wp_get_attachment_metadata($attachment_id);
+            if (is_array($metadata) && !empty($metadata['sizes']) && is_array($metadata['sizes'])) {
+                foreach ($metadata['sizes'] as $size_data) {
+                    if (!empty($size_data['file'])) {
+                        $candidates["$dirname/" . $size_data['file']] = true;
                     }
                 }
-                // Keep thumbnail
-                $thumb = $dirname . '/' . $base_name . "-{$thumb_size}x{$thumb_size}" . $extension;
-                if ($candidate === $thumb) {
-                    $is_current = true;
+            }
+
+            // The main file, thumbnail, and current-size variants in every
+            // extension we manage — covers leftovers from past conversions
+            // and alternate-format duplicates.
+            foreach ($all_extensions as $ext) {
+                $candidates["$dirname/$base_name.$ext"] = true;
+                $candidates["$dirname/$base_name-{$thumb_size}x{$thumb_size}.$ext"] = true;
+                foreach ($max_values as $index => $dimension) {
+                    if ($index === 0) continue;
+                    $candidates["$dirname/$base_name-$dimension.$ext"] = true;
                 }
-                // Keep the attached file itself
-                if ($candidate === $file_path) {
-                    $is_current = true;
+            }
+
+            // Build the keep set: attached file, current target-format
+            // sizes, current thumbnail, and (optionally) preserved
+            // originals in every original extension/size.
+            $keep = [];
+            $keep[$file_path] = true;
+            foreach ($max_values as $index => $dimension) {
+                $suffix = ($index === 0) ? '' : "-{$dimension}";
+                $keep["$dirname/$base_name$suffix$extension"] = true;
+            }
+            $keep["$dirname/$base_name-{$thumb_size}x{$thumb_size}$extension"] = true;
+
+            if ($preserve_originals) {
+                foreach (Constants::ORIGINAL_EXTENSIONS_WITH_CASE as $orig_ext) {
+                    $keep["$dirname/$base_name.$orig_ext"] = true;
+                    $keep["$dirname/$base_name-{$thumb_size}x{$thumb_size}.$orig_ext"] = true;
+                    foreach ($max_values as $index => $dimension) {
+                        if ($index === 0) continue;
+                        $keep["$dirname/$base_name-$dimension.$orig_ext"] = true;
+                    }
                 }
-                // CRITICAL FIX: If preserve_originals is ON, keep ALL original format files (jpg/png)
-                // This ensures originals are kept even when the attachment now points to webp/avif
-                if ($preserve_originals && in_array($candidate_ext, Constants::ORIGINAL_EXTENSIONS, true)) {
-                    $is_current = true;
-                }
-                
-                if (!$is_current && file_exists($candidate)) {
-                    @unlink($candidate);
+            }
+
+            foreach (array_keys($candidates) as $candidate) {
+                if (isset($keep[$candidate])) continue;
+                if (!file_exists($candidate)) continue;
+                if (@unlink($candidate)) {
                     $deleted++;
                     $log[] = sprintf(__('Deleted old file: %s', 'sfxtheme'), basename($candidate));
                 }
