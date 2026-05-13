@@ -1,3 +1,7 @@
+/* Layered baseline (sfx.components). Living in @layer is intentional:
+   unlayered rules — Bricks Builder element styles, child theme, user
+   custom CSS — win automatically without !important or specificity
+   wars. Do not unwrap the @layer block. */
 @layer sfx.components {
 /* =========================================
    CONTENT GRID – Responsive Grid System
