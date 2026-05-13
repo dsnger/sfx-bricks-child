@@ -450,6 +450,31 @@ class Ajax
             Constants::CONVERTED_EXTENSIONS
         );
 
+        // Pre-compute every other attachment's main file so the
+        // directory scan below can never propose deleting a file that
+        // is itself the attached file of a sibling attachment. Without
+        // this, an attachment literally named "photo-300" would be
+        // erased when cleanup runs against an attachment named "photo"
+        // (its basename matches the sized-variant regex).
+        $global_active_mains = [];
+        foreach ($attachments as $other_id) {
+            $other_path = get_attached_file($other_id);
+            if ($other_path) {
+                $global_active_mains[$other_path] = true;
+            }
+        }
+
+        // Cache scandir() per directory: a YYYY/MM uploads folder is
+        // shared by many attachments and re-reading it per attachment
+        // is wasted I/O on large sites.
+        $dir_listing_cache = [];
+
+        // Build the ext-alternation once for the bounded-basename regex.
+        $ext_pattern = implode('|', array_map(
+            fn($e) => preg_quote($e, '/'),
+            $all_extensions
+        ));
+
         foreach ($attachments as $attachment_id) {
             $file_path = get_attached_file($attachment_id);
             if (!$file_path || !file_exists($file_path)) continue;
@@ -487,6 +512,28 @@ class Ajax
                     if ($index === 0) continue;
                     $candidates["$dirname/$base_name-$dimension.$ext"] = true;
                 }
+            }
+
+            // Bounded exact-basename scan: pick up stale sized variants
+            // that are no longer referenced by metadata['sizes'] *and*
+            // no longer in current max_values (e.g., photo-900.webp
+            // left over after max_values shrank). The regex matches
+            //     ^<base_name>(?:|-\d+|-\d+x\d+)\.<managed-ext>$
+            // anchored to the start/end of the filename so prefix
+            // collisions (photo vs photo-portrait) can't bleed in.
+            // Cross-attachment safety: skip any path that is another
+            // attachment's main file.
+            if (!isset($dir_listing_cache[$dirname])) {
+                $entries = @scandir($dirname);
+                $dir_listing_cache[$dirname] = is_array($entries) ? $entries : [];
+            }
+            $name_re = '/^' . preg_quote($base_name, '/') . '(?:|-\d+|-\d+x\d+)\.(?:' . $ext_pattern . ')$/';
+            foreach ($dir_listing_cache[$dirname] as $entry) {
+                if ($entry === '.' || $entry === '..') continue;
+                if (!preg_match($name_re, $entry)) continue;
+                $full = "$dirname/$entry";
+                if ($full !== $file_path && isset($global_active_mains[$full])) continue;
+                $candidates[$full] = true;
             }
 
             // Build the keep set: attached file, current target-format

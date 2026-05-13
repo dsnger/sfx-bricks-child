@@ -412,13 +412,16 @@ class Controller
         // If the attached file doesn't exist, try to find the converted version
         if (!file_exists($file)) {
             // Recovery writes to the DB (update_attached_file +
-            // wp_update_post). Restrict that to administrative contexts:
-            // running it on every public-facing read is wasteful and can
-            // surprise other code that doesn't expect filter-time writes.
-            // Also de-dupe per-request — if anything re-enters this
-            // filter for the same attachment, the second pass returns
-            // early.
-            $may_recover = (is_admin() || wp_doing_ajax() || wp_doing_cron())
+            // wp_update_post). Restrict that to known metadata-generation
+            // contexts so a public-facing read can't trigger filter-time
+            // writes, while still allowing WP-CLI (`wp media regenerate`)
+            // and REST-driven media flows that legitimately regenerate
+            // metadata. Also de-dupe per-request — if anything re-enters
+            // this filter for the same attachment, the second pass
+            // returns early.
+            $is_cli  = defined('WP_CLI') && WP_CLI;
+            $is_rest = defined('REST_REQUEST') && REST_REQUEST;
+            $may_recover = (is_admin() || wp_doing_ajax() || wp_doing_cron() || $is_cli || $is_rest)
                 && !isset($recovered_ids[$attachment_id]);
 
             if ($may_recover) {
