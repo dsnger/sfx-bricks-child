@@ -130,7 +130,7 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_v6_' . sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v7_' . sanitize_key($filename);
         $cached = get_transient($transient_key);
 
         if ($cached !== false) {
@@ -155,8 +155,8 @@ class Settings
 
         // Show only tokens the module *expects from outside* — i.e. referenced
         // via var() but not defined in the file. Internal scoped tokens
-        // (--sfx-btn-*, --sfx-form-*, --cg-*, etc.) are both defined and used
-        // inside the module; they shouldn't be exposed for theme-option wiring.
+        // (--sfx-*) are both defined and used inside the module; they
+        // shouldn't be exposed for theme-option wiring.
         $referenced = [];
         if (preg_match_all('/var\(\s*(--[\w-]+)/', $css_content, $matches)) {
             $referenced = array_unique($matches[1]);
@@ -168,12 +168,45 @@ class Settings
         }
 
         $variables = array_values(array_diff($referenced, $defined));
+
+        // Allowlist by module prefix: every module references Bricks core
+        // tokens (--primary, --space-s, etc.) as default-chain fallbacks
+        // after the tokenization alignment refactor. Those belong to the
+        // Bricks/core framework surface, not to the per-module override
+        // list, so they're filtered out here. Keeping only --<prefix>-*
+        // tokens gives each module's theme-options panel a focused,
+        // module-scoped configuration surface.
+        $prefix = self::get_module_prefix($filename);
+        if ($prefix !== '') {
+            $variables = array_values(array_filter(
+                $variables,
+                static fn(string $v): bool => str_starts_with($v, $prefix)
+            ));
+        }
+
         sort($variables);
 
         // Cache for 1 week (cleared on theme update via clear_all_theme_caches)
         set_transient($transient_key, $variables, WEEK_IN_SECONDS);
 
         return $variables;
+    }
+
+    /**
+     * Map a module CSS filename to its public-token prefix.
+     *
+     * @param string $filename The CSS filename (e.g., 'buttons.css')
+     * @return string The prefix (e.g., '--btn-') or '' if unknown
+     */
+    private static function get_module_prefix(string $filename): string {
+        $map = [
+            'buttons.css'      => '--btn-',
+            'forms.css'        => '--form-',
+            'lists.css'        => '--list-',
+            'content-grid.css' => '--cg-',
+            'animations.css'   => '--animate-',
+        ];
+        return $map[$filename] ?? '';
     }
 
     /**
