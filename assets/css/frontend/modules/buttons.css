@@ -133,7 +133,9 @@
 
   &.bricks-background-dark {
     --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
-    --sfx-btn-color-fg: var(--btn-dark-fg, var(--btn-color-fg, #fff));
+    /* Dark bg by definition — bypass the global --btn-color-fg chain
+       (a user-set --btn-color-fg: #000 should not break dark buttons). */
+    --sfx-btn-color-fg: var(--btn-dark-fg, #fff);
   }
 
   &.bricks-background-muted {
@@ -201,7 +203,8 @@
 
     &.bricks-color-dark {
       --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
-      --sfx-btn-color-fg: var(--btn-dark-fg, var(--btn-color-fg, #fff));
+      /* Dark bg by definition — bypass the global --btn-color-fg chain. */
+      --sfx-btn-color-fg: var(--btn-dark-fg, #fff);
     }
 
     &.bricks-color-muted {

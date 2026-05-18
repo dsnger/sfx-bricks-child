@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.6] - 2026-05-18
+
+### Changed
+
+- Buttons module: `.bricks-background-dark` and `.bricks-color-dark` (outline) foreground fallback locked to `#fff` literal — same semantic-name treatment as the rc.5 `light` fix. The chain through global `--btn-color-fg` is bypassed for both `light` and `dark` variants since their semantic names guarantee bg lightness. A user-set `--btn-color-fg: #000` no longer corrupts dark-bg buttons. Per-variant `--btn-dark-fg` override still chains first.
+
 ## [0.12.0-rc.5] - 2026-05-18
 
 ### Fixed
