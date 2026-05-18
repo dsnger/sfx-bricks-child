@@ -7,8 +7,21 @@
 
 /* ========================================
    BUTTON STYLES (nested)
-   Longhands use --sfx-btn-* only. Define --btn-* in Core Framework (or :root);
-   theme maps: --sfx-btn-*: var(--btn-*, literal).
+   Longhands use --sfx-btn-* only. External wireup is --btn-*.
+
+   Per-variant color chain (defines once, user overrides at any level):
+     --sfx-btn-color: var(--btn-<variant>-bg, var(--<variant>, <literal>))
+   Lazy mode: define only Bricks core tokens (--primary, --secondary, ...) and
+   buttons follow. Define --btn-<variant>-bg only when you need a
+   button-specific override distinct from the global Bricks token.
+
+   Foreground/mix defaults are global, not per-variant:
+     --btn-color-fg          (default #fff) — dark-bg variants
+     --btn-color-fg-on-light (default #111) — light-bg variants (light/accent/warning)
+     --btn-mix               (default black) — hover darken for dark bgs
+     --btn-mix-on-light      (default #fff)  — hover lighten for secondary/dark/muted
+   Per-variant overrides --btn-<variant>-fg / --btn-<variant>-mix still chainable
+   for edge cases but no longer required.
    ======================================== */
 
 :where(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
@@ -95,55 +108,56 @@
   }
 
   &.bricks-background-primary {
-    --sfx-btn-color: var(--btn-primary-bg, #2563eb);
-    --sfx-btn-color-fg: var(--btn-primary-fg, #ffffff);
+    --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
+    --sfx-btn-color-fg: var(--btn-primary-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-secondary {
-    --sfx-btn-color: var(--btn-secondary-bg, #64748b);
-    --sfx-btn-color-fg: var(--btn-secondary-fg, #ffffff);
-    --sfx-btn-mix: var(--btn-secondary-mix, #ffffff);
+    --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
+    --sfx-btn-color-fg: var(--btn-secondary-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-mix: var(--btn-secondary-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-accent {
-    --sfx-btn-color: var(--btn-accent-bg, #f59e0b);
-    --sfx-btn-color-fg: var(--btn-accent-fg, #111827);
+    --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
+    --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg-on-light, #111));
   }
 
   &.bricks-background-light {
-    --sfx-btn-color: var(--btn-light-bg, #f8fafc);
-    --sfx-btn-color-fg: var(--btn-light-fg, #0f172a);
+    --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
+    --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg-on-light, #111));
   }
 
   &.bricks-background-dark {
-    --sfx-btn-color: var(--btn-dark-bg, #0f172a);
-    --sfx-btn-color-fg: var(--btn-dark-fg, #f8fafc);
-    --sfx-btn-mix: var(--btn-dark-mix, #ffffff);
+    --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
+    --sfx-btn-color-fg: var(--btn-dark-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-mix: var(--btn-dark-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-muted {
-    --sfx-btn-color: var(--btn-muted-bg, #94a3b8);
-    --sfx-btn-color-fg: var(--btn-muted-fg, #ffffff);
+    --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
+    --sfx-btn-color-fg: var(--btn-muted-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-mix: var(--btn-muted-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-info {
-    --sfx-btn-color: var(--btn-info-bg, #0ea5e9);
-    --sfx-btn-color-fg: var(--btn-info-fg, #ffffff);
+    --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
+    --sfx-btn-color-fg: var(--btn-info-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-success {
-    --sfx-btn-color: var(--btn-success-bg, #22c55e);
-    --sfx-btn-color-fg: var(--btn-success-fg, #ffffff);
+    --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
+    --sfx-btn-color-fg: var(--btn-success-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-danger {
-    --sfx-btn-color: var(--btn-danger-bg, #ef4444);
-    --sfx-btn-color-fg: var(--btn-danger-fg, #ffffff);
+    --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
+    --sfx-btn-color-fg: var(--btn-danger-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-warning {
-    --sfx-btn-color: var(--btn-warning-bg, #eab308);
-    --sfx-btn-color-fg: var(--btn-warning-fg, #111827);
+    --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
+    --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg-on-light, #111));
   }
 
   &.outline {
@@ -164,53 +178,53 @@
     }
 
     &.bricks-color-primary {
-      --sfx-btn-color: var(--btn-primary-bg, #2563eb);
-      --sfx-btn-color-fg: var(--btn-primary-fg, #ffffff);
+      --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
+      --sfx-btn-color-fg: var(--btn-primary-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-secondary {
-      --sfx-btn-color: var(--btn-secondary-bg, #64748b);
-      --sfx-btn-color-fg: var(--btn-secondary-fg, #ffffff);
+      --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
+      --sfx-btn-color-fg: var(--btn-secondary-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-accent {
-      --sfx-btn-color: var(--btn-accent-bg, #f59e0b);
-      --sfx-btn-color-fg: var(--btn-accent-fg, #111827);
+      --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
+      --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg-on-light, #111));
     }
 
     &.bricks-color-light {
-      --sfx-btn-color: var(--btn-light-bg, #f8fafc);
-      --sfx-btn-color-fg: var(--btn-light-fg, #0f172a);
+      --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
+      --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg-on-light, #111));
     }
 
     &.bricks-color-dark {
-      --sfx-btn-color: var(--btn-dark-bg, #0f172a);
-      --sfx-btn-color-fg: var(--btn-dark-fg, #f8fafc);
+      --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
+      --sfx-btn-color-fg: var(--btn-dark-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-muted {
-      --sfx-btn-color: var(--btn-muted-bg, #94a3b8);
-      --sfx-btn-color-fg: var(--btn-muted-fg, #ffffff);
+      --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
+      --sfx-btn-color-fg: var(--btn-muted-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-info {
-      --sfx-btn-color: var(--btn-info-bg, #0ea5e9);
-      --sfx-btn-color-fg: var(--btn-info-fg, #ffffff);
+      --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
+      --sfx-btn-color-fg: var(--btn-info-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-success {
-      --sfx-btn-color: var(--btn-success-bg, #22c55e);
-      --sfx-btn-color-fg: var(--btn-success-fg, #ffffff);
+      --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
+      --sfx-btn-color-fg: var(--btn-success-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-danger {
-      --sfx-btn-color: var(--btn-danger-bg, #ef4444);
-      --sfx-btn-color-fg: var(--btn-danger-fg, #ffffff);
+      --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
+      --sfx-btn-color-fg: var(--btn-danger-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-warning {
-      --sfx-btn-color: var(--btn-warning-bg, #eab308);
-      --sfx-btn-color-fg: var(--btn-warning-fg, #111827);
+      --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
+      --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg-on-light, #111));
     }
   }
 
