@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.5] - 2026-05-18
+
+### Fixed
+
+- Buttons module: `.bricks-background-light` and `.bricks-color-light` (outline) foreground fallback now resolves to a dark literal (`#111`) instead of chaining through the global `--btn-color-fg` (which defaults to `#fff`). The `light` variant is semantically guaranteed to be a light background — defaulting its text to white reproduced the unreadable rendering rc.4 fixed for accent-style cases. Per-variant `--btn-light-fg` override still chains first, so explicit theme settings continue to win.
+
 ## [0.12.0-rc.4] - 2026-05-18
 
 ### Fixed

@@ -126,7 +126,9 @@
 
   &.bricks-background-light {
     --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-    --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg, #fff));
+    /* Light bg by definition — bypass the global --btn-color-fg chain
+       (which defaults to white) and fall back to a dark fg literal. */
+    --sfx-btn-color-fg: var(--btn-light-fg, #111);
   }
 
   &.bricks-background-dark {
@@ -193,7 +195,8 @@
 
     &.bricks-color-light {
       --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-      --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg, #fff));
+      /* Light bg by definition — bypass the global --btn-color-fg chain. */
+      --sfx-btn-color-fg: var(--btn-light-fg, #111);
     }
 
     &.bricks-color-dark {
