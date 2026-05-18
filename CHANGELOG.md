@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.7] - 2026-05-18
+
+### Changed
+
+- Buttons module: per-variant foreground now chains through the matching Bricks core *pair* (`--<v>-fg`) instead of a single global `--btn-color-fg` token. Each variant's chain is `--sfx-btn-color-fg: var(--btn-<v>-fg, var(--<v>-fg, #fff))` — define the semantic pair (`--primary` + `--primary-fg`, `--accent` + `--accent-fg`, `--secondary` + `--secondary-fg`, etc.) in your core framework and buttons follow without per-variant button tokens. This is the pre-refactor convention preserved on top of the scoped `--sfx-btn-*` system. Light and dark variants are special-cased: light bg swaps the pair to `--dark` as the fg fallback, dark bg swaps to `--light` (so contrast is locked even when the user's core tokens don't define explicit `-fg` counterparts for those two). Hover-mix per-variant defaults reinstated for `secondary` and `dark` (white mix — lighter hover for already-dark colors, original module behavior). Per-variant `--btn-<v>-fg` and `--btn-<v>-mix` overrides remain chainable. The global `--btn-color-fg`, `--btn-color-fg-on-light`, and `--btn-mix-on-light` tokens are removed; base `.btn--text` and no-variant buttons default to `currentColor`.
+- General Theme Options admin: per-module field descriptions and the "External token mapping" help blocks rewritten to reflect the chain-to-Bricks-pair contract. Added previously missing mapping blocks for Lists and Content Grid (now that they ship with proper external `--list-*` / `--cg-*` wireup layers). Buttons mapping documents the new per-variant pair chain (`--btn-<v>-bg` → `--<v>`, `--btn-<v>-fg` → `--<v>-fg`), light/dark pair swap, and `--btn-mix` flip on `secondary` / `dark`. Forms mapping documents the new state-surface tokens, component-wide transitions, file-result spacing tokens, and the chains to `--primary` / `--text` / `--danger` / `--success`. CSS-vars transient cache key bumped (`sfx_css_vars_v7_` → `sfx_css_vars_v8_`) so the previously cached (pre-token-rename) lists invalidate on first read.
+
 ## [0.12.0-rc.6] - 2026-05-18
 
 ### Changed

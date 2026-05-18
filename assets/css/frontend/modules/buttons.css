@@ -9,21 +9,28 @@
    BUTTON STYLES (nested)
    Longhands use --sfx-btn-* only. External wireup is --btn-*.
 
-   Per-variant color chain (defines once, user overrides at any level):
-     --sfx-btn-color: var(--btn-<variant>-bg, var(--<variant>, <literal>))
-   Lazy mode: define only Bricks core tokens (--primary, --secondary, ...) and
-   buttons follow. Define --btn-<variant>-bg only when you need a
-   button-specific override distinct from the global Bricks token.
+   Per-variant chain (3 levels, falls through left to right):
+     --sfx-btn-color:    var(--btn-<v>-bg, var(--<v>,    <literal>))
+     --sfx-btn-color-fg: var(--btn-<v>-fg, var(--<v>-fg, <literal>))
 
-   Foreground and mix are SINGLE globals — the module cannot know whether
-   a given user's --primary / --accent / etc. resolves to a light or dark
-   colour, so it cannot guess fg contrast or hover direction. One fallback
-   each; override per-variant where your specific palette needs it:
-     --btn-color-fg  (default #fff)   — fg for any filled / outline variant
-     --btn-mix       (default black)  — hover mix for any filled variant
-   Per-variant overrides --btn-<variant>-fg / --btn-<variant>-mix remain
-   chainable for the cases where a specific palette needs a different fg
-   or inverse hover direction.
+   Each variant uses the matching Bricks core *pair* — bg uses --<v>, fg
+   uses --<v>-fg. Define both in your core framework (Bricks normally
+   ships them as semantic pairs: --primary/--primary-fg, --accent/
+   --accent-fg, etc.) and buttons follow. Override per-variant via
+   --btn-<v>-bg / --btn-<v>-fg only when you need a button-specific
+   value distinct from the global Bricks pair.
+
+   Light / dark variants are the two cases where the semantic name
+   guarantees brightness — they swap the pair (light → fg = --dark,
+   dark → fg = --light) so contrast is locked even when the user's
+   core tokens don't define explicit -fg counterparts for them.
+
+   Hover mix:
+     --btn-mix (default black) — hover blends 15% mix into the bg via
+     color-mix() (darker hover for dark bgs). The secondary and dark
+     variants flip to white per the original module behavior (lighter
+     hover for already-dark colors). Override per-variant via
+     --btn-<v>-mix.
    ======================================== */
 
 :where(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
@@ -55,7 +62,7 @@
   --sfx-btn-xl-padding-inline: var(--btn-xl-padding-inline, 2rem);
   --sfx-btn-xl-font-size: var(--btn-xl-font-size, 1.25rem);
   --sfx-btn-color: var(--btn-color, transparent);
-  --sfx-btn-color-fg: var(--btn-color-fg, currentColor);
+  --sfx-btn-color-fg: currentColor;
 
   align-items: center;
   gap: var(--sfx-btn-gap);
@@ -111,56 +118,56 @@
 
   &.bricks-background-primary {
     --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
-    --sfx-btn-color-fg: var(--btn-primary-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-primary-fg, var(--primary-fg, #fff));
   }
 
   &.bricks-background-secondary {
     --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
-    --sfx-btn-color-fg: var(--btn-secondary-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-secondary-fg, var(--secondary-fg, #fff));
+    --sfx-btn-mix: var(--btn-secondary-mix, white);
   }
 
   &.bricks-background-accent {
     --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
-    --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-accent-fg, var(--accent-fg, #fff));
   }
 
   &.bricks-background-light {
     --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-    /* Light bg by definition — bypass the global --btn-color-fg chain
-       (which defaults to white) and fall back to a dark fg literal. */
-    --sfx-btn-color-fg: var(--btn-light-fg, #111);
+    /* Light bg → swap pair: fg = --dark token. */
+    --sfx-btn-color-fg: var(--btn-light-fg, var(--dark, #111));
   }
 
   &.bricks-background-dark {
     --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
-    /* Dark bg by definition — bypass the global --btn-color-fg chain
-       (a user-set --btn-color-fg: #000 should not break dark buttons). */
-    --sfx-btn-color-fg: var(--btn-dark-fg, #fff);
+    /* Dark bg → swap pair: fg = --light token. */
+    --sfx-btn-color-fg: var(--btn-dark-fg, var(--light, #fff));
+    --sfx-btn-mix: var(--btn-dark-mix, white);
   }
 
   &.bricks-background-muted {
     --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
-    --sfx-btn-color-fg: var(--btn-muted-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-muted-fg, var(--muted-fg, #fff));
   }
 
   &.bricks-background-info {
     --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
-    --sfx-btn-color-fg: var(--btn-info-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-info-fg, var(--info-fg, #fff));
   }
 
   &.bricks-background-success {
     --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
-    --sfx-btn-color-fg: var(--btn-success-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-success-fg, var(--success-fg, #fff));
   }
 
   &.bricks-background-danger {
     --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
-    --sfx-btn-color-fg: var(--btn-danger-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
   }
 
   &.bricks-background-warning {
     --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
-    --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg, #fff));
+    --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
   }
 
   &.outline {
@@ -182,54 +189,54 @@
 
     &.bricks-color-primary {
       --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
-      --sfx-btn-color-fg: var(--btn-primary-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-primary-fg, var(--primary-fg, #fff));
     }
 
     &.bricks-color-secondary {
       --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
-      --sfx-btn-color-fg: var(--btn-secondary-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-secondary-fg, var(--secondary-fg, #fff));
     }
 
     &.bricks-color-accent {
       --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
-      --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-accent-fg, var(--accent-fg, #fff));
     }
 
     &.bricks-color-light {
       --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-      /* Light bg by definition — bypass the global --btn-color-fg chain. */
-      --sfx-btn-color-fg: var(--btn-light-fg, #111);
+      /* Light bg → swap pair: fg = --dark token. */
+      --sfx-btn-color-fg: var(--btn-light-fg, var(--dark, #111));
     }
 
     &.bricks-color-dark {
       --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
-      /* Dark bg by definition — bypass the global --btn-color-fg chain. */
-      --sfx-btn-color-fg: var(--btn-dark-fg, #fff);
+      /* Dark bg → swap pair: fg = --light token. */
+      --sfx-btn-color-fg: var(--btn-dark-fg, var(--light, #fff));
     }
 
     &.bricks-color-muted {
       --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
-      --sfx-btn-color-fg: var(--btn-muted-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-muted-fg, var(--muted-fg, #fff));
     }
 
     &.bricks-color-info {
       --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
-      --sfx-btn-color-fg: var(--btn-info-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-info-fg, var(--info-fg, #fff));
     }
 
     &.bricks-color-success {
       --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
-      --sfx-btn-color-fg: var(--btn-success-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-success-fg, var(--success-fg, #fff));
     }
 
     &.bricks-color-danger {
       --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
-      --sfx-btn-color-fg: var(--btn-danger-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
     }
 
     &.bricks-color-warning {
       --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
-      --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg, #fff));
+      --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
     }
   }
 
