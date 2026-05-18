@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.2] - 2026-05-18
+
+### Changed
+
+- General Theme Options: the per-module "CSS Variables" admin surface now hides internal scoped tokens (`--sfx-*`, `--cg-*`) and exposes only the external wireup tokens a theme would actually override. Implementation-detail tokens that a module declares and consumes in its own scope previously surfaced as theme-option wiring, which was misleading — overriding them at `:root` had no effect because the module redefines them inside its own selector. The extractor in `inc/GeneralThemeOptions/Settings.php::get_css_variables()` switched to "referenced via `var()` but not declared with `--name:`" inside the file, correctly distinguishing outside-supplied wireup tokens from in-module scoped longhands across all current naming conventions (`--sfx-*`, `--cg-*`, plus any future module prefix). Comments are stripped before scanning so wildcard placeholders in header comments (e.g. `var(--btn-*, literal)`) don't surface as bogus tokens like `--btn-`. CSS-vars transient bumped (`sfx_css_vars_v5_` → `sfx_css_vars_v6_`) so the old (inclusive) lists invalidate on first read. Net token counts: buttons 46 → 45 (36 internals hidden), forms 128 → 64 (64 internals hidden), content-grid 11 → 6 (5 internals hidden), animations 7 → 3 (4 internals hidden), lists 32 → 18 (14 internals hidden).
+
+### Added
+
+- Docs: design spec for the upcoming CSS tokenization alignment refactor (`docs/superpowers/specs/2026-05-18-css-tokenization-alignment-design.md`). Extends the buttons-module pattern (internal `--sfx-btn-*` scoped tokens fed by external `--btn-*` wireup) to forms, lists, and content-grid; simplifies the buttons surface so per-variant color tokens default-chain to Bricks core tokens (`--primary`, `--secondary`, etc.) instead of requiring a literal definition per variant. Spec only — no runtime change in this release.
+
 ## [0.12.0-rc.1] - 2026-05-13
 
 ### Fixed
