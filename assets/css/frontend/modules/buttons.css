@@ -15,13 +15,15 @@
    buttons follow. Define --btn-<variant>-bg only when you need a
    button-specific override distinct from the global Bricks token.
 
-   Foreground/mix defaults are global, not per-variant:
-     --btn-color-fg          (default #fff) — dark-bg variants
-     --btn-color-fg-on-light (default #111) — light-bg variants (light/accent/warning)
-     --btn-mix               (default black) — hover darken for dark bgs
-     --btn-mix-on-light      (default #fff)  — hover lighten for secondary/dark/muted
-   Per-variant overrides --btn-<variant>-fg / --btn-<variant>-mix still chainable
-   for edge cases but no longer required.
+   Foreground and mix are SINGLE globals — the module cannot know whether
+   a given user's --primary / --accent / etc. resolves to a light or dark
+   colour, so it cannot guess fg contrast or hover direction. One fallback
+   each; override per-variant where your specific palette needs it:
+     --btn-color-fg  (default #fff)   — fg for any filled / outline variant
+     --btn-mix       (default black)  — hover mix for any filled variant
+   Per-variant overrides --btn-<variant>-fg / --btn-<variant>-mix remain
+   chainable for the cases where a specific palette needs a different fg
+   or inverse hover direction.
    ======================================== */
 
 :where(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
@@ -115,29 +117,26 @@
   &.bricks-background-secondary {
     --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
     --sfx-btn-color-fg: var(--btn-secondary-fg, var(--btn-color-fg, #fff));
-    --sfx-btn-mix: var(--btn-secondary-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-accent {
     --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
-    --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg-on-light, #111));
+    --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-light {
     --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-    --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg-on-light, #111));
+    --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg, #fff));
   }
 
   &.bricks-background-dark {
     --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
     --sfx-btn-color-fg: var(--btn-dark-fg, var(--btn-color-fg, #fff));
-    --sfx-btn-mix: var(--btn-dark-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-muted {
     --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
     --sfx-btn-color-fg: var(--btn-muted-fg, var(--btn-color-fg, #fff));
-    --sfx-btn-mix: var(--btn-muted-mix, var(--btn-mix-on-light, #fff));
   }
 
   &.bricks-background-info {
@@ -157,7 +156,7 @@
 
   &.bricks-background-warning {
     --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
-    --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg-on-light, #111));
+    --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg, #fff));
   }
 
   &.outline {
@@ -189,12 +188,12 @@
 
     &.bricks-color-accent {
       --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
-      --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg-on-light, #111));
+      --sfx-btn-color-fg: var(--btn-accent-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-light {
       --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-      --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg-on-light, #111));
+      --sfx-btn-color-fg: var(--btn-light-fg, var(--btn-color-fg, #fff));
     }
 
     &.bricks-color-dark {
@@ -224,7 +223,7 @@
 
     &.bricks-color-warning {
       --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
-      --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg-on-light, #111));
+      --sfx-btn-color-fg: var(--btn-warning-fg, var(--btn-color-fg, #fff));
     }
   }
 

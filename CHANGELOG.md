@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.4] - 2026-05-18
+
+### Fixed
+
+- Buttons module: the rc.3 simplification introduced a wrong assumption that specific variants (`accent`, `light`, `warning`) would always resolve to light backgrounds and therefore needed dark foreground text via `--btn-color-fg-on-light`. The module cannot know what a user's `--accent`/`--light`/`--warning` actually resolve to — they may be dark colors in a given palette, producing dark-on-dark text. Same wrong-assumption applied to `--btn-mix-on-light` for `secondary`/`dark`/`muted` hover direction. Collapsed both splits to single global fallbacks: every filled variant now chains foreground through `--btn-color-fg` (default `#fff`) and every variant inherits the global `--btn-mix` (default `black`) from the base scoped block. Per-variant `--btn-<variant>-fg` overrides remain available — define them when your specific palette needs a non-white foreground for a given variant. Same uniform treatment applied to `.outline` (`bricks-color-*`) variants.
+
 ## [0.12.0-rc.3] - 2026-05-18
 
 ### Changed
