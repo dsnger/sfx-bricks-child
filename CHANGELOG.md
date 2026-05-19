@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.8] - 2026-05-19
+
+### Changed
+
+- Buttons module: per-variant token blocks consolidated. Each variant's `--sfx-btn-color` / `--sfx-btn-color-fg` (and where applicable `--sfx-btn-mix`) chain is now declared once in a combined selector (`&.bricks-background-primary, &.bricks-color-primary { … }`) instead of twice (once for filled, once for outline). Cuts ~50 lines of duplicate token definitions without behavior change — `.bricks-background-primary` (filled) and `.outline.bricks-color-primary` (outline) render identically to rc.7, and `.outline.bricks-color-primary:hover` continues to render identical to a plain `.bricks-background-primary` button. The `&.outline { … }` block now contains only the transparent-bg + idle/hover behavior, not variant token definitions.
+
 ## [0.12.0-rc.7] - 2026-05-18
 
 ### Changed

@@ -116,66 +116,85 @@
     }
   }
 
-  &.bricks-background-primary {
+  /* Variant token sets — apply to both filled (.bricks-background-X)
+     and outline (.bricks-color-X). Filled buttons read the tokens via
+     the [class*="bricks-background-"] block above; outline buttons read
+     them via the &.outline block below. The token chain itself is the
+     same regardless of which class the user picked. */
+  &.bricks-background-primary,
+  &.bricks-color-primary {
     --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
     --sfx-btn-color-fg: var(--btn-primary-fg, var(--primary-fg, #fff));
   }
 
-  &.bricks-background-secondary {
+  &.bricks-background-secondary,
+  &.bricks-color-secondary {
     --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
     --sfx-btn-color-fg: var(--btn-secondary-fg, var(--secondary-fg, #fff));
     --sfx-btn-mix: var(--btn-secondary-mix, white);
   }
 
-  &.bricks-background-accent {
+  &.bricks-background-accent,
+  &.bricks-color-accent {
     --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
     --sfx-btn-color-fg: var(--btn-accent-fg, var(--accent-fg, #fff));
   }
 
-  &.bricks-background-light {
+  &.bricks-background-light,
+  &.bricks-color-light {
     --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
     /* Light bg → swap pair: fg = --dark token. */
     --sfx-btn-color-fg: var(--btn-light-fg, var(--dark, #111));
   }
 
-  &.bricks-background-dark {
+  &.bricks-background-dark,
+  &.bricks-color-dark {
     --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
     /* Dark bg → swap pair: fg = --light token. */
     --sfx-btn-color-fg: var(--btn-dark-fg, var(--light, #fff));
     --sfx-btn-mix: var(--btn-dark-mix, white);
   }
 
-  &.bricks-background-muted {
+  &.bricks-background-muted,
+  &.bricks-color-muted {
     --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
     --sfx-btn-color-fg: var(--btn-muted-fg, var(--muted-fg, #fff));
   }
 
-  &.bricks-background-info {
+  &.bricks-background-info,
+  &.bricks-color-info {
     --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
     --sfx-btn-color-fg: var(--btn-info-fg, var(--info-fg, #fff));
   }
 
-  &.bricks-background-success {
+  &.bricks-background-success,
+  &.bricks-color-success {
     --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
     --sfx-btn-color-fg: var(--btn-success-fg, var(--success-fg, #fff));
   }
 
-  &.bricks-background-danger {
+  &.bricks-background-danger,
+  &.bricks-color-danger {
     --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
     --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
   }
 
-  &.bricks-background-warning {
+  &.bricks-background-warning,
+  &.bricks-color-warning {
     --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
     --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
   }
 
+  /* Outline variant — transparent bg + variant-colored border/text;
+     hover swaps to filled look (bg = variant color, text = paired fg),
+     so .outline.bricks-color-primary:hover renders identical to a
+     plain .bricks-background-primary button. */
   &.outline {
     background-color: transparent;
     border-width: var(--sfx-btn-border-width);
 
     &[class*="bricks-color-"],
-    &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
+    &[class*="btn--"]:not(.btn--text) {
       color: var(--sfx-btn-color);
       border-color: var(--sfx-btn-color);
 
@@ -185,58 +204,6 @@
         border-color: var(--sfx-btn-color);
         color: var(--sfx-btn-color-fg);
       }
-    }
-
-    &.bricks-color-primary {
-      --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
-      --sfx-btn-color-fg: var(--btn-primary-fg, var(--primary-fg, #fff));
-    }
-
-    &.bricks-color-secondary {
-      --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
-      --sfx-btn-color-fg: var(--btn-secondary-fg, var(--secondary-fg, #fff));
-    }
-
-    &.bricks-color-accent {
-      --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
-      --sfx-btn-color-fg: var(--btn-accent-fg, var(--accent-fg, #fff));
-    }
-
-    &.bricks-color-light {
-      --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
-      /* Light bg → swap pair: fg = --dark token. */
-      --sfx-btn-color-fg: var(--btn-light-fg, var(--dark, #111));
-    }
-
-    &.bricks-color-dark {
-      --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
-      /* Dark bg → swap pair: fg = --light token. */
-      --sfx-btn-color-fg: var(--btn-dark-fg, var(--light, #fff));
-    }
-
-    &.bricks-color-muted {
-      --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
-      --sfx-btn-color-fg: var(--btn-muted-fg, var(--muted-fg, #fff));
-    }
-
-    &.bricks-color-info {
-      --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
-      --sfx-btn-color-fg: var(--btn-info-fg, var(--info-fg, #fff));
-    }
-
-    &.bricks-color-success {
-      --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
-      --sfx-btn-color-fg: var(--btn-success-fg, var(--success-fg, #fff));
-    }
-
-    &.bricks-color-danger {
-      --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
-      --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
-    }
-
-    &.bricks-color-warning {
-      --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
-      --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
     }
   }
 
