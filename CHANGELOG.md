@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.9] - 2026-05-22
+
+### Added
+
+- Text Snippets: sortable "ID" column added to the `cpt_text_snippet` admin list table, inserted right after the title for easy scanning. Useful for building shortcodes (`[snippet id="123"]`) and Bricks dynamic-data tags (`{snippet_content:123}`) without opening the edit screen for each snippet. Sortable via the built-in `WP_Query` `orderby=ID`.
+
 ## [0.12.0-rc.8] - 2026-05-19
 
 ### Changed
