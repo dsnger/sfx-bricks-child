@@ -190,31 +190,22 @@
      so .outline.bricks-color-primary:hover renders identical to a
      plain .bricks-background-primary button.
 
-     !important on color and border-color is deliberate, not sloppy CSS:
-     Bricks ships two unlayered global rules that would otherwise
-     neutralize the outline chrome (unlayered always beats layered
-     normal declarations, regardless of selector specificity):
-
+     Note: the color and border-color declarations for the variant-color
+     swap (idle + hover) are NOT in this layered block. They live
+     unlayered at the bottom of this file so they win over Bricks' two
+     unlayered global rules:
        :where(:root) *                  { border-color: var(--border-primary); }
        :where(:root) .bricks-color-<v>  { color: var(--<v>); }
-
-     Per css-cascade-5, !important declarations in a named layer beat
-     unlayered !important-free declarations. Scope is tight — only the
-     two properties the global rules touch, only on the outline variant. */
+     See the "Unlayered outline chrome" block below for the reasoning. */
   &.outline {
     background-color: transparent;
     border-width: var(--sfx-btn-border-width);
 
     &[class*="bricks-color-"],
     &[class*="btn--"]:not(.btn--text) {
-      color: var(--sfx-btn-color) !important;
-      border-color: var(--sfx-btn-color) !important;
-
       &:hover {
         transform: translateY(-1px);
         background-color: var(--sfx-btn-color);
-        border-color: var(--sfx-btn-color) !important;
-        color: var(--sfx-btn-color-fg) !important;
       }
     }
   }
@@ -322,4 +313,40 @@ button.bricks-button,
   }
 }
 
+}
+
+/* ========================================
+   UNLAYERED OUTLINE CHROME
+   ----------------------------------------
+   These two declarations live OUTSIDE @layer sfx.components on purpose.
+
+   Bricks ships two unlayered global rules:
+     :where(:root) *                  { border-color: var(--border-primary); }
+     :where(:root) .bricks-color-<v>  { color: var(--<v>); }
+
+   Unlayered author declarations always beat layered ones (regardless of
+   selector specificity), so keeping the variant-colored border and the
+   hover text-swap inside @layer sfx.components would let Bricks' globals
+   neutralize them every time.
+
+   Lifting these specific properties out of the layer lets them compete
+   on plain specificity instead. The selectors below resolve to:
+     idle:  0,5,0   (beats Bricks .bricks-color-<v> at 0,1,0)
+     hover: 0,6,0   (beats Bricks at 0,1,0 with margin to spare)
+
+   No !important needed. The user can still override these with any
+   selector of equal or higher specificity — same as normal CSS.
+
+   All other outline behavior (background-color transparent, hover bg,
+   transform, border-width) stays inside the layer so users can still
+   override those via Bricks/child theme/custom CSS the normal way.
+   ======================================== */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).outline:is([class*="bricks-color-"], [class*="btn--"]:not(.btn--text)) {
+  color: var(--sfx-btn-color);
+  border-color: var(--sfx-btn-color);
+
+  &:hover {
+    color: var(--sfx-btn-color-fg);
+    border-color: var(--sfx-btn-color);
+  }
 }
