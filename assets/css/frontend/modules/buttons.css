@@ -188,21 +188,33 @@
   /* Outline variant — transparent bg + variant-colored border/text;
      hover swaps to filled look (bg = variant color, text = paired fg),
      so .outline.bricks-color-primary:hover renders identical to a
-     plain .bricks-background-primary button. */
+     plain .bricks-background-primary button.
+
+     !important on color and border-color is deliberate, not sloppy CSS:
+     Bricks ships two unlayered global rules that would otherwise
+     neutralize the outline chrome (unlayered always beats layered
+     normal declarations, regardless of selector specificity):
+
+       :where(:root) *                  { border-color: var(--border-primary); }
+       :where(:root) .bricks-color-<v>  { color: var(--<v>); }
+
+     Per css-cascade-5, !important declarations in a named layer beat
+     unlayered !important-free declarations. Scope is tight — only the
+     two properties the global rules touch, only on the outline variant. */
   &.outline {
     background-color: transparent;
     border-width: var(--sfx-btn-border-width);
 
     &[class*="bricks-color-"],
     &[class*="btn--"]:not(.btn--text) {
-      color: var(--sfx-btn-color);
-      border-color: var(--sfx-btn-color);
+      color: var(--sfx-btn-color) !important;
+      border-color: var(--sfx-btn-color) !important;
 
       &:hover {
         transform: translateY(-1px);
         background-color: var(--sfx-btn-color);
-        border-color: var(--sfx-btn-color);
-        color: var(--sfx-btn-color-fg);
+        border-color: var(--sfx-btn-color) !important;
+        color: var(--sfx-btn-color-fg) !important;
       }
     }
   }

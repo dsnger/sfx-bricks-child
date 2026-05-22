@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.10] - 2026-05-22
+
+### Fixed
+
+- Buttons (outline variant): variant-colored border and hover text-color swap were being neutralized by two unlayered global rules Bricks ships — `:where(:root) * { border-color: var(--border-primary) }` and `:where(:root) .bricks-color-<v> { color: var(--<v>) }`. Because unlayered author declarations always beat layered ones (regardless of selector specificity), our `@layer sfx.components` outline rules lost every time. Result: outline buttons rendered with a generic `--border-primary` border instead of the variant color, and hovering an outline button kept the text in the variant color instead of swapping to the paired foreground (poor contrast on hover). Fix: mark the four affected outline declarations (`color` + `border-color` for idle, `color` + `border-color` for `:hover`) `!important` inside the layer. Per css-cascade-5, `!important` in a named layer beats unlayered `!important`-free declarations. Scope is tight — only the properties the global Bricks rules touch, only on the outline variant. Filled variants are unaffected (their `border-color` matches `background-color`, so the Bricks override is visually invisible).
+
 ## [0.12.0-rc.9] - 2026-05-22
 
 ### Added
