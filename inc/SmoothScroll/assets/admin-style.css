@@ -1,0 +1,56 @@
+.sfx-smooth-scroll .sfx-ss-row {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sfx-smooth-scroll .sfx-ss-row--metrics {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.sfx-smooth-scroll .sfx-ss-row--easing {
+  grid-template-columns: 1fr 2fr;
+}
+
+.sfx-smooth-scroll .sfx-ss-row--toggles {
+  grid-template-columns: repeat(4, max-content);
+  gap: 28px;
+}
+
+.sfx-smooth-scroll .sfx-ss-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sfx-smooth-scroll .sfx-ss-field > label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.sfx-smooth-scroll .sfx-ss-field input[type="number"],
+.sfx-smooth-scroll .sfx-ss-field input[type="text"],
+.sfx-smooth-scroll .sfx-ss-field select {
+  width: 100%;
+}
+
+.sfx-smooth-scroll .sfx-ss-field--toggle {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sfx-smooth-scroll .sfx-ss-note {
+  margin-top: 8px;
+  color: #50575e;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .sfx-smooth-scroll .sfx-ss-row--metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sfx-smooth-scroll .sfx-ss-row--toggles {
+    grid-template-columns: repeat(2, max-content);
+  }
+}

@@ -47,6 +47,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_smooth_scroll',
+                'label'       => __('Enable Smooth Scroll', 'sfxtheme'),
+                'description' => __('Enable Lenis-powered smooth scrolling (replaces the Bricksforge Scroll Smoother).', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),
