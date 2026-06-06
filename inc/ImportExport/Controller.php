@@ -499,11 +499,20 @@ class Controller
                     if (!is_array($terms) || empty($terms)) {
                         continue;
                     }
-                    $post_data['taxonomies'][$taxonomy] = array_map(static function ($term) {
+                    $post_data['taxonomies'][$taxonomy] = array_map(static function ($term) use ($taxonomy) {
+                        // Store parent as a slug so hierarchy can be rebuilt on a site with different term IDs
+                        $parent_slug = '';
+                        if (!empty($term->parent)) {
+                            $parent_term = get_term($term->parent, $taxonomy);
+                            if ($parent_term instanceof \WP_Term) {
+                                $parent_slug = $parent_term->slug;
+                            }
+                        }
                         return [
                             'slug' => $term->slug,
                             'name' => $term->name,
                             'description' => $term->description,
+                            'parent' => $parent_slug,
                         ];
                     }, $terms);
                 }
@@ -1109,6 +1118,9 @@ class Controller
             }
 
             $term_ids = [];
+            $slug_to_id = []; // Map of imported slug => resolved term_id (for parent rebuilding)
+
+            // Pass 1: match or create each term (without parent), collecting IDs.
             foreach ($terms as $term) {
                 if (!is_array($term)) {
                     continue;
@@ -1121,27 +1133,96 @@ class Controller
                     continue;
                 }
 
-                // Match existing term by slug first to avoid duplicates
-                $existing = $slug ? get_term_by('slug', $slug, $taxonomy) : false;
-                if ($existing instanceof \WP_Term) {
-                    $term_ids[] = (int) $existing->term_id;
-                    continue;
+                $term_id = $this->resolve_or_create_term(
+                    $taxonomy,
+                    $slug,
+                    $name,
+                    sanitize_text_field($term['description'] ?? '')
+                );
+
+                if ($term_id > 0) {
+                    $term_ids[] = $term_id;
+                    if ($slug !== '') {
+                        $slug_to_id[$slug] = $term_id;
+                    }
                 }
+            }
 
-                $created = wp_insert_term($name !== '' ? $name : $slug, $taxonomy, [
-                    'slug' => $slug,
-                    'description' => sanitize_text_field($term['description'] ?? ''),
-                ]);
+            // Pass 2: restore parent relationships for hierarchical taxonomies.
+            if (is_taxonomy_hierarchical($taxonomy)) {
+                foreach ($terms as $term) {
+                    if (!is_array($term) || empty($term['parent'])) {
+                        continue;
+                    }
 
-                if (!is_wp_error($created) && isset($created['term_id'])) {
-                    $term_ids[] = (int) $created['term_id'];
+                    $slug = sanitize_title($term['slug'] ?? '');
+                    if ($slug === '' || !isset($slug_to_id[$slug])) {
+                        continue;
+                    }
+
+                    // Resolve the parent from this payload first, then fall back to an existing term.
+                    $parent_slug = sanitize_title($term['parent']);
+                    $parent_id = $slug_to_id[$parent_slug] ?? 0;
+                    if ($parent_id === 0) {
+                        $existing_parent = get_term_by('slug', $parent_slug, $taxonomy);
+                        if ($existing_parent instanceof \WP_Term) {
+                            $parent_id = (int) $existing_parent->term_id;
+                        }
+                    }
+
+                    if ($parent_id > 0 && $parent_id !== $slug_to_id[$slug]) {
+                        wp_update_term($slug_to_id[$slug], $taxonomy, ['parent' => $parent_id]);
+                    }
                 }
             }
 
             if (!empty($term_ids)) {
-                wp_set_object_terms($post_id, $term_ids, $taxonomy, false);
+                wp_set_object_terms($post_id, array_values(array_unique($term_ids)), $taxonomy, false);
             }
         }
+    }
+
+    /**
+     * Resolve an existing term by slug or create it.
+     * 
+     * Recovers the term ID when wp_insert_term reports a "term_exists" error
+     * (e.g. slug/name collisions across sites or concurrent inserts), so the
+     * term-to-post assignment is never silently dropped.
+     * 
+     * @param string $taxonomy Taxonomy slug.
+     * @param string $slug Term slug.
+     * @param string $name Term name.
+     * @param string $description Term description.
+     * @return int Resolved term ID, or 0 on failure.
+     */
+    private function resolve_or_create_term(string $taxonomy, string $slug, string $name, string $description): int
+    {
+        // Match existing term by slug first to avoid duplicates
+        $existing = $slug !== '' ? get_term_by('slug', $slug, $taxonomy) : false;
+        if ($existing instanceof \WP_Term) {
+            return (int) $existing->term_id;
+        }
+
+        $args = ['description' => $description];
+        if ($slug !== '') {
+            $args['slug'] = $slug;
+        }
+
+        $created = wp_insert_term($name !== '' ? $name : $slug, $taxonomy, $args);
+
+        if (!is_wp_error($created) && isset($created['term_id'])) {
+            return (int) $created['term_id'];
+        }
+
+        // Term already exists (name/slug collision or concurrent insert): recover its ID.
+        if (is_wp_error($created) && $created->get_error_code() === 'term_exists') {
+            $existing_id = $created->get_error_data('term_exists');
+            if ($existing_id) {
+                return (int) $existing_id;
+            }
+        }
+
+        return 0;
     }
 
     /**
