@@ -1,24 +1,34 @@
+/* Layered baseline (sfx.components). Living in @layer is intentional:
+   unlayered rules — Bricks Builder element styles, child themes, user
+   custom CSS — win automatically without !important or specificity
+   wars. Do not unwrap the @layer block.
+
+   Tokenization matches the buttons/forms/lists contract: external --cg-*
+   wireup tokens chain through Bricks core (--container-*, --grid-gap,
+   --max-screen-width, --space-m); internal --sfx-cg-* tokens are declared
+   at :root and used by every grid rule. Override the externals, not the
+   internals. */
 @layer sfx.components {
 /* =========================================
    CONTENT GRID – Responsive Grid System
    ========================================= */
 
 :root {
-  --cg-gutter: var(--container-padding-horizontal, 1.5rem);
-  --cg-content: var(--max-screen-width, 1400px);
-  --cg-feature: var(--container-xlarge, 2100px);
-  --cg-feature-max: var(--container-2xlarge, 2450px);
-  --cg-gap: var(--grid-gap, var(--space-m, 1.5rem));
+  --sfx-cg-gutter:      var(--cg-gutter, var(--container-padding-horizontal, 1.5rem));
+  --sfx-cg-content:     var(--cg-content, var(--max-screen-width, 1400px));
+  --sfx-cg-feature:     var(--cg-feature, var(--container-xlarge, 2100px));
+  --sfx-cg-feature-max: var(--cg-feature-max, var(--container-2xlarge, 2450px));
+  --sfx-cg-gap:         var(--cg-gap, var(--grid-gap, var(--space-m, 1.5rem)));
 }
 
 /* Base: 3 columns - outer columns grow to center content */
 .content-grid {
   display: grid;
-  row-gap: var(--cg-gap);
+  row-gap: var(--sfx-cg-gap);
   grid-template-columns:
-    [full-start] minmax(var(--cg-gutter), 1fr)
-    [content-start feature-start feature-max-start] minmax(0, calc(var(--cg-content) - 2 * var(--cg-gutter))) [content-end feature-end feature-max-end]
-    minmax(var(--cg-gutter), 1fr) [full-end];
+    [full-start] minmax(var(--sfx-cg-gutter), 1fr)
+    [content-start feature-start feature-max-start] minmax(0, calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter))) [content-end feature-end feature-max-end]
+    minmax(var(--sfx-cg-gutter), 1fr) [full-end];
 }
 
 .content-grid > * {
@@ -36,21 +46,21 @@
 
 .content--full-safe {
   grid-column: full-start / full-end;
-  padding-inline: var(--cg-gutter);
+  padding-inline: var(--sfx-cg-gutter);
 }
 
 .content--full-safe > .inner {
-  max-width: calc(var(--cg-content) - 2 * var(--cg-gutter));
+  max-width: calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter));
   margin-inline: auto;
 }
 
 .content--full-safe > .inner--feature {
-  max-width: calc(var(--cg-feature) - 2 * var(--cg-gutter));
+  max-width: calc(var(--sfx-cg-feature) - 2 * var(--sfx-cg-gutter));
   margin-inline: auto;
 }
 
 .content--full-safe > .inner--feature-max {
-  max-width: calc(var(--cg-feature-max) - 2 * var(--cg-gutter));
+  max-width: calc(var(--sfx-cg-feature-max) - 2 * var(--sfx-cg-gutter));
   margin-inline: auto;
 }
 
@@ -58,7 +68,7 @@
   grid-column: content-start / content-end;
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--cg-gap);
+  gap: var(--sfx-cg-gap);
 }
 
 @media (min-width: 768px) {
@@ -70,7 +80,7 @@
 
 @media (min-width: 1400px) {
   .content--split-50-breakout {
-    grid-template-columns: minmax(0, calc(((var(--cg-content) - 2 * var(--cg-gutter)) / 2) - var(--cg-gap))) minmax(0, 1fr);
+    grid-template-columns: minmax(0, calc(((var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) / 2) - var(--sfx-cg-gap))) minmax(0, 1fr);
   }
 }
 
@@ -80,7 +90,7 @@
     grid-column: full-start / content-end;
     direction: rtl;
   }
-  
+
   .content--split-50-breakout.reverse > * {
     direction: ltr;
   }
@@ -90,11 +100,11 @@
 @media (min-width: 2100px) {
   .content-grid {
     grid-template-columns:
-      [full-start] minmax(var(--cg-gutter), 1fr)
-      [feature-start feature-max-start] calc((var(--cg-feature) - var(--cg-content)) / 2)
-      [content-start] calc(var(--cg-content) - 2 * var(--cg-gutter)) [content-end]
-      calc((var(--cg-feature) - var(--cg-content)) / 2) [feature-end feature-max-end]
-      minmax(var(--cg-gutter), 1fr) [full-end];
+      [full-start] minmax(var(--sfx-cg-gutter), 1fr)
+      [feature-start feature-max-start] calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)
+      [content-start] calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) [content-end]
+      calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2) [feature-end feature-max-end]
+      minmax(var(--sfx-cg-gutter), 1fr) [full-end];
   }
 
   .content--feature {
@@ -106,13 +116,13 @@
 @media (min-width: 2450px) {
   .content-grid {
     grid-template-columns:
-      [full-start] minmax(var(--cg-gutter), 1fr)
-      [feature-max-start] calc((var(--cg-feature-max) - var(--cg-feature)) / 2)
-      [feature-start] calc((var(--cg-feature) - var(--cg-content)) / 2)
-      [content-start] calc(var(--cg-content) - 2 * var(--cg-gutter)) [content-end]
-      calc((var(--cg-feature) - var(--cg-content)) / 2) [feature-end]
-      calc((var(--cg-feature-max) - var(--cg-feature)) / 2) [feature-max-end]
-      minmax(var(--cg-gutter), 1fr) [full-end];
+      [full-start] minmax(var(--sfx-cg-gutter), 1fr)
+      [feature-max-start] calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2)
+      [feature-start] calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)
+      [content-start] calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) [content-end]
+      calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2) [feature-end]
+      calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2) [feature-max-end]
+      minmax(var(--sfx-cg-gutter), 1fr) [full-end];
   }
 
   .content--feature-max {

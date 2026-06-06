@@ -105,17 +105,32 @@ class Settings
     public static function get_max_widths(): array
     {
         $value = get_option('sfx_webp_max_widths', Constants::DEFAULT_MAX_WIDTHS);
-        $widths = array_map('absint', array_filter(explode(',', $value)));
-        $widths = array_filter($widths, fn($w) => $w > 0 && $w <= Constants::MAX_DIMENSION);
-        return array_slice($widths, 0, Constants::MAX_CUSTOM_SIZES);
+        $widths = self::parse_dimension_list($value);
+        // Empty option (e.g. "" saved manually) bypasses the get_option
+        // default. Re-parse the default so callers never see an empty
+        // max_values — that state lets convertImage return success with
+        // no files and triggers data loss in the upload path.
+        if (empty($widths)) {
+            $widths = self::parse_dimension_list(Constants::DEFAULT_MAX_WIDTHS);
+        }
+        return $widths;
     }
 
     public static function get_max_heights(): array
     {
         $value = get_option('sfx_webp_max_heights', Constants::DEFAULT_MAX_HEIGHTS);
-        $heights = array_map('absint', array_filter(explode(',', $value)));
-        $heights = array_filter($heights, fn($h) => $h > 0 && $h <= Constants::MAX_DIMENSION);
-        return array_slice($heights, 0, Constants::MAX_CUSTOM_SIZES);
+        $heights = self::parse_dimension_list($value);
+        if (empty($heights)) {
+            $heights = self::parse_dimension_list(Constants::DEFAULT_MAX_HEIGHTS);
+        }
+        return $heights;
+    }
+
+    private static function parse_dimension_list(string $value): array
+    {
+        $values = array_map('absint', array_filter(explode(',', $value)));
+        $values = array_filter($values, fn($v) => $v > 0 && $v <= Constants::MAX_DIMENSION);
+        return array_slice($values, 0, Constants::MAX_CUSTOM_SIZES);
     }
 
     public static function get_resize_mode(): string

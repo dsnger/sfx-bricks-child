@@ -1,3 +1,11 @@
+/* Sub-layer order anchor. Declared centrally so module priority is
+   fixed here, not by WP enqueue order. Later layers win over earlier
+   ones; all of them lose to unlayered rules — Bricks Builder element
+   styles, child-theme CSS, and user custom CSS therefore override our
+   baseline automatically without !important or specificity wars. Add
+   new sub-layer names here when introducing new module categories. */
+@layer sfx.reset, sfx.components, sfx.utilities, sfx.theme;
+
 .skip-link {
   display: none !important;
 }

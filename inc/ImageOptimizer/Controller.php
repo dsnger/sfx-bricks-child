@@ -230,12 +230,18 @@ class Controller
         
         // Update upload array with converted file info
         $main_converted_file = $result['main_file'];
-        if ($main_converted_file) {
-            $upload['file'] = $main_converted_file;
-            $upload['url'] = str_replace(basename($file_path), basename($main_converted_file), $upload['url']);
-            $upload['type'] = $format;
+        if ($main_converted_file === null) {
+            // Service reported success but produced no main file. Bail
+            // before the original-deletion block so we don't destroy the
+            // file that $upload['file'] still points at.
+            $log[] = sprintf(__('Aborted: conversion produced no main file for %s', 'sfxtheme'), basename($file_path));
+            Settings::append_log($log);
+            return $upload;
         }
-        
+        $upload['file'] = $main_converted_file;
+        $upload['url'] = str_replace(basename($file_path), basename($main_converted_file), $upload['url']);
+        $upload['type'] = $format;
+
         // Update metadata if we have an attachment ID
         if ($attachment_id && !empty($result['files'])) {
             $metadata_updated = ImageConversionService::updateAttachmentMetadata(
@@ -396,38 +402,55 @@ class Controller
      */
     public static function fix_format_metadata($metadata, $attachment_id): array
     {
+        static $recovered_ids = [];
+
         $use_avif = Settings::get_use_avif();
         $extension = Settings::get_extension_name();
         $format = Settings::get_format();
         $file = get_attached_file($attachment_id);
-        
+
         // If the attached file doesn't exist, try to find the converted version
         if (!file_exists($file)) {
-            $path_info = pathinfo($file);
-            $dirname = $path_info['dirname'];
-            $basename = $path_info['filename'];
-            
-            // Try to find the converted file (webp or avif)
-            $converted_extensions = ['webp', 'avif'];
-            foreach ($converted_extensions as $ext) {
-                $converted_file = "$dirname/$basename.$ext";
-                if (file_exists($converted_file)) {
-                    // Update the attachment file path to the existing converted file
-                    update_attached_file($attachment_id, $converted_file);
-                    wp_update_post(['ID' => $attachment_id, 'post_mime_type' => "image/$ext"]);
-                    $file = $converted_file;
-                    $extension = $ext;
-                    $format = "image/$ext";
-                    
-                    // Update metadata file path
-                    $upload_dir = wp_upload_dir();
-                    $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $converted_file);
-                    
-                    error_log("ImageOptimizer: Fixed attachment $attachment_id - updated to $converted_file");
-                    break;
+            // Recovery writes to the DB (update_attached_file +
+            // wp_update_post). Restrict that to known metadata-generation
+            // contexts so a public-facing read can't trigger filter-time
+            // writes, while still allowing WP-CLI (`wp media regenerate`)
+            // and REST-driven media flows that legitimately regenerate
+            // metadata. Also de-dupe per-request — if anything re-enters
+            // this filter for the same attachment, the second pass
+            // returns early.
+            $is_cli  = defined('WP_CLI') && WP_CLI;
+            $is_rest = defined('REST_REQUEST') && REST_REQUEST;
+            $may_recover = (is_admin() || wp_doing_ajax() || wp_doing_cron() || $is_cli || $is_rest)
+                && !isset($recovered_ids[$attachment_id]);
+
+            if ($may_recover) {
+                $recovered_ids[$attachment_id] = true;
+
+                $path_info = pathinfo($file);
+                $dirname = $path_info['dirname'];
+                $basename = $path_info['filename'];
+
+                // Try to find the converted file (webp or avif)
+                $converted_extensions = ['webp', 'avif'];
+                foreach ($converted_extensions as $ext) {
+                    $converted_file = "$dirname/$basename.$ext";
+                    if (file_exists($converted_file)) {
+                        update_attached_file($attachment_id, $converted_file);
+                        wp_update_post(['ID' => $attachment_id, 'post_mime_type' => "image/$ext"]);
+                        $file = $converted_file;
+                        $extension = $ext;
+                        $format = "image/$ext";
+
+                        $upload_dir = wp_upload_dir();
+                        $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $converted_file);
+
+                        error_log("ImageOptimizer: Fixed attachment $attachment_id - updated to $converted_file");
+                        break;
+                    }
                 }
             }
-            
+
             // If still not found, return original metadata
             if (!file_exists($file)) {
                 return $metadata;
@@ -554,7 +577,44 @@ class Controller
             $processed++;
             $file = get_attached_file($attachment_id);
 
-            if (!$file || !self::file_exists_cached($file)) {
+            if (!$file) {
+                continue;
+            }
+
+            // If the attached file is missing on disk, the attachment is
+            // already broken. Don't compound the damage: protect every
+            // path the auto-recovery filter (fix_format_metadata) would
+            // try to rebind to, plus anything postmeta still references
+            // (intermediates can survive even when the main file is
+            // gone), so the directory walk below doesn't @unlink the
+            // rescue candidates.
+            if (!self::file_exists_cached($file)) {
+                $orphan_dirname = dirname($file);
+                $orphan_base = pathinfo($file, PATHINFO_FILENAME);
+                $thumb_size = Constants::THUMBNAIL_SIZE;
+                $recovery_extensions = array_merge(
+                    Constants::ORIGINAL_EXTENSIONS_WITH_CASE,
+                    Constants::CONVERTED_EXTENSIONS
+                );
+                foreach ($recovery_extensions as $ext) {
+                    $active_files["$orphan_dirname/$orphan_base.$ext"] = true;
+                    $active_files["$orphan_dirname/$orphan_base-{$thumb_size}x{$thumb_size}.$ext"] = true;
+                    foreach ($max_values as $index => $dimension) {
+                        if ($index === 0) continue;
+                        $active_files["$orphan_dirname/$orphan_base-$dimension.$ext"] = true;
+                    }
+                }
+                // Protect anything postmeta still references — sizes
+                // are stored independently of file existence, and the
+                // intermediates they point at may still be on disk.
+                $orphan_metadata = wp_get_attachment_metadata($attachment_id);
+                if (is_array($orphan_metadata) && !empty($orphan_metadata['sizes']) && is_array($orphan_metadata['sizes'])) {
+                    foreach ($orphan_metadata['sizes'] as $size_data) {
+                        if (!empty($size_data['file'])) {
+                            $active_files["$orphan_dirname/" . $size_data['file']] = true;
+                        }
+                    }
+                }
                 continue;
             }
 
@@ -763,7 +823,7 @@ class Controller
                 $memory_warnings
             );
 
-        if ($file_count >= $batch_limit) {
+        if (($file_count ?? 0) >= $batch_limit) {
             $summary .= ' ' . __('(batch limit reached, more files may need processing)', 'sfxtheme');
         }
 

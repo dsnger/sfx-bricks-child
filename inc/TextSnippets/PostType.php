@@ -37,6 +37,9 @@ class PostType
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
         
         // Register admin columns
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_id_column']);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_id_column'], 10, 2);
+        add_filter('manage_edit-' . self::$post_type . '_sortable_columns', [self::class, 'make_id_sortable']);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_snippet_type_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_snippet_type_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
@@ -223,6 +226,52 @@ class PostType
             }
         }
         update_post_meta($post_id, '_sfx_text_snippet_fields', $clean_fields);
+    }
+
+    /**
+     * Add an ID column inserted right after the title.
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function add_id_column(array $columns): array
+    {
+        $new = [];
+        foreach ($columns as $key => $label) {
+            $new[$key] = $label;
+            if ($key === 'title') {
+                $new['snippet_id'] = __('ID', 'sfxtheme');
+            }
+        }
+        if (!isset($new['snippet_id'])) {
+            $new['snippet_id'] = __('ID', 'sfxtheme');
+        }
+        return $new;
+    }
+
+    /**
+     * Render the ID column content.
+     *
+     * @param string $column
+     * @param int    $post_id
+     */
+    public static function render_id_column(string $column, int $post_id): void
+    {
+        if ($column === 'snippet_id') {
+            echo (int) $post_id;
+        }
+    }
+
+    /**
+     * Mark the ID column as sortable (orderby=ID is a built-in WP_Query orderby).
+     *
+     * @param array $columns
+     * @return array
+     */
+    public static function make_id_sortable(array $columns): array
+    {
+        $columns['snippet_id'] = 'ID';
+        return $columns;
     }
 
     /**

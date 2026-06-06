@@ -1,9 +1,36 @@
+/* Layered baseline (sfx.components). Living in @layer is intentional:
+   unlayered rules — Bricks Builder element styles, child theme, user
+   custom CSS — win automatically without !important or specificity
+   wars. :where(...) below keeps base specificity at 0 for the same
+   reason. Do not unwrap the @layer block or strip :where(). */
 @layer sfx.components {
 
 /* ========================================
    BUTTON STYLES (nested)
-   Longhands use --sfx-btn-* only. Define --btn-* in Core Framework (or :root);
-   theme maps: --sfx-btn-*: var(--btn-*, literal).
+   Longhands use --sfx-btn-* only. External wireup is --btn-*.
+
+   Per-variant chain (3 levels, falls through left to right):
+     --sfx-btn-color:    var(--btn-<v>-bg, var(--<v>,    <literal>))
+     --sfx-btn-color-fg: var(--btn-<v>-fg, var(--<v>-fg, <literal>))
+
+   Each variant uses the matching Bricks core *pair* — bg uses --<v>, fg
+   uses --<v>-fg. Define both in your core framework (Bricks normally
+   ships them as semantic pairs: --primary/--primary-fg, --accent/
+   --accent-fg, etc.) and buttons follow. Override per-variant via
+   --btn-<v>-bg / --btn-<v>-fg only when you need a button-specific
+   value distinct from the global Bricks pair.
+
+   Light / dark variants are the two cases where the semantic name
+   guarantees brightness — they swap the pair (light → fg = --dark,
+   dark → fg = --light) so contrast is locked even when the user's
+   core tokens don't define explicit -fg counterparts for them.
+
+   Hover mix:
+     --btn-mix (default black) — hover blends 15% mix into the bg via
+     color-mix() (darker hover for dark bgs). The secondary and dark
+     variants flip to white per the original module behavior (lighter
+     hover for already-dark colors). Override per-variant via
+     --btn-<v>-mix.
    ======================================== */
 
 :where(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
@@ -35,7 +62,7 @@
   --sfx-btn-xl-padding-inline: var(--btn-xl-padding-inline, 2rem);
   --sfx-btn-xl-font-size: var(--btn-xl-font-size, 1.25rem);
   --sfx-btn-color: var(--btn-color, transparent);
-  --sfx-btn-color-fg: var(--btn-color-fg, currentColor);
+  --sfx-btn-color-fg: currentColor;
 
   align-items: center;
   gap: var(--sfx-btn-gap);
@@ -89,123 +116,97 @@
     }
   }
 
-  &.bricks-background-primary {
-    --sfx-btn-color: var(--btn-primary-bg, #2563eb);
-    --sfx-btn-color-fg: var(--btn-primary-fg, #ffffff);
+  /* Variant token sets — apply to both filled (.bricks-background-X)
+     and outline (.bricks-color-X). Filled buttons read the tokens via
+     the [class*="bricks-background-"] block above; outline buttons read
+     them via the &.outline block below. The token chain itself is the
+     same regardless of which class the user picked. */
+  &.bricks-background-primary,
+  &.bricks-color-primary {
+    --sfx-btn-color: var(--btn-primary-bg, var(--primary, #2563eb));
+    --sfx-btn-color-fg: var(--btn-primary-fg, var(--primary-fg, #fff));
   }
 
-  &.bricks-background-secondary {
-    --sfx-btn-color: var(--btn-secondary-bg, #64748b);
-    --sfx-btn-color-fg: var(--btn-secondary-fg, #ffffff);
-    --sfx-btn-mix: var(--btn-secondary-mix, #ffffff);
+  &.bricks-background-secondary,
+  &.bricks-color-secondary {
+    --sfx-btn-color: var(--btn-secondary-bg, var(--secondary, #64748b));
+    --sfx-btn-color-fg: var(--btn-secondary-fg, var(--secondary-fg, #fff));
+    --sfx-btn-mix: var(--btn-secondary-mix, white);
   }
 
-  &.bricks-background-accent {
-    --sfx-btn-color: var(--btn-accent-bg, #f59e0b);
-    --sfx-btn-color-fg: var(--btn-accent-fg, #111827);
+  &.bricks-background-accent,
+  &.bricks-color-accent {
+    --sfx-btn-color: var(--btn-accent-bg, var(--accent, #f59e0b));
+    --sfx-btn-color-fg: var(--btn-accent-fg, var(--accent-fg, #fff));
   }
 
-  &.bricks-background-light {
-    --sfx-btn-color: var(--btn-light-bg, #f8fafc);
-    --sfx-btn-color-fg: var(--btn-light-fg, #0f172a);
+  &.bricks-background-light,
+  &.bricks-color-light {
+    --sfx-btn-color: var(--btn-light-bg, var(--light, #f8fafc));
+    /* Light bg → swap pair: fg = --dark token. */
+    --sfx-btn-color-fg: var(--btn-light-fg, var(--dark, #111));
   }
 
-  &.bricks-background-dark {
-    --sfx-btn-color: var(--btn-dark-bg, #0f172a);
-    --sfx-btn-color-fg: var(--btn-dark-fg, #f8fafc);
-    --sfx-btn-mix: var(--btn-dark-mix, #ffffff);
+  &.bricks-background-dark,
+  &.bricks-color-dark {
+    --sfx-btn-color: var(--btn-dark-bg, var(--dark, #0f172a));
+    /* Dark bg → swap pair: fg = --light token. */
+    --sfx-btn-color-fg: var(--btn-dark-fg, var(--light, #fff));
+    --sfx-btn-mix: var(--btn-dark-mix, white);
   }
 
-  &.bricks-background-muted {
-    --sfx-btn-color: var(--btn-muted-bg, #94a3b8);
-    --sfx-btn-color-fg: var(--btn-muted-fg, #ffffff);
+  &.bricks-background-muted,
+  &.bricks-color-muted {
+    --sfx-btn-color: var(--btn-muted-bg, var(--muted, #94a3b8));
+    --sfx-btn-color-fg: var(--btn-muted-fg, var(--muted-fg, #fff));
   }
 
-  &.bricks-background-info {
-    --sfx-btn-color: var(--btn-info-bg, #0ea5e9);
-    --sfx-btn-color-fg: var(--btn-info-fg, #ffffff);
+  &.bricks-background-info,
+  &.bricks-color-info {
+    --sfx-btn-color: var(--btn-info-bg, var(--info, #0ea5e9));
+    --sfx-btn-color-fg: var(--btn-info-fg, var(--info-fg, #fff));
   }
 
-  &.bricks-background-success {
-    --sfx-btn-color: var(--btn-success-bg, #22c55e);
-    --sfx-btn-color-fg: var(--btn-success-fg, #ffffff);
+  &.bricks-background-success,
+  &.bricks-color-success {
+    --sfx-btn-color: var(--btn-success-bg, var(--success, #22c55e));
+    --sfx-btn-color-fg: var(--btn-success-fg, var(--success-fg, #fff));
   }
 
-  &.bricks-background-danger {
-    --sfx-btn-color: var(--btn-danger-bg, #ef4444);
-    --sfx-btn-color-fg: var(--btn-danger-fg, #ffffff);
+  &.bricks-background-danger,
+  &.bricks-color-danger {
+    --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
+    --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
   }
 
-  &.bricks-background-warning {
-    --sfx-btn-color: var(--btn-warning-bg, #eab308);
-    --sfx-btn-color-fg: var(--btn-warning-fg, #111827);
+  &.bricks-background-warning,
+  &.bricks-color-warning {
+    --sfx-btn-color: var(--btn-warning-bg, var(--warning, #eab308));
+    --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
   }
 
+  /* Outline variant — transparent bg + variant-colored border/text;
+     hover swaps to filled look (bg = variant color, text = paired fg),
+     so .outline.bricks-color-primary:hover renders identical to a
+     plain .bricks-background-primary button.
+
+     Note: the color and border-color declarations for the variant-color
+     swap (idle + hover) are NOT in this layered block. They live
+     unlayered at the bottom of this file so they win over Bricks' two
+     unlayered global rules:
+       :where(:root) *                  { border-color: var(--border-primary); }
+       :where(:root) .bricks-color-<v>  { color: var(--<v>); }
+     See the "Unlayered outline chrome" block below for the reasoning. */
   &.outline {
     background-color: transparent;
     border-width: var(--sfx-btn-border-width);
 
     &[class*="bricks-color-"],
     &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
-      color: var(--sfx-btn-color);
-      border-color: var(--sfx-btn-color);
-
       &:hover {
         transform: translateY(-1px);
         background-color: var(--sfx-btn-color);
-        border-color: var(--sfx-btn-color);
-        color: var(--sfx-btn-color-fg);
       }
-    }
-
-    &.bricks-color-primary {
-      --sfx-btn-color: var(--btn-primary-bg, #2563eb);
-      --sfx-btn-color-fg: var(--btn-primary-fg, #ffffff);
-    }
-
-    &.bricks-color-secondary {
-      --sfx-btn-color: var(--btn-secondary-bg, #64748b);
-      --sfx-btn-color-fg: var(--btn-secondary-fg, #ffffff);
-    }
-
-    &.bricks-color-accent {
-      --sfx-btn-color: var(--btn-accent-bg, #f59e0b);
-      --sfx-btn-color-fg: var(--btn-accent-fg, #111827);
-    }
-
-    &.bricks-color-light {
-      --sfx-btn-color: var(--btn-light-bg, #f8fafc);
-      --sfx-btn-color-fg: var(--btn-light-fg, #0f172a);
-    }
-
-    &.bricks-color-dark {
-      --sfx-btn-color: var(--btn-dark-bg, #0f172a);
-      --sfx-btn-color-fg: var(--btn-dark-fg, #f8fafc);
-    }
-
-    &.bricks-color-muted {
-      --sfx-btn-color: var(--btn-muted-bg, #94a3b8);
-      --sfx-btn-color-fg: var(--btn-muted-fg, #ffffff);
-    }
-
-    &.bricks-color-info {
-      --sfx-btn-color: var(--btn-info-bg, #0ea5e9);
-      --sfx-btn-color-fg: var(--btn-info-fg, #ffffff);
-    }
-
-    &.bricks-color-success {
-      --sfx-btn-color: var(--btn-success-bg, #22c55e);
-      --sfx-btn-color-fg: var(--btn-success-fg, #ffffff);
-    }
-
-    &.bricks-color-danger {
-      --sfx-btn-color: var(--btn-danger-bg, #ef4444);
-      --sfx-btn-color-fg: var(--btn-danger-fg, #ffffff);
-    }
-
-    &.bricks-color-warning {
-      --sfx-btn-color: var(--btn-warning-bg, #eab308);
-      --sfx-btn-color-fg: var(--btn-warning-fg, #111827);
     }
   }
 
@@ -312,4 +313,40 @@ button.bricks-button,
   }
 }
 
+}
+
+/* ========================================
+   UNLAYERED OUTLINE CHROME
+   ----------------------------------------
+   These two declarations live OUTSIDE @layer sfx.components on purpose.
+
+   Bricks ships two unlayered global rules:
+     :where(:root) *                  { border-color: var(--border-primary); }
+     :where(:root) .bricks-color-<v>  { color: var(--<v>); }
+
+   Unlayered author declarations always beat layered ones (regardless of
+   selector specificity), so keeping the variant-colored border and the
+   hover text-swap inside @layer sfx.components would let Bricks' globals
+   neutralize them every time.
+
+   Lifting these specific properties out of the layer lets them compete
+   on plain specificity instead. The selectors below resolve to:
+     idle:  0,5,0   (beats Bricks .bricks-color-<v> at 0,1,0)
+     hover: 0,6,0   (beats Bricks at 0,1,0 with margin to spare)
+
+   No !important needed. The user can still override these with any
+   selector of equal or higher specificity — same as normal CSS.
+
+   All other outline behavior (background-color transparent, hover bg,
+   transform, border-width) stays inside the layer so users can still
+   override those via Bricks/child theme/custom CSS the normal way.
+   ======================================== */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).outline:is([class*="bricks-color-"], [class*="btn--"]:not(.btn--text):not(.btn--icon-slide)) {
+  color: var(--sfx-btn-color);
+  border-color: var(--sfx-btn-color);
+
+  &:hover {
+    color: var(--sfx-btn-color-fg);
+    border-color: var(--sfx-btn-color);
+  }
 }
