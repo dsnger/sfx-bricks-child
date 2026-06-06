@@ -17,16 +17,17 @@ class Controller
 
     public function enqueue_frontend(): void
     {
-        if (is_admin()) {
-            return;
-        }
-
         if (function_exists('bricks_is_builder_main') && bricks_is_builder_main()) {
             return;
         }
 
         $lenis_path = get_stylesheet_directory() . '/assets/libs/lenis/lenis.min.js';
         if (!file_exists($lenis_path)) {
+            return;
+        }
+
+        $init = get_stylesheet_directory() . '/inc/SmoothScroll/assets/smooth-scroll.js';
+        if (!file_exists($init)) {
             return;
         }
 
@@ -38,12 +39,11 @@ class Controller
             true
         );
 
-        $init = get_stylesheet_directory() . '/inc/SmoothScroll/assets/smooth-scroll.js';
         wp_enqueue_script(
             'sfx-smooth-scroll',
             get_stylesheet_directory_uri() . '/inc/SmoothScroll/assets/smooth-scroll.js',
             ['sfx-lenis'],
-            file_exists($init) ? (string) filemtime($init) : '1.0.0',
+            (string) filemtime($init),
             true
         );
 

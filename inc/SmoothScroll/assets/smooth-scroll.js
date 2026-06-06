@@ -65,10 +65,30 @@
   var lenis = new window.Lenis(opts);
   window.sfxLenis = lenis;
 
+  var rafId = null;
+
   function raf(time) {
     lenis.raf(time);
-    requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
   }
 
-  requestAnimationFrame(raf);
+  function stop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }
+
+  // Cancel our loop whenever the instance is destroyed (e.g. by a page
+  // transition library) or the page is being unloaded, so raf() does not
+  // keep firing against a dead instance.
+  var originalDestroy = lenis.destroy.bind(lenis);
+  lenis.destroy = function () {
+    stop();
+    return originalDestroy();
+  };
+
+  window.addEventListener('pagehide', stop, { once: true });
+
+  rafId = requestAnimationFrame(raf);
 })();
