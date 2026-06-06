@@ -58,9 +58,9 @@
   if (easing) {
     opts.easing = easing;
   }
-  if (cfg.anchors) {
-    opts.anchors = { offset: cfg.anchorOffset || 0 };
-  }
+  // Anchor handling is done by us below (see setupAnchors) instead of Lenis'
+  // built-in `anchors` option, so we can support /#-prefixed links, a
+  // consistent offset, cross-page links, and the initial load-time hash.
 
   var lenis = new window.Lenis(opts);
   window.sfxLenis = lenis;
@@ -91,4 +91,79 @@
   window.addEventListener('pagehide', stop, { once: true });
 
   rafId = requestAnimationFrame(raf);
+
+  // ---------------------------------------------------------------------------
+  // Anchor handling: only intercept links whose target section exists on the
+  // CURRENT page. Same-page links (#x, /#x on the matching page) smooth-scroll
+  // without a reload; cross-page links (e.g. /#x from a subpage, /imprint#x)
+  // are left to the browser to navigate normally, after which the load-time
+  // hash handler below scrolls to the section once the new page has loaded.
+  function setupAnchors() {
+    var anchorOffset = cfg.anchorOffset || 0;
+
+    function normPath(path) {
+      return path.replace(/\/+$/, '') || '/';
+    }
+
+    // Returns the in-page target element for an href, or null when the href
+    // points to another page/origin or to a section not present on this page.
+    function resolveLocalTarget(href) {
+      if (!href) {
+        return null;
+      }
+      var url;
+      try {
+        url = new URL(href, window.location.href);
+      } catch (e) {
+        return null;
+      }
+      if (url.origin !== window.location.origin) {
+        return null;
+      }
+      if (normPath(url.pathname) !== normPath(window.location.pathname)) {
+        return null;
+      }
+      var id = url.hash ? url.hash.slice(1) : '';
+      if (!id) {
+        return null;
+      }
+      return document.getElementById(id);
+    }
+
+    document.addEventListener('click', function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!link) {
+        return;
+      }
+      if (link.target && link.target !== '_self') {
+        return;
+      }
+      var href = link.getAttribute('href');
+      if (!href || href.indexOf('#') === -1) {
+        return;
+      }
+      var target = resolveLocalTarget(href);
+      if (!target) {
+        return;
+      }
+      event.preventDefault();
+      lenis.scrollTo(target, { offset: anchorOffset });
+    });
+
+    if (window.location.hash && window.location.hash.length > 1) {
+      var loadTarget = resolveLocalTarget(window.location.hash);
+      if (loadTarget) {
+        requestAnimationFrame(function () {
+          lenis.scrollTo(loadTarget, { offset: anchorOffset, immediate: false });
+        });
+      }
+    }
+  }
+
+  if (cfg.anchors) {
+    setupAnchors();
+  }
 })();
