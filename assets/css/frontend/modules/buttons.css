@@ -202,7 +202,7 @@
     border-width: var(--sfx-btn-border-width);
 
     &[class*="bricks-color-"],
-    &[class*="btn--"]:not(.btn--text) {
+    &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
       &:hover {
         transform: translateY(-1px);
         background-color: var(--sfx-btn-color);
@@ -341,7 +341,7 @@ button.bricks-button,
    transform, border-width) stays inside the layer so users can still
    override those via Bricks/child theme/custom CSS the normal way.
    ======================================== */
-:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).outline:is([class*="bricks-color-"], [class*="btn--"]:not(.btn--text)) {
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).outline:is([class*="bricks-color-"], [class*="btn--"]:not(.btn--text):not(.btn--icon-slide)) {
   color: var(--sfx-btn-color);
   border-color: var(--sfx-btn-color);
 

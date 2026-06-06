@@ -1164,14 +1164,10 @@ class Ajax
         // Ensure it's in exclusion list
         Settings::add_excluded_image($attachment_id);
         
-        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original
-        // Store this in attachment metadata to persist across exclusion changes
-        $meta = wp_get_attachment_metadata($attachment_id);
-        if (!is_array($meta)) {
-            $meta = [];
-        }
-        $meta['_sfx_was_restored'] = true;
-        wp_update_attachment_metadata($attachment_id, $meta);
+        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original.
+        // Stored as a standalone post meta key so it persists across exclusion changes and is
+        // read back consistently via get_post_meta($id, '_sfx_was_restored', true).
+        update_post_meta($attachment_id, '_sfx_was_restored', true);
 
         // Log the reversion
         $log[] = sprintf(

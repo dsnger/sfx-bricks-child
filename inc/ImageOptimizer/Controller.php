@@ -823,7 +823,7 @@ class Controller
                 $memory_warnings
             );
 
-        if ($file_count >= $batch_limit) {
+        if (($file_count ?? 0) >= $batch_limit) {
             $summary .= ' ' . __('(batch limit reached, more files may need processing)', 'sfxtheme');
         }
 
