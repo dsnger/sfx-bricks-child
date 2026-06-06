@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.1_rc] - 2026-06-06
+
+### Added
+
+- Import/Export: Smooth Scroll settings (sfx_smooth_scroll_options) are now included in theme settings export and import.
+- Import/Export: Custom post type exports now capture taxonomy term assignments (Script Categories, Text Snippet Categories), including parent relationships for hierarchical taxonomies, and rebuild them on import.
+- Import/Export: Added the Custom Dashboard 'Allow User Notes' field to dashboard section import/export coverage.
+
+### Fixed
+
+- Import/Export: Taxonomy term assignments are no longer silently dropped when wp_insert_term reports an existing term (term_exists); the existing term ID is now recovered and assigned to the imported post.
+
 ## [0.11.0] - 2026-05-05
 
 ### Added
