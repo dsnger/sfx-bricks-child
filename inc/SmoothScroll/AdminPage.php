@@ -46,13 +46,6 @@ class AdminPage
                         <form method="post" action="options.php">
                             <?php settings_fields(Settings::OPTION_GROUP); ?>
 
-                            <div class="sfx-ss-field" style="margin-bottom: 20px;">
-                                <label for="sfx_ss_provider"><?php esc_html_e('Smooth Scrolling Provider', 'sfxtheme'); ?></label>
-                                <select id="sfx_ss_provider" disabled>
-                                    <option selected><?php esc_html_e('Lenis', 'sfxtheme'); ?></option>
-                                </select>
-                            </div>
-
                             <?php self::render_row('metrics', $fields_by_col['metrics'] ?? [], $options); ?>
                             <?php self::render_row('easing', $fields_by_col['easing'] ?? [], $options); ?>
                             <?php self::render_row('toggles', $fields_by_col['toggles'] ?? [], $options); ?>
@@ -154,15 +147,15 @@ class AdminPage
 
             case 'text':
             default:
-                if ($id === 'easing') {
-                    echo '<p class="sfx-ss-note">' . esc_html__('Expression in t (0 to 1). Default uses no eval.', 'sfxtheme') . '</p>';
-                }
                 printf(
                     '<input type="text" id="sfx_ss_%1$s" name="%2$s" value="%3$s" />',
                     esc_attr($id),
                     esc_attr($name),
                     esc_attr((string) $value)
                 );
+                if ($id === 'easing') {
+                    echo '<p class="sfx-ss-note">' . esc_html__('Expression in t (0 to 1). Default uses no eval.', 'sfxtheme') . '</p>';
+                }
                 break;
         }
 
