@@ -125,6 +125,9 @@ class AdminPage
                     esc_attr($field['min'] ?? ''),
                     esc_attr($field['max'] ?? '')
                 );
+                if ($id === 'anchor_scroll_offset') {
+                    echo '<p class="sfx-ss-note">' . esc_html__('Space (in pixels) to leave above the target when scrolling to an anchor, e.g. to clear a sticky header. Positive values create a gap below the top.', 'sfxtheme') . '</p>';
+                }
                 break;
 
             case 'select':

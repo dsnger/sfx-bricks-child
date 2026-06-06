@@ -30,7 +30,7 @@
       return undefined;
     }
     try {
-      var fn = new Function('t', 'return (' + cfg.easing + ');');
+      var fn = new Function('t', 'return (' + expr + ');');
       if (typeof fn === 'function' && Number.isFinite(fn(0)) && Number.isFinite(fn(1))) {
         return fn;
       }
@@ -99,7 +99,12 @@
   // are left to the browser to navigate normally, after which the load-time
   // hash handler below scrolls to the section once the new page has loaded.
   function setupAnchors() {
-    var anchorOffset = cfg.anchorOffset || 0;
+    // The setting is expressed as the space to leave ABOVE the target (e.g. to
+    // clear a sticky header), matching the scroll-padding-top mental model.
+    // Lenis adds `offset` to the destination scroll position, so a positive
+    // value would overshoot (target ends up above the viewport top); negate it
+    // so a positive setting produces a downward gap below the top.
+    var anchorOffset = -(cfg.anchorOffset || 0);
 
     function normPath(path) {
       return path.replace(/\/+$/, '') || '/';
