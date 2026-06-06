@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.11.1_rc] - 2026-06-06
+## [0.12.0_rc] - 2026-06-06
 
 ### Added
 
+- Smooth Scroll: New Lenis-based smooth scrolling feature that replaces the Bricksforge smooth scroll dependency. Adds a dedicated admin settings page (duration, mouse/touch multipliers, direction, gesture direction, easing, infinite scroll) and is toggled via General Theme Options (enable_smooth_scroll).
+- Smooth Scroll: Smooth anchor-link scrolling with a configurable anchor offset, load-time hash handling, and slash-aware anchor resolution.
 - Import/Export: Smooth Scroll settings (sfx_smooth_scroll_options) are now included in theme settings export and import.
 - Import/Export: Custom post type exports now capture taxonomy term assignments (Script Categories, Text Snippet Categories), including parent relationships for hierarchical taxonomies, and rebuild them on import.
 - Import/Export: Added the Custom Dashboard 'Allow User Notes' field to dashboard section import/export coverage.
