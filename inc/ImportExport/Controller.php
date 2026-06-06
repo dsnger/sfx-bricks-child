@@ -85,6 +85,7 @@ class Controller
             'note_title',
             'note_content',
             'note_position',
+            'allow_user_notes',
         ],
         'dashboard_stats' => [
             'stats_items',
@@ -286,6 +287,12 @@ class Controller
                 'option_key' => 'sfx_text_snippets_options',
                 'type' => 'single',
             ],
+            'smooth_scroll_options' => [
+                'label' => __('Smooth Scroll Settings', 'sfxtheme'),
+                'description' => __('Lenis smooth scroll configuration (duration, easing, multipliers, anchors)', 'sfxtheme'),
+                'option_key' => 'sfx_smooth_scroll_options',
+                'type' => 'single',
+            ],
         ];
     }
 
@@ -469,6 +476,7 @@ class Controller
                     'post_name' => $post->post_name,
                     'menu_order' => $post->menu_order,
                     'post_meta' => [],
+                    'taxonomies' => [],
                 ];
 
                 // Get all post meta
@@ -482,6 +490,22 @@ class Controller
                     $post_data['post_meta'][$meta_key] = count($meta_values) === 1 
                         ? maybe_unserialize($meta_values[0]) 
                         : array_map('maybe_unserialize', $meta_values);
+                }
+
+                // Get taxonomy term assignments (preserves categorization across sites)
+                $taxonomies = get_object_taxonomies($post_type, 'names');
+                foreach ($taxonomies as $taxonomy) {
+                    $terms = get_the_terms($post->ID, $taxonomy);
+                    if (!is_array($terms) || empty($terms)) {
+                        continue;
+                    }
+                    $post_data['taxonomies'][$taxonomy] = array_map(static function ($term) {
+                        return [
+                            'slug' => $term->slug,
+                            'name' => $term->name,
+                            'description' => $term->description,
+                        ];
+                    }, $terms);
                 }
 
                 $posts_data[] = $post_data;
@@ -1059,7 +1083,65 @@ class Controller
             }
         }
 
+        // Import taxonomy term assignments
+        if (!empty($post_data['taxonomies']) && is_array($post_data['taxonomies'])) {
+            $this->import_post_taxonomies($post_id, $post_data['taxonomies']);
+        }
+
         return $post_id;
+    }
+
+    /**
+     * Import taxonomy term assignments for a post.
+     * 
+     * Recreates missing terms (matched by slug) and assigns them to the post.
+     * 
+     * @param int $post_id Post ID.
+     * @param array $taxonomies Map of taxonomy => list of term arrays.
+     */
+    private function import_post_taxonomies(int $post_id, array $taxonomies): void
+    {
+        foreach ($taxonomies as $taxonomy => $terms) {
+            $taxonomy = sanitize_key((string) $taxonomy);
+
+            if (!taxonomy_exists($taxonomy) || !is_array($terms)) {
+                continue;
+            }
+
+            $term_ids = [];
+            foreach ($terms as $term) {
+                if (!is_array($term)) {
+                    continue;
+                }
+
+                $slug = sanitize_title($term['slug'] ?? '');
+                $name = sanitize_text_field($term['name'] ?? '');
+
+                if ($name === '' && $slug === '') {
+                    continue;
+                }
+
+                // Match existing term by slug first to avoid duplicates
+                $existing = $slug ? get_term_by('slug', $slug, $taxonomy) : false;
+                if ($existing instanceof \WP_Term) {
+                    $term_ids[] = (int) $existing->term_id;
+                    continue;
+                }
+
+                $created = wp_insert_term($name !== '' ? $name : $slug, $taxonomy, [
+                    'slug' => $slug,
+                    'description' => sanitize_text_field($term['description'] ?? ''),
+                ]);
+
+                if (!is_wp_error($created) && isset($created['term_id'])) {
+                    $term_ids[] = (int) $created['term_id'];
+                }
+            }
+
+            if (!empty($term_ids)) {
+                wp_set_object_terms($post_id, $term_ids, $taxonomy, false);
+            }
+        }
     }
 
     /**
