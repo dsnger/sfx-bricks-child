@@ -62,6 +62,9 @@ $options_to_delete = [
     'webp_conversion_complete',
     'webp_conversion_log',
     
+    // Smooth Scroll
+    'sfx_smooth_scroll_options',
+
     // Security Headers
     'sfx_hsts_max_age',
     'sfx_hsts_include_subdomains',
