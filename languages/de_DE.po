@@ -1841,11 +1841,7 @@ msgstr "HTTP-Sicherheits-Header-Konfiguration"
 msgid "Image conversion and optimization settings"
 msgstr "Bildkonvertierungs- und Optimierungseinstellungen"
 
-#: inc/ImportExport/Controller.php
-msgid "Text snippets feature settings"
-msgstr "Text-Snippet-Funktionseinstellungen"
-
-# #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#
+# #-#-#-#-#  catalog.po (SFX Bricks Child Theme 1.0.0)  #-#-#-#-#-
 # ============================================
 # Social Media Accounts
 # ============================================
@@ -1982,13 +1978,6 @@ msgstr "Bitte wähle eine gültige JSON-Datei aus."
 #: inc/ImportExport/AssetManager.php
 msgid "Processing..."
 msgstr "Verarbeitung..."
-
-# ============================================
-# Text Snippets
-# ============================================
-#: inc/TextSnippets/Settings.php
-msgid "Configure and manage the text snippet options below."
-msgstr "Konfiguriere und verwalte die Text-Snippet-Optionen unten."
 
 # ============================================
 # Access Control
@@ -3719,81 +3708,6 @@ msgstr ""
 msgid ""
 "Refer to Mozilla Observatory and securityheaders.com for header analysis."
 msgstr "Siehe Mozilla Observatory und securityheaders.com für Header-Analysen."
-
-# ============================================
-# Text Snippets
-# ============================================
-#: inc/TextSnippets/PostType.php
-msgid "Text Snippets"
-msgstr "Text-Snippets"
-
-#: inc/TextSnippets/PostType.php
-msgid "Text Snippet"
-msgstr "Text-Snippet"
-
-#: inc/TextSnippets/PostType.php
-msgid "Add New Text Snippet"
-msgstr "Neues Text-Snippet hinzufügen"
-
-#: inc/TextSnippets/PostType.php
-msgid "Edit Text Snippet"
-msgstr "Text-Snippet bearbeiten"
-
-#: inc/TextSnippets/PostType.php
-msgid "New Text Snippet"
-msgstr "Neues Text-Snippet"
-
-#: inc/TextSnippets/PostType.php
-msgid "View Text Snippet"
-msgstr "Text-Snippet ansehen"
-
-#: inc/TextSnippets/PostType.php
-msgid "Search Text Snippets"
-msgstr "Text-Snippets durchsuchen"
-
-#: inc/TextSnippets/PostType.php
-msgid "No text snippets found"
-msgstr "Keine Text-Snippets gefunden"
-
-#: inc/TextSnippets/PostType.php
-msgid "No text snippets found in Trash"
-msgstr "Keine Text-Snippets im Papierkorb gefunden"
-
-#: inc/TextSnippets/PostType.php
-msgid "All Text Snippets"
-msgstr "Alle Text-Snippets"
-
-#: inc/TextSnippets/PostType.php
-msgid "Snippet Categories"
-msgstr "Snippet-Kategorien"
-
-#: inc/TextSnippets/PostType.php
-msgid "Snippet Category"
-msgstr "Snippet-Kategorie"
-
-#: inc/TextSnippets/PostType.php
-msgid "Search Snippet Categories"
-msgstr "Snippet-Kategorien durchsuchen"
-
-#: inc/TextSnippets/PostType.php
-msgid "All Snippet Categories"
-msgstr "Alle Snippet-Kategorien"
-
-#: inc/TextSnippets/PostType.php
-msgid "Text Snippet Custom Fields"
-msgstr "Text-Snippet-Benutzerfelder"
-
-#: inc/TextSnippets/PostType.php
-msgid "Field Slug"
-msgstr "Feld-Slug"
-
-#: inc/TextSnippets/PostType.php
-msgid "Value"
-msgstr "Wert"
-
-#: inc/TextSnippets/PostType.php
-msgid "Add Field"
-msgstr "Feld hinzufügen"
 
 # ============================================
 # Image Optimizer - Additional Strings

@@ -281,12 +281,6 @@ class Controller
                 ],
                 'type' => 'multiple',
             ],
-            'text_snippets' => [
-                'label' => __('Text Snippets Settings', 'sfxtheme'),
-                'description' => __('Text snippets feature settings', 'sfxtheme'),
-                'option_key' => 'sfx_text_snippets_options',
-                'type' => 'single',
-            ],
             'smooth_scroll_options' => [
                 'label' => __('Smooth Scroll Settings', 'sfxtheme'),
                 'description' => __('Lenis smooth scroll configuration (duration, easing, multipliers, anchors)', 'sfxtheme'),
@@ -307,7 +301,6 @@ class Controller
             'sfx_custom_script' => __('Custom Scripts', 'sfxtheme'),
             'sfx_contact_info' => __('Contact Information', 'sfxtheme'),
             'sfx_social_account' => __('Social Media Accounts', 'sfxtheme'),
-            'cpt_text_snippet' => __('Text Snippets', 'sfxtheme'),
         ];
     }
 
