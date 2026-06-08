@@ -151,6 +151,7 @@ class TextSnippetsRemoval
     {
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $post_ids = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s",
@@ -164,6 +165,7 @@ class TextSnippetsRemoval
             }
         }
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $term_ids = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT t.term_id FROM {$wpdb->terms} AS t
@@ -196,13 +198,9 @@ class TextSnippetsRemoval
             $wpdb->prepare(
                 "DELETE FROM {$wpdb->options}
                 WHERE option_name LIKE %s
-                   OR option_name LIKE %s
-                   OR option_name LIKE %s
                    OR option_name LIKE %s",
                 '_transient_sfx_text_snippet_%',
-                '_transient_timeout_sfx_text_snippet_%',
-                '_transient_sfx_text_snippet_field_%',
-                '_transient_timeout_sfx_text_snippet_field_%'
+                '_transient_timeout_sfx_text_snippet_%'
             )
         );
     }
