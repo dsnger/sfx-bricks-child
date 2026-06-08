@@ -44,5 +44,4 @@ alwaysApply: false
 - `ContactInfos` (CPT-based, has Bricks dynamic tag `{contact_info:field}`)
 - `SocialMediaAccounts` (CPT-based, shortcode)
 - `CustomScriptsManager` (CPT-based, conditional script injection)
-- `TextSnippets` (standalone; `show_in_theme_settings` false)
 - `Shortcodes` (no menu; initializes on `acf/init`)

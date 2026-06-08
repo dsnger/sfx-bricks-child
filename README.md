@@ -2,7 +2,7 @@
 
 A WordPress child theme for Bricks Builder with enhanced features.
 
-This child theme extends Bricks Builder with powerful content management tools, performance optimizations, security enhancements, and developer utilities. It provides a comprehensive suite of features for managing contact information, social media accounts, text snippets, custom scripts, image optimization, and WordPress performance tuning.
+This child theme extends Bricks Builder with powerful content management tools, performance optimizations, security enhancements, and developer utilities. It provides a comprehensive suite of features for managing contact information, social media accounts, custom scripts, image optimization, and WordPress performance tuning.
 
 ## Features & Functions
 
@@ -15,7 +15,6 @@ This child theme extends Bricks Builder with powerful content management tools, 
 ### Content Management
 - **Contact Infos** - Custom post type for managing contact information with shortcode `[contact_info]` and Bricks dynamic tags `{contact_info:field}`
 - **Social Media Accounts** - Custom post type for social media links with shortcode `[social_accounts]`
-- **Text Snippets** - Reusable text content with shortcode `[snippet]` and Bricks dynamic tag `{snippet_content:ID}`
 - **Custom Scripts Manager** - Manage and enqueue custom JavaScript/CSS files with conditional loading
 
 ### Optimization
@@ -35,7 +34,7 @@ This child theme extends Bricks Builder with powerful content management tools, 
 
 ### Builder Integration
 - **Shortcodes** - Iconify icon shortcode support
-- **Dynamic Tags** - Custom Bricks dynamic data tags for contact info and text snippets
+- **Dynamic Tags** - Custom Bricks dynamic data tags for contact info
 
 ### Admin Features
 - **Custom Dashboard** - Customizable WordPress dashboard with stats, system info, and form submissions

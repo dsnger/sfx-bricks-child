@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.13.0_rc] - 2026-06-07
+
+### Removed
+
+- Text Snippets: Removed the entire Text Snippets feature, including its custom post type, taxonomy, settings, admin page, shortcode (SC_Snippet), and associated admin assets. The feature is no longer registered and its Import/Export integration has been dropped.
+
+### Added
+
+- Text Snippets: Added a one-time migration/removal helper (TextSnippetsRemoval) that detects legacy snippet data, shows a dismissible admin notice with the count of remaining legacy posts, and purges legacy posts, taxonomy terms, options, and transients on uninstall when delete-on-uninstall is enabled.
+
 ## [0.12.0_rc] - 2026-06-06
 
 ### Added
