@@ -4,7 +4,41 @@
    styles, child-theme CSS, and user custom CSS therefore override our
    baseline automatically without !important or specificity wars. Add
    new sub-layer names here when introducing new module categories. */
-@layer sfx.reset, sfx.components, sfx.utilities, sfx.theme;
+@layer sfx.reset, sfx.utilities, sfx.components, sfx.theme;
+
+@layer sfx.utilities {
+  :where(input:not([type="file"]), select, textarea, button, [role="button"], .button) {
+    &:is(:focus, :focus-visible) {
+      outline: var(--focus-width, 2px) solid var(--focus-color, var(--primary, #2563eb));
+      outline-offset: var(--focus-offset, 2px);
+      box-shadow: var(--focus-ring, none);
+    }
+
+    &:focus:not(:focus-visible) {
+      outline: none;
+      box-shadow: none;
+    }
+  }
+
+  /* Media queries MUST stay inside the layer block. Unlayered author CSS
+     beats all layered CSS regardless of specificity — if these @media
+     rules sit outside @layer sfx.utilities, they would override
+     sfx.components form/button focus in forced-colors / prefers-contrast. */
+  @media (forced-colors: active) {
+    :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):is(:focus, :focus-visible) {
+      outline: 2px solid CanvasText;
+      outline-offset: 2px;
+      box-shadow: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    :where(input:not([type="file"]), select, textarea, button, [role="button"], .button):focus-visible {
+      outline-width: max(3px, var(--focus-width, 2px));
+      box-shadow: var(--focus-ring, none);
+    }
+  }
+}
 
 .skip-link {
   display: none !important;

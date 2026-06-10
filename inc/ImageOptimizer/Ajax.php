@@ -436,12 +436,29 @@ class Ajax
         $preserve_originals = Settings::get_preserve_originals();
         $thumb_size = Constants::THUMBNAIL_SIZE;
         
-        $args = [
-            'post_type' => 'attachment',
+        $all_args = [
+            'post_type'      => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
             'posts_per_page' => -1,
-            'fields' => 'ids',
-            'post__not_in' => Settings::get_excluded_images(),
+            'fields'         => 'ids',
+        ];
+
+        // Protection set: every attachment main file, including excluded ones.
+        $global_active_mains = [];
+        foreach (get_posts($all_args) as $other_id) {
+            $other_path = get_attached_file($other_id);
+            if ($other_path) {
+                $global_active_mains[$other_path] = true;
+            }
+        }
+
+        // Cleanup loop: skip excluded attachments (unchanged behavior).
+        $args = [
+            'post_type'      => 'attachment',
+            'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'post__not_in'   => Settings::get_excluded_images(),
         ];
         $attachments = get_posts($args);
         $deleted = 0;
@@ -449,20 +466,6 @@ class Ajax
             Constants::ORIGINAL_EXTENSIONS_WITH_CASE,
             Constants::CONVERTED_EXTENSIONS
         );
-
-        // Pre-compute every other attachment's main file so the
-        // directory scan below can never propose deleting a file that
-        // is itself the attached file of a sibling attachment. Without
-        // this, an attachment literally named "photo-300" would be
-        // erased when cleanup runs against an attachment named "photo"
-        // (its basename matches the sized-variant regex).
-        $global_active_mains = [];
-        foreach ($attachments as $other_id) {
-            $other_path = get_attached_file($other_id);
-            if ($other_path) {
-                $global_active_mains[$other_path] = true;
-            }
-        }
 
         // Cache scandir() per directory: a YYYY/MM uploads folder is
         // shared by many attachments and re-reading it per attachment
@@ -536,9 +539,8 @@ class Ajax
                 $candidates[$full] = true;
             }
 
-            // Build the keep set: attached file, current target-format
-            // sizes, current thumbnail, and (optionally) preserved
-            // originals in every original extension/size.
+            // Build the keep set: attached file + current target-format sizes + thumbnail.
+            // preserve_originals is enforced at deletion time by extension (below), not here.
             $keep = [];
             $keep[$file_path] = true;
             foreach ($max_values as $index => $dimension) {
@@ -547,20 +549,21 @@ class Ajax
             }
             $keep["$dirname/$base_name-{$thumb_size}x{$thumb_size}$extension"] = true;
 
-            if ($preserve_originals) {
-                foreach (Constants::ORIGINAL_EXTENSIONS_WITH_CASE as $orig_ext) {
-                    $keep["$dirname/$base_name.$orig_ext"] = true;
-                    $keep["$dirname/$base_name-{$thumb_size}x{$thumb_size}.$orig_ext"] = true;
-                    foreach ($max_values as $index => $dimension) {
-                        if ($index === 0) continue;
-                        $keep["$dirname/$base_name-$dimension.$orig_ext"] = true;
+            foreach (array_keys($candidates) as $candidate) {
+                if (isset($keep[$candidate])) {
+                    continue;
+                }
+
+                if ($preserve_originals) {
+                    $ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
+                    if (in_array($ext, Constants::ORIGINAL_EXTENSIONS, true)) {
+                        continue;
                     }
                 }
-            }
 
-            foreach (array_keys($candidates) as $candidate) {
-                if (isset($keep[$candidate])) continue;
-                if (!file_exists($candidate)) continue;
+                if (!file_exists($candidate)) {
+                    continue;
+                }
                 if (@unlink($candidate)) {
                     $deleted++;
                     $log[] = sprintf(__('Deleted old file: %s', 'sfxtheme'), basename($candidate));

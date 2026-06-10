@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.12] - 2026-06-10
+
+### Fixed
+
+- Image Optimizer (`cleanup_originals`): no longer deletes files that are the main file of an excluded attachment. The cross-attachment protection set is now built from all attachments; the cleanup loop still skips excluded IDs.
+- Image Optimizer (`cleanup_originals`): `preserve_originals` again keeps all jpg/jpeg/png candidates within the bounded candidate set (restores pre-refactor contract; safe candidate boundary retained).
+
+### Added
+
+- CSS: site-wide accessible focus baseline in `@layer sfx.utilities` (`--focus-*` external wireup tokens consumed directly in rules). Layer order updated to `reset → utilities → components → theme` so Bricks form/button module focus still wins where both apply.
+
 ## [0.12.0-rc.11] - 2026-05-22
 
 ### Changed
