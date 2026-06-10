@@ -491,7 +491,18 @@ class Ajax
             // to other attachments and leave their DB rows pointing at
             // deleted files.
             $candidates = [];
-            $candidates[$file_path] = true;
+            $add_candidate = static function (string $path) use (
+                &$candidates,
+                $file_path,
+                $global_active_mains
+            ): void {
+                if ($path !== $file_path && isset($global_active_mains[$path])) {
+                    return;
+                }
+                $candidates[$path] = true;
+            };
+
+            $add_candidate($file_path);
 
             // Anything WP currently tracks as a size for this attachment
             // (catches legacy sizes whose dimension is no longer in
@@ -500,7 +511,7 @@ class Ajax
             if (is_array($metadata) && !empty($metadata['sizes']) && is_array($metadata['sizes'])) {
                 foreach ($metadata['sizes'] as $size_data) {
                     if (!empty($size_data['file'])) {
-                        $candidates["$dirname/" . $size_data['file']] = true;
+                        $add_candidate("$dirname/" . $size_data['file']);
                     }
                 }
             }
@@ -509,11 +520,11 @@ class Ajax
             // extension we manage — covers leftovers from past conversions
             // and alternate-format duplicates.
             foreach ($all_extensions as $ext) {
-                $candidates["$dirname/$base_name.$ext"] = true;
-                $candidates["$dirname/$base_name-{$thumb_size}x{$thumb_size}.$ext"] = true;
+                $add_candidate("$dirname/$base_name.$ext");
+                $add_candidate("$dirname/$base_name-{$thumb_size}x{$thumb_size}.$ext");
                 foreach ($max_values as $index => $dimension) {
                     if ($index === 0) continue;
-                    $candidates["$dirname/$base_name-$dimension.$ext"] = true;
+                    $add_candidate("$dirname/$base_name-$dimension.$ext");
                 }
             }
 
@@ -524,8 +535,6 @@ class Ajax
             //     ^<base_name>(?:|-\d+|-\d+x\d+)\.<managed-ext>$
             // anchored to the start/end of the filename so prefix
             // collisions (photo vs photo-portrait) can't bleed in.
-            // Cross-attachment safety: skip any path that is another
-            // attachment's main file.
             if (!isset($dir_listing_cache[$dirname])) {
                 $entries = @scandir($dirname);
                 $dir_listing_cache[$dirname] = is_array($entries) ? $entries : [];
@@ -534,9 +543,7 @@ class Ajax
             foreach ($dir_listing_cache[$dirname] as $entry) {
                 if ($entry === '.' || $entry === '..') continue;
                 if (!preg_match($name_re, $entry)) continue;
-                $full = "$dirname/$entry";
-                if ($full !== $file_path && isset($global_active_mains[$full])) continue;
-                $candidates[$full] = true;
+                $add_candidate("$dirname/$entry");
             }
 
             // Build the keep set: attached file + current target-format sizes + thumbnail.

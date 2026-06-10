@@ -138,11 +138,18 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_v8_' . sanitize_key($filename);
+        $sanitized = sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v8_' . $sanitized;
         $cached = get_transient($transient_key);
 
         if ($cached !== false) {
             return $cached;
+        }
+
+        // Drop superseded cache keys on recompute (TTL is one week; theme
+        // switch/update also wipes all _transient_sfx_% via clear_all_theme_caches).
+        foreach (['', 'v2_', 'v3_', 'v4_', 'v5_', 'v6_', 'v7_'] as $legacy_suffix) {
+            delete_transient('sfx_css_vars_' . $legacy_suffix . $sanitized);
         }
 
         $file_path = get_stylesheet_directory() . '/assets/css/frontend/modules/' . $filename;
@@ -194,7 +201,7 @@ class Settings
 
         sort($variables);
 
-        // Cache for 1 week (cleared on theme update via clear_all_theme_caches)
+        // Cache for 1 week; all sfx_* transients cleared on theme switch/update.
         set_transient($transient_key, $variables, WEEK_IN_SECONDS);
 
         return $variables;
