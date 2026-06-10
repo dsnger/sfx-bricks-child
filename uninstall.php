@@ -62,6 +62,9 @@ $options_to_delete = [
     'webp_conversion_complete',
     'webp_conversion_log',
     
+    // Smooth Scroll
+    'sfx_smooth_scroll_options',
+
     // Security Headers
     'sfx_hsts_max_age',
     'sfx_hsts_include_subdomains',
@@ -88,6 +91,13 @@ $options_to_delete = [
 // Delete options
 foreach ( $options_to_delete as $option ) {
     delete_option( $option );
+}
+
+// Purge legacy Text Snippets CPT posts, meta, and taxonomy terms
+$text_snippets_removal_file = get_stylesheet_directory() . '/inc/TextSnippetsRemoval.php';
+if ( file_exists( $text_snippets_removal_file ) ) {
+    require_once $text_snippets_removal_file;
+    \SFX\TextSnippetsRemoval::purge_legacy_data();
 }
 
 // Clear transients

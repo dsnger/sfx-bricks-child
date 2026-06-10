@@ -31,12 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Buttons (outline variant): variant-colored border and hover text-color swap were being neutralized by two unlayered global rules Bricks ships — `:where(:root) * { border-color: var(--border-primary) }` and `:where(:root) .bricks-color-<v> { color: var(--<v>) }`. Because unlayered author declarations always beat layered ones (regardless of selector specificity), our `@layer sfx.components` outline rules lost every time. Result: outline buttons rendered with a generic `--border-primary` border instead of the variant color, and hovering an outline button kept the text in the variant color instead of swapping to the paired foreground (poor contrast on hover). Fix in rc.10 used `!important` inside the layer; superseded by the architectural fix in rc.11 (see above) which removes the `!important` declarations.
 
-## [0.12.0-rc.9] - 2026-05-22
-
-### Added
-
-- Text Snippets: sortable "ID" column added to the `cpt_text_snippet` admin list table, inserted right after the title for easy scanning. Useful for building shortcodes (`[snippet id="123"]`) and Bricks dynamic-data tags (`{snippet_content:123}`) without opening the edit screen for each snippet. Sortable via the built-in `WP_Query` `orderby=ID`.
-
 ## [0.12.0-rc.8] - 2026-05-19
 
 ### Changed
@@ -102,6 +96,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Image Optimizer: `fix_format_metadata` recovery writes (`update_attached_file` + `wp_update_post`) now run only in known metadata-generation contexts (`is_admin`, `wp_doing_ajax`, `wp_doing_cron`, `WP_CLI`, `REST_REQUEST`). Filter-time DB writes on public-facing reads are wasteful and surprising to other code; gating prevents that while still allowing legitimate regeneration paths (e.g. `wp media regenerate`, REST media flows). A per-request static guard de-dupes recovery for the same attachment if anything downstream re-enters the filter.
 - Forms module: typography cascade extended with `--form-font-family`, `--form-font-weight`, `--form-letter-spacing`. Placeholders and selects inherit these via `--form-placeholder-*` / `--form-select-*` overrides and fall back to the field tokens when omitted. Added `--form-select-padding-inline-end` for native dropdown arrow clearance. Inputs, textarea, and select now share chrome (border, radius, padding, background, color, font) via a single `:is(input[type=text], …, textarea, select)` selector; the duplicate standalone textarea block was removed. CSS-vars transient bumped (`sfx_css_vars_v2_` → `sfx_css_vars_v5_`) so the admin token mapping reflects the new keys.
 - CSS Layers: declared module sub-layer order centrally in `assets/css/frontend/styles.css` (`@layer sfx.reset, sfx.components, sfx.utilities, sfx.theme;`). Module priority is now fixed by this declaration rather than emerging from WP enqueue order, so adding new sub-layers later won't reshuffle existing precedence. Added intent comments at the top of every layered module (`animations.css`, `buttons.css`, `content-grid.css`, `forms.css`, `lists.css`) explaining that the `@layer` wrapper is the mechanism letting Bricks Builder element styles, child themes, and user custom CSS override the baseline automatically — preventing the "remove the layer so we win" refactor.
+
+## [0.13.0_rc] - 2026-06-07
+
+### Removed
+
+- Text Snippets: Removed the entire Text Snippets feature, including its custom post type, taxonomy, settings, admin page, shortcode (SC_Snippet), and associated admin assets. The feature is no longer registered and its Import/Export integration has been dropped.
+
+### Added
+
+- Text Snippets: Added a one-time migration/removal helper (TextSnippetsRemoval) that detects legacy snippet data, shows a dismissible admin notice with the count of remaining legacy posts, and purges legacy posts, taxonomy terms, options, and transients on uninstall when delete-on-uninstall is enabled.
+
+## [0.12.0_rc] - 2026-06-06
+
+### Added
+
+- Smooth Scroll: New Lenis-based smooth scrolling feature that replaces the Bricksforge smooth scroll dependency. Adds a dedicated admin settings page (duration, mouse/touch multipliers, direction, gesture direction, easing, infinite scroll) and is toggled via General Theme Options (enable_smooth_scroll).
+- Smooth Scroll: Smooth anchor-link scrolling with a configurable anchor offset, load-time hash handling, and slash-aware anchor resolution.
+- Import/Export: Smooth Scroll settings (sfx_smooth_scroll_options) are now included in theme settings export and import.
+- Import/Export: Custom post type exports now capture taxonomy term assignments (Script Categories, Text Snippet Categories), including parent relationships for hierarchical taxonomies, and rebuild them on import.
+- Import/Export: Added the Custom Dashboard 'Allow User Notes' field to dashboard section import/export coverage.
+
+### Fixed
+
+- Import/Export: Taxonomy term assignments are no longer silently dropped when wp_insert_term reports an existing term (term_exists); the existing term ID is now recovered and assigned to the imported post.
 
 ## [0.11.0] - 2026-05-05
 

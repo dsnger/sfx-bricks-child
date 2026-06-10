@@ -51,6 +51,16 @@ Thumbs.db*
 !wp-content/themes/sfx-bricks-child/**
 !wp-content/plugins/**
 
-# Ignore .env.local file (for development environments)
+# Ignore build artifacts (keep *.sh tracked — release.sh / build-theme.sh are repo scripts)
 .sh*.zip
 *.zip
+*.tar
+*.gz
+*.bz2
+*.rar
+*.7z
+*.iso
+*.dmg
+*.pkg
+*.deb
+*.rpm

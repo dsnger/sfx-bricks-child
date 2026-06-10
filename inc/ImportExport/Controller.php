@@ -85,6 +85,7 @@ class Controller
             'note_title',
             'note_content',
             'note_position',
+            'allow_user_notes',
         ],
         'dashboard_stats' => [
             'stats_items',
@@ -280,10 +281,10 @@ class Controller
                 ],
                 'type' => 'multiple',
             ],
-            'text_snippets' => [
-                'label' => __('Text Snippets Settings', 'sfxtheme'),
-                'description' => __('Text snippets feature settings', 'sfxtheme'),
-                'option_key' => 'sfx_text_snippets_options',
+            'smooth_scroll_options' => [
+                'label' => __('Smooth Scroll Settings', 'sfxtheme'),
+                'description' => __('Lenis smooth scroll configuration (duration, easing, multipliers, anchors)', 'sfxtheme'),
+                'option_key' => 'sfx_smooth_scroll_options',
                 'type' => 'single',
             ],
         ];
@@ -300,7 +301,6 @@ class Controller
             'sfx_custom_script' => __('Custom Scripts', 'sfxtheme'),
             'sfx_contact_info' => __('Contact Information', 'sfxtheme'),
             'sfx_social_account' => __('Social Media Accounts', 'sfxtheme'),
-            'cpt_text_snippet' => __('Text Snippets', 'sfxtheme'),
         ];
     }
 
@@ -469,6 +469,7 @@ class Controller
                     'post_name' => $post->post_name,
                     'menu_order' => $post->menu_order,
                     'post_meta' => [],
+                    'taxonomies' => [],
                 ];
 
                 // Get all post meta
@@ -482,6 +483,31 @@ class Controller
                     $post_data['post_meta'][$meta_key] = count($meta_values) === 1 
                         ? maybe_unserialize($meta_values[0]) 
                         : array_map('maybe_unserialize', $meta_values);
+                }
+
+                // Get taxonomy term assignments (preserves categorization across sites)
+                $taxonomies = get_object_taxonomies($post_type, 'names');
+                foreach ($taxonomies as $taxonomy) {
+                    $terms = get_the_terms($post->ID, $taxonomy);
+                    if (!is_array($terms) || empty($terms)) {
+                        continue;
+                    }
+                    $post_data['taxonomies'][$taxonomy] = array_map(static function ($term) use ($taxonomy) {
+                        // Store parent as a slug so hierarchy can be rebuilt on a site with different term IDs
+                        $parent_slug = '';
+                        if (!empty($term->parent)) {
+                            $parent_term = get_term($term->parent, $taxonomy);
+                            if ($parent_term instanceof \WP_Term) {
+                                $parent_slug = $parent_term->slug;
+                            }
+                        }
+                        return [
+                            'slug' => $term->slug,
+                            'name' => $term->name,
+                            'description' => $term->description,
+                            'parent' => $parent_slug,
+                        ];
+                    }, $terms);
                 }
 
                 $posts_data[] = $post_data;
@@ -1059,7 +1085,137 @@ class Controller
             }
         }
 
+        // Import taxonomy term assignments
+        if (!empty($post_data['taxonomies']) && is_array($post_data['taxonomies'])) {
+            $this->import_post_taxonomies($post_id, $post_data['taxonomies']);
+        }
+
         return $post_id;
+    }
+
+    /**
+     * Import taxonomy term assignments for a post.
+     * 
+     * Recreates missing terms (matched by slug) and assigns them to the post.
+     * 
+     * @param int $post_id Post ID.
+     * @param array $taxonomies Map of taxonomy => list of term arrays.
+     */
+    private function import_post_taxonomies(int $post_id, array $taxonomies): void
+    {
+        foreach ($taxonomies as $taxonomy => $terms) {
+            $taxonomy = sanitize_key((string) $taxonomy);
+
+            if (!taxonomy_exists($taxonomy) || !is_array($terms)) {
+                continue;
+            }
+
+            $term_ids = [];
+            $slug_to_id = []; // Map of imported slug => resolved term_id (for parent rebuilding)
+
+            // Pass 1: match or create each term (without parent), collecting IDs.
+            foreach ($terms as $term) {
+                if (!is_array($term)) {
+                    continue;
+                }
+
+                $slug = sanitize_title($term['slug'] ?? '');
+                $name = sanitize_text_field($term['name'] ?? '');
+
+                if ($name === '' && $slug === '') {
+                    continue;
+                }
+
+                $term_id = $this->resolve_or_create_term(
+                    $taxonomy,
+                    $slug,
+                    $name,
+                    sanitize_text_field($term['description'] ?? '')
+                );
+
+                if ($term_id > 0) {
+                    $term_ids[] = $term_id;
+                    if ($slug !== '') {
+                        $slug_to_id[$slug] = $term_id;
+                    }
+                }
+            }
+
+            // Pass 2: restore parent relationships for hierarchical taxonomies.
+            if (is_taxonomy_hierarchical($taxonomy)) {
+                foreach ($terms as $term) {
+                    if (!is_array($term) || empty($term['parent'])) {
+                        continue;
+                    }
+
+                    $slug = sanitize_title($term['slug'] ?? '');
+                    if ($slug === '' || !isset($slug_to_id[$slug])) {
+                        continue;
+                    }
+
+                    // Resolve the parent from this payload first, then fall back to an existing term.
+                    $parent_slug = sanitize_title($term['parent']);
+                    $parent_id = $slug_to_id[$parent_slug] ?? 0;
+                    if ($parent_id === 0) {
+                        $existing_parent = get_term_by('slug', $parent_slug, $taxonomy);
+                        if ($existing_parent instanceof \WP_Term) {
+                            $parent_id = (int) $existing_parent->term_id;
+                        }
+                    }
+
+                    if ($parent_id > 0 && $parent_id !== $slug_to_id[$slug]) {
+                        wp_update_term($slug_to_id[$slug], $taxonomy, ['parent' => $parent_id]);
+                    }
+                }
+            }
+
+            if (!empty($term_ids)) {
+                wp_set_object_terms($post_id, array_values(array_unique($term_ids)), $taxonomy, false);
+            }
+        }
+    }
+
+    /**
+     * Resolve an existing term by slug or create it.
+     * 
+     * Recovers the term ID when wp_insert_term reports a "term_exists" error
+     * (e.g. slug/name collisions across sites or concurrent inserts), so the
+     * term-to-post assignment is never silently dropped.
+     * 
+     * @param string $taxonomy Taxonomy slug.
+     * @param string $slug Term slug.
+     * @param string $name Term name.
+     * @param string $description Term description.
+     * @return int Resolved term ID, or 0 on failure.
+     */
+    private function resolve_or_create_term(string $taxonomy, string $slug, string $name, string $description): int
+    {
+        // Match existing term by slug first to avoid duplicates
+        $existing = $slug !== '' ? get_term_by('slug', $slug, $taxonomy) : false;
+        if ($existing instanceof \WP_Term) {
+            return (int) $existing->term_id;
+        }
+
+        $args = ['description' => $description];
+        if ($slug !== '') {
+            $args['slug'] = $slug;
+        }
+
+        $created = wp_insert_term($name !== '' ? $name : $slug, $taxonomy, $args);
+
+        if (!is_wp_error($created) && isset($created['term_id'])) {
+            return (int) $created['term_id'];
+        }
+
+        // Term already exists (name/slug collision or concurrent insert): recover its ID.
+        if (is_wp_error($created) && $created->get_error_code() === 'term_exists') {
+            $existing_id = $created->get_error_data('term_exists');
+            if ($existing_id) {
+                return (int) $existing_id;
+            }
+        }
+
+        return 0;
     }
 
     /**

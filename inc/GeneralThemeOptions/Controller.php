@@ -46,6 +46,7 @@ class Controller
 
     $this->handle_image_optimizer();
     $this->handle_security_header();
+    $this->handle_smooth_scroll();
 
   }
 
@@ -62,6 +63,14 @@ class Controller
 
     if (!$this->is_option_enabled('enable_security_header')) {
       \SFX\SecurityHeader\Settings::delete_all_options();
+    }
+
+  }
+
+  public function handle_smooth_scroll(): void {
+
+    if (!$this->is_option_enabled('enable_smooth_scroll')) {
+      \SFX\SmoothScroll\Settings::delete_all_options();
     }
 
   }
