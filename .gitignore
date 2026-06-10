@@ -52,7 +52,6 @@ Thumbs.db*
 !wp-content/plugins/**
 
 # Ignore build artifacts (keep *.sh tracked — release.sh / build-theme.sh are repo scripts)
-.sh*.zip
 *.zip
 *.tar
 *.gz

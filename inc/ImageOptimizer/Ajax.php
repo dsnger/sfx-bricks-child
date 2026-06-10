@@ -532,14 +532,14 @@ class Ajax
             // that are no longer referenced by metadata['sizes'] *and*
             // no longer in current max_values (e.g., photo-900.webp
             // left over after max_values shrank). The regex matches
-            //     ^<base_name>(?:|-\d+|-\d+x\d+)\.<managed-ext>$
+            //     ^<base_name>(?:-\d+|-\d+x\d+)?\.<managed-ext>$
             // anchored to the start/end of the filename so prefix
             // collisions (photo vs photo-portrait) can't bleed in.
             if (!isset($dir_listing_cache[$dirname])) {
                 $entries = @scandir($dirname);
                 $dir_listing_cache[$dirname] = is_array($entries) ? $entries : [];
             }
-            $name_re = '/^' . preg_quote($base_name, '/') . '(?:|-\d+|-\d+x\d+)\.(?:' . $ext_pattern . ')$/';
+            $name_re = '/^' . preg_quote($base_name, '/') . '(?:-\d+|-\d+x\d+)?\.(?:' . $ext_pattern . ')$/';
             foreach ($dir_listing_cache[$dirname] as $entry) {
                 if ($entry === '.' || $entry === '..') continue;
                 if (!preg_match($name_re, $entry)) continue;
