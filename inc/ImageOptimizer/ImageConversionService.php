@@ -80,7 +80,23 @@ class ImageConversionService
         
         // Validate max values to avoid upscaling
         $valid_max_values = self::filterMaxValuesToAvoidUpscaling($file_path, $max_values, $mode);
-        
+
+        // An empty value set means we'd produce zero files but report
+        // success, which lets callers delete the original while
+        // $upload['file'] still points at it. Fail loudly instead.
+        if (empty($valid_max_values)) {
+            return [
+                'status' => self::STATUS_FAILED,
+                'files' => [],
+                'main_file' => null,
+                'log' => [sprintf(
+                    __('Error: No valid sizes configured for %s — aborting to avoid data loss', 'sfxtheme'),
+                    basename($file_path)
+                )],
+                'error' => __('No valid sizes configured', 'sfxtheme'),
+            ];
+        }
+
         // Convert each size
         $success = true;
         foreach ($valid_max_values as $index => $dimension) {
@@ -143,13 +159,30 @@ class ImageConversionService
             ];
         }
         
+        // Belt-and-braces: never return SUCCESS without a main file.
+        // Callers use main_file to rewrite $upload['file']; a null value
+        // there is what lets the original-deletion path destroy data.
+        if ($main_converted_file === null) {
+            self::rollbackConversion($new_files);
+            return [
+                'status' => self::STATUS_FAILED,
+                'files' => [],
+                'main_file' => null,
+                'log' => array_merge($log, [sprintf(
+                    __('Error: Conversion produced no main file for %s', 'sfxtheme'),
+                    basename($file_path)
+                )]),
+                'error' => __('Conversion produced no main file', 'sfxtheme'),
+            ];
+        }
+
         // Fire after conversion hook
         do_action('sfx_image_after_convert', $attachment_id, $main_converted_file, $new_files, [
             'original_path' => $file_path,
             'quality' => $quality,
             'format' => $format,
         ]);
-        
+
         return [
             'status' => self::STATUS_SUCCESS,
             'files' => $new_files,

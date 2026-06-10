@@ -8,6 +8,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.12.0-rc.12] - 2026-06-10
+
+### Fixed
+
+- Image Optimizer (`cleanup_originals`): no longer deletes files that are the main file of an excluded attachment. The cross-attachment protection set is now built from all attachments; the cleanup loop still skips excluded IDs.
+- Image Optimizer (`cleanup_originals`): `preserve_originals` again keeps all jpg/jpeg/png candidates within the bounded candidate set (restores pre-refactor contract; safe candidate boundary retained).
+
+### Added
+
+- CSS: site-wide accessible focus baseline in `@layer sfx.utilities` (`--focus-*` external wireup tokens consumed directly in rules). Layer order updated to `reset → utilities → components → theme` so Bricks form/button module focus still wins where both apply.
+
+## [0.12.0-rc.11] - 2026-05-22
+
+### Changed
+
+- Buttons (outline variant): replaces the rc.10 `!important` fix with a cleaner architectural solution. The variant-color `color` and `border-color` declarations (idle + hover) are now lifted *out* of `@layer sfx.components` to a small unlayered block at the bottom of `buttons.css`. They compete with Bricks' two conflicting global rules (`:where(:root) * { border-color: var(--border-primary) }` and `:where(:root) .bricks-color-<v> { color: var(--<v>) }`) on plain specificity — our selector resolves to 0,5,0 / 0,6,0 vs Bricks' 0 / 0,1,0, so ours wins without `!important`. All other outline behavior (transparent bg, hover bg-fill, transform, border-width) stays inside the layer so users can still override the non-identity chrome the normal way. The four `!important` declarations from rc.10 are removed.
+
+## [0.12.0-rc.10] - 2026-05-22
+
+### Fixed
+
+- Buttons (outline variant): variant-colored border and hover text-color swap were being neutralized by two unlayered global rules Bricks ships — `:where(:root) * { border-color: var(--border-primary) }` and `:where(:root) .bricks-color-<v> { color: var(--<v>) }`. Because unlayered author declarations always beat layered ones (regardless of selector specificity), our `@layer sfx.components` outline rules lost every time. Result: outline buttons rendered with a generic `--border-primary` border instead of the variant color, and hovering an outline button kept the text in the variant color instead of swapping to the paired foreground (poor contrast on hover). Fix in rc.10 used `!important` inside the layer; superseded by the architectural fix in rc.11 (see above) which removes the `!important` declarations.
+
+## [0.12.0-rc.8] - 2026-05-19
+
+### Changed
+
+- Buttons module: per-variant token blocks consolidated. Each variant's `--sfx-btn-color` / `--sfx-btn-color-fg` (and where applicable `--sfx-btn-mix`) chain is now declared once in a combined selector (`&.bricks-background-primary, &.bricks-color-primary { … }`) instead of twice (once for filled, once for outline). Cuts ~50 lines of duplicate token definitions without behavior change — `.bricks-background-primary` (filled) and `.outline.bricks-color-primary` (outline) render identically to rc.7, and `.outline.bricks-color-primary:hover` continues to render identical to a plain `.bricks-background-primary` button. The `&.outline { … }` block now contains only the transparent-bg + idle/hover behavior, not variant token definitions.
+
+## [0.12.0-rc.7] - 2026-05-18
+
+### Changed
+
+- Buttons module: per-variant foreground now chains through the matching Bricks core *pair* (`--<v>-fg`) instead of a single global `--btn-color-fg` token. Each variant's chain is `--sfx-btn-color-fg: var(--btn-<v>-fg, var(--<v>-fg, #fff))` — define the semantic pair (`--primary` + `--primary-fg`, `--accent` + `--accent-fg`, `--secondary` + `--secondary-fg`, etc.) in your core framework and buttons follow without per-variant button tokens. This is the pre-refactor convention preserved on top of the scoped `--sfx-btn-*` system. Light and dark variants are special-cased: light bg swaps the pair to `--dark` as the fg fallback, dark bg swaps to `--light` (so contrast is locked even when the user's core tokens don't define explicit `-fg` counterparts for those two). Hover-mix per-variant defaults reinstated for `secondary` and `dark` (white mix — lighter hover for already-dark colors, original module behavior). Per-variant `--btn-<v>-fg` and `--btn-<v>-mix` overrides remain chainable. The global `--btn-color-fg`, `--btn-color-fg-on-light`, and `--btn-mix-on-light` tokens are removed; base `.btn--text` and no-variant buttons default to `currentColor`.
+- General Theme Options admin: per-module field descriptions and the "External token mapping" help blocks rewritten to reflect the chain-to-Bricks-pair contract. Added previously missing mapping blocks for Lists and Content Grid (now that they ship with proper external `--list-*` / `--cg-*` wireup layers). Buttons mapping documents the new per-variant pair chain (`--btn-<v>-bg` → `--<v>`, `--btn-<v>-fg` → `--<v>-fg`), light/dark pair swap, and `--btn-mix` flip on `secondary` / `dark`. Forms mapping documents the new state-surface tokens, component-wide transitions, file-result spacing tokens, and the chains to `--primary` / `--text` / `--danger` / `--success`. CSS-vars transient cache key bumped (`sfx_css_vars_v7_` → `sfx_css_vars_v8_`) so the previously cached (pre-token-rename) lists invalidate on first read.
+
+## [0.12.0-rc.6] - 2026-05-18
+
+### Changed
+
+- Buttons module: `.bricks-background-dark` and `.bricks-color-dark` (outline) foreground fallback locked to `#fff` literal — same semantic-name treatment as the rc.5 `light` fix. The chain through global `--btn-color-fg` is bypassed for both `light` and `dark` variants since their semantic names guarantee bg lightness. A user-set `--btn-color-fg: #000` no longer corrupts dark-bg buttons. Per-variant `--btn-dark-fg` override still chains first.
+
+## [0.12.0-rc.5] - 2026-05-18
+
+### Fixed
+
+- Buttons module: `.bricks-background-light` and `.bricks-color-light` (outline) foreground fallback now resolves to a dark literal (`#111`) instead of chaining through the global `--btn-color-fg` (which defaults to `#fff`). The `light` variant is semantically guaranteed to be a light background — defaulting its text to white reproduced the unreadable rendering rc.4 fixed for accent-style cases. Per-variant `--btn-light-fg` override still chains first, so explicit theme settings continue to win.
+
+## [0.12.0-rc.4] - 2026-05-18
+
+### Fixed
+
+- Buttons module: the rc.3 simplification introduced a wrong assumption that specific variants (`accent`, `light`, `warning`) would always resolve to light backgrounds and therefore needed dark foreground text via `--btn-color-fg-on-light`. The module cannot know what a user's `--accent`/`--light`/`--warning` actually resolve to — they may be dark colors in a given palette, producing dark-on-dark text. Same wrong-assumption applied to `--btn-mix-on-light` for `secondary`/`dark`/`muted` hover direction. Collapsed both splits to single global fallbacks: every filled variant now chains foreground through `--btn-color-fg` (default `#fff`) and every variant inherits the global `--btn-mix` (default `black`) from the base scoped block. Per-variant `--btn-<variant>-fg` overrides remain available — define them when your specific palette needs a non-white foreground for a given variant. Same uniform treatment applied to `.outline` (`bricks-color-*`) variants.
+
+## [0.12.0-rc.3] - 2026-05-18
+
+### Changed
+
+- Buttons module: simplified per-variant color tokenization. Per-variant `--btn-<variant>-bg` tokens now default-chain to Bricks core tokens (`--primary`, `--secondary`, `--accent`, `--light`, `--dark`, `--muted`, `--info`, `--success`, `--danger`, `--warning`) instead of literal hex values — define the Bricks core colors once and buttons follow without redefining every `--btn-<variant>-bg` / `--btn-<variant>-fg` pair. Foreground/mix split into globals + per-variant overrides: dark-bg variants chain through new `--btn-color-fg` (default `#fff`); light-bg variants (`light`/`accent`/`warning`) chain through new `--btn-color-fg-on-light` (default `#111`); `secondary`/`dark`/`muted` hover mix chains through new `--btn-mix-on-light` (default `#fff`); other variants use the existing `--btn-mix` (default `black`). Per-variant `--btn-<variant>-fg` / `--btn-<variant>-mix` overrides remain chainable for edge cases. Same colors render; configuration radically smaller. Same chain pattern applied to `.outline` variants (`bricks-color-*`).
+- Lists module: aligned tokenization with the buttons pattern. Renamed internal scoped tokens from `--list-*` to `--sfx-list-*` and introduced a proper external `--list-*` wireup layer that chains through Bricks core spacing/color tokens (`--space-s`, `--space-2xs`, `--radius-full`, `--secondary`, `--tertiary-l-4`) with literal fallbacks. Both base `.list--icon` and the `.is-check` variant now default to a check-mark mask SVG — `<ul class="list--icon">` renders an icon out-of-the-box (previously rendered nothing without `.is-check`). Variant override chains fall back to the base `--list-*` token before the literal, so a user-supplied `--list-icon-color` applies to both plain and `.is-check` lists.
+- Content-grid module: aligned tokenization with the buttons pattern. Renamed internal `--cg-*` tokens to `--sfx-cg-*` and introduced a proper external `--cg-*` wireup layer at `:root` that chains through Bricks core tokens (`--container-padding-horizontal`, `--max-screen-width`, `--container-xlarge`, `--container-2xlarge`, `--grid-gap`, `--space-m`) with literal fallbacks. External `--cg-*` surface (`--cg-gutter`, `--cg-content`, `--cg-feature`, `--cg-feature-max`, `--cg-gap`) becomes the stable theme-options handle. Breakpoint literals in `@media` queries (768/1400/2100/2450) remain hardcoded — CSS forbids `var()` inside `@media` rules. User-visible behavior unchanged.
+- Forms module: chained six existing tokens through Bricks core color tokens (literal fallbacks preserved) — `--form-focus-color` and `--form-radio-active-color` → `var(--primary, …)`; `--form-label-color` and `--form-color` → `var(--text, …)`; `--form-error-bg` → `var(--danger-bg, …)`; `--form-error-color` → `var(--danger-fg, …)`; `--form-file-remove-color` and `--form-file-remove-hover-bg` → `var(--danger, …)`. Added `--form-transition` (default `all .15s ease`) and `--form-placeholder-transition` (default `opacity .2s ease`) replacing 5 hardcoded transition strings (placeholder, choose-files, file-result, file-result `.remove`, checkbox/radio). Added state-surface tokens for file-result inline feedback — `--form-success-surface-fg` / `--form-success-surface` and `--form-error-surface-fg` / `--form-error-surface` (defaults chain to `--success` / `--danger`; background defaults to `color-mix(5% surface-fg, input-bg)` so customizing surface-fg automatically updates the background tint). Existing `--form-error-bg` / `--form-error-color` names retained — they style the validation-message tooltip, a distinct visual context from the new state-surface tokens. Added file-result spacing tokens (`--form-file-result-gap`, `--form-file-result-padding`, `--form-file-result-icon-size`, `--form-submit-sending-gap`).
+- General Theme Options: per-module CSS-variables admin surface now applies an allowlist filter after the "referenced but not defined" computation — only tokens matching the module's own prefix survive. After the tokenization alignment refactor, every module references Bricks core tokens (`--primary`, `--space-s`, `--container-padding-horizontal`, etc.) as default-chain fallbacks inside `var(...)`; those tokens belong to the Bricks/core framework surface and are managed there. Mapping: `buttons.css` → `--btn-`, `forms.css` → `--form-`, `lists.css` → `--list-`, `content-grid.css` → `--cg-`, `animations.css` → `--animate-`. Transient cache key bumped (`sfx_css_vars_v6_` → `sfx_css_vars_v7_`) so the previously cached (unfiltered) lists invalidate on first read.
+
+## [0.12.0-rc.2] - 2026-05-18
+
+### Changed
+
+- General Theme Options: the per-module "CSS Variables" admin surface now hides internal scoped tokens (`--sfx-*`, `--cg-*`) and exposes only the external wireup tokens a theme would actually override. Implementation-detail tokens that a module declares and consumes in its own scope previously surfaced as theme-option wiring, which was misleading — overriding them at `:root` had no effect because the module redefines them inside its own selector. The extractor in `inc/GeneralThemeOptions/Settings.php::get_css_variables()` switched to "referenced via `var()` but not declared with `--name:`" inside the file, correctly distinguishing outside-supplied wireup tokens from in-module scoped longhands across all current naming conventions (`--sfx-*`, `--cg-*`, plus any future module prefix). Comments are stripped before scanning so wildcard placeholders in header comments (e.g. `var(--btn-*, literal)`) don't surface as bogus tokens like `--btn-`. CSS-vars transient bumped (`sfx_css_vars_v5_` → `sfx_css_vars_v6_`) so the old (inclusive) lists invalidate on first read. Net token counts: buttons 46 → 45 (36 internals hidden), forms 128 → 64 (64 internals hidden), content-grid 11 → 6 (5 internals hidden), animations 7 → 3 (4 internals hidden), lists 32 → 18 (14 internals hidden).
+
+### Added
+
+- Docs: design spec for the upcoming CSS tokenization alignment refactor (`docs/superpowers/specs/2026-05-18-css-tokenization-alignment-design.md`). Extends the buttons-module pattern (internal `--sfx-btn-*` scoped tokens fed by external `--btn-*` wireup) to forms, lists, and content-grid; simplifies the buttons surface so per-variant color tokens default-chain to Bricks core tokens (`--primary`, `--secondary`, etc.) instead of requiring a literal definition per variant. Spec only — no runtime change in this release.
+
+## [0.12.0-rc.1] - 2026-05-13
+
+### Fixed
+
+- Image Optimizer: blank media library entries after running "Cleanup Images". The cleanup loop used `glob("$base_name*")` to enumerate candidate files, which silently matched files belonging to *other* attachments with prefix-overlapping basenames (e.g. processing `photo` swept up `photo-portrait.webp` and its sized variants). Those sibling files were `@unlink`-ed even though their attachment rows still pointed at them, producing blank thumbnails. Replaced the wildcard with an explicit per-attachment candidate set built from the attached file, metadata-tracked sizes, and the deterministic main/thumbnail/sized paths in every managed extension. Same keep-set logic, no wildcard scope.
+- Image Optimizer: original file could be deleted during upload conversion when `max_values` resolved to empty (saved option as empty string bypassing the `get_option` default). `ImageConversionService::convertImage` returned `STATUS_SUCCESS` with `main_file=null`; the upload handler skipped the `$upload['file']` rewrite but still ran the original-deletion block, destroying the source the attachment was about to be created against. `convertImage` now fails fast on an empty `valid_max_values` array and rejects null `main_file` before returning success; both the upload and batch handlers bail before deletion when `main_file` is null. `Settings::get_max_widths`/`get_max_heights` never return `[]` — empty or all-invalid options fall back to `Constants::DEFAULT_MAX_*`.
+- Image Optimizer: `cleanup_leftover_originals` could compound damage on already-broken attachments. When `get_attached_file()` returned a path missing on disk, the function `continue`d without protecting any of the attachment's expected siblings. The recursive walk then treated preserved originals and surviving intermediates as orphan files and `@unlink`-ed them — wiping the auto-recovery candidates that `fix_format_metadata` would have rebound to. The missing-file branch now marks every recovery candidate (main file, thumbnail, sized variants in every managed extension) plus every `wp_get_attachment_metadata`'s `sizes[*]['file']` path as active before continuing.
+- Image Optimizer: `cleanup_originals` missed stale sized variants whose dimension was no longer in `metadata['sizes']` *and* no longer in current `max_values` (e.g., `photo-900.webp` left over after `max_values` shrank). Added a bounded exact-basename `scandir` pass matching `^<base_name>(?:|-\d+|-\d+x\d+)\.<managed-ext>$` — anchored regex with a `preg_quote`d basename so prefix collisions can't bleed in. Cross-attachment safety: every attachment's main file is pre-computed and excluded from scan results, so a numeric-suffix basename collision (e.g., attachments named `photo` and `photo-300`) cannot delete the sibling's main file.
+
+### Changed
+
+- Image Optimizer: `fix_format_metadata` recovery writes (`update_attached_file` + `wp_update_post`) now run only in known metadata-generation contexts (`is_admin`, `wp_doing_ajax`, `wp_doing_cron`, `WP_CLI`, `REST_REQUEST`). Filter-time DB writes on public-facing reads are wasteful and surprising to other code; gating prevents that while still allowing legitimate regeneration paths (e.g. `wp media regenerate`, REST media flows). A per-request static guard de-dupes recovery for the same attachment if anything downstream re-enters the filter.
+- Forms module: typography cascade extended with `--form-font-family`, `--form-font-weight`, `--form-letter-spacing`. Placeholders and selects inherit these via `--form-placeholder-*` / `--form-select-*` overrides and fall back to the field tokens when omitted. Added `--form-select-padding-inline-end` for native dropdown arrow clearance. Inputs, textarea, and select now share chrome (border, radius, padding, background, color, font) via a single `:is(input[type=text], …, textarea, select)` selector; the duplicate standalone textarea block was removed. CSS-vars transient bumped (`sfx_css_vars_v2_` → `sfx_css_vars_v5_`) so the admin token mapping reflects the new keys.
+- CSS Layers: declared module sub-layer order centrally in `assets/css/frontend/styles.css` (`@layer sfx.reset, sfx.components, sfx.utilities, sfx.theme;`). Module priority is now fixed by this declaration rather than emerging from WP enqueue order, so adding new sub-layers later won't reshuffle existing precedence. Added intent comments at the top of every layered module (`animations.css`, `buttons.css`, `content-grid.css`, `forms.css`, `lists.css`) explaining that the `@layer` wrapper is the mechanism letting Bricks Builder element styles, child themes, and user custom CSS override the baseline automatically — preventing the "remove the layer so we win" refactor.
+
 ## [0.13.0_rc] - 2026-06-07
 
 ### Removed

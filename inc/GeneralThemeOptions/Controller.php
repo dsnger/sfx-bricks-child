@@ -170,7 +170,7 @@ class Controller
           wp_enqueue_style(
             $handle,
             $this->modules_uri . $file,
-            ['bricks-child'], // Depend on main child theme styles
+            ['sfx-frontend'],
             filemtime($file_path)
           );
         }

@@ -237,7 +237,16 @@ class Ajax
                 }
 
             $main_converted_file = $result['main_file'];
-            
+
+            // Defense in depth: a null main_file with SUCCESS status would
+            // let the original-deletion block below destroy data.
+            // ImageConversionService now rejects this state, but guard
+            // here so a future change can't reintroduce the bug.
+            if ($main_converted_file === null) {
+                $log[] = sprintf(__('Skipped: conversion produced no main file for Attachment ID %d', 'sfxtheme'), $attachment_id);
+                continue;
+            }
+
             // Update metadata
             if ($attachment_id && !empty($result['files'])) {
                 $metadata_updated = ImageConversionService::updateAttachmentMetadata(
@@ -427,51 +436,142 @@ class Ajax
         $preserve_originals = Settings::get_preserve_originals();
         $thumb_size = Constants::THUMBNAIL_SIZE;
         
-        $args = [
-            'post_type' => 'attachment',
+        $all_args = [
+            'post_type'      => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
             'posts_per_page' => -1,
-            'fields' => 'ids',
-            'post__not_in' => Settings::get_excluded_images(),
+            'fields'         => 'ids',
+        ];
+
+        // Protection set: every attachment main file, including excluded ones.
+        $global_active_mains = [];
+        foreach (get_posts($all_args) as $other_id) {
+            $other_path = get_attached_file($other_id);
+            if ($other_path) {
+                $global_active_mains[$other_path] = true;
+            }
+        }
+
+        // Cleanup loop: skip excluded attachments (unchanged behavior).
+        $args = [
+            'post_type'      => 'attachment',
+            'post_mime_type' => ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'post__not_in'   => Settings::get_excluded_images(),
         ];
         $attachments = get_posts($args);
         $deleted = 0;
+        $all_extensions = array_merge(
+            Constants::ORIGINAL_EXTENSIONS_WITH_CASE,
+            Constants::CONVERTED_EXTENSIONS
+        );
+
+        // Cache scandir() per directory: a YYYY/MM uploads folder is
+        // shared by many attachments and re-reading it per attachment
+        // is wasted I/O on large sites.
+        $dir_listing_cache = [];
+
+        // Build the ext-alternation once for the bounded-basename regex.
+        $ext_pattern = implode('|', array_map(
+            fn($e) => preg_quote($e, '/'),
+            $all_extensions
+        ));
+
         foreach ($attachments as $attachment_id) {
             $file_path = get_attached_file($attachment_id);
             if (!$file_path || !file_exists($file_path)) continue;
             $dirname = dirname($file_path);
             $base_name = pathinfo($file_path, PATHINFO_FILENAME);
-            $all_files = glob($dirname . '/' . $base_name . '*');
-            foreach ($all_files as $candidate) {
-                $is_current = false;
-                $candidate_ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
-                
-                // Keep current format and sizes
-                foreach ($max_values as $index => $dimension) {
-                    $suffix = ($index === 0) ? '' : "-{$dimension}";
-                    $expected = $dirname . '/' . $base_name . $suffix . $extension;
-                    if ($candidate === $expected) {
-                        $is_current = true;
-                        break;
+
+            // Build an explicit per-attachment candidate set. Never use a
+            // wildcard like glob("$base_name*") here: filenames in WP
+            // routinely share prefixes (e.g. "photo" vs "photo-portrait"),
+            // and a prefix match would silently sweep up files that belong
+            // to other attachments and leave their DB rows pointing at
+            // deleted files.
+            $candidates = [];
+            $add_candidate = static function (string $path) use (
+                &$candidates,
+                $file_path,
+                $global_active_mains
+            ): void {
+                if ($path !== $file_path && isset($global_active_mains[$path])) {
+                    return;
+                }
+                $candidates[$path] = true;
+            };
+
+            $add_candidate($file_path);
+
+            // Anything WP currently tracks as a size for this attachment
+            // (catches legacy sizes whose dimension is no longer in
+            // max_values — they're exactly what we want to clean up).
+            $metadata = wp_get_attachment_metadata($attachment_id);
+            if (is_array($metadata) && !empty($metadata['sizes']) && is_array($metadata['sizes'])) {
+                foreach ($metadata['sizes'] as $size_data) {
+                    if (!empty($size_data['file'])) {
+                        $add_candidate("$dirname/" . $size_data['file']);
                     }
                 }
-                // Keep thumbnail
-                $thumb = $dirname . '/' . $base_name . "-{$thumb_size}x{$thumb_size}" . $extension;
-                if ($candidate === $thumb) {
-                    $is_current = true;
+            }
+
+            // The main file, thumbnail, and current-size variants in every
+            // extension we manage — covers leftovers from past conversions
+            // and alternate-format duplicates.
+            foreach ($all_extensions as $ext) {
+                $add_candidate("$dirname/$base_name.$ext");
+                $add_candidate("$dirname/$base_name-{$thumb_size}x{$thumb_size}.$ext");
+                foreach ($max_values as $index => $dimension) {
+                    if ($index === 0) continue;
+                    $add_candidate("$dirname/$base_name-$dimension.$ext");
                 }
-                // Keep the attached file itself
-                if ($candidate === $file_path) {
-                    $is_current = true;
+            }
+
+            // Bounded exact-basename scan: pick up stale sized variants
+            // that are no longer referenced by metadata['sizes'] *and*
+            // no longer in current max_values (e.g., photo-900.webp
+            // left over after max_values shrank). The regex matches
+            //     ^<base_name>(?:-\d+|-\d+x\d+)?\.<managed-ext>$
+            // anchored to the start/end of the filename so prefix
+            // collisions (photo vs photo-portrait) can't bleed in.
+            if (!isset($dir_listing_cache[$dirname])) {
+                $entries = @scandir($dirname);
+                $dir_listing_cache[$dirname] = is_array($entries) ? $entries : [];
+            }
+            $name_re = '/^' . preg_quote($base_name, '/') . '(?:-\d+|-\d+x\d+)?\.(?:' . $ext_pattern . ')$/';
+            foreach ($dir_listing_cache[$dirname] as $entry) {
+                if ($entry === '.' || $entry === '..') continue;
+                if (!preg_match($name_re, $entry)) continue;
+                $add_candidate("$dirname/$entry");
+            }
+
+            // Build the keep set: attached file + current target-format sizes + thumbnail.
+            // preserve_originals is enforced at deletion time by extension (below), not here.
+            $keep = [];
+            $keep[$file_path] = true;
+            foreach ($max_values as $index => $dimension) {
+                $suffix = ($index === 0) ? '' : "-{$dimension}";
+                $keep["$dirname/$base_name$suffix$extension"] = true;
+            }
+            $keep["$dirname/$base_name-{$thumb_size}x{$thumb_size}$extension"] = true;
+
+            foreach (array_keys($candidates) as $candidate) {
+                if (isset($keep[$candidate])) {
+                    continue;
                 }
-                // CRITICAL FIX: If preserve_originals is ON, keep ALL original format files (jpg/png)
-                // This ensures originals are kept even when the attachment now points to webp/avif
-                if ($preserve_originals && in_array($candidate_ext, Constants::ORIGINAL_EXTENSIONS, true)) {
-                    $is_current = true;
+
+                if ($preserve_originals) {
+                    $ext = strtolower(pathinfo($candidate, PATHINFO_EXTENSION));
+                    if (in_array($ext, Constants::ORIGINAL_EXTENSIONS, true)) {
+                        continue;
+                    }
                 }
-                
-                if (!$is_current && file_exists($candidate)) {
-                    @unlink($candidate);
+
+                if (!file_exists($candidate)) {
+                    continue;
+                }
+                if (@unlink($candidate)) {
                     $deleted++;
                     $log[] = sprintf(__('Deleted old file: %s', 'sfxtheme'), basename($candidate));
                 }
@@ -1074,14 +1174,10 @@ class Ajax
         // Ensure it's in exclusion list
         Settings::add_excluded_image($attachment_id);
         
-        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original
-        // Store this in attachment metadata to persist across exclusion changes
-        $meta = wp_get_attachment_metadata($attachment_id);
-        if (!is_array($meta)) {
-            $meta = [];
-        }
-        $meta['_sfx_was_restored'] = true;
-        wp_update_attachment_metadata($attachment_id, $meta);
+        // CRITICAL: Mark this image as "restored" so future optimizations preserve the original.
+        // Stored as a standalone post meta key so it persists across exclusion changes and is
+        // read back consistently via get_post_meta($id, '_sfx_was_restored', true).
+        update_post_meta($attachment_id, '_sfx_was_restored', true);
 
         // Log the reversion
         $log[] = sprintf(

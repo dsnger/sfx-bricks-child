@@ -51,8 +51,7 @@ Thumbs.db*
 !wp-content/themes/sfx-bricks-child/**
 !wp-content/plugins/**
 
-# Ignore build artifacts
-*.sh
+# Ignore build artifacts (keep *.sh tracked — release.sh / build-theme.sh are repo scripts)
 *.zip
 *.tar
 *.gz

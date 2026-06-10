@@ -90,7 +90,7 @@ class Settings
             [
                 'id'          => 'enable_style_content_grid',
                 'label'       => __('Content Grid', 'sfxtheme'),
-                'description' => __('Responsive content grid classes (.content-grid, .content--full, .content--feature, etc.)', 'sfxtheme'),
+                'description' => __('Responsive grid classes (.content-grid, .content--full, .content--feature, .content--split-50-breakout) use scoped --sfx-cg-* wired from --cg-* (which chain to Bricks core --container-*, --grid-gap, --space-m).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'content-grid.css',
@@ -98,7 +98,7 @@ class Settings
             [
                 'id'          => 'enable_style_forms',
                 'label'       => __('Form Styles', 'sfxtheme'),
-                'description' => __('Form inputs, checkboxes, radios, file uploads, error states, and focus styles.', 'sfxtheme'),
+                'description' => __('Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to Bricks core --primary, --text, --danger, --success where applicable).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'forms.css',
@@ -106,7 +106,7 @@ class Settings
             [
                 'id'          => 'enable_style_buttons',
                 'label'       => __('Button Styles', 'sfxtheme'),
-                'description' => __('Button variants, sizes, outline, loading states, and icon animations.', 'sfxtheme'),
+                'description' => __('Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.). See Style Modules help for semantic keys.', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'buttons.css',
@@ -114,7 +114,7 @@ class Settings
             [
                 'id'          => 'enable_style_lists',
                 'label'       => __('List Styles', 'sfxtheme'),
-                'description' => __('Icon list styles (.list--icon, .is-check) with custom icons.', 'sfxtheme'),
+                'description' => __('Icon list styles (.list--icon renders a default check; .is-check tunes spacing) use scoped --sfx-list-* wired from --list-* (chain to Bricks core --space-*, --radius-full, --secondary).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'lists.css',
@@ -138,46 +138,90 @@ class Settings
      * @return array List of unique CSS variable names
      */
     public static function get_css_variables(string $filename): array {
-        $transient_key = 'sfx_css_vars_' . sanitize_key($filename);
+        $sanitized = sanitize_key($filename);
+        $transient_key = 'sfx_css_vars_v8_' . $sanitized;
         $cached = get_transient($transient_key);
-        
+
         if ($cached !== false) {
             return $cached;
         }
-        
+
+        // Drop superseded cache keys on recompute (TTL is one week; theme
+        // switch/update also wipes all _transient_sfx_% via clear_all_theme_caches).
+        foreach (['', 'v2_', 'v3_', 'v4_', 'v5_', 'v6_', 'v7_'] as $legacy_suffix) {
+            delete_transient('sfx_css_vars_' . $legacy_suffix . $sanitized);
+        }
+
         $file_path = get_stylesheet_directory() . '/assets/css/frontend/modules/' . $filename;
-        
+
         if (!file_exists($file_path)) {
             return [];
         }
-        
+
         $css_content = file_get_contents($file_path);
         if ($css_content === false) {
             return [];
         }
-        
-        $variables = [];
-        
-        // Match var(--variable-name) - variables being used
+
+        // Strip /* ... */ comments so wildcard placeholders inside
+        // header comments (e.g. "var(--btn-*, literal)") don't surface
+        // as bogus tokens like "--btn-".
+        $css_content = preg_replace('!/\*.*?\*/!s', '', $css_content);
+
+        // Show only tokens the module *expects from outside* — i.e. referenced
+        // via var() but not defined in the file. Internal scoped tokens
+        // (--sfx-*) are both defined and used inside the module; they
+        // shouldn't be exposed for theme-option wiring.
+        $referenced = [];
         if (preg_match_all('/var\(\s*(--[\w-]+)/', $css_content, $matches)) {
-            $variables = array_merge($variables, $matches[1]);
+            $referenced = array_unique($matches[1]);
         }
-        
-        // Match --variable-name: (variable definitions, but exclude the internal ones defined and used only within the file)
-        // We want variables that are expected to come from outside (framework/theme)
+
+        $defined = [];
         if (preg_match_all('/[\s{;](--[\w-]+)\s*:/', $css_content, $matches)) {
-            // These are definitions - we'll include them as they show what can be customized
-            $variables = array_merge($variables, $matches[1]);
+            $defined = array_unique($matches[1]);
         }
-        
-        // Remove duplicates and sort
-        $variables = array_unique($variables);
+
+        $variables = array_values(array_diff($referenced, $defined));
+
+        // Allowlist by module prefix: every module references Bricks core
+        // tokens (--primary, --space-s, etc.) as default-chain fallbacks
+        // after the tokenization alignment refactor. Those belong to the
+        // Bricks/core framework surface, not to the per-module override
+        // list, so they're filtered out here. Keeping only --<prefix>-*
+        // tokens gives each module's theme-options panel a focused,
+        // module-scoped configuration surface.
+        $prefix = self::get_module_prefix($filename);
+        if ($prefix !== '') {
+            $variables = array_values(array_filter(
+                $variables,
+                static fn(string $v): bool => str_starts_with($v, $prefix)
+            ));
+        }
+
         sort($variables);
-        
-        // Cache for 1 week (cleared on theme update via clear_all_theme_caches)
+
+        // Cache for 1 week; all sfx_* transients cleared on theme switch/update.
         set_transient($transient_key, $variables, WEEK_IN_SECONDS);
-        
+
         return $variables;
+    }
+
+    /**
+     * Map a module CSS filename to its public-token prefix.
+     *
+     * @param string $filename The CSS filename (e.g., 'buttons.css')
+     * @return string The prefix (e.g., '--btn-') or '' if unknown
+     */
+    private static function get_module_prefix(string $filename): string {
+        $map = [
+            'buttons.css'      => '--btn-',
+            'forms.css'        => '--form-',
+            'lists.css'        => '--list-',
+            'content-grid.css' => '--cg-',
+            'animations.css'   => '--animate-',
+        ];
+        return $map[$filename] ?? '';
     }
 
     /**
@@ -242,8 +286,40 @@ class Settings
     public static function render_styles_section(): void
     {
       echo '<p>' . esc_html__('Enable or disable optional CSS style modules. All modules are enabled by default. Disabling unused modules can reduce page size.', 'sfxtheme') . '</p>';
-      echo '<p>' . esc_html__('These styles are presets designed to work with CSS custom properties (variables). They integrate seamlessly with CSS frameworks like CoreFramework, ACSS, or your own custom variable definitions. Define the variables in your framework or theme settings, and the styles will automatically adapt.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Buttons and Forms load after the main frontend sheet so cascade layers apply in order.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Token model: every module exposes external --<prefix>-* wireup tokens that default-chain through Bricks core tokens (--primary, --primary-fg, --space-s, etc.) with literal fallbacks. Internal --sfx-<prefix>-* tokens are implementation detail and not shown in this panel. Define the externals where you need a module-specific override; otherwise the chain falls through to your Bricks core tokens.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Optional: customize --sfx-* on a component root in Bricks to override the computed value just for that instance.', 'sfxtheme') . '</p>';
       echo '<p>' . esc_html__('Use the "Copy CSS" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet.', 'sfxtheme') . '</p>';
+      ?>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Buttons)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Chrome / layout: --btn-gap, --btn-padding-block|inline, --btn-font-*, --btn-border-*, --btn-radius, --btn-shadow(|-hover), --btn-transition, --btn-focus-outline-*, --btn-mix (hover blend, default black), --btn-s-*, --btn-l-*, --btn-xl-*.'); ?></code></p>
+        <p><code><?php echo esc_html('Per-variant chain (filled + outline): --btn-<v>-bg falls back to Bricks --<v>; --btn-<v>-fg falls back to Bricks --<v>-fg. Variants: primary, secondary, accent, light, dark, muted, info, success, danger, warning. Define semantic Bricks pairs (--primary/--primary-fg, --accent/--accent-fg, ...) and buttons follow without per-variant button tokens.'); ?></code></p>
+        <p><code><?php echo esc_html('Light/dark are special-cased: --btn-light-fg falls back to Bricks --dark; --btn-dark-fg falls back to Bricks --light (contrast locked even when paired -fg tokens are absent). secondary and dark variants flip --btn-mix to white for lighter hover on already-dark colors; override via --btn-secondary-mix / --btn-dark-mix.'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption in module: every longhand uses var(--sfx-btn-*); the scoped selector maps --sfx-btn-* from the external --btn-* / --<v> / --<v>-fg chain with literal fallbacks.'); ?></code></p>
+      </details>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Forms)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Layout & fields: --form-input-height, --form-label-*, --form-padding-block|inline, --form-border-*, --form-font-* (size, line-height, family, weight, letter-spacing), --form-input-bg, --form-color, --form-placeholder-* (optional; cascades from field typography when unset), --form-select-* typography (optional; cascades from field tokens), --form-options-gap, --form-option-row-gap, --form-radius-small, --form-focus-*, --form-radio-active-color, --form-icon-*, --form-checkbox-icon, --form-group-spacing, --form-error-bg|color (validation-message tooltip), --form-file-remove-*, --form-submit-padding-*, --form-submit-border-*, --form-choose-files-padding-block|inline, --form-select-padding-inline-end.'); ?></code></p>
+        <p><code><?php echo esc_html('State-surface (file-result inline feedback, distinct from --form-error-bg|color): --form-success-surface, --form-success-surface-fg, --form-error-surface, --form-error-surface-fg. Defaults chain to Bricks --success / --danger; background defaults to color-mix(5% surface-fg, input-bg).'); ?></code></p>
+        <p><code><?php echo esc_html('Component-wide: --form-transition (default all .15s ease), --form-placeholder-transition (default opacity .2s ease), --form-file-result-gap|padding|icon-size, --form-submit-sending-gap.'); ?></code></p>
+        <p><code><?php echo esc_html('Bricks core chains: --form-focus-color & --form-radio-active-color chain to --primary; --form-label-color & --form-color chain to --text; --form-error-bg|color chain to --danger-bg|fg; --form-file-remove-color & --form-file-remove-hover-bg chain to --danger.'); ?></code></p>
+        <p><code><?php echo esc_html('Typographic cascade in CSS: placeholders use --form-placeholder-font-family|--form-placeholder-font-weight|--form-placeholder-letter-spacing defaulting to field --form-font-*; placeholder font-size and line-height chain to --form-font-size|--form-line-height when their placeholder counterparts are omitted. Selects mirror this via --form-select-* chaining to --form-font-*.'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption: longhands use var(--sfx-form-*); submit controls use var(--sfx-form-submit-*). No --btn-* in the forms module.'); ?></code></p>
+      </details>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Lists)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Layout: --list-gutter, --list-indent, --list-gap, --list-item-gutter, --list-icon-gap. Defaults chain to Bricks --space-s / --space-2xs / --article-gutter-xs.'); ?></code></p>
+        <p><code><?php echo esc_html('Icon: --list-icon-url (default check SVG mask), --list-icon-size, --list-icon-offset, --list-icon-display, --list-icon-color (default --secondary), --list-icon-bg-color (default --tertiary-l-4), --list-icon-bg-offset, --list-icon-bg-size-pad, --list-icon-bg-radius (default --radius-full).'); ?></code></p>
+        <p><code><?php echo esc_html('.is-check variant overrides: --list-check-icon-url, --list-check-icon-color, --list-check-icon-offset, --list-check-icon-size, --list-check-icon-icon-gap, --list-check-icon-display, --list-check-icon-indent, --list-check-icon-gap, --list-check-icon-bg-offset, --list-check-icon-bg-color, --list-check-icon-bg-color-alt. Each falls back through the base --list-* token before the literal.'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption: every longhand uses var(--sfx-list-*); two triggers (.list--icon on a <ul>, or .has-list-icons on a wrapping element) opt a list into the system.'); ?></code></p>
+      </details>
+      <details class="sfx-token-mapping-summary">
+        <summary><?php esc_html_e('External token mapping (Content Grid)', 'sfxtheme'); ?></summary>
+        <p><code><?php echo esc_html('Wireup at :root: --cg-gutter (chains to --container-padding-horizontal), --cg-content (chains to --max-screen-width), --cg-feature (chains to --container-xlarge), --cg-feature-max (chains to --container-2xlarge), --cg-gap (chains to --grid-gap then --space-m).'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption: grid rules use var(--sfx-cg-*). Breakpoint literals in @media queries (768/1400/2100/2450) stay hardcoded — CSS forbids var() inside @media rules.'); ?></code></p>
+      </details>
+      <?php
     }
 
     public static function render_field(array $args): void
