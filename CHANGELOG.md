@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.13.0-rc.1] - 2026-06-12
+
+### Fixed
+
+- WPOptimizer: `is_option_enabled()` now reads through `Settings::get()` so missing saved keys no longer leave security toggles disabled while the admin UI shows them on.
+- General Theme Options: call `maybe_set_default_options()` on boot so `enable_wp_optimizer` resolves before the settings page is first saved.
+- SFXBricksChildTheme: feature activation checks fall back to General Theme Options field defaults when a toggle key is missing from the saved option array.
+
+### Changed
+
+- WPOptimizer: `block_rest_users_anonymous` and `block_author_query` now default to enabled to harden user enumeration out of the box.
+- WPOptimizer: `disable_xmlrpc` now returns HTTP 403 and exits on `XMLRPC_REQUEST` before WordPress can serve `xmlrpc.php`.
+
+### Added
+
+- Security Header: optional "Restrict Sensitive Browser Features" toggle forces geolocation, camera, and microphone to `()` in Permissions-Policy while preserving other directives.
+- Tests: standalone PHP scripts for WP Optimizer security defaults/XML-RPC blocking and Security Header Permissions-Policy merging.
+
 ## [0.12.0-rc.12] - 2026-06-10
 
 ### Fixed
