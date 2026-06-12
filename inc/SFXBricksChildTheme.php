@@ -300,7 +300,7 @@ class SFXBricksChildTheme
     if ($option_name === 'sfx_general_options' && class_exists('\SFX\GeneralThemeOptions\Settings')) {
       foreach (\SFX\GeneralThemeOptions\Settings::get_all_fields() as $field) {
         if (($field['id'] ?? '') === $option_key) {
-          return !empty($field['default']);
+          return isset($field['default']) ? (bool) $field['default'] : false;
         }
       }
     }

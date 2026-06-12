@@ -16,7 +16,7 @@ function esc_url_raw($url)
     return $url;
 }
 
-require_once dirname(__DIR__) . '/inc/SecurityHeader/Controller.php';
+require_once __DIR__ . '/../inc/SecurityHeader/Controller.php';
 
 function assert_true($condition, string $message): void
 {
