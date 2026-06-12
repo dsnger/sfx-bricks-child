@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.13.0] - 2026-06-12
+
+Stable release promoted from 0.13.0-rc.2 after RC testing. Includes all changes since 0.11.0.
+
+### Added
+
+- Smooth Scroll: Lenis-based smooth scrolling (optional; replaces Bricksforge Scroll Smoother).
+- Security Header: optional "Restrict Sensitive Browser Features" Permissions-Policy toggle.
+- CSS: site-wide accessible focus baseline and centralized frontend layer ordering.
+- Text Snippets removal helper: admin notice for legacy snippet posts and uninstall purge support.
+
+### Changed
+
+- CSS modules (buttons, forms, lists, content-grid): tokenization refactor with Bricks core chain defaults and scoped internal tokens.
+- Buttons: outline variant styling fixed against Bricks global rules without !important.
+- Lists: `.list--icon` now renders a default check icon.
+- WPOptimizer: runtime option resolution honors field defaults; user-enumeration guards default to enabled; XML-RPC blocked with HTTP 403.
+- General Theme Options: feature activation and defaults resolve correctly before first save.
+- Import/Export: taxonomy term assignments, Smooth Scroll settings, and dashboard notes coverage.
+
+### Fixed
+
+- Image Optimizer: cleanup and conversion bugs that could blank media library entries or delete wrong files.
+- General Theme Options: explicit falsy field defaults preserved in feature activation fallback.
+
+### Removed
+
+- Text Snippets: feature, CPT, shortcode, and Bricks dynamic tags (legacy posts remain until migrated or uninstall purge).
+
 ## [0.13.0-rc.2] - 2026-06-12
 
 ### Fixed
