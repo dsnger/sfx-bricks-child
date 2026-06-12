@@ -176,7 +176,7 @@ class Controller
         $directives = [];
         $seen = [];
         foreach (array_filter(array_map('trim', explode(',', $policy))) as $directive) {
-            $name = trim(strtok($directive, '='));
+            $name = trim(explode('=', $directive, 2)[0]);
             if (isset($restricted[$name])) {
                 $directives[] = $restricted[$name];
                 $seen[$name] = true;

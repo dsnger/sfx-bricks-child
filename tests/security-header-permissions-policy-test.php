@@ -29,6 +29,9 @@ function assert_true($condition, string $message): void
 function build_security_headers(): array
 {
     $reflection = new ReflectionMethod(\SFX\SecurityHeader\Controller::class, 'build_headers_array');
+    if (PHP_VERSION_ID < 80100) {
+        $reflection->setAccessible(true);
+    }
 
     return $reflection->invoke(null);
 }

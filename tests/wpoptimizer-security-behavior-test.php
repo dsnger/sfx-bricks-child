@@ -47,8 +47,8 @@ function nocache_headers(): void
     echo "nocache\n";
 }
 
-require_once dirname(__DIR__) . '/inc/WPOptimizer/Settings.php';
-require_once dirname(__DIR__) . '/inc/WPOptimizer/Controller.php';
+require_once dirname(__DIR__) . '/inc/wpoptimizer/Settings.php';
+require_once dirname(__DIR__) . '/inc/wpoptimizer/Controller.php';
 require_once dirname(__DIR__) . '/inc/GeneralThemeOptions/Settings.php';
 require_once dirname(__DIR__) . '/inc/SFXBricksChildTheme.php';
 
@@ -77,6 +77,9 @@ function new_theme_without_constructor(): object
 function invoke_private(object $object, string $method, array $args = [])
 {
     $reflection = new ReflectionMethod($object, $method);
+    if (PHP_VERSION_ID < 80100) {
+        $reflection->setAccessible(true);
+    }
 
     return $reflection->invokeArgs($object, $args);
 }
