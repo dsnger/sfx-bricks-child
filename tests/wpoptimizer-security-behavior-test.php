@@ -330,6 +330,7 @@ $test_settings_errors = [];
 
 $test_options['sfx_wpoptimizer_options'] = [
     'custom_login_slug' => 'my-secret-login',
+    'hide_login' => 1,
 ];
 
 $sanitized = \SFX\WPOptimizer\Settings::sanitize_options([
@@ -338,8 +339,8 @@ $sanitized = \SFX\WPOptimizer\Settings::sanitize_options([
 ]);
 
 assert_true(
-    ($sanitized['hide_login'] ?? 1) === 0,
-    'invalid enable attempt should disable hide_login'
+    ($sanitized['hide_login'] ?? 0) === 1,
+    'invalid replacement slug should keep hide_login enabled when a previous valid slug exists'
 );
 
 assert_true(
@@ -475,6 +476,13 @@ if (PHP_VERSION_ID < 80100) {
 assert_true(
     $blocked_method->invoke(null) === true,
     'unauthenticated wp-admin requests should be blocked instead of redirecting to the custom login slug'
+);
+
+$_SERVER['REQUEST_URI'] = '/?redirect_to=https%3A%2F%2Fexample.com%2Fwp-login.php';
+
+assert_true(
+    $blocked_method->invoke(null) === false,
+    'login endpoint checks should ignore wp-login.php substrings in query parameters'
 );
 
 $_SERVER['REQUEST_URI'] = '/wp-admin/admin-post.php';

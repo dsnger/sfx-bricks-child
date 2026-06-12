@@ -92,6 +92,8 @@ class AdminPage
 
         if ($type === 'post_types') {
             echo self::render_post_types_accordion($id, $value, $options);
+
+            return;
         }
     }
 
@@ -208,7 +210,7 @@ class AdminPage
     ?>
         <div class="wrap">
             <h1><?php esc_html_e('WP Optimizer Options', 'sfxtheme'); ?></h1>
-            <?php settings_errors(); ?>
+            <?php settings_errors(\SFX\WPOptimizer\Settings::$OPTION_GROUP); ?>
             <?php
             $groups = [
                 'performance' => __('Performance', 'sfxtheme'),
@@ -274,8 +276,11 @@ class AdminPage
                                         }
 
                                         // If current and next are both conditional and depend on the same field, combine them
-                                        $combine_with_next = $is_conditional && $next_is_conditional &&
-                                            $field['conditional']['field'] === $next_field['conditional']['field'];
+                                        $combine_with_next = $is_conditional
+                                            && $next_is_conditional
+                                            && $field['conditional']['field'] === $next_field['conditional']['field']
+                                            && ($field['conditional']['operator'] ?? null) === ($next_field['conditional']['operator'] ?? null)
+                                            && (($field['conditional']['value'] ?? null) === ($next_field['conditional']['value'] ?? null));
                                     ?>
                                         <div style="flex: 1 1 33%; min-width: 220px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
                                             <h2 style="margin-top:0; font-size: 1.1em;"><?php echo esc_html($field['label']); ?></h2>

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WPOptimizer Hide Login: slug validation now rejects published posts, public post type rewrite bases, and taxonomy rewrite bases.
 - WPOptimizer Hide Login: `wp-admin/admin-post.php` remains available for public `admin_post_nopriv_*` handlers.
 - WPOptimizer admin: custom login slug field renders for all field types in combined conditional cards; invalid slug saves show a settings error.
+- WPOptimizer Hide Login: invalid slug edits preserve the last known-good slug when Hide Login URL is already enabled.
 
 ## [0.13.0] - 2026-06-12
 

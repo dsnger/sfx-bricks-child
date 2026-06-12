@@ -502,10 +502,16 @@ class Settings
         }
 
         $current_options = get_option('sfx_wpoptimizer_options', []);
+        $hide_login_available = class_exists(classes\HideLogin::class);
+        $was_hide_login_enabled = !empty($current_options['hide_login']);
         $hide_login_requested = !empty($input['hide_login']);
         $submitted_slug = isset($input['custom_login_slug']) ? (string) $input['custom_login_slug'] : '';
-        $normalized_slug = classes\HideLogin::normalize_slug($submitted_slug);
-        $previous_slug = classes\HideLogin::normalize_slug((string) ($current_options['custom_login_slug'] ?? ''));
+        $normalized_slug = $hide_login_available
+            ? classes\HideLogin::normalize_slug($submitted_slug)
+            : sanitize_title($submitted_slug);
+        $previous_slug = $hide_login_available
+            ? classes\HideLogin::normalize_slug((string) ($current_options['custom_login_slug'] ?? ''))
+            : sanitize_title((string) ($current_options['custom_login_slug'] ?? ''));
 
         $output = [];
         foreach (self::get_fields() as $field) {
@@ -526,6 +532,13 @@ class Settings
             }
         }
 
+        if (!$hide_login_available) {
+            $output['hide_login'] = (int) ($current_options['hide_login'] ?? 0);
+            $output['custom_login_slug'] = (string) ($current_options['custom_login_slug'] ?? '');
+
+            return $output;
+        }
+
         $invalid_slug_reason = classes\HideLogin::get_invalid_slug_reason($normalized_slug);
 
         if ($hide_login_requested) {
@@ -539,10 +552,9 @@ class Settings
                     $invalid_slug_reason,
                     'error'
                 );
-                $output['hide_login'] = 0;
-                $output['custom_login_slug'] = classes\HideLogin::is_valid_slug($previous_slug)
-                    ? $previous_slug
-                    : '';
+                $has_previous_valid_slug = classes\HideLogin::is_valid_slug($previous_slug);
+                $output['hide_login'] = ($was_hide_login_enabled && $has_previous_valid_slug) ? 1 : 0;
+                $output['custom_login_slug'] = $has_previous_valid_slug ? $previous_slug : '';
             }
         } else {
             $output['hide_login'] = 0;

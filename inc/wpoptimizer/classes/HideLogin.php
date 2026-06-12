@@ -288,11 +288,9 @@ class HideLogin
             return false;
         }
 
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $request_path = self::get_request_path();
 
-        if (str_contains($request_uri, 'wp-login.php')
-            || str_contains($request_uri, 'wp-signup.php')
-            || str_contains($request_uri, 'wp-register.php')) {
+        if (in_array($request_path, ['wp-login.php', 'wp-signup.php', 'wp-register.php'], true)) {
             return true;
         }
 
