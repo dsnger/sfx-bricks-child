@@ -18,6 +18,20 @@ use WP_Error;
  */
 class Controller
 {
+    private const CONTEXT_SENSITIVE_OPTIONS = [
+        'disable_jquery',
+        'disable_jquery_migrate',
+        'disable_embed',
+        'defer_js',
+        'defer_css',
+        'disable_rest_api',
+        'disable_rest_api_non_authenticated',
+        'block_rest_users_anonymous',
+        'remove_users_sitemap',
+        'enable_content_order',
+        'enable_media_replacement',
+        'hide_login',
+    ];
 
     private $fields = [];
     private $styles = [];
@@ -44,6 +58,11 @@ class Controller
         // Load MediaReplacement class if it exists
         if (file_exists(__DIR__ . '/classes/MediaReplacement.php')) {
             require_once __DIR__ . '/classes/MediaReplacement.php';
+        }
+
+        // Load HideLogin class if it exists
+        if (file_exists(__DIR__ . '/classes/HideLogin.php')) {
+            require_once __DIR__ . '/classes/HideLogin.php';
         }
 
         // Register hooks through consolidated system
@@ -125,27 +144,8 @@ class Controller
             return;
         }
         
-		// Handle options that need proper context checking
-		$context_sensitive_options = [
-			'disable_jquery',
-			'disable_jquery_migrate',
-			'disable_embed',
-			'defer_js',
-			'defer_css',
-			// Ensure REST-related restrictions are registered early
-			'disable_rest_api',
-			'disable_rest_api_non_authenticated',
-			'block_rest_users_anonymous',
-			// Sitemap providers are registered on init priority 10; we need to filter earlier
-			'remove_users_sitemap',
-			// Content order needs to run early in admin
-			'enable_content_order',
-			// Media replacement needs to run early in admin
-			'enable_media_replacement',
-		];
-        
         foreach ($this->fields as $field) {
-            if (in_array($field['id'], $context_sensitive_options) && 
+            if (in_array($field['id'], self::CONTEXT_SENSITIVE_OPTIONS, true) &&
                 $this->is_option_enabled($field['id']) && 
                 method_exists($this, $field['id'])) {
                 $this->{$field['id']}();
@@ -161,7 +161,7 @@ class Controller
         
         foreach ($this->fields as $field) {
             // Skip context-sensitive options (handled separately)
-            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order', 'enable_media_replacement', 'block_rest_users_anonymous', 'remove_users_sitemap'])) {
+            if (in_array($field['id'], self::CONTEXT_SENSITIVE_OPTIONS, true)) {
                 continue;
             }
             
@@ -429,6 +429,16 @@ class Controller
         if (class_exists('\SFX\WPOptimizer\classes\MediaReplacement')) {
             \SFX\WPOptimizer\classes\MediaReplacement::register();
         }
+    }
+
+    private function hide_login(): void
+    {
+        if (!class_exists('\SFX\WPOptimizer\classes\HideLogin')) {
+            return;
+        }
+
+        $slug = (string) Settings::get('custom_login_slug', '');
+        \SFX\WPOptimizer\classes\HideLogin::register($slug);
     }
 
     // --- Beispiele aus WPOptimizer (2. Datei, ebenfalls umbenannt) ---
