@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.13.0-rc.2] - 2026-06-12
+
+### Fixed
+
+- Tests: WP Optimizer security behavior test now uses the git-tracked lowercase `inc/wpoptimizer` include paths for case-sensitive filesystems.
+- Tests: private-method reflection helpers remain compatible with PHP 8.0 by calling `setAccessible(true)` only where it is still needed.
+- Tests: XML-RPC subprocess coverage now captures stdout, stderr, and exit code before asserting the hard-block behavior, making process failures visible.
+- General Theme Options: feature activation fallback now casts explicitly defined field defaults instead of relying on `empty()`, preserving explicit falsy defaults.
+
+### Changed
+
+- Tests: Security Header permissions-policy test now uses an obviously static include path to avoid false-positive dynamic-include warnings.
+
 ## [0.13.0-rc.1] - 2026-06-12
 
 ### Fixed
