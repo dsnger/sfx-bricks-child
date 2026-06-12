@@ -46,6 +46,11 @@ class Controller
             require_once __DIR__ . '/classes/MediaReplacement.php';
         }
 
+        // Load HideLogin class if it exists
+        if (file_exists(__DIR__ . '/classes/HideLogin.php')) {
+            require_once __DIR__ . '/classes/HideLogin.php';
+        }
+
         // Register hooks through consolidated system
         $this->init_fields();
         
@@ -142,6 +147,8 @@ class Controller
 			'enable_content_order',
 			// Media replacement needs to run early in admin
 			'enable_media_replacement',
+			// Hide login must intercept the current init request
+			'hide_login',
 		];
         
         foreach ($this->fields as $field) {
@@ -161,7 +168,7 @@ class Controller
         
         foreach ($this->fields as $field) {
             // Skip context-sensitive options (handled separately)
-            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order', 'enable_media_replacement', 'block_rest_users_anonymous', 'remove_users_sitemap'])) {
+            if (in_array($field['id'], ['disable_jquery', 'disable_jquery_migrate', 'disable_embed', 'defer_js', 'defer_css', 'enable_content_order', 'enable_media_replacement', 'block_rest_users_anonymous', 'remove_users_sitemap', 'hide_login'])) {
                 continue;
             }
             
@@ -429,6 +436,16 @@ class Controller
         if (class_exists('\SFX\WPOptimizer\classes\MediaReplacement')) {
             \SFX\WPOptimizer\classes\MediaReplacement::register();
         }
+    }
+
+    private function hide_login(): void
+    {
+        if (!class_exists('\SFX\WPOptimizer\classes\HideLogin')) {
+            return;
+        }
+
+        $slug = (string) Settings::get('custom_login_slug', '');
+        \SFX\WPOptimizer\classes\HideLogin::register($slug);
     }
 
     // --- Beispiele aus WPOptimizer (2. Datei, ebenfalls umbenannt) ---

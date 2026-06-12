@@ -6,7 +6,7 @@ namespace SFX\WPOptimizer;
 
 class Settings
 {
-    public static string $OPTION_GROUP;
+    public static string $OPTION_GROUP = 'sfx_wpoptimizer_options';
 
     /**
      * Register all settings for WP Optimizer options.
@@ -378,6 +378,26 @@ class Settings
                 'group'       => 'users',
             ],
             [
+                'id'          => 'hide_login',
+                'label'       => __('Hide Login URL', 'sfxtheme'),
+                'description' => __('Serve wp-login.php on a custom URL slug and redirect direct /wp-login.php access to the homepage. Deactivate conflicting hide-login plugins first. Save a valid slug before enabling to avoid lockout.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'users',
+            ],
+            [
+                'id'          => 'custom_login_slug',
+                'label'       => __('Custom Login Slug', 'sfxtheme'),
+                'description' => __('Custom path segment for the login screen (e.g. my-secret-login). Must be at least 3 characters and must not match a reserved WordPress path, published content slug, or public rewrite base.', 'sfxtheme'),
+                'type'        => 'text',
+                'default'     => '',
+                'group'       => 'users',
+                'conditional' => [
+                    'field'    => 'hide_login',
+                    'operator' => 'checked',
+                ],
+            ],
+            [
                 'id'          => 'enforce_display_name_not_login',
                 'label'       => __('Enforce Display Name ≠ Username', 'sfxtheme'),
                 'description' => __('On profile save, blocks setting Display Name equal to the login username. Prevents the login slug from leaking through bylines, oEmbed, feeds, and REST. Existing users are not auto-changed — only new saves are validated.', 'sfxtheme'),
@@ -477,17 +497,74 @@ class Settings
 
     public static function sanitize_options($input): array
     {
+        if (!class_exists(classes\HideLogin::class) && file_exists(__DIR__ . '/classes/HideLogin.php')) {
+            require_once __DIR__ . '/classes/HideLogin.php';
+        }
+
+        $current_options = get_option('sfx_wpoptimizer_options', []);
+        $hide_login_requested = !empty($input['hide_login']);
+        $submitted_slug = isset($input['custom_login_slug']) ? (string) $input['custom_login_slug'] : '';
+        $normalized_slug = classes\HideLogin::normalize_slug($submitted_slug);
+        $previous_slug = classes\HideLogin::normalize_slug((string) ($current_options['custom_login_slug'] ?? ''));
+
         $output = [];
         foreach (self::get_fields() as $field) {
             $id = $field['id'];
+
+            if ($id === 'hide_login' || $id === 'custom_login_slug') {
+                continue;
+            }
+
             if ($field['type'] === 'number') {
-                $output[$id] = isset($input[$id]) ? (int)$input[$id] : (int)$field['default'];
+                $output[$id] = isset($input[$id]) ? (int) $input[$id] : (int) $field['default'];
             } elseif ($field['type'] === 'post_types') {
                 $output[$id] = isset($input[$id]) && is_array($input[$id]) ? array_map('sanitize_text_field', $input[$id]) : [];
+            } elseif ($field['type'] === 'text') {
+                $output[$id] = isset($input[$id]) ? sanitize_text_field((string) $input[$id]) : (string) ($field['default'] ?? '');
             } else {
                 $output[$id] = isset($input[$id]) && $input[$id] ? 1 : 0;
             }
         }
+
+        $invalid_slug_reason = classes\HideLogin::get_invalid_slug_reason($normalized_slug);
+
+        if ($hide_login_requested) {
+            if ($invalid_slug_reason === null) {
+                $output['hide_login'] = 1;
+                $output['custom_login_slug'] = $normalized_slug;
+            } else {
+                add_settings_error(
+                    self::$OPTION_GROUP,
+                    'custom_login_slug',
+                    $invalid_slug_reason,
+                    'error'
+                );
+                $output['hide_login'] = 0;
+                $output['custom_login_slug'] = classes\HideLogin::is_valid_slug($previous_slug)
+                    ? $previous_slug
+                    : '';
+            }
+        } else {
+            $output['hide_login'] = 0;
+
+            if ($normalized_slug !== '' && $invalid_slug_reason !== null) {
+                add_settings_error(
+                    self::$OPTION_GROUP,
+                    'custom_login_slug',
+                    $invalid_slug_reason,
+                    'error'
+                );
+            }
+
+            if ($normalized_slug !== '' && $invalid_slug_reason === null) {
+                $output['custom_login_slug'] = $normalized_slug;
+            } elseif (classes\HideLogin::is_valid_slug($previous_slug)) {
+                $output['custom_login_slug'] = $previous_slug;
+            } else {
+                $output['custom_login_slug'] = '';
+            }
+        }
+
         return $output;
     }
 

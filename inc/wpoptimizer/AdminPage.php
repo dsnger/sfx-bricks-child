@@ -56,6 +56,46 @@ class AdminPage
     }
 
     /**
+     * Render a single settings field control.
+     *
+     * @param array<string, mixed> $field
+     * @param mixed $value
+     * @param array<string, mixed> $options
+     */
+    private static function render_field_control(array $field, $value, array $options = [], string $input_style = 'margin-top: 16px;'): void
+    {
+        $id = esc_attr($field['id']);
+        $type = $field['type'] ?? 'checkbox';
+
+        if ($type === 'checkbox') {
+            $style = $input_style === 'margin-top: 16px;' ? 'margin-top: 32px;' : $input_style;
+            echo '<input type="checkbox" id="' . $id . '" name="sfx_wpoptimizer_options[' . $id . ']" value="1" ';
+            checked((int) $value, 1);
+            echo ' style="' . esc_attr($style) . '" />';
+
+            return;
+        }
+
+        if ($type === 'number') {
+            $min = isset($field['min']) ? (int) $field['min'] : 0;
+            $max = isset($field['max']) ? (int) $field['max'] : 10;
+            echo '<input type="number" id="' . $id . '" name="sfx_wpoptimizer_options[' . $id . ']" value="' . esc_attr($value) . '" min="' . $min . '" max="' . $max . '" style="' . esc_attr($input_style) . '" />';
+
+            return;
+        }
+
+        if ($type === 'text') {
+            echo '<input type="text" id="' . $id . '" name="sfx_wpoptimizer_options[' . $id . ']" value="' . esc_attr((string) $value) . '" class="regular-text" autocapitalize="off" autocorrect="off" spellcheck="false" style="' . esc_attr($input_style) . ' width: 100%;" />';
+
+            return;
+        }
+
+        if ($type === 'post_types') {
+            echo self::render_post_types_accordion($id, $value, $options);
+        }
+    }
+
+    /**
      * Render post types selection UI with accordion support
      */
     private static function render_post_types_selection($field_id, $value, $options = []): string
@@ -168,6 +208,7 @@ class AdminPage
     ?>
         <div class="wrap">
             <h1><?php esc_html_e('WP Optimizer Options', 'sfxtheme'); ?></h1>
+            <?php settings_errors(); ?>
             <?php
             $groups = [
                 'performance' => __('Performance', 'sfxtheme'),
@@ -239,25 +280,16 @@ class AdminPage
                                         <div style="flex: 1 1 33%; min-width: 220px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
                                             <h2 style="margin-top:0; font-size: 1.1em;"><?php echo esc_html($field['label']); ?></h2>
                                             <p style="font-size: 0.97em; color: #555;margin-top: 0; margin-bottom: auto;"><?php echo esc_html($field['description']); ?></p>
-                                            <?php if ($type === 'checkbox'): ?>
-                                                <input type="checkbox" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="1" <?php checked((int)$value, 1); ?> style="margin-top: 32px;" />
-                                            <?php elseif ($type === 'number'):
-                                                $min = isset($field['min']) ? (int)$field['min'] : 0;
-                                                $max = isset($field['max']) ? (int)$field['max'] : 10;
-                                            ?>
-                                                <input type="number" id="<?php echo $id; ?>" name="sfx_wpoptimizer_options[<?php echo $id; ?>]" value="<?php echo esc_attr($value); ?>" min="<?php echo $min; ?>" max="<?php echo $max; ?>" style="margin-top: 16px;" />
-
-                                            <?php elseif ($type === 'post_types'):
-                                                echo self::render_post_types_accordion($id, $value, $options);
-                                            endif; ?>
+                                            <?php self::render_field_control($field, $value, $options); ?>
 
                                             <?php if ($combine_with_next && $next_field): ?>
                                                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e5e5;">
                                                 <h3 style="margin-top: 0; font-size: 1em;"><?php echo esc_html($next_field['label']); ?></h3>
                                                 <p style="font-size: 0.97em; color: #555; margin-bottom: 16px;"><?php echo esc_html($next_field['description']); ?></p>
-                                                <?php if ($next_field['type'] === 'post_types'): ?>
-                                                    <?php echo self::render_post_types_accordion($next_field['id'], $options[$next_field['id']] ?? [], $options); ?>
-                                                <?php endif; ?>
+                                                <?php
+                                                $next_value = $options[$next_field['id']] ?? $next_field['default'] ?? '';
+                                                self::render_field_control($next_field, $next_value, $options);
+                                                ?>
                                                 <?php $i++; // Skip the next field since we've already rendered it 
                                                 ?>
                                             <?php endif; ?>
