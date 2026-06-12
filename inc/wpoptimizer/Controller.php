@@ -173,8 +173,7 @@ class Controller
 
     private function is_option_enabled(string $option_key): bool
     {
-        $options = get_option(self::OPTION_NAME, []);
-        return !empty($options[$option_key]);
+        return !empty(Settings::get($option_key));
     }
 
 
@@ -791,6 +790,12 @@ class Controller
 
     private function disable_xmlrpc()
     {
+        if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
+            status_header(403);
+            nocache_headers();
+            exit;
+        }
+
         if (is_admin()) {
             update_option('default_ping_status', 'closed');
         }

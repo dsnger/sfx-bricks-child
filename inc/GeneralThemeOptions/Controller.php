@@ -18,6 +18,8 @@ class Controller
 
   public function __construct()
   {
+    self::maybe_set_default_options();
+
     // Initialize paths
     $this->modules_dir = get_stylesheet_directory() . '/assets/css/frontend/modules/';
     $this->modules_uri = get_stylesheet_directory_uri() . '/assets/css/frontend/modules/';
