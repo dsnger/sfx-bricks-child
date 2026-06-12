@@ -120,11 +120,30 @@ assert_true(
 );
 
 $child_command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' xmlrpc-child';
-$child_output = shell_exec($child_command);
+assert_true(function_exists('proc_open'), 'proc_open() is required for the XML-RPC subprocess test');
+
+$process = proc_open($child_command, [
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w'],
+], $pipes);
+
+assert_true(is_resource($process), 'failed to start XML-RPC subprocess test');
+
+$child_output = stream_get_contents($pipes[1]);
+$child_error = stream_get_contents($pipes[2]);
+fclose($pipes[1]);
+fclose($pipes[2]);
+
+$child_status = proc_close($process);
+
+assert_true(
+    $child_status === 0 && $child_error === '',
+    'XML-RPC subprocess failed. Exit code: ' . $child_status . '. STDERR: ' . $child_error . '. STDOUT: ' . $child_output
+);
 
 assert_true(
     is_string($child_output) && str_contains($child_output, "status:403\n") && !str_contains($child_output, "continued\n"),
-    'disable_xmlrpc should hard-block XML-RPC requests before WordPress exposes xmlrpc.php'
+    'disable_xmlrpc should hard-block XML-RPC requests before WordPress exposes xmlrpc.php. Child output: ' . $child_output
 );
 
 echo "OK\n";
