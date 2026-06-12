@@ -79,6 +79,9 @@ class Controller
         
         // Permissions Policy
         $permissions_policy = get_option('sfx_permissions_policy', '');
+        if ((bool) get_option('sfx_restrict_sensitive_browser_features', false)) {
+            $permissions_policy = self::restrict_sensitive_browser_features($permissions_policy);
+        }
         if (!empty($permissions_policy)) {
             $headers['Permissions-Policy'] = $permissions_policy;
         }
@@ -160,6 +163,36 @@ class Controller
             }
         }
         return $x_frame ?: 'SAMEORIGIN';
+    }
+
+    private static function restrict_sensitive_browser_features(string $policy): string
+    {
+        $restricted = [
+            'geolocation' => 'geolocation=()',
+            'camera' => 'camera=()',
+            'microphone' => 'microphone=()',
+        ];
+
+        $directives = [];
+        $seen = [];
+        foreach (array_filter(array_map('trim', explode(',', $policy))) as $directive) {
+            $name = trim(strtok($directive, '='));
+            if (isset($restricted[$name])) {
+                $directives[] = $restricted[$name];
+                $seen[$name] = true;
+                continue;
+            }
+
+            $directives[] = $directive;
+        }
+
+        foreach ($restricted as $name => $directive) {
+            if (empty($seen[$name])) {
+                $directives[] = $directive;
+            }
+        }
+
+        return implode(', ', $directives);
     }
 
     public static function get_feature_config(): array

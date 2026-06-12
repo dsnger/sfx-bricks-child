@@ -55,6 +55,11 @@ class Settings
             'sanitize_callback' => 'sanitize_textarea_field',
             'default' => 'accelerometer=(), autoplay=(), camera=(), cross-origin-isolated=(), display-capture=(self), encrypted-media=(), fullscreen=*, geolocation=(self), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), payment=*, picture-in-picture=*, publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=*, usb=(), xr-spatial-tracking=(), gamepad=(), serial=()',
         ]);
+        register_setting(self::OPTION_GROUP, 'sfx_restrict_sensitive_browser_features', [
+            'type' => 'boolean',
+            'sanitize_callback' => 'rest_sanitize_boolean',
+            'default' => false,
+        ]);
         register_setting(self::OPTION_GROUP, 'sfx_x_frame_options', [
             'type' => 'string',
             'sanitize_callback' => 'sanitize_text_field',
@@ -107,6 +112,7 @@ class Settings
             'sfx_csp',
             'sfx_csp_report_uri',
             'sfx_permissions_policy',
+            'sfx_restrict_sensitive_browser_features',
             'sfx_x_frame_options',
             'sfx_x_frame_options_allow_from_url',
             'sfx_disable_hsts_header',

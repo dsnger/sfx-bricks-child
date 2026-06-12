@@ -87,15 +87,22 @@ class AdminPage
                                         <div class="sfx-description"><?php esc_html_e( 'Enter your custom URL (Sentry, URIports, Datadog, and Report URI) for CSP violation reports.', 'sfxtheme' ); ?></div>
                                     </td>
                                 </tr>
-                                <tr valign="top">
-                                    <th scope="row"><?php esc_html_e( 'Permissions Policy', 'sfxtheme' ); ?></th>
-                                    <td>
-                                        <textarea name="sfx_permissions_policy" rows="3" cols="60"><?php echo esc_textarea( get_option( 'sfx_permissions_policy', '' ) ); ?></textarea>
-                                        <div class="sfx-description"><?php esc_html_e( 'The HTTP Permissions-Policy header provides a mechanism to allow and deny the use of browser features in a document or within any <iframe> elements in the document.', 'sfxtheme' ); ?></div>
-                                    </td>
-                                </tr>
-                                <tr valign="top">
-                                    <th scope="row"><?php esc_html_e( 'X-Frame-Options', 'sfxtheme' ); ?></th>
+	                                <tr valign="top">
+	                                    <th scope="row"><?php esc_html_e( 'Permissions Policy', 'sfxtheme' ); ?></th>
+	                                    <td>
+	                                        <textarea name="sfx_permissions_policy" rows="3" cols="60"><?php echo esc_textarea( get_option( 'sfx_permissions_policy', '' ) ); ?></textarea>
+	                                        <div class="sfx-description"><?php esc_html_e( 'The HTTP Permissions-Policy header provides a mechanism to allow and deny the use of browser features in a document or within any <iframe> elements in the document.', 'sfxtheme' ); ?></div>
+	                                    </td>
+	                                </tr>
+	                                <tr valign="top">
+	                                    <th scope="row"><?php esc_html_e( 'Restrict Sensitive Browser Features', 'sfxtheme' ); ?></th>
+	                                    <td>
+	                                        <input type="checkbox" name="sfx_restrict_sensitive_browser_features" value="1" <?php checked( 1, (int) get_option( 'sfx_restrict_sensitive_browser_features', 0 ) ); ?> />
+	                                        <div class="sfx-description"><?php esc_html_e( 'Force geolocation, camera, and microphone to be disabled in the Permissions-Policy header. Enable this for privacy-focused brochure sites, but leave it disabled if the site needs browser location, camera, or microphone access.', 'sfxtheme' ); ?></div>
+	                                    </td>
+	                                </tr>
+	                                <tr valign="top">
+	                                    <th scope="row"><?php esc_html_e( 'X-Frame-Options', 'sfxtheme' ); ?></th>
                                     <td>
                                         <select name="sfx_x_frame_options" id="sfx_x_frame_options">
                                             <option value="DENY" <?php selected( 'DENY', get_option( 'sfx_x_frame_options', 'SAMEORIGIN' ) ); ?>>DENY</option>
@@ -177,4 +184,3 @@ class AdminPage
         <?php
     }
 }
-

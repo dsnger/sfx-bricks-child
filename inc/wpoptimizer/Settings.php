@@ -350,7 +350,7 @@ class Settings
                 'label'       => __('Block REST API Users for Guests', 'sfxtheme'),
                 'description' => __('Removes the /wp-json/wp/v2/users endpoint for non-logged-in users while keeping the rest of the REST API public. Disable this if a headless frontend or plugin needs to fetch user data anonymously (better: authenticate the headless app via application password).', 'sfxtheme'),
                 'type'        => 'checkbox',
-                'default'     => 0,
+                'default'     => 1,
                 'group'       => 'users',
             ],
             [
@@ -358,7 +358,7 @@ class Settings
                 'label'       => __('Block ?author= Enumeration', 'sfxtheme'),
                 'description' => __('Strips the author query var from frontend requests, preventing the /?author=N → /author/<login>/ redirect that leaks login slugs. Disable if a custom archive or plugin uses ?author=N for legitimate filtering.', 'sfxtheme'),
                 'type'        => 'checkbox',
-                'default'     => 0,
+                'default'     => 1,
                 'group'       => 'users',
             ],
             [
