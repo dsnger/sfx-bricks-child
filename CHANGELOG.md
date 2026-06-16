@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-06-16
+
+Fixes WP Optimizer revision limiting so configured caps are enforced reliably, including when revisions are disabled.
+
+### Added
+
+- WPOptimizer: `RevisionLimiter` class centralizes revision cap logic, post-type scoping, and post-save pruning.
+- WPOptimizer revision limiting: behavior tests for filter logic, pruning, hook registration, and settings clamping.
+
+### Changed
+
+- WPOptimizer: default revision limit is now `3` (was `0`, which disabled revisions on fresh installs).
+- WPOptimizer: revision pruning runs on `wp_after_insert_post` priority 15, after core revision creation.
+- WPOptimizer: revision limit settings are clamped to 0-10 on save and at runtime.
+
+### Fixed
+
+- WPOptimizer: revision limit filter now registers even when `WP_POST_REVISIONS` is `false` in `wp-config.php`.
+- WPOptimizer: existing revisions are pruned on post save when the limit is `0` (core skips pruning in that case).
+- WPOptimizer: unsupported post types no longer have revision limits overridden by the theme filter.
+
 ## [0.14.0] - 2026-06-12
 
 Adds WPOptimizer Hide Login URL with custom slug support and hardening from review.

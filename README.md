@@ -19,15 +19,13 @@ This child theme extends Bricks Builder with powerful content management tools, 
 
 ### Optimization
 - **Image Optimizer** - Automatic WebP/AVIF conversion on upload with quality control and size management
-- **WP Optimizer** - Comprehensive WordPress performance optimizations:
-  - Disable jQuery/jQuery Migrate, Emoji, Embeds, Feeds, XML-RPC, REST API
-  - Remove version numbers, RSD links, shortlinks, wlwmanifest
-  - Defer JavaScript/CSS loading
-  - Limit post revisions and autosave intervals
-  - Disable comments, search, author archives, attachment pages
-  - Content ordering and media replacement utilities
-  - Remove thumbnail dimensions, navigation containers, caption widths
-  - Shortcode formatting improvements
+- **Smooth Scroll** - Optional Lenis-based smooth scrolling (replaces Bricksforge Scroll Smoother)
+- **WP Optimizer** - WordPress performance and admin cleanup toggles:
+  - Frontend: disable jQuery/jQuery Migrate, Emoji, Embeds, Feeds; defer JavaScript/CSS; remove thumbnail dimensions, nav menu containers, caption widths; shortcode formatting improvements
+  - Security: disable XML-RPC, REST API (optional), version numbers, RSD/shortlinks/wlwmanifest; block author enumeration and anonymous REST user listing
+  - Performance: limit post revisions (per post type, 0-10, default 3), slow autosave/heartbeat, disable dashicons on frontend
+  - Admin utilities: content ordering, media replacement, hide login URL with custom slug
+  - Site features: disable comments, search, author archives, attachment pages, XML sitemaps (optional)
 
 ### Security
 - **Security Headers** - Configurable HTTP security headers (HSTS, CSP, X-Frame-Options, Permissions Policy, etc.)

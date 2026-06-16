@@ -65,6 +65,11 @@ class Controller
             require_once __DIR__ . '/classes/HideLogin.php';
         }
 
+        // Load RevisionLimiter class if it exists
+        if (file_exists(__DIR__ . '/classes/RevisionLimiter.php')) {
+            require_once __DIR__ . '/classes/RevisionLimiter.php';
+        }
+
         // Register hooks through consolidated system
         $this->init_fields();
         
@@ -257,31 +262,13 @@ class Controller
         });
     }
 
-    private function limit_revisions()
+    private function limit_revisions(): void
     {
-        if (defined('WP_POST_REVISIONS') && WP_POST_REVISIONS !== false) {
-            add_filter('wp_revisions_to_keep', function ($num, $post) {
-                // Get the revision number setting
-                $revision_number = Settings::get('limit_revisions_number', 0);
-                
-                // Check if revisions are enabled for this post type
-                $enabled_post_types = Settings::get('limit_revisions_post_types', []);
-                $post_type = $post->post_type;
-                
-                // If post type is not in enabled list, return original number
-                if (!empty($enabled_post_types) && !in_array($post_type, $enabled_post_types)) {
-                    return $num;
-                }
-                
-                return $revision_number;
-            }, 10, 2);
+        if (!class_exists(classes\RevisionLimiter::class)) {
+            return;
         }
-    }
 
-    private function limit_revisions_number()
-    {
-        // This function is handled by limit_revisions() above
-        // It uses the limit_revisions_number setting value
+        classes\RevisionLimiter::register();
     }
 
     private function disable_search()

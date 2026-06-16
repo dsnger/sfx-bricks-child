@@ -254,9 +254,9 @@ class Settings
             [
                 'id'          => 'limit_revisions_number',
                 'label'       => __('Revisions number', 'sfxtheme'),
-                'description' => __('Sets the maximum number of post revisions to keep. Set to 0 to disable revisions. Recommended for performance on large sites.', 'sfxtheme'),
+                'description' => __('Sets the maximum number of post revisions to keep. Applied on the next post save. Set to 0 to disable revisions and remove existing ones on save.', 'sfxtheme'),
                 'type'        => 'number',
-                'default'     => 0,
+                'default'     => 3,
                 'min'         => 0,
                 'max'         => 10,
                 'group'       => 'performance',
@@ -522,7 +522,18 @@ class Settings
             }
 
             if ($field['type'] === 'number') {
-                $output[$id] = isset($input[$id]) ? (int) $input[$id] : (int) $field['default'];
+                $value = isset($input[$id]) ? (int) $input[$id] : (int) $field['default'];
+                $min = isset($field['min']) ? (int) $field['min'] : null;
+                $max = isset($field['max']) ? (int) $field['max'] : null;
+
+                if ($min !== null) {
+                    $value = max($min, $value);
+                }
+                if ($max !== null) {
+                    $value = min($max, $value);
+                }
+
+                $output[$id] = $value;
             } elseif ($field['type'] === 'post_types') {
                 $output[$id] = isset($input[$id]) && is_array($input[$id]) ? array_map('sanitize_text_field', $input[$id]) : [];
             } elseif ($field['type'] === 'text') {

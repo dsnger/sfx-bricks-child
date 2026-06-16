@@ -15,6 +15,27 @@ $test_settings_errors = [];
 $test_home_url = 'https://example.test';
 $test_logged_in = false;
 $test_redirect_location = null;
+$test_posts_by_id = [];
+$test_post_revisions = [];
+$test_deleted_revision_ids = [];
+$test_post_type_supports = [
+    'post' => ['revisions'],
+    'page' => ['revisions'],
+];
+
+class WP_Post
+{
+    public int $ID;
+    public string $post_type;
+    public string $post_name;
+
+    public function __construct(int $ID = 0, string $post_type = 'post', string $post_name = '')
+    {
+        $this->ID = $ID;
+        $this->post_type = $post_type;
+        $this->post_name = $post_name;
+    }
+}
 
 function __($text, $domain = 'default')
 {
@@ -31,7 +52,11 @@ function get_option($name, $default = false)
 function add_filter($hook_name, $callback, $priority = 10, $accepted_args = 1): bool
 {
     global $test_filters;
-    $test_filters[$hook_name][] = $callback;
+    $test_filters[$hook_name][] = [
+        'callback' => $callback,
+        'priority' => $priority,
+        'accepted_args' => $accepted_args,
+    ];
 
     return true;
 }
@@ -42,9 +67,63 @@ function add_action($hook_name, $callback, $priority = 10, $accepted_args = 1): 
     $test_actions[$hook_name][] = [
         'callback' => $callback,
         'priority' => $priority,
+        'accepted_args' => $accepted_args,
     ];
 
     return true;
+}
+
+function apply_filters(string $hook_name, $value, ...$args)
+{
+    global $test_filters;
+
+    if (empty($test_filters[$hook_name])) {
+        return $value;
+    }
+
+    foreach ($test_filters[$hook_name] as $filter) {
+        $callback = $filter['callback'];
+        $accepted_args = (int) ($filter['accepted_args'] ?? 1);
+        $call_args = array_merge([$value], array_slice($args, 0, max(0, $accepted_args - 1)));
+        $value = $callback(...$call_args);
+    }
+
+    return $value;
+}
+
+function get_post($post_id)
+{
+    global $test_posts_by_id;
+
+    return $test_posts_by_id[$post_id] ?? null;
+}
+
+function post_type_supports(string $post_type, string $feature): bool
+{
+    global $test_post_type_supports;
+
+    return in_array($feature, $test_post_type_supports[$post_type] ?? [], true);
+}
+
+function wp_get_post_revisions(int $post_id, array $args = []): array
+{
+    global $test_post_revisions;
+
+    return $test_post_revisions[$post_id] ?? [];
+}
+
+function wp_delete_post_revision(int $revision_id): void
+{
+    global $test_deleted_revision_ids, $test_post_revisions;
+
+    $test_deleted_revision_ids[] = $revision_id;
+
+    foreach ($test_post_revisions as $parent_id => $revisions) {
+        $test_post_revisions[$parent_id] = array_values(array_filter(
+            $revisions,
+            static fn($revision) => $revision->ID !== $revision_id
+        ));
+    }
 }
 
 function update_option($option, $value, $autoload = null): bool
@@ -217,6 +296,7 @@ function wp_safe_redirect(string $location, int $status = 302): void
 
 // Git tracks WP Optimizer under lowercase inc/wpoptimizer/ for case-sensitive filesystems.
 require_once dirname(__DIR__) . '/inc/wpoptimizer/classes/HideLogin.php';
+require_once dirname(__DIR__) . '/inc/wpoptimizer/classes/RevisionLimiter.php';
 require_once dirname(__DIR__) . '/inc/wpoptimizer/Settings.php';
 require_once dirname(__DIR__) . '/inc/wpoptimizer/Controller.php';
 require_once dirname(__DIR__) . '/inc/GeneralThemeOptions/Settings.php';
@@ -552,6 +632,171 @@ assert_true(
 assert_true(
     is_string($child_output) && str_contains($child_output, "status:403\n") && !str_contains($child_output, "continued\n"),
     'disable_xmlrpc should hard-block XML-RPC requests before WordPress exposes xmlrpc.php. Child output: ' . $child_output
+);
+
+$revisionLimiterClass = \SFX\WPOptimizer\classes\RevisionLimiter::class;
+
+$sanitized = \SFX\WPOptimizer\Settings::sanitize_options([
+    'limit_revisions_number' => 15,
+]);
+
+assert_true(
+    ($sanitized['limit_revisions_number'] ?? 0) === 10,
+    'sanitize_options should clamp limit_revisions_number to the field max of 10'
+);
+
+$sanitized = \SFX\WPOptimizer\Settings::sanitize_options([
+    'limit_revisions_number' => -5,
+]);
+
+assert_true(
+    ($sanitized['limit_revisions_number'] ?? 99) === 0,
+    'sanitize_options should clamp limit_revisions_number to the field min of 0'
+);
+
+$test_options['sfx_wpoptimizer_options'] = [
+    'limit_revisions_number' => 3,
+    'limit_revisions_post_types' => [],
+];
+
+$post = new WP_Post(100, 'post', 'sample-post');
+$test_posts_by_id[100] = $post;
+
+assert_true(
+    $revisionLimiterClass::applies_to_post($post) === true,
+    'applies_to_post should be true for supported types with an empty allowlist'
+);
+
+$test_options['sfx_wpoptimizer_options']['limit_revisions_post_types'] = ['post'];
+$page = new WP_Post(200, 'page', 'sample-page');
+
+assert_true(
+    $revisionLimiterClass::applies_to_post($page) === false,
+    'applies_to_post should be false when the post type is excluded by the allowlist'
+);
+
+$test_post_type_supports['attachment'] = [];
+$attachment = new WP_Post(300, 'attachment', 'image');
+
+assert_true(
+    $revisionLimiterClass::applies_to_post($attachment) === false,
+    'applies_to_post should be false when the post type does not support revisions'
+);
+
+$test_options['sfx_wpoptimizer_options']['limit_revisions_number'] = 15;
+assert_true(
+    $revisionLimiterClass::get_limit_for_post($post) === 10,
+    'get_limit_for_post should clamp out-of-range saved values at runtime'
+);
+
+$test_options['sfx_wpoptimizer_options']['limit_revisions_number'] = -1;
+assert_true(
+    $revisionLimiterClass::get_limit_for_post($post) === 0,
+    'get_limit_for_post should clamp negative saved values to 0 at runtime'
+);
+
+$test_options['sfx_wpoptimizer_options']['limit_revisions_number'] = 3;
+assert_true(
+    $revisionLimiterClass::filter_revisions_to_keep(-1, $post) === 3,
+    'filter_revisions_to_keep should override the core unlimited value for in-scope supported types'
+);
+
+assert_true(
+    $revisionLimiterClass::filter_revisions_to_keep(0, $attachment) === 0,
+    'filter_revisions_to_keep should leave core 0 unchanged for unsupported post types'
+);
+
+if (!defined('WP_POST_REVISIONS')) {
+    define('WP_POST_REVISIONS', false);
+}
+
+assert_true(
+    $revisionLimiterClass::filter_revisions_to_keep(0, $post) === 3,
+    'filter_revisions_to_keep should still apply when WP_POST_REVISIONS is false'
+);
+
+$test_post_revisions[100] = [
+    new WP_Post(1, 'revision', '100-revision-v1'),
+    new WP_Post(2, 'revision', '100-revision-v2'),
+    new WP_Post(3, 'revision', '100-revision-v3'),
+    new WP_Post(4, 'revision', '100-revision-v4'),
+];
+$test_deleted_revision_ids = [];
+
+$revisionLimiterClass::prune_post_revisions(100);
+
+assert_true(
+    $test_deleted_revision_ids === [1],
+    'prune_post_revisions should delete the oldest revisions down to the configured limit'
+);
+
+$test_post_revisions[100] = [
+    new WP_Post(10, 'revision', '100-revision-v1'),
+    new WP_Post(11, 'revision', '100-autosave-v1'),
+    new WP_Post(12, 'revision', '100-revision-v2'),
+];
+$test_deleted_revision_ids = [];
+$test_options['sfx_wpoptimizer_options']['limit_revisions_number'] = 0;
+
+$revisionLimiterClass::prune_post_revisions(100);
+
+assert_true(
+    $test_deleted_revision_ids === [10, 12],
+    'prune_post_revisions should delete all non-autosave revisions when the limit is 0'
+);
+
+$test_deleted_revision_ids = [];
+$revisionLimiterClass::prune_post_revisions(200);
+
+assert_true(
+    $test_deleted_revision_ids === [],
+    'prune_post_revisions should be a no-op for posts outside the revision limit scope'
+);
+
+$test_post_revisions[100] = [
+    new WP_Post(20, 'revision', '100-revision-v1'),
+    new WP_Post(21, 'revision', '100-revision-v2'),
+    new WP_Post(22, 'revision', '100-revision-v3'),
+];
+$test_deleted_revision_ids = [];
+$test_options['sfx_wpoptimizer_options']['limit_revisions_number'] = 1;
+
+add_filter(
+    'wp_save_post_revision_revisions_before_deletion',
+    static function (array $revisions) {
+        array_pop($revisions);
+
+        return $revisions;
+    },
+    10,
+    1
+);
+
+$revisionLimiterClass::prune_post_revisions(100);
+
+assert_true(
+    $test_deleted_revision_ids === [20],
+    'prune_post_revisions should honor wp_save_post_revision_revisions_before_deletion'
+);
+
+$test_filters = [];
+$test_actions = [];
+$revisionLimiterClass::register();
+
+assert_true(
+    isset($test_filters['wp_revisions_to_keep'][0])
+    && $test_filters['wp_revisions_to_keep'][0]['callback'] === [$revisionLimiterClass, 'filter_revisions_to_keep']
+    && $test_filters['wp_revisions_to_keep'][0]['priority'] === 10
+    && $test_filters['wp_revisions_to_keep'][0]['accepted_args'] === 2,
+    'register() should wire wp_revisions_to_keep with the expected callback, priority, and accepted args'
+);
+
+assert_true(
+    isset($test_actions['wp_after_insert_post'][0])
+    && $test_actions['wp_after_insert_post'][0]['callback'] === [$revisionLimiterClass, 'maybe_prune_after_insert']
+    && $test_actions['wp_after_insert_post'][0]['priority'] === 15
+    && $test_actions['wp_after_insert_post'][0]['accepted_args'] === 4,
+    'register() should wire wp_after_insert_post with the expected callback, priority, and accepted args'
 );
 
 echo "OK\n";
