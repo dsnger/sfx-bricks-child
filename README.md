@@ -1,119 +1,105 @@
 # SFX Bricks Child Theme
 
-A WordPress child theme for Bricks Builder with enhanced features.
+WordPress child theme for [Bricks Builder](https://bricksbuilder.io/) with agency-focused content tools, performance toggles, and security helpers.
 
-This child theme extends Bricks Builder with powerful content management tools, performance optimizations, security enhancements, and developer utilities. It provides a comprehensive suite of features for managing contact information, social media accounts, custom scripts, image optimization, and WordPress performance tuning.
+Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, and Smooth Scroll can be enabled or disabled in **General Theme Options**.
 
-## Features & Functions
+## Features
 
-### Core Features
-- **GitHub Theme Updater** - Automatic theme updates from GitHub repository
-- **Development Mode** - Disable updates during local development
-- **Access Control** - Two-tier permission system for theme and dashboard settings
-- **Cache Management** - Automatic cache clearing on theme/plugin updates
+### Core
 
-### Content Management
-- **Contact Infos** - Custom post type for managing contact information with shortcode `[contact_info]` and Bricks dynamic tags `{contact_info:field}`
-- **Social Media Accounts** - Custom post type for social media links with shortcode `[social_accounts]`
-- **Custom Scripts Manager** - Manage and enqueue custom JavaScript/CSS files with conditional loading
+- **GitHub Theme Updater** — update checks and installs from the theme’s GitHub repository
+- **Access control** — restrict Global Theme Settings and Custom Dashboard settings via `wp-config.php` constants
+- **Cache helpers** — theme transients cleared on theme/plugin updates
+- **Import / Export** — backup and restore theme settings and CPT data (preview, selective import, merge/replace)
+
+### Content (custom post types)
+
+- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode; Bricks dynamic tags `{contact_info:field}` (optional location/attributes)
+- **Social Media Accounts** (`sfx_social_account`) — `[social_accounts]` and `[social_account]` shortcodes
+- **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location rules, priorities, and categories
 
 ### Optimization
-- **Image Optimizer** - Automatic WebP/AVIF conversion on upload with quality control and size management
-- **Smooth Scroll** - Optional Lenis-based smooth scrolling (replaces Bricksforge Scroll Smoother)
-- **WP Optimizer** - WordPress performance and admin cleanup toggles:
-  - Frontend: disable jQuery/jQuery Migrate, Emoji, Embeds, Feeds; defer JavaScript/CSS; remove thumbnail dimensions, nav menu containers, caption widths; shortcode formatting improvements
-  - Security: disable XML-RPC, REST API (optional), version numbers, RSD/shortlinks/wlwmanifest; block author enumeration and anonymous REST user listing
-  - Performance: limit post revisions (per post type, 0-10, default 3), slow autosave/heartbeat, disable dashicons on frontend
-  - Admin utilities: content ordering, media replacement, hide login URL with custom slug
-  - Site features: disable comments, search, author archives, attachment pages, XML sitemaps (optional)
+
+- **Image Optimizer** — WebP/AVIF conversion on upload, quality and resize controls, batch tools in admin
+- **Smooth Scroll** — optional Lenis-based scrolling (General Theme Options)
+- **WP Optimizer** — grouped toggles for performance, security, and admin cleanup, including:
+  - Revision limiting per post type (0–10, default 3) with post-save pruning
+  - Hide login URL with custom slug
+  - Content ordering and media replacement utilities
+  - Frontend cleanup (jQuery, emoji, embeds, feeds, defer JS/CSS, and more)
+  - Security hardening (XML-RPC, REST restrictions, author enumeration blocks, and more)
 
 ### Security
-- **Security Headers** - Configurable HTTP security headers (HSTS, CSP, X-Frame-Options, Permissions Policy, etc.)
 
-### Builder Integration
-- **Shortcodes** - Iconify icon shortcode support
-- **Dynamic Tags** - Custom Bricks dynamic data tags for contact info
+- **Security Header** — HSTS, CSP (optional report URI), Permissions-Policy, X-Frame-Options, and related HTTP headers
 
-### Admin Features
-- **Custom Dashboard** - Customizable WordPress dashboard with stats, system info, and form submissions
-- **General Theme Options** - Global theme configuration settings
-- **Import/Export** - Export/import theme settings and custom post type data with preview, selective import, and merge/replace modes
+### Admin
 
-### Utilities
-- **Environment Handler** - Development/production environment detection
-- **Text Domain Support** - Internationalization ready
+- **Custom Dashboard** — replace wp-admin home with configurable widgets (stats, system info, tips, notes); optional **Bricks form submissions** summary when Bricks Pro’s submissions table is present
+- **General Theme Options** — master switches for major features; optional disable Bricks frontend JS/CSS; delete data on uninstall
 
-## Development Mode
+## Requirements
 
-This theme supports a development mode that disables GitHub updates during local development, preventing your development version from being overwritten by GitHub updates.
+- WordPress with **Bricks** parent theme
+- **PHP 8+**
+- Run `composer install` in the theme root (autoloader; admin notice shown if missing)
 
-### Setup
+## Development mode
 
-1. Create a `.env.local` file in the theme root directory:
+Disable GitHub update checks during local development.
+
+1. Create `.env.local` in the theme root:
 
    ```bash
-   # Set to 'true' to disable GitHub theme updates during development
    SFX_THEME_DEV_MODE=true
    ```
 
-2. The `.env.local` file is automatically ignored by Git to ensure your local development settings are not committed.
+2. `.env.local` is gitignored (via `.env.*`).
 
-3. When you're ready to deploy, either:
-   - Delete the `.env.local` file
-   - Or set `SFX_THEME_DEV_MODE=false`
+3. For production, delete the file or set `SFX_THEME_DEV_MODE=false`.
 
-### How It Works
+When enabled, `SFX\Environment::is_dev_mode()` is true and the GitHub updater is not initialized.
 
-- The environment file is loaded at theme initialization
-- When `SFX_THEME_DEV_MODE=true`, the GitHub updater will not be initialized
-- This prevents the theme from checking for updates during development
+## GitHub updater authentication
 
-## GitHub Updater Authentication
-
-On shared hosting, GitHub's API rate limit (60 requests/hour per IP) can cause "no connection" errors. Add a token for 5,000 requests/hour:
+Shared hosting may hit GitHub’s unauthenticated API limit (60 requests/hour per IP). Set a token in `wp-config.php` for 5,000 requests/hour:
 
 ```php
-// wp-config.php
 define('SFX_GITHUB_TOKEN', 'ghp_your_token_here');
 ```
 
-**Create token:** [GitHub Settings → Developer settings → Personal access tokens (classic)](https://github.com/settings/tokens) → Generate with `public_repo` scope.
+Create a [classic personal access token](https://github.com/settings/tokens) with `public_repo` scope.
 
-**Debug page:** `/wp-admin/themes.php?page=theme-updater-debug`
+Debug page: `/wp-admin/themes.php?page=theme-updater-debug`
 
-## Building a Release Package
+## Build a release zip
 
-To create a production-ready zip file of the theme:
+From the theme root:
 
-1. Make sure you're in the theme root directory
-2. Run the build script:
+```bash
+./build-theme.sh
+```
 
-   ```bash
-   ./build-theme.sh
-   ```
+Creates `sfx-bricks-child-v{VERSION}.zip` using the version from `style.css`, excluding dev files (`.git`, `node_modules`, `.env`, etc.).
 
-This will:
+For versioned releases with changelog and tagging, use `./release.sh <version>` (see `.cursor/rules/publish-release.mdc`).
 
-- Extract the current version from style.css
-- Create a zip file named `sfx-bricks-child-v{VERSION}.zip`
-- Exclude development files (.git, node_modules, .env, etc.)
-- Place the zip file in the theme root directory
+## Restricting settings access
 
-## Restricting Theme Settings Access
-
-Two-tier access control via `wp-config.php`. **If not defined, access is locked for everyone.**
+Define in `wp-config.php`. **If constants are missing, access is locked.**
 
 ```php
-// Theme Settings - role OR capability (auto-detected)
+// Global Theme Settings — role or capability
 define('SFX_THEME_ADMINS', 'administrator');  // or 'manage_options'
 
-// Custom Dashboard Settings - usernames (comma-separated)
+// Custom Dashboard settings — comma-separated usernames
 define('SFX_THEME_DASHBOARD', 'agency_user,agency_dev');
 ```
 
-| SFX_THEME_ADMINS | SFX_THEME_DASHBOARD | Theme Settings | Dashboard Settings |
-|------------------|---------------------|----------------|-------------------|
-| Not defined | Not defined | Locked | Locked |
-| Defined | Not defined | By role/cap | Locked |
-| Not defined | Defined | Locked | By username |
-| Defined | Defined | By role/cap | By username |
+| `SFX_THEME_ADMINS` | `SFX_THEME_DASHBOARD` | Theme settings | Dashboard settings |
+|--------------------|-----------------------|----------------|--------------------|
+| Not defined        | Not defined           | Locked         | Locked             |
+| Defined            | Not defined           | By role/cap    | Locked             |
+| Not defined        | Defined               | Locked         | By username        |
+| Defined            | Defined               | By role/cap    | By username        |
