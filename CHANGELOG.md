@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.14.2] - 2026-06-16
+
+Publishes WP Optimizer revision limiting and README updates since v0.14.0. See CHANGELOG.md for the full 0.14.1 entry.
+
+### Changed
+
+- README: align documented features with the codebase, add requirements, and remove outdated claims.
+
 ## [Unreleased]
 
 ## [0.14.1] - 2026-06-16
