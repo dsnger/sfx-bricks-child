@@ -2983,6 +2983,11 @@ msgid "Security & Privacy"
 msgstr "Sicherheit & Datenschutz"
 
 #: inc/WPOptimizer/AdminPage.php
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Users & Authors"
+msgstr "Benutzer & Autoren"
+
+#: inc/WPOptimizer/AdminPage.php
 msgid "Frontend Cleanup"
 msgstr "Frontend-Bereinigung"
 
@@ -4414,20 +4419,3 @@ msgstr "Teilweise"
 #: inc/ThemeSettingsOverview/OverviewProvider.php
 msgid "Built-in Modules"
 msgstr "Integrierte Module"
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php
-msgid "Theme & Bricks"
-msgstr "Theme & Bricks"
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php
-msgid "Content Features"
-msgstr "Inhaltsfunktionen"
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php
-msgid "Utilities"
-msgstr "Werkzeuge"
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php
-msgid "Built-in — no plugin required"
-msgstr "Integriert — kein Plugin erforderlich"
-
