@@ -2065,43 +2065,62 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 }
 
 /* Theme Settings Overview — custom dashboard widget inner content */
-.sfx-theme-overview--widget {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget {
     font-size: 12px;
     line-height: 1.4;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__intro {
-    margin: 0 0 10px;
-    color: var(--sfx-text-muted, #646970);
-    font-size: 12px;
+/* Reset generic widget-content list styles inside the overview */
+.sfx-dashboard-widget-content .sfx-theme-overview--widget ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__footer {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget li {
+    padding: 0;
+    border-bottom: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__intro {
+    margin: 0 0 10px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer {
     margin: 12px 0 0;
     padding-top: 10px;
-    border-top: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
-    color: var(--sfx-text-muted, #646970);
+    border-top: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
     font-size: 12px;
+    line-height: 1.4;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__footer a {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a {
     color: hsl(var(--primary));
     text-decoration: none;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__footer a:hover,
-.sfx-theme-overview--widget .sfx-theme-overview__footer a:focus {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a:hover,
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a:focus {
+    color: hsl(var(--ring));
     text-decoration: underline;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__accordion {
-    border: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
-    border-radius: 6px;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion {
+    border: 1px solid hsl(var(--border));
+    border-radius: 4px;
     margin: 0 0 8px;
-    background: var(--sfx-card-bg, rgba(255, 255, 255, 0.04));
+    background: hsl(var(--background));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion:last-child {
+    margin-bottom: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2110,35 +2129,35 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     list-style: none;
     font-weight: 600;
     font-size: 12px;
+    color: hsl(var(--foreground));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary::-webkit-details-marker {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary::-webkit-details-marker {
     display: none;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary::before {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary::before {
     content: "";
     width: 0;
     height: 0;
     border-top: 4px solid transparent;
     border-bottom: 4px solid transparent;
-    border-left: 5px solid currentColor;
-    opacity: 0.6;
+    border-left: 5px solid hsl(var(--muted-foreground));
     flex-shrink: 0;
     transition: transform 0.15s ease;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__accordion[open] > .sfx-theme-overview__summary::before {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion[open] > .sfx-theme-overview__summary::before {
     transform: rotate(90deg);
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary-title {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-title {
     flex: 1 1 auto;
     min-width: 0;
     margin-right: 8px;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary-end {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-end {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -2146,14 +2165,14 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     margin-left: auto;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__summary-count {
-    opacity: 0.75;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-count {
+    color: hsl(var(--muted-foreground));
     font-weight: 500;
     font-size: 11px;
     white-space: nowrap;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__settings-link {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2165,14 +2184,14 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     flex-shrink: 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__settings-link:hover,
-.sfx-theme-overview--widget .sfx-theme-overview__settings-link:focus {
-    background: var(--sfx-hover-bg, rgba(255, 255, 255, 0.08));
-    color: hsl(var(--primary));
-    opacity: 0.85;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link:hover,
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link:focus {
+    background: hsl(var(--muted));
+    color: hsl(var(--ring));
+    text-decoration: none;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__settings-icon {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-icon {
     display: inline-block;
     width: 16px;
     height: 16px;
@@ -2186,26 +2205,26 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     mask-position: center;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__list {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__list {
     margin: 0;
     padding: 4px 10px 8px;
     list-style: none;
-    border-top: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
+    border-top: 1px solid hsl(var(--border) / 0.6);
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__sections {
-    border-top: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__sections {
+    border-top: 1px solid hsl(var(--border) / 0.6);
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection {
     padding: 8px 10px 4px;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection + .sfx-theme-overview__subsection {
-    border-top: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection + .sfx-theme-overview__subsection {
+    border-top: 1px solid hsl(var(--border) / 0.6);
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection-header {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2213,35 +2232,36 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     margin-bottom: 4px;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection-title {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-title {
     margin: 0;
     font-size: 12px;
     font-weight: 600;
+    color: hsl(var(--foreground));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection-meta {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-meta {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__subsection-count {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-count {
+    color: hsl(var(--muted-foreground));
     font-size: 11px;
-    opacity: 0.85;
     white-space: nowrap;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__list--nested {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__list--nested {
     padding: 0 0 4px 8px;
     border-top: none;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item--nested {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item--nested {
     padding: 4px 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2250,7 +2270,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     font-size: 12px;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item-leading {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-leading {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2258,7 +2278,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     min-width: 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__status-icon {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2267,62 +2287,58 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     height: 16px;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__status-icon--active {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--active {
     color: hsl(var(--success));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__status-icon--partial {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--partial {
     color: hsl(var(--warning));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__status-icon--inactive {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--inactive {
     color: hsl(var(--muted-foreground));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item-label {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-label {
     flex: 1 1 auto;
     min-width: 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item-meta {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-meta {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__badge {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge {
     display: inline-block;
     padding: 1px 6px;
     border-radius: 10px;
     font-size: 10px;
     font-weight: 600;
+    line-height: 1.4;
     white-space: nowrap;
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__badge--active {
-    background: rgba(34, 197, 94, 0.15);
-    color: #15803d;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--active {
+    background: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__badge--inactive {
-    background: rgba(100, 116, 139, 0.12);
-    color: #64748b;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--inactive {
+    background: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__badge--partial {
-    background: rgba(234, 179, 8, 0.15);
-    color: #a16207;
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--partial {
+    background: hsl(var(--warning) / 0.15);
+    color: hsl(var(--warning));
 }
 
-.sfx-theme-overview--widget .sfx-theme-overview__item-detail {
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-detail {
+    color: hsl(var(--muted-foreground));
     font-size: 11px;
-    opacity: 0.85;
     white-space: nowrap;
-}
-
-/* Keep widget-content link color for settings gear without underline on hover */
-.sfx-dashboard-widget-content .sfx-theme-overview__settings-link:hover {
-    text-decoration: none;
 }
 
