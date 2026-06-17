@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.14.3] - 2026-06-17
+
+Adds a Theme Settings Overview dashboard widget that surfaces active built-in modules, WP Optimizer sections, and security header status.
+
+### Added
+
+- Theme Settings Overview: native WordPress dashboard widget and custom dashboard widget integration.
+- Theme Settings Overview: accordion UI with active/inactive/partial status, per-group settings links, and support contact footer.
+- Theme Settings Overview: `OverviewProvider`, `OverviewRenderer`, and `SecurityHeaderStatusResolver` with provider behavior tests.
+- German translations for overview strings and the WP Optimizer "Users & Authors" section label.
+
+### Changed
+
+- Custom Dashboard: registers the SFX Theme Settings Overview widget when the custom dashboard is enabled.
+
 ## [0.14.2] - 2026-06-16
 
 Publishes WP Optimizer revision limiting and README updates since v0.14.0. See CHANGELOG.md for the full 0.14.1 entry.

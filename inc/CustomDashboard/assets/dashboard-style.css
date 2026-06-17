@@ -2063,3 +2063,281 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-dashboard-container .sfx-dashboard-footer svg {
     color: #e91e63;
 }
+
+/* Theme Settings Overview — custom dashboard widget inner content */
+.sfx-dashboard-widget-content .sfx-theme-overview--widget {
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Reset generic widget-content list styles inside the overview */
+.sfx-dashboard-widget-content .sfx-theme-overview--widget ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget li {
+    padding: 0;
+    border-bottom: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__intro {
+    margin: 0 0 10px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer {
+    margin: 12px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a {
+    color: hsl(var(--primary));
+    text-decoration: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a:hover,
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__footer a:focus {
+    color: hsl(var(--ring));
+    text-decoration: underline;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion {
+    border: 1px solid hsl(var(--border));
+    border-radius: 4px;
+    margin: 0 0 8px;
+    background: hsl(var(--background));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion:last-child {
+    margin-bottom: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    font-size: 12px;
+    color: hsl(var(--foreground));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary::-webkit-details-marker {
+    display: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__accordion[open] > .sfx-theme-overview__summary::before {
+    transform: rotate(90deg);
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 8px;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-end {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__summary-count {
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    color: hsl(var(--primary));
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link:hover,
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-link:focus {
+    background: hsl(var(--muted));
+    color: hsl(var(--ring));
+    text-decoration: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__settings-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__list {
+    margin: 0;
+    padding: 4px 10px 8px;
+    list-style: none;
+    border-top: 1px solid hsl(var(--border) / 0.6);
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__sections {
+    border-top: 1px solid hsl(var(--border) / 0.6);
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection {
+    padding: 8px 10px 4px;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection + .sfx-theme-overview__subsection {
+    border-top: 1px solid hsl(var(--border) / 0.6);
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__subsection-count {
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__list--nested {
+    padding: 0 0 4px 8px;
+    border-top: none;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item--nested {
+    padding: 4px 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 12px;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-leading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--active {
+    color: hsl(var(--success));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--partial {
+    color: hsl(var(--warning));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__status-icon--inactive {
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--active {
+    background: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--inactive {
+    background: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge--partial {
+    background: hsl(var(--warning) / 0.15);
+    color: hsl(var(--warning));
+}
+
+.sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-detail {
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    white-space: nowrap;
+}

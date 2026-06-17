@@ -290,14 +290,14 @@ class SFXBricksChildTheme
 
 
 
-  private function is_option_enabled(string $option_name, string $option_key): bool
+  public static function is_general_option_enabled(string $option_key): bool
   {
-    $options = get_option($option_name, []);
+    $options = get_option('sfx_general_options', []);
     if (isset($options[$option_key])) {
       return !empty($options[$option_key]);
     }
 
-    if ($option_name === 'sfx_general_options' && class_exists('\SFX\GeneralThemeOptions\Settings')) {
+    if (class_exists('\SFX\GeneralThemeOptions\Settings')) {
       foreach (\SFX\GeneralThemeOptions\Settings::get_all_fields() as $field) {
         if (($field['id'] ?? '') === $option_key) {
           return isset($field['default']) ? (bool) $field['default'] : false;
@@ -306,6 +306,16 @@ class SFXBricksChildTheme
     }
 
     return false;
+  }
+
+  private function is_option_enabled(string $option_name, string $option_key): bool
+  {
+    if ($option_name === 'sfx_general_options') {
+      return self::is_general_option_enabled($option_key);
+    }
+
+    $options = get_option($option_name, []);
+    return isset($options[$option_key]) ? !empty($options[$option_key]) : false;
   }
 
   /**

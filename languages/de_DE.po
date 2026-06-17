@@ -820,6 +820,7 @@ msgid "Users"
 msgstr "Benutzer"
 
 #: inc/CustomDashboard/Settings.php
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
 msgid "Settings"
 msgstr "Einstellungen"
 
@@ -979,6 +980,7 @@ msgid "Image Optimizer"
 msgstr "Bild-Optimierer"
 
 #: inc/CustomDashboard/Settings.php
+#: inc/ThemeSettingsOverview/OverviewProvider.php
 msgid "Security Headers"
 msgstr "Sicherheits-Header"
 
@@ -2530,6 +2532,7 @@ msgid "No contact data"
 msgstr "Keine Kontaktdaten"
 
 #: inc/ContactInfos/PostType.php
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
 msgid "Active"
 msgstr "Aktiv"
 
@@ -2978,6 +2981,11 @@ msgstr "Admin-Verbesserungen"
 #: inc/WPOptimizer/AdminPage.php
 msgid "Security & Privacy"
 msgstr "Sicherheit & Datenschutz"
+
+#: inc/WPOptimizer/AdminPage.php
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Users & Authors"
+msgstr "Benutzer & Autoren"
 
 #: inc/WPOptimizer/AdminPage.php
 msgid "Frontend Cleanup"
@@ -4382,3 +4390,32 @@ msgstr "Ja"
 #: inc/ImageOptimizer/Ajax.php
 msgid "Enabled"
 msgstr "Aktiviert"
+
+#: inc/ThemeSettingsOverview/Controller.php
+msgid "SFX Theme Settings"
+msgstr "SFX Theme-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "SFX Theme Settings Overview"
+msgstr "SFX Theme-Einstellungen Übersicht"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "You are using the SFX Child Theme for Bricks Builder, which includes a range of useful features covering security, WordPress optimization, and image optimization. Generally, no additional optimization plugins are required. The only recommended additions are a caching plugin and an SEO plugin. The following settings and options are currently enabled; please adjust them as needed."
+msgstr "Sie verwenden das SFX Child Theme für Bricks Builder, das eine Reihe nützlicher Funktionen für Sicherheit, WordPress-Optimierung und Bildoptimierung bietet. In der Regel sind keine zusätzlichen Optimierungs-Plugins erforderlich. Empfohlen werden lediglich ein Caching-Plugin und ein SEO-Plugin. Die folgenden Einstellungen und Optionen sind derzeit aktiviert; passen Sie diese bei Bedarf an."
+
+#. translators: %s: support email link.
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "If you have any questions, please contact %s."
+msgstr "Bei Fragen wenden Sie sich bitte an %s."
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Partial"
+msgstr "Teilweise"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Built-in Modules"
+msgstr "Integrierte Module"

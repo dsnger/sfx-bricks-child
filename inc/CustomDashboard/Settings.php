@@ -2831,6 +2831,7 @@ $stats['orders'] = [
     {
         // Default WordPress dashboard widgets (always available)
         $available_widgets = [
+            'sfx_theme_settings_overview' => __('SFX Theme Settings Overview', 'sfxtheme'),
             'dashboard_site_health' => __('Site Health Status', 'sfxtheme'),
             'dashboard_right_now' => __('At a Glance', 'sfxtheme'),
             'dashboard_activity' => __('Activity', 'sfxtheme'),
