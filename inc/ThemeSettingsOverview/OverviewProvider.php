@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace SFX\ThemeSettingsOverview;
 
-use SFX\AccessControl;
-use SFX\ImageOptimizer\Constants as ImageConstants;
 use SFX\SFXBricksChildTheme;
 use SFX\WPOptimizer\Settings as WPOptimizerSettings;
 
@@ -30,9 +28,6 @@ final class OverviewProvider
     {
         $groups = [
             self::build_builtin_modules_group(),
-            self::build_theme_bricks_group(),
-            self::build_content_features_group(),
-            self::build_utilities_group(),
         ];
 
         if (SFXBricksChildTheme::is_general_option_enabled('enable_wp_optimizer')) {
@@ -41,10 +36,6 @@ final class OverviewProvider
 
         if (SFXBricksChildTheme::is_general_option_enabled('enable_security_header')) {
             $groups[] = self::build_security_headers_group();
-        }
-
-        if (SFXBricksChildTheme::is_general_option_enabled('enable_image_optimizer')) {
-            $groups[] = self::build_image_optimizer_group();
         }
 
         return [
@@ -61,38 +52,41 @@ final class OverviewProvider
         $modules = [
             'enable_wp_optimizer' => [
                 'label' => __('WP Optimizer', 'sfxtheme'),
-                'url' => 'admin.php?page=sfx-wp-optimizer',
             ],
             'enable_image_optimizer' => [
                 'label' => __('Image Optimizer', 'sfxtheme'),
-                'url' => 'admin.php?page=sfx-image-optimizer',
             ],
             'enable_security_header' => [
                 'label' => __('Security Header', 'sfxtheme'),
-                'url' => 'admin.php?page=sfx-security-header',
             ],
             'enable_smooth_scroll' => [
                 'label' => __('Smooth Scroll', 'sfxtheme'),
-                'url' => 'admin.php?page=sfx-smooth-scroll',
             ],
         ];
 
         $items = [];
+        $active_count = 0;
+
         foreach ($modules as $id => $meta) {
             $enabled = SFXBricksChildTheme::is_general_option_enabled($id);
+            if ($enabled) {
+                $active_count++;
+            }
+
             $items[] = [
                 'id' => $id,
                 'label' => $meta['label'],
                 'status' => $enabled ? 'active' : 'inactive',
                 'detail' => null,
-                'settings_url' => $meta['url'],
             ];
         }
 
         return [
             'id' => 'builtin_modules',
             'label' => __('Built-in Modules', 'sfxtheme'),
-            'badge' => null,
+            'settings_url' => 'admin.php?page=sfx-general-theme-options',
+            'active_count' => $active_count,
+            'total_count' => count($modules),
             'items' => $items,
         ];
     }
@@ -111,7 +105,10 @@ final class OverviewProvider
             $grouped_fields[$group][] = $field;
         }
 
-        $items = [];
+        $sections = [];
+        $active_count = 0;
+        $total_count = 0;
+
         foreach (self::WP_OPTIMIZER_GROUP_LABELS as $group_key => $group_label) {
             if (empty($grouped_fields[$group_key])) {
                 continue;
@@ -120,11 +117,24 @@ final class OverviewProvider
             $fields = $grouped_fields[$group_key];
             $total = count($fields);
             $enabled = 0;
+            $children = [];
+
             foreach ($fields as $field) {
-                if (! empty(WPOptimizerSettings::get($field['id']))) {
+                $is_enabled = ! empty(WPOptimizerSettings::get($field['id']));
+                if ($is_enabled) {
                     $enabled++;
                 }
+
+                $children[] = [
+                    'id' => (string) $field['id'],
+                    'label' => (string) ($field['label'] ?? $field['id'] ?? ''),
+                    'status' => $is_enabled ? 'active' : 'inactive',
+                    'detail' => null,
+                ];
             }
+
+            $active_count += $enabled;
+            $total_count += $total;
 
             $status = 'inactive';
             if ($enabled === $total && $total > 0) {
@@ -133,20 +143,24 @@ final class OverviewProvider
                 $status = 'partial';
             }
 
-            $items[] = [
+            $sections[] = [
                 'id' => 'wp_optimizer_' . $group_key,
                 'label' => __($group_label, 'sfxtheme'),
                 'status' => $status,
                 'detail' => $enabled . '/' . $total,
-                'settings_url' => 'admin.php?page=sfx-wp-optimizer',
+                'items' => $children,
             ];
         }
 
         return [
             'id' => 'wp_optimizer',
             'label' => __('WP Optimizer', 'sfxtheme'),
-            'badge' => null,
-            'items' => $items,
+            'settings_url' => 'admin.php?page=sfx-wp-optimizer',
+            'layout' => 'sections',
+            'active_count' => $active_count,
+            'total_count' => $total_count,
+            'sections' => $sections,
+            'items' => [],
         ];
     }
 
@@ -157,207 +171,37 @@ final class OverviewProvider
     {
         $items = SecurityHeaderStatusResolver::get_header_items();
         foreach ($items as &$item) {
-            $item['settings_url'] = 'admin.php?page=sfx-security-header';
+            unset($item['settings_url']);
         }
         unset($item);
 
-        return [
+        return self::with_status_summary([
             'id' => 'security_headers',
             'label' => __('Security Headers', 'sfxtheme'),
-            'badge' => null,
+            'settings_url' => 'admin.php?page=sfx-security-header',
             'items' => $items,
-        ];
+        ]);
     }
 
     /**
+     * @param array<string, mixed> $group
      * @return array<string, mixed>
      */
-    private static function build_image_optimizer_group(): array
+    private static function with_status_summary(array $group): array
     {
-        $use_avif = (bool) get_option('sfx_webp_use_avif', false);
-        $quality = (int) get_option('sfx_webp_quality', ImageConstants::DEFAULT_QUALITY);
-        $auto_conversion = ! (bool) get_option('sfx_webp_disable_auto_conversion', false);
-        $preserve_originals = (bool) get_option('sfx_webp_preserve_originals', false);
+        $active_count = 0;
+        $items = $group['items'] ?? [];
 
-        return [
-            'id' => 'image_optimizer',
-            'label' => __('Image Optimizer', 'sfxtheme'),
-            'badge' => null,
-            'items' => [
-                [
-                    'id' => 'image_format',
-                    'label' => __('Output format', 'sfxtheme'),
-                    'status' => 'active',
-                    'detail' => $use_avif ? 'AVIF' : 'WebP',
-                    'settings_url' => 'admin.php?page=sfx-image-optimizer',
-                ],
-                [
-                    'id' => 'image_quality',
-                    'label' => __('Quality', 'sfxtheme'),
-                    'status' => 'active',
-                    'detail' => (string) $quality,
-                    'settings_url' => 'admin.php?page=sfx-image-optimizer',
-                ],
-                [
-                    'id' => 'image_auto_conversion',
-                    'label' => __('Auto-conversion', 'sfxtheme'),
-                    'status' => $auto_conversion ? 'active' : 'inactive',
-                    'detail' => null,
-                    'settings_url' => 'admin.php?page=sfx-image-optimizer',
-                ],
-                [
-                    'id' => 'image_preserve_originals',
-                    'label' => __('Preserve originals', 'sfxtheme'),
-                    'status' => $preserve_originals ? 'active' : 'inactive',
-                    'detail' => null,
-                    'settings_url' => 'admin.php?page=sfx-image-optimizer',
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private static function build_theme_bricks_group(): array
-    {
-        $items = [
-            [
-                'id' => 'disable_bricks_js',
-                'label' => __('Disable Bricks JS', 'sfxtheme'),
-                'status' => SFXBricksChildTheme::is_general_option_enabled('disable_bricks_js') ? 'active' : 'inactive',
-                'detail' => null,
-                'settings_url' => 'admin.php?page=sfx-general-theme-options',
-            ],
-            [
-                'id' => 'disable_bricks_styles',
-                'label' => __('Disable Bricks Styling', 'sfxtheme'),
-                'status' => SFXBricksChildTheme::is_general_option_enabled('disable_bricks_styles') ? 'active' : 'inactive',
-                'detail' => null,
-                'settings_url' => 'admin.php?page=sfx-general-theme-options',
-            ],
-        ];
-
-        if (class_exists('\SFX\GeneralThemeOptions\Settings')) {
-            foreach (\SFX\GeneralThemeOptions\Settings::get_style_fields() as $field) {
-                $items[] = [
-                    'id' => $field['id'],
-                    'label' => $field['label'],
-                    'status' => SFXBricksChildTheme::is_general_option_enabled($field['id']) ? 'active' : 'inactive',
-                    'detail' => null,
-                    'settings_url' => 'admin.php?page=sfx-general-theme-options',
-                ];
+        foreach ($items as $item) {
+            if (($item['status'] ?? '') === 'active') {
+                $active_count++;
             }
         }
 
-        return [
-            'id' => 'theme_bricks',
-            'label' => __('Theme & Bricks', 'sfxtheme'),
-            'badge' => null,
-            'items' => $items,
-        ];
-    }
+        $group['active_count'] = $active_count;
+        $group['total_count'] = count($items);
 
-    /**
-     * @return array<string, mixed>
-     */
-    private static function build_content_features_group(): array
-    {
-        $features = [
-            [
-                'id' => 'contact_infos',
-                'label' => __('Contact Infos', 'sfxtheme'),
-                'post_type' => 'sfx_contact_info',
-                'settings_url' => 'edit.php?post_type=sfx_contact_info',
-            ],
-            [
-                'id' => 'social_accounts',
-                'label' => __('Social Media Accounts', 'sfxtheme'),
-                'post_type' => 'sfx_social_account',
-                'settings_url' => 'edit.php?post_type=sfx_social_account',
-            ],
-            [
-                'id' => 'custom_scripts',
-                'label' => __('Custom Scripts', 'sfxtheme'),
-                'post_type' => 'sfx_custom_script',
-                'settings_url' => 'edit.php?post_type=sfx_custom_script',
-            ],
-        ];
-
-        $items = [];
-        foreach ($features as $feature) {
-            $count = self::get_post_count($feature['post_type']);
-            $items[] = [
-                'id' => $feature['id'],
-                'label' => $feature['label'],
-                'status' => $count > 0 ? 'active' : 'inactive',
-                'detail' => sprintf(
-                    /* translators: %d: number of posts */
-                    _n('%d entry', '%d entries', $count, 'sfxtheme'),
-                    $count
-                ),
-                'settings_url' => $feature['settings_url'],
-            ];
-        }
-
-        return [
-            'id' => 'content_features',
-            'label' => __('Content Features', 'sfxtheme'),
-            'badge' => null,
-            'items' => $items,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private static function build_utilities_group(): array
-    {
-        $items = [
-            [
-                'id' => 'import_export',
-                'label' => __('Import / Export', 'sfxtheme'),
-                'status' => 'active',
-                'detail' => __('Built-in — no plugin required', 'sfxtheme'),
-                'settings_url' => 'admin.php?page=sfx-import-export',
-            ],
-        ];
-
-        if (AccessControl::can_access_dashboard_settings()) {
-            $dashboard_options = get_option('sfx_custom_dashboard', []);
-            $dashboard_enabled = ! empty($dashboard_options['enable_custom_dashboard']);
-            $items[] = [
-                'id' => 'custom_dashboard',
-                'label' => __('Custom Dashboard', 'sfxtheme'),
-                'status' => $dashboard_enabled ? 'active' : 'inactive',
-                'detail' => null,
-                'settings_url' => 'admin.php?page=sfx-custom-dashboard',
-            ];
-        }
-
-        return [
-            'id' => 'utilities',
-            'label' => __('Utilities', 'sfxtheme'),
-            'badge' => null,
-            'items' => $items,
-        ];
-    }
-
-    private static function get_post_count(string $post_type): int
-    {
-        if (! class_exists('\WP_Query')) {
-            return 0;
-        }
-
-        $query = new \WP_Query([
-            'post_type' => $post_type,
-            'post_status' => 'publish',
-            'posts_per_page' => 1,
-            'fields' => 'ids',
-            'no_found_rows' => false,
-        ]);
-
-        return (int) $query->found_posts;
+        return $group;
     }
 
     /**
@@ -366,10 +210,34 @@ final class OverviewProvider
     public static function get_item_status(array $data, string $item_id): ?string
     {
         foreach ($data['groups'] ?? [] as $group) {
-            foreach ($group['items'] ?? [] as $item) {
-                if (($item['id'] ?? '') === $item_id) {
-                    return $item['status'] ?? null;
+            $status = self::find_item_status_in_list($group['items'] ?? [], $item_id);
+            if ($status !== null) {
+                return $status;
+            }
+
+            foreach ($group['sections'] ?? [] as $section) {
+                if (($section['id'] ?? '') === $item_id) {
+                    return $section['status'] ?? null;
                 }
+
+                $status = self::find_item_status_in_list($section['items'] ?? [], $item_id);
+                if ($status !== null) {
+                    return $status;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $items
+     */
+    private static function find_item_status_in_list(array $items, string $item_id): ?string
+    {
+        foreach ($items as $item) {
+            if (($item['id'] ?? '') === $item_id) {
+                return $item['status'] ?? null;
             }
         }
 

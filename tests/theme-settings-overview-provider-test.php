@@ -61,7 +61,6 @@ class WP_Query
 require __DIR__ . '/support/overview-general-theme-options-settings-stub.php';
 require __DIR__ . '/support/overview-wpoptimizer-settings-stub.php';
 require __DIR__ . '/support/overview-sfx-stubs.php';
-require dirname(__DIR__) . '/inc/ImageOptimizer/Constants.php';
 require dirname(__DIR__) . '/inc/ThemeSettingsOverview/SecurityHeaderStatusResolver.php';
 require dirname(__DIR__) . '/inc/ThemeSettingsOverview/OverviewProvider.php';
 
@@ -93,10 +92,17 @@ function reset_test_state(): void
 // Fresh install defaults
 reset_test_state();
 $data = OverviewProvider::get_data();
-assert_status($data, 'enable_wp_optimizer', 'active', 'WP Optimizer default active');
-assert_status($data, 'enable_image_optimizer', 'active', 'Image Optimizer default active');
-assert_status($data, 'enable_security_header', 'active', 'Security Header default active');
-assert_status($data, 'enable_smooth_scroll', 'inactive', 'Smooth Scroll default inactive');
+assert_true(OverviewProvider::has_group($data, 'builtin_modules'), 'Built-in Modules group present');
+assert_true(OverviewProvider::has_group($data, 'wp_optimizer'), 'WP Optimizer detail group present by default');
+assert_true(OverviewProvider::has_group($data, 'security_headers'), 'Security Headers group present by default');
+assert_true(! OverviewProvider::has_group($data, 'image_optimizer'), 'Image Optimizer detail group removed');
+assert_true(! OverviewProvider::has_group($data, 'theme_bricks'), 'Theme & Bricks group removed');
+assert_true(! OverviewProvider::has_group($data, 'content_features'), 'Content Features group removed');
+assert_true(! OverviewProvider::has_group($data, 'utilities'), 'Utilities group removed');
+assert_status($data, 'enable_wp_optimizer', 'active', 'WP Optimizer module default active');
+assert_status($data, 'enable_image_optimizer', 'active', 'Image Optimizer module default active');
+assert_status($data, 'enable_security_header', 'active', 'Security Header module default active');
+assert_status($data, 'enable_smooth_scroll', 'inactive', 'Smooth Scroll module default inactive');
 
 // Security headers with unset disable flags
 reset_test_state();
@@ -135,6 +141,10 @@ $test_options['sfx_wpoptimizer_options'] = [
 $data = OverviewProvider::get_data();
 $performance_status = OverviewProvider::get_item_status($data, 'wp_optimizer_performance');
 assert_true($performance_status === 'partial', 'WP Optimizer performance group is partial');
+$jquery_status = OverviewProvider::get_item_status($data, 'disable_jquery');
+assert_true($jquery_status === 'active', 'WP Optimizer disable_jquery child is active');
+$footer_status = OverviewProvider::get_item_status($data, 'jquery_to_footer');
+assert_true($footer_status === 'inactive', 'WP Optimizer jquery_to_footer child is inactive');
 
 // is_general_option_enabled fallback
 reset_test_state();
