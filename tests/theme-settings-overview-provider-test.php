@@ -6,7 +6,7 @@ define('ABSPATH', dirname(__DIR__) . '/../../../../');
 
 $test_options = [];
 $test_wp_query_counts = [];
-$test_can_access_dashboard_settings = false;
+$test_can_access_theme_settings = false;
 $failures = 0;
 
 function __($text, $domain = 'default')
@@ -83,10 +83,10 @@ function assert_status(array $data, string $item_id, string $expected, string $m
 
 function reset_test_state(): void
 {
-    global $test_options, $test_wp_query_counts, $test_can_access_dashboard_settings;
+    global $test_options, $test_wp_query_counts, $test_can_access_theme_settings;
     $test_options = [];
     $test_wp_query_counts = [];
-    $test_can_access_dashboard_settings = false;
+    $test_can_access_theme_settings = false;
 }
 
 // Fresh install defaults

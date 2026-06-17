@@ -27,10 +27,10 @@ class SFXBricksChildTheme
 
 class AccessControl
 {
-    public static function can_access_dashboard_settings(): bool
+    public static function can_access_theme_settings(): bool
     {
-        global $test_can_access_dashboard_settings;
+        global $test_can_access_theme_settings;
 
-        return (bool) $test_can_access_dashboard_settings;
+        return (bool) $test_can_access_theme_settings;
     }
 }

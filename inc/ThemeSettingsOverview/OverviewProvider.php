@@ -12,13 +12,14 @@ use SFX\WPOptimizer\Settings as WPOptimizerSettings;
  */
 final class OverviewProvider
 {
-    private const WP_OPTIMIZER_GROUP_LABELS = [
-        'performance' => 'Performance',
-        'admin' => 'Admin Enhancements',
-        'security' => 'Security & Privacy',
-        'users' => 'Users & Authors',
-        'frontend' => 'Frontend Cleanup',
-        'media' => 'Media & Uploads',
+    /** @var list<string> */
+    private const WP_OPTIMIZER_GROUP_KEYS = [
+        'performance',
+        'admin',
+        'security',
+        'users',
+        'frontend',
+        'media',
     ];
 
     /**
@@ -109,7 +110,7 @@ final class OverviewProvider
         $active_count = 0;
         $total_count = 0;
 
-        foreach (self::WP_OPTIMIZER_GROUP_LABELS as $group_key => $group_label) {
+        foreach (self::WP_OPTIMIZER_GROUP_KEYS as $group_key) {
             if (empty($grouped_fields[$group_key])) {
                 continue;
             }
@@ -145,7 +146,7 @@ final class OverviewProvider
 
             $sections[] = [
                 'id' => 'wp_optimizer_' . $group_key,
-                'label' => __($group_label, 'sfxtheme'),
+                'label' => self::get_wp_optimizer_group_label($group_key),
                 'status' => $status,
                 'detail' => $enabled . '/' . $total,
                 'items' => $children,
@@ -169,18 +170,25 @@ final class OverviewProvider
      */
     private static function build_security_headers_group(): array
     {
-        $items = SecurityHeaderStatusResolver::get_header_items();
-        foreach ($items as &$item) {
-            unset($item['settings_url']);
-        }
-        unset($item);
-
         return self::with_status_summary([
             'id' => 'security_headers',
             'label' => __('Security Headers', 'sfxtheme'),
             'settings_url' => 'admin.php?page=sfx-security-header',
-            'items' => $items,
+            'items' => SecurityHeaderStatusResolver::get_header_items(),
         ]);
+    }
+
+    private static function get_wp_optimizer_group_label(string $group_key): string
+    {
+        return match ($group_key) {
+            'performance' => __('Performance', 'sfxtheme'),
+            'admin' => __('Admin Enhancements', 'sfxtheme'),
+            'security' => __('Security & Privacy', 'sfxtheme'),
+            'users' => __('Users & Authors', 'sfxtheme'),
+            'frontend' => __('Frontend Cleanup', 'sfxtheme'),
+            'media' => __('Media & Uploads', 'sfxtheme'),
+            default => $group_key,
+        };
     }
 
     /**
