@@ -2063,3 +2063,83 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-dashboard-container .sfx-dashboard-footer svg {
     color: #e91e63;
 }
+
+/* Theme Settings Overview — custom dashboard widget inner content */
+.sfx-theme-overview--widget {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__intro {
+    margin: 0 0 12px;
+    color: var(--sfx-text-muted, #646970);
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__group {
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sfx-border-color, rgba(0, 0, 0, 0.08));
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__group:last-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__group-title {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 5px 0;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__item-label {
+    flex: 1 1 auto;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__badge--active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__badge--inactive {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__badge--partial {
+    background: rgba(234, 179, 8, 0.15);
+    color: #a16207;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__item-detail {
+    flex: 1 1 100%;
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+.sfx-theme-overview--widget .sfx-theme-overview__item-link {
+    font-size: 11px;
+}
+

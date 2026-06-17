@@ -4382,3 +4382,56 @@ msgstr "Ja"
 #: inc/ImageOptimizer/Ajax.php
 msgid "Enabled"
 msgstr "Aktiviert"
+
+#: inc/ThemeSettingsOverview/Controller.php
+msgid "SFX Theme Settings"
+msgstr "SFX Theme-Einstellungen"
+
+#: inc/CustomDashboard/Settings.php
+msgid "SFX Theme Settings Overview"
+msgstr "SFX Theme-Einstellungen Übersicht"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "These features are built into the SFX child theme — no additional plugin required."
+msgstr "Diese Funktionen sind im SFX Child Theme integriert — kein zusätzliches Plugin erforderlich."
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Active"
+msgstr "Aktiv"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Partial"
+msgstr "Teilweise"
+
+#: inc/ThemeSettingsOverview/OverviewRenderer.php
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Built-in Modules"
+msgstr "Integrierte Module"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Security Headers"
+msgstr "Sicherheits-Header"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Theme & Bricks"
+msgstr "Theme & Bricks"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Content Features"
+msgstr "Inhaltsfunktionen"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Utilities"
+msgstr "Werkzeuge"
+
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Built-in — no plugin required"
+msgstr "Integriert — kein Plugin erforderlich"
+

@@ -1090,6 +1090,10 @@ class DashboardRenderer
                 'title' => __('Site Health Status', 'sfxtheme'),
                 'callback' => 'wp_dashboard_site_health',
             ],
+            'sfx_theme_settings_overview' => [
+                'title' => __('SFX Theme Settings Overview', 'sfxtheme'),
+                'callback' => [\SFX\ThemeSettingsOverview\Controller::class, 'render_widget'],
+            ],
             'dashboard_right_now' => [
                 'title' => __('At a Glance', 'sfxtheme'),
                 'callback' => 'wp_dashboard_right_now',
@@ -1177,6 +1181,10 @@ class DashboardRenderer
             'dashboard_right_now' => 'read',
             'dashboard_primary' => 'read',
         ];
+
+        if ($widget_id === 'sfx_theme_settings_overview') {
+            return \SFX\AccessControl::can_access_theme_settings();
+        }
 
         $required_cap = $required_capabilities[$widget_id] ?? 'read';
         $can_render = current_user_can($required_cap);
