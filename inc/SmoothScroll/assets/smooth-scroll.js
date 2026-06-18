@@ -62,113 +62,149 @@
   // built-in `anchors` option, so we can support /#-prefixed links, a
   // consistent offset, cross-page links, and the initial load-time hash.
 
-  var lenis = new window.Lenis(opts);
-  window.sfxLenis = lenis;
+  function start(skipHashScroll) {
+    var lenis = new window.Lenis(opts);
+    window.sfxLenis = lenis;
 
-  var rafId = null;
+    var rafId = null;
 
-  function raf(time) {
-    lenis.raf(time);
+    function raf(time) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+
+    function stop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    // Cancel our loop whenever the instance is destroyed (e.g. by a page
+    // transition library) or the page is being unloaded, so raf() does not
+    // keep firing against a dead instance.
+    var originalDestroy = lenis.destroy.bind(lenis);
+    lenis.destroy = function () {
+      stop();
+      return originalDestroy();
+    };
+
+    window.addEventListener('pagehide', stop, { once: true });
+
     rafId = requestAnimationFrame(raf);
-  }
 
-  function stop() {
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+    // -------------------------------------------------------------------------
+    // Anchor handling: only intercept links whose target section exists on the
+    // CURRENT page. Same-page links (#x, /#x on the matching page) smooth-scroll
+    // without a reload; cross-page links (e.g. /#x from a subpage, /imprint#x)
+    // are left to the browser to navigate normally, after which the load-time
+    // hash handler below scrolls to the section once the new page has loaded.
+    function setupAnchors(skipHashScroll) {
+      // The setting is expressed as the space to leave ABOVE the target (e.g. to
+      // clear a sticky header), matching the scroll-padding-top mental model.
+      // Lenis adds `offset` to the destination scroll position, so a positive
+      // value would overshoot (target ends up above the viewport top); negate it
+      // so a positive setting produces a downward gap below the top.
+      var anchorOffset = -(cfg.anchorOffset || 0);
+
+      function normPath(path) {
+        return path.replace(/\/+$/, '') || '/';
+      }
+
+      // Returns the in-page target element for an href, or null when the href
+      // points to another page/origin or to a section not present on this page.
+      function resolveLocalTarget(href) {
+        if (!href) {
+          return null;
+        }
+        var url;
+        try {
+          url = new URL(href, window.location.href);
+        } catch (e) {
+          return null;
+        }
+        if (url.origin !== window.location.origin) {
+          return null;
+        }
+        if (normPath(url.pathname) !== normPath(window.location.pathname)) {
+          return null;
+        }
+        var id = url.hash ? url.hash.slice(1) : '';
+        if (!id) {
+          return null;
+        }
+        return document.getElementById(id);
+      }
+
+      document.addEventListener('click', function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+        var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+        if (!link) {
+          return;
+        }
+        if (link.target && link.target !== '_self') {
+          return;
+        }
+        var href = link.getAttribute('href');
+        if (!href || href.indexOf('#') === -1) {
+          return;
+        }
+        var target = resolveLocalTarget(href);
+        if (!target) {
+          return;
+        }
+        event.preventDefault();
+        lenis.scrollTo(target, { offset: anchorOffset });
+      });
+
+      if (!skipHashScroll && window.location.hash && window.location.hash.length > 1) {
+        var loadTarget = resolveLocalTarget(window.location.hash);
+        if (loadTarget) {
+          requestAnimationFrame(function () {
+            lenis.scrollTo(loadTarget, { offset: anchorOffset, immediate: false });
+          });
+        }
+      }
+    }
+
+    if (cfg.anchors) {
+      setupAnchors(skipHashScroll);
     }
   }
 
-  // Cancel our loop whenever the instance is destroyed (e.g. by a page
-  // transition library) or the page is being unloaded, so raf() does not
-  // keep firing against a dead instance.
-  var originalDestroy = lenis.destroy.bind(lenis);
-  lenis.destroy = function () {
-    stop();
-    return originalDestroy();
-  };
+  // Defer instantiation + the rAF loop until the page has loaded, so Lenis does
+  // not compete with critical rendering and inflate page-load metrics (its
+  // every-frame rAF was the main cost). Falls back to the first real scroll
+  // intent in case the user interacts before `load` fires, so smooth scroll is
+  // always ready by the time it's actually needed — behaviour is unchanged.
+  var started = false;
+  var triggers = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
 
-  window.addEventListener('pagehide', stop, { once: true });
-
-  rafId = requestAnimationFrame(raf);
-
-  // ---------------------------------------------------------------------------
-  // Anchor handling: only intercept links whose target section exists on the
-  // CURRENT page. Same-page links (#x, /#x on the matching page) smooth-scroll
-  // without a reload; cross-page links (e.g. /#x from a subpage, /imprint#x)
-  // are left to the browser to navigate normally, after which the load-time
-  // hash handler below scrolls to the section once the new page has loaded.
-  function setupAnchors() {
-    // The setting is expressed as the space to leave ABOVE the target (e.g. to
-    // clear a sticky header), matching the scroll-padding-top mental model.
-    // Lenis adds `offset` to the destination scroll position, so a positive
-    // value would overshoot (target ends up above the viewport top); negate it
-    // so a positive setting produces a downward gap below the top.
-    var anchorOffset = -(cfg.anchorOffset || 0);
-
-    function normPath(path) {
-      return path.replace(/\/+$/, '') || '/';
+  function startOnce(event) {
+    if (started) {
+      return;
     }
-
-    // Returns the in-page target element for an href, or null when the href
-    // points to another page/origin or to a section not present on this page.
-    function resolveLocalTarget(href) {
-      if (!href) {
-        return null;
-      }
-      var url;
-      try {
-        url = new URL(href, window.location.href);
-      } catch (e) {
-        return null;
-      }
-      if (url.origin !== window.location.origin) {
-        return null;
-      }
-      if (normPath(url.pathname) !== normPath(window.location.pathname)) {
-        return null;
-      }
-      var id = url.hash ? url.hash.slice(1) : '';
-      if (!id) {
-        return null;
-      }
-      return document.getElementById(id);
-    }
-
-    document.addEventListener('click', function (event) {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-        return;
-      }
-      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-      if (!link) {
-        return;
-      }
-      if (link.target && link.target !== '_self') {
-        return;
-      }
-      var href = link.getAttribute('href');
-      if (!href || href.indexOf('#') === -1) {
-        return;
-      }
-      var target = resolveLocalTarget(href);
-      if (!target) {
-        return;
-      }
-      event.preventDefault();
-      lenis.scrollTo(target, { offset: anchorOffset });
+    started = true;
+    window.removeEventListener('load', startOnce);
+    triggers.forEach(function (ev) {
+      window.removeEventListener(ev, startOnce);
     });
-
-    if (window.location.hash && window.location.hash.length > 1) {
-      var loadTarget = resolveLocalTarget(window.location.hash);
-      if (loadTarget) {
-        requestAnimationFrame(function () {
-          lenis.scrollTo(loadTarget, { offset: anchorOffset, immediate: false });
-        });
-      }
-    }
+    // If a user interaction (not `load`) triggered the start, the user is
+    // already scrolling — skip the one-time hash scroll so we don't yank the
+    // viewport back to the URL anchor they just scrolled away from. Click-based
+    // anchor navigation is unaffected.
+    var userInteracted = !!(event && event.type && event.type !== 'load');
+    start(userInteracted);
   }
 
-  if (cfg.anchors) {
-    setupAnchors();
+  if (document.readyState === 'complete') {
+    startOnce();
+  } else {
+    window.addEventListener('load', startOnce, { once: true });
+    triggers.forEach(function (ev) {
+      window.addEventListener(ev, startOnce, { once: true, passive: true });
+    });
   }
 })();

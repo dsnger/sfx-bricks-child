@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.14.4] - 2026-06-18
+
+Defers Lenis smooth scroll initialization so it no longer competes with critical rendering and inflates page-load metrics when the feature is active.
+
+### Changed
+
+- Smooth Scroll: defer Lenis instantiation and its per-frame requestAnimationFrame loop until `window.load` (or the first scroll intent — wheel/touchstart/keydown/pointerdown — if the user interacts sooner), removing main-thread cost during page load while leaving smooth-scroll behavior unchanged.
+
 ## [0.14.3] - 2026-06-17
 
 Adds a Theme Settings Overview dashboard widget that surfaces active built-in modules, WP Optimizer sections, and security header status.
