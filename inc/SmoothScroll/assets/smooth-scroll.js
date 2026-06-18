@@ -62,7 +62,7 @@
   // built-in `anchors` option, so we can support /#-prefixed links, a
   // consistent offset, cross-page links, and the initial load-time hash.
 
-  function start() {
+  function start(skipHashScroll) {
     var lenis = new window.Lenis(opts);
     window.sfxLenis = lenis;
 
@@ -99,7 +99,7 @@
     // without a reload; cross-page links (e.g. /#x from a subpage, /imprint#x)
     // are left to the browser to navigate normally, after which the load-time
     // hash handler below scrolls to the section once the new page has loaded.
-    function setupAnchors() {
+    function setupAnchors(skipHashScroll) {
       // The setting is expressed as the space to leave ABOVE the target (e.g. to
       // clear a sticky header), matching the scroll-padding-top mental model.
       // Lenis adds `offset` to the destination scroll position, so a positive
@@ -159,7 +159,7 @@
         lenis.scrollTo(target, { offset: anchorOffset });
       });
 
-      if (window.location.hash && window.location.hash.length > 1) {
+      if (!skipHashScroll && window.location.hash && window.location.hash.length > 1) {
         var loadTarget = resolveLocalTarget(window.location.hash);
         if (loadTarget) {
           requestAnimationFrame(function () {
@@ -170,7 +170,7 @@
     }
 
     if (cfg.anchors) {
-      setupAnchors();
+      setupAnchors(skipHashScroll);
     }
   }
 
@@ -182,7 +182,7 @@
   var started = false;
   var triggers = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
 
-  function startOnce() {
+  function startOnce(event) {
     if (started) {
       return;
     }
@@ -191,7 +191,12 @@
     triggers.forEach(function (ev) {
       window.removeEventListener(ev, startOnce);
     });
-    start();
+    // If a user interaction (not `load`) triggered the start, the user is
+    // already scrolling — skip the one-time hash scroll so we don't yank the
+    // viewport back to the URL anchor they just scrolled away from. Click-based
+    // anchor navigation is unaffected.
+    var userInteracted = !!(event && event.type && event.type !== 'load');
+    start(userInteracted);
   }
 
   if (document.readyState === 'complete') {
