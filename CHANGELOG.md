@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.14.5] - 2026-06-21
+
+Link-style text buttons now read idle and hover text colors from theme tokens instead of relying on Bricks defaults alone.
+
+### Changed
+
+- Buttons module: text-style buttons (bricks-background-text, bricks-color-text, btn--text) use --btn-text-color (chains to Bricks --text) and --btn-text-hover-color (chains to --primary).
+- Buttons module: unlayered text-button chrome so Bricks global color rules do not override themed text button colors.
+
 ## [0.14.4] - 2026-06-18
 
 Defers Lenis smooth scroll initialization so it no longer competes with critical rendering and inflates page-load metrics when the feature is active.
