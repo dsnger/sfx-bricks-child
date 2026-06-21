@@ -31,6 +31,11 @@
      variants flip to white per the original module behavior (lighter
      hover for already-dark colors). Override per-variant via
      --btn-<v>-mix.
+
+   Text variant (link-style, no padding):
+     --btn-text-color chains to Bricks --text; --btn-text-hover-color
+     chains to --primary. Applies to .bricks-background-text,
+     .bricks-color-text, and .btn--text.
    ======================================== */
 
 :where(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button) {
@@ -185,6 +190,13 @@
     --sfx-btn-color-fg: var(--btn-warning-fg, var(--warning-fg, #fff));
   }
 
+  &.bricks-background-text,
+  &.bricks-color-text,
+  &.btn--text {
+    --sfx-btn-text-color: var(--btn-text-color, var(--text, inherit));
+    --sfx-btn-text-hover-color: var(--btn-text-hover-color, var(--primary, #2563eb));
+  }
+
   /* Outline variant — transparent bg + variant-colored border/text;
      hover swaps to filled look (bg = variant color, text = paired fg),
      so .outline.bricks-color-primary:hover renders identical to a
@@ -278,7 +290,9 @@
 
 .brxe-button.bricks-button.btn--text,
 .brxe-button.btn.btn--text,
-button.bricks-button.btn--text {
+button.bricks-button.btn--text,
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).bricks-background-text,
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).bricks-color-text {
   --btn-padding-block: 0;
   --btn-padding-inline: 0;
   --btn-s-padding-block: 0;
@@ -287,6 +301,11 @@ button.bricks-button.btn--text {
   --btn-l-padding-inline: 0;
   padding-block: 0;
   padding-inline: 0;
+  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, inherit)));
+
+  &:hover {
+    color: var(--sfx-btn-text-hover-color, var(--btn-text-hover-color, var(--primary, #2563eb)));
+  }
 }
 
 @keyframes button-spin {
@@ -348,5 +367,19 @@ button.bricks-button,
   &:hover {
     color: var(--sfx-btn-color-fg);
     border-color: var(--sfx-btn-color);
+  }
+}
+
+/* ========================================
+   UNLAYERED TEXT-BUTTON CHROME
+   Same reasoning as outline chrome above — Bricks' unlayered
+   .bricks-background-text / .bricks-color-text color rules would
+   otherwise beat the layered declarations in the btn--text block.
+   ======================================== */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button):is(.bricks-background-text, .bricks-color-text, .btn--text) {
+  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, inherit)));
+
+  &:hover {
+    color: var(--sfx-btn-text-hover-color, var(--btn-text-hover-color, var(--primary, #2563eb)));
   }
 }
