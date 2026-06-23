@@ -7,6 +7,7 @@ define('ABSPATH', dirname(__DIR__) . '/../../../../');
 $test_options = [];
 $test_filters = [];
 $test_actions = [];
+$test_removed_actions = [];
 $test_pages_by_path = [];
 $test_posts_by_slug = [];
 $test_post_type_rewrite_slugs = [];
@@ -67,6 +68,19 @@ function add_action($hook_name, $callback, $priority = 10, $accepted_args = 1): 
     $test_actions[$hook_name][] = [
         'callback' => $callback,
         'priority' => $priority,
+        'accepted_args' => $accepted_args,
+    ];
+
+    return true;
+}
+
+function remove_action($hook_name, $callback, $priority = 10, $accepted_args = 1): bool
+{
+    global $test_removed_actions;
+    $test_removed_actions[] = [
+        'hook'          => $hook_name,
+        'callback'      => $callback,
+        'priority'      => $priority,
         'accepted_args' => $accepted_args,
     ];
 
@@ -580,6 +594,71 @@ $hideLoginClass::reset_for_tests();
 unset($_SERVER['REQUEST_URI']);
 
 $controller = new_controller_without_constructor();
+
+$controllerReflection = new ReflectionClass(\SFX\WPOptimizer\Controller::class);
+
+foreach (\SFX\WPOptimizer\Settings::get_fields() as $field) {
+    if (($field['type'] ?? 'checkbox') !== 'checkbox') {
+        continue;
+    }
+
+    $fieldId = $field['id'];
+
+    assert_true(
+        $controllerReflection->hasMethod($fieldId),
+        "Controller is missing handler method for checkbox field '{$fieldId}'"
+    );
+
+    $method = $controllerReflection->getMethod($fieldId);
+    assert_true(
+        $method->isPrivate(),
+        "Handler for '{$fieldId}' should be a private Controller method"
+    );
+}
+
+global $test_actions, $test_removed_actions;
+
+$test_actions = [];
+$test_removed_actions = [];
+
+invoke_private($controller, 'disable_dns_prefetch');
+
+assert_true(
+    !empty($test_actions['init'] ?? []),
+    'disable_dns_prefetch() should register an init callback'
+);
+
+$initHook = $test_actions['init'][0];
+
+assert_true(
+    ($initHook['priority'] ?? null) === 10
+    && ($initHook['accepted_args'] ?? null) === 1,
+    'disable_dns_prefetch init callback should use default add_action priority/accepted_args'
+);
+
+$initCallback = $initHook['callback'];
+assert_true(
+    is_callable($initCallback),
+    'disable_dns_prefetch init callback should be callable'
+);
+
+$initCallback();
+
+assert_true(
+    count($test_removed_actions) === 1,
+    'init callback should call remove_action exactly once'
+);
+
+$removal = $test_removed_actions[0];
+
+assert_true(
+    ($removal['hook'] ?? null) === 'wp_head'
+    && ($removal['callback'] ?? null) === 'wp_resource_hints'
+    && ($removal['priority'] ?? null) === 2
+    && ($removal['accepted_args'] ?? null) === 99,
+    'disable_dns_prefetch init callback should remove wp_resource_hints from wp_head at priority 2'
+);
+
 $theme = new_theme_without_constructor();
 
 assert_true(

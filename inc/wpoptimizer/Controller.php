@@ -244,7 +244,7 @@ class Controller
         });
     }
 
-    private function add_slug_to_body_class()
+    private function add_slug_body_class()
     {
         add_filter('body_class', function ($classes) {
             global $post;
@@ -840,7 +840,7 @@ class Controller
     }
 
 
-    private function remove_dns_prefetch()
+    private function disable_dns_prefetch()
     {
         add_action('init', function () {
             remove_action('wp_head', 'wp_resource_hints', 2, 99);
