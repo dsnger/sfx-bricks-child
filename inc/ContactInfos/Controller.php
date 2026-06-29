@@ -58,27 +58,7 @@ class Controller
    */
   public static function add_bricks_dynamic_tag(array $tags): array
   {
-    // Define all available contact info fields with their labels
-    $contact_fields = [
-      'company' => 'Company Name',
-      'director' => 'Director',
-      'street' => 'Street',
-      'zip' => 'ZIP Code',
-      'city' => 'City',
-      'country' => 'Country',
-      'address' => 'Full Address',
-      'phone' => 'Phone',
-      'mobile' => 'Mobile',
-      'fax' => 'Fax',
-      'email' => 'Email',
-      'tax_id' => 'Tax ID',
-      'vat' => 'VAT Number',
-      'hrb' => 'HRB Number',
-      'court' => 'Court',
-      'dsb' => 'DSB',
-      'opening' => 'Opening Hours',
-      'maplink' => 'Map Link'
-    ];
+    $contact_fields = FieldRegistry::get_fields();
     
     // Add each field as a separate dynamic tag option
     foreach ($contact_fields as $field => $label) {

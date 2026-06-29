@@ -29,13 +29,9 @@ class PostType
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
         
         // Register admin columns
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_icon_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_icon_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_link_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_link_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
+        add_action('admin_notices', [self::class, 'render_global_tags_notice']);
     }
 
     /**
@@ -272,6 +268,72 @@ class PostType
         foreach ($fields as $key => $value) {
             update_post_meta($post_id, '_' . $key, $value);
         }
+    }
+
+    /**
+     * Define admin list table columns in explicit order.
+     *
+     * @param array<string, string> $columns
+     * @return array<string, string>
+     */
+    public static function define_list_columns(array $columns): array
+    {
+        $date = $columns['date'] ?? null;
+
+        return array_filter([
+            'cb'           => $columns['cb'] ?? '',
+            'title'        => $columns['title'] ?? '',
+            'icon'         => __('Icon', 'sfxtheme'),
+            'url'          => __('URL', 'sfxtheme'),
+            'placeholders' => __('Placeholders', 'sfxtheme'),
+            'status'       => __('Status', 'sfxtheme'),
+            'date'         => $date,
+        ], static fn ($value) => $value !== null);
+    }
+
+    /**
+     * Render admin list table column content.
+     */
+    public static function render_list_column(string $column, int $post_id): void
+    {
+        switch ($column) {
+            case 'icon':
+                self::render_icon_column($column, $post_id);
+                break;
+            case 'url':
+                $link_url = get_post_meta($post_id, '_link_url', true);
+                if (!empty($link_url)) {
+                    echo '<a href="' . esc_url((string) $link_url) . '" target="_blank" rel="noopener noreferrer">' . esc_url((string) $link_url) . '</a>';
+                } else {
+                    echo '<span class="no-link">' . esc_html__('No link', 'sfxtheme') . '</span>';
+                }
+                break;
+            case 'placeholders':
+                \SFX\Admin\PlaceholderColumn::render_rows(
+                    \SFX\Admin\PlaceholderItems::build_social_items($post_id)
+                );
+                break;
+            case 'status':
+                self::render_status_column($column, $post_id);
+                break;
+        }
+    }
+
+    /**
+     * Show global shortcode / Bricks tags above the list table.
+     */
+    public static function render_global_tags_notice(): void
+    {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || $screen->base !== 'edit' || $screen->post_type !== self::$post_type) {
+            return;
+        }
+
+        echo '<div class="notice notice-info"><p>';
+        echo esc_html__('Global tags:', 'sfxtheme') . ' ';
+        echo '<code>[social_accounts]</code> ';
+        echo '<code>{social_accounts}</code>';
+        echo '</p></div>';
     }
 
     /**

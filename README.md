@@ -16,7 +16,7 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 ### Content (custom post types)
 
 - **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode; Bricks dynamic tags `{contact_info:field}` (optional location/attributes)
-- **Social Media Accounts** (`sfx_social_account`) — `[social_accounts]` and `[social_account]` shortcodes
+- **Social Media Accounts** (`sfx_social_account`) — `[social_accounts]` and `[social_account id="…"]` shortcodes; Bricks dynamic tags `{social_account:field:ID}` and `{social_accounts}` (ID suffix required for per-account fields)
 - **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location rules, priorities, and categories
 
 ### Optimization

@@ -29,15 +29,8 @@ class PostType
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
         
         // Register admin columns
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_type_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_type_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_address_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_address_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_contact_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_contact_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
         
         // Multilingual support through consolidated system
         add_action('sfx_init_advanced_features', [self::class, 'register_multilingual_support']);
@@ -527,6 +520,63 @@ class PostType
             update_post_meta($post_id, '_' . $key, $value);
             
             
+        }
+    }
+
+    /**
+     * Define admin list table columns in explicit order.
+     *
+     * @param array<string, string> $columns
+     * @return array<string, string>
+     */
+    public static function define_list_columns(array $columns): array
+    {
+        $date = $columns['date'] ?? null;
+
+        return array_filter([
+            'cb'           => $columns['cb'] ?? '',
+            'title'        => $columns['title'] ?? '',
+            'contact_type' => __('Type', 'sfxtheme'),
+            'url'          => __('URL', 'sfxtheme'),
+            'address'      => __('Address', 'sfxtheme'),
+            'contact'      => __('Contact', 'sfxtheme'),
+            'placeholders' => __('Placeholders', 'sfxtheme'),
+            'status'       => __('Status', 'sfxtheme'),
+            'date'         => $date,
+        ], static fn ($value) => $value !== null);
+    }
+
+    /**
+     * Render admin list table column content.
+     */
+    public static function render_list_column(string $column, int $post_id): void
+    {
+        switch ($column) {
+            case 'contact_type':
+                self::render_type_column($column, $post_id);
+                break;
+            case 'url':
+                $maplink = get_post_meta($post_id, '_maplink', true);
+                if (!empty($maplink)) {
+                    echo '<a href="' . esc_url((string) $maplink) . '" target="_blank" rel="noopener noreferrer">' . esc_url((string) $maplink) . '</a>';
+                } else {
+                    echo '<span class="no-data">&mdash;</span>';
+                }
+                break;
+            case 'address':
+                self::render_address_column($column, $post_id);
+                break;
+            case 'contact':
+                self::render_contact_column($column, $post_id);
+                break;
+            case 'placeholders':
+                \SFX\Admin\PlaceholderColumn::render_rows(
+                    \SFX\Admin\PlaceholderItems::build_contact_items($post_id)
+                );
+                break;
+            case 'status':
+                self::render_status_column($column, $post_id);
+                break;
         }
     }
 

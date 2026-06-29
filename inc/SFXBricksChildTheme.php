@@ -194,6 +194,10 @@ class SFXBricksChildTheme
     // Initialize the main admin menu page
     new \SFX\SFXBricksChildAdmin();
 
+    if (class_exists(\SFX\Admin\AssetManager::class)) {
+      \SFX\Admin\AssetManager::register();
+    }
+
     $features = self::get_registered_features();
 
     foreach ($features as $feature) {
