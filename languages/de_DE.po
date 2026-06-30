@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SFX Bricks Child Theme 1.0.0\n"
+"Project-Id-Version: SFX Bricks Child Theme 0.14.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-12-06 00:00+0000\n"
 "PO-Revision-Date: 2026-06-30 12:00+0200\n"
