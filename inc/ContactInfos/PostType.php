@@ -39,6 +39,55 @@ class PostType
         add_action('admin_notices', [self::class, 'admin_notices']);
         add_action('admin_init', [self::class, 'handle_cache_clear']);
         add_action('admin_footer', [self::class, 'add_cache_clear_button']);
+
+        add_filter('map_meta_cap', [self::class, 'map_editor_level_meta_cap'], 10, 4);
+    }
+
+    /**
+     * Plural post-type caps for editor-level menu access (no meta caps here).
+     *
+     * @return array<string, string>
+     */
+    private static function editor_level_capabilities(): array
+    {
+        return [
+            'edit_posts'             => 'edit_others_posts',
+            'edit_others_posts'      => 'edit_others_posts',
+            'publish_posts'          => 'edit_others_posts',
+            'read_private_posts'     => 'edit_others_posts',
+            'create_posts'           => 'edit_others_posts',
+            'edit_private_posts'     => 'edit_others_posts',
+            'edit_published_posts'   => 'edit_others_posts',
+            'delete_posts'           => 'delete_others_posts',
+            'delete_private_posts'   => 'delete_others_posts',
+            'delete_published_posts' => 'delete_others_posts',
+            'delete_others_posts'    => 'delete_others_posts',
+        ];
+    }
+
+    /**
+     * Require edit_others_posts for per-post read/edit/delete on this CPT.
+     *
+     * @param array<int, string> $caps
+     * @param array<int, mixed>  $args
+     * @return array<int, string>
+     */
+    public static function map_editor_level_meta_cap(array $caps, string $cap, int $user_id, array $args): array
+    {
+        if (!in_array($cap, ['edit_post', 'read_post', 'delete_post'], true) || empty($args[0])) {
+            return $caps;
+        }
+
+        $post = get_post((int) $args[0]);
+        if (!$post instanceof \WP_Post || $post->post_type !== self::$post_type) {
+            return $caps;
+        }
+
+        return match ($cap) {
+            'edit_post', 'read_post' => ['edit_others_posts'],
+            'delete_post' => ['delete_others_posts'],
+            default => $caps,
+        };
     }
 
     /**
@@ -73,23 +122,7 @@ class PostType
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
-            'capabilities'       => [
-                'edit_post'              => 'edit_others_posts',
-                'read_post'              => 'read',
-                'delete_post'            => 'delete_others_posts',
-                'edit_posts'             => 'edit_others_posts',
-                'edit_others_posts'      => 'edit_others_posts',
-                'publish_posts'          => 'edit_others_posts',
-                'read_private_posts'     => 'edit_others_posts',
-                'delete_posts'           => 'delete_others_posts',
-                'delete_private_posts'   => 'delete_others_posts',
-                'delete_published_posts' => 'delete_others_posts',
-                'delete_others_posts'    => 'delete_others_posts',
-                'edit_private_posts'     => 'edit_others_posts',
-                'edit_published_posts'   => 'edit_others_posts',
-                'create_posts'           => 'edit_others_posts',
-            ],
-            'map_meta_cap'       => true,
+            'capabilities'       => self::editor_level_capabilities(),
             'show_ui'            => true,
             // Multilingual support
             'publicly_queryable' => false,

@@ -28,6 +28,7 @@ Contact and social data management moves to dedicated admin menus; Social Media 
 ### Fixed
 
 - Social Media Accounts: Bricks dynamic data escaping and cache invalidation on post save/delete.
+- Contact Infos and Social Media Accounts: `map_meta_cap` PHP notices on admin list screens (WordPress 6.1+).
 
 ## [0.14.5] - 2026-06-21
 
