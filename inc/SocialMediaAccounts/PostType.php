@@ -29,13 +29,8 @@ class PostType
         add_action('save_post_' . self::$post_type, [self::class, 'save_custom_fields']);
         
         // Register admin columns
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_icon_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_icon_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_link_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_link_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
-        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
-        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
+        add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
+        add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
     }
 
     /**
@@ -275,44 +270,42 @@ class PostType
     }
 
     /**
-     * Add a custom column for icon.
+     * Define admin list table columns in explicit order.
      *
-     * @param array $columns
-     * @return array
+     * @param array<string, string> $columns
+     * @return array<string, string>
      */
-    public static function add_icon_column(array $columns): array
+    public static function define_list_columns(array $columns): array
     {
-        $date = $columns['date'] ?? null;
-        unset($columns['date']);
-        $columns['icon'] = __('Icon', 'sfxtheme');
-        if ($date !== null) {
-            $columns['date'] = $date;
+        return array_filter([
+            'cb'     => $columns['cb'] ?? '',
+            'title'  => $columns['title'] ?? '',
+            'sfx_id' => __('ID', 'sfxtheme'),
+            'icon'   => __('Icon', 'sfxtheme'),
+            'link'   => __('Link', 'sfxtheme'),
+            'status' => __('Status', 'sfxtheme'),
+        ], static fn ($value) => $value !== '');
+    }
+
+    /**
+     * Render admin list table column content.
+     */
+    public static function render_list_column(string $column, int $post_id): void
+    {
+        switch ($column) {
+            case 'sfx_id':
+                echo esc_html((string) $post_id);
+                break;
+            case 'icon':
+                self::render_icon_column($column, $post_id);
+                break;
+            case 'link':
+                self::render_link_column($column, $post_id);
+                break;
+            case 'status':
+                self::render_status_column($column, $post_id);
+                break;
         }
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for link.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_link_column(array $columns): array
-    {
-        $columns['link'] = __('Link', 'sfxtheme');
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for status.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_status_column(array $columns): array
-    {
-        $columns['status'] = __('Status', 'sfxtheme');
-        return $columns;
     }
 
     /**
@@ -370,16 +363,4 @@ class PostType
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
         }
     }
-
-    /**
-     * Remove the date column.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function remove_date_column(array $columns): array
-    {
-        unset($columns['date']);
-        return $columns;
-    }
-} 
+}
