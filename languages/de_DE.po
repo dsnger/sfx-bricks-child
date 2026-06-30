@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: SFX Bricks Child Theme 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-12-06 00:00+0000\n"
-"PO-Revision-Date: 2025-12-06 13:01+0100\n"
+"PO-Revision-Date: 2026-06-30 12:00+0200\n"
 "Last-Translator: Daniel Sänger <webmaster@daniel-saenger.de>\n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -832,7 +832,7 @@ msgstr "Bricks"
 msgid "Menus"
 msgstr "Menüs"
 
-#: inc/CustomDashboard/Settings.php inc/ContactInfos/PostType.php
+#: inc/CustomDashboard/Settings.php
 msgid "Contact Info"
 msgstr "Kontaktdaten"
 
@@ -988,6 +988,10 @@ msgstr "Sicherheits-Header"
 # ============================================
 # Contact Infos
 # ============================================
+#: inc/ContactInfos/PostType.php inc/ContactInfos/AdminPage.php inc/ContactInfos/Controller.php
+msgid "Company Informations"
+msgstr "Firmeninformationen"
+
 #: inc/CustomDashboard/Settings.php inc/ContactInfos/AdminPage.php
 msgid "Contact Information"
 msgstr "Kontaktinformationen"

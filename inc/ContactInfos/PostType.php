@@ -58,7 +58,7 @@ class PostType
             'not_found'             => __('No contact info found', 'sfxtheme'),
             'not_found_in_trash'    => __('No contact info found in Trash', 'sfxtheme'),
             'all_items'             => __('All Contact Info', 'sfxtheme'),
-            'menu_name'             => __('Company Informations / Branches', 'sfxtheme'),
+            'menu_name'             => __('Company Informations', 'sfxtheme'),
             'name_admin_bar'        => __('Contact Info', 'sfxtheme'),
         ];
 

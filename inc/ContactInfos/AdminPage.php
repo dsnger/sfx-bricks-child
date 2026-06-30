@@ -10,6 +10,6 @@ namespace SFX\ContactInfos;
 class AdminPage
 {
     public static string $menu_slug = 'sfx-contact-infos';
-    public static string $page_title = 'Company Informations / Branches';
+    public static string $page_title = 'Company Informations';
     public static string $description = 'Manage company informations and branches';
 }

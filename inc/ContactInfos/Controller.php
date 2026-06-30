@@ -31,7 +31,7 @@ class Controller
     return [
       'class' => self::class,
       'menu_slug' => AdminPage::$menu_slug,
-      'page_title' => AdminPage::$page_title,
+      'page_title' => __(AdminPage::$page_title, 'sfxtheme'),
       'description' => AdminPage::$description,
       'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
       'show_in_theme_settings' => false,
