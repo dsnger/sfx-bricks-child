@@ -531,17 +531,14 @@ class PostType
      */
     public static function define_list_columns(array $columns): array
     {
-        $date = $columns['date'] ?? null;
-
         return array_filter([
             'cb'           => $columns['cb'] ?? '',
             'title'        => $columns['title'] ?? '',
+            'sfx_id'       => __('ID', 'sfxtheme'),
             'contact_type' => __('Type', 'sfxtheme'),
-            'url'          => __('URL', 'sfxtheme'),
             'address'      => __('Address', 'sfxtheme'),
             'contact'      => __('Contact', 'sfxtheme'),
             'status'       => __('Status', 'sfxtheme'),
-            'date'         => $date,
         ], static fn ($value) => $value !== null);
     }
 
@@ -551,16 +548,11 @@ class PostType
     public static function render_list_column(string $column, int $post_id): void
     {
         switch ($column) {
+            case 'sfx_id':
+                echo esc_html((string) $post_id);
+                break;
             case 'contact_type':
                 self::render_type_column($column, $post_id);
-                break;
-            case 'url':
-                $maplink = get_post_meta($post_id, '_maplink', true);
-                if (!empty($maplink)) {
-                    echo '<a href="' . esc_url((string) $maplink) . '" target="_blank" rel="noopener noreferrer">' . esc_url((string) $maplink) . '</a>';
-                } else {
-                    echo '<span class="no-data">&mdash;</span>';
-                }
                 break;
             case 'address':
                 self::render_address_column($column, $post_id);

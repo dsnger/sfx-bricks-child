@@ -277,15 +277,13 @@ class PostType
      */
     public static function define_list_columns(array $columns): array
     {
-        $date = $columns['date'] ?? null;
-
         return array_filter([
-            'cb'           => $columns['cb'] ?? '',
-            'title'        => $columns['title'] ?? '',
-            'icon'         => __('Icon', 'sfxtheme'),
-            'url'          => __('URL', 'sfxtheme'),
-            'status'       => __('Status', 'sfxtheme'),
-            'date'         => $date,
+            'cb'     => $columns['cb'] ?? '',
+            'title'  => $columns['title'] ?? '',
+            'sfx_id' => __('ID', 'sfxtheme'),
+            'icon'   => __('Icon', 'sfxtheme'),
+            'link'   => __('Link', 'sfxtheme'),
+            'status' => __('Status', 'sfxtheme'),
         ], static fn ($value) => $value !== null);
     }
 
@@ -295,16 +293,14 @@ class PostType
     public static function render_list_column(string $column, int $post_id): void
     {
         switch ($column) {
+            case 'sfx_id':
+                echo esc_html((string) $post_id);
+                break;
             case 'icon':
                 self::render_icon_column($column, $post_id);
                 break;
-            case 'url':
-                $link_url = get_post_meta($post_id, '_link_url', true);
-                if (!empty($link_url)) {
-                    echo '<a href="' . esc_url((string) $link_url) . '" target="_blank" rel="noopener noreferrer">' . esc_url((string) $link_url) . '</a>';
-                } else {
-                    echo '<span class="no-link">' . esc_html__('No link', 'sfxtheme') . '</span>';
-                }
+            case 'link':
+                self::render_link_column($column, $post_id);
                 break;
             case 'status':
                 self::render_status_column($column, $post_id);
