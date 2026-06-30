@@ -18,6 +18,8 @@ class SC_SocialAccounts
 {
     public const SHORTCODE = 'social_accounts';
 
+    private const CACHE_GEN_OPTION = 'sfx_social_accounts_cache_gen';
+
     public function __construct()
     {
         add_shortcode(self::SHORTCODE, [$this, 'render_social_accounts']);
@@ -29,23 +31,12 @@ class SC_SocialAccounts
 
     public function clear_social_account_caches(int $post_id): void
     {
-        global $wpdb;
+        update_option(self::CACHE_GEN_OPTION, $this->get_cache_generation() + 1, false);
+    }
 
-        $patterns = [
-            '_transient_sfx_social_account_%',
-            '_transient_timeout_sfx_social_account_%',
-            '_transient_sfx_social_accounts_%',
-            '_transient_timeout_sfx_social_accounts_%',
-        ];
-
-        foreach ($patterns as $pattern) {
-            $wpdb->query(
-                $wpdb->prepare(
-                    "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-                    $pattern
-                )
-            );
-        }
+    private function get_cache_generation(): int
+    {
+        return (int) get_option(self::CACHE_GEN_OPTION, 0);
     }
 
     public function render_social_accounts($atts = []): string
@@ -62,7 +53,7 @@ class SC_SocialAccounts
             'target' => '_blank',
         ], $atts, self::SHORTCODE);
 
-        $cache_key = 'sfx_social_accounts_' . md5(serialize($atts));
+        $cache_key = 'sfx_social_accounts_' . $this->get_cache_generation() . '_' . md5(serialize($atts));
         $cached_output = get_transient($cache_key);
 
         if ($cached_output !== false) {
@@ -133,7 +124,7 @@ class SC_SocialAccounts
         }
 
         if ($field === 'html') {
-            $cache_key = 'sfx_social_account_' . $post_id . '_html_' . md5(serialize($atts));
+            $cache_key = 'sfx_social_account_' . $post_id . '_html_' . $this->get_cache_generation() . '_' . md5(serialize($atts));
             $cached_output = get_transient($cache_key);
 
             if ($cached_output !== false) {
@@ -179,26 +170,26 @@ class SC_SocialAccounts
 
     private function render_scalar_field(\WP_Post $account, string $field): string
     {
+        $meta_key = FieldRegistry::get_meta_key($field);
+        if ($meta_key === '') {
+            return '';
+        }
+
         switch ($field) {
             case 'url':
-                $url = $this->get_account_meta($account->ID, '_link_url');
-                $validated = esc_url($url);
-                return $validated !== '' ? $validated : '';
-
             case 'icon':
-                $icon = $this->get_account_meta($account->ID, '_icon_image');
-                $validated = esc_url($icon);
+                $validated = esc_url($this->get_account_meta($account->ID, $meta_key));
                 return $validated !== '' ? $validated : '';
 
             case 'title':
-                $title = $this->get_account_meta($account->ID, '_link_title');
+                $title = $this->get_account_meta($account->ID, $meta_key);
                 if ($title === '') {
                     $title = $account->post_title;
                 }
                 return sanitize_text_field($title);
 
             case 'target':
-                $target = $this->get_account_meta($account->ID, '_link_target');
+                $target = $this->get_account_meta($account->ID, $meta_key);
                 return in_array($target, ['_blank', '_self'], true) ? $target : '_blank';
 
             default:
@@ -208,13 +199,14 @@ class SC_SocialAccounts
 
     private function render_single_account_html(\WP_Post $account, array $atts): string
     {
-        $icon_image = $this->get_account_meta($account->ID, '_icon_image');
-        $link_url = $this->get_account_meta($account->ID, '_link_url');
-        $link_title = $this->get_account_meta($account->ID, '_link_title');
-        $link_target = $this->get_account_meta($account->ID, '_link_target');
+        $icon_image = esc_url($this->get_account_meta($account->ID, FieldRegistry::get_meta_key('icon')));
+        $link_url = esc_url($this->get_account_meta($account->ID, FieldRegistry::get_meta_key('url')));
+        $link_title = $this->get_account_meta($account->ID, FieldRegistry::get_meta_key('title'));
+        $link_target = $this->get_account_meta($account->ID, FieldRegistry::get_meta_key('target'));
         if ($link_target === '') {
-            $link_target = $atts['target'] ?? '_blank';
+            $link_target = (string) ($atts['target'] ?? '_blank');
         }
+        $link_target = in_array($link_target, ['_blank', '_self'], true) ? $link_target : '_blank';
 
         if ($link_url === '') {
             return '';

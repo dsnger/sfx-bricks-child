@@ -567,59 +567,6 @@ class PostType
     }
 
     /**
-     * Add a custom column for contact type.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_type_column(array $columns): array
-    {
-        $date = $columns['date'] ?? null;
-        unset($columns['date']);
-        $columns['contact_type'] = __('Type', 'sfxtheme');
-        if ($date !== null) {
-            $columns['date'] = $date;
-        }
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for address.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_address_column(array $columns): array
-    {
-        $columns['address'] = __('Address', 'sfxtheme');
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for contact details.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_contact_column(array $columns): array
-    {
-        $columns['contact'] = __('Contact', 'sfxtheme');
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for status.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_status_column(array $columns): array
-    {
-        $columns['status'] = __('Status', 'sfxtheme');
-        return $columns;
-    }
-
-    /**
      * Render the contact type column content.
      *
      * @param string $column
@@ -725,18 +672,6 @@ class PostType
             ];
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
         }
-    }
-
-    /**
-     * Remove the date column.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function remove_date_column(array $columns): array
-    {
-        unset($columns['date']);
-        return $columns;
     }
 
     /**

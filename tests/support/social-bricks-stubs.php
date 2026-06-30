@@ -12,6 +12,7 @@ $test_meta = [];
 $test_meta_single_as_array = [];
 $test_post_lists = [];
 $test_transients = [];
+$test_options = [];
 
 function assert_true(bool $condition, string $message): void
 {
@@ -54,17 +55,18 @@ function esc_html_e($text, $domain = 'default'): void
 
 function esc_html($text): string
 {
-    return (string) $text;
+    return htmlspecialchars((string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 function esc_attr($text): string
 {
-    return (string) $text;
+    return htmlspecialchars((string) $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 function esc_url($url): string
 {
-    return (string) $url;
+    $url = trim((string) $url);
+    return preg_match('#^https?://#i', $url) ? $url : '';
 }
 
 function sanitize_text_field($text): string
@@ -170,6 +172,19 @@ function delete_transient(string $key): bool
 {
     global $test_transients;
     unset($test_transients[$key]);
+    return true;
+}
+
+function get_option(string $option, $default = false)
+{
+    global $test_options;
+    return $test_options[$option] ?? $default;
+}
+
+function update_option(string $option, $value, $autoload = null): bool
+{
+    global $test_options;
+    $test_options[$option] = $value;
     return true;
 }
 

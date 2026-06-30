@@ -9,11 +9,13 @@ require dirname(__DIR__) . '/inc/ContactInfos/PostType.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Shortcode/SC_ContactInfos.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Controller.php';
 require dirname(__DIR__) . '/inc/SocialMediaAccounts/FieldRegistry.php';
+require dirname(__DIR__) . '/inc/SocialMediaAccounts/PostType.php';
 require dirname(__DIR__) . '/inc/SocialMediaAccounts/Shortcode/SC_SocialAccounts.php';
 require dirname(__DIR__) . '/inc/SocialMediaAccounts/Controller.php';
 
 use SFX\ContactInfos\Controller as ContactInfosController;
 use SFX\SocialMediaAccounts\Controller as SocialMediaAccountsController;
+use SFX\SocialMediaAccounts\FieldRegistry as SocialFieldRegistry;
 use SFX\SocialMediaAccounts\Shortcode\SC_SocialAccounts;
 
 $sc = new SC_SocialAccounts();
@@ -82,6 +84,29 @@ run_social_bricks_case('Case 6: {social_account:url}', 'render_bricks_dynamic_ta
 run_social_bricks_case('Case 7: {social_accounts}', 'render_bricks_dynamic_content', function (): void {
     $actual = SocialMediaAccountsController::render_bricks_dynamic_content('X {social_accounts} Y');
     assert_contains('social-accounts', $actual, 'Case 7: Bricks list tag');
+});
+
+// Case 15 — Bricks tag list generation
+run_social_bricks_case('Case 15: add_bricks_dynamic_tag', 'add_bricks_dynamic_tag', function (): void {
+    $tags = SocialMediaAccountsController::add_bricks_dynamic_tag([]);
+    $names = array_column($tags, 'name');
+
+    assert_true(in_array('{social_accounts}', $names, true), 'Case 15: list tag registered');
+
+    foreach (SocialFieldRegistry::get_fields() as $field => $label) {
+        $expected = '{social_account:' . $field . ':123}';
+        assert_true(in_array($expected, $names, true), "Case 15: per-field tag for {$field}");
+    }
+
+    $url_tag = null;
+    foreach ($tags as $tag) {
+        if (($tag['name'] ?? '') === '{social_account:url:123}') {
+            $url_tag = $tag;
+            break;
+        }
+    }
+    assert_true($url_tag !== null, 'Case 15: url tag entry exists');
+    assert_contains('Instagram', (string) ($url_tag['label'] ?? ''), 'Case 15: tag label includes account title');
 });
 
 global $failures;

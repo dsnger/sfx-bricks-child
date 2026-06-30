@@ -284,7 +284,7 @@ class PostType
             'icon'   => __('Icon', 'sfxtheme'),
             'link'   => __('Link', 'sfxtheme'),
             'status' => __('Status', 'sfxtheme'),
-        ], static fn ($value) => $value !== null);
+        ], static fn ($value) => $value !== '');
     }
 
     /**
@@ -306,47 +306,6 @@ class PostType
                 self::render_status_column($column, $post_id);
                 break;
         }
-    }
-
-    /**
-     * Add a custom column for icon.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_icon_column(array $columns): array
-    {
-        $date = $columns['date'] ?? null;
-        unset($columns['date']);
-        $columns['icon'] = __('Icon', 'sfxtheme');
-        if ($date !== null) {
-            $columns['date'] = $date;
-        }
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for link.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_link_column(array $columns): array
-    {
-        $columns['link'] = __('Link', 'sfxtheme');
-        return $columns;
-    }
-
-    /**
-     * Add a custom column for status.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function add_status_column(array $columns): array
-    {
-        $columns['status'] = __('Status', 'sfxtheme');
-        return $columns;
     }
 
     /**
@@ -404,16 +363,4 @@ class PostType
             echo '<span class="status-' . esc_attr($status) . '">' . esc_html($status_labels[$status] ?? $status) . '</span>';
         }
     }
-
-    /**
-     * Remove the date column.
-     *
-     * @param array $columns
-     * @return array
-     */
-    public static function remove_date_column(array $columns): array
-    {
-        unset($columns['date']);
-        return $columns;
-    }
-} 
+}

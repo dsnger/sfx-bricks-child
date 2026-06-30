@@ -57,10 +57,11 @@ class Controller
         ]);
 
         foreach ($accounts as $account) {
+            $account_title = sanitize_text_field($account->post_title);
             foreach (FieldRegistry::get_fields() as $field => $label) {
                 $tags[] = [
                     'name'  => '{social_account:' . $field . ':' . $account->ID . '}',
-                    'label' => $account->post_title . ': ' . $label,
+                    'label' => $account_title . ': ' . $label,
                     'group' => __('Social Accounts', 'sfxtheme'),
                 ];
             }
