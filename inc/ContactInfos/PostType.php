@@ -73,6 +73,23 @@ class PostType
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
+            'capabilities'       => [
+                'edit_post'              => 'edit_others_posts',
+                'read_post'              => 'read',
+                'delete_post'            => 'delete_others_posts',
+                'edit_posts'             => 'edit_others_posts',
+                'edit_others_posts'      => 'edit_others_posts',
+                'publish_posts'          => 'edit_others_posts',
+                'read_private_posts'     => 'edit_others_posts',
+                'delete_posts'           => 'delete_others_posts',
+                'delete_private_posts'   => 'delete_others_posts',
+                'delete_published_posts' => 'delete_others_posts',
+                'delete_others_posts'    => 'delete_others_posts',
+                'edit_private_posts'     => 'edit_others_posts',
+                'edit_published_posts'   => 'edit_others_posts',
+                'create_posts'           => 'edit_others_posts',
+            ],
+            'map_meta_cap'       => true,
             'show_ui'            => true,
             // Multilingual support
             'publicly_queryable' => false,
@@ -801,7 +818,7 @@ class PostType
             return;
         }
 
-        if (!current_user_can('edit_posts')) {
+        if (!current_user_can('edit_others_posts')) {
             return;
         }
 
