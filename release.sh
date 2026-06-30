@@ -283,7 +283,7 @@ EOF
 
 # Function to show usage
 show_usage() {
-    echo "Usage: $0 <version> [release_notes] [--rc]"
+    echo "Usage: $0 <version> [release_notes] [--rc] [--skip-bump]"
     echo ""
     echo "Examples:"
     echo "  $0 0.4.61                                    # Interactive release notes"
@@ -291,6 +291,7 @@ show_usage() {
     echo "  $0 1.0.0                                     # Interactive release notes"
     echo "  $0 0.4.61 \"\" --rc                           # Release candidate (adds _rc suffix, no publish)"
     echo "  $0 0.4.61_rc                                 # RC version (auto-detected, no publish)"
+    echo "  $0 0.14.6 --skip-bump                        # Publish pre-bumped version (no style.css/CHANGELOG edits)"
     echo "  $0 template 0.4.61                           # Create release notes template"
     echo ""
     echo "Release Notes Options:"
@@ -298,6 +299,10 @@ show_usage() {
     echo "  - Custom text: Use provided release notes"
     echo "  - Type 'auto': Generate automatic release notes"
     echo "  - Type 'template': Create a release notes template file"
+    echo ""
+    echo "Skip Bump Mode:"
+    echo "  - Use --skip-bump when style.css and CHANGELOG.md already contain the target version"
+    echo "  - Skips version/changelog edits and the release commit; still tags, builds, and publishes"
     echo ""
     echo "Release Candidate (RC) Mode:"
     echo "  - Use --rc flag or include _rc in version (e.g., 0.4.61_rc)"
@@ -357,14 +362,17 @@ main() {
     local new_version=""
     local release_notes_arg=""
     local is_rc=false
+    local skip_bump=false
     
-    # Parse arguments - handle --rc flag and extract version/notes
+    # Parse arguments - handle --rc / --skip-bump flags and extract version/notes
     for arg in "$@"; do
         if [ "$arg" = "--rc" ]; then
             is_rc=true
+        elif [ "$arg" = "--skip-bump" ]; then
+            skip_bump=true
         elif [ -z "$new_version" ]; then
             new_version="$arg"
-        elif [ -z "$release_notes_arg" ] && [ "$arg" != "--rc" ]; then
+        elif [ -z "$release_notes_arg" ] && [ "$arg" != "--rc" ] && [ "$arg" != "--skip-bump" ]; then
             release_notes_arg="$arg"
         fi
     done
@@ -403,14 +411,19 @@ main() {
     # Allow re-releasing same RC version (for rebuilds without version bump)
     local base_new_version="${new_version%_rc}"
     local base_current_version="${current_version%_rc}"
-    if [ "$base_new_version" = "$base_current_version" ] && [ "$new_version" = "$current_version" ] && [ "$is_rc" != true ]; then
+    if [ "$base_new_version" = "$base_current_version" ] && [ "$new_version" = "$current_version" ] && [ "$is_rc" != true ] && [ "$skip_bump" != true ]; then
         print_error "Version ${new_version} is already the current version"
+        print_error "Use --skip-bump to publish an existing version without re-bumping style.css or CHANGELOG.md"
         exit 1
     fi
     
-    # For RC re-releases with same version, skip version update
-    if [ "$new_version" = "$current_version" ] && [ "$is_rc" = true ]; then
-        print_warning "Re-releasing RC version ${new_version} (no version update)"
+    # Skip version/changelog update when re-releasing same RC or publishing a pre-bumped version
+    if [ "$new_version" = "$current_version" ] && { [ "$is_rc" = true ] || [ "$skip_bump" = true ]; }; then
+        if [ "$skip_bump" = true ]; then
+            print_warning "Publishing version ${new_version} without version/changelog updates (--skip-bump)"
+        else
+            print_warning "Re-releasing RC version ${new_version} (no version update)"
+        fi
         SKIP_VERSION_UPDATE=true
     else
         SKIP_VERSION_UPDATE=false
