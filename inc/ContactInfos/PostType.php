@@ -58,19 +58,38 @@ class PostType
             'not_found'             => __('No contact info found', 'sfxtheme'),
             'not_found_in_trash'    => __('No contact info found in Trash', 'sfxtheme'),
             'all_items'             => __('All Contact Info', 'sfxtheme'),
-            'menu_name'             => __('Contact Info', 'sfxtheme'),
+            'menu_name'             => __('Company Information', 'sfxtheme'),
             'name_admin_bar'        => __('Contact Info', 'sfxtheme'),
         ];
 
         $args = [
             'labels'             => $labels,
             'public'             => false,
-            'show_in_menu'       => false, // Will be added as submenu under theme admin
+            'show_in_menu'       => true,
+            'menu_icon'          => 'dashicons-building',
+            'menu_position'      => 26,
             'show_in_rest'       => true,
             'supports'           => ['title'],
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
+            'capabilities'       => [
+                'edit_post'              => 'edit_others_posts',
+                'read_post'              => 'read',
+                'delete_post'            => 'delete_others_posts',
+                'edit_posts'             => 'edit_others_posts',
+                'edit_others_posts'      => 'edit_others_posts',
+                'publish_posts'          => 'edit_others_posts',
+                'read_private_posts'     => 'edit_others_posts',
+                'delete_posts'           => 'delete_others_posts',
+                'delete_private_posts'   => 'delete_others_posts',
+                'delete_published_posts' => 'delete_others_posts',
+                'delete_others_posts'    => 'delete_others_posts',
+                'edit_private_posts'     => 'edit_others_posts',
+                'edit_published_posts'   => 'edit_others_posts',
+                'create_posts'           => 'edit_others_posts',
+            ],
+            'map_meta_cap'       => true,
             'show_ui'            => true,
             // Multilingual support
             'publicly_queryable' => false,
@@ -539,7 +558,7 @@ class PostType
             'address'      => __('Address', 'sfxtheme'),
             'contact'      => __('Contact', 'sfxtheme'),
             'status'       => __('Status', 'sfxtheme'),
-        ], static fn ($value) => $value !== null);
+        ], static fn ($value) => $value !== '');
     }
 
     /**
@@ -892,4 +911,4 @@ class PostType
         </script>
         <?php
     }
-} 
+}

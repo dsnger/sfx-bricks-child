@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SFX Bricks Child Theme 1.0.0\n"
+"Project-Id-Version: SFX Bricks Child Theme 0.14.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-12-06 00:00+0000\n"
-"PO-Revision-Date: 2025-12-06 13:01+0100\n"
+"PO-Revision-Date: 2026-06-30 12:00+0200\n"
 "Last-Translator: Daniel Sänger <webmaster@daniel-saenger.de>\n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -832,7 +832,7 @@ msgstr "Bricks"
 msgid "Menus"
 msgstr "Menüs"
 
-#: inc/CustomDashboard/Settings.php inc/ContactInfos/PostType.php
+#: inc/CustomDashboard/Settings.php
 msgid "Contact Info"
 msgstr "Kontaktdaten"
 
@@ -988,6 +988,14 @@ msgstr "Sicherheits-Header"
 # ============================================
 # Contact Infos
 # ============================================
+#: inc/ContactInfos/PostType.php inc/ContactInfos/AdminPage.php inc/ContactInfos/Controller.php
+msgid "Company Information"
+msgstr "Firmeninformationen"
+
+#: inc/ContactInfos/AdminPage.php inc/ContactInfos/Controller.php
+msgid "Manage company information and branches"
+msgstr "Firmeninformationen und Niederlassungen verwalten"
+
 #: inc/CustomDashboard/Settings.php inc/ContactInfos/AdminPage.php
 msgid "Contact Information"
 msgstr "Kontaktinformationen"
@@ -2350,10 +2358,6 @@ msgstr "Niederlassung/Standort"
 #: inc/ContactInfos/PostType.php
 msgid "Select whether this is the main contact or a branch/location."
 msgstr "Wähle, ob dies der Hauptkontakt oder eine Niederlassung/Standort ist."
-
-#: inc/ContactInfos/PostType.php
-msgid "Company Information"
-msgstr "Firmeninformationen"
 
 #: inc/ContactInfos/PostType.php
 msgid "Name of the company"

@@ -13,7 +13,6 @@ class Controller
   public function __construct()
   {
     // Initialize components
-    AdminPage::register();
     AssetManager::register();
     PostType::init();
     
@@ -32,9 +31,10 @@ class Controller
     return [
       'class' => self::class,
       'menu_slug' => AdminPage::$menu_slug,
-      'page_title' => AdminPage::$page_title,
-      'description' => AdminPage::$description,
+      'page_title' => __(AdminPage::$page_title, 'sfxtheme'),
+      'description' => __(AdminPage::$description, 'sfxtheme'),
       'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
+      'show_in_theme_settings' => false,
       'error' => 'Missing ContactInfosController class in theme',
       'hook'  => null,
     ];

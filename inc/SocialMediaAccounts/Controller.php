@@ -12,7 +12,6 @@ class Controller
 
     public function __construct()
     {
-        AdminPage::register();
         AssetManager::register();
         PostType::init();
         self::$shortcode_instance = new Shortcode\SC_SocialAccounts();
@@ -25,9 +24,10 @@ class Controller
         return [
             'class' => self::class,
             'menu_slug' => AdminPage::$menu_slug,
-            'page_title' => AdminPage::$page_title,
-            'description' => AdminPage::$description,
+            'page_title' => __(AdminPage::$page_title, 'sfxtheme'),
+            'description' => __(AdminPage::$description, 'sfxtheme'),
             'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
+            'show_in_theme_settings' => false,
             'error' => 'Missing SocialMediaAccountsController class in theme',
             'hook'  => null,
         ];
@@ -48,13 +48,7 @@ class Controller
             'group' => __('Social Accounts', 'sfxtheme'),
         ];
 
-        $accounts = get_posts([
-            'post_type' => PostType::$post_type,
-            'post_status' => 'publish',
-            'numberposts' => -1,
-            'orderby' => 'menu_order',
-            'order' => 'ASC',
-        ]);
+        $accounts = self::get_published_accounts_for_bricks_tags();
 
         foreach ($accounts as $account) {
             $account_title = sanitize_text_field($account->post_title);
@@ -189,5 +183,31 @@ class Controller
         }
 
         return self::$shortcode_instance;
+    }
+
+    /**
+     * @return list<\WP_Post>
+     */
+    private static function get_published_accounts_for_bricks_tags(): array
+    {
+        $cache_gen = (int) get_option('sfx_social_accounts_cache_gen', 0);
+        $cache_key = 'sfx_social_accounts_bricks_tags_' . $cache_gen;
+        $cached = get_transient($cache_key);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $accounts = get_posts([
+            'post_type' => PostType::$post_type,
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'orderby' => 'menu_order',
+            'order' => 'ASC',
+        ]);
+
+        set_transient($cache_key, $accounts, HOUR_IN_SECONDS);
+
+        return $accounts;
     }
 }

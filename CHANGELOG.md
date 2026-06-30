@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.14.6] - 2026-06-30
+
+Contact and social data management moves to dedicated admin menus; Social Media gains Bricks dynamic data parity with Contact Infos.
+
+### Added
+
+- Social Media Accounts: Bricks dynamic data tags (`{social_accounts}`, `{social_account:field}`) with `FieldRegistry`.
+- Contact Infos: `FieldRegistry` for Bricks dynamic tag field definitions.
+- Tests: social Bricks dynamic data suite and WP Optimizer security behavior coverage.
+
+### Changed
+
+- Contact Infos and Social Media Accounts: top-level admin menus (`dashicons-building`, `dashicons-share`) for editor-level users; removed from Global Theme Settings cards and submenus.
+- Global Theme Settings: `SFX_THEME_ADMINS` access only; removed editor partial-access workaround.
+- Contact Infos admin menu label: "Company Information" (German: Firmeninformationen).
+- Contact and Social Media admin lists: explicit column order with post ID column.
+
+### Fixed
+
+- Social Media Accounts: Bricks dynamic data escaping and cache invalidation on post save/delete.
+
 ## [0.14.5] - 2026-06-21
 
 Link-style text buttons now read idle and hover text colors from theme tokens instead of relying on Bricks defaults alone.
