@@ -989,8 +989,12 @@ msgstr "Sicherheits-Header"
 # Contact Infos
 # ============================================
 #: inc/ContactInfos/PostType.php inc/ContactInfos/AdminPage.php inc/ContactInfos/Controller.php
-msgid "Company Informations"
+msgid "Company Information"
 msgstr "Firmeninformationen"
+
+#: inc/ContactInfos/AdminPage.php inc/ContactInfos/Controller.php
+msgid "Manage company information and branches"
+msgstr "Firmeninformationen und Niederlassungen verwalten"
 
 #: inc/CustomDashboard/Settings.php inc/ContactInfos/AdminPage.php
 msgid "Contact Information"
@@ -2354,10 +2358,6 @@ msgstr "Niederlassung/Standort"
 #: inc/ContactInfos/PostType.php
 msgid "Select whether this is the main contact or a branch/location."
 msgstr "Wähle, ob dies der Hauptkontakt oder eine Niederlassung/Standort ist."
-
-#: inc/ContactInfos/PostType.php
-msgid "Company Information"
-msgstr "Firmeninformationen"
 
 #: inc/ContactInfos/PostType.php
 msgid "Name of the company"

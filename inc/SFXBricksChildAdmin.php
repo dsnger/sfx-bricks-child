@@ -18,6 +18,8 @@ class SFXBricksChildAdmin
       return;
     }
 
+    // Broad cap so role-based SFX_THEME_ADMINS without manage_options still see the menu.
+    // Unauthorized users never reach here; render uses die_if_unauthorized_theme().
     add_menu_page(
       __('Global Theme Settings', 'sfxtheme'),
       __('Global Theme Settings', 'sfxtheme'),

@@ -22,7 +22,7 @@ Contact and social data management moves to dedicated admin menus; Social Media 
 
 - Contact Infos and Social Media Accounts: top-level admin menus (`dashicons-building`, `dashicons-share`) for editor-level users; removed from Global Theme Settings cards and submenus.
 - Global Theme Settings: `SFX_THEME_ADMINS` access only; removed editor partial-access workaround.
-- Contact Infos admin menu label: "Company Informations" (German: Firmeninformationen).
+- Contact Infos admin menu label: "Company Information" (German: Firmeninformationen).
 - Contact and Social Media admin lists: explicit column order with post ID column.
 
 ### Fixed

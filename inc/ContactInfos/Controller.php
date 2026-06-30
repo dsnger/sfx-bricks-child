@@ -32,7 +32,7 @@ class Controller
       'class' => self::class,
       'menu_slug' => AdminPage::$menu_slug,
       'page_title' => __(AdminPage::$page_title, 'sfxtheme'),
-      'description' => AdminPage::$description,
+      'description' => __(AdminPage::$description, 'sfxtheme'),
       'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
       'show_in_theme_settings' => false,
       'error' => 'Missing ContactInfosController class in theme',
