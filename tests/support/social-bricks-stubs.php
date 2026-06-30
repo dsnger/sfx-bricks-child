@@ -276,6 +276,31 @@ $test_meta[124] = [
 $test_meta_single_as_array[124] = ['_link_url', '_icon_image', '_link_target'];
 $test_post_lists['sfx_social_account'][] = $test_posts[124];
 
+$test_posts[125] = sfx_make_post(125, 'sfx_social_account', 'publish', 'ACME "Social" & Co');
+$test_meta[125] = [
+    '_link_url'    => ['https://safe.example/acme'],
+    '_link_title'  => [''],
+    '_link_target' => ['_blank'],
+];
+$test_post_lists['sfx_social_account'][] = $test_posts[125];
+
+$test_posts[126] = sfx_make_post(126, 'sfx_social_account', 'publish', 'Unsafe "Account" & Co');
+$test_meta[126] = [
+    '_link_url'    => ['https://safe.example/profile'],
+    '_icon_image'  => ['https://cdn.example/unsafe.svg'],
+    '_link_title'  => ['Follow "Us" & Co'],
+    '_link_target' => ['javascript:alert(1)'],
+];
+$test_post_lists['sfx_social_account'][] = $test_posts[126];
+
+$test_posts[127] = sfx_make_post(127, 'sfx_social_account', 'publish', 'Invalid URL');
+$test_meta[127] = [
+    '_link_url'    => ['javascript:alert(1)'],
+    '_link_title'  => ['Invalid'],
+    '_link_target' => ['_blank'],
+];
+$test_post_lists['sfx_social_account'][] = $test_posts[127];
+
 $test_posts[200] = sfx_make_post(200, 'page', 'publish', 'Page');
 $test_meta[200] = ['_link_url' => ['https://evil.example']];
 

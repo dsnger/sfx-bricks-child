@@ -86,6 +86,43 @@ run_social_bricks_case('Case 7: {social_accounts}', 'render_bricks_dynamic_conte
     assert_contains('social-accounts', $actual, 'Case 7: Bricks list tag');
 });
 
+run_social_bricks_case('Case 16: attribute-context title escaping', 'render_bricks_dynamic_content', function (): void {
+    $actual = SocialMediaAccountsController::render_bricks_dynamic_content(
+        'title="{social_account:title:125}"',
+        null,
+        'attribute'
+    );
+
+    assert_same('title="ACME &quot;Social&quot; &amp; Co"', $actual, 'Case 16: title is escaped for attributes');
+});
+
+run_social_account_field_case('Case 17: HTML sanitization and target fallback', function (SC_SocialAccounts $sc): void {
+    $actual = $sc->render_single_account(['id' => '126', 'class' => 'one" two', 'target' => 'popup']);
+
+    assert_same('', $sc->render_account_field(['id' => '127', 'field' => 'url']), 'Case 17: invalid scalar URL rejected');
+    assert_contains('class="social-account social-account-126 social-account-medium one&quot; two"', $actual, 'Case 17: custom classes escaped');
+    assert_contains('href="https://safe.example/profile"', $actual, 'Case 17: safe URL rendered');
+    assert_contains('target="_blank"', $actual, 'Case 17: invalid target falls back');
+    assert_contains('title="Follow &quot;Us&quot; &amp; Co"', $actual, 'Case 17: link title escaped');
+    assert_contains('alt="Unsafe &quot;Account&quot; &amp; Co"', $actual, 'Case 17: image alt escaped');
+});
+
+run_social_account_field_case('Case 18: cache generation invalidates old output', function (SC_SocialAccounts $sc): void {
+    $before = $sc->render_all_accounts(['class' => 'cache-case']);
+    $sc->clear_social_account_caches(123);
+    $after = $sc->render_all_accounts(['class' => 'cache-case']);
+
+    assert_same($before, $after, 'Case 18: generation change preserves rendered output');
+
+    global $test_transients, $test_options;
+    $matching_keys = array_filter(array_keys($test_transients), function (string $key): bool {
+        return strpos($key, 'sfx_social_accounts_') === 0;
+    });
+
+    assert_true((int) ($test_options['sfx_social_accounts_cache_gen'] ?? 0) > 0, 'Case 18: cache generation option increments');
+    assert_true(count($matching_keys) >= 2, 'Case 18: old and new generation cache keys are distinct');
+});
+
 // Case 15 — Bricks tag list generation
 run_social_bricks_case('Case 15: add_bricks_dynamic_tag', 'add_bricks_dynamic_tag', function (): void {
     $tags = SocialMediaAccountsController::add_bricks_dynamic_tag([]);

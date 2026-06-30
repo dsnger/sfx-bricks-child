@@ -106,6 +106,7 @@ class SC_SocialAccounts
             'class' => 'social-account',
             'size' => 'medium',
             'target' => '_blank',
+            'context' => 'text',
         ], $atts, 'social_account');
 
         $field = (string) ($atts['field'] ?? 'html');
@@ -137,7 +138,7 @@ class SC_SocialAccounts
             return $output;
         }
 
-        return $this->render_scalar_field($account, $field);
+        return $this->render_scalar_field($account, $field, (string) ($atts['context'] ?? 'text'));
     }
 
     private function resolve_published_account(int $post_id): ?\WP_Post
@@ -168,7 +169,7 @@ class SC_SocialAccounts
         return is_string($value) ? $value : '';
     }
 
-    private function render_scalar_field(\WP_Post $account, string $field): string
+    private function render_scalar_field(\WP_Post $account, string $field, string $context = 'text'): string
     {
         $meta_key = FieldRegistry::get_meta_key($field);
         if ($meta_key === '') {
@@ -186,7 +187,7 @@ class SC_SocialAccounts
                 if ($title === '') {
                     $title = $account->post_title;
                 }
-                return sanitize_text_field($title);
+                return $this->escape_scalar_text($title, $context);
 
             case 'target':
                 $target = $this->get_account_meta($account->ID, $meta_key);
@@ -195,6 +196,17 @@ class SC_SocialAccounts
             default:
                 return '';
         }
+    }
+
+    private function escape_scalar_text(string $value, string $context): string
+    {
+        $value = sanitize_text_field($value);
+
+        if (in_array(strtolower($context), ['attribute', 'attr'], true)) {
+            return esc_attr($value);
+        }
+
+        return esc_html($value);
     }
 
     private function render_single_account_html(\WP_Post $account, array $atts): string
