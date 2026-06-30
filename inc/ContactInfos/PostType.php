@@ -540,7 +540,6 @@ class PostType
             'url'          => __('URL', 'sfxtheme'),
             'address'      => __('Address', 'sfxtheme'),
             'contact'      => __('Contact', 'sfxtheme'),
-            'placeholders' => __('Placeholders', 'sfxtheme'),
             'status'       => __('Status', 'sfxtheme'),
             'date'         => $date,
         ], static fn ($value) => $value !== null);
@@ -568,11 +567,6 @@ class PostType
                 break;
             case 'contact':
                 self::render_contact_column($column, $post_id);
-                break;
-            case 'placeholders':
-                \SFX\Admin\PlaceholderColumn::render_rows(
-                    \SFX\Admin\PlaceholderItems::build_contact_items($post_id)
-                );
                 break;
             case 'status':
                 self::render_status_column($column, $post_id);

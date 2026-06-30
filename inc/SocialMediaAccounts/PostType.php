@@ -31,7 +31,6 @@ class PostType
         // Register admin columns
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
-        add_action('admin_notices', [self::class, 'render_global_tags_notice']);
     }
 
     /**
@@ -285,7 +284,6 @@ class PostType
             'title'        => $columns['title'] ?? '',
             'icon'         => __('Icon', 'sfxtheme'),
             'url'          => __('URL', 'sfxtheme'),
-            'placeholders' => __('Placeholders', 'sfxtheme'),
             'status'       => __('Status', 'sfxtheme'),
             'date'         => $date,
         ], static fn ($value) => $value !== null);
@@ -308,32 +306,10 @@ class PostType
                     echo '<span class="no-link">' . esc_html__('No link', 'sfxtheme') . '</span>';
                 }
                 break;
-            case 'placeholders':
-                \SFX\Admin\PlaceholderColumn::render_rows(
-                    \SFX\Admin\PlaceholderItems::build_social_items($post_id)
-                );
-                break;
             case 'status':
                 self::render_status_column($column, $post_id);
                 break;
         }
-    }
-
-    /**
-     * Show global shortcode / Bricks tags above the list table.
-     */
-    public static function render_global_tags_notice(): void
-    {
-        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
-        if (!$screen || $screen->base !== 'edit' || $screen->post_type !== self::$post_type) {
-            return;
-        }
-
-        echo '<div class="notice notice-info"><p>';
-        echo esc_html__('Global tags:', 'sfxtheme') . ' ';
-        echo '<code>[social_accounts]</code> ';
-        echo '<code>{social_accounts}</code>';
-        echo '</p></div>';
     }
 
     /**
