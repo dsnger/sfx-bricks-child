@@ -6,7 +6,6 @@ class SFXBricksChildAdmin
 {
 
   public static $menu_slug = 'sfx-theme-settings';
-  private const EDITOR_ACCESS_CAP = 'edit_others_posts';
 
   public function __construct()
   {
@@ -15,14 +14,14 @@ class SFXBricksChildAdmin
 
   public static function register_admin_menu()
   {
-    if (!AccessControl::can_access_theme_settings() && !current_user_can(self::EDITOR_ACCESS_CAP)) {
+    if (!AccessControl::can_access_theme_settings()) {
       return;
     }
 
     add_menu_page(
       __('Global Theme Settings', 'sfxtheme'),
       __('Global Theme Settings', 'sfxtheme'),
-      self::EDITOR_ACCESS_CAP,
+      'read',
       self::$menu_slug,
       [self::class, 'render_theme_settings_page'],
       'dashicons-admin-generic',
@@ -30,24 +29,9 @@ class SFXBricksChildAdmin
     );
   }
 
-  /**
-   * Slugs accessible to editor-level users without full theme-settings access.
-   */
-  private static array $editor_visible_slugs = [
-      'sfx-contact-infos',
-  ];
-
   public static function render_theme_settings_page()
   {
-    if (!AccessControl::can_access_theme_settings() && !current_user_can(self::EDITOR_ACCESS_CAP)) {
-      wp_die(
-        esc_html__('You do not have sufficient permissions to access this page.', 'sfxtheme'),
-        esc_html__('Access Denied', 'sfxtheme'),
-        ['response' => 403, 'back_link' => true]
-      );
-    }
-
-    $has_full_access = AccessControl::can_access_theme_settings();
+    AccessControl::die_if_unauthorized_theme();
 
     echo '<div class="wrap">';
     echo '<h1>' . esc_html__('Global Theme Settings', 'sfxtheme') . '</h1>';
@@ -65,10 +49,6 @@ class SFXBricksChildAdmin
       }
 
       if ($feature['menu_slug'] === 'sfx-custom-dashboard' && !AccessControl::can_access_dashboard_settings()) {
-        continue;
-      }
-
-      if (!$has_full_access && !in_array($feature['menu_slug'], self::$editor_visible_slugs, true)) {
         continue;
       }
 

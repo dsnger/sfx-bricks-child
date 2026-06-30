@@ -13,7 +13,6 @@ class Controller
   public function __construct()
   {
     // Initialize components
-    AdminPage::register();
     AssetManager::register();
     PostType::init();
     
@@ -35,6 +34,7 @@ class Controller
       'page_title' => AdminPage::$page_title,
       'description' => AdminPage::$description,
       'url' => admin_url('edit.php?post_type=' . PostType::$post_type),
+      'show_in_theme_settings' => false,
       'error' => 'Missing ContactInfosController class in theme',
       'hook'  => null,
     ];

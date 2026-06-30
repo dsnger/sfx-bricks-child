@@ -50,14 +50,16 @@ class PostType
             'not_found'             => __('No social accounts found', 'sfxtheme'),
             'not_found_in_trash'    => __('No social accounts found in Trash', 'sfxtheme'),
             'all_items'             => __('All Social Accounts', 'sfxtheme'),
-            'menu_name'             => __('Social Accounts', 'sfxtheme'),
+            'menu_name'             => __('Social Media Accounts', 'sfxtheme'),
             'name_admin_bar'        => __('Social Account', 'sfxtheme'),
         ];
 
         $args = [
             'labels'             => $labels,
             'public'             => false,
-            'show_in_menu'       => false, // Will be added as submenu under theme admin
+            'show_in_menu'       => true,
+            'menu_icon'          => 'dashicons-share',
+            'menu_position'      => 27,
             'show_in_rest'       => true,
             'supports'           => ['title'],
             'has_archive'        => false,

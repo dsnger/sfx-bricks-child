@@ -58,14 +58,16 @@ class PostType
             'not_found'             => __('No contact info found', 'sfxtheme'),
             'not_found_in_trash'    => __('No contact info found in Trash', 'sfxtheme'),
             'all_items'             => __('All Contact Info', 'sfxtheme'),
-            'menu_name'             => __('Contact Info', 'sfxtheme'),
+            'menu_name'             => __('Company Informations / Branches', 'sfxtheme'),
             'name_admin_bar'        => __('Contact Info', 'sfxtheme'),
         ];
 
         $args = [
             'labels'             => $labels,
             'public'             => false,
-            'show_in_menu'       => false, // Will be added as submenu under theme admin
+            'show_in_menu'       => true,
+            'menu_icon'          => 'dashicons-building',
+            'menu_position'      => 26,
             'show_in_rest'       => true,
             'supports'           => ['title'],
             'has_archive'        => false,
@@ -799,7 +801,7 @@ class PostType
             return;
         }
 
-        if (!current_user_can('edit_others_posts')) {
+        if (!current_user_can('edit_posts')) {
             return;
         }
 
