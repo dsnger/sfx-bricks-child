@@ -108,19 +108,25 @@ run_social_account_field_case('Case 17: HTML sanitization and target fallback', 
 });
 
 run_social_account_field_case('Case 18: cache generation invalidates old output', function (SC_SocialAccounts $sc): void {
+    global $test_transients, $test_options;
+    $list_cache_keys = static function () use (&$test_transients): array {
+        return array_filter(array_keys($test_transients), static function (string $key): bool {
+            return strpos($key, 'sfx_social_accounts_') === 0;
+        });
+    };
+
+    $initial_keys = $list_cache_keys();
     $before = $sc->render_all_accounts(['class' => 'cache-case']);
+    $after_first_render_keys = $list_cache_keys();
     $sc->clear_social_account_caches(123);
     $after = $sc->render_all_accounts(['class' => 'cache-case']);
+    $after_second_render_keys = $list_cache_keys();
 
     assert_same($before, $after, 'Case 18: generation change preserves rendered output');
 
-    global $test_transients, $test_options;
-    $matching_keys = array_filter(array_keys($test_transients), function (string $key): bool {
-        return strpos($key, 'sfx_social_accounts_') === 0;
-    });
-
     assert_true((int) ($test_options['sfx_social_accounts_cache_gen'] ?? 0) > 0, 'Case 18: cache generation option increments');
-    assert_true(count($matching_keys) >= 2, 'Case 18: old and new generation cache keys are distinct');
+    assert_same(1, count(array_diff($after_first_render_keys, $initial_keys)), 'Case 18: first render creates one list cache key');
+    assert_same(1, count(array_diff($after_second_render_keys, $after_first_render_keys)), 'Case 18: generation change creates a distinct list cache key');
 });
 
 // Case 15 — Bricks tag list generation
