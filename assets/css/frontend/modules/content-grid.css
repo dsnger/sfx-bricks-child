@@ -76,30 +76,43 @@
   margin-inline: auto;
 }
 
-.content--split-50-breakout {
+/* Split breakout: a content-aligned left column + a right column that breaks
+   out to the screen edge. --sfx-cg-split is the left column as a fraction of
+   the content width (0.5 = 50/50). Override per element with --cg-split, or use
+   a named preset below. The [class*="content--split-"] selector intentionally
+   matches the canonical .content--split-breakout, the legacy alias
+   .content--split-50-breakout, and every -NN- preset with one rule. */
+[class*="content--split-"] {
+  --sfx-cg-split: var(--cg-split, 0.5);
   grid-column: content-start / content-end;
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--sfx-cg-gap);
 }
 
+/* Named ratio presets — just preset the fraction; --cg-split still overrides. */
+.content--split-30-breakout { --sfx-cg-split: var(--cg-split, 0.3); }
+.content--split-40-breakout { --sfx-cg-split: var(--cg-split, 0.4); }
+.content--split-60-breakout { --sfx-cg-split: var(--cg-split, 0.6); }
+.content--split-70-breakout { --sfx-cg-split: var(--cg-split, 0.7); }
+
 @media (min-width: 768px) {
-  .content--split-50-breakout {
+  [class*="content--split-"] {
     grid-column: content-start / full-end;
     grid-template-columns:
-      minmax(0, calc((min(100vw, var(--sfx-cg-content)) - 2 * var(--sfx-cg-gutter) - var(--sfx-cg-gap)) / 2))
+      minmax(0, calc((min(100vw, var(--sfx-cg-content)) - 2 * var(--sfx-cg-gutter) - var(--sfx-cg-gap)) * var(--sfx-cg-split)))
       minmax(0, 1fr);
   }
 }
 
 /* Reverse modifier: Breaks out to LEFT instead of right */
 @media (min-width: 768px) {
-  .content--split-50-breakout.reverse {
+  [class*="content--split-"].reverse {
     grid-column: full-start / content-end;
     direction: rtl;
   }
 
-  .content--split-50-breakout.reverse > * {
+  [class*="content--split-"].reverse > * {
     direction: ltr;
   }
 }
