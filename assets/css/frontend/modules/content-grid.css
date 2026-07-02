@@ -4,10 +4,14 @@
    wars. Do not unwrap the @layer block.
 
    Tokenization matches the buttons/forms/lists contract: external --cg-*
-   wireup tokens chain through Bricks core (--container-*, --grid-gap,
-   --max-screen-width, --space-m); internal --sfx-cg-* tokens are declared
-   at :root and used by every grid rule. Override the externals, not the
-   internals. */
+   wireup tokens chain through Bricks core (--container-padding-horizontal,
+   --grid-gap, --max-screen-width, --space-m); internal --sfx-cg-* tokens are
+   declared at :root and used by every grid rule. Override the externals, not
+   the internals.
+
+   Exception: --cg-feature / --cg-feature-max default to fixed px values, not
+   the scaling --container-xlarge/2xlarge, because the @media breakpoints they
+   gate can't read var() and must stay numerically in sync (see :root note). */
 @layer sfx.components {
 /* =========================================
    CONTENT GRID – Responsive Grid System
@@ -16,8 +20,16 @@
 :root {
   --sfx-cg-gutter:      var(--cg-gutter, var(--container-padding-horizontal, 1.5rem));
   --sfx-cg-content:     var(--cg-content, var(--max-screen-width, 1400px));
-  --sfx-cg-feature:     var(--cg-feature, var(--container-xlarge, 2100px));
-  --sfx-cg-feature-max: var(--cg-feature-max, var(--container-2xlarge, 2450px));
+  /* feature / feature-max are the breakout tiers. Their defaults are FIXED
+     (not chained to --container-xlarge/2xlarge, which Bricks derives as
+     max-screen-width * 1.5 / * 1.75) so they stay in lock-step with the
+     hardcoded @media breakpoints below (2100 / 2450). This lets --cg-content
+     grow freely without the feature grid activating before it fits. Note: if
+     --cg-content is pushed above these fixed widths, the feature/feature-max
+     side tracks intentionally collapse to 0 (minmax semantics) instead of
+     overflowing — expected, not a bug. */
+  --sfx-cg-feature:     var(--cg-feature, 2100px);
+  --sfx-cg-feature-max: var(--cg-feature-max, 2450px);
   --sfx-cg-gap:         var(--cg-gap, var(--grid-gap, var(--space-m, 1.5rem)));
 }
 
@@ -64,34 +76,43 @@
   margin-inline: auto;
 }
 
-.content--split-50-breakout {
+/* Split breakout: a content-aligned left column + a right column that breaks
+   out to the screen edge. --sfx-cg-split is the left column as a fraction of
+   the content width (0.5 = 50/50). Override per element with --cg-split, or use
+   a named preset below. The [class*="content--split-"] selector intentionally
+   matches the canonical .content--split-breakout, the legacy alias
+   .content--split-50-breakout, and every -NN- preset with one rule. */
+[class*="content--split-"] {
+  --sfx-cg-split: var(--cg-split, 0.5);
   grid-column: content-start / content-end;
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--sfx-cg-gap);
 }
 
-@media (min-width: 768px) {
-  .content--split-50-breakout {
-    grid-column: content-start / full-end;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
+/* Named ratio presets — just preset the fraction; --cg-split still overrides. */
+.content--split-30-breakout { --sfx-cg-split: var(--cg-split, 0.3); }
+.content--split-40-breakout { --sfx-cg-split: var(--cg-split, 0.4); }
+.content--split-60-breakout { --sfx-cg-split: var(--cg-split, 0.6); }
+.content--split-70-breakout { --sfx-cg-split: var(--cg-split, 0.7); }
 
-@media (min-width: 1400px) {
-  .content--split-50-breakout {
-    grid-template-columns: minmax(0, calc(((var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) / 2) - var(--sfx-cg-gap))) minmax(0, 1fr);
+@media (min-width: 768px) {
+  [class*="content--split-"] {
+    grid-column: content-start / full-end;
+    grid-template-columns:
+      minmax(0, calc((min(100vw, var(--sfx-cg-content)) - 2 * var(--sfx-cg-gutter) - var(--sfx-cg-gap)) * var(--sfx-cg-split)))
+      minmax(0, 1fr);
   }
 }
 
 /* Reverse modifier: Breaks out to LEFT instead of right */
 @media (min-width: 768px) {
-  .content--split-50-breakout.reverse {
+  [class*="content--split-"].reverse {
     grid-column: full-start / content-end;
     direction: rtl;
   }
 
-  .content--split-50-breakout.reverse > * {
+  [class*="content--split-"].reverse > * {
     direction: ltr;
   }
 }
@@ -101,9 +122,9 @@
   .content-grid {
     grid-template-columns:
       [full-start] minmax(var(--sfx-cg-gutter), 1fr)
-      [feature-start feature-max-start] calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)
-      [content-start] calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) [content-end]
-      calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2) [feature-end feature-max-end]
+      [feature-start feature-max-start] minmax(0, calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2))
+      [content-start] minmax(0, calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter))) [content-end]
+      minmax(0, calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)) [feature-end feature-max-end]
       minmax(var(--sfx-cg-gutter), 1fr) [full-end];
   }
 
@@ -117,11 +138,11 @@
   .content-grid {
     grid-template-columns:
       [full-start] minmax(var(--sfx-cg-gutter), 1fr)
-      [feature-max-start] calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2)
-      [feature-start] calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)
-      [content-start] calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter)) [content-end]
-      calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2) [feature-end]
-      calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2) [feature-max-end]
+      [feature-max-start] minmax(0, calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2))
+      [feature-start] minmax(0, calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2))
+      [content-start] minmax(0, calc(var(--sfx-cg-content) - 2 * var(--sfx-cg-gutter))) [content-end]
+      minmax(0, calc((var(--sfx-cg-feature) - var(--sfx-cg-content)) / 2)) [feature-end]
+      minmax(0, calc((var(--sfx-cg-feature-max) - var(--sfx-cg-feature)) / 2)) [feature-max-end]
       minmax(var(--sfx-cg-gutter), 1fr) [full-end];
   }
 
