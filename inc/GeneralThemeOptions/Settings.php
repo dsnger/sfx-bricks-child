@@ -316,8 +316,8 @@ class Settings
       </details>
       <details class="sfx-token-mapping-summary">
         <summary><?php esc_html_e('External token mapping (Content Grid)', 'sfxtheme'); ?></summary>
-        <p><code><?php echo esc_html('Wireup at :root: --cg-gutter (chains to --container-padding-horizontal), --cg-content (chains to --max-screen-width), --cg-feature (chains to --container-xlarge), --cg-feature-max (chains to --container-2xlarge), --cg-gap (chains to --grid-gap then --space-m).'); ?></code></p>
-        <p><code><?php echo esc_html('Scoped consumption: grid rules use var(--sfx-cg-*). Breakpoint literals in @media queries (768/1400/2100/2450) stay hardcoded — CSS forbids var() inside @media rules.'); ?></code></p>
+        <p><code><?php echo esc_html('Wireup at :root: --cg-gutter (chains to --container-padding-horizontal), --cg-content (chains to --max-screen-width), --cg-feature (fixed 2100px default), --cg-feature-max (fixed 2450px default), --cg-gap (chains to --grid-gap then --space-m).'); ?></code></p>
+        <p><code><?php echo esc_html('Scoped consumption: grid rules use var(--sfx-cg-*). Breakpoint literals in @media queries (768/1400/2100/2450) stay hardcoded — CSS forbids var() inside @media rules, so --cg-feature/-max keep fixed px defaults (not the scaling --container-xlarge/2xlarge) to stay in sync. --cg-content is free to grow.'); ?></code></p>
       </details>
       <?php
     }
