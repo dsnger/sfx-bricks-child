@@ -24,7 +24,10 @@
      (not chained to --container-xlarge/2xlarge, which Bricks derives as
      max-screen-width * 1.5 / * 1.75) so they stay in lock-step with the
      hardcoded @media breakpoints below (2100 / 2450). This lets --cg-content
-     grow freely without the feature grid activating before it fits. */
+     grow freely without the feature grid activating before it fits. Note: if
+     --cg-content is pushed above these fixed widths, the feature/feature-max
+     side tracks intentionally collapse to 0 (minmax semantics) instead of
+     overflowing — expected, not a bug. */
   --sfx-cg-feature:     var(--cg-feature, 2100px);
   --sfx-cg-feature-max: var(--cg-feature-max, 2450px);
   --sfx-cg-gap:         var(--cg-gap, var(--grid-gap, var(--space-m, 1.5rem)));
