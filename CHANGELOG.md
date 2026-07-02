@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.15.0] - 2026-07-02
+
+Fix content grid horizontal overflow when Max screen width exceeds 1400px by pinning the feature/feature-max breakout widths to fixed defaults in sync with their breakpoints. Add configurable split-breakout ratios via the --cg-split token with 30/70, 40/60, 60/40, and 70/30 presets.
+
 ## [0.14.6] - 2026-06-30
 
 Contact and social data management moves to dedicated admin menus; Social Media gains Bricks dynamic data parity with Contact Infos.
