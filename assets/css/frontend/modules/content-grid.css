@@ -97,6 +97,15 @@
 .content--split-70-breakout { --sfx-cg-split: var(--cg-split, 0.7); }
 
 @media (min-width: 768px) {
+  .content--split-md {
+    grid-column: content-start / full-end;
+    grid-template-columns:
+      minmax(0, calc((min(100vw, var(--sfx-cg-content)) - 2 * var(--sfx-cg-gutter) - var(--sfx-cg-gap)) * var(--sfx-cg-split)))
+      minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
   [class*="content--split-"] {
     grid-column: content-start / full-end;
     grid-template-columns:
@@ -107,6 +116,17 @@
 
 /* Reverse modifier: Breaks out to LEFT instead of right */
 @media (min-width: 768px) {
+  .content--split-md.reverse {
+    grid-column: full-start / content-end;
+    direction: rtl;
+  }
+
+  .content--split-md.reverse > * {
+    direction: ltr;
+  }
+}
+
+@media (min-width: 1024px) {
   [class*="content--split-"].reverse {
     grid-column: full-start / content-end;
     direction: rtl;
