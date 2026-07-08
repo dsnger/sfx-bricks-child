@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.15.1] - 2026-07-08
+
+### Changed
+
+- Content Grid: split breakout layouts now activate at 1024px by default, keeping tablet widths stacked.
+- Content Grid: add `.content--split-md` to opt specific split layouts into the earlier 768px breakpoint, including reverse splits.
+
 ## [0.15.0] - 2026-07-02
 
 Fix content grid horizontal overflow when Max screen width exceeds 1400px by pinning the feature/feature-max breakout widths to fixed defaults in sync with their breakpoints. Add configurable split-breakout ratios via the --cg-split token with 30/70, 40/60, 60/40, and 70/30 presets.
