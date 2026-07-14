@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.15.3] - 2026-07-14
+
+### Fixed
+
+- Content Grid: align gutter with Bricks --container-padding-inline so content-grid tracks line up with the page container at any max-screen-width.
+
 ## [0.15.2] - 2026-07-14
 
 ### Fixed
