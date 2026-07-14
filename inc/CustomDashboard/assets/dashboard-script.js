@@ -163,11 +163,24 @@
     // ========================================
 
     /**
+     * Whether the dashboard allows collapsing the admin sidebar.
+     * @returns {boolean}
+     */
+    function isSidebarToggleAllowed() {
+        const container = getDashboardContainer();
+        return container?.getAttribute('data-sidebar-toggle-allowed') !== '0';
+    }
+
+    /**
      * Get the current sidebar state from various sources
      * Priority: localStorage > data-sidebar-default attribute > 'visible'
      * @returns {string} 'visible' or 'collapsed'
      */
     function getSidebarState() {
+        if (!isSidebarToggleAllowed()) {
+            return 'visible';
+        }
+
         // Check localStorage first (user preference)
         const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
         if (stored && ['visible', 'collapsed'].includes(stored)) {
@@ -247,9 +260,28 @@
     }
 
     /**
+     * Keep sidebar visible when toggle is disabled (fixes stale localStorage / bad config).
+     */
+    function ensureSidebarAccessible() {
+        if (isSidebarToggleAllowed()) {
+            return;
+        }
+
+        applySidebarState('visible', false);
+
+        try {
+            localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+        } catch (e) {
+            console.warn('Could not clear sidebar preference:', e);
+        }
+    }
+
+    /**
      * Initialize sidebar toggle functionality
      */
     function initSidebarToggle() {
+        ensureSidebarAccessible();
+
         const toggleBtn = document.getElementById('sfx-sidebar-toggle');
         if (!toggleBtn) return;
 
