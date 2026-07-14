@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.15.2] - 2026-07-14
+
+### Fixed
+
+- Custom Dashboard: prevent admin menu dead end when sidebar toggle is disabled while default or saved state is collapsed.
+
 ## [0.15.1] - 2026-07-08
 
 ### Changed
