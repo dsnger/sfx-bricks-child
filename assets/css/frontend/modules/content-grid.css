@@ -4,7 +4,7 @@
    wars. Do not unwrap the @layer block.
 
    Tokenization matches the buttons/forms/lists contract: external --cg-*
-   wireup tokens chain through Bricks core (--container-padding-horizontal,
+   wireup tokens chain through Bricks core (--container-padding-inline,
    --grid-gap, --max-screen-width, --space-m); internal --sfx-cg-* tokens are
    declared at :root and used by every grid rule. Override the externals, not
    the internals.
@@ -18,7 +18,7 @@
    ========================================= */
 
 :root {
-  --sfx-cg-gutter:      var(--cg-gutter, var(--container-padding-horizontal, 1.5rem));
+  --sfx-cg-gutter:      var(--cg-gutter, var(--container-padding-inline, var(--container-padding-horizontal, 1.5rem)));
   --sfx-cg-content:     var(--cg-content, var(--max-screen-width, 1400px));
   /* feature / feature-max are the breakout tiers. Their defaults are FIXED
      (not chained to --container-xlarge/2xlarge, which Bricks derives as
