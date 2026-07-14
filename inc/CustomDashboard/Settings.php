@@ -2922,6 +2922,41 @@ $stats['orders'] = [
     }
 
     /**
+     * Whether the admin sidebar can be collapsed by users.
+     *
+     * @param array<string, mixed>|null $options
+     */
+    public static function is_sidebar_toggle_allowed(?array $options = null): bool
+    {
+        if ($options === null) {
+            $options = get_option(self::$option_name, []);
+        }
+
+        return !empty($options['allow_sidebar_toggle']);
+    }
+
+    /**
+     * Effective sidebar default state. Collapsed is only valid when toggle is enabled.
+     *
+     * @param array<string, mixed>|null $options
+     * @return 'visible'|'collapsed'
+     */
+    public static function get_effective_sidebar_default_state(?array $options = null): string
+    {
+        if ($options === null) {
+            $options = get_option(self::$option_name, []);
+        }
+
+        if (!self::is_sidebar_toggle_allowed($options)) {
+            return 'visible';
+        }
+
+        $default = $options['sidebar_default_state'] ?? 'visible';
+
+        return in_array($default, ['visible', 'collapsed'], true) ? $default : 'visible';
+    }
+
+    /**
      * Sanitize options
      *
      * @param mixed $input
@@ -3067,6 +3102,11 @@ $stats['orders'] = [
                 default:
                     $output[$id] = $default;
             }
+        }
+
+        // Collapsed sidebar requires the toggle button; otherwise users cannot reopen the menu.
+        if (empty($output['allow_sidebar_toggle'])) {
+            $output['sidebar_default_state'] = 'visible';
         }
 
         // Clear brand CSS cache when settings are saved

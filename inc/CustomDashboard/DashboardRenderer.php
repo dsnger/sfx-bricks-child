@@ -111,11 +111,11 @@ class DashboardRenderer
 
         // Get sidebar toggle settings
         $allow_sidebar_toggle = $this->is_enabled('allow_sidebar_toggle');
-        $sidebar_default_state = $this->get_option('sidebar_default_state', 'visible');
+        $sidebar_default_state = Settings::get_effective_sidebar_default_state($this->options);
 
         ?>
         <!-- SFX Custom Dashboard -->
-        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>">
+        <div class="sfx-dashboard-container" data-theme="<?php echo esc_attr($color_mode_default); ?>" data-default-theme="<?php echo esc_attr($color_mode_default); ?>" data-sidebar-default="<?php echo esc_attr($sidebar_default_state); ?>" data-sidebar-toggle-allowed="<?php echo $allow_sidebar_toggle ? '1' : '0'; ?>">
             <?php $this->render_admin_notices(); ?>
             <?php $this->render_welcome_section(); ?>
             <?php $this->render_positioned_sections('below_header'); ?>

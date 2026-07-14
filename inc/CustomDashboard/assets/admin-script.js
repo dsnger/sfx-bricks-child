@@ -1257,9 +1257,34 @@
     }
 
     /**
+     * Disable collapsed default when sidebar toggle is turned off.
+     */
+    function initSidebarToggleDependency() {
+        var $toggle = $('#allow_sidebar_toggle');
+        var $defaultState = $('#sidebar_default_state');
+
+        if (!$toggle.length || !$defaultState.length) {
+            return;
+        }
+
+        function updateSidebarDefaultStateField() {
+            var toggleEnabled = $toggle.is(':checked');
+            $defaultState.find('option[value="collapsed"]').prop('disabled', !toggleEnabled);
+
+            if (!toggleEnabled && $defaultState.val() === 'collapsed') {
+                $defaultState.val('visible');
+            }
+        }
+
+        $toggle.on('change', updateSidebarDefaultStateField);
+        updateSidebarDefaultStateField();
+    }
+
+    /**
      * Initialize on document ready
      */
     $(document).ready(function() {
+        initSidebarToggleDependency();
         initLogoUploader();
         initColorSelectPreview();
         initAddGroup();

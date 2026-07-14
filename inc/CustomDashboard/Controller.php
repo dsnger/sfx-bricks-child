@@ -87,9 +87,12 @@ class Controller
         }
 
         $options = get_option(Settings::$option_name, []);
-        $sidebar_default = $options['sidebar_default_state'] ?? 'visible';
-        
-        if ($sidebar_default === 'collapsed') {
+
+        if (!Settings::is_sidebar_toggle_allowed($options)) {
+            return $classes;
+        }
+
+        if (Settings::get_effective_sidebar_default_state($options) === 'collapsed') {
             $classes .= ' sfx-sidebar-collapsed';
         }
 
@@ -104,15 +107,20 @@ class Controller
     public function inject_sidebar_state_script(): void
     {
         $options = get_option(Settings::$option_name, []);
-        $sidebar_default = $options['sidebar_default_state'] ?? 'visible';
+        $allow_toggle = Settings::is_sidebar_toggle_allowed($options);
+        $sidebar_default = Settings::get_effective_sidebar_default_state($options);
         ?>
         <script>
         (function() {
-            var stored = localStorage.getItem('sfx-dashboard-sidebar');
+            var allowToggle = <?php echo $allow_toggle ? 'true' : 'false'; ?>;
+            var stored = allowToggle ? localStorage.getItem('sfx-dashboard-sidebar') : null;
             var defaultState = '<?php echo esc_js($sidebar_default); ?>';
             
             // Use stored preference if available, otherwise fall back to default
-            var state = stored !== null ? stored : defaultState;
+            var state = allowToggle && stored !== null ? stored : defaultState;
+            if (!allowToggle) {
+                state = 'visible';
+            }
             
             // Safely access classList with null checks
             var html = document.documentElement;
