@@ -8,6 +8,12 @@ class Controller
 {
     public const OPTION_NAME = 'sfx_social_media_accounts_options';
 
+    /**
+     * Marker property used to select post types for Bricks' post type lists.
+     * Inert: nothing in WordPress or Bricks reads it apart from our own filter.
+     */
+    private const BRICKS_SELECTABLE_PROP = 'sfx_bricks_selectable';
+
     private static ?Shortcode\SC_SocialAccounts $shortcode_instance = null;
 
     public function __construct()
@@ -38,6 +44,52 @@ class Controller
         add_filter('bricks/dynamic_tags_list', [self::class, 'add_bricks_dynamic_tag'], 20);
         add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
         add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
+
+        // Late (20) so we consume whatever args other plugins have already asked for.
+        add_filter('bricks/registered_post_types_args', [self::class, 'allow_bricks_post_type_selection'], 20);
+    }
+
+    /**
+     * Let the (non-public) social account CPT appear in Bricks' post type lists without
+     * making the CPT public.
+     *
+     * Scope: this filter is global and carries no context, so the CPT becomes selectable in
+     * every Bricks post type list, not only the query loop dropdown — template conditions,
+     * theme style conditions, the Related Posts and Breadcrumbs elements, and the builder
+     * post type setting all read the same Helpers::get_registered_post_types(). That is
+     * accepted: Bricks offers no per-context seam, and the CPT is not publicly queryable, so
+     * selecting it elsewhere yields nothing. The requirement is only that no OTHER internal
+     * CPT becomes newly selectable.
+     *
+     * Bricks feeds these args to get_post_types(), which AND-matches every pair against the
+     * post type object's properties. "public OR sfx_social_account" is therefore not
+     * expressible as args, and simply widening them would expose every internal CPT
+     * (sfx_custom_script and friends register with an identical public/show_ui/show_in_rest
+     * profile, so no args expression can tell them apart).
+     *
+     * Instead we compute the union ourselves and select it via a marker property, which
+     * WP_Post_Type supports by design (#[AllowDynamicProperties] + set_props()). No existing
+     * property is touched, so sitemap exclusion and the noindex header keep working.
+     *
+     * @param array<string, mixed> $args
+     * @return array<string, mixed>
+     */
+    public static function allow_bricks_post_type_selection(array $args): array
+    {
+        global $wp_post_types;
+
+        if (!is_array($wp_post_types)) {
+            return $args;
+        }
+
+        $selectable = get_post_types($args);
+        $selectable[PostType::$post_type] = PostType::$post_type;
+
+        foreach ($wp_post_types as $name => $object) {
+            $object->{self::BRICKS_SELECTABLE_PROP} = isset($selectable[$name]);
+        }
+
+        return [self::BRICKS_SELECTABLE_PROP => true];
     }
 
     public static function add_bricks_dynamic_tag(array $tags): array
@@ -95,7 +147,15 @@ class Controller
         }
 
         $field = $m[1];
-        $account_id = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0;
+        $has_explicit_id = isset($m[2]) && $m[2] !== '';
+
+        // Only an omitted ID falls back to the current loop/post context, so that
+        // {social_account:url} resolves per loop item. An ID that was supplied but is invalid
+        // (e.g. {social_account:url:0}) keeps returning '' as it always has, rather than
+        // silently resolving to whatever post happens to be in context.
+        $account_id = $has_explicit_id
+            ? (int) $m[2]
+            : self::resolve_context_account_id($post);
 
         if ($account_id <= 0) {
             return '';
@@ -132,6 +192,34 @@ class Controller
         } catch (\Exception $e) {
             return '';
         }
+    }
+
+    /**
+     * Resolve the contextual post to a published social account ID, or 0.
+     *
+     * Bricks hands us the resolved loop post, so prefer it and only fall back to the
+     * global current post when it is absent.
+     *
+     * @param \WP_Post|int|null $post
+     */
+    private static function resolve_context_account_id($post): int
+    {
+        // Bricks only ever hands these filters a WP_Post or null.
+        if ($post instanceof \WP_Post) {
+            $post_id = $post->ID;
+        } elseif ($post === null) {
+            $post_id = (int) (get_the_ID() ?: 0);
+        } else {
+            // Context was supplied but is not a post: do not guess.
+            return 0;
+        }
+
+        if ($post_id <= 0) {
+            return 0;
+        }
+
+        // Reuse the shortcode's post-type + publish check rather than duplicating it.
+        return self::get_shortcode_instance()->resolve_published_account($post_id) !== null ? $post_id : 0;
     }
 
     public static function render_bricks_dynamic_content($content, $post = null, $context = 'text')

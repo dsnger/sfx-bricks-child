@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__, 2) . '/');
 }
 
+require_once __DIR__ . '/sfx-namespaced-stubs.php';
+
 $failures = 0;
 $test_posts = [];
 $test_meta = [];
@@ -13,6 +15,9 @@ $test_meta_single_as_array = [];
 $test_post_lists = [];
 $test_transients = [];
 $test_options = [];
+$test_current_post_id = 0;
+$wp_post_types = [];
+$test_registered_post_types = [];
 
 function assert_true(bool $condition, string $message): void
 {
@@ -130,6 +135,69 @@ function get_posts(array $args = []): array
     global $test_post_lists;
     $post_type = $args['post_type'] ?? '';
     return $test_post_lists[$post_type] ?? [];
+}
+
+function get_the_ID()
+{
+    global $test_current_post_id;
+    return $test_current_post_id > 0 ? $test_current_post_id : false;
+}
+
+/**
+ * Capture the args a post type is actually registered with, so tests can assert on the
+ * real registration rather than on a helper that just echoes back the same array.
+ */
+function register_post_type(string $post_type, array $args = []): void
+{
+    global $test_registered_post_types;
+    $test_registered_post_types[$post_type] = $args;
+}
+
+/**
+ * Minimal stand-in for WP_Post_Type. Mirrors core's #[AllowDynamicProperties] so that
+ * custom register_post_type() args become object properties, as WP_Post_Type::set_props() does.
+ */
+#[AllowDynamicProperties]
+class WP_Post_Type
+{
+    public function __construct(public string $name = '', public bool $public = false)
+    {
+    }
+}
+
+/**
+ * Port of core get_post_types() -> wp_filter_object_list() -> WP_List_Util::filter()
+ * with the default 'AND' operator.
+ *
+ * Mirrors core exactly on the two details that matter here: empty $args returns everything,
+ * and for objects each arg must satisfy isset($obj->{$key}) && $value == $obj->{$key}.
+ * Core uses isset() (not array_key_exists on a cast), so a null-valued property counts as
+ * absent — see wp-includes/class-wp-list-util.php::filter().
+ */
+function get_post_types(array $args = [], string $output = 'names'): array
+{
+    global $wp_post_types;
+
+    // No empty($args) early return needed: with count 0 every post type matches below,
+    // which is what core's early return amounts to.
+    $filtered = [];
+    $count = count($args);
+
+    foreach ($wp_post_types as $name => $object) {
+        $matched = 0;
+
+        foreach ($args as $key => $value) {
+            if (isset($object->{$key}) && $value == $object->{$key}) {
+                $matched++;
+            }
+        }
+
+        if ($matched === $count) {
+            $filtered[$name] = $output === 'objects' ? $object : $name;
+        }
+    }
+
+    return $filtered;
 }
 
 function get_post_meta($post_id, $key = '', $single = false)
@@ -310,4 +378,15 @@ $test_meta[201] = ['_link_url' => ['https://draft.example']];
 $test_posts[99] = sfx_make_post(99, 'sfx_contact_info', 'publish', 'HQ');
 $test_meta[99] = [
     '_email' => ['billing@example.test'],
+];
+
+// Post type registry mirroring the real registrations: the sfx_* CPTs are all
+// public=false, so no get_post_types() args expression can tell them apart.
+$wp_post_types = [
+    'post'               => new WP_Post_Type('post', true),
+    'page'               => new WP_Post_Type('page', true),
+    'bricks_template'    => new WP_Post_Type('bricks_template', false),
+    'sfx_social_account' => new WP_Post_Type('sfx_social_account', false),
+    'sfx_custom_script'  => new WP_Post_Type('sfx_custom_script', false),
+    'sfx_contact_info'   => new WP_Post_Type('sfx_contact_info', false),
 ];

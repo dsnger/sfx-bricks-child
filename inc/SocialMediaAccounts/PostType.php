@@ -32,6 +32,9 @@ class PostType
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
 
+        // Show the admin list in the same order the frontend renders.
+        add_action('pre_get_posts', [self::class, 'order_admin_list_by_menu_order']);
+
         add_filter('map_meta_cap', [self::class, 'map_editor_level_meta_cap'], 10, 4);
     }
 
@@ -106,7 +109,9 @@ class PostType
             'menu_icon'          => 'dashicons-share',
             'menu_position'      => 27,
             'show_in_rest'       => true,
-            'supports'           => ['title'],
+            // 'page-attributes' provides the Order box. Both the Bricks tag provider and the
+            // shortcode query by menu_order, which stays 0 for every account without it.
+            'supports'           => ['title', 'page-attributes'],
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
@@ -318,6 +323,24 @@ class PostType
     }
 
     /**
+     * Default the admin list to menu_order, matching the frontend query order.
+     */
+    public static function order_admin_list_by_menu_order(\WP_Query $query): void
+    {
+        if (!is_admin() || !$query->is_main_query() || $query->get('post_type') !== self::$post_type) {
+            return;
+        }
+
+        // Respect an explicit sort click.
+        if ($query->get('orderby')) {
+            return;
+        }
+
+        $query->set('orderby', 'menu_order');
+        $query->set('order', 'ASC');
+    }
+
+    /**
      * Define admin list table columns in explicit order.
      *
      * @param array<string, string> $columns
@@ -331,6 +354,7 @@ class PostType
             'sfx_id' => __('ID', 'sfxtheme'),
             'icon'   => __('Icon', 'sfxtheme'),
             'link'   => __('Link', 'sfxtheme'),
+            'order'  => __('Order', 'sfxtheme'),
             'status' => __('Status', 'sfxtheme'),
         ], static fn ($value) => $value !== '');
     }
@@ -349,6 +373,10 @@ class PostType
                 break;
             case 'link':
                 self::render_link_column($column, $post_id);
+                break;
+            case 'order':
+                $post = get_post($post_id);
+                echo esc_html((string) ($post->menu_order ?? 0));
                 break;
             case 'status':
                 self::render_status_column($column, $post_id);
