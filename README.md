@@ -2,42 +2,37 @@
 
 WordPress child theme for [Bricks Builder](https://bricksbuilder.io/) with agency-focused content tools, performance toggles, and security helpers.
 
-Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, and Smooth Scroll can be enabled or disabled in **General Theme Options**.
+Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, and Password Protection can be enabled or disabled in **General Theme Options**.
 
 ## Features
 
 ### Core
 
 - **GitHub Theme Updater** — update checks and installs from the theme’s GitHub repository
-- **Access control** — restrict Global Theme Settings and Custom Dashboard settings via `wp-config.php` constants
-- **Cache helpers** — theme transients cleared on theme/plugin updates
-- **Import / Export** — backup and restore theme settings and CPT data (preview, selective import, merge/replace)
+- **Access control** — lock Global Theme Settings and Custom Dashboard behind `wp-config.php` constants
+- **Import / Export** — back up and restore settings and CPT data (selective, merge/replace)
 
 ### Content (custom post types)
 
-- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode; Bricks dynamic tags `{contact_info:field}` (optional location/attributes)
-- **Social Media Accounts** (`sfx_social_account`) — `[social_accounts]` and `[social_account id="…"]` shortcodes; Bricks dynamic tags `{social_account:field:ID}` and `{social_accounts}` (ID suffix required for per-account fields)
-- **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location rules, priorities, and categories
+- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode and `{contact_info:field}` Bricks tags
+- **Social Media Accounts** (`sfx_social_account`) — shortcodes, `{social_account:…}` Bricks tags, and a sortable Bricks query loop
+- **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location, priority, and category rules
 
 ### Optimization
 
-- **Image Optimizer** — WebP/AVIF conversion on upload, quality and resize controls, batch tools in admin
-- **Smooth Scroll** — optional Lenis-based scrolling (General Theme Options)
-- **WP Optimizer** — grouped toggles for performance, security, and admin cleanup, including:
-  - Revision limiting per post type (0–10, default 3) with post-save pruning
-  - Hide login URL with custom slug
-  - Content ordering and media replacement utilities
-  - Frontend cleanup (jQuery, emoji, embeds, feeds, defer JS/CSS, and more)
-  - Security hardening (XML-RPC, REST restrictions, author enumeration blocks, and more)
+- **Image Optimizer** — WebP/AVIF conversion on upload, quality/resize controls, batch tools
+- **Smooth Scroll** — optional Lenis-based scrolling
+- **WP Optimizer** — grouped performance, security, and cleanup toggles: revision limiting, hide-login URL, content ordering, media replacement, frontend cleanup, and hardening
 
 ### Security
 
-- **Security Header** — HSTS, CSP (optional report URI), Permissions-Policy, X-Frame-Options, and related HTTP headers
+- **Security Header** — HSTS, CSP, Permissions-Policy, X-Frame-Options, and related HTTP headers
+- **Password Protection** — gate the frontend behind one shared password (wp-login-style prompt), with a shareable `?access=` bypass link for clients, IP allowlist, role/feed/REST exemptions, and per-link session revocation
 
 ### Admin
 
-- **Custom Dashboard** — replace wp-admin home with configurable widgets (stats, system info, tips, notes); optional **Bricks form submissions** summary when Bricks Pro’s submissions table is present
-- **General Theme Options** — master switches for major features; optional disable Bricks frontend JS/CSS; delete data on uninstall
+- **Custom Dashboard** — configurable wp-admin home (stats, system info, tips, notes; optional Bricks form submissions)
+- **General Theme Options** — master switches for the toggleable modules; delete data on uninstall
 
 ## Requirements
 
