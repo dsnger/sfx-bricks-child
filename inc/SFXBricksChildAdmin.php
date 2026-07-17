@@ -55,6 +55,7 @@ class SFXBricksChildAdmin
       // check), so the "Go to" button would land on "Sorry, you are not
       // allowed to access this page."
       if (!empty($feature['activation_option_key'])
+        && !empty($feature['activation_option_name'])
         && !\SFX\SFXBricksChildTheme::is_option_enabled($feature['activation_option_name'], $feature['activation_option_key'])) {
         continue;
       }

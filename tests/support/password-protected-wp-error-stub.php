@@ -26,5 +26,16 @@ if (!class_exists('WP_Error')) {
         {
             return $this->errors !== [];
         }
+
+        /** @return array<int, string> */
+        public function get_error_messages(): array
+        {
+            $messages = [];
+            foreach ($this->errors as $code_messages) {
+                $messages = array_merge($messages, $code_messages);
+            }
+
+            return $messages;
+        }
     }
 }

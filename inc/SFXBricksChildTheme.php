@@ -202,7 +202,7 @@ class SFXBricksChildTheme
         continue;
       }
 
-      if (!empty($feature['activation_option_key'])) {
+      if (!empty($feature['activation_option_key']) && !empty($feature['activation_option_name'])) {
         $option_enabled = self::is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
         if (!$option_enabled) {
           continue;
