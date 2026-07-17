@@ -109,6 +109,12 @@ class Auth
             setcookie(self::cookie_name(), '', self::cookie_options(time() - DAY_IN_SECONDS, $path));
         }
 
+        // Load-bearing for the current request, not just the browser's next
+        // one: setcookie() does not touch $_COOKIE, so without this a wrong-
+        // password login POST would clear the cookie header-wise while the
+        // stale value stayed readable in $_COOKIE. maybe_show_login(), called
+        // later in the same request, would then re-validate that stale value
+        // against the unchanged hash and render the protected page anyway.
         unset($_COOKIE[self::cookie_name()]);
     }
 
