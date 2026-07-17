@@ -141,7 +141,11 @@ class SC_SocialAccounts
         return $this->render_scalar_field($account, $field, (string) ($atts['context'] ?? 'text'));
     }
 
-    private function resolve_published_account(int $post_id): ?\WP_Post
+    /**
+     * Resolve a post ID to a published social account, or null.
+     * Public so Bricks tag rendering can reuse this check for loop context.
+     */
+    public function resolve_published_account(int $post_id): ?\WP_Post
     {
         if ($post_id <= 0) {
             return null;

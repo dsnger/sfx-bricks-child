@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.16.0] - 2026-07-17
+
+### Added
+
+- Social Media Accounts: the `sfx_social_account` CPT can now drive a Bricks query loop. One loop element renders every published account instead of hardcoding one element per platform.
+  - Exposed the CPT in Bricks' post type dropdowns via `bricks/registered_post_types_args`, without making it public. Sitemap exclusion and the `noindex` header are unaffected, and no other internal CPT is newly exposed.
+  - `{social_account:<field>}` without an ID now resolves against the current loop/post context. It still returns an empty string unless that post is a published `sfx_social_account`, so element conditions using `empty_not` keep working.
+  - Added `page-attributes` support so `menu_order` is editable, plus an Order column; the admin list now defaults to the same `menu_order` order the frontend queries with.
+
+### Notes
+
+- Icons in a loop: set a custom attribute `style="--icon: url({social_account:icon})"` on the loop item and use `mask-image: var(--icon); background-color: currentColor`. This keeps SVG icons recolorable via CSS, which an `<img>` cannot do. The `bricks/dynamic_data/render_tag` filter remains deliberately unhooked (see 0.6.1/0.6.3).
+
 ## [0.15.3] - 2026-07-14
 
 ### Fixed
