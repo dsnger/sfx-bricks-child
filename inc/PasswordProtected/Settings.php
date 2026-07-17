@@ -215,6 +215,60 @@ class Settings
         return ['values' => $values, 'errors' => $errors];
     }
 
+    /**
+     * Post/Redirect/Get, following exactly what options.php does.
+     *
+     * The transient and the `settings-updated` query arg are both load-bearing:
+     * settings_errors() only consumes the transient when that arg is present.
+     * Omit either and the notices silently never appear.
+     */
+    public static function save_from_request(): void
+    {
+        check_admin_referer('sfx_pp_save');
+        \SFX\AccessControl::die_if_unauthorized_theme();
+
+        // wp_unslash() the whole tree once; the readers below then type-check
+        // each field individually.
+        $result = self::validate_snapshot(wp_unslash($_POST), self::get());
+
+        update_option(self::OPTION_NAME, $result['values']);
+
+        // update_option() returns false both for "nothing changed" and for
+        // "the write failed", so its return value cannot tell us which. Read
+        // back instead: on a failed write the cache is not updated and get()
+        // still returns the old values.
+        $write_failed = self::get() !== $result['values'];
+
+        foreach ($result['errors'] as $field => $message) {
+            add_settings_error(self::OPTION_NAME, 'sfx_pp_' . $field, $message, 'error');
+        }
+
+        if ($write_failed) {
+            add_settings_error(
+                self::OPTION_NAME,
+                'sfx_pp_write_failed',
+                __('Settings could NOT be saved — the database write failed. Nothing was changed.', 'sfxtheme'),
+                'error'
+            );
+        } else {
+            // Never an unqualified success next to a red error.
+            add_settings_error(
+                self::OPTION_NAME,
+                'sfx_pp_saved',
+                $result['errors'] === []
+                    ? __('Settings saved.', 'sfxtheme')
+                    : __('Settings saved, but some fields were rejected.', 'sfxtheme'),
+                $result['errors'] === [] ? 'success' : 'warning'
+            );
+        }
+
+        set_transient('settings_errors', get_settings_errors(), 30);
+
+        $target = add_query_arg('settings-updated', 'true', AdminPage::page_url());
+        wp_safe_redirect(wp_validate_redirect($target, home_url('/')));
+        exit;
+    }
+
     public static function normalize_ip_list(string $raw): string
     {
         $lines = array_filter(
