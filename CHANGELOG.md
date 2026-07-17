@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.17.0] - 2026-07-17
+
+### Added
+
+- Password Protection - optional module that gates the entire frontend behind a single shared password, shown as a wp-login-styled prompt. Toggle it in General Theme Options (enable_password_protected); configure it under Global Theme Settings > Password Protection.
+  - WordPress-standard password hashing. The auth cookie is HMAC-signed against the password hash, so changing the password ends every session.
+  - Shareable bypass link for clients and reviewers via a neutral ?access=<key> query parameter, with a copy button and an editable, memorable custom key. Rotating the key issues a new link without evicting current visitors; a separate "lock out previous visitors" switch ends bypass sessions only, never touching password sessions or exempt administrators / logged-in users.
+  - Exemptions for administrators, logged-in users, RSS feeds, and the REST API; an IP allowlist; an optional "stay logged in" checkbox with a configurable lifetime; and a bypass redirect target.
+  - Real HTTP no-cache headers on protected responses (not just DONOTCACHEPAGE), a noindex login page, and robots.txt left reachable.
+
+### Fixed
+
+- Global Theme Settings: tiles are now hidden for features whose activation option is off, so their "Go to settings" button no longer lands on a "not allowed" page. Both the feature loader and the tile renderer require the activation option name and key before evaluating the gate.
+- The frontend login prompt no longer renders unstyled when WP Optimizer has deregistered dashicons on the frontend; the handle is re-registered so the login stylesheet dependency graph resolves.
+- Password Protection permission toggles now have vertical spacing between rows.
+
+### Changed
+
+- German (de_DE) translations completed for every previously-untranslated admin string and the new module; de_DE.mo recompiled.
+
 ## [0.16.0] - 2026-07-17
 
 ### Added
