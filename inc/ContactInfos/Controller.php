@@ -13,6 +13,12 @@ class Controller
    * Must be the SAME string the SocialMediaAccounts controller uses, so the two filters
    * compose on the shared bricks/registered_post_types_args hook: each reads the marker the
    * other already set and adds its own CPT, exposing both instead of clobbering one.
+   *
+   * Kept as a duplicated literal rather than a shared constant on purpose: the two CPT
+   * modules stay decoupled, and the value is an arbitrary internal marker with no reason to
+   * change. If the two ever drift apart, the composition regression case (Case 38 in
+   * social-bricks-dynamic-data-test.php) fails — it asserts both CPTs survive the chained
+   * filters — so the coupling is pinned by a test, not only by this comment.
    */
   private const BRICKS_SELECTABLE_PROP = 'sfx_bricks_selectable';
 
@@ -239,7 +245,8 @@ class Controller
    * current post when it is absent. Anything that is not a published sfx_contact_info yields
    * 0, which keeps the type=main default in play for non-loop usage.
    *
-   * @param \WP_Post|int|null $post
+   * @param \WP_Post|null $post Bricks only ever passes a WP_Post or null; any other value
+   *                           is treated as "don't guess" and returns 0.
    */
   private static function resolve_context_contact_id($post): int
   {

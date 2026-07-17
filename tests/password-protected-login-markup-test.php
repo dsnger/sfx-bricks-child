@@ -206,7 +206,13 @@ namespace {
 
     function apply_filters(string $hook, $value, ...$args)
     {
-        return $value;
+        // Distinct values so the assertions prove the template actually applies these
+        // filters, not merely that some <h1>/<a> exists.
+        return match ($hook) {
+            'login_headerurl' => 'https://client.example/login',
+            'login_headertext' => 'Client Portal',
+            default => $value,
+        };
     }
 
     // --- Remaining WordPress surface the template touches ----------------------
@@ -389,8 +395,12 @@ namespace {
     assert_true(strpos($html, 'class="forgetmenot"') !== false, '.forgetmenot present for remember-me');
     assert_true(strpos($html, 'button button-primary button-large') !== false, 'submit keeps .button-primary.button-large');
 
-    // 6. Logo uses the login_headerurl / login_headertext filters inside .login h1 a.
+    // 6. Logo uses the login_headerurl / login_headertext filters inside .login h1 a,
+    //    and the page has a real (screen-reader) heading since the logo h1 is presentational.
     assert_true(strpos($html, '<h1') !== false && strpos($html, '</h1>') !== false, 'logo h1 present');
+    assert_true(strpos($html, 'href="https://client.example/login"') !== false, 'filtered login_headerurl renders in the logo link');
+    assert_true(strpos($html, 'Client Portal') !== false, 'filtered login_headertext renders');
+    assert_true(strpos($html, 'class="screen-reader-text"') !== false, 'a screen-reader heading is present');
 
     // 7. The internal field contract the Controller reads is preserved.
     assert_true(strpos($html, 'name="sfx_pp_pwd"') !== false, 'password field name preserved');

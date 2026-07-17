@@ -104,6 +104,8 @@ if (!function_exists('sfx_pp_render_login_page')) {
 <?php // The login CSS is written against these classes; a bare #login does not get the look. ?>
 <body class="login wp-core-ui">
 <div id="login">
+    <?php // The logo h1 is presentational, so give the page a real (visually hidden) heading. ?>
+    <h1 class="screen-reader-text"><?php echo esc_html($sfx_pp_header_text); ?></h1>
     <h1 role="presentation">
         <a href="<?php echo esc_url($sfx_pp_header_url); ?>">
             <?php echo esc_html($sfx_pp_header_text); ?>
