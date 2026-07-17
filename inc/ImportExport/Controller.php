@@ -287,6 +287,12 @@ class Controller
                 'option_key' => 'sfx_smooth_scroll_options',
                 'type' => 'single',
             ],
+            // Note: sfx_password_protected_options is deliberately NOT exportable.
+            // The array holds a password hash and a plaintext bearer token (the
+            // bypass key); export would write both into a portable JSON file.
+            // Import also writes options wholesale, bypassing
+            // Settings::validate_snapshot() — the one thing enforcing
+            // "status is never on without a password".
         ];
     }
 

@@ -17,6 +17,7 @@ class Settings
             ['id' => 'enable_wp_optimizer', 'default' => 1],
             ['id' => 'enable_image_optimizer', 'default' => 1],
             ['id' => 'enable_security_header', 'default' => 1],
+            ['id' => 'enable_password_protected', 'default' => 0],
             ['id' => 'enable_smooth_scroll', 'default' => 0],
             ['id' => 'disable_bricks_js', 'default' => 0],
             ['id' => 'disable_bricks_styles', 'default' => 0],

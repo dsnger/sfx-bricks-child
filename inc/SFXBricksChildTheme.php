@@ -253,7 +253,8 @@ class SFXBricksChildTheme
         strpos($hook_suffix, 'sfx_custom_script') === false &&
         strpos($hook_suffix, 'sfx_social_account') === false &&
         strpos($hook_suffix, 'sfx_contact_info') === false &&
-        strpos($hook_suffix, 'security-header') === false) {
+        strpos($hook_suffix, 'security-header') === false &&
+        strpos($hook_suffix, 'sfx-password-protected') === false) {
         return;
     }
     wp_enqueue_style(
