@@ -72,10 +72,12 @@ class AdminPage
                                 <tr valign="top">
                                     <th scope="row"><?php esc_html_e('Permissions', 'sfxtheme'); ?></th>
                                     <td>
-                                        <label><input type="checkbox" name="allow_admins" value="1" <?php checked($settings['allow_admins']); ?> /> <?php esc_html_e('Allow administrators', 'sfxtheme'); ?></label><br />
-                                        <label><input type="checkbox" name="allow_users" value="1" <?php checked($settings['allow_users']); ?> /> <?php esc_html_e('Allow logged-in users', 'sfxtheme'); ?></label><br />
-                                        <label><input type="checkbox" name="allow_feeds" value="1" <?php checked($settings['allow_feeds']); ?> /> <?php esc_html_e('Allow RSS feeds', 'sfxtheme'); ?></label><br />
-                                        <label><input type="checkbox" name="allow_rest" value="1" <?php checked($settings['allow_rest']); ?> /> <?php esc_html_e('Allow REST API', 'sfxtheme'); ?></label>
+                                        <div class="sfx-checkbox-list">
+                                            <label><input type="checkbox" name="allow_admins" value="1" <?php checked($settings['allow_admins']); ?> /> <?php esc_html_e('Allow administrators', 'sfxtheme'); ?></label>
+                                            <label><input type="checkbox" name="allow_users" value="1" <?php checked($settings['allow_users']); ?> /> <?php esc_html_e('Allow logged-in users', 'sfxtheme'); ?></label>
+                                            <label><input type="checkbox" name="allow_feeds" value="1" <?php checked($settings['allow_feeds']); ?> /> <?php esc_html_e('Allow RSS feeds', 'sfxtheme'); ?></label>
+                                            <label><input type="checkbox" name="allow_rest" value="1" <?php checked($settings['allow_rest']); ?> /> <?php esc_html_e('Allow REST API', 'sfxtheme'); ?></label>
+                                        </div>
                                     </td>
                                 </tr>
 
@@ -131,42 +133,124 @@ class AdminPage
                                 <tr valign="top">
                                     <th scope="row"><?php esc_html_e('Bypass URL', 'sfxtheme'); ?></th>
                                     <td>
-                                        <input type="checkbox" name="bypass_enabled" value="1" <?php checked($settings['bypass_enabled']); ?> />
+                                        <input type="checkbox" name="bypass_enabled" id="sfx_pp_bypass_enabled" value="1" <?php checked($settings['bypass_enabled']); ?> />
                                         <div class="sfx-description"><?php esc_html_e('A shareable link that grants access without the password. A key is generated automatically when you switch this on.', 'sfxtheme'); ?></div>
                                     </td>
                                 </tr>
 
-                                <?php if ($settings['bypass_key'] !== '') : ?>
-                                    <tr valign="top">
-                                        <th scope="row"><?php esc_html_e('Bypass Link', 'sfxtheme'); ?></th>
-                                        <td>
-                                            <?php // No name attribute: the key is never submitted. A stale form
-                                                  // would otherwise silently restore a rotated key. ?>
-                                            <input type="text" readonly onfocus="this.select();" style="width: 100%;"
-                                                   value="<?php echo esc_attr(home_url('/?sfx_bypass=' . rawurlencode($settings['bypass_key']))); ?>" />
+                                <?php
+                                // Everything below belongs to the Bypass URL feature. It is hidden
+                                // when the toggle is off (server-side initial state, JS keeps it in
+                                // sync live) so these rows never read as standalone settings — that
+                                // grouping is the whole point: "Redirect To" is a bypass sub-field,
+                                // not a global one.
+                                $bypass_row_style = $settings['bypass_enabled'] ? '' : ' style="display:none;"';
+                                ?>
+
+                                <tr valign="top" class="sfx-bypass-detail"<?php echo $bypass_row_style; ?>>
+                                    <th scope="row"><?php esc_html_e('Bypass Link', 'sfxtheme'); ?></th>
+                                    <td>
+                                        <?php if ($settings['bypass_key'] !== '') : ?>
+                                            <?php // No name attribute: this link is never submitted. The custom-key
+                                                  // field below is the only way to change the key. ?>
+                                            <div style="display:flex; gap:8px; align-items:center;">
+                                                <input type="text" id="sfx_pp_bypass_link" readonly onfocus="this.select();" style="flex:1;"
+                                                       value="<?php echo esc_attr(home_url('/?' . Controller::BYPASS_QUERY_VAR . '=' . rawurlencode($settings['bypass_key']))); ?>" />
+                                                <button type="button" class="button" id="sfx_pp_copy" data-label-copied="<?php echo esc_attr__('Copied!', 'sfxtheme'); ?>"><?php esc_html_e('Copy', 'sfxtheme'); ?></button>
+                                            </div>
                                             <div class="sfx-description"><?php esc_html_e('Anyone with this link gets in. It will end up in browser history and server logs.', 'sfxtheme'); ?></div>
-                                        </td>
-                                    </tr>
-                                    <tr valign="top">
+                                        <?php else : ?>
+                                            <div class="sfx-description"><?php esc_html_e('Save the settings to generate the link. It becomes active once saved.', 'sfxtheme'); ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+
+                                <tr valign="top" class="sfx-bypass-detail"<?php echo $bypass_row_style; ?>>
+                                    <th scope="row"><?php esc_html_e('Custom Key', 'sfxtheme'); ?></th>
+                                    <td>
+                                        <?php // Empty by default on purpose — see Settings::validate_snapshot():
+                                              // empty means "keep the current key", so a stale form can't restore
+                                              // a rotated one. Only a freshly typed value changes it. ?>
+                                        <input type="text" name="bypass_key_custom" value="" autocomplete="off" style="width: 100%;" placeholder="<?php echo esc_attr__('e.g. client-preview', 'sfxtheme'); ?>" />
+                                        <div class="sfx-description"><?php esc_html_e('Leave empty to keep the current key. Type your own short, memorable key (letters, numbers, dashes) to make the link easy to pass on. A memorable key is easier to guess — fine when you just don\'t want casual visitors peeking, not for real secrecy.', 'sfxtheme'); ?></div>
+                                    </td>
+                                </tr>
+
+                                <?php if ($settings['bypass_key'] !== '') : ?>
+                                    <tr valign="top" class="sfx-bypass-detail"<?php echo $bypass_row_style; ?>>
                                         <th scope="row"><?php esc_html_e('Rotate Key', 'sfxtheme'); ?></th>
                                         <td>
                                             <label>
                                                 <input type="checkbox" name="bypass_rotate" value="1" />
-                                                <?php esc_html_e('Generate a new key on save — the old link stops working immediately.', 'sfxtheme'); ?>
+                                                <?php esc_html_e('Generate a new link on save — the old link stops letting new people in.', 'sfxtheme'); ?>
                                             </label>
-                                            <div class="sfx-description"><strong><?php esc_html_e('Rotating the key does not log out anyone who already used the old link. Only changing the password does that.', 'sfxtheme'); ?></strong></div>
+                                            <div class="sfx-description"><?php esc_html_e('This only swaps the link. Anyone already inside through an earlier link stays — tick "Lock out previous visitors" below to end their access too.', 'sfxtheme'); ?></div>
+                                        </td>
+                                    </tr>
+                                    <tr valign="top" class="sfx-bypass-detail"<?php echo $bypass_row_style; ?>>
+                                        <th scope="row"><?php esc_html_e('Lock Out Previous Visitors', 'sfxtheme'); ?></th>
+                                        <td>
+                                            <?php // Unchecked value is not submitted, so this fires once — on the
+                                                  // save where it is ticked — and never sticks on a later save. ?>
+                                            <label>
+                                                <input type="checkbox" name="bypass_revoke" value="1" />
+                                                <?php esc_html_e('Sign out everyone who entered through a bypass link, on save.', 'sfxtheme'); ?>
+                                            </label>
+                                            <div class="sfx-description"><?php esc_html_e('Ends current bypass sessions only — password visitors are untouched and the password does not change. Combine with "Rotate Key" for a fresh link that also cuts off the old visitors.', 'sfxtheme'); ?></div>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
 
-                                <tr valign="top">
+                                <tr valign="top" class="sfx-bypass-detail"<?php echo $bypass_row_style; ?>>
                                     <th scope="row"><?php esc_html_e('Redirect To', 'sfxtheme'); ?></th>
                                     <td>
-                                        <input type="text" name="bypass_redirect" style="width: 100%;" value="<?php echo esc_attr($settings['bypass_redirect']); ?>" placeholder="<?php echo esc_attr(home_url('/')); ?>" />
-                                        <div class="sfx-description"><?php esc_html_e('Where the bypass link sends the visitor. Empty means the home page.', 'sfxtheme'); ?></div>
+                                        <?php // Example goes in the placeholder, not the value: it shows a
+                                              // specific-page URL so the field itself teaches the format. The
+                                              // value stays empty by default on purpose — an empty value and
+                                              // the bare home URL redirect to the same place, so prefilling the
+                                              // domain would be a redundant no-op the user just leaves standing. ?>
+                                        <input type="text" name="bypass_redirect" style="width: 100%;" value="<?php echo esc_attr($settings['bypass_redirect']); ?>" placeholder="<?php echo esc_attr(home_url('/willkommen/')); ?>" />
+                                        <div class="sfx-description"><?php esc_html_e('Where the bypass link sends the visitor. Empty means the home page. Enter a specific landing page if the shared link should open somewhere other than the front page.', 'sfxtheme'); ?></div>
                                     </td>
                                 </tr>
                             </table>
+
+                            <?php // Reveal the bypass sub-fields the instant the toggle flips, so
+                                  // enabling the feature shows what belongs to it without a save. ?>
+                            <script>
+                            jQuery(function ($) {
+                                var $rows = $('.sfx-bypass-detail');
+                                $('#sfx_pp_bypass_enabled').on('change', function () {
+                                    $rows.toggle(this.checked);
+                                });
+
+                                $('#sfx_pp_copy').on('click', function () {
+                                    var input = document.getElementById('sfx_pp_bypass_link');
+                                    if (!input) { return; }
+                                    input.focus();
+                                    input.select();
+                                    input.setSelectionRange(0, 99999);
+                                    var $btn = $(this);
+                                    var restore = $btn.text();
+                                    var flash = function () {
+                                        $btn.text($btn.data('label-copied'));
+                                        setTimeout(function () { $btn.text(restore); }, 1500);
+                                    };
+                                    // Only confirm on an actual copy: execCommand returns false (or
+                                    // throws) when it failed, and the promise rejects likewise.
+                                    var fallback = function () {
+                                        var ok = false;
+                                        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+                                        if (ok) { flash(); }
+                                    };
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                        navigator.clipboard.writeText(input.value).then(flash, fallback);
+                                    } else {
+                                        fallback();
+                                    }
+                                });
+                            });
+                            </script>
 
                             <?php submit_button(); ?>
                         </form>
@@ -192,7 +276,7 @@ class AdminPage
 
                         <h2 class="sfx-section-title"><?php esc_html_e('Logging everyone out', 'sfxtheme'); ?></h2>
                         <ul class="sfx-tips-list">
-                            <li><?php esc_html_e('Changing the password is the only thing that invalidates existing access. Switching protection off and on again does not.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Changing the password ends every session. To cut off bypass visitors only, tick "Lock out previous visitors" — generating a new link on its own does not remove anyone already inside. Switching protection off and on again does not either.', 'sfxtheme'); ?></li>
                         </ul>
                     </div>
                 </div>

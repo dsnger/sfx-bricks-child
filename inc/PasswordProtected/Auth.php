@@ -7,13 +7,25 @@ namespace SFX\PasswordProtected;
 /**
  * Cookie handling, mirroring WordPress core's own auth cookie scheme.
  *
- * The stored password hash is baked into the signing key, so changing the
- * password invalidates every outstanding cookie for free. That is also the
- * only revocation this module has — see the spec.
+ * Two revocation levers are folded into the signing key:
+ *   - password hash  → changing the password logs EVERYONE out (both flavors).
+ *   - bypass secret  → mixed into 'bp' cookies only, so the "lock out previous
+ *                      visitors" action ends bypass sessions without touching
+ *                      password sessions or forcing a password change.
+ *
+ * The bypass secret is deliberately SEPARATE from the shareable key: generating
+ * a new link (rotating the key) changes only the link, not the secret, so
+ * existing bypass visitors stay put unless you explicitly lock them out.
+ *
+ * The flavor ('pw' | 'bp') is part of what is signed, so a bypass cookie cannot
+ * be downgraded to a password one to dodge the secret binding.
  */
 class Auth
 {
     private const SESSION_WINDOW = 20 * DAY_IN_SECONDS;
+
+    public const FLAVOR_PASSWORD = 'pw';
+    public const FLAVOR_BYPASS   = 'bp';
 
     public static function site_id(): string
     {
@@ -27,20 +39,35 @@ class Auth
         return 'sfx_pp_' . COOKIEHASH;
     }
 
-    public static function generate_cookie(int $expiration, string $password_hash): string
-    {
-        $site_id = self::site_id();
-        $key     = wp_hash($site_id . '|' . $password_hash . '|' . $expiration, 'auth');
-        $hmac    = hash_hmac('sha256', $site_id . '|' . $expiration, $key);
+    public static function generate_cookie(
+        int $expiration,
+        string $flavor,
+        string $password_hash,
+        string $bypass_secret
+    ): string {
+        $site_id  = self::site_id();
+        $material = $site_id . '|' . $password_hash . '|' . $expiration;
 
-        return $site_id . '|' . $expiration . '|' . $hmac;
+        // Only bypass cookies fold in the bypass secret, so "lock out previous
+        // visitors" (which bumps that secret) ends bypass sessions while
+        // password sessions — which never include it — stay valid. The
+        // shareable key is NOT in here: a new link and revoking old access are
+        // two separate choices.
+        if ($flavor === self::FLAVOR_BYPASS) {
+            $material .= '|' . $bypass_secret;
+        }
+
+        $key  = wp_hash($material, 'auth');
+        $hmac = hash_hmac('sha256', $site_id . '|' . $expiration . '|' . $flavor, $key);
+
+        return $site_id . '|' . $expiration . '|' . $flavor . '|' . $hmac;
     }
 
     /**
      * @param mixed $cookie Raw cookie value; may be anything a client sent.
      *                      null means "read it from $_COOKIE".
      */
-    public static function validate_cookie($cookie = null, ?string $password_hash = null): bool
+    public static function validate_cookie($cookie = null): bool
     {
         if ($cookie === null) {
             $cookie = $_COOKIE[self::cookie_name()] ?? null;
@@ -51,13 +78,17 @@ class Auth
         }
 
         $parts = explode('|', $cookie);
-        if (count($parts) !== 3) {
+        if (count($parts) !== 4) {
             return false;
         }
 
-        [$site_id, $expiration, $hmac] = $parts;
+        [$site_id, $expiration, $flavor, $hmac] = $parts;
 
         if (!hash_equals(self::site_id(), $site_id)) {
+            return false;
+        }
+
+        if ($flavor !== self::FLAVOR_PASSWORD && $flavor !== self::FLAVOR_BYPASS) {
             return false;
         }
 
@@ -72,16 +103,18 @@ class Auth
             return false;
         }
 
-        if ($password_hash === null) {
-            $password_hash = Settings::get_password_hash();
-        }
-
-        $expected = self::generate_cookie((int) $expiration, $password_hash);
+        $settings = Settings::get();
+        $expected = self::generate_cookie(
+            (int) $expiration,
+            $flavor,
+            (string) $settings['password'],
+            (string) $settings['bypass_session_secret']
+        );
 
         return hash_equals($expected, $cookie);
     }
 
-    public static function set_cookie(bool $remember): void
+    public static function set_cookie(bool $remember, string $flavor): void
     {
         $settings = Settings::get();
 
@@ -93,7 +126,12 @@ class Auth
             $expire     = 0; // Browser session cookie.
         }
 
-        $cookie = self::generate_cookie($expiration, $settings['password']);
+        $cookie = self::generate_cookie(
+            $expiration,
+            $flavor,
+            (string) $settings['password'],
+            (string) $settings['bypass_session_secret']
+        );
 
         foreach (self::cookie_paths() as $path) {
             setcookie(self::cookie_name(), $cookie, self::cookie_options($expire, $path));

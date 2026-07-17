@@ -29,6 +29,10 @@ class Settings
         'bypass_enabled'       => 'bool',
         'bypass_key'           => 'string',
         'bypass_redirect'      => 'string',
+        // Folded into bypass-cookie signing only. Bumping it locks out everyone
+        // who entered through an earlier link, without touching the password or
+        // password sessions. Never rendered, never posted.
+        'bypass_session_secret' => 'string',
     ];
 
     private const BOOL_FIELDS = [
@@ -57,6 +61,7 @@ class Settings
             'bypass_enabled'       => false,
             'bypass_key'           => '',
             'bypass_redirect'      => '',
+            'bypass_session_secret' => '',
         ];
     }
 
@@ -190,15 +195,44 @@ class Settings
             $values['status'] = false;
         }
 
-        // The key is never read from $post. A stale form would otherwise
-        // silently restore a rotated key and revive links already revoked.
+        // The custom-key field is empty by default and NEVER prefilled with the
+        // current key. Empty means "keep whatever is stored", so a stale or
+        // cached form (empty field) cannot silently restore a rotated key —
+        // only an explicit, freshly typed value changes it. That preserves the
+        // original "never resurrect a revoked key" invariant while still letting
+        // an admin choose a short, memorable key on purpose.
         $stored_key = (string) $existing['bypass_key'];
-        if (self::post_bool($post, 'bypass_rotate')) {
+        $custom_raw = self::post_string($post, 'bypass_key_custom');
+        $custom     = self::sanitize_bypass_key($custom_raw);
+
+        if ($custom !== '') {
+            $values['bypass_key'] = $custom;
+        } elseif (trim($custom_raw) !== '') {
+            // Typed, but nothing valid survived sanitising — surface it instead
+            // of silently storing a mangled key.
+            $errors['bypass_key'] = __('The bypass key needs at least 4 characters and may use only letters, numbers, dashes, dots or underscores. The previous key was kept.', 'sfxtheme');
+            $values['bypass_key'] = ($stored_key === '' && $values['bypass_enabled'])
+                ? wp_generate_password(20, false)
+                : $stored_key;
+        } elseif (self::post_bool($post, 'bypass_rotate')) {
             $values['bypass_key'] = wp_generate_password(20, false);
         } elseif ($values['bypass_enabled'] && $stored_key === '') {
             $values['bypass_key'] = wp_generate_password(20, false);
         } else {
             $values['bypass_key'] = $stored_key;
+        }
+
+        // Bypass secret lives alongside the key but is independent of it:
+        // "lock out previous visitors" bumps it, ending every bypass session,
+        // while rotating the key (a new link) leaves it untouched so existing
+        // visitors stay. It only needs to exist once there is a key to protect.
+        $stored_bp_secret = (string) $existing['bypass_session_secret'];
+        if (self::post_bool($post, 'bypass_revoke')) {
+            $values['bypass_session_secret'] = wp_generate_password(32, false);
+        } elseif ($stored_bp_secret === '' && $values['bypass_key'] !== '') {
+            $values['bypass_session_secret'] = wp_generate_password(32, false);
+        } else {
+            $values['bypass_session_secret'] = $stored_bp_secret;
         }
 
         $values['allowed_ips']          = self::normalize_ip_list(self::post_string($post, 'allowed_ips'));
@@ -277,6 +311,23 @@ class Settings
         );
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * A bypass key travels in a URL and is compared with hash_equals(). Keep it
+     * URL-safe (no encoding surprises) and reject anything under 4 chars so a
+     * fat-fingered "a" can't become a one-character door. Empty return means
+     * "not a usable custom key" — the caller then keeps or generates one.
+     */
+    private static function sanitize_bypass_key(string $raw): string
+    {
+        $raw = trim($raw);
+
+        // Strict accept-or-reject. Stripping bad characters (or truncating an
+        // over-long value) would silently store a bearer key the admin never
+        // chose and then hand it out in a link — so an invalid value is refused
+        // by the caller, not quietly rewritten.
+        return preg_match('/\A[A-Za-z0-9._-]{4,64}\z/', $raw) === 1 ? $raw : '';
     }
 
     private static function cast(string $key, $value, $default)

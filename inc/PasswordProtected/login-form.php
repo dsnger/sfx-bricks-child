@@ -41,6 +41,15 @@ header('Content-Type: ' . get_bloginfo('html_type') . '; charset=' . get_bloginf
     // since this document calls neither wp_head() nor print_admin_styles(),
     // nothing would ever print: an unstyled login page. $force_echo prints the
     // handle and its dependencies (dashicons, buttons, forms, base styles).
+    // The WP Optimizer feature deregisters 'dashicons' on the frontend for
+    // logged-out visitors. The 'login' style hard-depends on it, so once it is
+    // gone wp_admin_css() silently drops login too (all_deps excludes any style
+    // with an unregistered dependency) and the page renders unstyled. Put it
+    // back so the dependency graph resolves.
+    if (!wp_styles()->query('dashicons')) {
+        $sfx_pp_suffix = (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+        wp_register_style('dashicons', includes_url("css/dashicons$sfx_pp_suffix.css"), [], get_bloginfo('version'));
+    }
     wp_admin_css('login', true);
 
     if (function_exists('wp_site_icon')) {

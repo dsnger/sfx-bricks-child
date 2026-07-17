@@ -2,8 +2,6 @@
 
 namespace SFX;
 
-use Bricks\Elements;
-
 class SFXBricksChildTheme
 {
 
@@ -205,7 +203,7 @@ class SFXBricksChildTheme
       }
 
       if (!empty($feature['activation_option_key'])) {
-        $option_enabled = $this->is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
+        $option_enabled = self::is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
         if (!$option_enabled) {
           continue;
         }
@@ -309,7 +307,7 @@ class SFXBricksChildTheme
     return false;
   }
 
-  private function is_option_enabled(string $option_name, string $option_key): bool
+  public static function is_option_enabled(string $option_name, string $option_key): bool
   {
     if ($option_name === 'sfx_general_options') {
       return self::is_general_option_enabled($option_key);

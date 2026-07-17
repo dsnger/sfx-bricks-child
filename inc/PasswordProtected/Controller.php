@@ -23,6 +23,14 @@ class Controller
      */
     public static ?\WP_Error $errors = null;
 
+    /**
+     * Query parameter that carries the bypass key, e.g. ?access=<key>.
+     * Deliberately theme-neutral. Shared contract between the link built in
+     * AdminPage and the read below — keep them on this one constant so a rename
+     * can never silently break the bypass.
+     */
+    public const BYPASS_QUERY_VAR = 'access';
+
     public function __construct()
     {
         self::$errors = new \WP_Error();
@@ -128,7 +136,7 @@ class Controller
         $stored = Settings::get()['bypass_key'];
 
         // The empty-stored guard is not padding: without it an empty stored key
-        // plus ?sfx_bypass= compares '' to '' and lets the world in.
+        // plus ?access= compares '' to '' and lets the world in.
         if ($stored === '' || !is_string($submitted) || $submitted === '') {
             return false;
         }
@@ -199,7 +207,7 @@ class Controller
         $remember = Settings::get()['allow_remember_me'] && Settings::post_bool($_POST, 'sfx_pp_rememberme');
 
         nocache_headers();
-        Auth::set_cookie($remember);
+        Auth::set_cookie($remember, Auth::FLAVOR_PASSWORD);
 
         self::redirect_to(Settings::request_string($_POST, 'redirect_to'));
     }
@@ -210,7 +218,7 @@ class Controller
             return;
         }
 
-        $submitted = Settings::request_string($_GET, 'sfx_bypass');
+        $submitted = Settings::request_string($_GET, self::BYPASS_QUERY_VAR);
 
         if ($submitted === '' || !self::bypass_key_matches($submitted)) {
             return; // Silently continue to the normal login gate.
@@ -220,7 +228,7 @@ class Controller
         // intermediary may cache a response holding a working auth cookie and
         // keep handing out access after the key is rotated.
         nocache_headers();
-        Auth::set_cookie(false);
+        Auth::set_cookie(false, Auth::FLAVOR_BYPASS);
 
         self::redirect_to(Settings::get()['bypass_redirect']);
     }
