@@ -107,8 +107,12 @@ function __($text, $domain = null)
     return $text;
 }
 
+$nocache_headers_calls = 0;
+
 function nocache_headers(): void
 {
+    global $nocache_headers_calls;
+    $nocache_headers_calls++;
 }
 
 function is_ssl(): bool
@@ -249,12 +253,19 @@ assert_true(
     'precondition: the visitor must be exempt (allowlisted IP) for this test to mean anything'
 );
 
+$nocache_headers_calls = 0;
 Controller::disable_caching();
 
 assert_true(
     defined('DONOTCACHEPAGE'),
     'disable_caching(): an exempt visitor must still get an uncacheable response — otherwise their '
         . 'exempt-and-therefore-fully-rendered protected page populates a shared, URL-keyed page cache for everyone'
+);
+
+assert_true(
+    $nocache_headers_calls === 1,
+    'disable_caching(): must also send real HTTP no-cache headers — DONOTCACHEPAGE only reaches cooperating '
+        . 'WordPress caches, not the browser/CDN/reverse-proxy layer that a URL-keyed cache actually lives in'
 );
 
 // --- Test C: maybe_process_login() must reject a wrong password ------------

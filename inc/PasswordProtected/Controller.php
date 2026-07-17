@@ -151,6 +151,13 @@ class Controller
         if (!defined('DONOTCACHEPAGE')) {
             define('DONOTCACHEPAGE', true);
         }
+
+        // DONOTCACHEPAGE is a request to cooperating WordPress caches and
+        // nothing more. Browsers, CDNs and reverse proxies never see it — they
+        // need real HTTP headers, or a protected page fetched by one visitor
+        // gets stored and served to everyone else. Same leak as the constant
+        // guards against, one layer out.
+        nocache_headers();
     }
 
     public static function maybe_process_logout(): void
