@@ -6,7 +6,21 @@ namespace SFX\ContactInfos;
 
 class Controller
 {
-
+  /**
+   * Marker property used to select post types for Bricks' post type lists.
+   * Inert: nothing in WordPress or Bricks reads it apart from our own filter.
+   *
+   * Must be the SAME string the SocialMediaAccounts controller uses, so the two filters
+   * compose on the shared bricks/registered_post_types_args hook: each reads the marker the
+   * other already set and adds its own CPT, exposing both instead of clobbering one.
+   *
+   * Kept as a duplicated literal rather than a shared constant on purpose: the two CPT
+   * modules stay decoupled, and the value is an arbitrary internal marker with no reason to
+   * change. If the two ever drift apart, the composition regression case (Case 38 in
+   * social-bricks-dynamic-data-test.php) fails — it asserts both CPTs survive the chained
+   * filters — so the coupling is pinned by a test, not only by this comment.
+   */
+  private const BRICKS_SELECTABLE_PROP = 'sfx_bricks_selectable';
 
   private static $shortcode_instance;
 
@@ -51,6 +65,40 @@ class Controller
     // Only register render_tag filter for content processing, not for individual tag rendering
     add_filter('bricks/dynamic_data/render_content', [self::class, 'render_bricks_dynamic_content'], 20, 3);
     add_filter('bricks/frontend/render_data', [self::class, 'render_bricks_frontend_data'], 20, 2);
+
+    // Let the (non-public) contact CPT appear in Bricks' query-loop post type list.
+    // Late (20) so we consume whatever args other plugins have already asked for.
+    add_filter('bricks/registered_post_types_args', [self::class, 'allow_bricks_post_type_selection'], 20);
+  }
+
+  /**
+   * Let the (non-public) contact info CPT appear in Bricks' post type lists without making
+   * the CPT public. Same marker-property approach as SocialMediaAccounts — see
+   * BRICKS_SELECTABLE_PROP for why the marker string must match. Bricks feeds these args to
+   * get_post_types(), which AND-matches every pair, so "public OR sfx_contact_info" is not
+   * expressible as args (every internal sfx_* CPT shares an identical public/show_ui profile);
+   * we compute the union ourselves and select it via an inert marker property. No existing
+   * property is touched, so sitemap exclusion and the noindex profile keep working.
+   *
+   * @param array<string, mixed> $args
+   * @return array<string, mixed>
+   */
+  public static function allow_bricks_post_type_selection(array $args): array
+  {
+    global $wp_post_types;
+
+    if (!is_array($wp_post_types)) {
+      return $args;
+    }
+
+    $selectable = get_post_types($args);
+    $selectable[PostType::$post_type] = PostType::$post_type;
+
+    foreach ($wp_post_types as $name => $object) {
+      $object->{self::BRICKS_SELECTABLE_PROP} = isset($selectable[$name]);
+    }
+
+    return [self::BRICKS_SELECTABLE_PROP => true];
   }
 
   /**
@@ -124,6 +172,15 @@ class Controller
         // Otherwise treat as type (main/branch)
         $atts['type'] = $location;
       }
+    } else {
+      // No explicit id/type: inside a Bricks query loop over contacts, resolve the loop post
+      // so {contact_info:field} renders each iterated contact. Only kicks in when the context
+      // IS a published contact; otherwise the existing type=main default is preserved, so
+      // header/footer usage on ordinary pages is unaffected.
+      $context_id = self::resolve_context_contact_id($post);
+      if ($context_id > 0) {
+        $atts['contact_id'] = $context_id;
+      }
     }
 
     if (!empty($attributes)) {
@@ -179,6 +236,42 @@ class Controller
     } catch (\Exception $e) {
       return '';
     }
+  }
+
+  /**
+   * Resolve the contextual post to a published contact info ID, or 0.
+   *
+   * Bricks hands us the resolved loop post, so prefer it and only fall back to the global
+   * current post when it is absent. Anything that is not a published sfx_contact_info yields
+   * 0, which keeps the type=main default in play for non-loop usage.
+   *
+   * @param \WP_Post|null $post Bricks only ever passes a WP_Post or null; any other value
+   *                           is treated as "don't guess" and returns 0.
+   */
+  private static function resolve_context_contact_id($post): int
+  {
+    // Bricks only ever hands these filters a WP_Post or null.
+    if ($post instanceof \WP_Post) {
+      $post_id = $post->ID;
+    } elseif ($post === null) {
+      $post_id = (int) (get_the_ID() ?: 0);
+    } else {
+      // Context was supplied but is not a post: do not guess.
+      return 0;
+    }
+
+    if ($post_id <= 0) {
+      return 0;
+    }
+
+    $candidate = get_post($post_id);
+    if (!$candidate instanceof \WP_Post
+      || $candidate->post_type !== PostType::$post_type
+      || $candidate->post_status !== 'publish') {
+      return 0;
+    }
+
+    return $post_id;
   }
 
   /**

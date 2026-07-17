@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.18.0] - 2026-07-17
+
+### Added
+
+- Contact Infos (sfx_contact_info) can now be used in Bricks query loops, matching the social account CPT.
+  - The CPT is now selectable as a query-loop source via a `bricks/registered_post_types_args` marker filter, without making it public. The filter shares the same inert marker property as the social account module, so both CPTs compose and stay selectable together.
+  - `{contact_info:field}` without an explicit id/type now resolves the current loop post, so each iterated contact renders its own values. Non-loop usage on ordinary pages still falls back to the `type=main` contact, so existing header/footer tags are unaffected.
+  - `page-attributes` support adds the Order box, so contacts can be sorted by menu_order in loops. `exclude_from_search` and `show_in_nav_menus` are now set explicitly to keep the CPT out of the front end and sitemaps.
+
+### Changed
+
+- Password Protection login screen is now compatible with the WordPress / password-protected login hook and DOM contract, so login styles loaded via `login_enqueue_scripts` take effect on the gate.
+  - The template fires `login_enqueue_scripts`, `password_protected_login_head`, and `password_protected_before_login_form` / `password_protected_after_login_form`, then prints the enqueued styles itself (core login CSS, dashicons, and any snippet stylesheets plus their `wp_add_inline_style()` CSS). Only styles enqueued within the login hooks print — the wider frontend queue is never flushed onto the gate, and it still does not call `wp_head()`.
+  - DOM aligned with wp-login.php: the form is addressable via `#loginform`, the logo link/text run through the `login_headerurl` / `login_headertext` filters, and the submit button keeps `.button.button-primary.button-large`. Internal field names (`sfx_pp_pwd`, `sfx_pp_rememberme`), the nonce, and `redirect_to` are unchanged, so authentication, cookie signing, redirect validation, and bypass links are untouched.
+
 ## [0.17.0] - 2026-07-17
 
 ### Added
