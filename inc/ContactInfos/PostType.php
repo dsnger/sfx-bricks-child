@@ -118,7 +118,9 @@ class PostType
             'menu_icon'          => 'dashicons-building',
             'menu_position'      => 26,
             'show_in_rest'       => true,
-            'supports'           => ['title'],
+            // 'page-attributes' provides the Order box so contacts can be sorted by menu_order
+            // in Bricks query loops, matching the social account CPT.
+            'supports'           => ['title', 'page-attributes'],
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
@@ -127,6 +129,11 @@ class PostType
             // Multilingual support
             'publicly_queryable' => false,
             'query_var'          => false,
+            // Keep the CPT out of the front end even though Bricks can select it as a loop
+            // source. These mirror the public=false defaults but are set explicitly so the
+            // Bricks selection filter can never be misread as making the CPT public.
+            'exclude_from_search' => true,
+            'show_in_nav_menus'  => false,
         ];
 
         register_post_type(self::$post_type, $args);

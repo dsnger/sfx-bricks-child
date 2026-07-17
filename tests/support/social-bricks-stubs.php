@@ -325,6 +325,15 @@ function run_social_bricks_case(string $label, string $method, callable $callbac
     $callback();
 }
 
+function run_contact_bricks_case(string $label, string $method, callable $callback): void
+{
+    if (!method_exists(\SFX\ContactInfos\Controller::class, $method)) {
+        assert_true(false, "{$label}: {$method}() not implemented yet");
+        return;
+    }
+    $callback();
+}
+
 // Stub data
 $test_posts[123] = sfx_make_post(123, 'sfx_social_account', 'publish', 'Instagram');
 $test_meta[123] = [
@@ -379,6 +388,29 @@ $test_posts[99] = sfx_make_post(99, 'sfx_contact_info', 'publish', 'HQ');
 $test_meta[99] = [
     '_email' => ['billing@example.test'],
 ];
+
+// ContactInfos fixtures for Bricks query-loop context resolution.
+$test_posts[300] = sfx_make_post(300, 'sfx_contact_info', 'publish', 'HQ Berlin');
+$test_meta[300] = [
+    '_phone'        => ['+49 30 111'],
+    '_contact_type' => ['main'],
+];
+
+$test_posts[301] = sfx_make_post(301, 'sfx_contact_info', 'publish', 'Branch Munich');
+$test_meta[301] = [
+    '_phone'        => ['+49 89 222'],
+    '_contact_type' => ['branch'],
+];
+
+$test_posts[302] = sfx_make_post(302, 'sfx_contact_info', 'draft', 'Unpublished Branch');
+$test_meta[302] = [
+    '_phone'        => ['+49 99 999'],
+    '_contact_type' => ['branch'],
+];
+
+// The type=main default runs WP_Query(post_type=sfx_contact_info); the stub returns this
+// list, so the first entry (300) is the "main" fallback when no id/type/context resolves.
+$test_post_lists['sfx_contact_info'] = [$test_posts[300], $test_posts[301]];
 
 // Post type registry mirroring the real registrations: the sfx_* CPTs are all
 // public=false, so no get_post_types() args expression can tell them apart.

@@ -264,6 +264,77 @@ assert_same(false, $social_cpt_args['public'] ?? null, 'Case 31: CPT stays non-p
 assert_same(false, $social_cpt_args['publicly_queryable'] ?? null, 'Case 31: CPT stays non-publicly-queryable');
 assert_same(false, $social_cpt_args['query_var'] ?? null, 'Case 31: query_var stays disabled');
 
+// Cases 32–39 — ContactInfos Bricks query-loop support (analog to the social CPT)
+run_contact_bricks_case('Case 32: ID-less contact tag resolves from loop $post', 'render_bricks_dynamic_tag', function (): void {
+    global $test_posts;
+    // In a query loop over sfx_contact_info, {contact_info:phone} must resolve the loop item,
+    // not the type=main default. 301 is a branch, so its phone proves per-item resolution.
+    $actual = ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone}', $test_posts[301]);
+    assert_contains('+49 89 222', $actual, 'Case 32: resolves the branch in loop context');
+});
+
+run_contact_bricks_case('Case 33: non-contact context keeps the type=main default', 'render_bricks_dynamic_tag', function (): void {
+    global $test_posts;
+    // A normal page in context (header/footer usage) must keep falling back to the main contact.
+    $actual = ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone}', $test_posts[200]);
+    assert_contains('+49 30 111', $actual, 'Case 33: page context falls back to main contact');
+});
+
+run_contact_bricks_case('Case 34: null context keeps the type=main default', 'render_bricks_dynamic_tag', function (): void {
+    $actual = ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone}', null);
+    assert_contains('+49 30 111', $actual, 'Case 34: no context falls back to main contact');
+});
+
+run_contact_bricks_case('Case 35: explicit contact_id wins over loop context', 'render_bricks_dynamic_tag', function (): void {
+    global $test_posts;
+    $actual = ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:301}', $test_posts[300]);
+    assert_contains('+49 89 222', $actual, 'Case 35: explicit id is not overridden by context');
+});
+
+run_contact_bricks_case('Case 36: draft contact context does not resolve', 'render_bricks_dynamic_tag', function (): void {
+    global $test_posts;
+    // A draft contact must not be pulled into loop output; falls back to the main default.
+    $actual = ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone}', $test_posts[302]);
+    assert_contains('+49 30 111', $actual, 'Case 36: draft context falls back to main');
+});
+
+run_contact_bricks_case('Case 37: bricks/registered_post_types_args exposes contact CPT', 'allow_bricks_post_type_selection', function (): void {
+    $args = ContactInfosController::allow_bricks_post_type_selection(['public' => true]);
+    $exposed = get_post_types($args);
+
+    assert_true(isset($exposed['sfx_contact_info']), 'Case 37: contact CPT is exposed');
+    assert_true(isset($exposed['post']), 'Case 37: public post type still exposed');
+    assert_true(isset($exposed['page']), 'Case 37: public page type still exposed');
+    assert_true(!isset($exposed['sfx_social_account']), 'Case 37: social CPT NOT newly exposed');
+    assert_true(!isset($exposed['sfx_custom_script']), 'Case 37: sfx_custom_script NOT newly exposed');
+    assert_true(!isset($exposed['bricks_template']), 'Case 37: bricks template CPT NOT newly exposed');
+});
+
+run_contact_bricks_case('Case 38: social + contact filters compose cumulatively', 'allow_bricks_post_type_selection', function (): void {
+    // Both modules register on bricks/registered_post_types_args with the same marker prop.
+    // Chaining them must expose BOTH CPTs — the later filter must not drop the earlier one.
+    $social_args = SocialMediaAccountsController::allow_bricks_post_type_selection(['public' => true]);
+    $args = ContactInfosController::allow_bricks_post_type_selection($social_args);
+    $exposed = get_post_types($args);
+
+    assert_true(isset($exposed['sfx_social_account']), 'Case 38: social CPT survives the contact filter');
+    assert_true(isset($exposed['sfx_contact_info']), 'Case 38: contact CPT is added');
+    assert_true(isset($exposed['post']), 'Case 38: public types preserved');
+});
+
+// Case 39 — the real registration: order editable AND the CPT stays non-public.
+\SFX\ContactInfos\PostType::register_post_type();
+
+$contact_cpt_args = $test_registered_post_types['sfx_contact_info'] ?? [];
+
+assert_true(
+    in_array('page-attributes', $contact_cpt_args['supports'] ?? [], true),
+    'Case 39: page-attributes is registered, so menu_order is editable'
+);
+assert_same(false, $contact_cpt_args['public'] ?? null, 'Case 39: CPT stays non-public');
+assert_same(false, $contact_cpt_args['publicly_queryable'] ?? null, 'Case 39: CPT stays non-publicly-queryable');
+assert_same(false, $contact_cpt_args['query_var'] ?? null, 'Case 39: query_var stays disabled');
+
 global $failures;
 
 if ($failures > 0) {

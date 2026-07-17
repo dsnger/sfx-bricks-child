@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.18.0] - 2026-07-17
+
+### Added
+
+- Contact Infos (sfx_contact_info) can now be used in Bricks query loops, matching the social account CPT.
+  - The CPT is now selectable as a query-loop source via a `bricks/registered_post_types_args` marker filter, without making it public. The filter shares the same inert marker property as the social account module, so both CPTs compose and stay selectable together.
+  - `{contact_info:field}` without an explicit id/type now resolves the current loop post, so each iterated contact renders its own values. Non-loop usage on ordinary pages still falls back to the `type=main` contact, so existing header/footer tags are unaffected.
+  - `page-attributes` support adds the Order box, so contacts can be sorted by menu_order in loops. `exclude_from_search` and `show_in_nav_menus` are now set explicitly to keep the CPT out of the front end and sitemaps.
+
 ## [0.17.0] - 2026-07-17
 
 ### Added
