@@ -2,8 +2,6 @@
 
 namespace SFX;
 
-use Bricks\Elements;
-
 class SFXBricksChildTheme
 {
 
@@ -204,8 +202,8 @@ class SFXBricksChildTheme
         continue;
       }
 
-      if (!empty($feature['activation_option_key'])) {
-        $option_enabled = $this->is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
+      if (!empty($feature['activation_option_key']) && !empty($feature['activation_option_name'])) {
+        $option_enabled = self::is_option_enabled($feature['activation_option_name'], $feature['activation_option_key']);
         if (!$option_enabled) {
           continue;
         }
@@ -253,7 +251,8 @@ class SFXBricksChildTheme
         strpos($hook_suffix, 'sfx_custom_script') === false &&
         strpos($hook_suffix, 'sfx_social_account') === false &&
         strpos($hook_suffix, 'sfx_contact_info') === false &&
-        strpos($hook_suffix, 'security-header') === false) {
+        strpos($hook_suffix, 'security-header') === false &&
+        strpos($hook_suffix, 'sfx-password-protected') === false) {
         return;
     }
     wp_enqueue_style(
@@ -308,7 +307,7 @@ class SFXBricksChildTheme
     return false;
   }
 
-  private function is_option_enabled(string $option_name, string $option_key): bool
+  public static function is_option_enabled(string $option_name, string $option_key): bool
   {
     if ($option_name === 'sfx_general_options') {
       return self::is_general_option_enabled($option_key);

@@ -78,7 +78,10 @@ $options_to_delete = [
     'sfx_disable_csp_header',
     'sfx_disable_x_content_type_options_header',
     'sfx_disable_x_frame_options_header',
-    
+
+    // Password Protected
+    'sfx_password_protected_options',
+
     // Image sizes
     'thumbnail_size_w', // Be careful: these are standard WP options, but the theme overrides them. 
                         // If the user deletes the theme, they might want these reset? 

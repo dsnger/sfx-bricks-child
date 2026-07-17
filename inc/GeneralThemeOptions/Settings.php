@@ -47,6 +47,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_password_protected',
+                'label'       => __('Enable Password Protection module', 'sfxtheme'),
+                'description' => __('Loads the password protection module and adds its settings page. The protection itself is switched on inside that page.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'enable_smooth_scroll',
                 'label'       => __('Enable Smooth Scroll', 'sfxtheme'),
                 'description' => __('Enable Lenis-powered smooth scrolling (replaces the Bricksforge Scroll Smoother).', 'sfxtheme'),

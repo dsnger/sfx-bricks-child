@@ -60,6 +60,9 @@ final class OverviewProvider
             'enable_security_header' => [
                 'label' => __('Security Header', 'sfxtheme'),
             ],
+            'enable_password_protected' => [
+                'label' => __('Password Protection (module loaded)', 'sfxtheme'),
+            ],
             'enable_smooth_scroll' => [
                 'label' => __('Smooth Scroll', 'sfxtheme'),
             ],

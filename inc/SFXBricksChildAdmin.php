@@ -50,6 +50,16 @@ class SFXBricksChildAdmin
         continue;
       }
 
+      // Hide tiles for features whose activation option is off. Their submenu
+      // page is never registered (load_dependencies() skips them on the same
+      // check), so the "Go to" button would land on "Sorry, you are not
+      // allowed to access this page."
+      if (!empty($feature['activation_option_key'])
+        && !empty($feature['activation_option_name'])
+        && !\SFX\SFXBricksChildTheme::is_option_enabled($feature['activation_option_name'], $feature['activation_option_key'])) {
+        continue;
+      }
+
       if ($feature['menu_slug'] === 'sfx-custom-dashboard' && !AccessControl::can_access_dashboard_settings()) {
         continue;
       }

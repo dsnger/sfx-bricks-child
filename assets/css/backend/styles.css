@@ -633,6 +633,19 @@ input[type="checkbox"].sfx-toggle:checked:after {
     background-color: var(--sfx-primary-color);
 }
 
+/* Stacked toggle rows (e.g. Password Protection permissions) need breathing room */
+.sfx-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.sfx-checkbox-list label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
 
 /* WP Optimizer Admin Tab Navigation Styles */
 .sfx-tabs-nav {
