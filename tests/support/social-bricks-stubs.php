@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__, 2) . '/');
 }
 
+require_once __DIR__ . '/sfx-namespaced-stubs.php';
+
 $failures = 0;
 $test_posts = [];
 $test_meta = [];
@@ -15,6 +17,7 @@ $test_transients = [];
 $test_options = [];
 $test_current_post_id = 0;
 $wp_post_types = [];
+$test_registered_post_types = [];
 
 function assert_true(bool $condition, string $message): void
 {
@@ -138,6 +141,16 @@ function get_the_ID()
 {
     global $test_current_post_id;
     return $test_current_post_id > 0 ? $test_current_post_id : false;
+}
+
+/**
+ * Capture the args a post type is actually registered with, so tests can assert on the
+ * real registration rather than on a helper that just echoes back the same array.
+ */
+function register_post_type(string $post_type, array $args = []): void
+{
+    global $test_registered_post_types;
+    $test_registered_post_types[$post_type] = $args;
 }
 
 /**

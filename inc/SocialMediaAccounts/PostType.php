@@ -82,19 +82,6 @@ class PostType
     }
 
     /**
-     * Post type supports.
-     *
-     * 'page-attributes' provides the Order box. Both the Bricks tag provider and the
-     * shortcode query by menu_order, which stays 0 for every account without it.
-     *
-     * @return list<string>
-     */
-    public static function supported_features(): array
-    {
-        return ['title', 'page-attributes'];
-    }
-
-    /**
      * Register the custom post type.
      */
     public static function register_post_type(): void
@@ -122,7 +109,9 @@ class PostType
             'menu_icon'          => 'dashicons-share',
             'menu_position'      => 27,
             'show_in_rest'       => true,
-            'supports'           => self::supported_features(),
+            // 'page-attributes' provides the Order box. Both the Bricks tag provider and the
+            // shortcode query by menu_order, which stays 0 for every account without it.
+            'supports'           => ['title', 'page-attributes'],
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',

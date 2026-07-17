@@ -50,8 +50,16 @@ class Controller
     }
 
     /**
-     * Let the (non-public) social account CPT appear in Bricks' post type lists, e.g. the
-     * query loop dropdown, without making the CPT public.
+     * Let the (non-public) social account CPT appear in Bricks' post type lists without
+     * making the CPT public.
+     *
+     * Scope: this filter is global and carries no context, so the CPT becomes selectable in
+     * every Bricks post type list, not only the query loop dropdown — template conditions,
+     * theme style conditions, the Related Posts and Breadcrumbs elements, and the builder
+     * post type setting all read the same Helpers::get_registered_post_types(). That is
+     * accepted: Bricks offers no per-context seam, and the CPT is not publicly queryable, so
+     * selecting it elsewhere yields nothing. The requirement is only that no OTHER internal
+     * CPT becomes newly selectable.
      *
      * Bricks feeds these args to get_post_types(), which AND-matches every pair against the
      * post type object's properties. "public OR sfx_social_account" is therefore not
