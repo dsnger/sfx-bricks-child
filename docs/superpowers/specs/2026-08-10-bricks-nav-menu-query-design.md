@@ -8,6 +8,7 @@
 - new `inc/NavMenuQuery/*` (4 files)
 - one field in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
+- new German strings in `languages/de_DE.po`, recompiled to `languages/de_DE.mo`
 - one test plus one stub file in `tests/`
 - delete `query/example.php` (dead scaffold, loaded by nothing)
 
@@ -39,7 +40,11 @@ Every claim below was read out of Bricks 2.3.9 on disk. They are the load-bearin
 |---|---|
 | `bricks/setup/control_options` carries `queryTypes` | `includes/setup.php:1125` |
 | `bricks/query/run` — `apply_filters( 'bricks/query/run', [], $this )` | `includes/query.php:916` |
-| `bricks/query/loop_object_type` exists, 3 args | `includes/query.php:2139` |
+| `get_loop_object_type()` already classifies any `WP_Post` as `post` **before** firing `bricks/query/loop_object_type` | `includes/query.php:2121-2139` |
+| `get_loop_builder_controls( $group )` stamps `group` onto `hasLoop` and `query` when the host passes one | `includes/elements/base.php:4086-4116` |
+| Map passes the group `addresses` | `includes/elements/map.php:250` |
+| `bricks/load_elements/before` fires once, immediately before all elements' controls are built | `includes/elements.php:252-254` |
+| `Elements::load_elements()` runs on the `wp` hook | `includes/elements.php:16` |
 | `Query::$settings` **is** the element's settings array | `includes/query.php:121` |
 | `objectType` is stripped from settings into `Query::$object_type` | `includes/query.php:116-119` |
 | Query loop is offered on `section`, `container`, `block`, `div` | `includes/elements/container.php:88-93` |
@@ -78,12 +83,14 @@ Four files, split by what changes together.
 
 ```
 inc/NavMenuQuery/Controller.php    bootstrap, hook registration, feature config
-inc/NavMenuQuery/MenuOptions.php   what the builder selects show; AJAX endpoint
-inc/NavMenuQuery/QueryType.php     query type, element controls, run, loop object type
+inc/NavMenuQuery/MenuOptions.php   menu resolution (shared), select options, AJAX endpoint
+inc/NavMenuQuery/QueryType.php     query type registration, element controls, run
 inc/NavMenuQuery/MenuItemTags.php  tag registration and value resolution
 ```
 
-`MenuOptions` is builder-side only (admin/AJAX); `QueryType` and `MenuItemTags` are render-side. That is the seam — it keeps the AJAX/label logic, the part with the most branching and the easiest to unit-test, out of the render path.
+`MenuOptions` is **shared infrastructure**, not builder-only: its option lists and AJAX endpoint serve the builder, but `resolve_menu_id()` is equally the render path's resolver — `QueryType::run()` calls it on every frontend request. That sharing is deliberate. A separate resolver on each side is how a builder preview and a frontend render start disagreeing about which menu a loop points at.
+
+`QueryType` and `MenuItemTags` are render-side only. The seam keeps menu lookup and label formatting — the part with the most branching and the easiest to test — in one place that both sides call.
 
 `Controller` registers hooks and holds no logic. All other classes are static; there is no per-request state beyond one cache in `MenuItemTags`.
 
@@ -108,29 +115,80 @@ inc/NavMenuQuery/MenuItemTags.php  tag registration and value resolution
 
 German wording ("Menüpunkte") is a translation of the English source strings in `languages/`, not a hardcoded string. The snippet hardcodes German; that does not survive into a theme shipped across sites.
 
+Every new user-facing string in this feature gets a `msgid`/`msgstr` pair in `languages/de_DE.po`, and the `.mo` is recompiled. That includes the query type label ("Menu Items" → "Menüpunkte"), all control labels, descriptions and placeholders, the relative parent entry, the nine tag labels and their group name, and the two AJAX error strings. A string added without its translation ships an English label into a German backend, so the `.po`/`.mo` update is part of the work, not a follow-up.
+
+## Query type registration
+
+Without this the feature is unreachable: the query type must be added to the `queryTypes` control option or it never appears in the builder's Query → Type dropdown.
+
+```php
+add_filter('bricks/setup/control_options', [QueryType::class, 'add_query_type']);
+
+public static function add_query_type(array $control_options): array
+{
+    $control_options['queryTypes']['sfx_nav_menu'] = esc_html__('Menu Items', 'sfxtheme');
+
+    return $control_options;
+}
+```
+
+The array is merged into, never replaced — Bricks' own five types (`post`, `term`, `user`, `api`, `array`, `setup.php:1125`) and any other plugin's additions must survive. The label is the English source string; "Menüpunkte" comes from `de_DE.po`.
+
+Test: given a `$control_options` array carrying the five built-in types plus one foreign key, the callback returns all of them plus `sfx_nav_menu`, and no existing value is altered.
+
 ## Builder controls
 
 Registered on **every element that supports a query loop**, derived rather than listed:
 
 ```php
-add_action('init', function () {
-    foreach (array_keys(\Bricks\Elements::$elements) as $name) {
-        add_filter("bricks/elements/{$name}/controls", [QueryType::class, 'add_element_controls']);
+add_action('bricks/load_elements/before', [QueryType::class, 'register_element_controls']);
+
+public static function register_element_controls(): void
+{
+    static $done = false;
+
+    if ($done) {
+        return;
     }
-}, 20);
+
+    $done = true;
+
+    foreach (array_keys(\Bricks\Elements::$elements) as $name) {
+        add_filter("bricks/elements/{$name}/controls", [self::class, 'add_element_controls']);
+    }
+}
 ```
 
-and inside the callback:
+`bricks/load_elements/before` (`includes/elements.php:254`) fires immediately before Bricks iterates `Elements::$elements` and builds each element's controls, on the `wp` hook (`elements.php:16`). Registering there sees the **complete** registry — an `init` priority-20 snapshot would miss any element registered later, and "any third-party element" would be a promise the code does not keep. The once-guard covers the secondary call site (`builder-permissions.php:28`, the Bricks Settings page) firing the action a second time in the same request.
+
+`load_element()` can also be called individually without `load_elements()` running, so this registration is not guaranteed on every frontend path. That is fine: `container.php:89` gates the loop controls on `bricks_is_builder()`, so `hasLoop` does not exist on the frontend anyway. Controls only need to exist where they are edited; rendering reads stored values straight off `Query::$settings`.
+
+The callback keys off `hasLoop` and inherits the host element's group:
 
 ```php
-if (!isset($controls['hasLoop'])) {
+public static function add_element_controls(array $controls): array
+{
+    if (!isset($controls['hasLoop'])) {
+        return $controls;
+    }
+
+    $group = $controls['query']['group'] ?? null;
+
+    // ... build the three controls ...
+
+    if ($group !== null) {
+        foreach (['sfxNavMenuLocation', 'sfxNavMenuId', 'sfxNavMenuParent'] as $key) {
+            $controls[$key]['group'] = $group;
+        }
+    }
+
     return $controls;
 }
 ```
 
-This works because `bricks/elements/{name}/controls` fires after `set_controls()` (base.php:149), so `hasLoop` is already present for loop-capable elements. It covers all seven Bricks elements plus any third-party element that opts into the loop builder — and it is less code than maintaining a list. The snippet hardcodes `container`, `block`, `div`, missing `section`, `slider`, `accordion` and `map`.
+Copying `group` matters because `get_loop_builder_controls( $group )` (`base.php:4086-4116`) stamps a group onto both `hasLoop` and `query` when the host element passes one. Map does exactly that with `'addresses'` (`map.php:250`). Ungrouped controls would be detected on Map but rendered in a different panel from the query UI they belong to — present, but separated from the control they modify. Section, Container, Block, Div, Slider and Accordion pass no group, so `$group` is `null` there and nothing is stamped.
 
-`container.php:89` gates the loop controls on `bricks_is_builder()`, so `hasLoop` is absent on the frontend. That is fine: controls only need to exist where they are edited. The frontend reads the stored values straight off `Query::$settings`.
+This works because `bricks/elements/{name}/controls` fires after `set_controls()` (`base.php:143-149`), so both `hasLoop` and `query` are already present. It covers all seven Bricks elements plus any element registered before `bricks/load_elements/before`. The snippet hardcodes `container`, `block`, `div`, missing `section`, `slider`, `accordion` and `map`.
 
 ### The three controls
 
@@ -182,11 +240,29 @@ One function, used by both the AJAX endpoint and the query runner, so the builde
 MenuOptions::resolve_menu_id(string $location, $menu_id): int
 ```
 
-1. `$location` non-empty → `get_nav_menu_locations()[$location]` if set.
-2. otherwise `(int) $menu_id`.
-3. otherwise `0`.
+The contract, stated exactly, because the precedence is the whole point:
 
-Returning `0` means "no menu", and every caller treats that as an empty result. Location wins when both are set: it is the portable choice, and silently preferring the stale ID would be the surprising behaviour.
+```
+if ($location !== '') {
+    // location branch — $menu_id is NOT consulted, whatever it holds
+    $locations = get_nav_menu_locations();
+    return isset($locations[$location]) ? (int) $locations[$location] : 0;
+}
+
+return (int) $menu_id;   // 0 when unset
+```
+
+A **non-empty but unassigned** location returns `0`. It does not fall through to the stored menu ID. Selecting a location is a statement that this loop follows whatever is assigned there; if nothing is, the correct answer is "no menu", not "the menu you happened to pick earlier". Falling through would make an unassigned location render stale content that looks right and silently ignores the editor's choice.
+
+`0` means "no menu" and every caller treats it as an empty result.
+
+| `$location` | assigned? | `$menu_id` | result |
+|---|---|---|---|
+| `''` | — | `7` | `7` |
+| `''` | — | `0`/unset | `0` |
+| `'primary'` | yes → `4` | `7` | `4` |
+| `'primary'` | no | `7` | `0` |
+| `'primary'` | no | `0` | `0` |
 
 Location is primary because a stored menu term ID is install-specific — it breaks when a template moves between sites, and when a menu is deleted and recreated. The ID select stays for menus not assigned to any location.
 
@@ -199,6 +275,20 @@ Location is primary because a stored menu term ID is install-specific — it bre
    `Sehen & Erleben › Sehenswürdigkeiten (6)`, `Kontakt (0)`.
 
 Paths are built by walking `menu_item_parent` upward, because names repeat between levels ("Veranstaltungen" can exist on level 1 and level 2) and a bare title would be ambiguous. Titles pass through `html_entity_decode( $text, ENT_QUOTES, 'UTF-8' )` — WordPress stores them escaped, so a raw label reads `Sehen &amp; Erleben`.
+
+The upward walk carries a visited-ID guard:
+
+```php
+$seen = [];
+
+while ($current && isset($titles[$current]) && !isset($seen[$current])) {
+    $seen[$current] = true;
+    array_unshift($path, $titles[$current]);
+    $current = (int) $parents[$current];
+}
+```
+
+A menu whose `menu_item_parent` values form a cycle is corrupt data, not something WordPress' UI can produce — but corrupt postmeta is reachable by a bad import or a direct DB edit, and without the guard the loop never terminates and takes the admin screen down with a timeout rather than a diagnosable error. "Never fatal" is meant literally, so the guard is not optional.
 
 **All** items are listed, including leaves. The snippet lists only items that have children — an assumption that fits mega-menu panels and misleads everywhere else: an editor looking for "Kontakt" and not finding it concludes the feature is broken, and the list changes shape as the menu is edited. `(0)` states plainly why a loop will be empty. The select is `searchable`, so length is not a problem.
 
@@ -214,8 +304,31 @@ In order:
 
 1. `check_ajax_referer('bricks-nonce-builder', 'nonce', false)` → `wp_send_json_error('Invalid nonce')`.
 2. `current_user_can('edit_posts')` → `wp_send_json_error('Insufficient permissions')`.
-3. Read `$_GET['locationId']` and `$_GET['menuId']`; Bricks sends `{{control}}` values as arrays for some control types, so `is_array($v) && $v = reset($v)` for both; then `sanitize_text_field()`.
+3. Normalise both `$_GET['locationId']` and `$_GET['menuId']` through one helper.
 4. `wp_send_json_success(MenuOptions::parent_options(MenuOptions::resolve_menu_id($location, $menu_id)))`.
+
+The normaliser, applied to each value independently:
+
+```php
+private static function scalar_param(string $key): string
+{
+    $value = $_GET[$key] ?? '';
+
+    // Bricks sends {{control}} values as arrays for some control types.
+    if (is_array($value)) {
+        $value = reset($value);
+    }
+
+    // Anything still not scalar (nested array, object) is malformed input.
+    if (!is_scalar($value)) {
+        return '';
+    }
+
+    return sanitize_text_field(wp_unslash((string) $value));
+}
+```
+
+Three things the snippet's version does not do. `reset()` on a nested array yields another array, and casting that to string emits a notice and produces `"Array"` — so the post-unwrap `is_scalar()` check rejects it as the malformed input it is, rather than passing garbage into the resolver. `wp_unslash()` undoes the slashes WordPress adds to all superglobals, and must run *before* `sanitize_text_field()`, or a location slug containing an escaped character is sanitised in its slashed form and then never matches a real key. Both values are rejected independently, so one malformed parameter cannot corrupt the other.
 
 The capability check is an addition to the snippet, which verifies the nonce alone. Menu structure is not a secret, but an endpoint that enumerates site structure to any authenticated user is a needless disclosure, and the check is one line.
 
@@ -225,9 +338,20 @@ No `wp_ajax_nopriv_` handler is registered — the builder is never available to
 
 ```php
 add_filter('bricks/query/run', [QueryType::class, 'run'], 10, 2);
+
+public static function run($results, $query)
+{
+    if ($query->object_type !== 'sfx_nav_menu') {
+        return $results;   // untouched, including type
+    }
+
+    // ...
+}
 ```
 
-Early return unless `$query->object_type === 'sfx_nav_menu'`. Then:
+The guard returns **`$results` itself**, not `[]` and not a cast — `bricks/query/run` is a shared filter that every query type and every other plugin passes through, and a handler that normalises the value it was given breaks whichever handler runs after it. Bricks seeds the chain with `[]` (`query.php:916`), but nothing entitles this callback to assume that is still what is flowing. The snippet gets this right; it is written down because it is the one line whose damage is invisible in this feature's own tests.
+
+After the guard:
 
 1. `$menu_id = MenuOptions::resolve_menu_id($query->settings['sfxNavMenuLocation'] ?? '', $query->settings['sfxNavMenuId'] ?? 0)`. `0` → `[]`.
 2. `$items = wp_get_nav_menu_items($menu_id)`. Falsy → `[]`.
@@ -265,15 +389,21 @@ if ($parent === 'current') {
 
 Because `current` exists, the snippet's `bricks_render_dynamic_data()` branch is **removed**. Its only purpose was to make nesting expressible before there was a relative option, and it required the editor to know a tag by heart to type into a select. Dropping it leaves one code path and a parent value that is always one of three known shapes.
 
-### Loop object type
+### Loop object type — deliberately not filtered
+
+The snippet adds a `bricks/query/loop_object_type` filter forcing `'post'`. It is **not** carried over: it is a no-op.
+
+`Query::get_loop_object_type()` classifies by class before the filter runs (`query.php:2121-2139`):
 
 ```php
-add_filter('bricks/query/loop_object_type', function ($object_type, $object, $query_id) {
-    return \Bricks\Query::get_query_object_type($query_id) === 'sfx_nav_menu' ? 'post' : $object_type;
-}, 10, 3);
+if ( is_a( $object, 'WP_Post' ) ) {
+    $object_type = 'post';
+}
 ```
 
-Menu items *are* posts (`nav_menu_item`), so declaring `post` makes Bricks put the right `$post` into the dynamic-data context — which is what makes `{post_title}`-style tags and the tags below resolve inside the loop.
+The loop objects here are the `WP_Post` objects returned by `wp_get_nav_menu_items()`, and nothing in this feature filters `bricks/query/loop_object`, so Bricks already classifies them as `post` — which is what puts the right `$post` into the dynamic-data context. A filter that recomputes the value Bricks just computed adds a hook to every loop iteration of every query on the site to change nothing.
+
+This is noted rather than silently dropped so nobody ports it back in from the snippet on the assumption it was load-bearing.
 
 ## Dynamic tags
 
@@ -341,7 +471,9 @@ Every failure yields an empty loop, never a notice or a fatal:
 | Condition | Result |
 |---|---|
 | No location and no menu ID | `[]` |
-| Location assigned to no menu | `[]` |
+| Location selected but assigned to no menu | `[]` — the stored menu ID is *not* used as a fallback |
+| Cyclic `menu_item_parent` data | path walk terminates via the visited guard |
+| Malformed AJAX parameter (nested array) | treated as empty, endpoint still answers |
 | Menu deleted (`wp_get_nav_menu_items` false) | `[]` |
 | Parent ID not in this menu | `[]` (nothing matches the filter) |
 | `current` with no enclosing loop | `[]` |
@@ -355,22 +487,36 @@ An empty loop in Bricks renders nothing, which is the correct outcome for a navi
 
 Following `tests/social-bricks-dynamic-data-test.php`: a standalone PHP script with hand-written stubs, run as `php tests/nav-menu-query-test.php`, asserting via the existing `assert_same` / `assert_contains` helpers. No PHPUnit — the theme has none.
 
-`tests/support/nav-menu-query-stubs.php` stubs `wp_get_nav_menu_items`, `wp_get_nav_menus`, `get_registered_nav_menus`, `get_nav_menu_locations`, `wp_setup_nav_menu_item`, `_wp_menu_item_classes_by_context`, `esc_html`, `esc_url`, `__`, and a minimal `Bricks\Query` double with settable `is_any_looping` / `get_loop_object` / `is_looping` returns.
+`tests/support/nav-menu-query-stubs.php` stubs `wp_get_nav_menu_items`, `wp_get_nav_menus`, `get_registered_nav_menus`, `get_nav_menu_locations`, `wp_setup_nav_menu_item`, `_wp_menu_item_classes_by_context`, `esc_html`, `esc_url`, `esc_html__`, `__`, `sanitize_text_field`, `wp_unslash`, `check_ajax_referer`, `current_user_can`, `wp_send_json_success`, `wp_send_json_error`, and a minimal `Bricks\Query` double with settable `is_any_looping` / `get_loop_object` / `is_looping` returns.
+
+`wp_send_json_*` throw a marker exception rather than exiting, so a test can assert which branch the AJAX handler took. `_wp_menu_item_classes_by_context` records the argument it received (for case 5) and sets `->current` / `->current_item_ancestor` from the fixture.
 
 Fixture: a three-level menu where a title repeats across levels (to prove path labels disambiguate) and one title contains `&amp;` (to prove decoding).
 
 Cases:
 
-1. `resolve_menu_id` — location set; location unassigned; ID fallback; location beats ID; neither → `0`.
+0. `add_query_type` — `sfx_nav_menu` added; the five built-in types and a foreign key all survive unaltered.
+1. `resolve_menu_id` — all five rows of the precedence table above, the unassigned-location row (`'primary'` unassigned + `$menu_id = 7` → `0`) included as its own assertion.
+1b. `add_element_controls` — no `hasLoop` → array returned unchanged (identity); `hasLoop` present without a group → three controls added, none carrying `group`; `hasLoop` present with `query.group = 'addresses'` → all three carry `'addresses'`.
+1c. `parent_options` path traversal terminates on a cyclic `menu_item_parent` fixture instead of hanging.
 2. `parent_options` — relative entry first; all items present including leaves; `(0)` on a leaf; path label for a repeated name; entities decoded; empty menu → relative entry only.
-3. `run` — top level (empty parent); explicit parent ID; parent from another menu → empty; deleted menu → empty.
+3. `run` — unrelated `object_type` returns the given `$results` unchanged, asserted with a non-empty sentinel array so a `[]` return fails; top level (empty parent); explicit parent ID; parent from another menu → empty; deleted menu → empty.
 4. `run` with `current` — resolves to the enclosing loop's item; no enclosing loop → empty; enclosing object of the wrong post type → empty.
 5. `_wp_menu_item_classes_by_context` receives the **unfiltered** item set (assert the stub's captured argument count equals the full menu, not the filtered subset).
 6. `value()` — all nine keys; unknown key → `null`; non-menu-item post with no loop → `null`; loop-context fallback returns the item.
 7. `render_content` — substitutes all nine; `esc_html` applied to `title`; `esc_url` to `url`; content without the prefix returned unchanged (identity, not just equal); content outside a loop returned unchanged.
-8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly.
+8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly; nested array → treated as empty, not `"Array"`; slashed input round-trips through `wp_unslash()` before sanitising; one malformed parameter leaves the other intact.
 
-Manual verification in the builder, since no test can cover it: the query type appears in the dropdown; the three controls appear on a Block and on a Slider and hide when another query type is selected (this is what validates the `query.objectType` dotted `required` path); the parent select populates over AJAX and repopulates when the menu selection changes; a two-level menu renders from one outer plus one inner loop with the relative parent; the active item carries `current-menu-item`; toggling the feature off removes the query type.
+Manual verification in the builder, since no test can cover it:
+
+- The query type appears in the Query → Type dropdown, labelled "Menüpunkte" in a German backend.
+- The three controls appear on a **Block** and hide when another query type is selected — this is what validates the dotted `required` path `query.objectType`.
+- On a **Map**, the three controls appear in the *same* `addresses` group as Map's own query UI, not in a separate panel. This is the case the group-copying code exists for and the one a unit test cannot see.
+- On a **Slider** and an **Accordion**, they appear ungrouped alongside the query control.
+- The parent select populates over AJAX and repopulates when the menu or location selection changes.
+- A two-level menu renders from one outer plus one inner loop using the relative parent.
+- The active item carries `current-menu-item`, and `{sfx_menu_item_is_active}` drives a Bricks condition.
+- Toggling the feature off removes the query type from the dropdown.
 
 ## Out of scope
 
