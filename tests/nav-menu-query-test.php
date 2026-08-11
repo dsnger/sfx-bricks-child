@@ -6,8 +6,10 @@ require __DIR__ . '/support/nav-menu-query-stubs.php';
 require __DIR__ . '/support/nav-menu-query-bricks-stubs.php';
 
 require dirname(__DIR__) . '/inc/NavMenuQuery/MenuOptions.php';
+require dirname(__DIR__) . '/inc/NavMenuQuery/QueryType.php';
 
 use SFX\NavMenuQuery\MenuOptions;
+use SFX\NavMenuQuery\QueryType;
 
 // ---------------------------------------------------------------- fixtures
 
@@ -168,6 +170,67 @@ $sent = run_ajax_endpoint(['locationId' => [], 'menuId' => '']);
 assert_same(['current'], array_keys($sent->payload), 'Case 4l: an empty-array value normalises to the empty string, not a crash');
 
 $_GET = [];
+
+// ------------------------------------------- Case 5: query type + controls
+
+// 5a: the queryTypes array is merged into, never replaced. Bricks' five plus
+// a hypothetical other plugin's entry must all survive.
+$control_options = [
+    'queryTypes' => [
+        'post'    => 'Posts',
+        'term'    => 'Terms',
+        'user'    => 'Users',
+        'api'     => 'API',
+        'array'   => 'Array',
+        'wooCart' => 'Cart contents',
+    ],
+    'queryOrder' => ['asc' => 'Ascending'],
+];
+
+$merged = QueryType::add_query_type($control_options);
+
+assert_same('Menu Items', $merged['queryTypes']['sfx_nav_menu'] ?? null, 'Case 5a: the query type is registered');
+assert_same(7, count($merged['queryTypes']), 'Case 5b: all pre-existing query types survive');
+assert_same('Cart contents', $merged['queryTypes']['wooCart'] ?? null, "Case 5c: another plugin's entry is untouched");
+assert_same(['asc' => 'Ascending'], $merged['queryOrder'] ?? null, 'Case 5d: unrelated control options are untouched');
+
+// 5e: an element with no query loop is left strictly alone.
+$plain = ['someControl' => ['type' => 'text']];
+assert_same($plain, QueryType::add_element_controls($plain), 'Case 5e: an element without hasLoop is returned unchanged');
+
+// 5f: an ungrouped loop element (Section, Container, Block, Div, Slider, Accordion).
+$ungrouped = QueryType::add_element_controls([
+    'hasLoop' => ['type' => 'checkbox'],
+    'query'   => ['type' => 'query'],
+]);
+
+assert_true(isset($ungrouped['sfxNavMenuLocation']), 'Case 5f: the location control is added');
+assert_true(isset($ungrouped['sfxNavMenuId']), 'Case 5g: the menu control is added');
+assert_true(isset($ungrouped['sfxNavMenuParent']), 'Case 5h: the parent control is added');
+assert_same(false, isset($ungrouped['sfxNavMenuLocation']['group']), 'Case 5i: no group is invented when the host has none');
+assert_same('sfx_nav_menu', $ungrouped['sfxNavMenuLocation']['required'][2] ?? null, 'Case 5j: the control is gated on the query type');
+
+// 5k: Map puts its query UI in the 'addresses' group. Ours must follow it there.
+$grouped = QueryType::add_element_controls([
+    'hasLoop' => ['type' => 'checkbox', 'group' => 'addresses'],
+    'query'   => ['type' => 'query', 'group' => 'addresses'],
+]);
+
+assert_same('addresses', $grouped['sfxNavMenuLocation']['group'] ?? null, 'Case 5k: the location control joins the host group');
+assert_same('addresses', $grouped['sfxNavMenuId']['group'] ?? null, 'Case 5l: the menu control joins the host group');
+assert_same('addresses', $grouped['sfxNavMenuParent']['group'] ?? null, 'Case 5m: the parent control joins the host group');
+
+// 5n: the once-guard. add_filter is stubbed as a per-hook counter.
+Bricks\Elements::$elements = ['section' => [], 'block' => [], 'map' => []];
+$test_filters = [];
+
+QueryType::register_element_controls();
+QueryType::register_element_controls();
+
+assert_same(1, $test_filters['bricks/elements/section/controls'] ?? 0, 'Case 5n: section registered exactly once across two calls');
+assert_same(1, $test_filters['bricks/elements/block/controls'] ?? 0, 'Case 5o: block registered exactly once');
+assert_same(1, $test_filters['bricks/elements/map/controls'] ?? 0, 'Case 5p: map registered exactly once');
+assert_same(3, array_sum($test_filters), 'Case 5q: three registrations total — the guard suppresses the repeat, not the work');
 
 // ------------------------------------------------------------- epilogue
 
