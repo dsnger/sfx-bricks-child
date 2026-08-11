@@ -40,24 +40,42 @@ class MenuItemTags
     /**
      * Find the menu item the current context refers to.
      *
-     * The fallback is not optional: on the link path Bricks calls
-     * bricks_render_dynamic_data() with its own post id (base.php:2524), so
-     * $post is not the menu item and the tag would survive into the href.
+     * The loop object wins over $post, and that order is the whole point.
+     * Bricks does not hand our filters the object the query produced: it
+     * RECONSTRUCTS one first. Providers::render_tag() replaces $post with
+     * Helpers::get_post_preserving_preview( $post_id ) (providers.php:669),
+     * which falls through to get_post() (helpers.php:3768) and so to
+     * WP_Post::get_instance() — a brand-new object built from the cached DB
+     * row. Every runtime property QueryType::run() put on the item is gone
+     * from it: no ->current, no ->current_item_ancestor, and none of the
+     * standard menu-item classes _wp_menu_item_classes_by_context() added
+     * (QueryType.php:168). Prefer that reconstruction and every context tag
+     * renders empty for every item, current or not.
+     *
+     * $post is still the fallback, and it is not optional: on the link path
+     * Bricks calls bricks_render_dynamic_data() with its own post id
+     * (base.php:2524), and outside any loop a nav_menu_item passed directly is
+     * all we have.
+     *
+     * get_loop_object() is called with NO query id on purpose. Bare, it
+     * returns the innermost currently-looping query's object, which is the
+     * right item for a tag written inside a nested loop; naming a query would
+     * pin resolution to the wrong level.
      *
      * @param mixed $post
      */
     public static function item_from_context($post): ?\WP_Post
     {
-        if ($post instanceof \WP_Post && $post->post_type === 'nav_menu_item') {
-            return $post;
-        }
-
         if (class_exists('Bricks\Query') && \Bricks\Query::is_looping()) {
             $loop_object = \Bricks\Query::get_loop_object();
 
             if ($loop_object instanceof \WP_Post && $loop_object->post_type === 'nav_menu_item') {
                 return $loop_object;
             }
+        }
+
+        if ($post instanceof \WP_Post && $post->post_type === 'nav_menu_item') {
+            return $post;
         }
 
         return null;

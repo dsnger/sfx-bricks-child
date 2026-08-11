@@ -643,6 +643,84 @@ assert_same('sfx_general_options', $config['activation_option_name'] ?? null, 'C
 assert_same('enable_nav_menu_query', $config['activation_option_key'] ?? null, 'Case 10j: gated on the right key');
 assert_same(false, isset($config['menu_slug']), 'Case 10k: no menu_slug, so no empty settings page is created');
 
+// ------------------------- Case 11: the reconstructed post must not win
+//
+// The production shape, exactly. Bricks never hands our filters the object the
+// query produced: Providers::render_tag() first replaces it with
+// Helpers::get_post_preserving_preview( $post_id ) (providers.php:669), which
+// falls through to get_post() (helpers.php:3768) and so to
+// WP_Post::get_instance() — a new object built from the cached DB row. So two
+// objects share one ID: the loop's decorated item, and a reconstruction
+// carrying none of the runtime state _wp_menu_item_classes_by_context() added
+// during the query run (QueryType.php:168).
+
+MenuItemTags::reset_cache();
+Bricks\Query::reset();
+
+$decorated = new WP_Post([
+    'ID'                    => 13,
+    'title'                 => 'Kunst & Kultur',
+    'classes'               => ['menu-item', 'menu-item-type-custom', 'menu-item-object-custom', 'current-menu-item'],
+    'current'               => true,
+    'current_item_ancestor' => false,
+]);
+
+// What WP_Post::get_instance() yields: the same ID and the same stored
+// columns, and not one runtime property. The stub's defaults are that shape.
+$reconstructed = new WP_Post(['ID' => 13, 'title' => 'Kunst & Kultur']);
+
+Bricks\Query::$looping      = true;
+Bricks\Query::$loop_objects = ['' => $decorated];
+
+assert_same($decorated, MenuItemTags::item_from_context($reconstructed), 'Case 11a: the loop object beats the reconstructed $post');
+assert_same(
+    'menu-item menu-item-type-custom menu-item-object-custom current-menu-item',
+    MenuItemTags::value($reconstructed, 'classes'),
+    'Case 11b: classes come from the decorated instance, not the reconstruction'
+);
+assert_same('1', MenuItemTags::value($reconstructed, 'is_active'), 'Case 11c: so does is_active');
+
+// The ancestor half, on its own id: an item is realistically either the
+// current one or an ancestor of it.
+$decorated_ancestor = new WP_Post([
+    'ID'                    => 12,
+    'title'                 => 'Veranstaltungen',
+    'classes'               => ['menu-item', 'current-menu-ancestor'],
+    'current_item_ancestor' => true,
+]);
+
+Bricks\Query::$loop_objects = ['' => $decorated_ancestor];
+
+assert_same(
+    '1',
+    MenuItemTags::value(new WP_Post(['ID' => 12, 'title' => 'Veranstaltungen']), 'is_ancestor'),
+    'Case 11d: is_ancestor comes from the decorated instance too'
+);
+
+// The non-current item is the diagnostic that identified this defect: before
+// the fix it rendered NO classes at all, which is what proved the object had
+// never been through _wp_menu_item_classes_by_context() rather than merely
+// failing a current-page comparison.
+$decorated_plain = new WP_Post([
+    'ID'      => 20,
+    'title'   => 'Kontakt',
+    'classes' => ['menu-item', 'menu-item-type-custom', 'menu-item-object-custom'],
+]);
+
+Bricks\Query::$loop_objects = ['' => $decorated_plain];
+
+$plain_reconstructed = new WP_Post(['ID' => 20, 'title' => 'Kontakt']);
+
+assert_same(
+    'menu-item menu-item-type-custom menu-item-object-custom',
+    MenuItemTags::value($plain_reconstructed, 'classes'),
+    'Case 11e: a NON-current item still carries its standard classes'
+);
+assert_same('', MenuItemTags::value($plain_reconstructed, 'is_active'), 'Case 11f: and is correctly not active');
+
+Bricks\Query::reset();
+MenuItemTags::reset_cache();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
