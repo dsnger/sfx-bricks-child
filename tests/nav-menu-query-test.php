@@ -425,7 +425,7 @@ $content_item = new WP_Post([
     'target'                => '_blank',
     'xfn'                   => 'noopener',
     'description'           => 'Museen & mehr',
-    'classes'               => ['current-menu-item'],
+    'classes'               => ['current-menu-item', 'promo&sale'],
     'current'               => true,
     'current_item_ancestor' => true,
 ]);
@@ -457,19 +457,26 @@ assert_contains('Kunst &amp; Kultur', $rendered, 'Case 9g: the title is esc_html
 assert_contains('kunst%20kultur', $rendered, 'Case 9h: the url is esc_url-ed here, unlike in render_tag');
 assert_contains('Museen &amp; mehr', $rendered, 'Case 9i: the description is esc_html-ed');
 
-// 9j: the builder tag list.
+// 9j: classes are user-typed in the WordPress menu screen, so an ampersand
+// in a class name is real user input reaching markup, not a generated value
+// like id/is_active/is_ancestor. This is the one field in the esc_html arm
+// whose fixture value is actually escape-sensitive, so it is the one that
+// can fail if 'classes' is ever moved into the raw arm.
+assert_contains('promo&amp;sale', $rendered, 'Case 9j: a CSS class is esc_html-ed, same as title/description');
+
+// 9k: the builder tag list.
 $picker = MenuItemTags::add_tags_to_builder([['name' => '{post_title}', 'label' => 'Title', 'group' => 'Post']]);
 
-assert_same(10, count($picker), 'Case 9j: nine tags appended to the existing list');
-assert_same('{post_title}', $picker[0]['name'], 'Case 9k: the pre-existing entry is preserved');
+assert_same(10, count($picker), 'Case 9k: nine tags appended to the existing list');
+assert_same('{post_title}', $picker[0]['name'], 'Case 9l: the pre-existing entry is preserved');
 
 $names = array_column($picker, 'name');
-assert_true(in_array('{sfx_menu_item_title}', $names, true), 'Case 9l: the title tag is registered with braces');
-assert_true(in_array('{sfx_menu_item_is_ancestor}', $names, true), 'Case 9m: the is_ancestor tag is registered');
+assert_true(in_array('{sfx_menu_item_title}', $names, true), 'Case 9m: the title tag is registered with braces');
+assert_true(in_array('{sfx_menu_item_is_ancestor}', $names, true), 'Case 9n: the is_ancestor tag is registered');
 
 $ours = array_values(array_filter($picker, fn($t) => strpos($t['name'], '{sfx_menu_item_') === 0));
-assert_same(1, count(array_unique(array_column($ours, 'group'))), 'Case 9n: all nine share one picker group');
-assert_true($ours[0]['label'] !== '', 'Case 9o: each entry carries a label');
+assert_same(1, count(array_unique(array_column($ours, 'group'))), 'Case 9o: all nine share one picker group');
+assert_true($ours[0]['label'] !== '', 'Case 9p: each entry carries a label');
 
 MenuItemTags::reset_cache();
 

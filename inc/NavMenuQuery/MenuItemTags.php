@@ -230,6 +230,12 @@ class MenuItemTags
         foreach (self::KEYS as $key) {
             $value = (string) self::value($post, $key);
 
+            // id / is_active / is_ancestor are generated and structurally
+            // incapable of carrying HTML-special characters — digits and
+            // '1'/'' respectively — so leaving them raw is a statement of
+            // intent, not a behavioural guarantee. Escaping them would be a
+            // no-op, which is why no test asserts the difference: such a
+            // test could only be a tautology.
             $replacements['{' . self::PREFIX . $key . '}'] = match ($key) {
                 'url' => esc_url($value),
                 'id', 'is_active', 'is_ancestor' => $value,
