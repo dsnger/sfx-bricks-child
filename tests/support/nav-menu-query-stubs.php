@@ -139,7 +139,7 @@ function __($text, $domain = 'default')
 
 function esc_html__($text, $domain = 'default')
 {
-    return (string) $text;
+    return esc_html(__($text, $domain));
 }
 
 function esc_html($text)
