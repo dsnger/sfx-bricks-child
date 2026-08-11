@@ -24,7 +24,13 @@ class MenuItemTags
         'is_ancestor',
     ];
 
-    /** @var array<int, array<string, string>> per-request cache, keyed by item id */
+    /**
+     * @var array<int, array<string, string>> per-request cache, keyed by item id
+     *
+     * Holds only the six wp_setup_nav_menu_item()-derived values, which are
+     * functions of the id alone — postmeta and the nav label. classes,
+     * is_active and is_ancestor are deliberately NOT in here; see value().
+     */
     private static array $cache = [];
 
     public static function register(): void
@@ -101,6 +107,26 @@ class MenuItemTags
             return null;
         }
 
+        // Never cached, always read off the item item_from_context() just
+        // resolved. These three are context, not identity: they are put on the
+        // item by _wp_menu_item_classes_by_context() for THIS request
+        // (QueryType.php:168), and two objects with the same ID can disagree
+        // about them — Bricks' reconstructed $post has none of them at all
+        // (providers.php:669, helpers.php:3768). Cache them by id and one
+        // earlier read from an undecorated instance suppresses active state for
+        // every later read of that id, which is the same defect as preferring
+        // the wrong object, only harder to see.
+        switch ($key) {
+            case 'classes':
+                return implode(' ', array_filter((array) ($item->classes ?? []), static fn($c) => $c !== ''));
+
+            case 'is_active':
+                return !empty($item->current) ? '1' : '';
+
+            case 'is_ancestor':
+                return !empty($item->current_item_ancestor) ? '1' : '';
+        }
+
         $id = (int) $item->ID;
 
         if (!isset(self::$cache[$id])) {
@@ -109,19 +135,13 @@ class MenuItemTags
             // sets ->title to the nav label rather than the page title.
             $prepared = wp_setup_nav_menu_item(clone $item);
 
-            // Active state and classes were set on the ORIGINAL item by
-            // _wp_menu_item_classes_by_context() during the query run, so they
-            // are read from $item, not from the prepared clone.
             self::$cache[$id] = [
                 'title'       => (string) ($prepared->title ?? ''),
                 'url'         => (string) ($prepared->url ?? ''),
                 'id'          => (string) $id,
                 'target'      => (string) ($prepared->target ?? ''),
                 'rel'         => (string) ($prepared->xfn ?? ''),
-                'classes'     => implode(' ', array_filter((array) ($item->classes ?? []), static fn($c) => $c !== '')),
                 'description' => (string) ($prepared->description ?? ''),
-                'is_active'   => !empty($item->current) ? '1' : '',
-                'is_ancestor' => !empty($item->current_item_ancestor) ? '1' : '',
             ];
         }
 

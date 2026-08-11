@@ -721,6 +721,61 @@ assert_same('', MenuItemTags::value($plain_reconstructed, 'is_active'), 'Case 11
 Bricks\Query::reset();
 MenuItemTags::reset_cache();
 
+// -------------------- Case 12: a prewarmed cache must not poison context
+//
+// Inverting the precedence is not sufficient on its own. The per-id cache used
+// to hold all nine values, so one earlier resolution from an UNDECORATED
+// instance — the same id reached outside the loop, or before the query
+// decorated anything — would answer every later read for that id and suppress
+// active state on the real render. This case runs the cold read first, on
+// purpose.
+
+MenuItemTags::reset_cache();
+Bricks\Query::reset();
+
+$cold_active   = new WP_Post(['ID' => 13, 'title' => 'Kunst & Kultur']);
+$cold_ancestor = new WP_Post(['ID' => 12, 'title' => 'Veranstaltungen']);
+
+assert_same('', MenuItemTags::value($cold_active, 'classes'), 'Case 12a: the undecorated instance really does have no classes');
+assert_same('', MenuItemTags::value($cold_active, 'is_active'), 'Case 12b: nor active state');
+assert_same('Kunst & Kultur', MenuItemTags::value($cold_active, 'title'), 'Case 12c: and reading it warms the id-keyed cache');
+assert_same('', MenuItemTags::value($cold_ancestor, 'is_ancestor'), 'Case 12d: same for the ancestor id');
+assert_same('Veranstaltungen', MenuItemTags::value($cold_ancestor, 'title'), 'Case 12e: which is warmed too');
+
+// Now the real render of those same ids, with the decorated items in the loop.
+Bricks\Query::$looping      = true;
+Bricks\Query::$loop_objects = ['' => $decorated];
+
+assert_same(
+    'menu-item menu-item-type-custom menu-item-object-custom current-menu-item',
+    MenuItemTags::value($reconstructed, 'classes'),
+    'Case 12f: classes are NOT served from the prewarmed snapshot'
+);
+assert_same('1', MenuItemTags::value($reconstructed, 'is_active'), 'Case 12g: nor is is_active');
+
+Bricks\Query::$loop_objects = ['' => $decorated_ancestor];
+
+assert_same('1', MenuItemTags::value($cold_ancestor, 'is_ancestor'), 'Case 12h: nor is is_ancestor');
+assert_same(
+    'menu-item current-menu-ancestor',
+    MenuItemTags::value($cold_ancestor, 'classes'),
+    'Case 12i: nor the ancestor classes'
+);
+
+// The six id-stable values keep their cache — throwing it away wholesale would
+// give up the only thing the cache is for.
+$test_setup_nav_menu_item_args = [];
+
+assert_same('Veranstaltungen', MenuItemTags::value($cold_ancestor, 'title'), 'Case 12j: title still resolves');
+assert_same(
+    0,
+    count($test_setup_nav_menu_item_args),
+    'Case 12k: and is served from the cache — wp_setup_nav_menu_item did not run a second time for that id'
+);
+
+Bricks\Query::reset();
+MenuItemTags::reset_cache();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
