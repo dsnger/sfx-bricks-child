@@ -8,6 +8,7 @@
 - new `inc/NavMenuQuery/*` (4 files)
 - one field in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
+- one name in the module sentence at `README.md:5`
 - new German strings in `languages/de_DE.po`, recompiled to `languages/de_DE.mo`
 - one test plus one stub file in `tests/`
 - delete `query/example.php` (dead scaffold, loaded by nothing)
@@ -43,7 +44,8 @@ Every claim below was read out of Bricks 2.3.9 on disk. They are the load-bearin
 | `get_loop_object_type()` already classifies any `WP_Post` as `post` **before** firing `bricks/query/loop_object_type` | `includes/query.php:2121-2139` |
 | `get_loop_builder_controls( $group )` stamps `group` onto `hasLoop` and `query` when the host passes one | `includes/elements/base.php:4086-4116` |
 | Map passes the group `addresses` | `includes/elements/map.php:250` |
-| `bricks/load_elements/before` fires once, immediately before all elements' controls are built | `includes/elements.php:252-254` |
+| `bricks/load_elements/before` fires at the start of **each** `Elements::load_elements()` call, before that call builds any element's controls | `includes/elements.php:252-254` |
+| `render_tag` receives the tag with outer braces already stripped, seeded as the filter's default value | `includes/integrations/dynamic-data/providers.php:651-671` |
 | `Elements::load_elements()` runs on the `wp` hook | `includes/elements.php:16` |
 | `Query::$settings` **is** the element's settings array | `includes/query.php:121` |
 | `objectType` is stripped from settings into `Query::$object_type` | `includes/query.php:116-119` |
@@ -90,7 +92,15 @@ inc/NavMenuQuery/MenuItemTags.php  tag registration and value resolution
 
 `MenuOptions` is **shared infrastructure**, not builder-only: its option lists and AJAX endpoint serve the builder, but `resolve_menu_id()` is equally the render path's resolver — `QueryType::run()` calls it on every frontend request. That sharing is deliberate. A separate resolver on each side is how a builder preview and a frontend render start disagreeing about which menu a loop points at.
 
-`QueryType` and `MenuItemTags` are render-side only. The seam keeps menu lookup and label formatting — the part with the most branching and the easiest to test — in one place that both sides call.
+`QueryType` and `MenuItemTags` straddle both sides too. `QueryType` registers the query type and the element controls (builder) *and* runs the query (render); `MenuItemTags` registers the tag picker list (builder) *and* resolves tag values (render). No class here is single-sided — the split is by **subject matter**, not by builder-versus-render:
+
+| File | Subject |
+|---|---|
+| `MenuOptions` | which menu, and what the selects offer |
+| `QueryType` | the query type and its controls, and running it |
+| `MenuItemTags` | the tag vocabulary and its values |
+
+Each subject's builder half and render half share assumptions — a control's stored shape, a tag's name — and splitting them across files would put those assumptions in two places. The seam that matters is `MenuOptions`, because menu lookup is the one thing all three subjects need and the one place where builder and render disagreeing would be invisible.
 
 `Controller` registers hooks and holds no logic. All other classes are static; there is no per-request state beyond one cache in `MenuItemTags`.
 
@@ -159,7 +169,9 @@ public static function register_element_controls(): void
 }
 ```
 
-`bricks/load_elements/before` (`includes/elements.php:254`) fires immediately before Bricks iterates `Elements::$elements` and builds each element's controls, on the `wp` hook (`elements.php:16`). Registering there sees the **complete** registry — an `init` priority-20 snapshot would miss any element registered later, and "any third-party element" would be a promise the code does not keep. The once-guard covers the secondary call site (`builder-permissions.php:28`, the Bricks Settings page) firing the action a second time in the same request.
+`bricks/load_elements/before` (`includes/elements.php:254`) fires at the start of **each** `Elements::load_elements()` call, before that call iterates `Elements::$elements` and builds any element's controls. The primary call is on the `wp` hook (`elements.php:16`). Registering there sees the **complete** registry — an `init` priority-20 snapshot would miss any element registered later, and "any third-party element" would be a promise the code does not keep.
+
+The action can fire more than once per request: `builder-permissions.php:28` calls `load_elements()` again on the Bricks Settings page. Hence the once-guard — without it the second firing adds a duplicate filter per element, and each element's controls would be built twice over, with the three controls overwriting themselves. Harmless in output, wasteful per element, and the kind of thing that only shows up as a slow admin screen.
 
 `load_element()` can also be called individually without `load_elements()` running, so this registration is not guaranteed on every frontend path. That is fine: `container.php:89` gates the loop controls on `bricks_is_builder()`, so `hasLoop` does not exist on the frontend anyway. Controls only need to exist where they are edited; rendering reads stored values straight off `Query::$settings`.
 
@@ -302,8 +314,8 @@ add_action('wp_ajax_sfx_nav_menu_parent_options', [MenuOptions::class, 'ajax_par
 
 In order:
 
-1. `check_ajax_referer('bricks-nonce-builder', 'nonce', false)` → `wp_send_json_error('Invalid nonce')`.
-2. `current_user_can('edit_posts')` → `wp_send_json_error('Insufficient permissions')`.
+1. `check_ajax_referer('bricks-nonce-builder', 'nonce', false)` → `wp_send_json_error(__('Invalid nonce', 'sfxtheme'))`.
+2. `current_user_can('edit_posts')` → `wp_send_json_error(__('Insufficient permissions', 'sfxtheme'))`.
 3. Normalise both `$_GET['locationId']` and `$_GET['menuId']` through one helper.
 4. `wp_send_json_success(MenuOptions::parent_options(MenuOptions::resolve_menu_id($location, $menu_id)))`.
 
@@ -448,6 +460,47 @@ Returns `null` for an unknown key or when no menu item can be resolved. Callers 
 Not redundancy. Verified in the Bricks source:
 
 - **`bricks/dynamic_data/render_tag`** (`providers.php:671`) — single-value contexts: a Link's URL, an image source, a condition's operand.
+
+#### `render_tag` pass-through contract
+
+This filter is shared by every dynamic-data provider on the site, and Bricks seeds it with the tag itself:
+
+```php
+$value = apply_filters( 'bricks/dynamic_data/render_tag', $tag, $post, $context );
+```
+
+So the incoming `$tag` doubles as "no one has resolved this yet". A callback that returns anything else for a tag it does not own — `''`, `null`, a normalised copy — destroys the value for every provider registered after it. The contract, exactly:
+
+```php
+public static function render_tag($tag, $post, $context)
+{
+    if (!is_string($tag) || strpos($tag, 'sfx_menu_item_') !== 0) {
+        return $tag;                     // not ours — byte-identical
+    }
+
+    $key = substr($tag, strlen('sfx_menu_item_'));
+
+    if (!in_array($key, self::KEYS, true)) {
+        return $tag;                     // ours by prefix, but not a known key
+    }
+
+    $value = self::value($post, $key);   // MenuItemTags::value()
+
+    return $value === null ? $tag : $value;   // unresolvable — hand it back
+}
+```
+
+Three rules:
+
+1. **Unrelated tag** → the exact incoming `$tag`, unchanged. Asserted by identity, not equality.
+2. **Owned tag that cannot be resolved** — used outside a menu-item loop, so `value()` returns `null` → the exact incoming `$tag`. Not an empty string: returning `''` would suppress a later provider's answer and, in a Link URL, silently produce `href=""` instead of leaving a visibly unresolved tag the editor can see and fix.
+3. **Owned tag inside the loop** → the **raw** resolved value, unescaped. The consuming control escapes for its own context; `esc_url()` here would be applied twice and corrupt the URL. This is the deliberate asymmetry with `render_content`, which does escape because it writes straight into markup.
+
+Bricks strips the outer braces before firing the filter (`providers.php:651-654`), so the tag arrives as `sfx_menu_item_title`, never `{sfx_menu_item_title}`.
+
+Matching is exact against the nine keys. A suffixed variant such as `sfx_menu_item_title:something` — Bricks' tag-filter syntax — is **not** supported and falls through rule 2, returning unchanged. Half-supporting filter syntax by ignoring the suffix would silently drop what the editor asked for; leaving the tag visible says so.
+
+`is_string()` guards the front because the dynamic-data picker can pass an array (`providers.php:647`).
 - **`bricks/dynamic_data/render_content`** (`providers.php:368`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 368) and does the substitution itself.
 
 `render_content` guards with `strpos($content, '{sfx_menu_item_') === false` and a `value($post, 'id') === null` check before doing any work, then substitutes with `strtr()`.
@@ -489,7 +542,7 @@ Following `tests/social-bricks-dynamic-data-test.php`: a standalone PHP script w
 
 `tests/support/nav-menu-query-stubs.php` stubs `wp_get_nav_menu_items`, `wp_get_nav_menus`, `get_registered_nav_menus`, `get_nav_menu_locations`, `wp_setup_nav_menu_item`, `_wp_menu_item_classes_by_context`, `esc_html`, `esc_url`, `esc_html__`, `__`, `sanitize_text_field`, `wp_unslash`, `check_ajax_referer`, `current_user_can`, `wp_send_json_success`, `wp_send_json_error`, and a minimal `Bricks\Query` double with settable `is_any_looping` / `get_loop_object` / `is_looping` returns.
 
-`wp_send_json_*` throw a marker exception rather than exiting, so a test can assert which branch the AJAX handler took. `_wp_menu_item_classes_by_context` records the argument it received (for case 5) and sets `->current` / `->current_item_ancestor` from the fixture.
+`add_filter` is stubbed as a per-hook registration counter for case 1d, and `\Bricks\Elements::$elements` is set to a three-element fixture. `wp_send_json_*` throw a marker exception rather than exiting, so a test can assert which branch the AJAX handler took. `_wp_menu_item_classes_by_context` records the argument it received (for case 5) and sets `->current` / `->current_item_ancestor` from the fixture.
 
 Fixture: a three-level menu where a title repeats across levels (to prove path labels disambiguate) and one title contains `&amp;` (to prove decoding).
 
@@ -498,6 +551,7 @@ Cases:
 0. `add_query_type` — `sfx_nav_menu` added; the five built-in types and a foreign key all survive unaltered.
 1. `resolve_menu_id` — all five rows of the precedence table above, the unassigned-location row (`'primary'` unassigned + `$menu_id = 7` → `0`) included as its own assertion.
 1b. `add_element_controls` — no `hasLoop` → array returned unchanged (identity); `hasLoop` present without a group → three controls added, none carrying `group`; `hasLoop` present with `query.group = 'addresses'` → all three carry `'addresses'`.
+1d. `register_element_controls` once-guard — with a three-element registry fixture and an `add_filter` stub that counts registrations per hook name, calling it **twice** yields exactly three registrations, one per element. Calling it once yields the same three (so the guard cannot pass by suppressing everything).
 1c. `parent_options` path traversal terminates on a cyclic `menu_item_parent` fixture instead of hanging.
 2. `parent_options` — relative entry first; all items present including leaves; `(0)` on a leaf; path label for a repeated name; entities decoded; empty menu → relative entry only.
 3. `run` — unrelated `object_type` returns the given `$results` unchanged, asserted with a non-empty sentinel array so a `[]` return fails; top level (empty parent); explicit parent ID; parent from another menu → empty; deleted menu → empty.
@@ -505,6 +559,13 @@ Cases:
 5. `_wp_menu_item_classes_by_context` receives the **unfiltered** item set (assert the stub's captured argument count equals the full menu, not the filtered subset).
 6. `value()` — all nine keys; unknown key → `null`; non-menu-item post with no loop → `null`; loop-context fallback returns the item.
 7. `render_content` — substitutes all nine; `esc_html` applied to `title`; `esc_url` to `url`; content without the prefix returned unchanged (identity, not just equal); content outside a loop returned unchanged.
+7b. `render_tag` — the three contract rules, each asserted by identity where the contract says "unchanged":
+   - unrelated tag (`post_title`) → the exact incoming `$tag`;
+   - owned tag outside a menu-item loop → the exact incoming `$tag`, **not** `''`;
+   - owned tag inside the loop → the resolved value, **raw**: assert `sfx_menu_item_url` returns a URL with no `esc_url()` applied and `sfx_menu_item_title` returns a title still containing `&`, proving the escaping asymmetry with `render_content`;
+   - unknown key under the owned prefix (`sfx_menu_item_bogus`) → unchanged;
+   - suffixed variant (`sfx_menu_item_title:foo`) → unchanged;
+   - non-string `$tag` (array from the picker) → returned as-is without a type error.
 8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly; nested array → treated as empty, not `"Array"`; slashed input round-trips through `wp_unslash()` before sanitising; one malformed parameter leaves the other intact.
 
 Manual verification in the builder, since no test can cover it:
