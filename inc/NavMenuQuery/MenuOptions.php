@@ -16,6 +16,11 @@ class MenuOptions
     /** Stored parent value meaning "children of the enclosing loop's item". */
     public const RELATIVE_PARENT = 'current';
 
+    public static function register(): void
+    {
+        add_action('wp_ajax_sfx_nav_menu_parent_options', [self::class, 'ajax_parent_options']);
+    }
+
     /**
      * Registered theme locations, slug => label.
      *
@@ -145,5 +150,54 @@ class MenuOptions
     private static function plain_text($text): string
     {
         return html_entity_decode((string) $text, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Feed the "Items below" select.
+     *
+     * No wp_ajax_nopriv_ counterpart: the builder is never available to
+     * logged-out users. The capability check is not about secrecy — menu
+     * structure is not sensitive — but enumerating it to any authenticated
+     * user is a needless disclosure, and the check is one line.
+     */
+    public static function ajax_parent_options(): void
+    {
+        if (!check_ajax_referer('bricks-nonce-builder', 'nonce', false)) {
+            wp_send_json_error(__('Invalid nonce', 'sfxtheme'));
+        }
+
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(__('Insufficient permissions', 'sfxtheme'));
+        }
+
+        $location = self::scalar_param('locationId');
+        $menu_id  = self::scalar_param('menuId');
+
+        wp_send_json_success(self::parent_options(self::resolve_menu_id($location, $menu_id)));
+    }
+
+    /**
+     * Read one request parameter safely.
+     *
+     * Bricks sends {{control}} values as arrays for some control types, so a
+     * single unwrap is expected. Anything still non-scalar after that is
+     * malformed — casting it would emit a notice and produce the literal
+     * "Array". wp_unslash() must precede sanitize_text_field(), or a value
+     * containing an escaped character is sanitised while still slashed and
+     * never matches a real key.
+     */
+    private static function scalar_param(string $key): string
+    {
+        $value = $_GET[$key] ?? '';
+
+        if (is_array($value)) {
+            $value = reset($value);
+        }
+
+        if (!is_scalar($value)) {
+            return '';
+        }
+
+        return sanitize_text_field(wp_unslash((string) $value));
     }
 }

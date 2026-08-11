@@ -89,6 +89,75 @@ $cyclic = MenuOptions::parent_options(5);
 assert_same(3, count($cyclic), 'Case 3k: a cyclic menu still returns, relative entry plus both items');
 assert_contains('A', $cyclic['41'], 'Case 3l: the cyclic item still gets a label');
 
+// ------------------------------------------ Case 4: the AJAX endpoint
+// wp_send_json_* throw SfxJsonSent instead of exiting, so each branch is
+// observable. This helper runs the endpoint and returns what it sent.
+
+function run_ajax_endpoint(array $get): SfxJsonSent
+{
+    $_GET = $get;
+
+    try {
+        MenuOptions::ajax_parent_options();
+    } catch (SfxJsonSent $sent) {
+        return $sent;
+    }
+
+    throw new RuntimeException('the endpoint returned without sending a response');
+}
+
+$test_nonce_valid      = false;
+$test_current_user_can = true;
+$sent = run_ajax_endpoint(['locationId' => 'primary']);
+assert_same(false, $sent->success, 'Case 4a: a bad nonce is rejected');
+assert_same('Invalid nonce', $sent->payload, 'Case 4b: with the translated message');
+
+$test_nonce_valid      = true;
+$test_current_user_can = false;
+$sent = run_ajax_endpoint(['locationId' => 'primary']);
+assert_same(false, $sent->success, 'Case 4c: an under-privileged user is rejected');
+assert_same('Insufficient permissions', $sent->payload, 'Case 4d: with the translated message');
+
+$test_current_user_can = true;
+
+// Happy path: location 'primary' is assigned to menu 4, the six-item fixture.
+$sent = run_ajax_endpoint(['locationId' => 'primary', 'menuId' => '']);
+assert_same(true, $sent->success, 'Case 4e: a valid request succeeds');
+assert_same(7, count($sent->payload), 'Case 4f: it returns the parent options for the resolved menu');
+
+// Bricks sends {{control}} values as arrays for some control types.
+$sent = run_ajax_endpoint(['locationId' => ['primary'], 'menuId' => '']);
+assert_same(7, count($sent->payload), 'Case 4g: an array-wrapped value is unwrapped');
+
+// A nested array survives reset() as an array. Casting it would yield "Array".
+// Menu 7 gets two items so its option count (3) differs from the empty-menu
+// count (1) — otherwise this assertion would pass even if the malformed
+// location had become the string "Array" and resolved to no menu at all.
+$test_menu_items[7] = [
+    new WP_Post(['ID' => 71, 'title' => 'Impressum', 'menu_item_parent' => '0']),
+    new WP_Post(['ID' => 72, 'title' => 'Datenschutz', 'menu_item_parent' => '0']),
+];
+
+$sent = run_ajax_endpoint(['locationId' => [['primary']], 'menuId' => '7']);
+assert_same(true, $sent->success, 'Case 4h: a nested array does not fatal');
+assert_same(
+    3,
+    count($sent->payload),
+    'Case 4i: the malformed location is treated as empty, so menuId 7 is used — it did not become the string "Array"'
+);
+
+// One malformed parameter must not corrupt the other.
+$sent = run_ajax_endpoint(['locationId' => '', 'menuId' => [['nonsense']]]);
+assert_same(['current'], array_keys($sent->payload), 'Case 4j: a malformed menuId resolves to no menu, not a crash');
+
+// wp_unslash must run before sanitize_text_field.
+$test_registered_nav_menus["o'brien"] = 'Test';
+$test_nav_menu_locations["o'brien"]   = 4;
+$sent = run_ajax_endpoint(['locationId' => "o\\'brien", 'menuId' => '']);
+assert_same(7, count($sent->payload), 'Case 4k: a slashed location slug is unslashed before sanitising, so it still matches');
+
+$_GET = [];
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
