@@ -460,6 +460,7 @@ Returns `null` for an unknown key or when no menu item can be resolved. Callers 
 Not redundancy. Verified in the Bricks source:
 
 - **`bricks/dynamic_data/render_tag`** (`providers.php:671`) — single-value contexts: a Link's URL, an image source, a condition's operand.
+- **`bricks/dynamic_data/render_content`** (`providers.php:368`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 368) and does the substitution itself.
 
 #### `render_tag` pass-through contract
 
@@ -501,7 +502,8 @@ Bricks strips the outer braces before firing the filter (`providers.php:651-654`
 Matching is exact against the nine keys. A suffixed variant such as `sfx_menu_item_title:something` — Bricks' tag-filter syntax — is **not** supported and falls through rule 2, returning unchanged. Half-supporting filter syntax by ignoring the suffix would silently drop what the editor asked for; leaving the tag visible says so.
 
 `is_string()` guards the front because the dynamic-data picker can pass an array (`providers.php:647`).
-- **`bricks/dynamic_data/render_content`** (`providers.php:368`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 368) and does the substitution itself.
+
+#### `render_content`
 
 `render_content` guards with `strpos($content, '{sfx_menu_item_') === false` and a `value($post, 'id') === null` check before doing any work, then substitutes with `strtr()`.
 
