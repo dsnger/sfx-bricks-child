@@ -7,9 +7,11 @@ require __DIR__ . '/support/nav-menu-query-bricks-stubs.php';
 
 require dirname(__DIR__) . '/inc/NavMenuQuery/MenuOptions.php';
 require dirname(__DIR__) . '/inc/NavMenuQuery/QueryType.php';
+require dirname(__DIR__) . '/inc/NavMenuQuery/MenuItemTags.php';
 
 use SFX\NavMenuQuery\MenuOptions;
 use SFX\NavMenuQuery\QueryType;
+use SFX\NavMenuQuery\MenuItemTags;
 
 // ---------------------------------------------------------------- fixtures
 
@@ -320,6 +322,53 @@ assert_same(
 );
 
 Bricks\Query::reset();
+
+// ------------------------------------------------- Case 7: value resolution
+
+MenuItemTags::reset_cache();
+Bricks\Query::reset();
+
+$item = new WP_Post([
+    'ID'                    => 13,
+    'title'                 => 'Kunst & Kultur',
+    'url'                   => 'https://example.test/kunst kultur',
+    'menu_item_parent'      => '12',
+    'target'                => '_blank',
+    'xfn'                   => 'noopener',
+    'description'           => 'Museen und mehr',
+    'classes'               => ['custom-class', 'current-menu-item'],
+    'current'               => true,
+    'current_item_ancestor' => false,
+]);
+
+assert_same('Kunst & Kultur', MenuItemTags::value($item, 'title'), 'Case 7a: title');
+assert_same('https://example.test/kunst kultur', MenuItemTags::value($item, 'url'), 'Case 7b: url is raw, unescaped');
+assert_same('13', MenuItemTags::value($item, 'id'), 'Case 7c: id');
+assert_same('_blank', MenuItemTags::value($item, 'target'), 'Case 7d: target');
+assert_same('noopener', MenuItemTags::value($item, 'rel'), 'Case 7e: rel comes from xfn');
+assert_same('custom-class current-menu-item', MenuItemTags::value($item, 'classes'), 'Case 7f: classes are joined');
+assert_same('Museen und mehr', MenuItemTags::value($item, 'description'), 'Case 7g: description');
+assert_same('1', MenuItemTags::value($item, 'is_active'), 'Case 7h: is_active renders as 1');
+assert_same('', MenuItemTags::value($item, 'is_ancestor'), 'Case 7i: is_ancestor renders as empty when false');
+
+assert_same(null, MenuItemTags::value($item, 'bogus'), 'Case 7j: an unknown key yields null');
+
+// 7k: a non-menu-item post with no loop running is not ours.
+$page = new WP_Post(['ID' => 500, 'post_type' => 'page']);
+assert_same(null, MenuItemTags::value($page, 'title'), 'Case 7k: a page outside a loop yields null');
+assert_same(null, MenuItemTags::value(null, 'title'), 'Case 7l: no post at all yields null');
+
+// 7m: the loop-context fallback — this is the link path, where Bricks passes
+// its own post id rather than the menu item.
+Bricks\Query::$looping      = true;
+Bricks\Query::$loop_objects = ['' => $item];
+
+assert_same('Kunst & Kultur', MenuItemTags::value($page, 'title'), 'Case 7m: the item is recovered from the loop when $post is not it');
+assert_same($item, MenuItemTags::item_from_context($page), 'Case 7n: item_from_context returns the loop object');
+assert_same($item, MenuItemTags::item_from_context($item), 'Case 7o: a menu item passed directly is used as-is');
+
+Bricks\Query::reset();
+MenuItemTags::reset_cache();
 
 // ------------------------------------------------------------- epilogue
 
