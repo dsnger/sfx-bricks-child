@@ -8,10 +8,12 @@ require __DIR__ . '/support/nav-menu-query-bricks-stubs.php';
 require dirname(__DIR__) . '/inc/NavMenuQuery/MenuOptions.php';
 require dirname(__DIR__) . '/inc/NavMenuQuery/QueryType.php';
 require dirname(__DIR__) . '/inc/NavMenuQuery/MenuItemTags.php';
+require dirname(__DIR__) . '/inc/NavMenuQuery/Controller.php';
 
 use SFX\NavMenuQuery\MenuOptions;
 use SFX\NavMenuQuery\QueryType;
 use SFX\NavMenuQuery\MenuItemTags;
+use SFX\NavMenuQuery\Controller;
 
 // ---------------------------------------------------------------- fixtures
 
@@ -479,6 +481,30 @@ assert_same(1, count(array_unique(array_column($ours, 'group'))), 'Case 9o: all 
 assert_true($ours[0]['label'] !== '', 'Case 9p: each entry carries a label');
 
 MenuItemTags::reset_cache();
+
+// ------------------------------------------------- Case 10: controller wiring
+// add_filter/add_action are stubbed as per-hook counters, so constructing the
+// controller shows exactly which hooks the feature registers.
+
+$test_filters = [];
+
+new Controller();
+
+assert_same(1, $test_filters['bricks/setup/control_options'] ?? 0, 'Case 10a: the query type is registered');
+assert_same(1, $test_filters['bricks/load_elements/before'] ?? 0, 'Case 10b: element control registration is hooked');
+assert_same(1, $test_filters['bricks/query/run'] ?? 0, 'Case 10c: the query runner is hooked');
+assert_same(1, $test_filters['wp_ajax_sfx_nav_menu_parent_options'] ?? 0, 'Case 10d: the AJAX endpoint is hooked');
+assert_same(1, $test_filters['bricks/dynamic_tags_list'] ?? 0, 'Case 10e: the builder tag list is hooked');
+assert_same(1, $test_filters['bricks/dynamic_data/render_tag'] ?? 0, 'Case 10f: single-value tag rendering is hooked');
+assert_same(1, $test_filters['bricks/dynamic_data/render_content'] ?? 0, 'Case 10g: content tag rendering is hooked');
+
+assert_same(7, array_sum($test_filters), 'Case 10h: exactly seven hooks — no collaborator silently skipped, none registered twice');
+
+// The feature config the theme's registry reads.
+$config = Controller::get_feature_config();
+assert_same('sfx_general_options', $config['activation_option_name'] ?? null, 'Case 10i: gated on the general options array');
+assert_same('enable_nav_menu_query', $config['activation_option_key'] ?? null, 'Case 10j: gated on the right key');
+assert_same(false, isset($config['menu_slug']), 'Case 10k: no menu_slug, so no empty settings page is created');
 
 // ------------------------------------------------------------- epilogue
 

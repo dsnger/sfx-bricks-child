@@ -12,6 +12,13 @@ namespace SFX\NavMenuQuery;
  */
 class Controller
 {
+    public function __construct()
+    {
+        QueryType::register();
+        MenuOptions::register();
+        MenuItemTags::register();
+    }
+
     /**
      * @return array<string, mixed>
      */
