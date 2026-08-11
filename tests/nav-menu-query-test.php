@@ -232,6 +232,95 @@ assert_same(1, $test_filters['bricks/elements/block/controls'] ?? 0, 'Case 5o: b
 assert_same(1, $test_filters['bricks/elements/map/controls'] ?? 0, 'Case 5p: map registered exactly once');
 assert_same(3, array_sum($test_filters), 'Case 5q: three registrations total — the guard suppresses the repeat, not the work');
 
+// -------------------------------------------------- Case 6: running the query
+
+/** Minimal stand-in for Bricks\Query as bricks/query/run receives it. */
+function make_query(string $object_type, array $settings): object
+{
+    return new class ($object_type, $settings) {
+        public string $object_type;
+        public array $settings;
+
+        public function __construct(string $object_type, array $settings)
+        {
+            $this->object_type = $object_type;
+            $this->settings    = $settings;
+        }
+    };
+}
+
+// 6a: the pass-through guard. A non-empty sentinel makes a `[]` return fail.
+$sentinel = ['untouched'];
+assert_same(
+    $sentinel,
+    QueryType::run($sentinel, make_query('post', [])),
+    'Case 6a: an unrelated query type gets its results back byte-identical, not []'
+);
+
+// The fixture menu (id 4) again, now with active state on item 13.
+$test_menu_items[4] = [
+    new WP_Post(['ID' => 10, 'title' => 'Sehen &amp; Erleben', 'menu_item_parent' => '0', 'current_item_ancestor' => true]),
+    new WP_Post(['ID' => 11, 'title' => 'Sehenswürdigkeiten', 'menu_item_parent' => '10']),
+    new WP_Post(['ID' => 12, 'title' => 'Veranstaltungen',    'menu_item_parent' => '10']),
+    new WP_Post(['ID' => 13, 'title' => 'Highlights',         'menu_item_parent' => '12', 'current' => true]),
+    new WP_Post(['ID' => 20, 'title' => 'Veranstaltungen',    'menu_item_parent' => '0']),
+    new WP_Post(['ID' => 30, 'title' => 'Kontakt',            'menu_item_parent' => '0']),
+];
+
+// 6b: top level.
+$top = QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => '']));
+assert_same([10, 20, 30], array_map(fn($i) => $i->ID, $top), 'Case 6b: an empty parent yields the top level');
+
+// 6c: an explicit parent.
+$children = QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => '10']));
+assert_same([11, 12], array_map(fn($i) => $i->ID, $children), 'Case 6c: an explicit parent yields its direct children');
+
+// 6d: keys are re-indexed, so Bricks sees a list.
+assert_same([0, 1], array_keys($children), 'Case 6d: results are array_values()-ed');
+
+// 6e / 6f: nothing to show.
+assert_same([], QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => '9999'])), 'Case 6e: an unknown parent yields nothing');
+assert_same([], QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 1234, 'sfxNavMenuParent' => ''])), 'Case 6f: a deleted menu yields nothing');
+assert_same([], QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuParent' => ''])), 'Case 6g: no menu selected at all yields nothing');
+
+// 6h: an unassigned location does NOT fall back to the stored id.
+assert_same(
+    [],
+    QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuLocation' => 'footer', 'sfxNavMenuId' => 4, 'sfxNavMenuParent' => ''])),
+    'Case 6h: an unassigned location yields nothing, it does not fall back to sfxNavMenuId'
+);
+
+// 6i: ancestry is computed on the full menu, not the filtered subset.
+$test_classes_by_context_calls = [];
+QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => '10']));
+assert_same([6], $test_classes_by_context_calls, 'Case 6i: _wp_menu_item_classes_by_context saw all six items, not the two filtered ones');
+
+// ------------------------------------- Case 6j+: the relative parent
+
+Bricks\Query::reset();
+Bricks\Query::$any_looping  = 'outer-query';
+Bricks\Query::$loop_objects = ['outer-query' => $test_menu_items[4][0]]; // item 10
+
+$relative = QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => 'current']));
+assert_same([11, 12], array_map(fn($i) => $i->ID, $relative), "Case 6j: 'current' resolves to the enclosing loop's item");
+
+Bricks\Query::reset();
+assert_same(
+    [],
+    QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => 'current'])),
+    "Case 6k: 'current' with no enclosing loop yields nothing rather than silently falling back to the top level"
+);
+
+Bricks\Query::$any_looping  = 'outer-query';
+Bricks\Query::$loop_objects = ['outer-query' => new WP_Post(['ID' => 500, 'post_type' => 'page'])];
+assert_same(
+    [],
+    QueryType::run([], make_query('sfx_nav_menu', ['sfxNavMenuId' => 4, 'sfxNavMenuParent' => 'current'])),
+    "Case 6l: 'current' with a non-menu-item enclosing object yields nothing"
+);
+
+Bricks\Query::reset();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

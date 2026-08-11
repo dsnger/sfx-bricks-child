@@ -19,6 +19,7 @@ class QueryType
     {
         add_filter('bricks/setup/control_options', [self::class, 'add_query_type']);
         add_action('bricks/load_elements/before', [self::class, 'register_element_controls']);
+        add_filter('bricks/query/run', [self::class, 'run'], 10, 2);
     }
 
     /**
@@ -127,5 +128,86 @@ class QueryType
         }
 
         return $controls;
+    }
+
+    /**
+     * Run the menu-items query.
+     *
+     * @param mixed  $results
+     * @param object $query   Bricks\Query
+     * @return mixed list<\WP_Post> for this query type, $results otherwise
+     */
+    public static function run($results, $query)
+    {
+        // Hand back exactly what we were given. bricks/query/run is shared by
+        // every query type and every plugin; normalising the value here would
+        // break whichever handler runs next.
+        if ($query->object_type !== self::OBJECT_TYPE) {
+            return $results;
+        }
+
+        $menu_id = MenuOptions::resolve_menu_id(
+            (string) ($query->settings['sfxNavMenuLocation'] ?? ''),
+            $query->settings['sfxNavMenuId'] ?? 0
+        );
+
+        if ($menu_id <= 0) {
+            return [];
+        }
+
+        $items = wp_get_nav_menu_items($menu_id);
+
+        if (!$items) {
+            return [];
+        }
+
+        // On the FULL set: ancestry is computed by comparing every item
+        // against every other, so filtering first would leave
+        // current_item_ancestor wrong exactly where it matters. WP calls this
+        // from wp_nav_menu(), never from wp_get_nav_menu_items().
+        _wp_menu_item_classes_by_context($items);
+
+        $parent = self::resolve_parent((string) ($query->settings['sfxNavMenuParent'] ?? ''));
+
+        if ($parent === null) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $items,
+            static fn($item) => (string) $item->menu_item_parent === $parent
+        ));
+    }
+
+    /**
+     * Turn the stored parent value into an id to filter on.
+     *
+     * The stored value is always one of three shapes: empty (top level), a
+     * numeric id, or the literal 'current'.
+     *
+     * @return string|null the parent id, or null meaning "return nothing"
+     */
+    private static function resolve_parent(string $stored): ?string
+    {
+        if ($stored !== MenuOptions::RELATIVE_PARENT) {
+            return $stored === '' ? '0' : (string) (int) $stored;
+        }
+
+        // While a nested query is being built, is_any_looping() returns the
+        // ENCLOSING query's id — the same mechanism Bricks uses to resolve
+        // dynamic data in nested queries (providers.php:358-366).
+        $enclosing = \Bricks\Query::is_any_looping();
+
+        if (!$enclosing) {
+            return null;
+        }
+
+        $object = \Bricks\Query::get_loop_object($enclosing);
+
+        if (!$object instanceof \WP_Post || $object->post_type !== 'nav_menu_item') {
+            return null;
+        }
+
+        return (string) $object->ID;
     }
 }
