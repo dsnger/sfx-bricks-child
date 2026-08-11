@@ -48,6 +48,8 @@ $test_nav_menu_locations     = [];   // slug => term_id
 $test_nav_menus              = [];   // list of objects with ->term_id, ->name
 $test_menu_items             = [];   // menu_id => list<WP_Post>|false
 $test_classes_by_context_calls = []; // item counts captured per call
+/** every object handed to wp_setup_nav_menu_item(), for identity assertions */
+$test_setup_nav_menu_item_args = [];
 $test_current_user_can       = true;
 $test_nonce_valid            = true;
 /**
@@ -76,6 +78,8 @@ if (!class_exists('WP_Post')) {
         public array $classes = [];
         public bool $current = false;
         public bool $current_item_ancestor = false;
+        /** Stub-only marker set by wp_setup_nav_menu_item(). See that function. */
+        public bool $sfx_prepared = false;
 
         /** @param array<string, mixed> $props */
         public function __construct(array $props = [])
@@ -135,18 +139,26 @@ function _wp_menu_item_classes_by_context(&$menu_items): void
 }
 
 /**
- * Real WP derives ->title/->url/etc. from postmeta here. It does NOT set the
- * context flags — ->current, ->current_item_ancestor and the current-menu-*
- * classes come from _wp_menu_item_classes_by_context(), which only ever runs
- * on the original item. Clearing them here is what makes the production code's
- * "read context off $item, not off the clone" split observable in tests:
- * reading these from the prepared object now yields empty, and fails.
+ * Real WP fills in the menu-item fields that are MISSING and preserves every
+ * property the object already carries — each assignment is guarded by
+ * `! isset( $menu_item->x ) ? … : $menu_item->x` (wp-includes/nav-menu.php:955
+ * onwards, ->classes at :980). It never touches ->current or
+ * ->current_item_ancestor at all; those come from
+ * _wp_menu_item_classes_by_context() and simply survive this call.
+ *
+ * So this stub preserves too. Clone isolation is not asserted by deleting
+ * properties — inventing behaviour WordPress does not have would lock in an
+ * implementation detail rather than model reality. It is asserted through
+ * object identity ($test_setup_nav_menu_item_args) and through ->sfx_prepared,
+ * a harmless marker the ORIGINAL item must never come back carrying.
  */
 function wp_setup_nav_menu_item($item)
 {
-    $item->current               = false;
-    $item->current_item_ancestor = false;
-    $item->classes               = [];
+    global $test_setup_nav_menu_item_args;
+
+    $test_setup_nav_menu_item_args[] = $item;
+
+    $item->sfx_prepared = true;
 
     return $item;
 }

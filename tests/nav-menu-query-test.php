@@ -355,9 +355,8 @@ assert_same('', MenuItemTags::value($item, 'is_ancestor'), 'Case 7i: is_ancestor
 
 // 7i2: the flag actually set. Without this, is_ancestor had no assertion that
 // could fail — '' is also what a wrongly-read flag produces, so a regression
-// (reading current_item_ancestor off the prepared clone, which
-// wp_setup_nav_menu_item clears) would have gone unnoticed. This gives
-// is_ancestor the same protection Case 7h gives is_active.
+// that never reads current_item_ancestor at all would have gone unnoticed.
+// This gives is_ancestor the same protection Case 7h gives is_active.
 $ancestor_item = new WP_Post([
     'ID'                    => 12,
     'title'                 => 'Veranstaltungen',
@@ -384,6 +383,28 @@ assert_same($item, MenuItemTags::item_from_context($page), 'Case 7n: item_from_c
 assert_same($item, MenuItemTags::item_from_context($item), 'Case 7o: a menu item passed directly is used as-is');
 
 Bricks\Query::reset();
+MenuItemTags::reset_cache();
+
+// 7p-7r: clone isolation. wp_setup_nav_menu_item() mutates whatever it is
+// handed — in production it writes ->title, ->url, ->target and friends onto
+// the object — so the loop's own item must never be the thing handed over, or
+// the query results are rewritten underneath the loop. Asserted by object
+// identity and by a marker the original must not come back carrying; the stub
+// does NOT delete properties to manufacture a signal, because real WordPress
+// deletes nothing (wp-includes/nav-menu.php:955 onwards).
+
+$test_setup_nav_menu_item_args = [];
+
+$isolation_item = new WP_Post(['ID' => 77, 'title' => 'Isolation probe']);
+MenuItemTags::value($isolation_item, 'title');
+
+assert_same(1, count($test_setup_nav_menu_item_args), 'Case 7p: wp_setup_nav_menu_item ran exactly once');
+assert_true(
+    $test_setup_nav_menu_item_args[0] !== $isolation_item,
+    'Case 7q: it was handed a CLONE, not the resolved item itself'
+);
+assert_same(false, $isolation_item->sfx_prepared, 'Case 7r: so the original never received the preparation mutation');
+
 MenuItemTags::reset_cache();
 
 // ------------------------------------------ Case 8: render_tag contract
