@@ -150,11 +150,22 @@ assert_same(
 $sent = run_ajax_endpoint(['locationId' => '', 'menuId' => [['nonsense']]]);
 assert_same(['current'], array_keys($sent->payload), 'Case 4j: a malformed menuId resolves to no menu, not a crash');
 
-// wp_unslash must run before sanitize_text_field.
-$test_registered_nav_menus["o'brien"] = 'Test';
-$test_nav_menu_locations["o'brien"]   = 4;
-$sent = run_ajax_endpoint(['locationId' => "o\\'brien", 'menuId' => '']);
-assert_same(7, count($sent->payload), 'Case 4k: a slashed location slug is unslashed before sanitising, so it still matches');
+// Case 4k: locks wp_unslash() BEFORE sanitize_text_field(). The input is
+// synthetic — WordPress' own slashing would not produce a backslash-space —
+// but with realistic slashed input the two orders commute, so a fixture that
+// can actually fail has to be constructed. Correct order normalises to 'x'
+// and resolves the location; swapped order leaves ' x', which matches nothing.
+$test_registered_nav_menus['x'] = 'Ordering probe';
+$test_nav_menu_locations['x']   = 4;
+
+$sent = run_ajax_endpoint(['locationId' => "\\ x", 'menuId' => '']);
+assert_same(7, count($sent->payload), 'Case 4k: wp_unslash runs before sanitize_text_field, so the slashed slug still matches');
+
+// An empty-array value: reset([]) is false, which is scalar, so it normalises
+// to the empty string rather than being rejected. Behaviour is correct but
+// incidental — this makes it explicit.
+$sent = run_ajax_endpoint(['locationId' => [], 'menuId' => '']);
+assert_same(['current'], array_keys($sent->payload), 'Case 4l: an empty-array value normalises to the empty string, not a crash');
 
 $_GET = [];
 
