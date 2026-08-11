@@ -460,8 +460,15 @@ Returns `null` for an unknown key or when no menu item can be resolved. Callers 
 
 Not redundancy. Verified in the Bricks source:
 
-- **`bricks/dynamic_data/render_tag`** (`providers.php:671`) — single-value contexts: a Link's URL, an image source, a condition's operand.
+- **`bricks/dynamic_data/render_tag`** (`providers.php:671`) — single-value contexts that resolve *one whole tag* through `Providers::render_tag()`: an image or background source (`assets.php:2072`, `builder.php:1952`, `query.php:1996`), a lightbox image (`base.php:2456`), the Code element's `useDynamicData` (`builder.php:1761`), SVG, and the builder's dynamic-data preview.
 - **`bricks/dynamic_data/render_content`** (`providers.php:368`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 368) and does the substitution itself.
+
+**A Link's `href` and a condition's operand are `render_content`, not `render_tag`.** Both go through `bricks_render_dynamic_data()` (`functions.php:286`), which is a one-line wrapper around `Providers::render_content()`:
+
+- Link: `Element::set_link_attributes()` calls `bricks_render_dynamic_data( $link_dd_tag, $post_id, $context )` (`base.php:2524`). The `link` *context* is passed, but the *entry point* is still the content path.
+- Condition: `Conditions::check()` calls `$instance->render_dynamic_data( … )` (`conditions.php:930`, `1084`, `1093`), which is `bricks_render_dynamic_data()` again (`base.php:4264-4267`).
+
+This matters because it bounds the blast radius of a `render_tag` defect: with `render_content` working and `render_tag` inert, text, links and conditions all still resolve, and only image-ish and preview contexts break.
 
 #### `render_tag` pass-through contract
 
@@ -474,13 +481,25 @@ $value = apply_filters( 'bricks/dynamic_data/render_tag', $tag, $post, $context 
 So the incoming `$tag` doubles as "no one has resolved this yet". A callback that returns anything else for a tag it does not own — `''`, `null`, a normalised copy — destroys the value for every provider registered after it. The contract, exactly:
 
 ```php
+add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 20, 3);
+
 public static function render_tag($tag, $post, $context)
 {
-    if (!is_string($tag) || strpos($tag, 'sfx_menu_item_') !== 0) {
+    if (!is_string($tag)) {
+        return $tag;                     // picker array — byte-identical
+    }
+
+    $needle = $tag;
+
+    if (strlen($needle) > 1 && $needle[0] === '{' && substr($needle, -1) === '}') {
+        $needle = substr($needle, 1, -1);
+    }
+
+    if (strpos($needle, 'sfx_menu_item_') !== 0) {
         return $tag;                     // not ours — byte-identical
     }
 
-    $key = substr($tag, strlen('sfx_menu_item_'));
+    $key = substr($needle, strlen('sfx_menu_item_'));
 
     if (!in_array($key, self::KEYS, true)) {
         return $tag;                     // ours by prefix, but not a known key
@@ -492,17 +511,66 @@ public static function render_tag($tag, $post, $context)
 }
 ```
 
+Every miss returns `$tag`, never `$needle`: whatever the previous callback produced is what the next one must see.
+
 Three rules:
 
 1. **Unrelated tag** → the exact incoming `$tag`, unchanged. Asserted by identity, not equality.
 2. **Owned tag that cannot be resolved** — used outside a menu-item loop, so `value()` returns `null` → the exact incoming `$tag`. Not an empty string: returning `''` would suppress a later provider's answer and, in a Link URL, silently produce `href=""` instead of leaving a visibly unresolved tag the editor can see and fix.
 3. **Owned tag inside the loop** → the **raw** resolved value, unescaped. The consuming control escapes for its own context; `esc_url()` here would be applied twice and corrupt the URL. This is the deliberate asymmetry with `render_content`, which does escape because it writes straight into markup.
 
-Bricks strips the outer braces before firing the filter (`providers.php:651-654`), so the tag arrives as `sfx_menu_item_title`, never `{sfx_menu_item_title}`.
+#### Priority 20 and brace tolerance — both mandatory
+
+`Providers::render_tag()` does strip the outer braces before firing the filter (`providers.php:651-654`), so the tag is *seeded* as `sfx_menu_item_title`. But Bricks is not merely the caller here — it is also the first callback on its own filter:
+
+```php
+add_filter( 'bricks/dynamic_data/render_tag', [ $instance, 'get_tag_value' ], 10, 3 );   // providers.php:150
+```
+
+`Providers::register()` runs at include time — `init.php:165`, reached from `bricks/functions.php:204` when the parent theme's `functions.php` loads. The child theme's `functions.php` runs *first* but only schedules `after_setup_theme` priority 1, so by the time our `Controller` constructor calls `add_filter()`, Bricks' callback is already there. At the same priority WordPress preserves registration order, so a priority-10 registration of ours can only ever run **second**.
+
+And Bricks' handler does not pass unknown tags through untouched. `get_tag_value()` looks the tag up in `Providers::$tags`, does not find ours (see above — `dynamic_tags_list` does not feed that array), and returns:
+
+```php
+$replace_tag = apply_filters( 'bricks/dynamic_data/replace_nonexistent_tags', false );
+$value       = $replace_tag ? '' : '{' . $original_tag . '}';   // providers.php:562
+```
+
+So the value reaching us is `{sfx_menu_item_title}`, braces restored.
+
+Hence both halves:
+
+- **Priority 10 + brace tolerance** — we still run after Bricks, which is fine, but only because the tie broke that way; nothing enforces it.
+- **Priority 20 + no brace tolerance** — we receive `{sfx_menu_item_title}`, the prefix test fails at offset 0, and the tag survives into the output. This is the state the feature shipped in until it was caught: `render_tag` was inert in production while the suite, which fed it bare tags, stayed green.
+- **Priority 10 + brace tolerance, ordering flipped** — we resolve first and hand Bricks a plain `Kunst & Kultur`, which it does not recognise either and re-wraps as `{Kunst & Kultur}`.
+- **Priority 20 + brace tolerance** — Bricks passes our tag through wrapped, we unwrap, resolve, and return a value Bricks will not see again. This is the only combination that is correct by construction rather than by accident.
+
+The bare form stays accepted, so the contract holds whether or not a preceding callback re-wrapped the tag. Only the outermost pair is stripped, matching what Bricks itself does.
+
+Testing this needs an integration-shaped case: the `add_filter` stub records registrations, it does not execute filters, so the sequence is composed by hand from a local helper that models Bricks' priority-10 behaviour (`fn($tag) => '{' . $tag . '}'`) followed by our callback. A bare-tag test cannot see this defect — that is precisely how it survived eleven review passes.
 
 Matching is exact against the nine keys. A suffixed variant such as `sfx_menu_item_title:something` — Bricks' tag-filter syntax — is **not** supported and falls through rule 2, returning unchanged. Half-supporting filter syntax by ignoring the suffix would silently drop what the editor asked for; leaving the tag visible says so.
 
 `is_string()` guards the front because the dynamic-data picker can pass an array (`providers.php:647`).
+
+#### Follow-up note — registering a real provider (a spike, not a decision)
+
+Not an ADR, and not settled. Recording it so the option is not rediscovered from scratch.
+
+Everything above exists because our tags are never in `Providers::$tags`. There is a hook that could put them there:
+
+```php
+apply_filters( 'bricks/dynamic_data/register_providers', [ 'cmb2', 'wp', 'woo', … ] );   // init.php:151
+```
+
+Two reasons not to call that the "real fix" yet:
+
+- The Bricks source itself marks it **undocumented** — `// NOTE: bricks/dynamic_data/register_providers Undocumented (@since 1.6.2)` (`init.php:149`). An undocumented hook carries no compatibility promise across Bricks releases.
+- It takes provider *slugs*, not objects, and `register_providers()` composes each slug into a class name inside Bricks' own namespace: `'Bricks\Integrations\Dynamic_Data\Providers\Provider_' . …` (`providers.php:187`). Registering through it means declaring a class in the parent theme's namespace and matching an internal naming convention and provider interface. That is a much larger coupling surface than two documented filters.
+
+If anyone picks this up, it is a **spike**, and the question it has to answer is empirical: does a provider registered this way behave correctly on the frontend, in the builder, over AJAX (`ajax.php:3383`) and through the REST/API path (`api.php:1892`), across a Bricks upgrade? Prove that across all four contexts first; an ADR is only worth writing once there is evidence.
+
+Until then the two-filter approach stands on documented, filter-only coupling, which is the trade the rest of this design makes everywhere else.
 
 #### `render_content`
 
@@ -562,13 +630,17 @@ Cases:
 5. `_wp_menu_item_classes_by_context` receives the **unfiltered** item set (assert the stub's captured argument count equals the full menu, not the filtered subset).
 6. `value()` — all nine keys; unknown key → `null`; non-menu-item post with no loop → `null`; loop-context fallback returns the item.
 7. `render_content` — substitutes all nine; `esc_html` applied to `title`; `esc_url` to `url`; content without the prefix returned unchanged (identity, not just equal); content outside a loop returned unchanged.
-7b. `render_tag` — the three contract rules, each asserted by identity where the contract says "unchanged":
-   - unrelated tag (`post_title`) → the exact incoming `$tag`;
-   - owned tag outside a menu-item loop → the exact incoming `$tag`, **not** `''`;
-   - owned tag inside the loop → the resolved value, **raw**: assert `sfx_menu_item_url` returns a URL with no `esc_url()` applied and `sfx_menu_item_title` returns a title still containing `&`, proving the escaping asymmetry with `render_content`;
-   - unknown key under the owned prefix (`sfx_menu_item_bogus`) → unchanged;
-   - suffixed variant (`sfx_menu_item_title:foo`) → unchanged;
-   - non-string `$tag` (array from the picker) → returned as-is without a type error.
+7b. `render_tag` — the three contract rules, each asserted by identity where the contract says "unchanged". The inputs are **brace-wrapped**, because that is the shape Bricks' priority-10 handler delivers; bare inputs get their own cases so both forms stay covered:
+   - unrelated tag (`{post_title}`) → the exact incoming `$tag`;
+   - owned tag outside a menu-item loop → the exact incoming `$tag`, **not** `''`, and **not** unwrapped;
+   - owned tag inside the loop → the resolved value, **raw**: assert `{sfx_menu_item_url}` returns a URL with no `esc_url()` applied and `{sfx_menu_item_title}` returns a title still containing `&`, proving the escaping asymmetry with `render_content`;
+   - unknown key under the owned prefix (`{sfx_menu_item_bogus}`) → unchanged;
+   - suffixed variant (`{sfx_menu_item_title:foo}`) → unchanged;
+   - doubly-wrapped (`{{sfx_menu_item_title}}`) → unchanged, since only the outermost pair is stripped;
+   - non-string `$tag` (array from the picker) → returned as-is without a type error;
+   - the **loop-recovery** path through the filter: a non-menu-item `$post` with a loop running still resolves, and still does not claim foreign tags.
+7c. `render_tag` **in sequence**, not in isolation — the case a bare-tag test cannot express. Compose a local helper modelling Bricks' priority-10 behaviour for an unknown tag (`'{' . $tag . '}'`) with our callback, then assert: an owned tag resolves; an unrelated tag comes back exactly as Bricks left it; an owned-but-unresolvable tag comes back brace-wrapped, not stripped and not `''`. Verify by deliberate break — remove only the brace tolerance, keep priority 20, and confirm this fails.
+7d. Hook registration is asserted on shape, not just count: the `add_filter` stub records `callback` / `priority` / `accepted_args` per hook, so `render_tag` at priority 20 and `bricks/query/run` with `accepted_args` 2 are both locked. A per-hook counter cannot see either, which is how the priority defect survived review.
 8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly; nested array → treated as empty, not `"Array"`; empty array → treated as empty, not a fatal; one malformed parameter leaves the other intact; and the unslash-before-sanitize ordering locked by a fixture **verified to fail under the swapped composition**.
 
    That last one needs care. Under these stubs (`sanitize_text_field` = `trim(strip_tags(…))`) the two orders **commute for most realistic input** — a plausible `o\'brien` fixture yields the same string either way and so cannot fail. A discriminating fixture is necessarily synthetic: a literal backslash-space-`x` normalises to `x` in the correct order and to `' x'` in the swapped one. Any replacement fixture must be re-verified the same way — run the suite, swap the composition, confirm the case fails, revert — before it is trusted to lock anything.
