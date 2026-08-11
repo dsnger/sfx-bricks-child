@@ -126,9 +126,20 @@ function _wp_menu_item_classes_by_context(&$menu_items): void
     }
 }
 
-/** Real WP resolves ->url and ->title here; fixtures already carry both. */
+/**
+ * Real WP derives ->title/->url/etc. from postmeta here. It does NOT set the
+ * context flags — ->current, ->current_item_ancestor and the current-menu-*
+ * classes come from _wp_menu_item_classes_by_context(), which only ever runs
+ * on the original item. Clearing them here is what makes the production code's
+ * "read context off $item, not off the clone" split observable in tests:
+ * reading these from the prepared object now yields empty, and fails.
+ */
 function wp_setup_nav_menu_item($item)
 {
+    $item->current               = false;
+    $item->current_item_ancestor = false;
+    $item->classes               = [];
+
     return $item;
 }
 

@@ -90,7 +90,7 @@ class MenuItemTags
                 'id'          => (string) $id,
                 'target'      => (string) ($prepared->target ?? ''),
                 'rel'         => (string) ($prepared->xfn ?? ''),
-                'classes'     => implode(' ', array_filter((array) ($item->classes ?? []))),
+                'classes'     => implode(' ', array_filter((array) ($item->classes ?? []), static fn($c) => $c !== '')),
                 'description' => (string) ($prepared->description ?? ''),
                 'is_active'   => !empty($item->current) ? '1' : '',
                 'is_ancestor' => !empty($item->current_item_ancestor) ? '1' : '',
