@@ -353,6 +353,20 @@ assert_same('Museen und mehr', MenuItemTags::value($item, 'description'), 'Case 
 assert_same('1', MenuItemTags::value($item, 'is_active'), 'Case 7h: is_active renders as 1');
 assert_same('', MenuItemTags::value($item, 'is_ancestor'), 'Case 7i: is_ancestor renders as empty when false');
 
+// 7i2: the flag actually set. Without this, is_ancestor had no assertion that
+// could fail — '' is also what a wrongly-read flag produces, so a regression
+// (reading current_item_ancestor off the prepared clone, which
+// wp_setup_nav_menu_item clears) would have gone unnoticed. This gives
+// is_ancestor the same protection Case 7h gives is_active.
+$ancestor_item = new WP_Post([
+    'ID'                    => 12,
+    'title'                 => 'Veranstaltungen',
+    'current_item_ancestor' => true,
+]);
+
+assert_same('1', MenuItemTags::value($ancestor_item, 'is_ancestor'), 'Case 7i2: is_ancestor renders as 1 when the flag is set on the original item');
+assert_same('', MenuItemTags::value($ancestor_item, 'is_active'), 'Case 7i3: an ancestor that is not the current item is not active');
+
 assert_same(null, MenuItemTags::value($item, 'bogus'), 'Case 7j: an unknown key yields null');
 
 // 7k: a non-menu-item post with no loop running is not ours.
