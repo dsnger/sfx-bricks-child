@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **PHP `>=8.0`** (`composer.json:12`). `match`, constructor promotion, `?->` are available. Do not use PHP 8.1+ features (`readonly`, enums, `never`).
-- **Every file starts** with `<?php`, a blank line, `declare(strict_types=1);`, a blank line, then `namespace SFX\NavMenuQuery;`.
+- **Every file under `inc/NavMenuQuery/`** starts with `<?php`, a blank line, `declare(strict_types=1);`, a blank line, then `namespace SFX\NavMenuQuery;`. Test files and stubs do not — they are global-namespace, except the `Bricks` doubles.
 - **Text domain is `sfxtheme`** for every user-facing string, without exception.
 - **Namespaced identifiers only** — query type `sfx_nav_menu`, controls `sfxNavMenu*`, tags `{sfx_menu_item_*}`, AJAX action `sfx_nav_menu_parent_options`, option key `enable_nav_menu_query`. No `navMenu`, no `{menu_item_*}`, no back-compat aliases.
 - **Nothing site-specific.** No hardcoded menu names, IDs, locations, or German strings in PHP. German lives only in `languages/de_DE.po`.
@@ -49,12 +49,14 @@ The feature must be discoverable, off by default, and visible in the settings UI
 - Create: `inc/NavMenuQuery/Controller.php`
 - Modify: `inc/GeneralThemeOptions/Settings.php` (add one entry to `get_fields()`)
 - Modify: `inc/ThemeSettingsOverview/OverviewProvider.php` (add one entry to `build_builtin_modules_group()`)
+- Modify: `tests/support/overview-general-theme-options-settings-stub.php` (add the field so the stub matches the real settings)
+- Modify: `tests/theme-settings-overview-provider-test.php` (assert the new module's default and enabled states)
 - Modify: `README.md:5`
 - Delete: `query/example.php`
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `SFX\NavMenuQuery\Controller::get_feature_config(): array`; the constructor `new Controller()`, which later tasks fill with `register()` calls.
+- Produces: `SFX\NavMenuQuery\Controller::get_feature_config(): array`. The class declares **no constructor** in this task — Task 10 adds one. `new Controller()` works either way, so the feature is loadable now and does nothing, which is exactly right until its collaborators exist.
 
 **Context you need:** `SFXBricksChildTheme::auto_register_features()` (`inc/SFXBricksChildTheme.php:323`) globs `inc/*/Controller.php` and calls the static `get_feature_config()` on each. `load_dependencies()` (line 188) then does `new $feature['class']()` — but only when `is_option_enabled($config['activation_option_name'], $config['activation_option_key'])` is true. Copy the config shape from `inc/SmoothScroll/Controller.php:53-66`, minus `menu_slug` / `page_title` / `description`: `SFXBricksChildAdmin` skips features without those (`inc/SFXBricksChildAdmin.php:45`), which is how a toggle-only feature avoids getting an empty settings page.
 
@@ -77,11 +79,6 @@ namespace SFX\NavMenuQuery;
  */
 class Controller
 {
-    public function __construct()
-    {
-        // Filled in by Task 10 once the collaborators exist.
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -156,7 +153,51 @@ grep -rn "query/example\|bl_setup_query_controls\|bl_maybe_run_new_query" --incl
 
 If that grep prints anything, stop and report it rather than deleting.
 
-- [ ] **Step 6: Verify PHP syntax**
+- [ ] **Step 6: Write the failing activation assertions**
+
+The overview suite has its own copy of the settings fields, so it must learn about the new toggle or it proves nothing about it. Add to `tests/theme-settings-overview-provider-test.php`, directly after the existing `enable_smooth_scroll` line in the "Fresh install defaults" block (line 105):
+
+```php
+assert_status($data, 'enable_nav_menu_query', 'inactive', 'Menu Items query type module default inactive');
+```
+
+and add a new block after the existing "WP Optimizer module off" block:
+
+```php
+// Menu Items query type, switched on
+reset_test_state();
+$test_options['sfx_general_options'] = ['enable_nav_menu_query' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_nav_menu_query', 'active', 'Menu Items query type module active when enabled');
+```
+
+- [ ] **Step 7: Run the overview test to verify it fails**
+
+```bash
+php tests/theme-settings-overview-provider-test.php
+```
+
+Expected: two failures reported and exit 1 — the stub's `get_fields()` does not yet carry `enable_nav_menu_query`, so `get_item_status()` cannot find the row.
+
+- [ ] **Step 8: Teach the stub about the new field**
+
+In `tests/support/overview-general-theme-options-settings-stub.php`, add to the array returned by `get_fields()`, after the `enable_smooth_scroll` line:
+
+```php
+            ['id' => 'enable_nav_menu_query', 'default' => 0],
+```
+
+The stub mirrors the real `Settings::get_fields()`; `'default' => 0` must match what Step 2 wrote, or the test asserts a default the code does not have.
+
+- [ ] **Step 9: Run the overview test to verify it passes**
+
+```bash
+php tests/theme-settings-overview-provider-test.php
+```
+
+Expected: exit 0 and `All theme settings overview provider tests passed.` — note this suite does **not** print a `PASS:` line; that convention belongs to the newer tests.
+
+- [ ] **Step 10: Verify PHP syntax**
 
 ```bash
 php -l inc/NavMenuQuery/Controller.php && php -l inc/GeneralThemeOptions/Settings.php && php -l inc/ThemeSettingsOverview/OverviewProvider.php
@@ -164,18 +205,10 @@ php -l inc/NavMenuQuery/Controller.php && php -l inc/GeneralThemeOptions/Setting
 
 Expected: `No syntax errors detected` three times.
 
-- [ ] **Step 7: Verify the existing suite still passes**
+- [ ] **Step 11: Commit**
 
 ```bash
-php tests/theme-settings-overview-provider-test.php
-```
-
-Expected: exit 0 with a `PASS:` line. This test reads the overview provider, so it is the one that would notice a broken edit in Step 3.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add inc/NavMenuQuery/Controller.php inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php README.md
+git add inc/NavMenuQuery/Controller.php inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php README.md tests/theme-settings-overview-provider-test.php tests/support/overview-general-theme-options-settings-stub.php
 git rm --cached query/example.php 2>/dev/null; git add -u query/
 git commit -m "feat(nav-menu-query): add opt-in feature skeleton and toggle"
 ```
@@ -2105,7 +2138,8 @@ git commit -m "feat(nav-menu-query): substitute menu item tags in content and th
 Every collaborator exists and is tested. This is the line that makes the feature live.
 
 **Files:**
-- Modify: `inc/NavMenuQuery/Controller.php` (fill the constructor)
+- Modify: `inc/NavMenuQuery/Controller.php` (add the constructor)
+- Modify: `tests/nav-menu-query-test.php` (append Case 10 group and a new `require`)
 
 **Interfaces:**
 - Consumes: `QueryType::register()`, `MenuOptions::register()`, `MenuItemTags::register()`.
@@ -2115,9 +2149,63 @@ Every collaborator exists and is tested. This is the line that makes the feature
 
 Composer uses PSR-4 (`composer.json` `autoload.psr-4`, `SFX\` → `inc/`), so new class files are picked up without regenerating the autoloader. `functions.php` also has a PSR-4 fallback autoloader for installs without `vendor/`.
 
-- [ ] **Step 1: Fill the constructor**
+- [ ] **Step 1: Write the failing test**
 
-Replace the constructor body in `inc/NavMenuQuery/Controller.php`:
+Wiring is code, so it gets a test. A missing or misspelled `register()` call would otherwise survive every suite and only surface during manual verification in Task 12.
+
+Add the require at the top of `tests/nav-menu-query-test.php`:
+
+```php
+require dirname(__DIR__) . '/inc/NavMenuQuery/Controller.php';
+```
+
+and the import:
+
+```php
+use SFX\NavMenuQuery\Controller;
+```
+
+Then append before the epilogue:
+
+```php
+// ------------------------------------------------- Case 10: controller wiring
+// add_filter/add_action are stubbed as per-hook counters, so constructing the
+// controller shows exactly which hooks the feature registers.
+
+$test_filters = [];
+
+new Controller();
+
+assert_same(1, $test_filters['bricks/setup/control_options'] ?? 0, 'Case 10a: the query type is registered');
+assert_same(1, $test_filters['bricks/load_elements/before'] ?? 0, 'Case 10b: element control registration is hooked');
+assert_same(1, $test_filters['bricks/query/run'] ?? 0, 'Case 10c: the query runner is hooked');
+assert_same(1, $test_filters['wp_ajax_sfx_nav_menu_parent_options'] ?? 0, 'Case 10d: the AJAX endpoint is hooked');
+assert_same(1, $test_filters['bricks/dynamic_tags_list'] ?? 0, 'Case 10e: the builder tag list is hooked');
+assert_same(1, $test_filters['bricks/dynamic_data/render_tag'] ?? 0, 'Case 10f: single-value tag rendering is hooked');
+assert_same(1, $test_filters['bricks/dynamic_data/render_content'] ?? 0, 'Case 10g: content tag rendering is hooked');
+
+assert_same(7, array_sum($test_filters), 'Case 10h: exactly seven hooks — no collaborator silently skipped, none registered twice');
+
+// The feature config the theme's registry reads.
+$config = Controller::get_feature_config();
+assert_same('sfx_general_options', $config['activation_option_name'] ?? null, 'Case 10i: gated on the general options array');
+assert_same('enable_nav_menu_query', $config['activation_option_key'] ?? null, 'Case 10j: gated on the right key');
+assert_same(false, isset($config['menu_slug']), 'Case 10k: no menu_slug, so no empty settings page is created');
+```
+
+Case 10h is the one that matters: asserting each hook individually would still pass if a fourth collaborator were added and forgotten, and the total catches a duplicated `register()` call.
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+```bash
+php tests/nav-menu-query-test.php
+```
+
+Expected: seven `FAIL:` lines (10a-10g each got `0`), plus 10h reporting `0`, and exit 1 — `Controller` has no constructor yet, so nothing is registered.
+
+- [ ] **Step 3: Add the constructor**
+
+Add to `inc/NavMenuQuery/Controller.php`, above `get_feature_config()`:
 
 ```php
     public function __construct()
@@ -2128,26 +2216,31 @@ Replace the constructor body in `inc/NavMenuQuery/Controller.php`:
     }
 ```
 
-- [ ] **Step 2: Verify syntax and the full suite**
+- [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
 php -l inc/NavMenuQuery/Controller.php && php tests/nav-menu-query-test.php
 ```
 
-Expected: `No syntax errors detected`, then `PASS: all nav-menu-query tests`.
+Expected: `No syntax errors detected`, then `PASS: all nav-menu-query tests`, exit 0.
 
-- [ ] **Step 3: Run every test in the repo**
+- [ ] **Step 5: Run every test in the repo**
 
 ```bash
-for t in tests/*-test.php; do echo "== $t"; php "$t" || echo "FAILED: $t"; done
+failed=0
+for t in tests/*-test.php; do
+  echo "== $t"
+  php "$t" || failed=1
+done
+exit "$failed"
 ```
 
-Expected: every file prints its own `PASS:` line and no `FAILED:` line appears. This is the first point at which the new feature could affect existing behaviour, so all suites run, not just the new one.
+Expected: exit status 0. Check it explicitly with `echo $?` — a plain `php "$t" || echo ...` loop leaves a zero status behind and would report success while a suite was failing. This is the first point at which the new feature could affect existing behaviour, so every suite runs, not just the new one.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add inc/NavMenuQuery/Controller.php
+git add inc/NavMenuQuery/Controller.php tests/nav-menu-query-test.php
 git commit -m "feat(nav-menu-query): wire the feature's hooks"
 ```
 
@@ -2165,9 +2258,17 @@ Every string the feature shows is currently English. A string added without its 
 - Consumes: the source strings written in Tasks 1, 3, 4, 5 and 9.
 - Produces: nothing other code calls.
 
-**Context you need:** the theme loads its text domain via `load_child_theme_textdomain('sfxtheme', get_stylesheet_directory() . '/languages')` (`inc/SFXBricksChildTheme.php:183`). `de_DE.po` already carries ~1245 entries; append, never rewrite.
+**Context you need:** the theme loads its text domain via `load_child_theme_textdomain('sfxtheme', get_stylesheet_directory() . '/languages')` (`inc/SFXBricksChildTheme.php:183`). `de_DE.po` is an existing catalogue — append to it, never rewrite it.
 
-- [ ] **Step 1: Collect every new source string**
+- [ ] **Step 1: Record the baseline count**
+
+```bash
+msgfmt --statistics languages/de_DE.po -o /dev/null
+```
+
+Write the number down. Step 5 compares against it rather than against a figure hardcoded in this plan, which would go stale the moment anything else adds a string.
+
+- [ ] **Step 2: Collect every new source string**
 
 ```bash
 grep -rhoE "(__|esc_html__)\('([^']|\\\\')+', *'sfxtheme'\)" inc/NavMenuQuery/ \
@@ -2176,7 +2277,7 @@ grep -rhoE "(__|esc_html__)\('([^']|\\\\')+', *'sfxtheme'\)" inc/NavMenuQuery/ \
 
 Cross-check against the two strings added outside the feature directory in Tasks 1 and 3 — the toggle label and description in `inc/GeneralThemeOptions/Settings.php`, and the overview label in `inc/ThemeSettingsOverview/OverviewProvider.php`. Every one of them needs an entry.
 
-- [ ] **Step 2: Append the entries to `languages/de_DE.po`**
+- [ ] **Step 3: Append the entries to `languages/de_DE.po`**
 
 ```po
 msgid "Enable Menu Items query type"
@@ -2263,7 +2364,7 @@ done
 
 Any line printing `1` or more already has an entry — skip that one rather than adding a second.
 
-- [ ] **Step 3: Recompile the `.mo`**
+- [ ] **Step 4: Recompile the `.mo`**
 
 ```bash
 msgfmt languages/de_DE.po -o languages/de_DE.mo && echo "compiled"
@@ -2271,15 +2372,15 @@ msgfmt languages/de_DE.po -o languages/de_DE.mo && echo "compiled"
 
 Expected: `compiled`, no warnings. If `msgfmt` is unavailable, install gettext (`brew install gettext`) — do not hand-edit the binary and do not skip this step, because WordPress reads the `.mo`, not the `.po`.
 
-- [ ] **Step 4: Verify the catalogue is well-formed**
+- [ ] **Step 5: Verify the catalogue is well-formed and grew**
 
 ```bash
 msgfmt --check --statistics languages/de_DE.po -o /dev/null
 ```
 
-Expected: a line like `1269 translated messages.` with no error output. A duplicate-`msgid` error here means Step 2's check was skipped for some string.
+Expected: no error output, and a translated-message count **higher than the Step 1 baseline** by the number of entries you actually appended (fewer than 24 if some already existed). A duplicate-`msgid` error here means Step 3's check was skipped for some string. A count equal to the baseline means nothing was appended.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add languages/de_DE.po languages/de_DE.mo
@@ -2379,11 +2480,19 @@ After Task 12, the branch is complete. Use `superpowers:finishing-a-development-
 Before opening a PR:
 
 ```bash
-for t in tests/*-test.php; do php "$t" || echo "FAILED: $t"; done
-for f in inc/NavMenuQuery/*.php; do php -l "$f"; done
+failed=0
+for t in tests/*-test.php; do
+  php "$t" || failed=1
+done
+for f in inc/NavMenuQuery/*.php; do
+  php -l "$f" || failed=1
+done
+echo "aggregate status: $failed"
 git log --oneline main..HEAD
 ```
 
-Expected: every suite passes, every file lints clean, and the log shows eleven commits (Tasks 1-11; Task 12 adds none).
+Expected: `aggregate status: 0`, and the log shows eleven commits (Tasks 1-11; Task 12 adds none).
+
+The accumulator is not decoration. `php "$t" || echo "FAILED: $t"` leaves the *echo's* exit status behind, so the loop finishes green while a suite is red — the failure scrolls past in a wall of output and the branch looks ready.
 
 The PR description should carry the spec's *Migration from the snippet* section verbatim — anyone enabling this on a site running the visitessen snippet needs those four steps, and step 4 (replacing a tag in the parent field with the *Children of the current item* entry) is the only behavioural change among them.

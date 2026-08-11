@@ -10,7 +10,8 @@
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
 - one name in the module sentence at `README.md:5`
 - new German strings in `languages/de_DE.po`, recompiled to `languages/de_DE.mo`
-- one test plus one stub file in `tests/`
+- one test plus two stub files in `tests/` — a global-namespace stub file and a `Bricks`-namespace one, because PHP forbids a bracketed namespace block alongside non-namespaced code (the same split as `social-bricks-stubs.php` / `sfx-namespaced-stubs.php`)
+- new assertions in `tests/theme-settings-overview-provider-test.php` and one field in `tests/support/overview-general-theme-options-settings-stub.php`, covering the new toggle
 - delete `query/example.php` (dead scaffold, loaded by nothing)
 
 No new options are stored, so `uninstall.php` is untouched — the toggle lives inside the existing `sfx_general_options` array.
