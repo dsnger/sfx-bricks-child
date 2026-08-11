@@ -6143,7 +6143,7 @@ msgid "Menu location"
 msgstr "Menü-Position"
 
 msgid "Select a location"
-msgstr "Position wählen"
+msgstr "Position auswählen"
 
 msgid "Follows whichever menu is assigned to this location."
 msgstr "Folgt dem Menü, das dieser Position zugewiesen ist."
@@ -6155,7 +6155,7 @@ msgid "Only used when no location is selected."
 msgstr "Wird nur verwendet, wenn keine Position gewählt ist."
 
 msgid "Items below"
-msgstr "Punkte unter"
+msgstr "Menüpunkte unter"
 
 msgid "Top level"
 msgstr "Oberste Ebene"
@@ -6188,4 +6188,4 @@ msgid "Is current page"
 msgstr "Ist aktuelle Seite"
 
 msgid "Is ancestor of current page"
-msgstr "Ist übergeordnet zur aktuellen Seite"
+msgstr "Ist der aktuellen Seite übergeordnet"
