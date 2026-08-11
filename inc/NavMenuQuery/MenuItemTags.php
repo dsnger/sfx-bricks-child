@@ -29,7 +29,9 @@ class MenuItemTags
 
     public static function register(): void
     {
+        add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
         add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 10, 3);
+        add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 10, 3);
     }
 
     /**
@@ -149,5 +151,92 @@ class MenuItemTags
     public static function reset_cache(): void
     {
         self::$cache = [];
+    }
+
+    /**
+     * Human labels for the picker, keyed by tag key.
+     *
+     * @return array<string, string>
+     */
+    public static function labels(): array
+    {
+        return [
+            'title'       => __('Title', 'sfxtheme'),
+            'url'         => __('URL', 'sfxtheme'),
+            'id'          => __('ID', 'sfxtheme'),
+            'target'      => __('Link target', 'sfxtheme'),
+            'rel'         => __('Link relation', 'sfxtheme'),
+            'classes'     => __('CSS classes', 'sfxtheme'),
+            'description' => __('Description', 'sfxtheme'),
+            'is_active'   => __('Is current page', 'sfxtheme'),
+            'is_ancestor' => __('Is ancestor of current page', 'sfxtheme'),
+        ];
+    }
+
+    /**
+     * Put the nine tags in the builder's tag picker.
+     *
+     * Presentation only — bricks/dynamic_tags_list is builder-facing
+     * (providers.php:797) and does not feed the content parser. Resolution
+     * still comes from render_tag() and render_content().
+     *
+     * @param array<int, array<string, string>> $tags
+     * @return array<int, array<string, string>>
+     */
+    public static function add_tags_to_builder(array $tags): array
+    {
+        $group = __('Menu item', 'sfxtheme');
+
+        foreach (self::labels() as $key => $label) {
+            $tags[] = [
+                'name'  => '{' . self::PREFIX . $key . '}',
+                'label' => $label,
+                'group' => $group,
+            ];
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Resolve tags inside text content.
+     *
+     * Not a duplicate of render_tag(). Bricks' content parser only resolves
+     * tags present in Providers::$tags, which is built from registered
+     * provider objects (providers.php:222, 327) — bricks/dynamic_tags_list
+     * does not feed it. So the parser will never resolve these tags, but this
+     * filter fires regardless (providers.php:368) and does the work itself.
+     *
+     * Values ARE escaped here, unlike render_tag(), because this writes
+     * straight into markup.
+     *
+     * @param mixed $content
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_content($content, $post, $context)
+    {
+        if (!is_string($content) || strpos($content, '{' . self::PREFIX) === false) {
+            return $content;
+        }
+
+        if (self::value($post, 'id') === null) {
+            return $content;
+        }
+
+        $replacements = [];
+
+        foreach (self::KEYS as $key) {
+            $value = (string) self::value($post, $key);
+
+            $replacements['{' . self::PREFIX . $key . '}'] = match ($key) {
+                'url' => esc_url($value),
+                'id', 'is_active', 'is_ancestor' => $value,
+                default => esc_html($value),
+            };
+        }
+
+        return strtr($content, $replacements);
     }
 }

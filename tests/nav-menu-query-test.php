@@ -413,6 +413,66 @@ assert_same($array_tag, MenuItemTags::render_tag($array_tag, $tag_item, 'text'),
 
 MenuItemTags::reset_cache();
 
+// -------------------------------- Case 9: render_content and the tag list
+
+MenuItemTags::reset_cache();
+Bricks\Query::reset();
+
+$content_item = new WP_Post([
+    'ID'                    => 13,
+    'title'                 => 'Kunst & Kultur',
+    'url'                   => 'https://example.test/kunst kultur',
+    'target'                => '_blank',
+    'xfn'                   => 'noopener',
+    'description'           => 'Museen & mehr',
+    'classes'               => ['current-menu-item'],
+    'current'               => true,
+    'current_item_ancestor' => true,
+]);
+
+// 9a: content with none of our tags is returned untouched, by identity.
+$plain_content = 'Hello {post_title} world';
+assert_same($plain_content, MenuItemTags::render_content($plain_content, $content_item, 'text'), 'Case 9a: content without our prefix is returned unchanged');
+
+// 9b: outside a loop, our tags are left visible rather than blanked.
+$page = new WP_Post(['ID' => 500, 'post_type' => 'page']);
+$tagged = 'Link: {sfx_menu_item_title}';
+assert_same($tagged, MenuItemTags::render_content($tagged, $page, 'text'), 'Case 9b: unresolvable content is returned unchanged');
+
+// 9c: all nine substitute.
+$all = '';
+foreach (MenuItemTags::KEYS as $key) {
+    $all .= '[' . $key . '={sfx_menu_item_' . $key . '}]';
+}
+
+$rendered = MenuItemTags::render_content($all, $content_item, 'text');
+
+assert_same(false, strpos($rendered, '{sfx_menu_item_'), 'Case 9c: no tag survives unsubstituted');
+assert_contains('[id=13]', $rendered, 'Case 9d: id is raw');
+assert_contains('[is_active=1]', $rendered, 'Case 9e: is_active is raw');
+assert_contains('[is_ancestor=1]', $rendered, 'Case 9f: is_ancestor is raw');
+
+// 9g/9h: the escaping asymmetry with render_tag.
+assert_contains('Kunst &amp; Kultur', $rendered, 'Case 9g: the title is esc_html-ed here, unlike in render_tag');
+assert_contains('kunst%20kultur', $rendered, 'Case 9h: the url is esc_url-ed here, unlike in render_tag');
+assert_contains('Museen &amp; mehr', $rendered, 'Case 9i: the description is esc_html-ed');
+
+// 9j: the builder tag list.
+$picker = MenuItemTags::add_tags_to_builder([['name' => '{post_title}', 'label' => 'Title', 'group' => 'Post']]);
+
+assert_same(10, count($picker), 'Case 9j: nine tags appended to the existing list');
+assert_same('{post_title}', $picker[0]['name'], 'Case 9k: the pre-existing entry is preserved');
+
+$names = array_column($picker, 'name');
+assert_true(in_array('{sfx_menu_item_title}', $names, true), 'Case 9l: the title tag is registered with braces');
+assert_true(in_array('{sfx_menu_item_is_ancestor}', $names, true), 'Case 9m: the is_ancestor tag is registered');
+
+$ours = array_values(array_filter($picker, fn($t) => strpos($t['name'], '{sfx_menu_item_') === 0));
+assert_same(1, count(array_unique(array_column($ours, 'group'))), 'Case 9n: all nine share one picker group');
+assert_true($ours[0]['label'] !== '', 'Case 9o: each entry carries a label');
+
+MenuItemTags::reset_cache();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
