@@ -50,7 +50,15 @@ $test_menu_items             = [];   // menu_id => list<WP_Post>|false
 $test_classes_by_context_calls = []; // item counts captured per call
 $test_current_user_can       = true;
 $test_nonce_valid            = true;
-$test_filters                = [];   // hook name => registration count
+/**
+ * hook name => list<array{callback: mixed, priority: int, accepted_args: int}>
+ *
+ * A bare per-hook counter was not enough: it cannot see a wrong priority — the
+ * defect that made render_tag inert behind Bricks' own priority-10 handler —
+ * and it cannot see a wrong accepted_args: drop the `, 2` from bricks/query/run
+ * and run() fatals on a missing $query while the hook count stays right.
+ */
+$test_filters                = [];
 
 // ----------------------------------------------------------------- WP_Post
 
@@ -212,12 +220,16 @@ function wp_send_json_error($payload = null): void
     throw new SfxJsonSent(false, $payload);
 }
 
-/** Counts registrations per hook so the once-guard can be asserted. */
+/** Records every registration in full, so priority and arity are assertable. */
 function add_filter($hook, $callback, $priority = 10, $accepted_args = 1): bool
 {
     global $test_filters;
 
-    $test_filters[$hook] = ($test_filters[$hook] ?? 0) + 1;
+    $test_filters[$hook][] = [
+        'callback'      => $callback,
+        'priority'      => $priority,
+        'accepted_args' => $accepted_args,
+    ];
 
     return true;
 }
@@ -225,4 +237,30 @@ function add_filter($hook, $callback, $priority = 10, $accepted_args = 1): bool
 function add_action($hook, $callback, $priority = 10, $accepted_args = 1): bool
 {
     return add_filter($hook, $callback, $priority, $accepted_args);
+}
+
+/**
+ * Registrations recorded for one hook.
+ *
+ * @return list<array{callback: mixed, priority: int, accepted_args: int}>
+ */
+function test_hook_registrations(string $hook): array
+{
+    global $test_filters;
+
+    return $test_filters[$hook] ?? [];
+}
+
+/** How many times one hook was registered. */
+function test_hook_count(string $hook): int
+{
+    return count(test_hook_registrations($hook));
+}
+
+/** Registrations across every hook — the once-guard's total. */
+function test_hook_total(): int
+{
+    global $test_filters;
+
+    return array_sum(array_map('count', $test_filters));
 }

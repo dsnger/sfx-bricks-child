@@ -224,17 +224,17 @@ assert_same('addresses', $grouped['sfxNavMenuLocation']['group'] ?? null, 'Case 
 assert_same('addresses', $grouped['sfxNavMenuId']['group'] ?? null, 'Case 5l: the menu control joins the host group');
 assert_same('addresses', $grouped['sfxNavMenuParent']['group'] ?? null, 'Case 5m: the parent control joins the host group');
 
-// 5n: the once-guard. add_filter is stubbed as a per-hook counter.
+// 5n: the once-guard. add_filter is stubbed to record every registration.
 Bricks\Elements::$elements = ['section' => [], 'block' => [], 'map' => []];
 $test_filters = [];
 
 QueryType::register_element_controls();
 QueryType::register_element_controls();
 
-assert_same(1, $test_filters['bricks/elements/section/controls'] ?? 0, 'Case 5n: section registered exactly once across two calls');
-assert_same(1, $test_filters['bricks/elements/block/controls'] ?? 0, 'Case 5o: block registered exactly once');
-assert_same(1, $test_filters['bricks/elements/map/controls'] ?? 0, 'Case 5p: map registered exactly once');
-assert_same(3, array_sum($test_filters), 'Case 5q: three registrations total — the guard suppresses the repeat, not the work');
+assert_same(1, test_hook_count('bricks/elements/section/controls'), 'Case 5n: section registered exactly once across two calls');
+assert_same(1, test_hook_count('bricks/elements/block/controls'), 'Case 5o: block registered exactly once');
+assert_same(1, test_hook_count('bricks/elements/map/controls'), 'Case 5p: map registered exactly once');
+assert_same(3, test_hook_total(), 'Case 5q: three registrations total — the guard suppresses the repeat, not the work');
 
 // -------------------------------------------------- Case 6: running the query
 
@@ -558,22 +558,49 @@ assert_true($ours[0]['label'] !== '', 'Case 9p: each entry carries a label');
 MenuItemTags::reset_cache();
 
 // ------------------------------------------------- Case 10: controller wiring
-// add_filter/add_action are stubbed as per-hook counters, so constructing the
-// controller shows exactly which hooks the feature registers.
+// add_filter/add_action are stubbed to record callback, priority and
+// accepted_args per hook, so constructing the controller shows exactly what
+// the feature registers — not merely how often.
 
 $test_filters = [];
 
 new Controller();
 
-assert_same(1, $test_filters['bricks/setup/control_options'] ?? 0, 'Case 10a: the query type is registered');
-assert_same(1, $test_filters['bricks/load_elements/before'] ?? 0, 'Case 10b: element control registration is hooked');
-assert_same(1, $test_filters['bricks/query/run'] ?? 0, 'Case 10c: the query runner is hooked');
-assert_same(1, $test_filters['wp_ajax_sfx_nav_menu_parent_options'] ?? 0, 'Case 10d: the AJAX endpoint is hooked');
-assert_same(1, $test_filters['bricks/dynamic_tags_list'] ?? 0, 'Case 10e: the builder tag list is hooked');
-assert_same(1, $test_filters['bricks/dynamic_data/render_tag'] ?? 0, 'Case 10f: single-value tag rendering is hooked');
-assert_same(1, $test_filters['bricks/dynamic_data/render_content'] ?? 0, 'Case 10g: content tag rendering is hooked');
+assert_same(1, test_hook_count('bricks/setup/control_options'), 'Case 10a: the query type is registered');
+assert_same(1, test_hook_count('bricks/load_elements/before'), 'Case 10b: element control registration is hooked');
+assert_same(1, test_hook_count('bricks/query/run'), 'Case 10c: the query runner is hooked');
+assert_same(1, test_hook_count('wp_ajax_sfx_nav_menu_parent_options'), 'Case 10d: the AJAX endpoint is hooked');
+assert_same(1, test_hook_count('bricks/dynamic_tags_list'), 'Case 10e: the builder tag list is hooked');
+assert_same(1, test_hook_count('bricks/dynamic_data/render_tag'), 'Case 10f: single-value tag rendering is hooked');
+assert_same(1, test_hook_count('bricks/dynamic_data/render_content'), 'Case 10g: content tag rendering is hooked');
 
-assert_same(7, array_sum($test_filters), 'Case 10h: exactly seven hooks — no collaborator silently skipped, none registered twice');
+assert_same(7, test_hook_total(), 'Case 10h: exactly seven hooks — no collaborator silently skipped, none registered twice');
+
+// 10l: priority 20 on render_tag. Bricks' own Providers::get_tag_value() holds
+// priority 10 and, registered at include time, always wins a tie — at 10 our
+// callback would only ever see the brace-wrapped fallback Bricks produced, and
+// before the brace fix it could not resolve anything at all.
+assert_same(
+    20,
+    test_hook_registrations('bricks/dynamic_data/render_tag')[0]['priority'] ?? null,
+    "Case 10l: render_tag runs at priority 20, after Bricks' own priority-10 handler"
+);
+
+// 10m: accepted_args on bricks/query/run. Drop the 2 and run() is called with
+// $results only, fataling on the missing $query — a defect no hook count sees.
+assert_same(
+    2,
+    test_hook_registrations('bricks/query/run')[0]['accepted_args'] ?? null,
+    'Case 10m: the query runner accepts both $results and $query'
+);
+
+// 10n: every recorded callback is actually invocable — a typo'd method name
+// would otherwise register fine and only fail at render time.
+foreach ($test_filters as $hook => $registrations) {
+    foreach ($registrations as $registration) {
+        assert_true(is_callable($registration['callback']), "Case 10n: the callback registered on {$hook} is callable");
+    }
+}
 
 // The feature config the theme's registry reads.
 $config = Controller::get_feature_config();
