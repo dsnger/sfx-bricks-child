@@ -384,35 +384,110 @@ $tag_item = new WP_Post([
     'current' => true,
 ]);
 
-// Rule 1: not ours — byte-identical, asserted by identity.
-$foreign = 'post_title';
+/**
+ * Bricks' own priority-10 handler on bricks/dynamic_data/render_tag, modelled.
+ *
+ * Providers::get_tag_value() looks the tag up in Providers::$tags and, finding
+ * nothing, hands on '{' . $original_tag . '}' (providers.php:562). Our tags are
+ * never in that array — bricks/dynamic_tags_list is builder-picker only — so
+ * this is the exact shape our callback receives in production.
+ */
+function bricks_p10_unknown_tag($tag)
+{
+    return is_string($tag) ? '{' . $tag . '}' : $tag;
+}
+
+/**
+ * The real filter sequence: Bricks at priority 10, ours at 20.
+ *
+ * The add_filter stub records registrations, it does not execute filters, so
+ * the chain is composed by hand. Feeding render_tag() a bare tag — as this
+ * case did before the brace fix — tests a shape production never delivers.
+ */
+function run_render_tag_chain($tag, $post, string $context = 'text')
+{
+    return MenuItemTags::render_tag(bricks_p10_unknown_tag($tag), $post, $context);
+}
+
+$page = new WP_Post(['ID' => 500, 'post_type' => 'page']);
+
+// 8-int: the sequence end to end. These three fail if either half of the fix
+// is missing — priority 20 without brace tolerance, or brace tolerance at a
+// priority that runs before Bricks.
+assert_same(
+    'Kunst & Kultur',
+    run_render_tag_chain('sfx_menu_item_title', $tag_item),
+    'Case 8-int1: through Bricks p10 then ours at p20, an owned tag resolves to the raw value'
+);
+assert_same(
+    '{post_title}',
+    run_render_tag_chain('post_title', $tag_item),
+    "Case 8-int2: an unrelated tag comes out of the sequence exactly as Bricks left it — we do not unwrap other providers' tags"
+);
+assert_same(
+    '{sfx_menu_item_title}',
+    run_render_tag_chain('sfx_menu_item_title', $page),
+    'Case 8-int3: an owned but unresolvable tag comes back brace-wrapped, exactly as Bricks left it — not stripped, not empty'
+);
+
+// Rule 1: not ours — byte-identical, asserted by identity, in the brace-wrapped
+// shape production delivers.
+$foreign = '{post_title}';
 assert_same($foreign, MenuItemTags::render_tag($foreign, $tag_item, 'text'), 'Case 8a: an unrelated tag is returned unchanged');
-assert_same('woo_product_price', MenuItemTags::render_tag('woo_product_price', null, 'text'), "Case 8b: another provider's tag is untouched");
+assert_same('{woo_product_price}', MenuItemTags::render_tag('{woo_product_price}', null, 'text'), "Case 8b: another provider's tag is untouched");
 
 // Rule 2: ours, but unresolvable.
-$page = new WP_Post(['ID' => 500, 'post_type' => 'page']);
 assert_same(
-    'sfx_menu_item_title',
-    MenuItemTags::render_tag('sfx_menu_item_title', $page, 'text'),
+    '{sfx_menu_item_title}',
+    MenuItemTags::render_tag('{sfx_menu_item_title}', $page, 'text'),
     'Case 8c: an owned tag outside a menu-item loop returns the tag, NOT an empty string'
 );
-assert_same('sfx_menu_item_bogus', MenuItemTags::render_tag('sfx_menu_item_bogus', $tag_item, 'text'), 'Case 8d: an unknown key under our prefix is returned unchanged');
-assert_same('sfx_menu_item_title:foo', MenuItemTags::render_tag('sfx_menu_item_title:foo', $tag_item, 'text'), 'Case 8e: Bricks filter syntax is unsupported and left visible');
+assert_same('{sfx_menu_item_bogus}', MenuItemTags::render_tag('{sfx_menu_item_bogus}', $tag_item, 'text'), 'Case 8d: an unknown key under our prefix is returned unchanged');
+assert_same('{sfx_menu_item_title:foo}', MenuItemTags::render_tag('{sfx_menu_item_title:foo}', $tag_item, 'text'), 'Case 8e: Bricks filter syntax is unsupported and left visible');
 
 // Rule 3: ours, resolvable — raw value, no escaping.
-assert_same('Kunst & Kultur', MenuItemTags::render_tag('sfx_menu_item_title', $tag_item, 'text'), 'Case 8f: an owned tag resolves');
+assert_same('Kunst & Kultur', MenuItemTags::render_tag('{sfx_menu_item_title}', $tag_item, 'text'), 'Case 8f: an owned tag resolves');
 assert_same(
     'https://example.test/kunst kultur',
-    MenuItemTags::render_tag('sfx_menu_item_url', $tag_item, 'link'),
+    MenuItemTags::render_tag('{sfx_menu_item_url}', $tag_item, 'link'),
     'Case 8g: the URL is RAW — esc_url() here would double-escape what the control escapes'
 );
-assert_contains('&', MenuItemTags::render_tag('sfx_menu_item_title', $tag_item, 'text'), 'Case 8h: the title keeps its raw ampersand, unlike the render_content path');
-assert_same('1', MenuItemTags::render_tag('sfx_menu_item_is_active', $tag_item, 'text'), 'Case 8i: is_active resolves');
+assert_contains('&', MenuItemTags::render_tag('{sfx_menu_item_title}', $tag_item, 'text'), 'Case 8h: the title keeps its raw ampersand, unlike the render_content path');
+assert_same('1', MenuItemTags::render_tag('{sfx_menu_item_is_active}', $tag_item, 'text'), 'Case 8i: is_active resolves');
 
 // The picker can hand over an array rather than a string.
 $array_tag = ['name' => '{sfx_menu_item_title}'];
 assert_same($array_tag, MenuItemTags::render_tag($array_tag, $tag_item, 'text'), 'Case 8j: a non-string tag is returned as-is without a type error');
 
+// 8k-8m: the bare form stays tolerated. Nothing in Bricks guarantees a
+// priority-10 callback re-wraps — a third-party provider registered before us
+// could hand the tag on untouched — so both shapes must work.
+assert_same('Kunst & Kultur', MenuItemTags::render_tag('sfx_menu_item_title', $tag_item, 'text'), 'Case 8k: a bare owned tag still resolves');
+assert_same('post_title', MenuItemTags::render_tag('post_title', $tag_item, 'text'), 'Case 8l: a bare unrelated tag is returned unchanged');
+assert_same('sfx_menu_item_title', MenuItemTags::render_tag('sfx_menu_item_title', $page, 'text'), 'Case 8m: a bare unresolvable owned tag is returned bare — the miss returns the input, it does not normalise it');
+
+// 8n: only the outermost pair is stripped, so a doubly-wrapped tag is not ours.
+assert_same('{{sfx_menu_item_title}}', MenuItemTags::render_tag('{{sfx_menu_item_title}}', $tag_item, 'text'), 'Case 8n: one brace pair only — a doubly-wrapped tag falls through unchanged');
+
+// 8o/8p: the loop-recovery path through render_tag. Bricks passes its own post
+// (base.php:2524-style callers), not the menu item, so the item has to come
+// from Bricks\Query. Case 7m covers this for value(); it was never covered
+// through the filter itself.
+Bricks\Query::$looping      = true;
+Bricks\Query::$loop_objects = ['' => $tag_item];
+
+assert_same(
+    'Kunst & Kultur',
+    run_render_tag_chain('sfx_menu_item_title', $page),
+    'Case 8o: with a loop running, a non-menu-item $post still resolves — the item is recovered from Bricks\\Query'
+);
+assert_same(
+    '{post_title}',
+    run_render_tag_chain('post_title', $page),
+    'Case 8p: loop recovery does not make us claim tags that are not ours'
+);
+
+Bricks\Query::reset();
 MenuItemTags::reset_cache();
 
 // -------------------------------- Case 9: render_content and the tag list
