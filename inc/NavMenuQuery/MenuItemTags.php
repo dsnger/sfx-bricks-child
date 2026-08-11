@@ -27,6 +27,11 @@ class MenuItemTags
     /** @var array<int, array<string, string>> per-request cache, keyed by item id */
     private static array $cache = [];
 
+    public static function register(): void
+    {
+        add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 10, 3);
+    }
+
     /**
      * Find the menu item the current context refers to.
      *
@@ -98,6 +103,46 @@ class MenuItemTags
         }
 
         return self::$cache[$id][$key];
+    }
+
+    /**
+     * Resolve a tag in a single-value context: a Link URL, an image source,
+     * a condition operand.
+     *
+     * This filter is shared by every dynamic-data provider and Bricks seeds it
+     * with the tag itself, so the incoming $tag doubles as "nobody has
+     * resolved this yet". Returning anything else for a tag we do not own —
+     * '', null, a normalised copy — destroys the value for every provider
+     * after us.
+     *
+     * Values come back RAW. The consuming control escapes for its own context;
+     * escaping here would double-escape. render_content() is the opposite,
+     * because it writes straight into markup.
+     *
+     * @param mixed $tag  already stripped of its outer braces by Bricks
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_tag($tag, $post, $context)
+    {
+        // The picker can hand over an array (providers.php:647).
+        if (!is_string($tag) || strpos($tag, self::PREFIX) !== 0) {
+            return $tag;
+        }
+
+        $key = substr($tag, strlen(self::PREFIX));
+
+        // Exact match only. A suffixed variant (Bricks' tag-filter syntax) is
+        // unsupported; ignoring the suffix would silently drop what the editor
+        // asked for, so it falls through and stays visible instead.
+        if (!in_array($key, self::KEYS, true)) {
+            return $tag;
+        }
+
+        $value = self::value($post, $key);
+
+        return $value === null ? $tag : $value;
     }
 
     /** Test seam for the per-request static cache. */

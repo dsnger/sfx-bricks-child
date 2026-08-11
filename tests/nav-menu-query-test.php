@@ -370,6 +370,49 @@ assert_same($item, MenuItemTags::item_from_context($item), 'Case 7o: a menu item
 Bricks\Query::reset();
 MenuItemTags::reset_cache();
 
+// ------------------------------------------ Case 8: render_tag contract
+
+MenuItemTags::reset_cache();
+Bricks\Query::reset();
+
+$tag_item = new WP_Post([
+    'ID'      => 13,
+    'title'   => 'Kunst & Kultur',
+    'url'     => 'https://example.test/kunst kultur',
+    'current' => true,
+]);
+
+// Rule 1: not ours — byte-identical, asserted by identity.
+$foreign = 'post_title';
+assert_same($foreign, MenuItemTags::render_tag($foreign, $tag_item, 'text'), 'Case 8a: an unrelated tag is returned unchanged');
+assert_same('woo_product_price', MenuItemTags::render_tag('woo_product_price', null, 'text'), "Case 8b: another provider's tag is untouched");
+
+// Rule 2: ours, but unresolvable.
+$page = new WP_Post(['ID' => 500, 'post_type' => 'page']);
+assert_same(
+    'sfx_menu_item_title',
+    MenuItemTags::render_tag('sfx_menu_item_title', $page, 'text'),
+    'Case 8c: an owned tag outside a menu-item loop returns the tag, NOT an empty string'
+);
+assert_same('sfx_menu_item_bogus', MenuItemTags::render_tag('sfx_menu_item_bogus', $tag_item, 'text'), 'Case 8d: an unknown key under our prefix is returned unchanged');
+assert_same('sfx_menu_item_title:foo', MenuItemTags::render_tag('sfx_menu_item_title:foo', $tag_item, 'text'), 'Case 8e: Bricks filter syntax is unsupported and left visible');
+
+// Rule 3: ours, resolvable — raw value, no escaping.
+assert_same('Kunst & Kultur', MenuItemTags::render_tag('sfx_menu_item_title', $tag_item, 'text'), 'Case 8f: an owned tag resolves');
+assert_same(
+    'https://example.test/kunst kultur',
+    MenuItemTags::render_tag('sfx_menu_item_url', $tag_item, 'link'),
+    'Case 8g: the URL is RAW — esc_url() here would double-escape what the control escapes'
+);
+assert_contains('&', MenuItemTags::render_tag('sfx_menu_item_title', $tag_item, 'text'), 'Case 8h: the title keeps its raw ampersand, unlike the render_content path');
+assert_same('1', MenuItemTags::render_tag('sfx_menu_item_is_active', $tag_item, 'text'), 'Case 8i: is_active resolves');
+
+// The picker can hand over an array rather than a string.
+$array_tag = ['name' => '{sfx_menu_item_title}'];
+assert_same($array_tag, MenuItemTags::render_tag($array_tag, $tag_item, 'text'), 'Case 8j: a non-string tag is returned as-is without a type error');
+
+MenuItemTags::reset_cache();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
