@@ -941,11 +941,27 @@ assert_same(
 $sent = run_ajax_endpoint(['locationId' => '', 'menuId' => [['nonsense']]]);
 assert_same(['current'], array_keys($sent->payload), 'Case 4j: a malformed menuId resolves to no menu, not a crash');
 
-// wp_unslash must run before sanitize_text_field.
-$test_registered_nav_menus["o'brien"] = 'Test';
-$test_nav_menu_locations["o'brien"]   = 4;
-$sent = run_ajax_endpoint(['locationId' => "o\\'brien", 'menuId' => '']);
-assert_same(7, count($sent->payload), 'Case 4k: a slashed location slug is unslashed before sanitising, so it still matches');
+// Case 4k locks wp_unslash() running BEFORE sanitize_text_field().
+//
+// The fixture is synthetic — WordPress' own slashing never produces a
+// backslash-space — and it has to be. With realistically slashed input the two
+// orders commute under these stubs (`sanitize_text_field` = trim+strip_tags
+// never touches backslashes), so an "o\'brien"-style fixture yields the same
+// string either way and cannot fail. Backslash-space-x does diverge: the
+// correct order normalises to 'x' and matches the location; the swapped order
+// leaves ' x', which matches nothing and resolves to no menu.
+//
+// Verified: correct order → 7 options, swapped order → 1. Any replacement
+// fixture must be re-verified the same way before it is trusted.
+$test_registered_nav_menus['x'] = 'Ordering probe';
+$test_nav_menu_locations['x']   = 4;
+
+$sent = run_ajax_endpoint(['locationId' => "\\ x", 'menuId' => '']);
+assert_same(7, count($sent->payload), 'Case 4k: wp_unslash runs before sanitize_text_field, so the slashed slug still matches');
+
+// Case 4l: an empty array unwraps to false, which is scalar, so it casts to ''.
+$sent = run_ajax_endpoint(['locationId' => [], 'menuId' => '']);
+assert_same(['current'], array_keys($sent->payload), 'Case 4l: an empty-array value normalises to the empty string, not a crash');
 
 $_GET = [];
 ```

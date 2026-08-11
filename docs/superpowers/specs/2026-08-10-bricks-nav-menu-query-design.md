@@ -569,7 +569,9 @@ Cases:
    - unknown key under the owned prefix (`sfx_menu_item_bogus`) → unchanged;
    - suffixed variant (`sfx_menu_item_title:foo`) → unchanged;
    - non-string `$tag` (array from the picker) → returned as-is without a type error.
-8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly; nested array → treated as empty, not `"Array"`; slashed input round-trips through `wp_unslash()` before sanitising; one malformed parameter leaves the other intact.
+8. `ajax_parent_options` — bad nonce → error; good nonce but no `edit_posts` → error; array-wrapped `{{control}}` value unwrapped correctly; nested array → treated as empty, not `"Array"`; empty array → treated as empty, not a fatal; one malformed parameter leaves the other intact; and the unslash-before-sanitize ordering locked by a fixture **verified to fail under the swapped composition**.
+
+   That last one needs care. Under these stubs (`sanitize_text_field` = `trim(strip_tags(…))`) the two orders **commute for most realistic input** — a plausible `o\'brien` fixture yields the same string either way and so cannot fail. A discriminating fixture is necessarily synthetic: a literal backslash-space-`x` normalises to `x` in the correct order and to `' x'` in the swapped one. Any replacement fixture must be re-verified the same way — run the suite, swap the composition, confirm the case fails, revert — before it is trusted to lock anything.
 
 Manual verification in the builder, since no test can cover it:
 
