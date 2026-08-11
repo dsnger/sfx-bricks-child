@@ -66,6 +66,9 @@ final class OverviewProvider
             'enable_smooth_scroll' => [
                 'label' => __('Smooth Scroll', 'sfxtheme'),
             ],
+            'enable_nav_menu_query' => [
+                'label' => __('Menu Items query type', 'sfxtheme'),
+            ],
         ];
 
         $items = [];
