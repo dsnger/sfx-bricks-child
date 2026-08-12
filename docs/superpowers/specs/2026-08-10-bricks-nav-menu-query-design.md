@@ -414,7 +414,25 @@ if ( is_a( $object, 'WP_Post' ) ) {
 }
 ```
 
-The loop objects here are the `WP_Post` objects returned by `wp_get_nav_menu_items()`, and nothing in this feature filters `bricks/query/loop_object`, so Bricks already classifies them as `post` — which is what puts the right `$post` into the dynamic-data context. A filter that recomputes the value Bricks just computed adds a hook to every loop iteration of every query on the site to change nothing.
+The loop objects here are the `WP_Post` objects returned by `wp_get_nav_menu_items()`, and nothing in this feature filters `bricks/query/loop_object`, so Bricks already classifies them as `post`. That classification is a **no-op on the ordinary in-loop path** — and it is precisely *why* `$post` is the enclosing page rather than the menu item, not what makes it the menu item. `Providers::render_content()` only swaps the loop object into `$post` when the classification is something *other than* `post`:
+
+```php
+if ( \Bricks\Query::is_looping() && \Bricks\Query::get_loop_object_type() !== 'post' ) {
+    $post = get_post();
+}
+```
+
+(`providers.php:770-772`). Because our items classify **as** `post`, this reassignment is skipped, so `$post` stays whatever `get_post_preserving_preview()` reconstructed from the page's own post ID a few lines above — never the item. This is exactly the defect `MenuItemTags::item_from_context()` exists to route around (see "Value resolution" below).
+
+The classification's one genuinely load-bearing effect is elsewhere, in the nested "before query run" branch (`providers.php:784-792`), reached only while an *enclosing, not-yet-running* query is being resolved:
+
+```php
+if ( $loop_object_type === 'post' ) {
+    $post = $loop_object;
+}
+```
+
+There, classifying as `post` is what hands `$post` the enclosing menu item. That is the one place it matters — everywhere else, including the ordinary in-loop path above, a filter that recomputes the value Bricks just computed adds a hook to every loop iteration of every query on the site to change nothing.
 
 This is noted rather than silently dropped so nobody ports it back in from the snippet on the assumption it was load-bearing.
 
