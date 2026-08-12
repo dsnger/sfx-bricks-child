@@ -365,7 +365,7 @@ element instance (`frontend.php:744`), which fires
 `bricks/elements/{name}/controls` — and so our controls filter — on **every**
 rendered instance of a loop-capable element, not once per request. Section,
 Container, Block and Div gate their whole loop-builder control block on
-`bricks_is_builder()` (`elements/container.php:89`), so `add_element_controls()`
+`bricks_is_builder()` (`elements/container.php:89-93`, the token itself on 90), so `add_element_controls()`
 never runs `MenuOptions::locations()`/`menus()` for those four outside the
 builder. Slider (`elements/slider.php:214`) and Accordion
 (`elements/accordion.php:67`) call `get_loop_builder_controls()`
