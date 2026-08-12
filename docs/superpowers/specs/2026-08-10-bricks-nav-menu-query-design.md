@@ -464,15 +464,22 @@ Without those two, the current page cannot be marked in the menu — the single 
 MenuItemTags::item_from_context($post): ?WP_Post
 ```
 
-Returns `$post` when it is a `nav_menu_item`; otherwise falls back to `\Bricks\Query::get_loop_object()` when `\Bricks\Query::is_looping()`. The fallback is required: on the link path Bricks calls `bricks_render_dynamic_data()` with its own post ID (`includes/elements/base.php:2524`), so `$post` is not the menu item and the tag would survive verbatim into the `href`.
+**The loop object wins, `$post` is the fallback.** When `\Bricks\Query::is_looping()`, the item is `\Bricks\Query::get_loop_object()` if that is a `nav_menu_item`; only otherwise is `$post` used, and only if it is a `nav_menu_item` itself.
+
+That order is not interchangeable. The loop object is the item `QueryType::run()` decorated — it carries `->current`, `->current_item_ancestor` and the classes `_wp_menu_item_classes_by_context()` added (`QueryType.php:168`). What Bricks hands to the filter as `$post` is a plain re-fetch by ID (`providers.php:669`, `helpers.php:3768`) with none of that on it. Prefer `$post` and every context tag renders empty for every item, current or not.
+
+The `$post` fallback is still required: on the link path Bricks calls `bricks_render_dynamic_data()` with its own post ID (`includes/elements/base.php:2524`), and outside any loop a `nav_menu_item` passed directly is all there is.
+
+`get_loop_object()` is called with no query ID on purpose — bare, it returns the innermost currently-looping query's object, which is the right item inside a nested loop.
 
 ```php
 MenuItemTags::value(?WP_Post $post, string $key): ?string
 ```
 
-Resolves the item, then on first use per item runs `wp_setup_nav_menu_item( clone $post )` and caches all nine values in a static array keyed by item ID. `wp_setup_nav_menu_item()` is what turns `_menu_item_object_id` / `_menu_item_url` into a real `->url` and sets `->title` to the navigation label rather than the page title. The `clone` keeps the loop's `$post` unmutated.
+Resolves the item, then splits the nine tags by whether the value is *identity* or *context*:
 
-The active-state properties are set by step 3 of the query run and survive on the object, so `value()` reads them off the resolved item.
+- **`classes`, `is_active`, `is_ancestor` — never cached.** Read straight off the resolved item on every call. These are per-request context, and two objects with the same ID can legitimately disagree about them. Caching them by ID means one earlier read from an undecorated instance suppresses active state for every later read of that ID — the same defect as preferring the wrong object, only harder to see.
+- **The other six (`title`, `url`, `id`, `target`, `rel`, `description`) — cached by item ID.** On first use per item, `wp_setup_nav_menu_item( clone $post )` turns `_menu_item_object_id` / `_menu_item_url` into a real `->url` and sets `->title` to the navigation label rather than the page title. The `clone` keeps the loop's `$post` unmutated. These are identity: same ID, same value, whatever the request.
 
 Returns `null` for an unknown key or when no menu item can be resolved. Callers distinguish `null` (not ours — leave alone) from `''` (ours, empty).
 
@@ -648,7 +655,7 @@ Cases:
 3. `run` — unrelated `object_type` returns the given `$results` unchanged, asserted with a non-empty sentinel array so a `[]` return fails; top level (empty parent); explicit parent ID; parent from another menu → empty; deleted menu → empty.
 4. `run` with `current` — resolves to the enclosing loop's item; no enclosing loop → empty; enclosing object of the wrong post type → empty.
 5. `_wp_menu_item_classes_by_context` receives the **unfiltered** item set (assert the stub's captured argument count equals the full menu, not the filtered subset).
-6. `value()` — all nine keys; unknown key → `null`; non-menu-item post with no loop → `null`; loop-context fallback returns the item.
+6. `value()` — all nine keys; unknown key → `null`; non-menu-item post with no loop → `null`; a decorated loop object beats an undecorated `$post` of the same ID for `classes` / `is_active` / `is_ancestor`; `$post` used when there is no loop item.
 7. `render_content` — substitutes all nine; `esc_html` applied to `title`; `esc_url` to `url`; content without the prefix returned unchanged (identity, not just equal); content outside a loop returned unchanged.
 7b. `render_tag` — the three contract rules, each asserted by identity where the contract says "unchanged". The inputs are **brace-wrapped**, because that is the shape Bricks' priority-10 handler delivers; bare inputs get their own cases so both forms stay covered:
    - unrelated tag (`{post_title}`) → the exact incoming `$tag`;
