@@ -287,9 +287,10 @@ tags have no `current_item_parent` / "is parent of current page" tag.
 **Risk:** `_wp_menu_item_classes_by_context()` sets `->current_item_parent` and
 the `current-menu-parent` class (`wp-includes/nav-menu-template.php:585,587`)
 alongside the two states this feature does expose (`->current`,
-`->current_item_ancestor`). It runs on every request via `QueryType::run()`
-(`_wp_menu_item_classes_by_context($items)`), so the value exists on the item —
-it is simply never surfaced as its own tag.
+`->current_item_ancestor`). It runs whenever an `sfx_nav_menu` query executes —
+`QueryType::run()` calls `_wp_menu_item_classes_by_context($items)` after its
+early return for other query types — so the value exists on the item whenever
+this feature is looping. It is simply never surfaced as its own tag.
 
 **Why non-blocking:** reachable via `{sfx_menu_item_classes}`, which includes
 `current-menu-parent` when set — a gap in convenience, not in information. An
@@ -401,15 +402,40 @@ structure disclosure to any authenticated, `edit_posts`-capable user is a
 deliberate, documented trade, not an oversight. Recorded here so the choice
 stays visible and re-triageable rather than silently accepted a second time.
 
-**Follow-up:** switch to `Capabilities::current_user_can_use_builder()` if
-this endpoint's exposure is revisited for other reasons. Not worth a change
-on its own.
+**Measured against Bricks' own convention, this endpoint is already stricter.**
+Bricks' equivalent `optionsAjax` endpoint — `get_posts()`, `ajax.php:1004-1010`
+— gates on **nonce alone**, with no capability check, and accepts a second
+nonce (`bricks-nonce-admin`) that widens access further. Ours requires the
+builder nonce *and* a capability.
+
+Two further reasons not to "align" with `Capabilities::current_user_can_use_builder()`
+(`capabilities.php:466`), despite the name suggesting it is the obvious choice:
+
+- It takes a `$post_id` and resolves edit permissions for a *specific post being
+  edited*. This endpoint edits nothing; with `$post_id = 0` it falls back to
+  `get_queried_object_id()`, which is meaningless in an `admin-ajax` request.
+  The semantics do not fit the call.
+- The nonce gate already implies builder access. `bricks-nonce-builder` is
+  emitted by the builder; a user who cannot load the builder cannot obtain it
+  and cannot mint one client-side. `edit_posts` is therefore a second layer
+  behind a gate that already requires what a builder-capability check would
+  assert.
+
+**Follow-up:** none. Revisit only if Bricks changes how it gates `optionsAjax`
+endpoints, or if this endpoint ever returns something more sensitive than menu
+titles and hierarchy.
+
+*(Raised again by CodeRabbit on PR #20 and declined, with the evidence above.
+Its premise — that Bricks gates these endpoints with the builder capability —
+is not true of `optionsAjax` endpoints in 2.3.10. It also described this entry
+as classifying the gap as "cosmetic"; the entry does not use that word.)*
 
 ---
 
 ## Separate: `render_content` shares the same registration-ordering shape
 
-This is not one of the eleven. It is a latent architectural note about the *other*
+This is separate from the eighteen numbered findings above. It is a latent
+architectural note about the *other*
 dynamic-data filter, recorded because the analysis is easy to get backwards.
 
 **The shape.** Bricks registers its own `render()` on
