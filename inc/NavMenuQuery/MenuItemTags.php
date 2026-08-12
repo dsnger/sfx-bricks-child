@@ -1,0 +1,339 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SFX\NavMenuQuery;
+
+/**
+ * The {sfx_menu_item_*} tag vocabulary and its values.
+ */
+class MenuItemTags
+{
+    public const PREFIX = 'sfx_menu_item_';
+
+    /** @var list<string> the nine tag keys, in display order */
+    public const KEYS = [
+        'title',
+        'url',
+        'id',
+        'target',
+        'rel',
+        'classes',
+        'description',
+        'is_active',
+        'is_ancestor',
+    ];
+
+    /**
+     * @var array<int, array<string, string>> per-request cache, keyed by item id
+     *
+     * Holds only the six wp_setup_nav_menu_item()-derived values, which are
+     * functions of the id alone — postmeta and the nav label. classes,
+     * is_active and is_ancestor are deliberately NOT in here; see value().
+     */
+    private static array $cache = [];
+
+    public static function register(): void
+    {
+        add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
+
+        // Priority 20 is load-bearing, not a preference. See render_tag().
+        add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 20, 3);
+
+        add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 10, 3);
+    }
+
+    /**
+     * Find the menu item the current context refers to.
+     *
+     * The loop object wins over $post, and that order is the whole point.
+     * Bricks does not hand our filters the object the query produced: it
+     * RECONSTRUCTS one first. Providers::render_tag() replaces $post with
+     * Helpers::get_post_preserving_preview( $post_id ) (providers.php:669),
+     * which falls through to get_post() (helpers.php:3768) and so to
+     * WP_Post::get_instance() — a brand-new object built from the cached DB
+     * row. Every runtime property QueryType::run() put on the item is gone
+     * from it: no ->current, no ->current_item_ancestor, and none of the
+     * standard menu-item classes _wp_menu_item_classes_by_context() added
+     * (QueryType.php:168). Prefer that reconstruction and every context tag
+     * renders empty for every item, current or not.
+     *
+     * $post is still the fallback, and it is not optional: on the link path
+     * Bricks calls bricks_render_dynamic_data() with its own post id
+     * (base.php:2524), and outside any loop a nav_menu_item passed directly is
+     * all we have.
+     *
+     * get_loop_object() is called with NO query id on purpose. Bare, it
+     * returns the innermost currently-looping query's object, which is the
+     * right item for a tag written inside a nested loop; naming a query would
+     * pin resolution to the wrong level.
+     *
+     * @param mixed $post
+     */
+    public static function item_from_context($post): ?\WP_Post
+    {
+        if (class_exists('Bricks\Query') && \Bricks\Query::is_looping()) {
+            $loop_object = \Bricks\Query::get_loop_object();
+
+            if ($loop_object instanceof \WP_Post && $loop_object->post_type === 'nav_menu_item') {
+                return $loop_object;
+            }
+        }
+
+        if ($post instanceof \WP_Post && $post->post_type === 'nav_menu_item') {
+            return $post;
+        }
+
+        return null;
+    }
+
+    /**
+     * One menu item value, raw and unescaped.
+     *
+     * null means "not resolvable, or not one of ours" — callers must leave the
+     * tag alone. An empty string means "ours, and empty".
+     *
+     * @param mixed $post
+     */
+    public static function value($post, string $key): ?string
+    {
+        if (!in_array($key, self::KEYS, true)) {
+            return null;
+        }
+
+        $item = self::item_from_context($post);
+
+        if (!$item instanceof \WP_Post) {
+            return null;
+        }
+
+        // Never cached, always read off the item item_from_context() just
+        // resolved. These three are context, not identity: they are put on the
+        // item by _wp_menu_item_classes_by_context() for THIS request
+        // (QueryType.php:168), and two objects with the same ID can disagree
+        // about them — Bricks' reconstructed $post has none of them at all
+        // (providers.php:669, helpers.php:3768). Cache them by id and one
+        // earlier read from an undecorated instance suppresses active state for
+        // every later read of that id, which is the same defect as preferring
+        // the wrong object, only harder to see.
+        switch ($key) {
+            case 'classes':
+                return implode(' ', array_filter((array) ($item->classes ?? []), static fn($c) => $c !== ''));
+
+            case 'is_active':
+                return !empty($item->current) ? '1' : '';
+
+            case 'is_ancestor':
+                return !empty($item->current_item_ancestor) ? '1' : '';
+        }
+
+        $id = (int) $item->ID;
+
+        if (!isset(self::$cache[$id])) {
+            // clone so the loop's $post is not mutated. wp_setup_nav_menu_item
+            // resolves ->url from _menu_item_object_id / _menu_item_url and
+            // sets ->title to the nav label rather than the page title.
+            $prepared = wp_setup_nav_menu_item(clone $item);
+
+            self::$cache[$id] = [
+                'title'       => (string) ($prepared->title ?? ''),
+                'url'         => (string) ($prepared->url ?? ''),
+                'id'          => (string) $id,
+                'target'      => (string) ($prepared->target ?? ''),
+                'rel'         => (string) ($prepared->xfn ?? ''),
+                'description' => (string) ($prepared->description ?? ''),
+            ];
+        }
+
+        return self::$cache[$id][$key];
+    }
+
+    /**
+     * Resolve a tag in a single-value context: an image or background source,
+     * a lightbox image, the Code element's useDynamicData, SVG, and the
+     * builder's dynamic-data preview.
+     *
+     * (A Link's href and a condition operand do NOT arrive here — both go
+     * through bricks_render_dynamic_data() (functions.php:286) into
+     * Providers::render_content(), which render_content() below serves.)
+     *
+     * This filter is shared by every dynamic-data provider and Bricks seeds it
+     * with the tag itself, so the incoming $tag doubles as "nobody has
+     * resolved this yet". Returning anything else for a tag we do not own —
+     * '', null, a normalised copy — destroys the value for every provider
+     * after us.
+     *
+     * Priority 20, and brace tolerance, are both mandatory — neither works
+     * alone:
+     *
+     * - Bricks itself occupies priority 10 here. Providers::register() runs at
+     *   include time (init.php:165, reached from bricks/functions.php:204),
+     *   which is before our after_setup_theme hook can fire, so a priority-10
+     *   registration of ours is always the SECOND one at that priority and
+     *   still runs after Bricks.
+     * - Bricks' handler, Providers::get_tag_value(), does not know our tags —
+     *   they are never in Providers::$tags — so it hands on
+     *   '{' . $original_tag . '}' (providers.php:562). Priority 20 without
+     *   brace tolerance therefore receives '{sfx_menu_item_title}', fails the
+     *   prefix test at offset 0, and the tag survives into the output.
+     * - Brace tolerance without priority 20 is worse than useless: if the
+     *   ordering ever flipped we would resolve first and hand Bricks a plain
+     *   value, which it would not recognise either and would re-wrap as
+     *   '{Kunst & Kultur}'.
+     *
+     * At priority 20 with the braces stripped before matching, the two
+     * cooperate: Bricks passes our tag through untouched-but-wrapped, and we
+     * unwrap, resolve, and return the value Bricks will not touch again.
+     *
+     * The bare form is still accepted, so the contract holds whether or not
+     * another callback has re-wrapped the tag.
+     *
+     * Values come back RAW. The consuming control escapes for its own context;
+     * escaping here would double-escape. render_content() is the opposite,
+     * because it writes straight into markup.
+     *
+     * @param mixed $tag  the tag, with or without a surrounding brace pair
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_tag($tag, $post, $context)
+    {
+        // Not Bricks' own picker — Providers::render_tag() normalises
+        // $tag['name'] down to a string before apply_filters() ever fires
+        // (providers.php:647, ahead of the call at providers.php:671), so
+        // within Bricks this filter never receives an array. Guards a third
+        // party calling apply_filters('bricks/dynamic_data/render_tag', …)
+        // directly with whatever shape it likes.
+        if (!is_string($tag)) {
+            return $tag;
+        }
+
+        $needle = $tag;
+
+        // One pair only: Bricks strips just the outermost pair too
+        // (providers.php:651-654).
+        if (strlen($needle) > 1 && $needle[0] === '{' && substr($needle, -1) === '}') {
+            $needle = substr($needle, 1, -1);
+        }
+
+        if (strpos($needle, self::PREFIX) !== 0) {
+            return $tag;
+        }
+
+        $key = substr($needle, strlen(self::PREFIX));
+
+        // Exact match only. A suffixed variant (Bricks' tag-filter syntax) is
+        // unsupported; ignoring the suffix would silently drop what the editor
+        // asked for, so it falls through and stays visible instead.
+        if (!in_array($key, self::KEYS, true)) {
+            return $tag;
+        }
+
+        $value = self::value($post, $key);
+
+        // Every miss above and here returns the ORIGINAL $tag, braces and all,
+        // never $needle: whatever the previous callback produced is what the
+        // next one must see.
+        return $value === null ? $tag : $value;
+    }
+
+    /** Test seam for the per-request static cache. */
+    public static function reset_cache(): void
+    {
+        self::$cache = [];
+    }
+
+    /**
+     * Human labels for the picker, keyed by tag key.
+     *
+     * @return array<string, string>
+     */
+    public static function labels(): array
+    {
+        return [
+            'title'       => __('Title', 'sfxtheme'),
+            'url'         => __('URL', 'sfxtheme'),
+            'id'          => __('ID', 'sfxtheme'),
+            'target'      => __('Link target', 'sfxtheme'),
+            'rel'         => __('Link relation', 'sfxtheme'),
+            'classes'     => __('CSS classes', 'sfxtheme'),
+            'description' => __('Description', 'sfxtheme'),
+            'is_active'   => __('Is current page', 'sfxtheme'),
+            'is_ancestor' => __('Is ancestor of current page', 'sfxtheme'),
+        ];
+    }
+
+    /**
+     * Put the nine tags in the builder's tag picker.
+     *
+     * Presentation only — bricks/dynamic_tags_list is builder-facing
+     * (providers.php:797) and does not feed the content parser. Resolution
+     * still comes from render_tag() and render_content().
+     *
+     * @param array<int, array<string, string>> $tags
+     * @return array<int, array<string, string>>
+     */
+    public static function add_tags_to_builder(array $tags): array
+    {
+        $group = __('Menu item', 'sfxtheme');
+
+        foreach (self::labels() as $key => $label) {
+            $tags[] = [
+                'name'  => '{' . self::PREFIX . $key . '}',
+                'label' => $label,
+                'group' => $group,
+            ];
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Resolve tags inside text content.
+     *
+     * Not a duplicate of render_tag(). Bricks' content parser only resolves
+     * tags present in Providers::$tags, which is built from registered
+     * provider objects (providers.php:222, 327) — bricks/dynamic_tags_list
+     * does not feed it. So the parser will never resolve these tags, but this
+     * filter fires regardless (providers.php:794) and does the work itself.
+     *
+     * Values ARE escaped here, unlike render_tag(), because this writes
+     * straight into markup.
+     *
+     * @param mixed $content
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_content($content, $post, $context)
+    {
+        if (!is_string($content) || strpos($content, '{' . self::PREFIX) === false) {
+            return $content;
+        }
+
+        if (self::value($post, 'id') === null) {
+            return $content;
+        }
+
+        $replacements = [];
+
+        foreach (self::KEYS as $key) {
+            $value = (string) self::value($post, $key);
+
+            // id / is_active / is_ancestor are generated and structurally
+            // incapable of carrying HTML-special characters — digits and
+            // '1'/'' respectively — so leaving them raw is a statement of
+            // intent, not a behavioural guarantee. Escaping them would be a
+            // no-op, which is why no test asserts the difference: such a
+            // test could only be a tautology.
+            $replacements['{' . self::PREFIX . $key . '}'] = match ($key) {
+                'url' => esc_url($value),
+                'id', 'is_active', 'is_ancestor' => $value,
+                default => esc_html($value),
+            };
+        }
+
+        return strtr($content, $replacements);
+    }
+}

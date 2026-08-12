@@ -6,7 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
 
+### Added
+
+- Menu Items query type for Bricks - an optional Bricks query loop over WordPress menu items, so a navigation can be built from ordinary Bricks elements instead of `wp_nav_menu()` markup. Toggle it in General Theme Options (`enable_nav_menu_query`); it adds no settings page of its own.
+  - Three controls appear on every loop-capable element next to the query control, gated on the query type: a menu **location**, a specific **menu**, and a **parent**. Location wins over the stored menu id, and an unassigned location deliberately yields nothing rather than silently falling back. On elements that group their query UI (Map's `addresses` group) the controls join that group instead of forming a panel of their own.
+  - The parent select lists every item as a full path with its child count, so a title that repeats across levels stays distinguishable, and it is repopulated over AJAX when the menu or location changes. Its first entry, *Children of the current item*, resolves against the enclosing loop, so a two-level navigation is one outer loop plus one inner loop.
+  - Nine `{sfx_menu_item_*}` dynamic tags - title, url, id, target, rel, classes, description, is_active, is_ancestor - registered in the builder's tag picker under "Menu item" and resolved in both text content and single-value contexts. Active and ancestor state comes from WordPress' own `_wp_menu_item_classes_by_context()`, computed across the whole menu rather than the filtered subset, so `current-menu-item` and `{sfx_menu_item_is_active}` are correct inside a filtered loop. A tag that cannot be resolved is left visible rather than blanked, so an unhooked element is obvious in the builder instead of rendering an empty `href`.
 
 ## [0.18.0] - 2026-07-17
 

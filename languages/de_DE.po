@@ -6125,3 +6125,67 @@ msgstr ""
 
 #~ msgid "Enabled"
 #~ msgstr "Aktiviert"
+
+#. Nav Menu Query feature (Task 11: German translations)
+msgid "Enable Menu Items query type"
+msgstr "Menüpunkte-Abfragetyp aktivieren"
+
+msgid "Adds a \"Menu Items\" query type to the Bricks query loop, so a WordPress menu can drive Bricks markup."
+msgstr "Fügt der Bricks-Abfrageschleife den Abfragetyp „Menüpunkte“ hinzu, sodass ein WordPress-Menü das Bricks-Markup steuern kann."
+
+msgid "Menu Items query type"
+msgstr "Menüpunkte-Abfragetyp"
+
+msgid "Menu Items"
+msgstr "Menüpunkte"
+
+msgid "Menu location"
+msgstr "Menü-Position"
+
+msgid "Select a location"
+msgstr "Position auswählen"
+
+msgid "Follows whichever menu is assigned to this location."
+msgstr "Folgt dem Menü, das dieser Position zugewiesen ist."
+
+msgid "Menu"
+msgstr "Menü"
+
+msgid "Only used when no location is selected."
+msgstr "Wird nur verwendet, wenn keine Position gewählt ist."
+
+msgid "Items below"
+msgstr "Menüpunkte unter"
+
+msgid "Top level"
+msgstr "Oberste Ebene"
+
+msgid "↑ Children of the current item"
+msgstr "↑ Unterpunkte des aktuellen Eintrags"
+
+msgid "Invalid nonce"
+msgstr "Ungültiger Nonce"
+
+msgid "Insufficient permissions"
+msgstr "Unzureichende Berechtigungen"
+
+msgid "Menu item"
+msgstr "Menüpunkt"
+
+msgid "Link target"
+msgstr "Linkziel"
+
+msgid "Link relation"
+msgstr "Linkbeziehung"
+
+msgid "CSS classes"
+msgstr "CSS-Klassen"
+
+msgid "Description"
+msgstr "Beschreibung"
+
+msgid "Is current page"
+msgstr "Ist aktuelle Seite"
+
+msgid "Is ancestor of current page"
+msgstr "Ist der aktuellen Seite übergeordnet"

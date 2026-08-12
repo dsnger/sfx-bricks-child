@@ -63,6 +63,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_nav_menu_query',
+                'label'       => __('Enable Menu Items query type', 'sfxtheme'),
+                'description' => __('Adds a "Menu Items" query type to the Bricks query loop, so a WordPress menu can drive Bricks markup.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),

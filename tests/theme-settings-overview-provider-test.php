@@ -103,6 +103,7 @@ assert_status($data, 'enable_wp_optimizer', 'active', 'WP Optimizer module defau
 assert_status($data, 'enable_image_optimizer', 'active', 'Image Optimizer module default active');
 assert_status($data, 'enable_security_header', 'active', 'Security Header module default active');
 assert_status($data, 'enable_smooth_scroll', 'inactive', 'Smooth Scroll module default inactive');
+assert_status($data, 'enable_nav_menu_query', 'inactive', 'Menu Items query type module default inactive');
 
 // Security headers with unset disable flags
 reset_test_state();
@@ -131,6 +132,12 @@ reset_test_state();
 $test_options['sfx_general_options'] = ['enable_wp_optimizer' => 0];
 $data = OverviewProvider::get_data();
 assert_true(! OverviewProvider::has_group($data, 'wp_optimizer'), 'WP Optimizer group omitted when module off');
+
+// Menu Items query type, switched on
+reset_test_state();
+$test_options['sfx_general_options'] = ['enable_nav_menu_query' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_nav_menu_query', 'active', 'Menu Items query type module active when enabled');
 
 // WP Optimizer partial
 reset_test_state();

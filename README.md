@@ -2,7 +2,7 @@
 
 WordPress child theme for [Bricks Builder](https://bricksbuilder.io/) with agency-focused content tools, performance toggles, and security helpers.
 
-Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, and Password Protection can be enabled or disabled in **General Theme Options**.
+Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, Password Protection, and the Menu Items query type can be enabled or disabled in **General Theme Options**.
 
 ## Features
 
