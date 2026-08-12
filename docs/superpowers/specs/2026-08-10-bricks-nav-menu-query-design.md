@@ -18,7 +18,7 @@ No new options are stored, so `uninstall.php` is untouched — the toggle lives 
 
 ## Goal
 
-Give Bricks a query loop over **WordPress menu items**, so a menu built in `Appearance → Menus` can drive Bricks markup directly. Bricks 2.3.9 ships `post`, `term`, `user`, `api` and `array` query types (`bricks/includes/setup.php:1125`) — none of them iterate `nav_menu_item` in a usable way.
+Give Bricks a query loop over **WordPress menu items**, so a menu built in `Appearance → Menus` can drive Bricks markup directly. Bricks 2.3.10 ships `post`, `term`, `user`, `api` and `array` query types (`bricks/includes/setup.php:1125`) — none of them iterate `nav_menu_item` in a usable way.
 
 The point is a single source of truth. Today mega-menu panels are commonly built from the page hierarchy (`post_parent`) while the mobile drilldown hangs off the WP menu — two places to maintain, which drift apart. With this query type both come from the menu, and an editor changes navigation without touching a Bricks template.
 
@@ -38,6 +38,8 @@ This generalises a site-specific snippet (visitessen, query type `navMenu`) into
 
 Every claim below was read out of Bricks 2.3.9 on disk. They are the load-bearing assumptions; if a Bricks update breaks one, this feature breaks.
 
+Bricks updated to 2.3.10 partway through this branch's review. Every citation below was re-verified against the 2.3.10 copy on disk; the handful that had moved were corrected in place rather than left pointing at 2.3.9 line numbers.
+
 | Fact | Location |
 |---|---|
 | `bricks/setup/control_options` carries `queryTypes` | `includes/setup.php:1125` |
@@ -55,12 +57,12 @@ Every claim below was read out of Bricks 2.3.9 on disk. They are the load-bearin
 | `bricks/elements/{name}/controls` fires **after** `set_controls()` | `includes/elements/base.php:143-149` |
 | `Elements::$elements` is a public static registry keyed by element name | `includes/elements.php:7` |
 | `Query::is_any_looping()` returns the enclosing query ID | `includes/query.php:2433` |
-| Bricks itself uses that to resolve dynamic data in a *nested, not-yet-running* query | `includes/integrations/dynamic-data/providers.php:358-366` |
+| Bricks itself uses that to resolve dynamic data in a *nested, not-yet-running* query | `includes/integrations/dynamic-data/providers.php:784-792` |
 | `bricks/dynamic_tags_list` is **builder-picker only** | `includes/integrations/dynamic-data/providers.php:797-801` ("allows the dynamic data providers to add their tags to the builder") |
 | The content parser matches against `Providers::$tags`, built only from registered provider objects | `providers.php:222`, `providers.php:327` |
-| `bricks/dynamic_data/render_content` fires regardless of that match | `providers.php:368` |
+| `bricks/dynamic_data/render_content` fires regardless of that match | `providers.php:794` |
 | `bricks/dynamic_data/render_tag` for single values | `providers.php:671` |
-| `optionsAjax` is a real select feature | `includes/elements/wordpress.php:90`, `form.php:2122` |
+| `optionsAjax` is a real select feature | `includes/elements/wordpress.php:90`, `form.php:2146` |
 | Builder AJAX nonce is `bricks-nonce-builder` | `includes/ajax.php:96` |
 
 WP core: `_wp_menu_item_classes_by_context( &$items )` (`wp-includes/nav-menu-template.php:327`) sets `->current`, `->current_item_ancestor`, `->current_item_parent` and the `current-menu-*` classes. It is what `wp_nav_menu()` uses; `wp_get_nav_menu_items()` does **not** call it.
@@ -396,7 +398,7 @@ if ($parent === 'current') {
 }
 ```
 
-`is_any_looping()` returns the ID of the innermost query that is *currently looping*. While an inner query is being built, that is the enclosing loop — this is precisely how Bricks resolves dynamic data for nested queries (`providers.php:358-366`), so the mechanism is Bricks' own, not a trick.
+`is_any_looping()` returns the ID of the innermost query that is *currently looping*. While an inner query is being built, that is the enclosing loop — this is precisely how Bricks resolves dynamic data for nested queries (`providers.php:784-792`), so the mechanism is Bricks' own, not a trick.
 
 `current` with no enclosing loop returns empty rather than falling back to the top level. A silent fallback would render a plausible-looking wrong menu; empty is diagnosable.
 
@@ -479,7 +481,7 @@ Returns `null` for an unknown key or when no menu item can be resolved. Callers 
 Not redundancy. Verified in the Bricks source:
 
 - **`bricks/dynamic_data/render_tag`** (`providers.php:671`) — single-value contexts that resolve *one whole tag* through `Providers::render_tag()`: an image or background source (`assets.php:2072`, `builder.php:1952`, `query.php:1996`), a lightbox image (`base.php:2456`), the Code element's `useDynamicData` (`builder.php:1761`), SVG, and the builder's dynamic-data preview.
-- **`bricks/dynamic_data/render_content`** (`providers.php:368`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 368) and does the substitution itself.
+- **`bricks/dynamic_data/render_content`** (`providers.php:794`) — text content. The content parser matches found tags against `Providers::$tags`, which is assembled purely from registered *provider objects* (`providers.php:222`). `bricks/dynamic_tags_list` does not feed it — the source comments it as builder-picker only (line 797). So our tags are never in `$registered_tags` and the parser will not resolve them; the `render_content` filter fires regardless (line 794) and does the substitution itself.
 
 **A Link's `href` and a condition's operand are `render_content`, not `render_tag`.** Both go through `bricks_render_dynamic_data()` (`functions.php:286`), which is a one-line wrapper around `Providers::render_content()`:
 
@@ -569,7 +571,7 @@ Testing this needs an integration-shaped case: the `add_filter` stub records reg
 
 Matching is exact against the nine keys. A suffixed variant such as `sfx_menu_item_title:something` — Bricks' tag-filter syntax — is **not** supported and falls through rule 2, returning unchanged. Half-supporting filter syntax by ignoring the suffix would silently drop what the editor asked for; leaving the tag visible says so.
 
-`is_string()` guards the front because the dynamic-data picker can pass an array (`providers.php:647`).
+`is_string()` guards the front — not because Bricks' own picker reaches us with an array. `Providers::render_tag()` normalises that shape away before the filter ever fires: `$tag = ! empty( $tag['name'] ) ? $tag['name'] : (string) $tag;` (`providers.php:647`), several lines before `apply_filters( 'bricks/dynamic_data/render_tag', $tag, $post, $context )` (`providers.php:671`). Within Bricks, the filter never receives an array. The guard is for a caller outside that path — anyone invoking `apply_filters('bricks/dynamic_data/render_tag', …)` directly, which is under no obligation to pre-normalise the way Bricks does.
 
 #### Follow-up note — registering a real provider (a spike, not a decision)
 

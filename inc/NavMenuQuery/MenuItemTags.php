@@ -199,7 +199,12 @@ class MenuItemTags
      */
     public static function render_tag($tag, $post, $context)
     {
-        // The picker can hand over an array (providers.php:647).
+        // Not Bricks' own picker — Providers::render_tag() normalises
+        // $tag['name'] down to a string before apply_filters() ever fires
+        // (providers.php:647, ahead of the call at providers.php:671), so
+        // within Bricks this filter never receives an array. Guards a third
+        // party calling apply_filters('bricks/dynamic_data/render_tag', …)
+        // directly with whatever shape it likes.
         if (!is_string($tag)) {
             return $tag;
         }
@@ -291,7 +296,7 @@ class MenuItemTags
      * tags present in Providers::$tags, which is built from registered
      * provider objects (providers.php:222, 327) — bricks/dynamic_tags_list
      * does not feed it. So the parser will never resolve these tags, but this
-     * filter fires regardless (providers.php:368) and does the work itself.
+     * filter fires regardless (providers.php:794) and does the work itself.
      *
      * Values ARE escaped here, unlike render_tag(), because this writes
      * straight into markup.

@@ -195,7 +195,7 @@ class QueryType
 
         // While a nested query is being built, is_any_looping() returns the
         // ENCLOSING query's id — the same mechanism Bricks uses to resolve
-        // dynamic data in nested queries (providers.php:358-366).
+        // dynamic data in nested queries (providers.php:784-792).
         $enclosing = \Bricks\Query::is_any_looping();
 
         if (!$enclosing) {

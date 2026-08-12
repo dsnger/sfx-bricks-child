@@ -149,7 +149,9 @@ check would also swallow `''` or `'0'` if either were ever a legitimate id, sile
 returning an empty loop instead of resolving the relative parent.
 
 **Why non-blocking:** Bricks query ids are element ids, which are non-empty
-alphanumeric strings; `'0'` is not reachable. Verified against Bricks 2.3.9.
+alphanumeric strings; `'0'` is not reachable. Verified against Bricks 2.3.9,
+re-verified against 2.3.10 after the mid-branch update — `$element_id =
+$element['id'] ?? ''` (`query.php:75`) is unchanged.
 
 **Follow-up:** tighten to `if ($enclosing === false)` if Bricks ever changes the
 return contract. Low value today; the current form is idiomatic.
