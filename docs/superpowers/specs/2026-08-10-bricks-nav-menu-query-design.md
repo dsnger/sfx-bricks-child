@@ -28,7 +28,7 @@ This generalises a site-specific snippet (visitessen, query type `navMenu`) into
 
 ## Background — the theme's feature contract
 
-`SFXBricksChildTheme::auto_register_features()` (`inc/SFXBricksChildTheme.php:323`) globs `inc/*/Controller.php` and registers every class exposing a static `get_feature_config()`. `load_dependencies()` (line 188) then instantiates each controller **only** if the config's `activation_option_key` is truthy inside `activation_option_name`.
+`SFXBricksChildTheme::auto_register_features()` (`inc/SFXBricksChildTheme.php:323`) globs `inc/*/Controller.php` and registers every class exposing a static `get_feature_config()`. `load_dependencies()` (line 189) then instantiates each controller **only** if the config's `activation_option_key` is truthy inside `activation_option_name`.
 
 `inc/SmoothScroll/` is the closest analogue: no post type, no persistence of its own, opt-in by default. It is followed here, minus its admin page — `SFXBricksChildAdmin` skips any feature whose config omits `menu_slug`/`page_title` (`inc/SFXBricksChildAdmin.php:45`), so a toggle-only feature is a supported shape, not a workaround.
 
