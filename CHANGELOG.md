@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-08-13
+
 ### Added
 
 - Menu Items query type for Bricks - an optional Bricks query loop over WordPress menu items, so a navigation can be built from ordinary Bricks elements instead of `wp_nav_menu()` markup. Toggle it in General Theme Options (`enable_nav_menu_query`); it adds no settings page of its own.
