@@ -64,7 +64,7 @@ add_action('after_setup_theme', function () {
 }, 1); // Priority 1 to run early but after WordPress core setup
 
 // Initialize theme updater
-require_once get_stylesheet_directory() . '/inc/GithubThemeUpdater.php';
+require_once get_stylesheet_directory() . '/inc/GitHubThemeUpdater.php';
 $updater = new \SFX\GitHubThemeUpdater();
 
 // Debug: Show development mode status

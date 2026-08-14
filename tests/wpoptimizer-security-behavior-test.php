@@ -308,11 +308,10 @@ function wp_safe_redirect(string $location, int $status = 302): void
     $test_redirect_location = $location;
 }
 
-// Git tracks WP Optimizer under lowercase inc/wpoptimizer/ for case-sensitive filesystems.
-require_once dirname(__DIR__) . '/inc/wpoptimizer/classes/HideLogin.php';
-require_once dirname(__DIR__) . '/inc/wpoptimizer/classes/RevisionLimiter.php';
-require_once dirname(__DIR__) . '/inc/wpoptimizer/Settings.php';
-require_once dirname(__DIR__) . '/inc/wpoptimizer/Controller.php';
+require_once dirname(__DIR__) . '/inc/WPOptimizer/classes/HideLogin.php';
+require_once dirname(__DIR__) . '/inc/WPOptimizer/classes/RevisionLimiter.php';
+require_once dirname(__DIR__) . '/inc/WPOptimizer/Settings.php';
+require_once dirname(__DIR__) . '/inc/WPOptimizer/Controller.php';
 require_once dirname(__DIR__) . '/inc/GeneralThemeOptions/Settings.php';
 require_once dirname(__DIR__) . '/inc/SFXBricksChildTheme.php';
 

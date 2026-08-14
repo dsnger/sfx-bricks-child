@@ -150,6 +150,12 @@ check_git_status() {
     fi
     
     print_success "Git working directory is clean"
+
+    print_status "Checking git-indexed PSR-4 path case..."
+    if ! php tests/psr4-path-case-test.php; then
+        print_error "PSR-4 path case check failed. Linux and GitHub zipballs use git-indexed case; fix mismatches before releasing."
+        exit 1
+    fi
 }
 
 # Function to create git tag and push
