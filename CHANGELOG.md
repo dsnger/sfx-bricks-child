@@ -6,7 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+
+## [0.19.1] - 2026-08-14
+
+### Fixed
+
+- Linux and GitHub zipball installs no longer fatal with Class SFX\WPOptimizer\AdminPage not found. Git had stored inc/wpoptimizer (and a few other feature paths) in the wrong case, so PSR-4 autoload could not find the class on case-sensitive filesystems. Indexed paths now match namespaces. A git-index case test and a release.sh preflight block this from shipping again.
 
 ## [0.19.0] - 2026-08-13
 
