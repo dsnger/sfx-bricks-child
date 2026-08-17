@@ -156,6 +156,12 @@ check_git_status() {
         print_error "PSR-4 path case check failed. Linux and GitHub zipballs use git-indexed case; fix mismatches before releasing."
         exit 1
     fi
+
+    print_status "Checking production zip exclude list..."
+    if ! php tests/build-package-exclude-test.php; then
+        print_error "Production zip exclude list is missing required development paths."
+        exit 1
+    fi
 }
 
 # Function to create git tag and push
