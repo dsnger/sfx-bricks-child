@@ -95,10 +95,10 @@
 
     // -------------------------------------------------------------------------
     // Anchor handling: only intercept links whose target section exists on the
-    // CURRENT page. Same-page links (#x, /#x on the matching page) smooth-scroll
-    // without a reload; cross-page links (e.g. /#x from a subpage, /imprint#x)
-    // are left to the browser to navigate normally, after which the load-time
-    // hash handler below scrolls to the section once the new page has loaded.
+    // CURRENT page (same origin, path, and query). Same-page links (#x, /#x)
+    // smooth-scroll without a reload; other-page or other-query links (e.g.
+    // /#x from a subpage, /imprint#x, pagination ?beginPos=10#x) are left to
+    // the browser. After navigation, the load-time hash handler scrolls.
     function setupAnchors(skipHashScroll) {
       // The setting is expressed as the space to leave ABOVE the target (e.g. to
       // clear a sticky header), matching the scroll-padding-top mental model.
@@ -112,7 +112,7 @@
       }
 
       // Returns the in-page target element for an href, or null when the href
-      // points to another page/origin or to a section not present on this page.
+      // points to another page, origin, query string, or missing section.
       function resolveLocalTarget(href) {
         if (!href) {
           return null;
@@ -127,6 +127,10 @@
           return null;
         }
         if (normPath(url.pathname) !== normPath(window.location.pathname)) {
+          return null;
+        }
+        // Different query (pagination, filters, sort) is a real navigation.
+        if (url.search !== window.location.search) {
           return null;
         }
         var id = url.hash ? url.hash.slice(1) : '';
