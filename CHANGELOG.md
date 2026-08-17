@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.2] - 2026-08-17
+
+### Removed
+
+- Unused Iconify [icon] shortcode feature. It was gated on ACF (acf/init and enable_iconify) after that dependency was already gone, so the shortcode never registered. Contact Info and Social Account shortcodes are unchanged.
+
 ## [0.19.1] - 2026-08-14
 
 ### Fixed
