@@ -1,18 +1,22 @@
+# Gitignore is not the production zip filter.
+# Clone this repo and you should have everything needed to keep developing:
+# tests, docs, Cursor rules, Claude commands, release scripts, composer.lock.
+# Production-only omissions live in build-theme.sh (EXCLUDE / FORBIDDEN_PATHS).
+
 # OS generated files
 .DS_Store
 .DS_Store*
 Thumbs.db/
 Thumbs.db*
 
-# IDE files
+# IDE files (Cursor rules in .cursor/rules/ stay tracked)
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 
-# Composer dependencies
+# Composer: lockfile is tracked; install dependencies with `composer install`
 /vendor/
-/composer.lock
 
 # Node dependencies and build artifacts
 /node_modules/
@@ -28,9 +32,17 @@ Thumbs.db*
 /wp-admin/
 /wp-includes/
 
-# Environment files
+# Environment files (.env.local is local-only; env-example.txt stays tracked)
 .env
 .env.*
+
+# Local AI / agent session state (shared rules and commands stay tracked)
+.remember/
+.conductor/
+.superpowers/
+.cloud/
+.claude/settings.local.json
+.claude/worktrees/
 
 # Backup and temp files
 *.bak

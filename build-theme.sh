@@ -25,6 +25,8 @@ BUILD_DIR=$(mktemp -d)
 DEST_DIR="${BUILD_DIR}/${THEME_NAME}"
 mkdir -p "$DEST_DIR"
 
+# Production zip filter only. Do not copy these into .gitignore — tests, docs,
+# Cursor rules, and release scripts must stay in git so a clone can keep developing.
 # Root-anchored patterns start with / and apply only at the theme root.
 # Unanchored names match that filename anywhere (nested .git, .DS_Store, etc).
 EXCLUDE=(
