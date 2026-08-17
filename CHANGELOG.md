@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.3] - 2026-08-17
+
+### Fixed
+
+- Production zip no longer includes development files. Local-tool folders (.superpowers, .claude, .conductor, .remember, .cursor), docs, tests, and related scripts are excluded, and the build fails if any of them leak through.
+
 ## [0.19.2] - 2026-08-17
 
 ### Removed
