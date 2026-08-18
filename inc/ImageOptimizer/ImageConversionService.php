@@ -536,15 +536,17 @@ class ImageConversionService
     public static function proportionalSize(int $dimension, string $mode, int $full_width, int $full_height): array
     {
         if ($mode === 'height') {
+            $height = ($full_height > 0) ? min($dimension, $full_height) : $dimension;
             return [
-                'width' => ($full_height > 0) ? max(1, (int) round($full_width * $dimension / $full_height)) : 0,
-                'height' => $dimension,
+                'width' => ($full_height > 0) ? max(1, (int) round($full_width * $height / $full_height)) : 0,
+                'height' => $height,
             ];
         }
 
+        $width = ($full_width > 0) ? min($dimension, $full_width) : $dimension;
         return [
-            'width' => $dimension,
-            'height' => ($full_width > 0) ? max(1, (int) round($full_height * $dimension / $full_width)) : 0,
+            'width' => $width,
+            'height' => ($full_width > 0) ? max(1, (int) round($full_height * $width / $full_width)) : 0,
         ];
     }
 
@@ -572,10 +574,11 @@ class ImageConversionService
     }
 
     /**
-     * Fill in custom-size width/height that WordPress would clamp to 1px.
+     * Fill in Image Optimizer custom-size width/height that WordPress would clamp to 1px.
      *
      * Existing attachments already stored height 0 (width mode) or width 0
      * (height mode). Repairing on read fixes CLS without a media regenerate.
+     * Only `custom-{int}` sizes are touched; core and plugin crops are left alone.
      */
     public static function repairMissingSizeDimensions(array $metadata): array
     {
@@ -587,7 +590,7 @@ class ImageConversionService
         }
 
         foreach ($metadata['sizes'] as $size_name => $size) {
-            if (!is_array($size) || $size_name === 'thumbnail') {
+            if (!is_array($size) || !is_string($size_name) || !preg_match('/^custom-\d+$/', $size_name)) {
                 continue;
             }
 

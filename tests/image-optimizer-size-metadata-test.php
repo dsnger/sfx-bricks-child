@@ -43,6 +43,14 @@ $missing_file = ImageConversionService::dimensionsForCustomSize('/tmp/does-not-e
 assert_same(600, $missing_file['width'], 'Missing size file should fall back to the target width');
 assert_same(338, $missing_file['height'], 'Missing size file should fall back to proportional height');
 
+$no_upscale_width = ImageConversionService::proportionalSize(1920, 'width', 800, 600);
+assert_same(800, $no_upscale_width['width'], 'Width-mode fallback must not invent a width larger than the source');
+assert_same(600, $no_upscale_width['height'], 'Width-mode fallback must keep the source height when the target would upscale');
+
+$no_upscale_height = ImageConversionService::proportionalSize(1080, 'height', 800, 600);
+assert_same(800, $no_upscale_height['width'], 'Height-mode fallback must keep the source width when the target would upscale');
+assert_same(600, $no_upscale_height['height'], 'Height-mode fallback must not invent a height larger than the source');
+
 $broken = [
     'width' => 1920,
     'height' => 1080,
@@ -104,5 +112,35 @@ $healthy = [
 
 $unchanged = ImageConversionService::repairMissingSizeDimensions($healthy);
 assert_same(675, $unchanged['sizes']['custom-1200']['height'], 'Already-correct size metadata should stay unchanged');
+
+$foreign_sizes = [
+    'width' => 1920,
+    'height' => 1080,
+    'sizes' => [
+        'custom-1200' => [
+            'file' => 'photo-1200.webp',
+            'width' => 1200,
+            'height' => 0,
+            'mime-type' => 'image/webp',
+        ],
+        'medium' => [
+            'file' => 'photo-300x200.webp',
+            'width' => 300,
+            'height' => 0,
+            'mime-type' => 'image/webp',
+        ],
+        'woocommerce_single' => [
+            'file' => 'photo-600x1.webp',
+            'width' => 600,
+            'height' => 1,
+            'mime-type' => 'image/webp',
+        ],
+    ],
+];
+
+$scoped = ImageConversionService::repairMissingSizeDimensions($foreign_sizes);
+assert_same(675, $scoped['sizes']['custom-1200']['height'], 'Optimizer custom sizes should still be repaired');
+assert_same(0, $scoped['sizes']['medium']['height'], 'WordPress core sizes must not be rewritten from the full-image ratio');
+assert_same(1, $scoped['sizes']['woocommerce_single']['height'], 'Plugin cropped sizes must not be rewritten from the full-image ratio');
 
 echo "OK\n";
