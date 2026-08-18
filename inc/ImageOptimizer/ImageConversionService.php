@@ -306,6 +306,15 @@ class ImageConversionService
         // Set file path in metadata (relative to uploads dir)
         $upload_dir = wp_upload_dir();
         $metadata['file'] = str_replace($upload_dir['basedir'] . '/', '', $main_file);
+
+        $main_size = self::readImageSize($main_file);
+        if ($main_size !== null) {
+            $metadata['width'] = $main_size['width'];
+            $metadata['height'] = $main_size['height'];
+        }
+
+        $full_width = (int) ($metadata['width'] ?? 0);
+        $full_height = (int) ($metadata['height'] ?? 0);
         
         $dirname = dirname($main_file);
         $base_name = pathinfo($main_file, PATHINFO_FILENAME);
@@ -315,15 +324,23 @@ class ImageConversionService
             $metadata['sizes'] = [];
         }
         
-        // Add custom sizes
+        // Add custom sizes with real pixel dimensions. Storing 0 for the
+        // unconstrained axis makes WordPress emit height="1" (CLS).
         foreach ($max_values as $index => $dimension) {
             if ($index === 0) continue;
             $size_file = "{$dirname}/{$base_name}-{$dimension}{$extension}";
             if (file_exists($size_file)) {
+                $size_dims = self::dimensionsForCustomSize(
+                    $size_file,
+                    (int) $dimension,
+                    $mode,
+                    $full_width,
+                    $full_height
+                );
                 $metadata['sizes']["custom-{$dimension}"] = [
                     'file' => "{$base_name}-{$dimension}{$extension}",
-                    'width' => ($mode === 'width') ? $dimension : 0,
-                    'height' => ($mode === 'height') ? $dimension : 0,
+                    'width' => $size_dims['width'],
+                    'height' => $size_dims['height'],
                     'mime-type' => $format,
                 ];
             }
@@ -484,6 +501,114 @@ class ImageConversionService
         
         // Perform deletion with retry
         return Settings::delete_file_with_retry($file_path, $log);
+    }
+
+    /**
+     * Read pixel width/height from an image file.
+     *
+     * @return array{width: int, height: int}|null
+     */
+    public static function readImageSize(string $file_path): ?array
+    {
+        if ($file_path === '' || !is_readable($file_path)) {
+            return null;
+        }
+
+        $size = function_exists('wp_getimagesize')
+            ? wp_getimagesize($file_path)
+            : @getimagesize($file_path);
+
+        if (!is_array($size) || (int) $size[0] < 1 || (int) $size[1] < 1) {
+            return null;
+        }
+
+        return [
+            'width' => (int) $size[0],
+            'height' => (int) $size[1],
+        ];
+    }
+
+    /**
+     * Compute the missing axis for a size constrained on width or height.
+     *
+     * @return array{width: int, height: int}
+     */
+    public static function proportionalSize(int $dimension, string $mode, int $full_width, int $full_height): array
+    {
+        if ($mode === 'height') {
+            return [
+                'width' => ($full_height > 0) ? max(1, (int) round($full_width * $dimension / $full_height)) : 0,
+                'height' => $dimension,
+            ];
+        }
+
+        return [
+            'width' => $dimension,
+            'height' => ($full_width > 0) ? max(1, (int) round($full_height * $dimension / $full_width)) : 0,
+        ];
+    }
+
+    /**
+     * Resolve width/height for a generated custom size.
+     *
+     * Prefer the real pixel size of the file. Fall back to a proportion of
+     * the full image so metadata never stores 0 on the unconstrained axis.
+     *
+     * @return array{width: int, height: int}
+     */
+    public static function dimensionsForCustomSize(
+        string $size_file,
+        int $dimension,
+        string $mode,
+        int $full_width = 0,
+        int $full_height = 0
+    ): array {
+        $from_file = self::readImageSize($size_file);
+        if ($from_file !== null) {
+            return $from_file;
+        }
+
+        return self::proportionalSize($dimension, $mode, $full_width, $full_height);
+    }
+
+    /**
+     * Fill in custom-size width/height that WordPress would clamp to 1px.
+     *
+     * Existing attachments already stored height 0 (width mode) or width 0
+     * (height mode). Repairing on read fixes CLS without a media regenerate.
+     */
+    public static function repairMissingSizeDimensions(array $metadata): array
+    {
+        $full_width = (int) ($metadata['width'] ?? 0);
+        $full_height = (int) ($metadata['height'] ?? 0);
+
+        if ($full_width <= 1 || $full_height <= 1 || empty($metadata['sizes']) || !is_array($metadata['sizes'])) {
+            return $metadata;
+        }
+
+        foreach ($metadata['sizes'] as $size_name => $size) {
+            if (!is_array($size) || $size_name === 'thumbnail') {
+                continue;
+            }
+
+            $width = (int) ($size['width'] ?? 0);
+            $height = (int) ($size['height'] ?? 0);
+
+            if ($width > 1 && $height > 1) {
+                continue;
+            }
+
+            if ($width > 1 && $height <= 1) {
+                $metadata['sizes'][$size_name]['height'] = max(1, (int) round($full_height * $width / $full_width));
+                continue;
+            }
+
+            if ($height > 1 && $width <= 1) {
+                $metadata['sizes'][$size_name]['width'] = max(1, (int) round($full_width * $height / $full_height));
+            }
+        }
+
+        return $metadata;
     }
 
     /**

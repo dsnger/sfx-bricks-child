@@ -64,6 +64,8 @@ class Controller
         add_filter('big_image_size_threshold', '__return_false', 999);
         // Register custom metadata filter
         add_filter('wp_generate_attachment_metadata', [self::class, 'fix_format_metadata'], 10, 2);
+        // Repair height=0 custom sizes already stored in the database (CLS)
+        add_filter('wp_get_attachment_metadata', [self::class, 'repair_zero_height_metadata'], 10, 2);
     }
 
     /**
@@ -469,14 +471,32 @@ class Controller
         $max_values = Settings::get_max_values();
         $metadata['file'] = str_replace($uploads['basedir'] . '/', '', $file_path);
         $metadata['mime_type'] = $format;
+
+        $full_width = (int) ($metadata['width'] ?? 0);
+        $full_height = (int) ($metadata['height'] ?? 0);
+        if ($full_width <= 1 || $full_height <= 1) {
+            $main_size = ImageConversionService::readImageSize($file_path);
+            if ($main_size !== null) {
+                $metadata['width'] = $full_width = $main_size['width'];
+                $metadata['height'] = $full_height = $main_size['height'];
+            }
+        }
+
         foreach ($max_values as $index => $dimension) {
             if ($index === 0) continue;
             $size_file = "$dirname/$base_name-$dimension.$extension";
             if (file_exists($size_file)) {
+                $size_dims = ImageConversionService::dimensionsForCustomSize(
+                    $size_file,
+                    (int) $dimension,
+                    $mode,
+                    $full_width,
+                    $full_height
+                );
                 $metadata['sizes']["custom-$dimension"] = [
                     'file' => "$base_name-$dimension.$extension",
-                    'width' => ($mode === 'width') ? $dimension : (isset($metadata['sizes']["custom-$dimension"]['width']) ? $metadata['sizes']["custom-$dimension"]['width'] : 0),
-                    'height' => ($mode === 'height') ? $dimension : (isset($metadata['sizes']["custom-$dimension"]['height']) ? $metadata['sizes']["custom-$dimension"]['height'] : 0),
+                    'width' => $size_dims['width'],
+                    'height' => $size_dims['height'],
                     'mime-type' => $format
                 ];
             }
@@ -501,6 +521,37 @@ class Controller
         ];
 
         return $metadata;
+    }
+
+    /**
+     * Repair stored size metadata that used 0 for the unconstrained axis.
+     *
+     * WordPress wp_constrain_dimensions() turns height 0 into height 1, which
+     * is written onto every <img> and causes cumulative layout shift.
+     *
+     * @param array|false $metadata      Attachment metadata
+     * @param int         $attachment_id Attachment ID
+     * @return array|false
+     */
+    public static function repair_zero_height_metadata($metadata, $attachment_id)
+    {
+        if (!is_array($metadata)) {
+            return $metadata;
+        }
+
+        $full_width = (int) ($metadata['width'] ?? 0);
+        $full_height = (int) ($metadata['height'] ?? 0);
+
+        if ($full_width <= 1 || $full_height <= 1) {
+            $file = get_attached_file((int) $attachment_id);
+            $size = is_string($file) ? ImageConversionService::readImageSize($file) : null;
+            if ($size !== null) {
+                $metadata['width'] = $size['width'];
+                $metadata['height'] = $size['height'];
+            }
+        }
+
+        return ImageConversionService::repairMissingSizeDimensions($metadata);
     }
 
     /**
