@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.4] - 2026-08-18
+
+### Fixed
+
+- Image Optimizer stored height 0 on custom sizes in width mode. WordPress then clamped that to 1, so frontend images got height="1" and caused cumulative layout shift. New conversions write the real pixel size; existing attachments are repaired on read. Repair is limited to Image Optimizer custom-{int} sizes, and the fallback does not invent dimensions larger than the source.
+- Smooth scroll no longer intercepts same-path links that only change the query string, so those navigations are not treated as in-page jumps.
+
 ## [0.19.3] - 2026-08-17
 
 ### Fixed
