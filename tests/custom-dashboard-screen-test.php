@@ -12,9 +12,17 @@ declare(strict_types=1);
  * inline hide-default-dashboard CSS breaks the native network UI.
  */
 
+$test_is_admin = true;
 $test_is_blog_admin = true;
 $test_screen = null;
 $pagenow = 'index.php';
+
+function is_admin(): bool
+{
+    global $test_is_admin;
+
+    return $test_is_admin;
+}
 
 function is_blog_admin(): bool
 {
