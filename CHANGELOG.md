@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.6] - 2026-08-19
+
+### Fixed
+
+- Custom dashboard no longer fatals on frontend previews. is_site_dashboard() ran on init and called get_current_screen(), which is not loaded outside wp-admin.
+
 ## [0.19.5] - 2026-08-19
 
 ### Fixed
