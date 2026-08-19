@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.5] - 2026-08-19
+
+### Fixed
+
+- Custom dashboard no longer replaces the WordPress network or user admin dashboards. It hooked admin_head-index.php, so it rendered unstyled on /wp-admin/network/ and hid the native network UI.
+
 ## [0.19.4] - 2026-08-18
 
 ### Fixed
