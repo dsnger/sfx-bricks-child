@@ -34,14 +34,13 @@ class AssetManager
     }
 
     /**
-     * Check if we're on the dashboard page
+     * Check if we're on the site dashboard page
      *
      * @return bool
      */
     private static function is_dashboard_page(): bool
     {
-        $screen = get_current_screen();
-        return $screen && $screen->id === 'dashboard';
+        return DashboardScreen::is_site_dashboard();
     }
 
     /**

@@ -56,6 +56,10 @@ class Controller
             return;
         }
 
+        if (!DashboardScreen::is_site_dashboard()) {
+            return;
+        }
+
         // Initialize renderer
         $this->renderer = new DashboardRenderer();
 
@@ -80,9 +84,7 @@ class Controller
      */
     public function add_sidebar_body_class(string $classes): string
     {
-        global $pagenow;
-        
-        if ($pagenow !== 'index.php') {
+        if (!DashboardScreen::is_site_dashboard()) {
             return $classes;
         }
 
@@ -106,6 +108,10 @@ class Controller
      */
     public function inject_sidebar_state_script(): void
     {
+        if (!DashboardScreen::is_site_dashboard()) {
+            return;
+        }
+
         $options = get_option(Settings::$option_name, []);
         $allow_toggle = Settings::is_sidebar_toggle_allowed($options);
         $sidebar_default = Settings::get_effective_sidebar_default_state($options);
@@ -155,6 +161,10 @@ class Controller
      */
     public function remove_dashboard_widgets(): void
     {
+        if (!DashboardScreen::is_site_dashboard()) {
+            return;
+        }
+
         if (!$this->is_option_enabled('enable_custom_dashboard')) {
             return;
         }
@@ -184,6 +194,10 @@ class Controller
      */
     public function inject_custom_dashboard(): void
     {
+        if (!DashboardScreen::is_site_dashboard()) {
+            return;
+        }
+
         if (!$this->is_option_enabled('enable_custom_dashboard')) {
             return;
         }
@@ -257,6 +271,10 @@ class Controller
      */
     public function render_dashboard_wrapper(): void
     {
+        if (!DashboardScreen::is_site_dashboard()) {
+            return;
+        }
+
         if (!$this->renderer) {
             return;
         }
