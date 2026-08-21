@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.19.7] - 2026-08-21
+
+### Changed
+
+- WP Optimizer Disable Version Query Args is now off by default. Removing ver query args from script and style URLs broke cache busting after WordPress updates. Existing installs are turned off once; the setting can still be enabled manually.
+
+### Fixed
+
+- WP Optimizer page slug body class no longer passes a function return value into end(), which PHP requires as a variable by reference.
+
 ## [0.19.6] - 2026-08-19
 
 ### Fixed
