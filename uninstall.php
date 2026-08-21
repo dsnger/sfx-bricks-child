@@ -33,6 +33,7 @@ $options_to_delete = [
     // WP Optimizer
     'sfx_wpoptimizer_options',
     'sfx_wpoptimizer_extra',
+    'sfx_wpoptimizer_migrated_disable_version_numbers_off',
     
     // Text Snippets
     'sfx_text_snippets_options',

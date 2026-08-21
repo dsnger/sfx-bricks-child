@@ -206,9 +206,9 @@ class Settings
             [
                 'id'          => 'disable_version_numbers',
                 'label'       => __('Disable Version Query Args', 'sfxtheme'),
-                'description' => __('Removes version query strings from scripts and styles to improve caching. May cause issues with cache busting.', 'sfxtheme'),
+                'description' => __('Removes version query strings from scripts and styles to improve caching. Off by default because it can break cache busting after WordPress or plugin updates.', 'sfxtheme'),
                 'type'        => 'checkbox',
-                'default'     => 1,
+                'default'     => 0,
                 'group'       => 'frontend',
             ],
             [

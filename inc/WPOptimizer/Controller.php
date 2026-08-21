@@ -44,6 +44,7 @@ class Controller
     {
         // Initialize default options if they don't exist
         self::maybe_set_default_options();
+        self::maybe_turn_off_version_query_arg_stripping();
         
         // Register components
         AdminPage::register();
@@ -251,7 +252,8 @@ class Controller
             if (is_home()) {
                 return $classes;
             } elseif (is_page()) {
-                $parent      = $post->post_parent ? end(get_post_ancestors($post)) : $post->ID;
+                $ancestors   = $post->post_parent ? get_post_ancestors($post) : [];
+                $parent      = $ancestors !== [] ? end($ancestors) : $post->ID;
                 $parent_post = get_post($parent);
                 $classes[]   = $parent_post->post_name;
                 $classes[]   = sanitize_html_class($post->post_name);
@@ -1037,7 +1039,29 @@ class Controller
             }
             add_option(self::OPTION_NAME, $defaults);
         }
-      }
+    }
+
+    /**
+     * Previous default kept version query args stripped. That breaks cache
+     * busting after WordPress/plugin updates, so flip saved installs once.
+     */
+    public static function maybe_turn_off_version_query_arg_stripping(): void
+    {
+        $migration_flag = 'sfx_wpoptimizer_migrated_disable_version_numbers_off';
+        if (get_option($migration_flag)) {
+            return;
+        }
+
+        $options = get_option(self::OPTION_NAME, []);
+        if (is_array($options) && (int) ($options['disable_version_numbers'] ?? 0) === 1) {
+            $options['disable_version_numbers'] = 0;
+            update_option(self::OPTION_NAME, $options);
+            delete_transient('sfx_wp_optimizer_enabled');
+            delete_transient('sfx_wp_optimizer_settings');
+        }
+
+        update_option($migration_flag, 1);
+    }
 
     /**
      * Check if optimization is enabled with caching
