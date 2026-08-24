@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - PHP 8.0+, `declare(strict_types=1)` at the top of every new PHP file, `namespace SFX\MediaCredits`.
-- Every user-facing string goes through `__()` / `esc_html__()` with text domain `sfxtheme`.
+- Every user-facing string goes through `__()` / `esc_html__()` with text domain `sfxtheme`. Two exceptions, both matching the existing modules: `AdminPage::$page_title` and `AdminPage::$description` are plain strings, because the feature registry reads them as static properties and a variable inside `__()` cannot be extracted anyway (see `SmoothScroll\AdminPage`).
 - Meta keys, verbatim: `_sfx_media_copyright`, `_sfx_media_ai`, `_sfx_media_iptc_prefilled`.
 - Option name, verbatim: `sfx_media_credits_options`. Feature toggle key: `enable_media_credits` inside `sfx_general_options`.
 - AI label slugs, verbatim and closed: `ai_generated`, `ai_edited`, `ai_assisted`, `digitally_altered`. The empty string means "no marking".
@@ -147,14 +147,21 @@ function esc_html__($text, $domain = 'default')
     return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Note the fourth argument. WordPress runs esc_html() through
+ * _wp_specialchars() with $double_encode = false (formatting.php:945), so an
+ * entity already in the string survives untouched. PHP's htmlspecialchars()
+ * defaults the other way, and a stub that double-encodes would quietly turn
+ * our brace entities into &amp;#123; and let a wrong escaping order pass.
+ */
 function esc_html($text)
 {
-    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8', false);
 }
 
 function esc_attr($text)
 {
-    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8', false);
 }
 
 function esc_url($url)
@@ -723,18 +730,30 @@ $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = '{echo:phpinfo}';
 Credit::reset_cache();
 $line = Credit::for(5)['line'];
 assert_not_contains('{echo:', $line, 'Case 7b: braces from the copyright field never reach the page');
-assert_contains('&#123;echo:phpinfo&#125;', $line, 'Case 7c: they are entity-escaped instead');
+// Exact string, not a substring: this is what catches a double-encoded
+// &amp;#123; from a wrong escaping order, which a contains() check would pass.
+assert_same('©&nbsp;&#123;echo:phpinfo&#125;', $line, 'Case 7c: exactly one round of entity escaping');
 
-// A filter runs AFTER composition, so escaping has to run after the filter.
+// A filter runs AFTER composition, so both gates have to run after it.
 $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto';
+
 $GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function () {
     return '{post_title}';
 };
 Credit::reset_cache();
 assert_not_contains('{post_title}', Credit::for(5)['line'], 'Case 7d: a filter cannot reintroduce a parseable tag');
+
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function () {
+    return 'Foto <script>alert(1)</script><em>ok</em>';
+};
+Credit::reset_cache();
+$line = Credit::for(5)['line'];
+assert_not_contains('<script>', $line, 'Case 7e: a filter cannot inject script either');
+assert_contains('<em>ok</em>', $line, 'Case 7f: but it can still add ordinary markup');
+
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_line']);
 
-assert_same('&#123;a&#125;', Credit::escape_braces('{a}'), 'Case 7e: escape_braces is available on its own');
+assert_same('&#123;a&#125;', Credit::escape_braces('{a}'), 'Case 7g: escape_braces is available on its own');
 
 // ------------------------------------------------------ Case 8: memoisation
 
@@ -1125,14 +1144,27 @@ assert_same('Agentur Nord', get_post_meta(11, Credit::META_COPYRIGHT, true), 'Ca
 assert_same('1', get_post_meta(11, Credit::META_IPTC_MARKER, true), 'Case 2b: and the marker records that it happened');
 
 // ------------------------------- Case 3: regeneration must not resurrect it
-// wp_generate_attachment_metadata fires again on thumbnail regeneration
-// (wp-admin/includes/image.php:184-188). "Write it if the field is empty"
-// would undo an editorial decision every time someone regenerates.
+// wp_generate_attachment_metadata fires again on regeneration, with context
+// 'update' (wp-admin/includes/image.php:185) instead of 'create' (:750).
+// Two independent guards, and the test proves each one alone.
 
 update_post_meta(11, Credit::META_COPYRIGHT, '');
-MediaLibrary::prefill_iptc($meta, 11);
+MediaLibrary::prefill_iptc($meta, 11, 'update');
 
-assert_same('', get_post_meta(11, Credit::META_COPYRIGHT, true), 'Case 3a: a deliberately cleared field stays cleared');
+assert_same('', get_post_meta(11, Credit::META_COPYRIGHT, true), 'Case 3a: context update writes nothing');
+
+MediaLibrary::prefill_iptc($meta, 11, 'create');
+
+assert_same('', get_post_meta(11, Credit::META_COPYRIGHT, true), 'Case 3b: and even a second create is stopped by the marker');
+
+// The context guard alone, on an attachment that has never been seen. This is
+// the mass-backfill case: switch the feature on, regenerate thumbnails site
+// wide, and every older image with IPTC data would be written at once.
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 20, 'update');
+
+assert_same('', get_post_meta(20, Credit::META_COPYRIGHT, true), 'Case 3c: an unseen attachment is not backfilled on regeneration');
+assert_same('', get_post_meta(20, Credit::META_IPTC_MARKER, true), 'Case 3d: and no marker is written, so a real upload can still prefill');
 
 // ---------------------------------------- Case 4: an editor's value is safe
 
@@ -1182,7 +1214,7 @@ Expected: `FAIL` lines for cases 1a onwards, or a fatal on the undefined method 
 Add to `inc/MediaCredits/MediaLibrary.php`. Extend `register()`:
 
 ```php
-        add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 2);
+        add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
 ```
 
 And add the two methods:
@@ -1191,18 +1223,24 @@ And add the two methods:
     /**
      * Prefill the copyright field from the IPTC data WordPress already parsed.
      *
-     * Exactly once per attachment, recorded in a marker meta. The hook also
-     * fires on metadata regeneration (wp-admin/includes/image.php:184-188), so
-     * an "if the field is empty" test would resurrect a value an editor
-     * deliberately cleared every time someone regenerates thumbnails.
+     * Two independent guards, because they answer different questions:
+     *
+     * - $context must be 'create'. WordPress passes 'create' on upload
+     *   (wp-admin/includes/image.php:750) and 'update' on regeneration
+     *   (image.php:185). Without this, the first regeneration after the
+     *   feature is switched on would backfill every older attachment that
+     *   happens to carry IPTC data — a mass write nobody asked for.
+     * - The marker must be absent. This is what keeps a second 'create' from
+     *   resurrecting a value an editor deliberately cleared.
      *
      * @param mixed $metadata
      * @param mixed $attachment_id
+     * @param mixed $context 'create' on upload, 'update' on regeneration
      * @return mixed the metadata, untouched — this is a read-only passenger on the filter
      */
-    public static function prefill_iptc($metadata, $attachment_id)
+    public static function prefill_iptc($metadata, $attachment_id, $context = 'create')
     {
-        if (!is_array($metadata)) {
+        if (!is_array($metadata) || $context !== 'create') {
             return $metadata;
         }
 
@@ -1445,8 +1483,12 @@ And the methods:
         }
 
         $post_type = $query->get('post_type');
+        $types     = is_array($post_type) ? $post_type : [$post_type];
 
-        if ($post_type !== '' && $post_type !== 'attachment') {
+        // Exactly attachment. upload.php's main query always sets it, and
+        // accepting an empty post_type would let this touch any other main
+        // query that happened to run on that screen.
+        if (!in_array('attachment', $types, true)) {
             return;
         }
 
@@ -1458,6 +1500,15 @@ And the methods:
 
         if ($meta_query === []) {
             return;
+        }
+
+        // Combine rather than replace: another plugin may already have put
+        // constraints on this query, and discarding them silently changes
+        // results that are not ours to change.
+        $existing = $query->get('meta_query');
+
+        if (is_array($existing) && $existing !== []) {
+            $meta_query = ['relation' => 'AND', $existing, $meta_query];
         }
 
         $query->set('meta_query', $meta_query);
@@ -1802,6 +1853,7 @@ class Bricks
         add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
         add_filter('bricks/frontend/render_element', [self::class, 'render_element'], 10, 2);
         add_filter('wp_get_attachment_image_attributes', [self::class, 'image_attributes'], 10, 2);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueue_overlay_styles'], 20);
 
         add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
 
@@ -2087,6 +2139,12 @@ assert_same('Attachment caption', Bricks::effective_caption([], 5), 'Case 5e: an
 assert_same('', Bricks::effective_caption([], 5, 'none'), 'Case 5f: the theme-style default is honoured when passed');
 assert_same('', Bricks::effective_caption(['caption' => 'attachment'], 0), 'Case 5g: no image, no caption');
 
+// The two boundaries where PHP's empty() and a trim() test disagree, and
+// where Bricks follows empty(): '0' is empty and falls through, whitespace is
+// not empty and trims to nothing.
+assert_same('Attachment caption', Bricks::effective_caption(['caption' => 'custom', 'captionCustom' => '0'], 5), 'Case 5h: "0" is empty to Bricks and falls through');
+assert_same('', Bricks::effective_caption(['caption' => 'custom', 'captionCustom' => '   '], 5), 'Case 5i: a whitespace-only custom caption renders as nothing, it does not fall through');
+
 // ------------------------------------------------ Case 6: marker matching
 
 assert_same(true, Bricks::has_marker('<figure><span class="sfx-credit">x</span></figure>'), 'Case 6a: the marker is found');
@@ -2352,7 +2410,12 @@ Replace the `element_settings()` stub in `inc/MediaCredits/Bricks.php` and add t
             return '';
         }
 
-        if ($type === 'custom' && trim((string) ($settings['captionCustom'] ?? '')) !== '') {
+        // empty() first, trim() after — Bricks' own order (image.php:805-806).
+        // The difference is not academic: '0' is empty to PHP and therefore
+        // falls through to the attachment caption, and a whitespace-only
+        // custom caption is NOT empty and therefore trims to ''. Testing
+        // trim() !== '' instead would get both backwards.
+        if ($type === 'custom' && !empty($settings['captionCustom'])) {
             return trim((string) $settings['captionCustom']);
         }
 
@@ -2440,7 +2503,7 @@ git commit -m "feat(media-credits): resolve tags and compose captions in element
 
 **Interfaces:**
 - Consumes: `Credit::for()`, `Settings::get('output_mode')`, `Bricks::has_marker()`, `Bricks::has_no_credit_class()`, `Bricks::image_id_from_element()`.
-- Produces: `Bricks::render_element($html, $element)`, `Bricks::inject_overlay(string $html, string $line): string`, `Bricks::root_tag(string $html): string`, `Bricks::image_attributes($attr, $attachment)`.
+- Produces: `Bricks::render_element($html, $element)`, `Bricks::inject_overlay(string $html, string $line): string`, `Bricks::root_tag(string $html): string`, `Bricks::image_attributes($attr, $attachment)`, `Bricks::enqueue_overlay_styles(): void`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2594,6 +2657,31 @@ Replace the `render_element()` and `image_attributes()` stubs in `inc/MediaCredi
     public static function root_tag(string $html): string
     {
         return preg_match('/^\s*<([a-z0-9-]+)/i', $html, $m) === 1 ? strtolower($m[1]) : '';
+    }
+
+    /**
+     * The overlay stylesheet, and only in overlay mode. It lives here rather
+     * than in the Controller because the overlay is this class's output;
+     * the Controller registers classes and holds no logic of its own.
+     */
+    public static function enqueue_overlay_styles(): void
+    {
+        if ((string) Settings::get('output_mode') !== 'overlay') {
+            return;
+        }
+
+        $path = get_stylesheet_directory() . '/inc/MediaCredits/assets/media-credits.css';
+
+        if (!file_exists($path)) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'sfx-media-credits',
+            get_stylesheet_directory_uri() . '/inc/MediaCredits/assets/media-credits.css',
+            [],
+            (string) filemtime($path)
+        );
     }
 
     /**
@@ -2758,9 +2846,13 @@ class AdminPage
     {
         \SFX\AccessControl::die_if_unauthorized_theme();
 
-        $defaults = Settings::get_defaults();
-        $options  = wp_parse_args(get_option(Settings::OPTION_NAME, []), $defaults);
-        $labels   = Settings::get_labels();
+        // Normalised, not raw: an import performed while the feature was off
+        // never reached the registered sanitizer, and the page must not offer
+        // an invalid mode or an out-of-range size back to the editor as if it
+        // were a real setting.
+        $stored  = get_option(Settings::OPTION_NAME, []);
+        $options = Settings::normalize(is_array($stored) ? $stored : []);
+        $labels  = Settings::get_labels();
         ?>
         <div class="wrap sfx-media-credits" style="padding: 0; font-size: 14px;">
             <div class="sfx-flex">
@@ -2964,7 +3056,7 @@ git commit -m "feat(media-credits): settings page with seal uploader"
 
 **Interfaces:**
 - Consumes: every class above.
-- Produces: `Controller::get_feature_config(): array`, `Controller::enqueue_frontend(): void`, `MediaLibrary::register_meta(): void`.
+- Produces: `Controller::get_feature_config(): array`, `MediaLibrary::register_meta(): void`, `Bricks::enqueue_overlay_styles(): void`.
 
 - [ ] **Step 1: Write the controller**
 
@@ -2991,32 +3083,6 @@ class Controller
         AdminPage::register();
         MediaLibrary::register();
         Bricks::register();
-
-        add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend'], 20);
-    }
-
-    /**
-     * The overlay stylesheet, and only in overlay mode. Caption mode renders
-     * through Bricks' own caption and needs nothing from us.
-     */
-    public function enqueue_frontend(): void
-    {
-        if ((string) Settings::get('output_mode') !== 'overlay') {
-            return;
-        }
-
-        $path = get_stylesheet_directory() . '/inc/MediaCredits/assets/media-credits.css';
-
-        if (!file_exists($path)) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'sfx-media-credits',
-            get_stylesheet_directory_uri() . '/inc/MediaCredits/assets/media-credits.css',
-            [],
-            (string) filemtime($path)
-        );
     }
 
     /**
@@ -3277,7 +3343,9 @@ Go to the media library in **list** view. Expected: a *Credit* column showing wh
 
 - [ ] **Step 6: Check the IPTC prefill**
 
-Upload an image that carries an IPTC copyright field. Expected: the Copyright field is prefilled. Then clear the field, save, and regenerate thumbnails for that attachment (any regeneration plugin, or re-upload metadata). Expected: **the field stays empty.** This is the data-loss guard; if the value comes back, the marker is not being written or not being read.
+Upload an image that carries an IPTC copyright field. Expected: the Copyright field is prefilled. Then clear the field, save, and regenerate thumbnails for that attachment (any regeneration plugin). Expected: **the field stays empty.**
+
+Then pick an image that was in the library *before* this feature existed and that carries IPTC copyright, and regenerate its thumbnails. Expected: **its Copyright field stays empty too.** The first check proves the marker; this one proves the `create`/`update` context guard, and it is the one that stops a site-wide regeneration from writing hundreds of attachments at once.
 
 - [ ] **Step 7: Check the tag in a Bricks caption**
 
