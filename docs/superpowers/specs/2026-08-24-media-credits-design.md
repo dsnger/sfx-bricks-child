@@ -250,7 +250,7 @@ Auto-output is skipped when the element already carries a credit. The marker is 
 **Order inside the settings filter is fixed, because both mechanisms write the same setting:**
 
 1. Substitute our tags in `captionCustom` (mechanism 1).
-2. Determine the **effective** caption — what will actually render, per image.php:794-810: `captionCustom` only when the effective caption type is `custom`, otherwise the attachment's `post_excerpt`, or nothing when the type is `none`.
+2. Determine the **effective** caption — what will actually render, per image.php:794-810. Bricks' own branch order, which must be reproduced exactly: type `none` → nothing; type `custom` **with a non-empty** `captionCustom` → that string; **anything else, empty custom caption included** → the attachment's `post_excerpt`. That last fallthrough is easy to miss and matters: an element set to `custom` with the field left blank still shows the attachment caption, and overwriting it with the credit would destroy a caption the editor never touched.
 3. Caption auto-output (mechanism 2) runs only if that effective caption carries no marker.
 
 Step 2 is what makes step 3 correct. Testing the raw `captionCustom` instead would let a marker sitting in a caption Bricks is not going to render — type `attachment` or `none` — suppress the auto-credit entirely, and the image would ship with no disclosure at all.
@@ -338,7 +338,7 @@ That needs the subset mechanism under an honest name: the existing `dashboard_su
 } elseif (in_array($group['type'], ['subset', 'dashboard_subset'], true)) {
 ```
 
-`ponytail:` two lines and no migration. Reusing the literal name `dashboard_subset` for a media module would have cost nothing and confused every later reader.
+`ponytail:` two lines and no migration. Reusing the literal name `dashboard_subset` for a media module would have been free to write and confusing to read ever after.
 
 **What the import path does and does not sanitize.** The importer's own `sanitize_option_value()` sends array options through a generic recursive sanitizer, which knows nothing of this module's whitelists. It is not the only gate, though: it calls `update_option()`, and core runs `sanitize_option()` inside it (`wp-includes/option.php:886`), which fires `sanitize_option_{$option}` — the filter `register_setting()` attaches the module's own callback to (`option.php:3072-3074`). So **when the module is loaded, an import does pass through `Settings::sanitize_options()`.**
 
@@ -346,7 +346,7 @@ The gap is narrower than that, and real: `register_setting()` only runs when the
 
 **4 · Uninstall — and a finding about the existing mechanism**
 
-The intended docking is trivial: `sfx_media_credits_options` in `$options_to_delete`, plus `delete_post_meta_by_key()` for the two meta keys, behind the same `delete_on_uninstall` check as everything else in that file.
+The intended docking is trivial: `sfx_media_credits_options` in `$options_to_delete`, plus `delete_post_meta_by_key()` for **all three** meta keys — `_sfx_media_copyright`, `_sfx_media_ai` and the `_sfx_media_iptc_prefilled` marker — behind the same `delete_on_uninstall` check as everything else in that file.
 
 **But `uninstall.php` never runs for a theme.** That filename is a *plugin* convention: core includes it only from `uninstall_plugin()` (`wp-admin/includes/plugin.php:1284`, `:1317-1327`). `delete_theme()` (`wp-admin/includes/theme.php`) fires `delete_theme`, removes the directory and fires `deleted_theme` — it contains no reference to `uninstall.php` at all, and the child theme registers no handler for either action. Every option in that file, and the legacy Text Snippets purge with them, is dead code today.
 
@@ -387,7 +387,7 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 - brace escaping: a copyright reading `{post_title}` and one reading `{echo:phpinfo}` survive as literal text — through `line`, through `{sfx_media_copyright}`, and through a `sfx_media_credits_line` filter that tries to reintroduce braces
 - a missing attachment returns the full array shape with empty parts, not a bare string
 - the label map survives a filter that adds keys **and** one that drops them
-- `force_wrapper` sets both the `tag` setting and the element's `tag` property
+- `force_wrapper` sets the `tag` setting only, and leaves an element that already has a tag of its own untouched
 - substitution touches `captionCustom` and leaves `altText` and `_cssClasses` alone
 
 `ponytail:` these stubs prove our logic, not Bricks'. They cannot prove that `bricks/element/settings` still runs before `render()` in a future Bricks release — stubs written from the spec reproduce the spec's assumptions. The implementation plan therefore ends with manual verification in a real Bricks install: caption tag, caption auto-output, overlay with and without a wrapper, a Sources image, and a builder canvas reload.
