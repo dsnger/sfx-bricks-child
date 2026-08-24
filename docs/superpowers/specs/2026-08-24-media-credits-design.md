@@ -63,7 +63,7 @@ inc/MediaCredits/
   AdminPage.php     settings page (incl. media-uploader fields for the seals)
   MediaLibrary.php  attachment fields, save, IPTC prefill, list column + filter
   Credit.php        single source of truth: id -> resolved credit parts
-  Bricks.php        dynamic tags, element context pointer, auto-output
+  Bricks.php        settings-time tag substitution, dynamic tags, auto-output
   assets/media-credits.css
   assets/media-credits-admin.js
   index.php
