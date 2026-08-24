@@ -24,6 +24,11 @@ class MediaLibrary
         add_action('manage_media_custom_column', [self::class, 'column'], 10, 2);
         add_action('restrict_manage_posts', [self::class, 'filter_dropdown']);
         add_action('pre_get_posts', [self::class, 'filter_query']);
+
+        // add_meta_boxes_attachment, not the generic add_meta_boxes: it only
+        // ever fires for this one post type, so the callback needs no post
+        // type check of its own and never runs on unrelated screens.
+        add_action('add_meta_boxes_attachment', [self::class, 'register_meta_box']);
     }
 
     /**
@@ -57,20 +62,65 @@ class MediaLibrary
      * Both fields, for every attachment type. The AI Act covers video and
      * audio too, and a MIME check would only add a way to be wrong.
      *
+     * Suppressed on the attachment edit screen (post.php): the sidebar meta
+     * box (see register_meta_box()/render_meta_box()) renders the same two
+     * controls there, and rendering both here and there would show every
+     * field twice. The media modal is unaffected: its request is
+     * admin-ajax.php, never post.php.
+     *
+     * Note $GLOBALS['pagenow'], not get_current_screen()->id: WP_Screen
+     * strips the .php suffix (see the note on filter_query() below), so a
+     * screen-id comparison against 'post.php' would never match.
+     *
      * @param array<string, mixed> $form_fields
      * @param mixed $post
      * @return array<string, mixed>
      */
     public static function fields(array $form_fields, $post): array
     {
-        $id = isset($post->ID) ? (int) $post->ID : 0;
+        if (($GLOBALS['pagenow'] ?? '') === 'post.php') {
+            return $form_fields;
+        }
+
+        $id       = isset($post->ID) ? (int) $post->ID : 0;
+        $controls = self::field_controls($id);
 
         $form_fields[self::FIELD_COPYRIGHT] = [
             'label' => __('Copyright', 'sfxtheme'),
-            'input' => 'text',
-            'value' => (string) get_post_meta($id, Credit::META_COPYRIGHT, true),
+            'input' => 'html',
+            'html'  => $controls['copyright'],
             'helps' => __('Free text, e.g. © Photographer or an agency notice.', 'sfxtheme'),
         ];
+
+        $form_fields[self::FIELD_AI] = [
+            'label' => __('AI marking', 'sfxtheme'),
+            'input' => 'html',
+            'html'  => $controls['ai'],
+            'helps' => __('How this file was produced or altered.', 'sfxtheme'),
+        ];
+
+        return $form_fields;
+    }
+
+    /**
+     * The Copyright input and AI select markup, built once and shared by
+     * fields() (the media modal's compat fields) and render_meta_box() (the
+     * attachment edit screen's sidebar box). Both keep the exact input names
+     * — attachments[<ID>][sfx_media_copyright] and
+     * attachments[<ID>][sfx_media_ai] — that save() already reads out of
+     * $_POST['attachments'][<ID>] via the attachment_fields_to_save filter,
+     * so neither caller needs a save path of its own.
+     *
+     * @return array{copyright: string, ai: string}
+     */
+    private static function field_controls(int $id): array
+    {
+        $copyright = sprintf(
+            '<input type="text" class="text" name="attachments[%1$d][%2$s]" id="attachments-%1$d-%2$s" value="%3$s">',
+            $id,
+            esc_attr(self::FIELD_COPYRIGHT),
+            esc_attr((string) get_post_meta($id, Credit::META_COPYRIGHT, true))
+        );
 
         $current = (string) get_post_meta($id, Credit::META_AI, true);
         $options = '<option value="">' . esc_html__('No marking', 'sfxtheme') . '</option>';
@@ -84,19 +134,76 @@ class MediaLibrary
             );
         }
 
-        $form_fields[self::FIELD_AI] = [
-            'label' => __('AI marking', 'sfxtheme'),
-            'input' => 'html',
-            'html'  => sprintf(
-                '<select name="attachments[%1$d][%2$s]" id="attachments-%1$d-%2$s">%3$s</select>',
-                $id,
-                esc_attr(self::FIELD_AI),
-                $options
-            ),
-            'helps' => __('How this file was produced or altered.', 'sfxtheme'),
-        ];
+        $ai = sprintf(
+            '<select name="attachments[%1$d][%2$s]" id="attachments-%1$d-%2$s">%3$s</select>',
+            $id,
+            esc_attr(self::FIELD_AI),
+            $options
+        );
 
-        return $form_fields;
+        return ['copyright' => $copyright, 'ai' => $ai];
+    }
+
+    /**
+     * The sidebar meta box that replaces the two compat fields on the
+     * attachment edit screen. Registered from register() via
+     * add_meta_boxes_attachment.
+     */
+    public static function register_meta_box(): void
+    {
+        add_meta_box(
+            'sfx_media_credits',
+            __('Media Credits', 'sfxtheme'),
+            [self::class, 'render_meta_box'],
+            'attachment',
+            'side'
+        );
+    }
+
+    /**
+     * Renders the same two controls as fields(), via the same
+     * field_controls() helper, under the same input names — so this box has
+     * nothing of its own to save. WordPress' core update handler for the
+     * attachment edit screen collects $_POST['attachments'][<ID>] and runs
+     * it through attachment_fields_to_save (save() above) exactly as it
+     * does today for the compat fields; this box only changes where the
+     * inputs are drawn, not how they are persisted.
+     *
+     * No wp_nonce_field() here: a nonce protects a save handler that reads
+     * it, and this box registers none — there is nothing of ours for a
+     * nonce to guard. The house pattern in ContactInfos/PostType.php and
+     * SocialMediaAccounts/PostType.php nonces because those boxes each have
+     * their own save_post handler that checks it; adding one here with no
+     * corresponding check would be inert markup, not a safeguard.
+     *
+     * @param \WP_Post $post
+     */
+    public static function render_meta_box($post): void
+    {
+        $id       = isset($post->ID) ? (int) $post->ID : 0;
+        $controls = self::field_controls($id);
+        ?>
+        <style>
+            #sfx_media_credits .inside input[type="text"],
+            #sfx_media_credits .inside select {
+                width: 100%;
+            }
+        </style>
+        <p>
+            <label for="attachments-<?php echo esc_attr((string) $id); ?>-<?php echo esc_attr(self::FIELD_COPYRIGHT); ?>">
+                <strong><?php esc_html_e('Copyright', 'sfxtheme'); ?></strong>
+            </label>
+            <?php echo $controls['copyright']; ?>
+            <span class="description"><?php esc_html_e('Free text, e.g. © Photographer or an agency notice.', 'sfxtheme'); ?></span>
+        </p>
+        <p>
+            <label for="attachments-<?php echo esc_attr((string) $id); ?>-<?php echo esc_attr(self::FIELD_AI); ?>">
+                <strong><?php esc_html_e('AI marking', 'sfxtheme'); ?></strong>
+            </label>
+            <?php echo $controls['ai']; ?>
+            <span class="description"><?php esc_html_e('How this file was produced or altered.', 'sfxtheme'); ?></span>
+        </p>
+        <?php
     }
 
     /**
