@@ -254,6 +254,72 @@ $GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'caption', '
 $element = new Test_Bricks_Element([], ['id' => 5]);
 assert_same(false, isset(Bricks::element_settings($element->settings, $element)['tag']), 'Case 9c: force_wrapper is an overlay-mode setting only');
 
+// ------------------------------------------------- Case 10: root detection
+
+assert_same('figure', Bricks::root_tag('<figure class="x"><img></figure>'), 'Case 10a: figure root');
+assert_same('div', Bricks::root_tag("\n  <div><img></div>"), 'Case 10b: leading whitespace is skipped');
+assert_same('img', Bricks::root_tag('<img src="x">'), 'Case 10c: a bare image root');
+assert_same('', Bricks::root_tag('no markup at all'), 'Case 10d: no tag, no root');
+
+// ------------------------------------------------ Case 11: overlay injection
+
+$line = '©&nbsp;Foto';
+
+$out = Bricks::inject_overlay('<figure class="x"><img src="a"></figure>', $line);
+assert_contains('sfx-credit--overlay', $out, 'Case 11a: the overlay is inserted');
+assert_same(true, strpos($out, 'sfx-credit--overlay') < strpos($out, '</figure>'), 'Case 11b: inside the wrapper, before its closing tag');
+
+$out = Bricks::inject_overlay('<section><img src="a"></section>', $line);
+assert_contains('sfx-credit--overlay', $out, 'Case 11c: a custom root tag also takes the overlay');
+
+// The three roots that must be left alone. Wrapping them would change the
+// layout of a page nobody asked us to change.
+foreach (['<img src="a">', '<picture><img src="a"></picture>', '<a href="#"><img src="a"></a>'] as $i => $html) {
+    assert_same($html, Bricks::inject_overlay($html, $line), "Case 11d{$i}: no wrapper, no injection");
+}
+
+// ------------------------------------------- Case 12: render_element gate
+
+test_reset();
+\Bricks\Query::reset();
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay'];
+
+$element = new Test_Bricks_Element(['caption' => 'none'], ['id' => 5]);
+$html    = '<figure><img src="a"></figure>';
+
+assert_contains('Foto Müller', Bricks::render_element($html, $element), 'Case 12a: overlay mode injects the credit');
+
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'caption'];
+assert_same($html, Bricks::render_element($html, $element), 'Case 12b: caption mode does not inject HTML');
+
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'off'];
+assert_same($html, Bricks::render_element($html, $element), 'Case 12c: off means off');
+
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay'];
+$optout = new Test_Bricks_Element(['_cssClasses' => 'no-credit'], ['id' => 5]);
+assert_same($html, Bricks::render_element($html, $optout), 'Case 12d: no-credit opts out');
+
+$already = '<figure><span class="sfx-credit">done</span><img src="a"></figure>';
+assert_same($already, Bricks::render_element($already, $element), 'Case 12e: an element that already carries a credit gets no second one');
+
+$heading = new Test_Bricks_Element([], ['id' => 5], 'heading');
+assert_same($html, Bricks::render_element($html, $heading), 'Case 12f: only image elements');
+
+// ------------------------------------------ Case 13: data-sfx-ai attribute
+
+test_reset();
+seed_attachment(5, '', 'ai_generated');
+$attachment = new WP_Post(['ID' => 5, 'post_type' => 'attachment']);
+
+$attr = Bricks::image_attributes(['src' => 'x'], $attachment);
+assert_same('ai_generated', $attr['data-sfx-ai'] ?? null, 'Case 13a: the slug is exposed on the img');
+
+seed_attachment(6, 'Foto', '');
+$attr = Bricks::image_attributes(['src' => 'x'], new WP_Post(['ID' => 6, 'post_type' => 'attachment']));
+assert_same(false, isset($attr['data-sfx-ai']), 'Case 13b: no AI marking, no attribute');
+assert_same('not an array', Bricks::image_attributes('not an array', $attachment), 'Case 13c: a non-array passes through');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

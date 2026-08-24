@@ -1,0 +1,28 @@
+/* Media Credits — overlay mode only. Loaded when output_mode is 'overlay'. */
+
+.sfx-credit--overlay {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  padding: 0.25em 0.5em;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: end;
+}
+
+/* The backing is not decoration: credit text sits on arbitrary photography,
+   and without it no colour choice can meet WCAG AA contrast. */
+
+.sfx-credit__seal {
+  display: inline-block;
+  vertical-align: text-bottom;
+}
+
+/* Position the parent without touching markup we did not create. Any root tag
+   qualifies, because the behaviour table allows any. Without :has() the credit
+   renders in flow instead of overlaid — degraded, not broken. */
+*:has(> .sfx-credit--overlay) {
+  position: relative;
+}

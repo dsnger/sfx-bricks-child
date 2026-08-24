@@ -418,30 +418,132 @@ class Bricks
     }
 
     /**
+     * Overlay auto-output — the only place this module writes HTML.
+     *
+     * Only fires on the frontend render path: Ajax::render_element() calls
+     * init() directly and never applies this filter (ajax.php:885-891), so
+     * while editing, an overlay appears on a full canvas load and not on the
+     * single element being re-rendered. Mechanisms 1 and 2 live inside init()
+     * and have no such gap, which is why caption mode is the recommended one.
+     *
      * @param mixed $html
      * @param mixed $element
      * @return mixed
      */
     public static function render_element($html, $element)
     {
-        return $html; // Task 8 replaces this body.
+        if (!is_string($html) || $html === '' || !is_object($element) || ($element->name ?? '') !== 'image') {
+            return $html;
+        }
+
+        if ((string) Settings::get('output_mode') !== 'overlay') {
+            return $html;
+        }
+
+        $settings = is_array($element->settings ?? null) ? $element->settings : [];
+
+        if (self::has_no_credit_class($settings) || self::has_marker($html)) {
+            return $html;
+        }
+
+        $id = self::image_id_from_element($element, $settings);
+
+        if ($id <= 0) {
+            return $html;
+        }
+
+        $line = Credit::for($id)['line'];
+
+        return $line === '' ? $html : self::inject_overlay($html, $line);
     }
 
     /**
+     * Insert the overlay before the root element's closing tag — and only when
+     * there is a root element to insert into. Bricks renders no wrapper at all
+     * unless a caption, overlay, gradient or tag is set (image.php:822), and
+     * wrapping the bare `<img>` ourselves would move a box in someone's
+     * layout for a credit they may not even have configured.
+     */
+    public static function inject_overlay(string $html, string $line): string
+    {
+        $root = self::root_tag($html);
+
+        if ($root === '' || in_array($root, ['img', 'picture', 'a'], true)) {
+            return $html;
+        }
+
+        $closing = '</' . $root . '>';
+        $pos     = strrpos($html, $closing);
+
+        if ($pos === false) {
+            return $html;
+        }
+
+        $span = '<span class="' . self::MARKER_CLASS . ' ' . self::MARKER_CLASS . '--overlay">' . $line . '</span>';
+
+        return substr($html, 0, $pos) . $span . substr($html, $pos);
+    }
+
+    public static function root_tag(string $html): string
+    {
+        return preg_match('/^\s*<([a-z0-9-]+)/i', $html, $m) === 1 ? strtolower($m[1]) : '';
+    }
+
+    /**
+     * The overlay stylesheet, and only in overlay mode. It lives here rather
+     * than in the Controller because the overlay is this class's output;
+     * the Controller registers classes and holds no logic of its own.
+     */
+    public static function enqueue_overlay_styles(): void
+    {
+        if ((string) Settings::get('output_mode') !== 'overlay') {
+            return;
+        }
+
+        $path = get_stylesheet_directory() . '/inc/MediaCredits/assets/media-credits.css';
+
+        if (!file_exists($path)) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'sfx-media-credits',
+            get_stylesheet_directory_uri() . '/inc/MediaCredits/assets/media-credits.css',
+            [],
+            (string) filemtime($path)
+        );
+    }
+
+    /**
+     * The machine-readable half: a data attribute on every image WordPress
+     * renders through wp_get_attachment_image(), which is how Bricks emits the
+     * Image element (image.php:1153).
+     *
+     * Not a provenance marking in the sense of AI Act Art. 50(2) — it does not
+     * survive the file leaving the page. It is the cheap part that helps.
+     *
      * @param mixed $attr
      * @param mixed $attachment
      * @return mixed
      */
     public static function image_attributes($attr, $attachment)
     {
-        return $attr; // Task 8 replaces this body.
-    }
+        if (!is_array($attr)) {
+            return $attr;
+        }
 
-    /**
-     * The overlay stylesheet, enqueued only in overlay mode.
-     */
-    public static function enqueue_overlay_styles(): void
-    {
-        // Task 8 replaces this body.
+        $id = is_object($attachment) ? (int) ($attachment->ID ?? 0) : (int) $attachment;
+
+        if ($id <= 0) {
+            return $attr;
+        }
+
+        $ai_key = Credit::for($id)['ai_key'];
+
+        if ($ai_key !== '') {
+            $attr['data-sfx-ai'] = esc_attr($ai_key);
+        }
+
+        return $attr;
     }
 }
