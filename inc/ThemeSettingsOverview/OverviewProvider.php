@@ -69,6 +69,9 @@ final class OverviewProvider
             'enable_nav_menu_query' => [
                 'label' => __('Menu Items query type', 'sfxtheme'),
             ],
+            'enable_media_credits' => [
+                'label' => __('Media Credits', 'sfxtheme'),
+            ],
         ];
 
         $items = [];

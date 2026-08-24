@@ -16,6 +16,7 @@ class MediaLibrary
 
     public static function register(): void
     {
+        add_action('init', [self::class, 'register_meta']);
         add_filter('attachment_fields_to_edit', [self::class, 'fields'], 10, 2);
         add_filter('attachment_fields_to_save', [self::class, 'save'], 10, 2);
         add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
@@ -23,6 +24,33 @@ class MediaLibrary
         add_action('manage_media_custom_column', [self::class, 'column'], 10, 2);
         add_action('restrict_manage_posts', [self::class, 'filter_dropdown']);
         add_action('pre_get_posts', [self::class, 'filter_query']);
+    }
+
+    /**
+     * Underscore-prefixed so the keys stay out of the Custom Fields box, and
+     * out of REST: this is not a public API, it is two fields and a marker.
+     */
+    public static function register_meta(): void
+    {
+        register_meta('post', Credit::META_COPYRIGHT, [
+            'type'              => 'string',
+            'single'            => true,
+            'show_in_rest'      => false,
+            'sanitize_callback' => 'sanitize_text_field',
+        ]);
+
+        register_meta('post', Credit::META_AI, [
+            'type'              => 'string',
+            'single'            => true,
+            'show_in_rest'      => false,
+            'sanitize_callback' => [self::class, 'sanitize_ai_key'],
+        ]);
+
+        register_meta('post', Credit::META_IPTC_MARKER, [
+            'type'         => 'string',
+            'single'       => true,
+            'show_in_rest' => false,
+        ]);
     }
 
     /**
