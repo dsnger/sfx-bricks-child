@@ -200,9 +200,11 @@ Three mechanisms, in descending order of how much of the work they carry. Only t
 
 ### 1 · Tags resolved in the element's own settings
 
-`bricks/element/settings` (base.php:2948) fires with the element instance immediately before `render()`. For an `image` element whose settings contain the string `{sfx_media_`, we resolve the attachment id from the element's own public `get_normalized_image_settings()` (image.php:724) and substitute our tags **inside the settings array**, recursively over its string values.
+`bricks/element/settings` (base.php:2948) fires with the element instance immediately before `render()`. For an `image` element whose `captionCustom` contains `{sfx_media_`, we resolve the attachment id from the element's own public `get_normalized_image_settings()` (image.php:724) and substitute our tags **in that setting**, wrapping the result in `<span class="sfx-credit">` so the dedup rule below can see it.
 
 This is what makes `{sfx_media_credit}` work in the Image element's *Custom caption* field: Bricks then renders its own `<figcaption>`, with its own typography controls, around finished text.
+
+**One setting, not the whole array.** An earlier draft recursed over every string in the settings, which is both too broad and partly too late: composed HTML dropped into `altText` or a source media query is invalid in context, and `_cssClasses`, `_attributes` and `_conditions` have already been consumed by the time this filter runs (base.php:2908, :2929) — a tag there could never have worked. `captionCustom` is the only setting the Image element renders as free text and does not resolve itself.
 
 **Why not the ordinary dynamic-data route.** `captionCustom` is never passed through `render_dynamic_data()` — image.php:805-806 copies it into the caption verbatim. The tag survives into the page HTML and is only resolved much later, when `bricks/frontend/render_data` runs over the whole assembled document (frontend.php:947) — long after the element that knew which image it belonged to finished rendering (frontend.php:752). A per-element context pointer cleared at `render_element` would already be gone, and the tag would silently resolve against the page's featured image instead. Substituting in the settings is the only place where element and tag are in the same room.
 
@@ -228,17 +230,23 @@ When `output_mode === 'overlay'`, `bricks/frontend/render_element` (frontend.php
 | `figure`, `div`, other custom tag | insert before the trailing closing tag |
 | `img`, `picture`, `a` | **nothing** — no wrapping, no layout surprise |
 
-With `force_wrapper` on, `bricks/element/settings` sets `$settings['tag'] = 'figure'` — the element's own documented option, set through Bricks' own filter, the same mechanism translation plugins use. That covers every case **except** `sources` without a link, where `<picture>` wins regardless (image.php:961-964); those elements get no overlay, and the settings page says so. Users who need a credit there switch to caption mode.
+With `force_wrapper` on, `bricks/element/settings` sets **two** things: `$settings['tag'] = 'figure'`, which is what flips `$has_html_tag` and makes a wrapper render at all (image.php:822), and `$element->tag = 'figure'` on the instance the filter is handed.
+
+The second assignment is not belt-and-braces. `$this->tag` is computed once in the **constructor**, `$this->tag = $this->get_tag()` (base.php:120, :220-233) — long before this filter runs — and image.php:976 prints that property. Setting only the array key produces a wrapper whose tag name is still whatever the constructor decided: `div` for an element with no tag of its own. A wrapper is a wrapper and the overlay would attach, but the spec would be describing markup the code does not emit.
+
+One case survives both assignments: `sources` set with no link and no caption re-assigns `$this->tag = 'picture'` inside `render()`, after the filter (image.php:961-964). Those elements get no overlay, and the settings page says so. Users who need a credit there switch to caption mode.
 
 **Builder parity is partial, and that is a Bricks constraint.** `Ajax::render_element()` re-renders a single element by calling `$element_instance->init()` directly and never applies `bricks/frontend/render_element` (ajax.php:885-891; the REST route delegates to it). So while editing, an overlay credit appears on a full canvas load and disappears from the single element being edited until the canvas reloads. Mechanisms 1 and 2 are unaffected — they live inside `init()`. This is the strongest reason to prefer caption mode.
 
 ### Dedup
 
-Auto-output is skipped when the element already carries a credit — the rendered HTML (overlay) or the composed settings (caption) already contain `sfx-credit`. Without this, an editor who followed the recommended route and placed the tag by hand gets the credit twice the moment someone switches auto-output on.
+Auto-output is skipped when the element already carries a credit. The marker is the class `sfx-credit`, matched as a class-attribute token — not as a bare substring, which would also trip over unrelated text or a `sfx-credit-note` class. This is why mechanism 1 wraps its substitution in that same span: an editor who followed the recommended route and placed the tag by hand must not get the credit a second time the moment someone switches auto-output on.
 
 ### Escaping
 
 `Credit::for()` returns `line` as **HTML, already escaped at composition**: `esc_html()` on the copyright text and the label, `esc_url()` on the seal URL, `esc_attr()` on the AI key. The `sfx_media_credits_line` filter output is passed through `wp_kses_post()` before it is used, so a filter can add markup but not script. Callers print `line` unescaped — that contract is stated once, here, because a second `esc_html()` downstream would print the tags.
+
+**Braces are escaped too**, and this one is not cosmetic. Whatever we compose ends up in the page HTML, and Bricks parses the *whole assembled document* for dynamic tags afterwards (frontend.php:947, providers.php:304-447). `sanitize_text_field()` leaves `{` and `}` untouched, so a copyright notice reading `{post_title}` would silently become the page title on the frontend while showing correctly in the admin — and `{echo:some_function}` reaches Bricks' echo tag (provider-wp.php:365, :1026, providers.php:432). Every user-supplied part of `line` therefore has `{` and `}` replaced with `&#123;` / `&#125;` at composition. A copyright field is free text typed by anyone who can upload media; it must not be a dynamic-data injection point.
 
 ### Dynamic tags outside the image element
 
@@ -356,6 +364,9 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 - dedup: an element that already contains `sfx-credit` gets no second credit
 - `no-credit` matches as a whitespace-separated token — `no-credit-card` does not suppress anything
 - escaping: a copyright containing `<script>` and a filter returning script markup both come back inert
+- brace escaping: a copyright reading `{post_title}` and one reading `{echo:phpinfo}` survive composition as literal text
+- `force_wrapper` sets both the `tag` setting and the element's `tag` property
+- substitution touches `captionCustom` and leaves `altText` and `_cssClasses` alone
 
 `ponytail:` these stubs prove our logic, not Bricks'. They cannot prove that `bricks/element/settings` still runs before `render()` in a future Bricks release — stubs written from the spec reproduce the spec's assumptions. The implementation plan therefore ends with manual verification in a real Bricks install: caption tag, caption auto-output, overlay with and without a wrapper, a Sources image, and a builder canvas reload.
 
@@ -374,3 +385,4 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 | Page-cache invalidation when a credit changes | A site actually runs a page cache and a stale disclosure is observed |
 | Multisite (`switch_to_blog`, network-wide purge) | The theme is used on single sites; the per-request memoisation and the purge both assume that |
 | Overlay in the builder's single-element re-render | Never — Bricks' AJAX path does not apply `bricks/frontend/render_element` (ajax.php:885-891). Caption mode has no such gap |
+| Avoiding the double resolution of a dynamic image source | Never — the settings filter and `render()` both call `get_normalized_image_settings()` (image.php:778). Caching it would mean holding per-element state again, which is what pass 1 removed. Providers are assumed deterministic |
