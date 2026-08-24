@@ -92,11 +92,19 @@ namespace {
         return $test_current_post_id ?? 0;
     }
 
+    function get_post($id = null)
+    {
+        global $test_posts;
+
+        return $test_posts[(int) $id] ?? null;
+    }
+
     if (!class_exists('WP_Post')) {
         class WP_Post
         {
             public int $ID = 0;
             public string $post_type = 'post';
+            public string $post_excerpt = '';
 
             /** @param array<string, mixed> $props */
             public function __construct(array $props = [])

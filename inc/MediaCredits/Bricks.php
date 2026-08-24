@@ -220,13 +220,201 @@ class Bricks
     }
 
     /**
-     * @param array<string, mixed> $settings
+     * Mechanisms 1 and 2, in a fixed order because both write captionCustom.
+     *
+     * This filter fires inside Element::init() immediately before render()
+     * (base.php:2948), which is the only moment where the element and our tag
+     * are in the same room: captionCustom is never passed through
+     * render_dynamic_data() (image.php:805-806), so a tag left in it survives
+     * into the page and is resolved much later, against the wrong context.
+     *
+     * @param mixed $settings
      * @param mixed $element
-     * @return array<string, mixed>
+     * @return mixed
      */
     public static function element_settings($settings, $element)
     {
-        return $settings; // Task 7 replaces this body.
+        if (!is_array($settings) || !is_object($element) || ($element->name ?? '') !== 'image') {
+            return $settings;
+        }
+
+        $id = self::image_id_from_element($element, $settings);
+
+        if ($id <= 0) {
+            return $settings;
+        }
+
+        // 1 · substitute our tags where the editor placed them
+        $caption_custom = (string) ($settings['captionCustom'] ?? '');
+
+        if (strpos($caption_custom, '{' . self::PREFIX) !== false) {
+            $settings['captionCustom'] = self::substitute($caption_custom, $id);
+        }
+
+        if (self::has_no_credit_class($settings)) {
+            return $settings;
+        }
+
+        $mode = (string) Settings::get('output_mode');
+
+        if ($mode === 'overlay') {
+            // The overlay needs a wrapper to attach to. Setting the key is
+            // what flips $has_html_tag (image.php:822); the tag NAME comes
+            // from the constructor and is already 'figure' for this element
+            // (image.php:10), so an element that chose 'div' keeps it.
+            if (Settings::get('force_wrapper') && !isset($settings['tag']) && Credit::for($id)['line'] !== '') {
+                $settings['tag'] = 'figure';
+            }
+
+            return $settings;
+        }
+
+        if ($mode !== 'caption') {
+            return $settings;
+        }
+
+        // 2 · caption auto-output, written as a setting rather than injected
+        $default_type = is_array($element->theme_styles ?? null) && !empty($element->theme_styles['caption'])
+            ? (string) $element->theme_styles['caption']
+            : 'attachment';
+
+        $effective = self::effective_caption($settings, $id, $default_type);
+
+        // Tested against the EFFECTIVE caption on purpose: a marker sitting in
+        // a captionCustom that Bricks is not going to render would otherwise
+        // suppress the disclosure entirely.
+        if (self::has_marker($effective)) {
+            return $settings;
+        }
+
+        $line = Credit::for($id)['line'];
+
+        if ($line === '') {
+            return $settings;
+        }
+
+        $credit = '<span class="' . self::MARKER_CLASS . '">' . $line . '</span>';
+
+        $settings['caption']       = 'custom';
+        $settings['captionCustom'] = $effective === '' ? $credit : $effective . '<br>' . $credit;
+
+        return $settings;
+    }
+
+    /**
+     * Replace our tags in one string, each wrapped in the marker span.
+     */
+    public static function substitute(string $text, int $id): string
+    {
+        $pattern = '/\{' . preg_quote(self::PREFIX, '/') . '(' . implode('|', self::KEYS) . ')(?::(\d+))?\}/';
+
+        return (string) preg_replace_callback(
+            $pattern,
+            static function (array $m) use ($id): string {
+                $target = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : $id;
+                $credit = Credit::for($target);
+
+                if ($m[1] === 'credit') {
+                    $value = $credit['line'];
+                } else {
+                    $raw   = $m[1] === 'copyright' ? $credit['copyright'] : $credit['ai_label'];
+                    $value = Credit::escape_braces(esc_html($raw));
+                }
+
+                if ($value === '') {
+                    return '';
+                }
+
+                return '<span class="' . self::MARKER_CLASS . '">' . $value . '</span>';
+            },
+            $text
+        );
+    }
+
+    /**
+     * What Bricks will actually render as the caption.
+     *
+     * Reproduces image.php:794-810 branch for branch. The third branch is the
+     * subtle one: type 'custom' with an EMPTY field still falls through to the
+     * attachment caption, so treating "custom" as "captionCustom" would let us
+     * overwrite a caption the editor never touched.
+     *
+     * @param array<string, mixed> $settings
+     */
+    public static function effective_caption(array $settings, int $image_id, string $default_type = 'attachment'): string
+    {
+        $type = isset($settings['caption']) ? (string) $settings['caption'] : $default_type;
+
+        if ($type === 'none') {
+            return '';
+        }
+
+        // empty() first, trim() after — Bricks' own order (image.php:805-806).
+        // The difference is not academic: '0' is empty to PHP and therefore
+        // falls through to the attachment caption, and a whitespace-only
+        // custom caption is NOT empty and therefore trims to ''. Testing
+        // trim() !== '' instead would get both backwards.
+        if ($type === 'custom' && !empty($settings['captionCustom'])) {
+            return trim((string) $settings['captionCustom']);
+        }
+
+        if ($image_id <= 0) {
+            return '';
+        }
+
+        $attachment = get_post($image_id);
+
+        return $attachment ? (string) ($attachment->post_excerpt ?? '') : '';
+    }
+
+    /**
+     * Is our marker class present as a class-attribute token?
+     *
+     * A bare substring test would also fire on the words in prose and on
+     * `sfx-credit-note`, and suppressing a disclosure by accident is the
+     * expensive direction of this mistake.
+     */
+    public static function has_marker(string $html): bool
+    {
+        $class = preg_quote(self::MARKER_CLASS, '/');
+
+        return preg_match('/class\s*=\s*(["\'])(?:[^"\']*\s)?' . $class . '(?:\s[^"\']*)?\1/', $html) === 1;
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    public static function has_no_credit_class(array $settings): bool
+    {
+        $classes = trim((string) ($settings['_cssClasses'] ?? ''));
+
+        if ($classes === '') {
+            return false;
+        }
+
+        $tokens = preg_split('/\s+/', $classes, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return in_array('no-credit', $tokens, true);
+    }
+
+    /**
+     * The element's attachment id, through Bricks' own resolver so a dynamic
+     * image source is honoured. A provider returning a URL rather than an id
+     * leaves id at 0 (image.php:738-760) — those images get no credit, which
+     * the spec accepts.
+     *
+     * @param mixed $element
+     * @param array<string, mixed> $settings
+     */
+    public static function image_id_from_element($element, array $settings): int
+    {
+        if (!is_object($element) || !method_exists($element, 'get_normalized_image_settings')) {
+            return 0;
+        }
+
+        $image = $element->get_normalized_image_settings($settings);
+
+        return is_array($image) && !empty($image['id']) ? (int) $image['id'] : 0;
     }
 
     /**
