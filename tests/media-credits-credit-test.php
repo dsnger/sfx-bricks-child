@@ -272,8 +272,17 @@ $import_export = file_get_contents(dirname(__DIR__) . '/inc/ImportExport/Control
 
 assert_contains("'option_key'  => 'sfx_media_credits_options'", $import_export, 'Case 9b: it exports our option');
 assert_contains("'type'        => 'subset'", $import_export, 'Case 9c: as a field subset');
-assert_not_contains("'seal_ai_generated'", $import_export, 'Case 9d: no seal id is listed as exportable');
+foreach (['seal_ai_generated', 'seal_ai_edited', 'seal_ai_assisted', 'seal_digitally_altered'] as $seal_key) {
+    assert_not_contains("'{$seal_key}'", $import_export, "Case 9d: no seal id ({$seal_key}) is listed as exportable");
+}
+
 assert_contains("['subset', 'dashboard_subset']", $import_export, 'Case 9e: both type spellings are accepted, so the dashboard groups keep working');
+// A half-applied rename — one comparison site widened, the other left as a
+// bare === check — would still satisfy Case 9e above, since both sites now
+// contain textually identical widened strings. This guards the failure mode
+// directly: a subset-typed group that exports fine but silently fails to
+// import because one site never got widened.
+assert_not_contains('$group[\'type\'] === \'dashboard_subset\'', $import_export, 'Case 9e2: no un-widened bare dashboard_subset comparison survives anywhere in the file');
 
 $uninstall = file_get_contents(dirname(__DIR__) . '/uninstall.php');
 
