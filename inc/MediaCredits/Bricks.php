@@ -26,6 +26,7 @@ class Bricks
         add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
         add_filter('bricks/frontend/render_element', [self::class, 'render_element'], 10, 2);
         add_filter('wp_get_attachment_image_attributes', [self::class, 'image_attributes'], 10, 2);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueue_overlay_styles'], 20);
 
         add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
 
@@ -246,5 +247,13 @@ class Bricks
     public static function image_attributes($attr, $attachment)
     {
         return $attr; // Task 8 replaces this body.
+    }
+
+    /**
+     * The overlay stylesheet, enqueued only in overlay mode.
+     */
+    public static function enqueue_overlay_styles(): void
+    {
+        // Task 8 replaces this body.
     }
 }
