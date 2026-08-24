@@ -99,6 +99,100 @@ $one = MediaLibrary::filter_meta_query('ai_generated');
 assert_same('ai_generated', $one[0]['value'] ?? null, 'Case 7i: a single slug filters on that slug');
 assert_same([], MediaLibrary::filter_meta_query('ai_hallucinated'), 'Case 7j: a slug outside the vocabulary is not a filter');
 
+// ------------------------------------------ Case 8: filter_query()'s scope
+//
+// pre_get_posts fires for every query in the request, so each guard is
+// pinned on its own: everything else about the call stays "would pass"
+// while only the one guard under test is made to fail. If any single guard
+// were dropped or reordered, its case here — and only its case — fails.
+
+test_reset();
+
+// Guard 1: not is_admin() rejects on its own.
+$test_is_admin = false;
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => 'attachment'], true);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8a: not is_admin() rejects, meta_query stays untouched');
+$test_is_admin = true;
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Guard 2: $pagenow must be exactly 'upload.php', not any other admin screen.
+$pagenow = 'edit.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => 'attachment'], true);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8b: the wrong $pagenow rejects, meta_query stays untouched');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Guard 3: a secondary query on the right screen is still left alone.
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => 'attachment'], false);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8c: not the main query rejects, meta_query stays untouched');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Guard 4a: a main query for a different post type is left alone.
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => 'post'], true);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8d: post_type=post rejects, meta_query stays untouched');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Guard 4b: an empty post_type must NOT be accepted as attachment either —
+// that would let this touch any other main query that happened to run on
+// the upload.php screen.
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => ''], true);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8e: an empty post_type is not treated as attachment');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Guard 5: every scope guard passes, but the value itself is not ours.
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'nonsense';
+$query = new Test_WP_Query(['post_type' => 'attachment'], true);
+MediaLibrary::filter_query($query);
+assert_same('', $query->get('meta_query'), 'Case 8f: an unrecognised filter value sets no meta_query');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Happy path: every guard passes and the value is ours — meta_query is set.
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'no_copyright';
+$query = new Test_WP_Query(['post_type' => 'attachment'], true);
+MediaLibrary::filter_query($query);
+assert_same(
+    MediaLibrary::filter_meta_query('no_copyright'),
+    $query->get('meta_query'),
+    'Case 8g: a recognised value on the right screen sets the meta_query'
+);
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
+// Combine, not replace: another plugin's meta_query must survive intact,
+// wrapped together with ours under a new top-level AND — never discarded.
+$existing = ['key' => '_some_other_plugin_flag', 'value' => '1', 'compare' => '='];
+$pagenow = 'upload.php';
+$_GET[MediaLibrary::FILTER_PARAM] = 'any_ai';
+$query = new Test_WP_Query(['post_type' => 'attachment', 'meta_query' => $existing], true);
+MediaLibrary::filter_query($query);
+$combined = $query->get('meta_query');
+assert_same('AND', $combined['relation'] ?? null, 'Case 8h: an existing meta_query is combined under AND, not discarded');
+assert_same($existing, $combined[0] ?? null, 'Case 8i: the existing clause survives intact');
+assert_same(MediaLibrary::filter_meta_query('any_ai'), $combined[1] ?? null, 'Case 8j: our clause is appended alongside it');
+unset($_GET[MediaLibrary::FILTER_PARAM]);
+$pagenow = null;
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

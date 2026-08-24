@@ -55,6 +55,7 @@ $test_attachment_img = [];   // attachment id => image url|false
 $test_is_image       = [];   // attachment id => bool
 $test_filter_returns = [];   // filter name => callable(mixed $value, array $args): mixed
 $test_filters        = [];   // hook name => list of registrations
+$test_is_admin       = true; // is_admin() return value
 
 // ------------------------------------------------------ WordPress doubles
 
@@ -101,6 +102,24 @@ function wp_kses_post($content)
 function sanitize_text_field($str)
 {
     return trim(strip_tags((string) $str));
+}
+
+function is_admin(): bool
+{
+    global $test_is_admin;
+
+    return $test_is_admin;
+}
+
+/**
+ * A plain passthrough for the string case is honest here: filter_query() and
+ * filter_dropdown() only ever hand this a $_GET scalar, never the nested
+ * array that the real wp_unslash() also has to walk via stripslashes_deep().
+ * Stubbing that recursive walk would only be weight nothing here exercises.
+ */
+function wp_unslash($value)
+{
+    return is_string($value) ? stripslashes($value) : $value;
 }
 
 function absint($value)
@@ -203,7 +222,7 @@ function test_registrations(string $hook): array
 function test_reset(): void
 {
     global $test_options, $test_post_meta, $test_attachment_url, $test_attachment_img,
-           $test_is_image, $test_filter_returns, $test_filters;
+           $test_is_image, $test_filter_returns, $test_filters, $test_is_admin;
 
     $test_options        = [];
     $test_post_meta      = [];
@@ -212,4 +231,44 @@ function test_reset(): void
     $test_is_image       = [];
     $test_filter_returns = [];
     $test_filters        = [];
+    $test_is_admin       = true;
+}
+
+/**
+ * A minimal WP_Query double for filter_query()'s scope-guard tests.
+ *
+ * Just get()/set()/is_main_query(), backed by a plain array, so a test can
+ * drive every branch of the guard chain and inspect what filter_query()
+ * did (or, correctly, did not) call set() with.
+ */
+class Test_WP_Query
+{
+    /** @var array<string, mixed> */
+    private array $data;
+
+    private bool $is_main_query;
+
+    /** @param array<string, mixed> $data */
+    public function __construct(array $data = [], bool $is_main_query = true)
+    {
+        $this->data          = $data;
+        $this->is_main_query = $is_main_query;
+    }
+
+    public function is_main_query(): bool
+    {
+        return $this->is_main_query;
+    }
+
+    /** @return mixed */
+    public function get(string $key)
+    {
+        return $this->data[$key] ?? '';
+    }
+
+    /** @param mixed $value */
+    public function set(string $key, $value): void
+    {
+        $this->data[$key] = $value;
+    }
 }
