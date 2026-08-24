@@ -130,7 +130,7 @@ Credit::for(int $attachment_id): array
 2. AI part: seal `<img>` and/or label text, per the `credit_display` setting (`text` | `icon` | `icon_text`). The seal is always rendered as `<img src="…" alt="{label}" width={size} height={size}>` — never inline SVG, so no SVG sanitizing is needed, and the label stays readable to assistive tech even in icon-only mode.
 3. Joined with `&nbsp;·&nbsp;`. Empty parts drop out; both empty → `''`.
 
-Filter `sfx_media_credit_line( string $line, int $id, array $parts )` for the rare site that wants different wording or order.
+Filter `sfx_media_credits_line( string $line, int $id, array $parts )` for the rare site that wants different wording or order.
 
 Results are memoised per request in a static array keyed by attachment id — an image repeated in a loop must not re-query meta each time.
 
@@ -208,14 +208,16 @@ A tag that resolves to nothing renders as an empty string, never as the literal 
 
 ### Auto-output — safety net only
 
-`bricks/frontend/render_element` (frontend.php:752), `image` elements only, active when `output_mode !== 'off'`. Skipped when the element carries the CSS class `no-credit`, and when `Credit::for()` returns an empty line.
+`bricks/frontend/render_element` (frontend.php:752), `image` elements only, active when `output_mode !== 'off'`. Skipped when `Credit::for()` returns an empty line, and when the element carries the CSS class `no-credit` — read from `$element->settings["_cssClasses"]`, not from the rendered HTML, so a class arriving from a global class or an interaction cannot be mistaken for one the user set.
+
+It runs in the builder canvas too, on the same render path. That is deliberate: what the editor sees is what ships.
 
 **It never creates structure.** Bricks omits the wrapper entirely when no caption, overlay, gradient or `tag` is set (image.php:822) — in that case the root is the bare `<img>` (or `<a>`, or `<picture>`). Injection rules:
 
 | Rendered root | Behaviour |
 |---|---|
 | `figure` | `caption` mode: append into the existing `</figcaption>` if there is one, otherwise add a `<figcaption>`. `overlay` mode: insert `<span class="sfx-credit sfx-credit--overlay">` before `</figure>`. |
-| `div` / custom tag | Same, but a `<div class="sfx-credit">` instead of `<figcaption>` — `figcaption` is only valid inside `figure`. |
+| `div` / custom tag | Same insertion points, but `caption` mode emits `<div class="sfx-credit">` rather than `<figcaption>` — `figcaption` is only valid inside `figure`. `overlay` mode is unchanged. |
 | `img` / `picture` / `a` | **Nothing.** No wrapping, no layout surprise. |
 
 Root detection is a single regex on the first tag name; insertion is before the trailing closing tag. At most one `<figcaption>` per `<figure>` is produced, which is what the spec requires.
