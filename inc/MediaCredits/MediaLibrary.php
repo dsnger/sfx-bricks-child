@@ -17,6 +17,7 @@ class MediaLibrary
     {
         add_filter('attachment_fields_to_edit', [self::class, 'fields'], 10, 2);
         add_filter('attachment_fields_to_save', [self::class, 'save'], 10, 2);
+        add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
     }
 
     /**
@@ -105,5 +106,77 @@ class MediaLibrary
     public static function sanitize_ai_key(string $key): string
     {
         return isset(Settings::get_labels()[$key]) ? $key : '';
+    }
+
+    /**
+     * Prefill the copyright field from the IPTC data WordPress already parsed.
+     *
+     * Two independent guards, because they answer different questions:
+     *
+     * - $context must be 'create'. WordPress passes 'create' on upload
+     *   (wp-admin/includes/image.php:750) and 'update' on regeneration
+     *   (image.php:185). Without this, the first regeneration after the
+     *   feature is switched on would backfill every older attachment that
+     *   happens to carry IPTC data — a mass write nobody asked for.
+     * - The marker must be absent. This is what keeps a second 'create' from
+     *   resurrecting a value an editor deliberately cleared.
+     *
+     * @param mixed $metadata
+     * @param mixed $attachment_id
+     * @param mixed $context 'create' on upload, 'update' on regeneration
+     * @return mixed the metadata, untouched — this is a read-only passenger on the filter
+     */
+    public static function prefill_iptc($metadata, $attachment_id, $context = 'create')
+    {
+        if (!is_array($metadata) || $context !== 'create') {
+            return $metadata;
+        }
+
+        $id = (int) $attachment_id;
+
+        if ($id <= 0) {
+            return $metadata;
+        }
+
+        if ((string) get_post_meta($id, Credit::META_IPTC_MARKER, true) !== '') {
+            return $metadata;
+        }
+
+        // The marker is set on the first run whether or not anything was
+        // found. "We have looked" is the fact being recorded, not "we wrote".
+        update_post_meta($id, Credit::META_IPTC_MARKER, '1');
+
+        $value = self::iptc_copyright(is_array($metadata['image_meta'] ?? null) ? $metadata['image_meta'] : []);
+
+        if ($value === '') {
+            return $metadata;
+        }
+
+        if (trim((string) get_post_meta($id, Credit::META_COPYRIGHT, true)) !== '') {
+            return $metadata;
+        }
+
+        update_post_meta($id, Credit::META_COPYRIGHT, $value);
+
+        return $metadata;
+    }
+
+    /**
+     * IPTC `copyright`, else `credit`. Both are already parsed by
+     * wp_read_image_metadata(); this module owns no parser of its own.
+     *
+     * @param array<string, mixed> $image_meta
+     */
+    public static function iptc_copyright(array $image_meta): string
+    {
+        foreach (['copyright', 'credit'] as $key) {
+            $value = sanitize_text_field((string) ($image_meta[$key] ?? ''));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 }
