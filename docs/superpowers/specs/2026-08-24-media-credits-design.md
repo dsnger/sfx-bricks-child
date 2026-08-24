@@ -9,7 +9,7 @@
 - one field in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
 - one settings group plus a two-line type rename in `inc/ImportExport/Controller.php`
-- one option name and one meta purge in `uninstall.php`
+- one option name and one meta purge in `uninstall.php` (a file that, per [Integration points](#integration-points), never actually executes — a pre-existing theme defect, raised separately)
 - two tests in `tests/`, one stub file in `tests/support/`
 
 ## Goal
@@ -38,16 +38,21 @@ All verified against the installed Bricks (`wp-content/themes/bricks`), 2.3.x:
 | Fact | Location |
 |---|---|
 | Image element has an `HTML tag` control: `figure` / `div` / `custom` | `includes/elements/image.php:74` |
-| A wrapper tag renders only if caption, overlay, `_gradient` or `tag` is set — otherwise `<img>` is the root | `includes/elements/image.php:822`, `:830-836` |
+| A wrapper tag renders only if an *effective* caption, overlay, `_gradient` or `tag` is set — otherwise `<img>` is the root. The caption type defaults to `attachment` from theme styles, so an unset caption control is not the same as no caption | `includes/elements/image.php:794-810`, `:822`, `:830-836` |
+| A caption forces `tag = figure`; `sources` without link or caption forces `tag = picture`, overriding an explicitly chosen tag | `includes/elements/image.php:955-964` |
 | Wrapper renders `_root` attributes | `includes/elements/image.php:976` |
 | Caption types: `none` / `attachment` / `custom`; `captionCustom` is a plain text control | `includes/elements/image.php:192-213` |
 | `<figcaption>` is rendered after the picture/link tags close | `includes/elements/image.php:1186-1195` |
-| `get_normalized_image_settings()` is **public** and resolves dynamic image sources to an attachment id | `includes/elements/image.php:724` |
+| `get_normalized_image_settings()` is **public** and resolves a dynamic image source to an attachment id — but only when the provider returns something numeric. A provider returning a URL sets `url` and leaves `id` at `0` | `includes/elements/image.php:724`, `:738-760` |
 | The `<img>` is emitted by `wp_get_attachment_image()`; `bricks/element/render_attributes` is applied there for `_root` only | `includes/elements/image.php:1122`, `:1153` |
 | `bricks/element/settings` fires with the element instance immediately **before** `render()` | `includes/elements/base.php:2948` |
 | `bricks/frontend/render_element` fires with the rendered HTML and the element instance **after** render | `includes/frontend.php:752` |
+| Dynamic tags left in element HTML are resolved much later, by `bricks/frontend/render_data` over the whole assembled document | `includes/frontend.php:947` |
+| `captionCustom` is **not** passed through `render_dynamic_data()` — it is copied into the caption verbatim | `includes/elements/image.php:805-806` |
+| A single-element re-render in the builder calls `init()` directly and never applies `bricks/frontend/render_element` | `includes/ajax.php:885-891` |
+| Bricks registers post meta as `{cf_<key>}`, there is no `{post_meta:…}` tag | `includes/integrations/dynamic-data/providers/provider-wp.php:388`, `:545-550` |
 
-The consequence that shapes everything below: **dynamic data inside `captionCustom` resolves against the current post, not against the attachment.** `{post_meta:_sfx_media_copyright}` written there returns the *page's* meta. A tag that works per-image has to establish the attachment context itself.
+The consequence that shapes everything below: **a dynamic tag written into `captionCustom` never sees the attachment.** It is not resolved by the element at all — it survives into the page HTML and is parsed at the end, against the current post. `{cf__sfx_media_copyright}` written there returns the *page's* meta, not the image's. A tag that works per-image has to be resolved before the element renders.
 
 ## Architecture
 
@@ -99,9 +104,9 @@ Registered through `register_meta('post', …)` with `single => true`, `show_in_
 **Meta lifecycle, two tiers** — this is the theme's existing contract, not a new rule:
 
 - **Feature switched off** (`enable_media_credits` unchecked): nothing is touched. Neither meta nor settings. The toggle hides the fields; it must not silently discard a site's copyright records. No `handle_*()` in `GeneralThemeOptions\Controller`, unlike ImageOptimizer or SmoothScroll — `PasswordProtected` and `NavMenuQuery` already set that precedent.
-- **Theme uninstalled with `delete_on_uninstall` on**: both meta keys are purged along with the option. That switch means *all* theme data, and `uninstall.php` already purges post data on that path (`TextSnippetsRemoval::purge_legacy_data()`). Two `delete_post_meta_by_key()` calls, no `$wpdb`.
+- **Theme uninstalled with `delete_on_uninstall` on**: both meta keys are purged along with the option — two `delete_post_meta_by_key()` calls, no `$wpdb`, written into `uninstall.php` next to the existing purges. Read [Integration points](#integration-points) before relying on this: that file is never executed by WordPress for a theme, so today the code is correct and inert.
 
-Worth naming plainly: with `delete_on_uninstall` enabled, deleting the theme destroys every copyright notice and AI label on the site. That is what the switch promises, and it is the same promise it already makes for Custom Scripts and Contact Infos.
+Worth naming plainly: if that mechanism is ever repaired, `delete_on_uninstall` will destroy every copyright notice and AI label on the site. That is what the switch promises, and it is the same promise it already makes for Custom Scripts and Contact Infos.
 
 ### Label vocabulary
 
@@ -115,7 +120,7 @@ Fixed, five steps, stored as slug:
 | `ai_assisted` | KI-unterstützt |
 | `digitally_altered` | Digital verändert |
 
-`Settings::get_labels()` returns the map, passed through the filter `sfx_media_credits_labels` so a site can reword without a settings UI. The **slugs are the contract** — a filter may change wording, never keys.
+`Settings::get_labels()` returns the map, passed through the filter `sfx_media_credits_labels` so a site can reword without a settings UI. The **slugs are the contract**: after filtering, the map is intersected back against the known slugs, so a filter that adds or drops a key changes no stored value's meaning. Wording is negotiable, keys are not.
 
 ## `Credit.php` — the single source of truth
 
@@ -133,12 +138,14 @@ Credit::for(int $attachment_id): array
 `line` composition:
 
 1. Copyright part: prefix `©&nbsp;` **unless** the text already starts with `©`, `(c)` or `Copyright` (case-insensitive).
-2. AI part: seal `<img>` and/or label text, per the `credit_display` setting (`text` | `icon` | `icon_text`). The seal is always rendered as `<img src="…" alt="{label}" width={size} height={size}>` — never inline SVG, so no SVG sanitizing is needed, and the label stays readable to assistive tech even in icon-only mode.
+2. AI part: seal `<img>` and/or label text, per the `credit_display` setting (`text` | `icon` | `icon_text`). The seal renders as `<img src="…" alt="…" width={size} height={size}>` — never inline SVG, so no SVG sanitizing is needed. **`alt` carries the label in `icon` mode and is empty in `icon_text` mode**, where the label is already printed as text; otherwise assistive technology announces it twice.
 3. Joined with `&nbsp;·&nbsp;`. Empty parts drop out; both empty → `''`.
+
+A seal whose attachment no longer exists (`wp_get_attachment_image_url()` returns false) is treated as no seal — in `icon` mode the line falls back to the label text rather than emitting a broken image.
 
 Filter `sfx_media_credits_line( string $line, int $id, array $parts )` for the rare site that wants different wording or order.
 
-Results are memoised per request in a static array keyed by attachment id — an image repeated in a loop must not re-query meta each time.
+Results are memoised per request in a static array keyed by attachment id — an image repeated in a loop must not re-query meta each time. Single-site assumption, stated because memoisation makes it load-bearing: attachment ids are site-local, so this cache would be wrong across a `switch_to_blog()`. See [Out of Scope](#out-of-scope).
 
 Everything downstream — dynamic tags, auto-output, the media library column — goes through this one function. There is exactly one place where a credit line is composed.
 
@@ -148,17 +155,23 @@ Everything downstream — dynamic tags, auto-output, the media library column �
 
 The trade-off is stated here because it is not obvious: **once the fallback is filled in, every image with an id has a credit** — logos, icons, decorative shapes included. That is exactly right on a site that shot all its own imagery, and wrong on a site that did not. There is deliberately no second switch to scope it; the escape hatches are leaving the field empty, or the `no-credit` class on individual elements.
 
+One guard the fallback does need: `Credit::for()` returns `''` for an id whose attachment is gone (`wp_get_attachment_url()` falsy). Bricks keeps the stored id and renders a placeholder for a deleted image (image.php:839-848); without the guard, a missing picture would carry a confident copyright line naming an owner who never took it.
+
 ## Media library (`MediaLibrary.php`)
 
 **Fields.** `attachment_fields_to_edit` / `attachment_fields_to_save` — one text input, one select. These render both in the media modal and on the attachment edit screen, for **all** attachment types (image, video, audio, PDF): the AI Act covers more than stills, and restricting by MIME type would only add a check.
 
-**List column.** `manage_media_columns` + `manage_media_custom_column` — one "Credit" column showing the copyright text and, if set, the label.
+**List column.** `manage_media_columns` + `manage_media_custom_column` — one "Credit" column showing the copyright text and, if set, the label. The column reads the **stored** meta, not `Credit::for()`: a value that only exists because of the global fallback is shown greyed and marked as such. Otherwise the column would display a copyright for rows the filter below calls "without copyright".
 
-**Filter.** `restrict_manage_posts` (on `upload.php`) + `pre_get_posts` — a dropdown: *all* · *without copyright* · *with AI marking* · one entry per label. `without copyright` uses a `NOT EXISTS` / empty-value `meta_query`.
+**Filter.** `restrict_manage_posts` + `pre_get_posts` — a dropdown: *all* · *without copyright* · *with AI marking* · one entry per label. `without copyright` uses a `NOT EXISTS` / empty-value `meta_query` against the stored meta.
+
+The `pre_get_posts` callback carries a scope contract, because that hook fires for every query in the request: act only when `is_admin()`, `$query->is_main_query()`, the current screen is `upload.php`, the queried post type is `attachment`, and the request parameter holds one of the recognised filter values. Anything else returns untouched.
 
 `ponytail:` column and filter exist in the **list** view only. The media grid has no columns — that is WordPress, not a shortcut, and the fix would mean reimplementing the grid.
 
-**IPTC prefill.** Filter on `wp_generate_attachment_metadata`: WordPress already parses IPTC/EXIF into `$metadata['image_meta']`. Read `['copyright']`, fall back to `['credit']`, write to `_sfx_media_copyright` **only if it is still empty**. Roughly ten lines and no parser of our own. Non-images have no `image_meta` and are skipped by the same emptiness check.
+**IPTC prefill.** Filter on `wp_generate_attachment_metadata`: WordPress already parses IPTC/EXIF into `$metadata['image_meta']`. Read `['copyright']`, fall back to `['credit']`, write to `_sfx_media_copyright`. Roughly ten lines and no parser of our own; non-images have no `image_meta` and drop out.
+
+**Once, on upload only.** That hook also fires when attachment metadata is regenerated — thumbnail regeneration, a media plugin's rebuild (`wp-admin/includes/image.php:184-188`). "Write it if the field is empty" would therefore resurrect a value an editor deliberately cleared, every time someone regenerates thumbnails. The prefill writes once and records that it did, in a `_sfx_media_iptc_prefilled` marker meta; a second run finds the marker and does nothing, whatever the field currently holds.
 
 ## Settings (`Settings.php`, `AdminPage.php`)
 
@@ -167,90 +180,112 @@ Option `sfx_media_credits_options`, submenu under `sfx-theme-settings`, guarded 
 | Field | Type | Default | Note |
 |---|---|---|---|
 | `output_mode` | select: `off` / `caption` / `overlay` | `off` | auto-output; see below |
-| `force_wrapper` | checkbox | off | see [Wrapper](#the-wrapper-question) |
+| `force_wrapper` | checkbox | off | overlay mode only; see [Overlay auto-output](#3--overlay-auto-output-the-one-html-injection) |
 | `credit_display` | select: `text` / `icon` / `icon_text` | `text` | how the AI part renders |
 | `icon_size` | number (px) | `24` | seal edge length |
 | `fallback_copyright` | text | `''` | see trade-off above |
 | `seal_{slug}` | attachment id | `0` | one per AI label, four in total |
 
-The seal fields use the WP media uploader (`wp_enqueue_media()` + `assets/media-credits-admin.js`, ~30 lines: open frame, write id to hidden input, swap preview). Stored as an id, not a URL, so the image survives a domain change.
+The seal fields use the WP media uploader (`wp_enqueue_media()` + `assets/media-credits-admin.js`, ~40 lines: open frame, write id to hidden input, swap preview, **and a Remove button that writes `0` back**). Without the remove control a chosen seal could never be unchosen. Each field is a labelled control with the preview carrying the label as `alt`, and every string — field labels, filter options, uploader buttons, error text — goes through `sfxtheme`.
 
-Sanitizing: `output_mode` / `credit_display` whitelisted against their option lists, `icon_size` clamped to 8–128, seal ids cast to int and checked with `wp_attachment_is_image()`, `fallback_copyright` through `sanitize_text_field`.
+Stored as an id, not a URL, so the image survives a domain change.
 
-The settings page carries a tips card stating the wrapper requirement in plain words — that is where the user turns the mode on, so that is where the constraint belongs.
+**Validation happens on write and on read.** On write: `output_mode` / `credit_display` whitelisted against their option lists, `icon_size` clamped to 8–128, `force_wrapper` cast to bool, seal ids cast to int and checked with `wp_attachment_is_image()`, `fallback_copyright` through `sanitize_text_field`. On read, `Settings::get()` applies the same whitelists and the same clamp, falling back to the default for anything unrecognised — see [Import](#integration-points) for why that second pass is not redundant.
+
+The settings page carries a tips card: caption mode is the reliable one, overlay mode needs a wrapper (`HTML tag` → `figure`, or `force_wrapper`), and overlay cannot attach to a responsive-Sources image. That is where the user turns the mode on, so that is where the constraints belong.
 
 ## Bricks integration (`Bricks.php`)
 
-### The element context pointer
+Three mechanisms, in descending order of how much of the work they carry. Only the last one touches rendered HTML.
 
-`bricks/element/settings` (base.php:2948) fires with the element instance immediately before `render()`. For `$element->name === 'image'` we resolve the attachment id via the element's own public `get_normalized_image_settings()` (image.php:724 — it also resolves dynamic image sources) and park it in a static:
+### 1 · Tags resolved in the element's own settings
 
-```php
-self::$current_image_id = $id;   // on bricks/element/settings
-self::$current_image_id = 0;     // on bricks/frontend/render_element, always
-```
+`bricks/element/settings` (base.php:2948) fires with the element instance immediately before `render()`. For an `image` element whose settings contain the string `{sfx_media_`, we resolve the attachment id from the element's own public `get_normalized_image_settings()` (image.php:724) and substitute our tags **inside the settings array**, recursively over its string values.
 
-Image elements do not nest, so a single slot is enough; a stack would be ceremony. `render_element` clears unconditionally, including when nothing was injected, so a skipped or failed render cannot leak context into the next element.
+This is what makes `{sfx_media_credit}` work in the Image element's *Custom caption* field: Bricks then renders its own `<figcaption>`, with its own typography controls, around finished text.
 
-`ponytail:` this is the one clever mechanism in the module. It rests on `bricks/element/settings` running before `render()` — a documented Bricks hook (the Academy link sits in Bricks' own source next to the call). The test pins the ordering against stubs, and `{sfx_media_credit:123}` with an explicit id is the escape hatch if a future Bricks release moves it.
+**Why not the ordinary dynamic-data route.** `captionCustom` is never passed through `render_dynamic_data()` — image.php:805-806 copies it into the caption verbatim. The tag survives into the page HTML and is only resolved much later, when `bricks/frontend/render_data` runs over the whole assembled document (frontend.php:947) — long after the element that knew which image it belonged to finished rendering (frontend.php:752). A per-element context pointer cleared at `render_element` would already be gone, and the tag would silently resolve against the page's featured image instead. Substituting in the settings is the only place where element and tag are in the same room.
 
-### Dynamic tags
+It also works on both render paths — see the builder note below — because `bricks/element/settings` sits inside `Element::init()`, which both paths call.
 
-Registered via `bricks/dynamic_tags_list`, `bricks/dynamic_data/render_tag` and `bricks/dynamic_data/render_content`, following `NavMenuQuery\MenuItemTags`:
+### 2 · Caption auto-output, written as a setting
 
-- `{sfx_media_copyright}` — the copyright part
-- `{sfx_media_ai_label}` — the label text
-- `{sfx_media_credit}` — the composed line, seal included
+When `output_mode === 'caption'`, the same `bricks/element/settings` pass composes the credit into `captionCustom` and sets `caption = 'custom'`, preserving whatever caption would otherwise have shown: the element's own custom caption, or the attachment's `post_excerpt` when the effective caption type is `attachment` (image.php:794-810 — note the type defaults to `attachment` from theme styles, so "no caption control set" does not mean "no caption"). Existing caption and credit are joined by a `<span class="sfx-credit">` on its own line, never by bare concatenation.
+
+Nothing is injected, nothing is wrapped, and the markup is Bricks' own. Two further problems dissolve here:
+
+- **The wrapper question disappears for this mode.** A caption forces `tag = 'figure'` (image.php:955-959), so a bare `<img>` root cannot occur.
+- **Responsive Sources stop being a special case.** With `sources` set and no link or caption, Bricks makes `<picture>` the root (image.php:961-964) — overriding even an explicitly chosen `tag`. The caption branch is checked first and wins.
+
+`force_wrapper` is therefore **only** relevant to overlay mode.
+
+### 3 · Overlay auto-output, the one HTML injection
+
+When `output_mode === 'overlay'`, `bricks/frontend/render_element` (frontend.php:752) inserts `<span class="sfx-credit sfx-credit--overlay">` before the closing tag of the rendered root — and **only** when that root is a real wrapper. Root detection is a regex on the first tag name:
+
+| Rendered root | Behaviour |
+|---|---|
+| `figure`, `div`, other custom tag | insert before the trailing closing tag |
+| `img`, `picture`, `a` | **nothing** — no wrapping, no layout surprise |
+
+With `force_wrapper` on, `bricks/element/settings` sets `$settings['tag'] = 'figure'` — the element's own documented option, set through Bricks' own filter, the same mechanism translation plugins use. That covers every case **except** `sources` without a link, where `<picture>` wins regardless (image.php:961-964); those elements get no overlay, and the settings page says so. Users who need a credit there switch to caption mode.
+
+**Builder parity is partial, and that is a Bricks constraint.** `Ajax::render_element()` re-renders a single element by calling `$element_instance->init()` directly and never applies `bricks/frontend/render_element` (ajax.php:885-891; the REST route delegates to it). So while editing, an overlay credit appears on a full canvas load and disappears from the single element being edited until the canvas reloads. Mechanisms 1 and 2 are unaffected — they live inside `init()`. This is the strongest reason to prefer caption mode.
+
+### Dedup
+
+Auto-output is skipped when the element already carries a credit — the rendered HTML (overlay) or the composed settings (caption) already contain `sfx-credit`. Without this, an editor who followed the recommended route and placed the tag by hand gets the credit twice the moment someone switches auto-output on.
+
+### Escaping
+
+`Credit::for()` returns `line` as **HTML, already escaped at composition**: `esc_html()` on the copyright text and the label, `esc_url()` on the seal URL, `esc_attr()` on the AI key. The `sfx_media_credits_line` filter output is passed through `wp_kses_post()` before it is used, so a filter can add markup but not script. Callers print `line` unescaped — that contract is stated once, here, because a second `esc_html()` downstream would print the tags.
+
+### Dynamic tags outside the image element
+
+Registered via `bricks/dynamic_tags_list`, `bricks/dynamic_data/render_tag` (**priority 20**) and `bricks/dynamic_data/render_content`, following `NavMenuQuery\MenuItemTags` — including the two details that file documents as load-bearing: priority 20, and tolerating the `{tag}` form Bricks re-wraps values into (`MenuItemTags.php:166-238`).
+
+- `{sfx_media_copyright}` — the stored copyright text, **raw**, without the `©` prefix
+- `{sfx_media_ai_label}` — the label text alone, no seal
+- `{sfx_media_credit}` — the composed line, prefix and seal included
 
 Context resolution, first hit wins:
 
 1. **Explicit id** — `{sfx_media_credit:123}`
-2. **Current image element** — the pointer above. This is what makes the tag work inside the Image element's *Custom caption* field: Bricks renders its own `<figcaption>`, with its own typography controls, around our text. **This is the recommended way to use the module.**
-3. **Bricks loop object**, when it is an attachment — covers query loops over attachments
-4. **Global `$post`**, when it is an attachment
-5. **Featured image** of the current post
+2. **Bricks loop object**, when it is an attachment — covers query loops over attachments
+3. **Global `$post`**, when it is an attachment
+4. **Featured image** of the current post
+
+Inside an image element, mechanism 1 has already substituted the tag before this list is ever consulted.
 
 A tag that resolves to nothing renders as an empty string, never as the literal tag.
 
-### Auto-output — safety net only
-
-`bricks/frontend/render_element` (frontend.php:752), `image` elements only, active when `output_mode !== 'off'`. Skipped when `Credit::for()` returns an empty line, and when the element carries the CSS class `no-credit` — read from `$element->settings["_cssClasses"]`, not from the rendered HTML, so a class arriving from a global class or an interaction cannot be mistaken for one the user set.
-
-It runs in the builder canvas too, on the same render path. That is deliberate: what the editor sees is what ships.
-
-**It never creates structure.** Bricks omits the wrapper entirely when no caption, overlay, gradient or `tag` is set (image.php:822) — in that case the root is the bare `<img>` (or `<a>`, or `<picture>`). Injection rules:
-
-| Rendered root | Behaviour |
-|---|---|
-| `figure` | `caption` mode: append into the existing `</figcaption>` if there is one, otherwise add a `<figcaption>`. `overlay` mode: insert `<span class="sfx-credit sfx-credit--overlay">` before `</figure>`. |
-| `div` / custom tag | Same insertion points, but `caption` mode emits `<div class="sfx-credit">` rather than `<figcaption>` — `figcaption` is only valid inside `figure`. `overlay` mode is unchanged. |
-| `img` / `picture` / `a` | **Nothing.** No wrapping, no layout surprise. |
-
-Root detection is a single regex on the first tag name; insertion is before the trailing closing tag. At most one `<figcaption>` per `<figure>` is produced, which is what the spec requires.
-
-### The wrapper question
-
-An image without a wrapper cannot receive a credit, and silently doing nothing is a poor answer when the point of the feature is not forgetting. Two answers, and the site picks:
-
-- **Default (`force_wrapper` off).** Structure is the user's business. The settings page states the requirement: set the Image element's *HTML tag* to `figure`, or set a caption, and the credit appears. Nothing is injected where no wrapper exists.
-- **`force_wrapper` on.** On `bricks/element/settings`, when auto-output is on and the attachment actually has credit data, set `$settings['tag'] = 'figure'`. This is the element's **own documented option**, set through Bricks' own filter — the same mechanism translation plugins use. Bricks then renders its own `<figure>`, with its own classes, and the markup stays valid. No string surgery, no foreign wrapper.
-
-`ponytail:` a warning rendered into the builder canvas was considered and dropped — on the no-wrapper path the root *is* the `<img>`, so a hint would have to be a sibling node, and Bricks' canvas maps elements by their single root. Not worth risking the builder to save a settings-page sentence. Revisit if the constraint proves confusing in practice.
-
 ### Machine-readable marking
 
-`wp_get_attachment_image_attributes` (WordPress core, not Bricks): when the attachment has an AI key, add `data-sfx-ai="{key}"` to the `<img>`. Bricks emits the image through `wp_get_attachment_image()` (image.php:1153), so this covers the Image element — and every other themed image on the site as a bonus. No regex, no structural change, and it satisfies the machine-readable half of Art. 50 even when the visible credit is styled away.
+`wp_get_attachment_image_attributes` (WordPress core, not Bricks): when the attachment has an AI key, add `data-sfx-ai="{key}"` to the `<img>`. Bricks emits the image through `wp_get_attachment_image()` (image.php:1153), so the Image element is covered, as is any other image the site renders **through that same core function** — not stored Gutenberg HTML, not CSS backgrounds, not hand-written `<img>` tags, and not Bricks' `<source>` elements (image.php:912-951).
+
+Stated precisely, because the earlier draft overstated it: this attribute is **a** machine-readable signal in the delivered page. It is not a provenance marking in the sense of AI Act Art. 50(2), which contemplates techniques that survive the file leaving the page — watermarks, embedded metadata, C2PA-style provenance. The attribute is lost on download, copy or proxy. Treating it as full compliance would be wrong; treating it as the cheap part that helps is right.
 
 ### CSS
 
 One stylesheet, enqueued only when the feature is on and `output_mode === 'overlay'`:
 
 ```css
-.sfx-credit--overlay { position: absolute; inset-block-end: 0; inset-inline-end: 0; }
-:where(figure, div):has(> .sfx-credit--overlay) { position: relative; }
+.sfx-credit--overlay {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  padding: 0.25em 0.5em;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+*:has(> .sfx-credit--overlay) { position: relative; }
 ```
 
-`ponytail:` positioning the parent via `:has()` avoids adding a class to markup we did not create. `:has()` is Baseline since 2023; in a browser without it the credit renders in flow instead of overlaid — degraded, not broken.
+The background is not decoration: credit text sits on arbitrary photography, and without an opaque backing WCAG AA contrast cannot be guaranteed for any colour choice.
+
+`ponytail:` positioning the parent via `:has()` avoids adding a class to markup we did not create, and the universal selector covers custom root tags — the earlier draft named only `figure` and `div` while the behaviour table allowed any tag. `:has()` is Baseline since 2023; without it the credit renders in flow instead of overlaid — degraded, not broken.
 
 ## Integration points
 
@@ -282,9 +317,19 @@ That needs the subset mechanism under an honest name: the existing `dashboard_su
 
 `ponytail:` two lines and no migration. Reusing the literal name `dashboard_subset` for a media module would have cost nothing and confused every later reader.
 
-**Import bypasses module sanitizers.** `sanitize_option_value()` sends every array option through the generic `sanitize_array_recursive()` — `Settings::sanitize_options()` never runs on an import. This module answers that by **whitelisting on read, not only on write**: `Settings::get('output_mode')` resolves through the same option list the settings page uses and falls back to the default for anything unrecognised. An import can therefore write nonsense into the option without changing behaviour. Same class of gap the `PasswordProtected` note in that file already documents — there it was solved by not exporting at all, which is not warranted here.
+**What the import path does and does not sanitize.** The importer's own `sanitize_option_value()` sends array options through a generic recursive sanitizer, which knows nothing of this module's whitelists. It is not the only gate, though: it calls `update_option()`, and core runs `sanitize_option()` inside it (`wp-includes/option.php:886`), which fires `sanitize_option_{$option}` — the filter `register_setting()` attaches the module's own callback to (`option.php:3072-3074`). So **when the module is loaded, an import does pass through `Settings::sanitize_options()`.**
 
-**4 · Uninstall** — `uninstall.php`: `sfx_media_credits_options` in `$options_to_delete`, plus the meta purge described above, guarded by the same `delete_on_uninstall` check as everything else in that file.
+The gap is narrower than that, and real: `register_setting()` only runs when the feature is enabled, on `admin_init`. An import performed while `enable_media_credits` is off writes the option with the generic sanitizer alone; enabling the feature later then reads values nothing validated. That is why `Settings::get()` whitelists **on read as well as on write** — one defensive pass in the getter closes a case that is otherwise invisible until it misbehaves.
+
+**4 · Uninstall — and a finding about the existing mechanism**
+
+The intended docking is trivial: `sfx_media_credits_options` in `$options_to_delete`, plus `delete_post_meta_by_key()` for the two meta keys, behind the same `delete_on_uninstall` check as everything else in that file.
+
+**But `uninstall.php` never runs for a theme.** That filename is a *plugin* convention: core includes it only from `uninstall_plugin()` (`wp-admin/includes/plugin.php:1284`, `:1317-1327`). `delete_theme()` (`wp-admin/includes/theme.php`) fires `delete_theme`, removes the directory and fires `deleted_theme` — it contains no reference to `uninstall.php` at all, and the child theme registers no handler for either action. Every option in that file, and the legacy Text Snippets purge with them, is dead code today.
+
+This is a **pre-existing defect in the theme, not one this feature introduces**, and fixing it is a separate piece of work: a deleted theme's code is not loaded at deletion time (a theme must be inactive to be deleted), so the cleanup can only be driven from somewhere that outlives it — an mu-plugin, or a "delete my data now" button in the theme settings that runs while the theme is still active.
+
+The spec's position: add the two entries so the file stays internally consistent and is correct on the day the mechanism is fixed, and **do not claim the data is purged on uninstall**. Raised separately; not in this feature's scope.
 
 ## Testing
 
@@ -297,17 +342,22 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 - fallback applied when the attachment value is empty, ignored when it is not
 - unknown `_sfx_media_ai` slug sanitizes to `''` and produces no label
 
-`tests/media-credits-bricks-test.php` (with `tests/support/media-credits-bricks-stubs.php`)
-- context resolution order: explicit id beats element pointer beats loop object beats `$post` beats featured image
-- the pointer is set before render and cleared after, including when the element renders nothing
-- auto-output injects into `figure` and into `div` with the correct wrapper tag
-- auto-output injects **nothing** for `img`, `picture` and `a` roots
-- an existing `</figcaption>` is appended to rather than duplicated
-- `no-credit` on the element suppresses injection
-
-`tests/media-credits-credit-test.php` additionally covers the architecture contract:
-- `Settings::get()` returns the default for an out-of-list stored value (the import path)
+- a seal id pointing at a deleted attachment falls back to the label text
+- an attachment id whose file is gone yields `''`, fallback copyright included
+- `Settings::get()` returns the default for an out-of-list stored value, and clamps an out-of-range `icon_size`
 - the export group's `fields` list contains no `seal_*` key
+- the label map survives a filter that adds and removes keys
+
+`tests/media-credits-bricks-test.php` (with `tests/support/media-credits-bricks-stubs.php`)
+- tag substitution rewrites `captionCustom` in the settings array, and leaves settings without our tags untouched
+- caption mode composes with an existing custom caption and with an attachment caption, rather than replacing either
+- context resolution order for tags outside an image element: explicit id beats loop object beats `$post` beats featured image
+- overlay injects into `figure` and into a custom root tag, and injects **nothing** for `img`, `picture` and `a`
+- dedup: an element that already contains `sfx-credit` gets no second credit
+- `no-credit` matches as a whitespace-separated token — `no-credit-card` does not suppress anything
+- escaping: a copyright containing `<script>` and a filter returning script markup both come back inert
+
+`ponytail:` these stubs prove our logic, not Bricks'. They cannot prove that `bricks/element/settings` still runs before `render()` in a future Bricks release — stubs written from the spec reproduce the spec's assumptions. The implementation plan therefore ends with manual verification in a real Bricks install: caption tag, caption auto-output, overlay with and without a wrapper, a Sources image, and a builder canvas reload.
 
 ## Out of scope
 
@@ -319,3 +369,8 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 | schema.org `copyrightNotice` | Someone asks for it |
 | Builder canvas warning | The settings-page hint proves insufficient |
 | Frontend credit for external-URL images | Never — there is no attachment to read meta from |
+| Credit for a dynamic image source that resolves to a URL rather than an id | Never, cheaply — Bricks leaves `id` at `0` there (image.php:738-760), and recovering it would mean a DB lookup per image |
+| Per-`<source>` credits on responsive images | Never — Bricks emits `<source>` manually (image.php:912-951); the credit follows the main image, so a breakpoint can show a different picture than the one credited. Document, don't build |
+| Page-cache invalidation when a credit changes | A site actually runs a page cache and a stale disclosure is observed |
+| Multisite (`switch_to_blog`, network-wide purge) | The theme is used on single sites; the per-request memoisation and the purge both assume that |
+| Overlay in the builder's single-element re-render | Never — Bricks' AJAX path does not apply `bricks/frontend/render_element` (ajax.php:885-891). Caption mode has no such gap |
