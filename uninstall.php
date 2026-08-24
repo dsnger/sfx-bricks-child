@@ -66,6 +66,9 @@ $options_to_delete = [
     // Smooth Scroll
     'sfx_smooth_scroll_options',
 
+    // Media Credits
+    'sfx_media_credits_options',
+
     // Security Headers
     'sfx_hsts_max_age',
     'sfx_hsts_include_subdomains',
@@ -102,6 +105,18 @@ $text_snippets_removal_file = get_stylesheet_directory() . '/inc/TextSnippetsRem
 if ( file_exists( $text_snippets_removal_file ) ) {
     require_once $text_snippets_removal_file;
     \SFX\TextSnippetsRemoval::purge_legacy_data();
+}
+
+// Media Credits attachment meta. Content, not configuration — deleted only
+// here, on the explicit delete_on_uninstall opt-in, never when the feature is
+// merely switched off.
+//
+// NOTE: WordPress does not execute a theme's uninstall.php at all — the
+// convention is plugin-only (wp-admin/includes/plugin.php:1284, :1317-1327),
+// and delete_theme() never includes it. This block is correct and currently
+// inert, like every other purge in this file.
+foreach (['_sfx_media_copyright', '_sfx_media_ai', '_sfx_media_iptc_prefilled'] as $meta_key) {
+    delete_post_meta_by_key($meta_key);
 }
 
 // Clear transients

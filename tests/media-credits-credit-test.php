@@ -253,6 +253,35 @@ assert_same('First', Credit::for(5)['copyright'], 'Case 8b: the second read come
 Credit::reset_cache();
 assert_same('Second', Credit::for(5)['copyright'], 'Case 8c: reset_cache is the test seam');
 
+// -------------------------------------- Case 9: what travels in an export
+// Seal ids are attachment ids. On another site the same number points at some
+// other image, which would then be presented as an AI seal. They stay home.
+
+$export_group = null;
+
+foreach (file(dirname(__DIR__) . '/inc/ImportExport/Controller.php') as $line) {
+    if (strpos($line, "'media_credits'") !== false) {
+        $export_group = true;
+        break;
+    }
+}
+
+assert_same(true, $export_group, 'Case 9a: the module has an export group');
+
+$import_export = file_get_contents(dirname(__DIR__) . '/inc/ImportExport/Controller.php');
+
+assert_contains("'option_key'  => 'sfx_media_credits_options'", $import_export, 'Case 9b: it exports our option');
+assert_contains("'type'        => 'subset'", $import_export, 'Case 9c: as a field subset');
+assert_not_contains("'seal_ai_generated'", $import_export, 'Case 9d: no seal id is listed as exportable');
+assert_contains("['subset', 'dashboard_subset']", $import_export, 'Case 9e: both type spellings are accepted, so the dashboard groups keep working');
+
+$uninstall = file_get_contents(dirname(__DIR__) . '/uninstall.php');
+
+assert_contains("'sfx_media_credits_options'", $uninstall, 'Case 9f: the option is purged');
+assert_contains(Credit::META_COPYRIGHT, $uninstall, 'Case 9g: the copyright meta is purged');
+assert_contains(Credit::META_AI, $uninstall, 'Case 9h: the AI meta is purged');
+assert_contains(Credit::META_IPTC_MARKER, $uninstall, 'Case 9i: the IPTC marker goes too, or a reinstall skips the prefill');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

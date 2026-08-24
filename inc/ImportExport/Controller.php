@@ -287,6 +287,19 @@ class Controller
                 'option_key' => 'sfx_smooth_scroll_options',
                 'type' => 'single',
             ],
+            'media_credits' => [
+                'label' => __('Media Credits Settings', 'sfxtheme'),
+                'description' => __('Copyright and AI-labelling output settings', 'sfxtheme'),
+                'option_key'  => 'sfx_media_credits_options',
+                'type'        => 'subset',
+                'fields'      => ['output_mode', 'force_wrapper', 'credit_display', 'icon_size', 'fallback_copyright'],
+            ],
+            // NOTE: the seal_* attachment ids are deliberately NOT exported.
+            // They are meaningful only on the site that stored them; on the
+            // target site the same id resolves to whatever image happens to
+            // hold it, which would then be presented as an AI seal. The subset
+            // importer merges named fields into the existing option, so the
+            // target site's own seals survive an import untouched.
             // Note: sfx_password_protected_options is deliberately NOT exportable.
             // The array holds a password hash and a plaintext bearer token (the
             // bypass key); export would write both into a portable JSON file.
@@ -412,7 +425,7 @@ class Controller
                 // Single option key - export entire option
                 $value = get_option($group['option_key'], []);
                 $data[$group_key] = $value;
-            } elseif ($group['type'] === 'dashboard_subset') {
+            } elseif (in_array($group['type'], ['subset', 'dashboard_subset'], true)) {
                 // Dashboard subset - only export specific fields from the option
                 $option_key = $group['option_key'];
                 if (!isset($option_cache[$option_key])) {
@@ -795,7 +808,7 @@ class Controller
                         'status' => 'success',
                         'message' => sprintf(__('%s imported successfully.', 'sfxtheme'), $group['label']),
                     ];
-                } elseif ($group['type'] === 'dashboard_subset') {
+                } elseif (in_array($group['type'], ['subset', 'dashboard_subset'], true)) {
                     // Dashboard subset - only import specific fields, preserve others
                     $existing = get_option($group['option_key'], []);
                     
