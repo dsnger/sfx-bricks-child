@@ -8,7 +8,8 @@
 - new `inc/MediaCredits/*`
 - one field in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
-- one option name in `uninstall.php`
+- one settings group plus a two-line type rename in `inc/ImportExport/Controller.php`
+- one option name and one meta purge in `uninstall.php`
 - two tests in `tests/`, one stub file in `tests/support/`
 
 ## Goal
@@ -95,7 +96,12 @@ Two post meta on the attachment, underscore-prefixed so they stay out of the Cus
 
 Registered through `register_meta('post', …)` with `single => true`, `show_in_rest => false`.
 
-**The meta is user content and is never deleted by this module** — not on feature deactivation, not on uninstall. Only the settings option is listed in `uninstall.php`. Turning the feature off hides the fields; it must not silently discard a site's copyright records.
+**Meta lifecycle, two tiers** — this is the theme's existing contract, not a new rule:
+
+- **Feature switched off** (`enable_media_credits` unchecked): nothing is touched. Neither meta nor settings. The toggle hides the fields; it must not silently discard a site's copyright records. No `handle_*()` in `GeneralThemeOptions\Controller`, unlike ImageOptimizer or SmoothScroll — `PasswordProtected` and `NavMenuQuery` already set that precedent.
+- **Theme uninstalled with `delete_on_uninstall` on**: both meta keys are purged along with the option. That switch means *all* theme data, and `uninstall.php` already purges post data on that path (`TextSnippetsRemoval::purge_legacy_data()`). Two `delete_post_meta_by_key()` calls, no `$wpdb`.
+
+Worth naming plainly: with `delete_on_uninstall` enabled, deleting the theme destroys every copyright notice and AI label on the site. That is what the switch promises, and it is the same promise it already makes for Custom Scripts and Contact Infos.
 
 ### Label vocabulary
 
@@ -248,10 +254,37 @@ One stylesheet, enqueued only when the feature is on and `output_mode === 'overl
 
 ## Integration points
 
-- `inc/GeneralThemeOptions/Settings.php` — one `enable_media_credits` checkbox, group `general`, default `0`
-- `inc/ThemeSettingsOverview/OverviewProvider.php` — one entry in `build_builtin_modules_group()`
-- `uninstall.php` — `sfx_media_credits_options` in the option list. **The attachment meta is not listed.**
-- No `handle_*()` in `GeneralThemeOptions\Controller` — unlike ImageOptimizer or SmoothScroll, this module's settings are **not** wiped when the feature is switched off. Seal assignments and the fallback notice are configuration a site should get back when it re-enables the feature. `PasswordProtected` and `NavMenuQuery` already set this precedent.
+Four docking points, matching how the theme already works.
+
+**1 · Feature toggle** — `inc/GeneralThemeOptions/Settings.php`: one `enable_media_credits` checkbox, group `general`, default `0`. Picked up automatically by `auto_register_features()` through `get_feature_config()`; off means not one hook is registered.
+
+**2 · Settings overview** — `inc/ThemeSettingsOverview/OverviewProvider.php`: one entry in `build_builtin_modules_group()`, label *Media Credits*.
+
+**3 · Import/Export** — `inc/ImportExport/Controller::get_settings_groups()`:
+
+```php
+'media_credits' => [
+    'label'       => __('Media Credits Settings', 'sfxtheme'),
+    'description' => __('Copyright and AI-labelling output settings', 'sfxtheme'),
+    'option_key'  => 'sfx_media_credits_options',
+    'type'        => 'subset',
+    'fields'      => ['output_mode', 'force_wrapper', 'credit_display', 'icon_size', 'fallback_copyright'],
+],
+```
+
+The **seal ids are deliberately excluded**. They are attachment ids, meaningful only on the site that stored them; carried into another site's JSON they would resolve to whatever image happens to hold that id — an unrelated picture silently presented as an AI seal. Everything that *is* portable travels; the seals get re-picked on the target site, where the subset importer leaves them untouched (it merges named fields into the existing option rather than replacing it).
+
+That needs the subset mechanism under an honest name: the existing `dashboard_subset` type is already fully generic — subset-of-one-option, nothing dashboard-specific in either `collect_settings_data()` or the import branch. Rename it to `subset` and accept both spellings at the two comparison sites (`Controller.php:415` and `:798`), so the eight dashboard groups keep working untouched:
+
+```php
+} elseif (in_array($group['type'], ['subset', 'dashboard_subset'], true)) {
+```
+
+`ponytail:` two lines and no migration. Reusing the literal name `dashboard_subset` for a media module would have cost nothing and confused every later reader.
+
+**Import bypasses module sanitizers.** `sanitize_option_value()` sends every array option through the generic `sanitize_array_recursive()` — `Settings::sanitize_options()` never runs on an import. This module answers that by **whitelisting on read, not only on write**: `Settings::get('output_mode')` resolves through the same option list the settings page uses and falls back to the default for anything unrecognised. An import can therefore write nonsense into the option without changing behaviour. Same class of gap the `PasswordProtected` note in that file already documents — there it was solved by not exporting at all, which is not warranted here.
+
+**4 · Uninstall** — `uninstall.php`: `sfx_media_credits_options` in `$options_to_delete`, plus the meta purge described above, guarded by the same `delete_on_uninstall` check as everything else in that file.
 
 ## Testing
 
@@ -271,6 +304,10 @@ Plain PHP assert scripts in `tests/`, in the style of `nav-menu-query-test.php`.
 - auto-output injects **nothing** for `img`, `picture` and `a` roots
 - an existing `</figcaption>` is appended to rather than duplicated
 - `no-credit` on the element suppresses injection
+
+`tests/media-credits-credit-test.php` additionally covers the architecture contract:
+- `Settings::get()` returns the default for an out-of-list stored value (the import path)
+- the export group's `fields` list contains no `seal_*` key
 
 ## Out of scope
 
