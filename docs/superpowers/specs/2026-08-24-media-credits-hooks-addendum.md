@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-24
 **Branch:** `feature/image-credit-fields`
-**Status:** concept, not implemented — **revised after Codex Gate A passes 1 and 2**
+**Status:** concept, not implemented — **revised after Codex Gate A passes 1, 2 and 3**
 **Parent spec:** `2026-08-24-media-credits-design.md` — read it first; this addendum assumes it and does not restate it.
 
 ## Scope
@@ -91,10 +91,23 @@ carrying the `ai_generated` seal, and same-key overrides were left unspecified e
 clause is withdrawn. It was flexibility nobody asked for, guarding a case nobody described, at the cost
 of the one guarantee this validation exists to make.
 
-Nothing is lost by removing it. A site that wants different wording already has
-`sfx_media_credits_labels`; a site that wants a different seal for a key sets it in the settings; a site
-that wants different seal markup has `sfx_media_credits_seal_html`. Three existing routes, none of which
-can desynchronise the tuple.
+Little is lost by removing it, and pass 3 was right that the first wording overstated even that. A site
+that wants different wording has `sfx_media_credits_labels`; a different seal for a key, the settings; a
+different seal markup, `sfx_media_credits_seal_html`. None of those three can desynchronise the tuple.
+
+But all three are **global**: labels and seal ids are per key, not per attachment (`Settings.php:63-72`,
+`:114-117`). So two things are genuinely **not** possible and are hereby declared unsupported rather than
+covered:
+
+- a per-attachment label variant — one image saying "KI-generiert (Midjourney)" while others say
+  "KI-generiert";
+- a per-attachment seal where the key's global seal is unset or unusable.
+
+Both are refused deliberately. A per-attachment label that the `data-sfx-ai` attribute cannot carry
+would let the visible disclosure and the machine-readable one diverge, which is the failure the tuple
+rule exists to prevent. A site that truly needs either can still replace the whole rendered credit
+through `sfx_media_credits_line` — which is honest about the fact that it is bypassing the module's
+composition rather than extending it.
 
 **Memoisation interaction:** the filtered parts are what gets cached in `Credit::$cache`. That is correct — the cache is per request and per attachment id — but it means a filter that varies its return by something other than the attachment id (the current loop position, say) will observe only its first result. Documented, not defended against.
 
@@ -160,10 +173,25 @@ outcome the hook was added to prevent.
 The contract is therefore:
 
 - The decision is taken in `Bricks::element_settings()`, once, before the caption branch and before
-  `force_wrapper` writes `$settings['tag']`, and memoised per element for the request.
+  `force_wrapper` writes `$settings['tag']`, and memoised **against the element object instance** in a
+  request-local `SplObjectStorage`.
 - `Bricks::render_element()` **consumes** that memoised decision rather than re-running the filter.
 - If no settings-time decision was recorded for an element — the module never saw it in
   `element_settings()` — `render_element()` evaluates once itself.
+
+**The memo key must be object identity, not `$id` or `$uid`.** Pass 3 caught this and it would have been
+a live bug in every query loop. Bricks constructs a fresh instance per render —
+`new $element_class_name($element)` at `frontend.php:743` — and hands that same instance to
+`bricks/frontend/render_element` at `:752`, so the object is stable across the two moments this hook
+cares about. But `$this->id` and `$this->uid` come from the stored element definition
+(`base.php:74-76`, `$uid = $id`), so a loop rendering one element for twenty posts presents the **same
+id twenty times**. Keying on it would freeze the first post's decision for the other nineteen —
+silently, and worst in exactly the case (a query loop over attachments) this module most expects.
+
+`SplObjectStorage` keyed by the instance is therefore the mechanism, not an implementation detail left
+open. Frontend entries are **removed once consumed** in `render_element()`, so the storage cannot grow
+across a long page. Builder-AJAX renders never reach `render_element()` and so never consume their
+entry; those are discarded with the request.
 
 Arguments are the attachment id, the mode and the element, so a callback has what it needs without
 reaching for per-phase state that changes between the two moments.
@@ -338,8 +366,13 @@ The load-bearing cases:
 - `sfx_media_credits_saved` fires once per save with the right context, fires from the IPTC path too,
   and a listener calling `Credit::for()` inside it observes the **new** values, not the cached ones.
 - **Backwards compatibility, stated precisely.** With no filters registered, *rendered output* is
-  byte-identical to the shipped module: same credit line, same caption, same overlay, same attribute,
-  same admin markup. Every existing assertion in all three suites passes unchanged.
+  byte-identical to the shipped module: same credit line, same caption, same overlay, same attribute.
+  Every existing assertion in all three suites passes unchanged.
+
+  **The settings page is explicitly excluded**, and pass 3 was right that the previous wording promised
+  otherwise: section 5 adds a documentation card, so admin markup changes by design, with no filters
+  registered. That is the intended deliverable, not a compatibility break, and no test should assert
+  the settings page is unchanged.
 
   It is **not** unconditionally byte-identical behaviour, and pass 2 was right to call the first
   revision's blanket claim a contradiction: `Credit::reset_cache()` now runs before
