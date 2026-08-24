@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-24
 **Branch:** `feature/image-credit-fields`
-**Status:** concept, not implemented — **revised after Codex Gate A pass 1**
+**Status:** concept, not implemented — **revised after Codex Gate A passes 1 and 2**
 **Parent spec:** `2026-08-24-media-credits-design.md` — read it first; this addendum assumes it and does not restate it.
 
 ## Scope
@@ -76,19 +76,25 @@ filter returning an invalid `ai_key` without an `ai_label` would clear the key �
 disappears and the composed AI part vanishes — while the *previous* label survives and is still
 disclosed through `{sfx_media_ai_label}`. One image would then say two different things.
 
-The rule is therefore:
+The rule is therefore — and pass 2 forced it to be simpler than the first revision:
 
 1. Non-array return → discard entirely, use the unfiltered parts.
-2. `copyright` → cast to string; absent → unfiltered value.
-3. `ai_key` → whitelist against `Settings::get_labels()`; unknown → `''`.
-4. **If the resulting `ai_key` differs from the unfiltered one**, re-derive `ai_label` and `icon_id`
-   from the new key exactly as `Credit::for()` does — *unless* the filter supplied that key explicitly,
-   in which case the supplied value is used (cast to string / int).
-5. `ai_key === ''` forces `ai_label = ''` and `icon_id = 0`, whatever the filter supplied. An empty
-   marking cannot carry a label or a seal.
+2. `copyright` → cast to string; absent → the unfiltered value.
+3. `ai_key` → whitelist against `Settings::get_labels()`; anything unknown → `''`.
+4. **The validated `ai_key` is authoritative. `ai_label` and `icon_id` are ALWAYS derived from it**,
+   exactly as `Credit::for()` does, and any values the filter supplied for them are discarded.
+5. Therefore `ai_key === ''` yields `ai_label === ''` and `icon_id === 0`, with no special case needed.
 
-A filter that wants a label without a key is asking for a disclosure the machine-readable attribute
-will not carry. That is refused rather than accommodated.
+The first revision let a filter supply `ai_label` / `icon_id` explicitly when it changed the key. Pass 2
+showed that this re-opened the hole in a new shape: a filter could return `ai_key => 'ai_edited'`
+carrying the `ai_generated` seal, and same-key overrides were left unspecified entirely. The escape
+clause is withdrawn. It was flexibility nobody asked for, guarding a case nobody described, at the cost
+of the one guarantee this validation exists to make.
+
+Nothing is lost by removing it. A site that wants different wording already has
+`sfx_media_credits_labels`; a site that wants a different seal for a key sets it in the settings; a site
+that wants different seal markup has `sfx_media_credits_seal_html`. Three existing routes, none of which
+can desynchronise the tuple.
 
 **Memoisation interaction:** the filtered parts are what gets cached in `Credit::$cache`. That is correct — the cache is per request and per attachment id — but it means a filter that varies its return by something other than the attachment id (the current loop position, say) will observe only its first result. Documented, not defended against.
 
@@ -125,8 +131,10 @@ the image being credited rather than on the seal asset. Added now rather than in
 **Inline SVG is not a use case for this hook, contrary to the first draft.** Pass 1 checked the actual
 allowlist: `wp_kses_post()` applies the post-content element list (`wp-includes/kses.php:2502-2503`),
 which contains neither `svg` nor `path` (`kses.php:68-420`). An SVG return is stripped outright, not
-merely de-scripted. The honest use is alternate *allowed* HTML — a `<picture>`, a wrapper with extra
-classes, a `<span>` glyph. A site that genuinely needs inline SVG must widen the allowlist itself,
+merely de-scripted. The honest use is alternate *allowed* HTML. Pass 2 caught a second wrong example in the first
+revision: `<picture>` is stripped too, and so is `<source>`. What survives `wp_kses_post()` and is
+actually useful here: `div` (`kses.php:156`), `figure` (`:170`), `img` (`:215`), `span` (`:295`) — so a
+wrapper with extra classes, a `<figure>`, or a differently-attributed `<img>`. A site that genuinely needs inline SVG must widen the allowlist itself,
 which is its decision to make and not something this module should do on its behalf.
 
 ### `sfx_media_credits_line` *(exists)*
@@ -142,24 +150,28 @@ apply_filters('sfx_media_credits_should_auto_output', bool $should, string $mode
 // $mode: 'caption' | 'overlay'
 ```
 
-Fires in **three** places, not two:
+**Evaluated once per element, at settings time, and reused at render time.** The first revision said
+"fires in three places". Pass 2 refuted that: Bricks assigns the filtered settings back onto the element
+before rendering (`base.php:2948-2953`), so two independent evaluations can legitimately disagree even
+for a deterministic callback — one keying on `isset($element->settings['tag'])` answers `true` before
+`force_wrapper` writes that key and `false` afterwards, which is precisely the wrapper-with-no-credit
+outcome the hook was added to prevent.
 
-- `Bricks::element_settings()`, caption branch — before the caption is composed.
-- `Bricks::element_settings()`, **overlay branch** — before `force_wrapper` sets `$settings['tag']`.
-- `Bricks::render_element()` — before the overlay is composed and injected.
+The contract is therefore:
 
-The overlay branch is the one pass 1 caught. `force_wrapper` writes the `tag` setting at settings time
-(`Bricks.php:269-270`) while the overlay is injected much later at render time (`Bricks.php:459-461`).
-A filter consulted only at render time would suppress the credit but leave a `figure` wrapper that
-exists solely to hold it — a layout change for nothing. The decision must be taken at settings time
-too, and it must be consistent: the same inputs must produce the same answer in both calls, which is
-why the filter receives the attachment id and the element rather than any per-phase state.
+- The decision is taken in `Bricks::element_settings()`, once, before the caption branch and before
+  `force_wrapper` writes `$settings['tag']`, and memoised per element for the request.
+- `Bricks::render_element()` **consumes** that memoised decision rather than re-running the filter.
+- If no settings-time decision was recorded for an element — the module never saw it in
+  `element_settings()` — `render_element()` evaluates once itself.
 
-This is the hook the module most visibly lacks today: the only current escape hatch is the `no-credit` CSS class, which requires editing every element by hand. Real cases it covers: no credits inside a header or footer template, none on a specific post type, none for images below a size threshold.
+Arguments are the attachment id, the mode and the element, so a callback has what it needs without
+reaching for per-phase state that changes between the two moments.
 
-Cast to bool on return. No escaping concern — it returns a boolean, and a truthy string cannot become markup.
-
-**It must not remove `data-sfx-ai`.** The parent spec is explicit that the machine-readable marking is not a design decision and survives `no-credit`; the same reasoning applies here. `Bricks::image_attributes()` does not consult this filter.
+**Known and documented:** Bricks' builder AJAX path calls `init()` without ever applying
+`bricks/frontend/render_element` (`ajax.php:885-891`), so while editing, a forced wrapper can appear
+with no overlay inside it until the canvas reloads. That is the same partial-parity constraint the
+parent spec already documents for overlay mode, not a new defect introduced here.
 
 ### `sfx_media_credits_caption_auto_html` — **downstream of the gate**
 
@@ -241,7 +253,17 @@ do_action('sfx_media_credits_saved', int $attachment_id, string $copyright, stri
 // $context: 'save' | 'iptc'
 ```
 
-Fires after both meta values have been written — from `MediaLibrary::save()` with context `save`, and from `prefill_iptc()` with context `iptc`.
+Firing contract, made precise after pass 2 found the first wording ambiguous for partial saves:
+
+- From `MediaLibrary::save()`, context `save` — fires when **at least one** of the two fields was present
+  in the submitted `attachments[<id>]` payload and therefore written. Not once per field. `save()` writes
+  each field only if its key is present (`MediaLibrary.php:222-236`), so "after both were written" was
+  never accurate.
+- From `MediaLibrary::prefill_iptc()`, context `iptc` — fires **only after an actual copyright write**.
+  That path has several earlier no-write returns (both one-shot guards, a non-image, an empty IPTC value,
+  a field the editor already filled), and none of them should wake a listener.
+- Both arguments always carry the **current post-write values of both fields**, re-read after the writes,
+  so a listener never has to guess which one changed or fetch them itself.
 
 **This is the seam the parent spec deliberately left open.** Page-cache invalidation is listed in that spec's Out of Scope table as "add when a site actually runs a page cache and a stale disclosure is observed". This action is how a site does that without the module knowing anything about caches. That motivation should be in its docblock, because a hook whose purpose is undocumented gets removed by the next person tidying up.
 
@@ -261,7 +283,7 @@ a second API.
 
 | Not hooked | Why |
 |---|---|
-| The `data-sfx-ai` attribute name or value | The attribute name *is* the machine-readable contract. Making it filterable defeats the only reason it exists. |
+| A **dedicated** hook on the `data-sfx-ai` attribute name or value | The attribute name *is* the machine-readable contract; making the name filterable defeats the only reason it exists. The **value** has no dedicated hook either — but it is not immutable, and pass 2 was right that the first wording implied otherwise: it follows the validated `ai_key` that `sfx_media_credits_parts` produces. That is the single, coherence-checked route, which is the point. |
 | The media-library column markup | Admin cosmetics. A site that wants a different column adds its own via `manage_media_columns`. |
 | The resolved attachment id for an element | Bricks resolves it through its own `get_normalized_image_settings()`. A filter here would let a site point a credit at the wrong image, which is the failure this module exists to prevent. |
 | The `©` / `(c)` / `Copyright` detection | A site wanting different detection replaces the line. Two overlapping ways to change one behaviour is worse than one. |
@@ -315,34 +337,38 @@ The load-bearing cases:
   neither crashes nor matches.
 - `sfx_media_credits_saved` fires once per save with the right context, fires from the IPTC path too,
   and a listener calling `Credit::for()` inside it observes the **new** values, not the cached ones.
-- **Backwards compatibility:** with no filters registered at all, every existing assertion in all three
-  suites still passes unchanged. This is the cheapest guard against the whole addendum and should be
-  stated as an explicit goal, not left implicit in the suite passing.
+- **Backwards compatibility, stated precisely.** With no filters registered, *rendered output* is
+  byte-identical to the shipped module: same credit line, same caption, same overlay, same attribute,
+  same admin markup. Every existing assertion in all three suites passes unchanged.
+
+  It is **not** unconditionally byte-identical behaviour, and pass 2 was right to call the first
+  revision's blanket claim a contradiction: `Credit::reset_cache()` now runs before
+  `sfx_media_credits_saved`, so a read-save-read sequence inside one request returns fresh values where
+  it previously returned the pre-save cache. That change happens with zero filters registered. It is
+  intentional — the old behaviour was a latent bug that only became reachable once an action existed to
+  observe it — and it is the one documented exception to the compatibility rule.
 
 ## 7 · Claims a reviewer should verify one by one
 
-Pass 1 refuted claims 1, 8 and 10 of the first draft. Those are now corrected above; the list below is
-what pass 2 should check, and it deliberately includes the corrections themselves.
+Pass 1 refuted claims 1, 8 and 10 of the first draft. Pass 2 then refuted claims 2, 3, 7, 9 and 10 of the
+first revision — every one of them a contradiction introduced by pass 1's own fixes. Both rounds are
+corrected above. The list below is what pass 3 should check.
 
-1. The four-sink table is **complete** — there is no fifth consumer of `Credit::for()`'s raw parts
-   anywhere in the module, and each of the four listed gates is what the code actually does today.
-2. The `parts` coherence rules (1–5) close the stale-label hole pass 1 found, and do not open a new one:
-   in particular that rule 4's "unless the filter supplied that key explicitly" cannot be used to pair a
-   valid key with another key's seal in a way that misleads.
-3. `should_auto_output` firing in the overlay branch of `element_settings()` genuinely prevents the
-   forced wrapper, and taking the decision twice (settings time and render time) cannot disagree with
-   itself in a way that produces a wrapper with no credit — or, if it can, under what conditions.
-4. The three-step order for the downstream hooks — `wp_kses_post()`, wrap-if-markerless,
-   `escape_braces()` — leaves `escape_braces()` genuinely last, and the wrapping step cannot introduce
-   a brace after it.
-5. Falling back to module markup on an empty return is right, and does not make deliberate suppression
-   impossible for a site that has a reason to want it.
-6. `Credit::reset_cache()` before `sfx_media_credits_saved` is sufficient, and clearing the whole
-   per-request cache has no consequence worse than the stale read it fixes.
-7. `wp_kses_post()` really does strip `<svg>` (the corrected `seal_html` rationale), so the hook's
-   documented use is now accurate.
-8. Splitting the caption paths — hooking auto-output only, leaving the manual substitution unhooked —
-   is the right call, or the manual path needs its own hook after all.
+1. Making the validated `ai_key` authoritative and **always** deriving `ai_label` and `icon_id` from it
+   closes the tuple hole completely, in the changed-key case, the same-key case and the empty case — and
+   removing the escape clause takes away no capability the three named alternative routes do not cover.
+2. Taking the `should_auto_output` decision **once** at settings time and memoising it per element
+   removes the disagreement pass 2 found, and the memoisation key is one that cannot collide between two
+   elements or leak between requests.
+3. The fallback path — `render_element()` evaluating for itself when no settings-time decision was
+   recorded — cannot itself produce the wrapper-with-no-credit outcome.
+4. The narrowed compatibility claim is now internally consistent with the required `reset_cache()`, and
+   there is no *other* behaviour that changes with zero filters registered that the document has missed.
+5. The `data-sfx-ai` wording in section 4 now matches what the code will actually do.
+6. The `seal_html` examples that remain (`div`, `figure`, `img`, `span`) genuinely survive
+   `wp_kses_post()`, and no third wrong example is left anywhere in the document.
+7. The `sfx_media_credits_saved` firing contract is now unambiguous for every path through `save()` and
+   `prefill_iptc()`, including the case where only one field is submitted.
+8. The four-sink table is still complete after these edits.
 9. Nothing in section 4 should be hooked, still.
-10. With no filters registered, behaviour is byte-identical to the shipped module. Any place this is not
-    true is a blocker.
+10. Nothing in this revision has re-opened anything pass 1 closed.
