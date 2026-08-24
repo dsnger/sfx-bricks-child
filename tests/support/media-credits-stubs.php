@@ -122,6 +122,19 @@ function wp_unslash($value)
     return is_string($value) ? stripslashes($value) : $value;
 }
 
+/**
+ * addslashes() on a string is an honest stand-in for core's wp_slash() for
+ * this suite's purposes: the values it is called with here are always
+ * strings, and slashing is the only semantic under test. Note this stub's
+ * update_post_meta() (below) does not unslash on the way in — unlike core's
+ * update_metadata() — so this is purely additive and only matters once a
+ * test value actually contains a backslash or quote.
+ */
+function wp_slash($value)
+{
+    return is_string($value) ? addslashes($value) : $value;
+}
+
 function absint($value)
 {
     return abs((int) $value);

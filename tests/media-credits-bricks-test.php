@@ -107,6 +107,9 @@ assert_contains('{post_title}', Bricks::render_content('{post_title}', $post, nu
 // Braces from stored data must not reach the page even through the tags.
 seed_attachment(5, '{echo:phpinfo}');
 assert_not_contains('{echo:', Bricks::render_content('{sfx_media_copyright}', $post, null), 'Case 4d: brace escaping applies to tag output too');
+// Exact string, not a substring: this is what catches a double-encoded
+// &amp;#123; from a wrong escaping order, which a contains() check would pass.
+assert_same('&#123;echo:phpinfo&#125;', Bricks::render_content('{sfx_media_copyright}', $post, null), 'Case 4e: exactly one round of entity escaping on the render_content path');
 
 // ------------------------------------------ Case 5: the effective caption
 // This mirrors Bricks' own branch order (image.php:794-810). The third branch

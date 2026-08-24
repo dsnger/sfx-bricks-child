@@ -189,7 +189,11 @@ class MediaLibrary
             return $metadata;
         }
 
-        update_post_meta($id, Credit::META_COPYRIGHT, $value);
+        // update_post_meta() -> update_metadata() unslashes its input, so it
+        // expects slashed data. save() gets that for free from $_POST; IPTC
+        // values come straight from wp_read_image_metadata() and are not
+        // slashed, so a backslash in a notice would otherwise be eaten.
+        update_post_meta($id, Credit::META_COPYRIGHT, wp_slash($value));
 
         return $metadata;
     }

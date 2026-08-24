@@ -165,7 +165,7 @@ class AdminPage
                                         <td class="sfx-mc-seal" data-field="<?php echo esc_attr($field); ?>">
                                             <input type="hidden" name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[<?php echo esc_attr($field); ?>]"
                                                    value="<?php echo esc_attr((string) $id); ?>" class="sfx-mc-seal-input">
-                                            <img src="<?php echo esc_url($url); ?>" alt="<?php echo esc_attr($label); ?>"
+                                            <img<?php echo $url !== '' ? ' src="' . esc_url($url) . '"' : ''; ?> alt="<?php echo esc_attr($label); ?>"
                                                  class="sfx-mc-seal-preview" style="max-width:48px;height:auto;vertical-align:middle;<?php echo $url ? '' : 'display:none;'; ?>">
                                             <button type="button" class="button sfx-mc-seal-choose"><?php esc_html_e('Choose image', 'sfxtheme'); ?></button>
                                             <button type="button" class="button-link sfx-mc-seal-remove" <?php echo $url ? '' : 'style="display:none;"'; ?>><?php esc_html_e('Remove', 'sfxtheme'); ?></button>
@@ -187,7 +187,7 @@ class AdminPage
                             <li><?php esc_html_e('Overlay mode needs something to attach to. Set the image element\'s HTML tag to figure, or switch on "Force a wrapper" above.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Overlay cannot attach to a responsive image using Sources that has neither a link nor a caption — Bricks makes that a picture element. Use caption mode for those.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('While editing, an overlay may only appear after the canvas reloads. Bricks does not run the output filter when it re-renders a single element.', 'sfxtheme'); ?></li>
-                            <li><?php esc_html_e('Add the CSS class no-credit to an image element to exclude it from automatic output.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Add no-credit in the image element\'s CSS classes field (Style tab) — not the global class picker — to exclude it from automatic output.', 'sfxtheme'); ?></li>
                         </ul>
                     </div>
                 </div>

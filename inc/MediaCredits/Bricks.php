@@ -129,7 +129,11 @@ class Bricks
 
                 // The composed line is HTML by contract; the two text values
                 // are not, and this context writes straight into markup.
-                return $m[1] === 'credit' ? $value : esc_html($value);
+                // escape_braces() runs last, not esc_html() — the module's
+                // rule that it is always the FINAL operation, made true here
+                // rather than resting on esc_html()'s $double_encode=false
+                // default happening to leave an existing entity alone.
+                return $m[1] === 'credit' ? $value : Credit::escape_braces(esc_html($value));
             },
             $content
         );
