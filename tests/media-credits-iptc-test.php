@@ -78,6 +78,27 @@ assert_same('ai_generated', MediaLibrary::sanitize_ai_key('ai_generated'), 'Case
 assert_same('', MediaLibrary::sanitize_ai_key('ai_hallucinated'), 'Case 6b: an unknown slug becomes no marking');
 assert_same('', MediaLibrary::sanitize_ai_key(''), 'Case 6c: empty stays empty');
 
+// ------------------------------------------- Case 7: the list filter query
+
+test_reset();
+
+assert_same([], MediaLibrary::filter_meta_query(''), 'Case 7a: no filter selected, no meta query');
+assert_same([], MediaLibrary::filter_meta_query('nonsense'), 'Case 7b: an unrecognised value is ignored, not guessed at');
+
+$no_copyright = MediaLibrary::filter_meta_query('no_copyright');
+assert_same('OR', $no_copyright['relation'] ?? null, 'Case 7c: "without copyright" needs both the absent and the empty case');
+assert_same(Credit::META_COPYRIGHT, $no_copyright[0]['key'] ?? null, 'Case 7d: it queries the copyright key');
+assert_same('NOT EXISTS', $no_copyright[0]['compare'] ?? null, 'Case 7e: rows that never had the meta');
+assert_same('', $no_copyright[1]['value'] ?? null, 'Case 7f: and rows where it was cleared');
+
+$any_ai = MediaLibrary::filter_meta_query('any_ai');
+assert_same(Credit::META_AI, $any_ai[0]['key'] ?? null, 'Case 7g: "with AI marking" queries the AI key');
+assert_same('!=', $any_ai[0]['compare'] ?? null, 'Case 7h: any non-empty slug counts');
+
+$one = MediaLibrary::filter_meta_query('ai_generated');
+assert_same('ai_generated', $one[0]['value'] ?? null, 'Case 7i: a single slug filters on that slug');
+assert_same([], MediaLibrary::filter_meta_query('ai_hallucinated'), 'Case 7j: a slug outside the vocabulary is not a filter');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
