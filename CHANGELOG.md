@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.20.0] - 2026-08-25
+
+### Added
+
+- **Media Credits** — an opt-in module giving every media attachment a copyright notice and an AI/alteration marking, rendered from Bricks image elements. Off by default: with the toggle off not one hook is registered and no stored data is ever touched.
+- Two attachment fields — free-text copyright and a closed five-value AI marking — in the media modal and in a sidebar box on the attachment edit screen.
+- One-shot IPTC copyright prefill on upload, behind two independent guards so a site-wide thumbnail regeneration cannot backfill hundreds of attachments and a later upload cannot resurrect a value an editor deliberately cleared.
+- Media library: a Credit column, and a filter for images without a copyright, with any AI marking, or per label.
+- Bricks: three dynamic tags, automatic caption output, an optional overlay with a per-label seal image, and a machine-readable `data-sfx-ai` attribute on the image.
+- Settings page with output mode, display style, per-label seal uploader, site-wide fallback copyright, and a reference card documenting all twelve extension hooks.
+- German translations throughout.
+
+### Changed
+
+- Import/Export accepts `subset` as an alias for `dashboard_subset`. Both spellings are honoured on export and on import, so existing export files continue to import unchanged.
+
+### Security
+
+- Every credit string is brace-escaped as its final operation before it reaches page content. The copyright field is free text typed by anyone who can upload media, and Bricks parses the finished document for `{tags}` — so an unescaped `{echo:some_function}` would otherwise execute. The escaping sits at each of the four sinks rather than at one gate, and each is asserted separately.
+
 ## [0.19.7] - 2026-08-21
 
 ### Changed
