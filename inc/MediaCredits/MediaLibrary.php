@@ -219,12 +219,15 @@ class MediaLibrary
             return $post;
         }
 
+        $touched = false;
+
         if (array_key_exists(self::FIELD_COPYRIGHT, $attachment)) {
             update_post_meta(
                 $id,
                 Credit::META_COPYRIGHT,
                 sanitize_text_field((string) $attachment[self::FIELD_COPYRIGHT])
             );
+            $touched = true;
         }
 
         if (array_key_exists(self::FIELD_AI, $attachment)) {
@@ -233,9 +236,63 @@ class MediaLibrary
                 Credit::META_AI,
                 self::sanitize_ai_key((string) $attachment[self::FIELD_AI])
             );
+            $touched = true;
+        }
+
+        // "At least one field was present", not "both were written" — save()
+        // only ever writes a field the submitted payload actually contains,
+        // so a partial edit (only copyright, only the AI select) must still
+        // notify, exactly once, not zero times and not once per field.
+        if ($touched) {
+            self::notify_saved($id, 'save');
         }
 
         return $post;
+    }
+
+    /**
+     * Re-read both fields' current values and fire sfx_media_credits_saved.
+     *
+     * Shared by save() (context 'save', at least one field present in the
+     * submitted payload) and prefill_iptc() (context 'iptc', immediately
+     * after the one write that path can ever make) so the action's contract
+     * — and its docblock — lives in exactly one place.
+     *
+     * This is the seam the parent spec deliberately left open. That spec
+     * lists page-cache invalidation in its Out of Scope table as "add when a
+     * site actually runs a page cache and a stale disclosure is observed".
+     * This action is how a site does that without the module knowing
+     * anything about caches.
+     *
+     * Credit::reset_cache() below is required, not defensive: Credit::for()
+     * memoises per request, and neither save() nor prefill_iptc() otherwise
+     * invalidates it. A listener doing the obvious thing — calling
+     * Credit::for($attachment_id) to see what changed — would otherwise be
+     * handed the pre-save value. Clearing the whole per-request cache is
+     * the accepted cost: saves are rare and the cache is per request, so a
+     * per-id invalidation would be a second API for no real gain.
+     */
+    private static function notify_saved(int $id, string $context): void
+    {
+        $copyright = (string) get_post_meta($id, Credit::META_COPYRIGHT, true);
+        $ai_key    = (string) get_post_meta($id, Credit::META_AI, true);
+
+        Credit::reset_cache();
+
+        /**
+         * Fires after at least one Media Credits field has been written for
+         * an attachment — from the compat-fields save handler or the
+         * one-shot IPTC prefill. Not de-duplicated against the previous
+         * value: comparing old and new would cost every save an extra read
+         * to serve a listener that can compare for itself.
+         *
+         * @param int    $attachment_id
+         * @param string $copyright     current value, re-read after the write
+         * @param string $ai_key        current value, re-read after the write
+         * @param string $context       'save' (attachment_fields_to_save) or
+         *                              'iptc' (the one-shot prefill)
+         */
+        do_action('sfx_media_credits_saved', $id, $copyright, $ai_key, $context);
     }
 
     /**
@@ -286,7 +343,16 @@ class MediaLibrary
         // found. "We have looked" is the fact being recorded, not "we wrote".
         update_post_meta($id, Credit::META_IPTC_MARKER, '1');
 
-        $value = self::iptc_copyright(is_array($metadata['image_meta'] ?? null) ? $metadata['image_meta'] : []);
+        $image_meta = is_array($metadata['image_meta'] ?? null) ? $metadata['image_meta'] : [];
+        $value      = self::iptc_copyright($image_meta);
+
+        // Lets a site read a different IPTC field, normalise agency
+        // spellings, or suppress the prefill for a source it does not
+        // trust by returning ''. Fires after iptc_copyright() has picked
+        // copyright/credit, before the empty check and the write — so a
+        // filter can veto the write, but never resurrect a value
+        // iptc_copyright() found nothing for.
+        $value = sanitize_text_field((string) apply_filters('sfx_media_credits_iptc_value', $value, $image_meta, $id));
 
         if ($value === '') {
             return $metadata;
@@ -301,6 +367,8 @@ class MediaLibrary
         // values come straight from wp_read_image_metadata() and are not
         // slashed, so a backslash in a notice would otherwise be eaten.
         update_post_meta($id, Credit::META_COPYRIGHT, wp_slash($value));
+
+        self::notify_saved($id, 'iptc');
 
         return $metadata;
     }

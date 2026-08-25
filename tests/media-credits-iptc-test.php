@@ -193,6 +193,145 @@ assert_same(MediaLibrary::filter_meta_query('any_ai'), $combined[1] ?? null, 'Ca
 unset($_GET[MediaLibrary::FILTER_PARAM]);
 $pagenow = null;
 
+// ------------------------------------------- Case 9: the iptc_value filter
+
+test_reset();
+$GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value'] = static function ($value, $args) {
+    return 'Filtered Notice';
+};
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 30);
+assert_same('Filtered Notice', get_post_meta(30, Credit::META_COPYRIGHT, true), 'Case 9a: iptc_value filter rewrites the value before it is written');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value']);
+
+// Suppression: an empty return skips the write, but the marker still records
+// "we looked" — that is what it means, not "we wrote".
+test_reset();
+$GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value'] = static function () {
+    return '';
+};
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 31);
+assert_same('', get_post_meta(31, Credit::META_COPYRIGHT, true), 'Case 9b: a filter returning empty suppresses the write');
+assert_same('1', get_post_meta(31, Credit::META_IPTC_MARKER, true), 'Case 9c: but the one-shot marker is still set');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value']);
+
+// sanitize_text_field() runs on the filtered value, then the existing
+// wp_slash() still runs on the way into update_post_meta().
+test_reset();
+$GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value'] = static function () {
+    return "  <b>O'Brien</b>  ";
+};
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 32);
+assert_same(addslashes("O'Brien"), get_post_meta(32, Credit::META_COPYRIGHT, true), 'Case 9d: sanitize_text_field runs on the filtered value, then wp_slash on the way into the write');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value']);
+
+// The filter receives the value iptc_copyright() already picked, the full
+// image_meta array, and the attachment id.
+test_reset();
+$captured = null;
+$GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value'] = static function ($value, $args) use (&$captured) {
+    $captured = [$value, $args];
+    return $value;
+};
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord', 'credit' => 'ignored']], 33);
+assert_same('Agentur Nord', $captured[0] ?? null, 'Case 9e: the filter receives the value iptc_copyright() already picked');
+assert_same(['copyright' => 'Agentur Nord', 'credit' => 'ignored'], $captured[1][0] ?? null, 'Case 9f: and the full image_meta array');
+assert_same(33, $captured[1][1] ?? null, 'Case 9g: and the attachment id');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value']);
+
+// ------------------------------------- Case 10: saved fires once from save()
+
+test_reset();
+update_post_meta(40, Credit::META_AI, 'ai_generated');
+MediaLibrary::save(['ID' => 40], [MediaLibrary::FIELD_COPYRIGHT => 'Foto Müller']);
+$calls = test_actions('sfx_media_credits_saved');
+assert_same(1, count($calls), 'Case 10a: saved fires exactly once when only copyright is submitted');
+assert_same([40, 'Foto Müller', 'ai_generated', 'save'], $calls[0] ?? null, 'Case 10b: arguments carry the post-write copyright and the current (untouched) AI value, context save');
+
+test_reset();
+update_post_meta(41, Credit::META_COPYRIGHT, 'Existing Notice');
+MediaLibrary::save(['ID' => 41], [MediaLibrary::FIELD_AI => 'ai_edited']);
+$calls = test_actions('sfx_media_credits_saved');
+assert_same(1, count($calls), 'Case 10c: saved fires exactly once when only the AI field is submitted');
+assert_same([41, 'Existing Notice', 'ai_edited', 'save'], $calls[0] ?? null, 'Case 10d: arguments carry the current (untouched) copyright and the post-write AI value');
+
+// The load-bearing case: both fields submitted fires ONCE, not once per field.
+test_reset();
+MediaLibrary::save(['ID' => 42], [
+    MediaLibrary::FIELD_COPYRIGHT => 'Both Notice',
+    MediaLibrary::FIELD_AI        => 'ai_assisted',
+]);
+$calls = test_actions('sfx_media_credits_saved');
+assert_same(1, count($calls), 'Case 10e: saved fires ONCE for a two-field save, not once per field');
+assert_same([42, 'Both Notice', 'ai_assisted', 'save'], $calls[0] ?? null, 'Case 10f: arguments carry both post-write values');
+
+test_reset();
+MediaLibrary::save(['ID' => 43], ['some_unrelated_key' => 'x']);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 10g: saved does not fire when neither field is in the payload');
+
+// ------------------------------ Case 11: saved fires only after a real IPTC write
+
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 50);
+$calls = test_actions('sfx_media_credits_saved');
+assert_same(1, count($calls), 'Case 11a: saved fires exactly once after an actual IPTC copyright write');
+assert_same([50, 'Agentur Nord', '', 'iptc'], $calls[0] ?? null, 'Case 11b: arguments carry the post-write copyright, the current AI value, context iptc');
+
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 51, 'update');
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11c: the context guard returning early does not fire saved');
+
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 52);
+$before = count(test_actions('sfx_media_credits_saved'));
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Second Notice']], 52);
+assert_same($before, count(test_actions('sfx_media_credits_saved')), 'Case 11d: the marker guard on a second create does not fire saved again');
+
+test_reset();
+MediaLibrary::prefill_iptc('not an array', 53);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11e: a non-array metadata value does not fire saved');
+
+test_reset();
+MediaLibrary::prefill_iptc(['sizes' => []], 54);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11f: metadata with no image_meta does not fire saved');
+
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => []], 55);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11g: an empty IPTC value does not fire saved');
+
+test_reset();
+update_post_meta(56, Credit::META_COPYRIGHT, 'Editor Wrote This');
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 56);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11h: a field the editor already filled does not fire saved');
+
+test_reset();
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 0);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11i: id 0 does not fire saved');
+
+// A filter suppressing the write means no write happened, so saved must not fire.
+test_reset();
+$GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value'] = static function () {
+    return '';
+};
+MediaLibrary::prefill_iptc(['image_meta' => ['copyright' => 'Agentur Nord']], 57);
+assert_same([], test_actions('sfx_media_credits_saved'), 'Case 11j: a filter suppressing the write means saved does not fire');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_iptc_value']);
+
+// --------------------------- Case 12: reset_cache() runs before the action
+
+test_reset();
+$GLOBALS['test_attachment_url'][60] = 'https://example.test/img.jpg';
+update_post_meta(60, Credit::META_COPYRIGHT, 'Old Notice');
+Credit::for(60); // seed the per-request cache with the pre-save value
+
+$seen = null;
+add_action('sfx_media_credits_saved', static function ($id, $copyright, $ai_key, $context) use (&$seen) {
+    $seen = Credit::for($id);
+}, 10, 4);
+
+MediaLibrary::save(['ID' => 60], [MediaLibrary::FIELD_COPYRIGHT => 'New Notice']);
+
+assert_same('New Notice', $seen['copyright'] ?? null, 'Case 12a: a listener calling Credit::for() inside the action sees the NEW value, not the pre-save cache');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

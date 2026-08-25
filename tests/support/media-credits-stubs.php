@@ -56,6 +56,7 @@ $test_is_image       = [];   // attachment id => bool
 $test_filter_returns = [];   // filter name => callable(mixed $value, array $args): mixed
 $test_filters        = [];   // hook name => list of registrations
 $test_is_admin       = true; // is_admin() return value
+$test_actions_fired  = [];   // hook name => list of arg-lists, one per do_action() call
 
 // ------------------------------------------------------ WordPress doubles
 
@@ -224,6 +225,26 @@ function add_action($hook, $callback, $priority = 10, $accepted_args = 1): bool
     return add_filter($hook, $callback, $priority, $accepted_args);
 }
 
+/**
+ * Every call is recorded (so a test can assert count and arguments even with
+ * no listener registered), and every registered add_action() callback for
+ * that hook is actually invoked, in registration order, each with its own
+ * accepted_args slice — so a listener can do real work (e.g. call
+ * Credit::for() and capture what it sees) rather than merely being counted.
+ *
+ * @param mixed ...$args
+ */
+function do_action($hook, ...$args): void
+{
+    global $test_actions_fired, $test_filters;
+
+    $test_actions_fired[$hook][] = $args;
+
+    foreach (($test_filters[$hook] ?? []) as $registration) {
+        call_user_func_array($registration['callback'], array_slice($args, 0, $registration['accepted_args']));
+    }
+}
+
 /** Registrations recorded for one hook. */
 function test_registrations(string $hook): array
 {
@@ -232,10 +253,18 @@ function test_registrations(string $hook): array
     return $test_filters[$hook] ?? [];
 }
 
+/** The arg-list of every do_action() call recorded for one hook, in order. */
+function test_actions(string $hook): array
+{
+    global $test_actions_fired;
+
+    return $test_actions_fired[$hook] ?? [];
+}
+
 function test_reset(): void
 {
     global $test_options, $test_post_meta, $test_attachment_url, $test_attachment_img,
-           $test_is_image, $test_filter_returns, $test_filters, $test_is_admin;
+           $test_is_image, $test_filter_returns, $test_filters, $test_is_admin, $test_actions_fired;
 
     $test_options        = [];
     $test_post_meta      = [];
@@ -245,6 +274,7 @@ function test_reset(): void
     $test_filter_returns = [];
     $test_filters        = [];
     $test_is_admin       = true;
+    $test_actions_fired  = [];
 }
 
 /**
