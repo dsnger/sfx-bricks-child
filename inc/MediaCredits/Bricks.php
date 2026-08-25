@@ -21,6 +21,9 @@ class Bricks
 
     public const MARKER_CLASS = 'sfx-credit';
 
+    /** The root tags an overlay is never injected into, unless filtered. */
+    private const DEFAULT_OVERLAY_SKIP_TAGS = ['img', 'picture', 'a'];
+
     /**
      * The should_auto_output decision, taken once per element in
      * element_settings() and consumed once in render_element().
@@ -375,7 +378,16 @@ class Bricks
             return $settings;
         }
 
-        $credit = '<span class="' . self::MARKER_CLASS . '">' . $line . '</span>';
+        $default_credit = '<span class="' . self::MARKER_CLASS . '">' . $line . '</span>';
+
+        // This is a page-content sink: captionCustom is copied VERBATIM into
+        // the caption (image.php:805-806) and never passed through Bricks'
+        // own render_dynamic_data(), so whatever the filter returns here
+        // lands in the assembled document unprotected. finish_fragment()
+        // gives it the same three-step treatment the module's own gate
+        // applies elsewhere: kses, marker restored, braces escaped last.
+        $filtered = (string) apply_filters('sfx_media_credits_caption_auto_html', $default_credit, $id, $settings);
+        $credit   = self::finish_fragment($filtered, $default_credit);
 
         $settings['caption']       = 'custom';
         $settings['captionCustom'] = $effective === '' ? $credit : $effective . '<br>' . $credit;
@@ -480,6 +492,41 @@ class Bricks
     }
 
     /**
+     * The three-step treatment every filtered page-content fragment gets,
+     * shared by caption_auto_html and overlay_html — the only two hooks in
+     * this module whose return is written into page content unprotected.
+     *
+     * Order is the whole point: kses so a filter cannot add script, the
+     * marker restored so a filter cannot silently break dedup, and
+     * escape_braces LAST so neither the filter nor the wrapping step can
+     * reintroduce a Bricks dynamic-data tag.
+     *
+     * An empty return (before or after kses strips it down to nothing) falls
+     * back to $fallback rather than suppressing output: should_auto_output
+     * already exists as the dedicated way to suppress a credit, so an empty
+     * string is far more likely a filter bug than a decision.
+     */
+    private static function finish_fragment(string $filtered, string $fallback, string $extra_class = ''): string
+    {
+        if (trim($filtered) === '') {
+            return $fallback;
+        }
+
+        $html = wp_kses_post($filtered);
+
+        if (trim($html) === '') {
+            return $fallback;
+        }
+
+        if (!self::has_marker($html)) {
+            $class = self::MARKER_CLASS . ($extra_class !== '' ? ' ' . $extra_class : '');
+            $html  = '<span class="' . $class . '">' . $html . '</span>';
+        }
+
+        return Credit::escape_braces($html);
+    }
+
+    /**
      * The element's attachment id, through Bricks' own resolver so a dynamic
      * image source is honoured. A provider returning a URL rather than an id
      * leaves id at 0 (image.php:738-760) — those images get no credit, which
@@ -557,7 +604,7 @@ class Bricks
 
         $line = Credit::for($id)['line'];
 
-        return $line === '' ? $html : self::inject_overlay($html, $line);
+        return $line === '' ? $html : self::inject_overlay($html, $line, $id);
     }
 
     /**
@@ -567,11 +614,16 @@ class Bricks
      * wrapping the bare `<img>` ourselves would move a box in someone's
      * layout for a credit they may not even have configured.
      */
-    public static function inject_overlay(string $html, string $line): string
+    public static function inject_overlay(string $html, string $line, int $attachment_id = 0): string
     {
         $root = self::root_tag($html);
 
-        if ($root === '' || in_array($root, ['img', 'picture', 'a'], true)) {
+        $skip_tags = self::sanitize_skip_tags(
+            apply_filters('sfx_media_credits_overlay_skip_tags', self::DEFAULT_OVERLAY_SKIP_TAGS),
+            self::DEFAULT_OVERLAY_SKIP_TAGS
+        );
+
+        if ($root === '' || in_array($root, $skip_tags, true)) {
             return $html;
         }
 
@@ -582,7 +634,12 @@ class Bricks
             return $html;
         }
 
-        $span = '<span class="' . self::MARKER_CLASS . ' ' . self::MARKER_CLASS . '--overlay">' . $line . '</span>';
+        $default_span = '<span class="' . self::MARKER_CLASS . ' ' . self::MARKER_CLASS . '--overlay">' . $line . '</span>';
+
+        // Same sink, same three-step treatment as the caption branch: the
+        // return is spliced straight into the rendered HTML.
+        $filtered = (string) apply_filters('sfx_media_credits_overlay_html', $default_span, $attachment_id, $root);
+        $span     = self::finish_fragment($filtered, $default_span, self::MARKER_CLASS . '--overlay');
 
         return substr($html, 0, $pos) . $span . substr($html, $pos);
     }
@@ -590,6 +647,35 @@ class Bricks
     public static function root_tag(string $html): string
     {
         return preg_match('/^\s*<([a-z0-9-]+)/i', $html, $m) === 1 ? strtolower($m[1]) : '';
+    }
+
+    /**
+     * Sanitise a sfx_media_credits_overlay_skip_tags return. The value is
+     * compared against a root tag already extracted by root_tag()'s own
+     * [a-z0-9-]+ regex, so a malformed entry can never actually match — but
+     * validating here keeps that comparison honest rather than accidental.
+     *
+     * @param mixed $tags
+     * @param list<string> $fallback used verbatim when $tags is not an array
+     * @return list<string>
+     */
+    private static function sanitize_skip_tags($tags, array $fallback): array
+    {
+        if (!is_array($tags)) {
+            return $fallback;
+        }
+
+        $clean = [];
+
+        foreach ($tags as $tag) {
+            $tag = strtolower((string) $tag);
+
+            if (preg_match('/^[a-z0-9-]+$/', $tag) === 1) {
+                $clean[] = $tag;
+            }
+        }
+
+        return $clean;
     }
 
     /**

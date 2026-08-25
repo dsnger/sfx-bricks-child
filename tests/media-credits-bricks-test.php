@@ -491,6 +491,221 @@ assert_contains('Foto Müller', Bricks::render_element($html, $element), 'Case 1
 
 Bricks::reset_decisions();
 
+// -------------------------------- Case 16: sfx_media_credits_caption_auto_html
+//
+// Downstream of the escaping gate: captionCustom is copied verbatim into the
+// caption (image.php:805-806) and never passed through Bricks' own dynamic
+// tag rendering, so the filter's return is this module's OWN responsibility
+// to make safe. The three-step treatment — wp_kses_post(), wrap if the
+// marker is missing, escape_braces() LAST — lives in finish_fragment() and
+// both Case 16 and Case 17 exercise it through their own sink.
+
+test_reset();
+\Bricks\Query::reset();
+Bricks::reset_decisions();
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'caption'];
+$GLOBALS['test_posts'][5] = new WP_Post(['ID' => 5, 'post_excerpt' => '']);
+
+$default_credit = '<span class="sfx-credit">©&nbsp;Foto Müller</span>';
+
+// 16a: a raw Bricks dynamic-data exploit string comes back EXACTLY brace
+// escaped — not merely "not containing {echo:", which a not_contains() would
+// still pass on a double-encoded &amp;#123;, itself broken output.
+$GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html'] = static function ($html, array $args) {
+    return '{echo:phpinfo}';
+};
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same('<span class="sfx-credit">&#123;echo:phpinfo&#125;</span>', $out['captionCustom'], 'Case 16a: caption_auto_html exploit string is wrapped (no marker) and exactly brace-escaped');
+
+// 16b: wp_kses_post() strips <script>, inert markup survives.
+$GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html'] = static function ($html, array $args) {
+    return '<script>alert(1)</script><em>ok</em>';
+};
+Credit::reset_cache();
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same('<span class="sfx-credit"><em>ok</em></span>', $out['captionCustom'], 'Case 16b: script stripped, <em> survives, then wrapped since the filter carried no marker');
+
+// 16c: a markerless return gets the marker wrapped back on.
+$GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html'] = static function ($html, array $args) {
+    return '<strong>Photo by Someone</strong>';
+};
+Credit::reset_cache();
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same('<span class="sfx-credit"><strong>Photo by Someone</strong></span>', $out['captionCustom'], 'Case 16c: markerless filter output wrapped in the marker span');
+
+// 16d: a second auto-output pass over the ALREADY-wrapped result, WITH THE
+// SAME markerless filter still registered and still returning unmarked
+// markup, adds no second credit. The filter is deliberately left active
+// here (unlike a simpler test that unregisters it first): dedup must not
+// depend on the filter falling silent by the second pass, it must depend on
+// the marker the FIRST pass wrote — that marker is what makes
+// has_marker($effective) short-circuit element_settings() before the filter
+// is even consulted again.
+Credit::reset_cache();
+$second_pass = new Test_Bricks_Element(['caption' => 'custom', 'captionCustom' => $out['captionCustom']], ['id' => 5]);
+$out2 = Bricks::element_settings($second_pass->settings, $second_pass);
+assert_same(1, substr_count($out2['captionCustom'], 'class="sfx-credit'), 'Case 16d: a second auto-output pass over the wrapped result, filter still active, adds no second credit');
+assert_same($out['captionCustom'], $out2['captionCustom'], 'Case 16d2: the caption is byte-identical across both passes — the marker short-circuits before the filter runs again');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html']);
+
+// 16e: an empty return falls back to the module's own markup — an empty
+// string is a filter bug, not a suppression decision. should_auto_output
+// already exists as the dedicated way to suppress.
+$GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html'] = static function ($html, array $args) {
+    return '';
+};
+Credit::reset_cache();
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same($default_credit, $out['captionCustom'], 'Case 16e: an empty caption_auto_html return falls back to the module markup, not suppression');
+
+// 16f: markup that already carries the marker is left EXACTLY as the filter
+// wrote it — not double-wrapped.
+$GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html'] = static function ($html, array $args) {
+    return '<span class="sfx-credit">custom credit text</span>';
+};
+Credit::reset_cache();
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same('<span class="sfx-credit">custom credit text</span>', $out['captionCustom'], 'Case 16f: an already-marked filter return is left exactly as written, not double-wrapped');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_caption_auto_html']);
+Credit::reset_cache();
+
+// -------------------------------------- Case 17: sfx_media_credits_overlay_html
+//
+// Same sink, same three-step treatment via finish_fragment(), reached
+// through inject_overlay() instead — attachment_id and root_tag are the
+// filter's args, and MARKER_CLASS . '--overlay' is the wrap's extra class.
+
+test_reset();
+\Bricks\Query::reset();
+Bricks::reset_decisions();
+
+$root_html        = '<figure><img src="a"></figure>';
+$line              = '©&nbsp;Foto';
+$default_overlay  = '<span class="sfx-credit sfx-credit--overlay">©&nbsp;Foto</span>';
+
+// 17a: exact brace-escaped output for an exploit string.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html'] = static function ($html, array $args) {
+    return '{echo:phpinfo}';
+};
+$out = Bricks::inject_overlay($root_html, $line, 5);
+assert_same(
+    '<figure><img src="a"><span class="sfx-credit sfx-credit--overlay">&#123;echo:phpinfo&#125;</span></figure>',
+    $out,
+    'Case 17a: overlay_html exploit string is wrapped (no marker) and exactly brace-escaped'
+);
+
+// 17b: script stripped, inert markup survives.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html'] = static function ($html, array $args) {
+    return '<script>alert(1)</script><em>ok</em>';
+};
+$out = Bricks::inject_overlay($root_html, $line, 5);
+assert_same(
+    '<figure><img src="a"><span class="sfx-credit sfx-credit--overlay"><em>ok</em></span></figure>',
+    $out,
+    'Case 17b: script stripped, <em> survives, wrapped since the filter carried no marker'
+);
+
+// 17c/17d: a markerless return is wrapped with BOTH classes, and 17e/17f
+// prove dedup survives a second render_element() pass over the already
+// marked result. Routed through render_element() rather than inject_overlay()
+// directly, because overlay dedup is render_element()'s own has_marker($html)
+// gate (Bricks.php:535), not something inject_overlay() decides for itself.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html'] = static function ($html, array $args) {
+    return '<strong>Photo credit</strong>';
+};
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay'];
+Bricks::reset_decisions();
+$element    = new Test_Bricks_Element(['caption' => 'none'], ['id' => 5]);
+$first_pass = Bricks::render_element($root_html, $element);
+assert_same(
+    '<figure><img src="a"><span class="sfx-credit sfx-credit--overlay"><strong>Photo credit</strong></span></figure>',
+    $first_pass,
+    'Case 17c: markerless overlay filter output wrapped with the marker AND the --overlay class'
+);
+assert_same(1, substr_count($first_pass, 'class="sfx-credit'), 'Case 17d: exactly one credit span after wrapping');
+
+Bricks::reset_decisions();
+$second      = new Test_Bricks_Element(['caption' => 'none'], ['id' => 5]);
+$second_pass = Bricks::render_element($first_pass, $second);
+assert_same($first_pass, $second_pass, 'Case 17e: a second render_element() pass over an already-marked overlay adds nothing');
+assert_same(1, substr_count($second_pass, 'class="sfx-credit'), 'Case 17f: still exactly one credit span');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html']);
+Bricks::reset_decisions();
+
+// 17g: an empty return falls back to the module's own markup.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html'] = static function ($html, array $args) {
+    return '';
+};
+$out = Bricks::inject_overlay($root_html, $line, 5);
+assert_same('<figure><img src="a">' . $default_overlay . '</figure>', $out, 'Case 17g: an empty overlay_html return falls back to the module markup, not suppression');
+
+// 17h: markup that already carries the marker (but not --overlay) is left
+// EXACTLY as the filter wrote it. Deliberate: forcing --overlay back on
+// would be the same paternalism rejected for the AI label — the filter took
+// control of the markup, so the overlay renders in normal flow instead of
+// positioned, and that is accepted, not "fixed".
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html'] = static function ($html, array $args) {
+    return '<span class="sfx-credit">custom overlay text</span>';
+};
+$out = Bricks::inject_overlay($root_html, $line, 5);
+assert_same('<figure><img src="a"><span class="sfx-credit">custom overlay text</span></figure>', $out, 'Case 17h: already-marked overlay output left exactly as written, --overlay class NOT forced on');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_overlay_html']);
+Bricks::reset_decisions();
+
+// ------------------------------- Case 18: sfx_media_credits_overlay_skip_tags
+
+test_reset();
+\Bricks\Query::reset();
+Bricks::reset_decisions();
+
+// 18a: returning ['figure'] suppresses injection into a figure root.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags'] = static function ($tags, array $args) {
+    return ['figure'];
+};
+$figure_html = '<figure><img src="a"></figure>';
+assert_same($figure_html, Bricks::inject_overlay($figure_html, '©&nbsp;Foto', 5), 'Case 18a: overlay_skip_tags returning [figure] suppresses injection into a figure root');
+
+// 18b: returning [] allows injection into an img root — proving the list is
+// really consulted, not merely accepted and ignored. (A bare <img> never has
+// a real closing tag; the synthetic </img> isolates "was the tag test even
+// reached" from "was there anywhere to inject".)
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags'] = static function ($tags, array $args) {
+    return [];
+};
+$img_html = '<img src="a"></img>';
+$out = Bricks::inject_overlay($img_html, '©&nbsp;Foto', 5);
+assert_contains('sfx-credit--overlay', $out, 'Case 18b: an empty skip list allows injection into an img root, proving the list is really consulted');
+
+// 18c: a non-array return is discarded — the default list (img excluded)
+// still applies.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags'] = static function ($tags, array $args) {
+    return 'not-an-array';
+};
+assert_same($img_html, Bricks::inject_overlay($img_html, '©&nbsp;Foto', 5), 'Case 18c: a non-array skip_tags return is discarded, default list still excludes img');
+
+// 18d: a malformed entry neither crashes nor matches — '<figure>' fails the
+// [a-z0-9-]+ pattern and is dropped, so a figure root still gets its overlay
+// exactly as if the filter had returned nothing usable.
+$GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags'] = static function ($tags, array $args) {
+    return ['<figure>', 123, ''];
+};
+$out = Bricks::inject_overlay($figure_html, '©&nbsp;Foto', 5);
+assert_contains('sfx-credit--overlay', $out, 'Case 18d: a malformed skip entry does not crash and does not match a real root tag — figure still gets its overlay');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags']);
+Bricks::reset_decisions();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
