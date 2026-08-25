@@ -49,10 +49,6 @@ designed, checked in the browser.
 IPTC-bearing upload plus a regeneration plugin) and the settings **import** (skipped on
 purpose — it writes options wholesale and could clobber local config).
 
-**CodeRabbit never reviewed the final commit** `b0baea9`. It was rate-limited and the
-merge came first. Greptile reviewed that head at 5/5 with no findings, and Gate B
-reviewed it too.
-
 ## Open, deliberately
 
 - **`uninstall.php` is inert.** WordPress never loads a theme's `uninstall.php`, so the
