@@ -28,8 +28,8 @@ class Controller
         return [
             'class'                  => self::class,
             'menu_slug'              => AdminPage::$menu_slug,
-            'page_title'             => AdminPage::$page_title,
-            'description'            => AdminPage::$description,
+            'page_title'             => AdminPage::page_title(),
+            'description'            => AdminPage::description(),
             'activation_option_name' => 'sfx_general_options',
             'activation_option_key'  => 'enable_media_credits',
             'option_value'           => true,

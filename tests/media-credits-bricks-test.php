@@ -54,7 +54,7 @@ $post = new WP_Post(['ID' => 5, 'post_type' => 'attachment']);
 
 assert_same('Foto Müller', Bricks::render_tag('sfx_media_copyright', $post, null), 'Case 2a: the bare tag resolves');
 assert_same('Foto Müller', Bricks::render_tag('{sfx_media_copyright}', $post, null), 'Case 2b: the brace-wrapped form resolves too — Bricks re-wraps unknown tags');
-assert_same('KI-generiert', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 2c: the label tag');
+assert_same('AI-generated', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 2c: the label tag');
 assert_contains('©&nbsp;Foto Müller', Bricks::render_tag('{sfx_media_credit}', $post, null), 'Case 2d: the composed line');
 
 // A tag that is not ours must come back BYTE-IDENTICAL. Returning '' or a
@@ -339,7 +339,7 @@ seed_attachment(5, 'Foto Müller', 'ai_generated');
 $post = new WP_Post(['ID' => 5, 'post_type' => 'attachment']);
 
 // Baseline, unfiltered: this is the label a coherence bug would leak.
-assert_same('KI-generiert', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 14a: baseline label before any parts filter runs');
+assert_same('AI-generated', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 14a: baseline label before any parts filter runs');
 
 $GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
     $parts['copyright'] = '{echo:phpinfo}';
@@ -363,7 +363,7 @@ assert_same('©&nbsp;&#123;echo:phpinfo&#125;', Credit::for(5)['line'], 'Case 14
 assert_same('&#123;echo:phpinfo&#125;', Bricks::render_tag('{sfx_media_copyright}', $post, null), 'Case 14c: sink 2 (raw_value dynamic tag) brace-escapes the copyright on its own, independent of the line gate');
 
 // Coherence, same sink: the invalid ai_key must not leave the PREVIOUS
-// label readable through the tag. It must be empty, not "KI-generiert".
+// label readable through the tag. It must be empty, not "AI-generated".
 assert_same('', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 14d: sink 2 coherence — an invalid ai_key empties the label tag, not the stale one from Case 14a');
 
 // Sink 3: a tag substituted into a caption, through Bricks::substitute().

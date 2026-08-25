@@ -66,6 +66,7 @@ inc/MediaCredits/
   Bricks.php        settings-time tag substitution, dynamic tags, auto-output
   assets/media-credits.css
   assets/media-credits-admin.js
+  assets/media-credits-admin.css
   index.php
 ```
 
@@ -77,8 +78,8 @@ public static function get_feature_config(): array
     return [
         'class'                  => self::class,
         'menu_slug'              => AdminPage::$menu_slug,
-        'page_title'             => AdminPage::$page_title,
-        'description'            => AdminPage::$description,
+        'page_title'             => AdminPage::page_title(),
+        'description'            => AdminPage::description(),
         'activation_option_name' => 'sfx_general_options',
         'activation_option_key'  => 'enable_media_credits',
         'option_value'           => true,
@@ -113,13 +114,17 @@ Worth naming plainly: if that mechanism is ever repaired, `delete_on_uninstall` 
 
 Fixed, five steps, stored as slug:
 
-| Slug | Default label (`sfxtheme`) |
-|---|---|
-| `''` | *(no marking — default)* |
-| `ai_generated` | KI-generiert |
-| `ai_edited` | KI-bearbeitet |
-| `ai_assisted` | KI-unterstützt |
-| `digitally_altered` | Digital verändert |
+| Slug | Source label (`sfxtheme`) | German (`de_DE`) |
+|---|---|---|
+| `''` | *(no marking — default)* | |
+| `ai_generated` | AI-generated | KI-generiert |
+| `ai_edited` | AI-edited | KI-bearbeitet |
+| `ai_assisted` | AI-assisted | KI-unterstützt |
+| `digitally_altered` | Digitally altered | Digital verändert |
+
+The source strings are English and the German wording is a `de_DE` translation,
+per the convention this theme already records: a hardcoded German source string
+renders German on every site that has no catalogue for it.
 
 `Settings::get_labels()` returns the map, passed through the filter `sfx_media_credits_labels` so a site can reword without a settings UI. The **slugs are the contract**, enforced in both directions: `array_merge($defaults, array_intersect_key($filtered, $defaults))`. The intersection drops keys a filter invented; the merge restores keys a filter dropped, with their default wording. Intersection alone would not — a filter returning three entries would leave two slugs with no label at all, and images already marked with them would silently lose their disclosure. Wording is negotiable, keys are not.
 

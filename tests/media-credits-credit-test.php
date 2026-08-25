@@ -35,7 +35,7 @@ $GLOBALS['test_filter_returns']['sfx_media_credits_labels'] = static function ()
 };
 $labels = Settings::get_labels();
 assert_same('AI generated', $labels['ai_generated'], 'Case 1c: a filter can reword');
-assert_same('KI-bearbeitet', $labels['ai_edited'], 'Case 1d: a dropped key falls back to its default wording');
+assert_same('AI-edited', $labels['ai_edited'], 'Case 1d: a dropped key falls back to its default wording');
 assert_same(4, count($labels), 'Case 1e: the map keeps all four slugs');
 
 // A filter returning nonsense: ignored.
@@ -126,12 +126,12 @@ foreach (['© Foto Müller', '(c) Foto Müller', 'Copyright Foto Müller'] as $i
 $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto Müller';
 $GLOBALS['test_post_meta'][5][Credit::META_AI]        = 'ai_generated';
 Credit::reset_cache();
-assert_same('©&nbsp;Foto Müller&nbsp;·&nbsp;KI-generiert', Credit::for(5)['line'], 'Case 4e: both parts, joined');
+assert_same('©&nbsp;Foto Müller&nbsp;·&nbsp;AI-generated', Credit::for(5)['line'], 'Case 4e: both parts, joined');
 
 // AI part only.
 $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = '';
 Credit::reset_cache();
-assert_same('KI-generiert', Credit::for(5)['line'], 'Case 4f: the separator drops out when one part is empty');
+assert_same('AI-generated', Credit::for(5)['line'], 'Case 4f: the separator drops out when one part is empty');
 
 // Neither part.
 $GLOBALS['test_post_meta'][5][Credit::META_AI] = '';
@@ -161,21 +161,21 @@ $GLOBALS['test_attachment_img'][90] = 'https://example.test/seal.svg';
 Credit::reset_cache();
 $line = Credit::for(5)['line'];
 assert_contains('src="https://example.test/seal.svg"', $line, 'Case 5a: icon mode renders the seal');
-assert_contains('alt="KI-generiert"', $line, 'Case 5b: in icon mode the alt carries the label');
+assert_contains('alt="AI-generated"', $line, 'Case 5b: in icon mode the alt carries the label');
 assert_contains('width="32"', $line, 'Case 5c: the configured size is applied');
-assert_not_contains('>KI-generiert', $line, 'Case 5d: icon mode prints no visible label text');
+assert_not_contains('>AI-generated', $line, 'Case 5d: icon mode prints no visible label text');
 
 $GLOBALS['test_options'][Settings::OPTION_NAME]['credit_display'] = 'icon_text';
 Credit::reset_cache();
 $line = Credit::for(5)['line'];
 assert_contains('alt=""', $line, 'Case 5e: with the label visible the seal alt is empty, or SR users hear it twice');
-assert_contains('KI-generiert', $line, 'Case 5f: icon_text still prints the label');
+assert_contains('AI-generated', $line, 'Case 5f: icon_text still prints the label');
 
 // A seal whose attachment was deleted must not become a broken image.
 $GLOBALS['test_attachment_img'][90] = false;
 $GLOBALS['test_options'][Settings::OPTION_NAME]['credit_display'] = 'icon';
 Credit::reset_cache();
-assert_same('KI-generiert', Credit::for(5)['line'], 'Case 5g: a deleted seal falls back to the label text');
+assert_same('AI-generated', Credit::for(5)['line'], 'Case 5g: a deleted seal falls back to the label text');
 
 // ----------------------------------------------------- Case 6: the fallback
 
@@ -257,24 +257,37 @@ assert_same('Second', Credit::for(5)['copyright'], 'Case 8c: reset_cache is the 
 // Seal ids are attachment ids. On another site the same number points at some
 // other image, which would then be presented as an AI seal. They stay home.
 
-$export_group = null;
+// 9a-9d assert the resolved group, not the file's text: the contract is what
+// get_settings_groups() returns, and a PHPCS alignment run over that file must
+// not fail a test that no behaviour change touched.
+require_once dirname(__DIR__) . '/inc/ImportExport/Controller.php';
 
-foreach (file(dirname(__DIR__) . '/inc/ImportExport/Controller.php') as $line) {
-    if (strpos($line, "'media_credits'") !== false) {
-        $export_group = true;
-        break;
+$groups = \SFX\ImportExport\Controller::get_settings_groups();
+
+assert_same(true, isset($groups['media_credits']), 'Case 9a: the module has an export group');
+
+$export_group = $groups['media_credits'] ?? [];
+
+assert_same('sfx_media_credits_options', $export_group['option_key'] ?? '', 'Case 9b: it exports our option');
+assert_same('subset', $export_group['type'] ?? '', 'Case 9c: as a field subset');
+// Every group aimed at our option, not just ours: a second subset group on the
+// same option_key could list a seal field and export it behind our back.
+$our_fields = [];
+
+foreach ($groups as $group) {
+    if (($group['option_key'] ?? '') === 'sfx_media_credits_options') {
+        $our_fields = array_merge($our_fields, $group['fields'] ?? []);
     }
 }
 
-assert_same(true, $export_group, 'Case 9a: the module has an export group');
-
-$import_export = file_get_contents(dirname(__DIR__) . '/inc/ImportExport/Controller.php');
-
-assert_contains("'option_key'  => 'sfx_media_credits_options'", $import_export, 'Case 9b: it exports our option');
-assert_contains("'type'        => 'subset'", $import_export, 'Case 9c: as a field subset');
 foreach (['seal_ai_generated', 'seal_ai_edited', 'seal_ai_assisted', 'seal_digitally_altered'] as $seal_key) {
-    assert_not_contains("'{$seal_key}'", $import_export, "Case 9d: no seal id ({$seal_key}) is listed as exportable");
+    assert_same(false, in_array($seal_key, $our_fields, true), "Case 9d: no seal id ({$seal_key}) is exportable by any group");
 }
+
+// 9e and 9e2 stay textual on purpose. They guard a half-applied rename across
+// two comparison sites, which no resolved value can show: a group can export
+// correctly and still fail to import because only one site was widened.
+$import_export = file_get_contents(dirname(__DIR__) . '/inc/ImportExport/Controller.php');
 
 assert_contains("['subset', 'dashboard_subset']", $import_export, 'Case 9e: both type spellings are accepted, so the dashboard groups keep working');
 // A half-applied rename — one comparison site widened, the other left as a
@@ -366,7 +379,7 @@ $GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (ar
     return $parts;
 };
 Credit::reset_cache();
-assert_same('KI-bearbeitet', Credit::for(5)['ai_label'], 'Case 10h: a valid new key re-derives its own label');
+assert_same('AI-edited', Credit::for(5)['ai_label'], 'Case 10h: a valid new key re-derives its own label');
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
 
 // The pass-2 hole: a valid key paired with another key's seal id. The seal
@@ -428,7 +441,7 @@ $GLOBALS['test_filter_returns']['sfx_media_credits_separator'] = static function
     return ' | ';
 };
 Credit::reset_cache();
-assert_same('©&nbsp;Foto Müller | KI-generiert', Credit::for(5)['line'], 'Case 10p: separator filter replaces the default, both parts present');
+assert_same('©&nbsp;Foto Müller | AI-generated', Credit::for(5)['line'], 'Case 10p: separator filter replaces the default, both parts present');
 assert_same(1, $sep_calls, 'Case 10q: consulted exactly once when both parts exist');
 
 $GLOBALS['test_post_meta'][5][Credit::META_AI] = '';
@@ -482,7 +495,7 @@ $GLOBALS['test_filter_returns']['sfx_media_credits_separator'] = static function
     return '{post_title}';
 };
 Credit::reset_cache();
-assert_same('©&nbsp;Foto&#123;post_title&#125;KI-generiert', Credit::for(5)['line'], 'Case 10w: separator output is caught by the existing gate');
+assert_same('©&nbsp;Foto&#123;post_title&#125;AI-generated', Credit::for(5)['line'], 'Case 10w: separator output is caught by the existing gate');
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_separator']);
 
 $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = '';

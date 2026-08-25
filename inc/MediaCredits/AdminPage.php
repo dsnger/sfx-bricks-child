@@ -7,8 +7,23 @@ namespace SFX\MediaCredits;
 class AdminPage
 {
     public static string $menu_slug  = 'sfx-media-credits';
-    public static string $page_title = 'Media Credits';
-    public static string $description = 'Copyright notices and AI markings on media, with optional automatic output in Bricks image elements.';
+
+    /**
+     * Title and description as methods, not static properties: a property
+     * initialiser must be a constant expression, so the literals could not sit
+     * inside __() there and reached the feature registry and the submenu
+     * untranslated. The registry is built after load_textdomains()
+     * (SFXBricksChildTheme.php:55,57), so the catalogue is loaded by then.
+     */
+    public static function page_title(): string
+    {
+        return __('Media Credits', 'sfxtheme');
+    }
+
+    public static function description(): string
+    {
+        return __('Copyright notices and AI markings on media, with optional automatic output in Bricks image elements.', 'sfxtheme');
+    }
 
     public static function register(): void
     {
@@ -24,8 +39,8 @@ class AdminPage
 
         add_submenu_page(
             'sfx-theme-settings',
-            self::$page_title,
-            self::$page_title,
+            self::page_title(),
+            self::page_title(),
             'manage_options',
             self::$menu_slug,
             [self::class, 'render_page']

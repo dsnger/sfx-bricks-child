@@ -208,6 +208,17 @@ function wp_attachment_is_image($id)
     return $test_is_image[$id] ?? false;
 }
 
+/**
+ * Diverges from core, and deliberately: this honours only a $test_filter_returns
+ * override and never invokes the callbacks add_filter() recorded. Bricks::register()
+ * registers the module's own production callbacks on these same hooks, so running
+ * them here would re-enter the code under test.
+ *
+ * Note the asymmetry with do_action() below, which does invoke everything
+ * add_action() registered. A test that registers a filter callback and expects it
+ * to run would silently observe the unfiltered value; drive filters through
+ * $test_filter_returns instead.
+ */
 function apply_filters($hook, $value, ...$args)
 {
     global $test_filter_returns;
@@ -273,20 +284,30 @@ function test_actions(string $hook): array
     return $test_actions_fired[$hook] ?? [];
 }
 
+/**
+ * The last three are the Bricks fixtures from media-credits-bricks-stubs.php.
+ * They are reset here too so a case cannot inherit a featured image, a current
+ * post or a WP_Post double from an earlier one; the other two suites never set
+ * them, so clearing them there is a no-op.
+ */
 function test_reset(): void
 {
     global $test_options, $test_post_meta, $test_attachment_url, $test_attachment_img,
-           $test_is_image, $test_filter_returns, $test_filters, $test_is_admin, $test_actions_fired;
+           $test_is_image, $test_filter_returns, $test_filters, $test_is_admin, $test_actions_fired,
+           $test_thumbnail_ids, $test_current_post_id, $test_posts;
 
-    $test_options        = [];
-    $test_post_meta      = [];
-    $test_attachment_url = [];
-    $test_attachment_img = [];
-    $test_is_image       = [];
-    $test_filter_returns = [];
-    $test_filters        = [];
-    $test_is_admin       = true;
-    $test_actions_fired  = [];
+    $test_options         = [];
+    $test_post_meta       = [];
+    $test_attachment_url  = [];
+    $test_attachment_img  = [];
+    $test_is_image        = [];
+    $test_filter_returns  = [];
+    $test_filters         = [];
+    $test_is_admin        = true;
+    $test_actions_fired   = [];
+    $test_thumbnail_ids   = [];
+    $test_current_post_id = 0;
+    $test_posts           = [];
 }
 
 /**

@@ -29,6 +29,38 @@ class MediaLibrary
         // ever fires for this one post type, so the callback needs no post
         // type check of its own and never runs on unrelated screens.
         add_action('add_meta_boxes_attachment', [self::class, 'register_meta_box']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_meta_box_style']);
+    }
+
+    /**
+     * The meta box's two layout rules, as a stylesheet rather than an inline
+     * <style> block. Scoped to the attachment edit screen, the only screen
+     * add_meta_boxes_attachment draws the box on.
+     */
+    public static function enqueue_meta_box_style(string $hook): void
+    {
+        if ($hook !== 'post.php') {
+            return;
+        }
+
+        $screen = get_current_screen();
+
+        if (!$screen || $screen->post_type !== 'attachment') {
+            return;
+        }
+
+        $path = get_stylesheet_directory() . '/inc/MediaCredits/assets/media-credits-admin.css';
+
+        if (!file_exists($path)) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'sfx-media-credits-attachment',
+            get_stylesheet_directory_uri() . '/inc/MediaCredits/assets/media-credits-admin.css',
+            [],
+            (string) filemtime($path)
+        );
     }
 
     /**
@@ -183,12 +215,6 @@ class MediaLibrary
         $id       = isset($post->ID) ? (int) $post->ID : 0;
         $controls = self::field_controls($id);
         ?>
-        <style>
-            #sfx_media_credits .inside input[type="text"],
-            #sfx_media_credits .inside select {
-                width: 100%;
-            }
-        </style>
         <p>
             <label for="attachments-<?php echo esc_attr((string) $id); ?>-<?php echo esc_attr(self::FIELD_COPYRIGHT); ?>">
                 <strong><?php esc_html_e('Copyright', 'sfxtheme'); ?></strong>

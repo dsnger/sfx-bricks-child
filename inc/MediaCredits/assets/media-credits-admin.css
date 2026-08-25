@@ -1,0 +1,5 @@
+/* Attachment edit screen: the two credit controls fill the meta box column. */
+#sfx_media_credits .inside input[type="text"],
+#sfx_media_credits .inside select {
+    width: 100%;
+}

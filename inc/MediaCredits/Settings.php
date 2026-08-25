@@ -45,10 +45,10 @@ class Settings
     public static function get_default_labels(): array
     {
         return [
-            'ai_generated'      => __('KI-generiert', 'sfxtheme'),
-            'ai_edited'         => __('KI-bearbeitet', 'sfxtheme'),
-            'ai_assisted'       => __('KI-unterstützt', 'sfxtheme'),
-            'digitally_altered' => __('Digital verändert', 'sfxtheme'),
+            'ai_generated'      => __('AI-generated', 'sfxtheme'),
+            'ai_edited'         => __('AI-edited', 'sfxtheme'),
+            'ai_assisted'       => __('AI-assisted', 'sfxtheme'),
+            'digitally_altered' => __('Digitally altered', 'sfxtheme'),
         ];
     }
 
