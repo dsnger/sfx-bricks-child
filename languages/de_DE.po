@@ -6405,3 +6405,131 @@ msgstr "Media-Credits-Einstellungen"
 #: inc/ImportExport/Controller.php:292
 msgid "Copyright and AI-labelling output settings"
 msgstr "Ausgabeeinstellungen für Copyright und KI-Kennzeichnung"
+
+#: inc/MediaCredits/AdminPage.php:194
+msgid "Hooks for developers"
+msgstr "Hooks für Entwickler"
+
+#: inc/MediaCredits/AdminPage.php:195
+msgid ""
+"Extension points for adjusting copyright and AI-marking behaviour from code, "
+"grouped by where each one fires. Signatures are shown as-is and are not "
+"translated."
+msgstr ""
+"Erweiterungspunkte, um das Verhalten von Copyright und KI-Kennzeichnung per "
+"Code anzupassen, gruppiert danach, wo sie jeweils ausgelöst werden. "
+"Signaturen werden unverändert angezeigt und nicht übersetzt."
+
+#: inc/MediaCredits/AdminPage.php:197
+msgid "Composition"
+msgstr "Zusammensetzung"
+
+#: inc/MediaCredits/AdminPage.php:201
+msgid ""
+"Fires when the label vocabulary is built. Reword the AI and alteration "
+"labels; their keys stay fixed."
+msgstr ""
+"Wird ausgelöst, wenn das Vokabular der Labels aufgebaut wird. Ändere den "
+"Wortlaut der KI- und Änderungs-Labels; die Schlüssel bleiben fest."
+
+#: inc/MediaCredits/AdminPage.php:205
+msgid ""
+"Fires after the copyright and AI values are resolved, before composition. The "
+"AI key you return is authoritative — its label and seal always follow from "
+"it."
+msgstr ""
+"Wird ausgelöst, nachdem Copyright- und KI-Werte aufgelöst wurden, vor der "
+"Zusammensetzung. Der von dir zurückgegebene KI-Schlüssel ist maßgeblich – "
+"Label und Siegel folgen immer daraus."
+
+#: inc/MediaCredits/AdminPage.php:209
+msgid ""
+"Fires only when the copyright text does not already start with ©, (c) or "
+"Copyright."
+msgstr ""
+"Wird nur ausgelöst, wenn der Copyright-Text nicht bereits mit ©, (c) oder "
+"Copyright beginnt."
+
+#: inc/MediaCredits/AdminPage.php:213
+msgid ""
+"Fires only when both a copyright and an AI part are present, right before "
+"they are joined."
+msgstr ""
+"Wird nur ausgelöst, wenn sowohl ein Copyright- als auch ein KI-Teil vorhanden "
+"sind, unmittelbar bevor sie zusammengefügt werden."
+
+#: inc/MediaCredits/AdminPage.php:217
+msgid ""
+"Fires after the seal image markup is built, only when a seal is actually "
+"rendered."
+msgstr ""
+"Wird ausgelöst, nachdem das Markup des Siegelbilds erstellt wurde, nur wenn "
+"tatsächlich ein Siegel gerendert wird."
+
+#: inc/MediaCredits/AdminPage.php:221
+msgid ""
+"The last word before the composed credit line is escaped. Replace it outright "
+"when nothing else fits."
+msgstr ""
+"Das letzte Wort, bevor die zusammengesetzte Nachweiszeile escaped wird. "
+"Ersetze sie komplett, wenn nichts anderes passt."
+
+#: inc/MediaCredits/AdminPage.php:225
+msgid "Output"
+msgstr "Ausgabe"
+
+#: inc/MediaCredits/AdminPage.php:229
+msgid ""
+"Decides once per element whether automatic caption or overlay output happens "
+"at all."
+msgstr ""
+"Entscheidet einmal pro Element, ob automatische Bildunterschrift- oder "
+"Overlay-Ausgabe überhaupt stattfindet."
+
+#: inc/MediaCredits/AdminPage.php:233
+msgid ""
+"Covers automatic caption output only. A hand-placed {sfx_media_credit} tag "
+"goes through a different path."
+msgstr ""
+"Betrifft nur die automatische Bildunterschrift-Ausgabe. Ein von Hand "
+"platziertes {sfx_media_credit}-Tag läuft über einen anderen Pfad."
+
+#: inc/MediaCredits/AdminPage.php:237
+msgid ""
+"Fires right before the overlay markup is spliced into the rendered image "
+"element."
+msgstr ""
+"Wird ausgelöst, unmittelbar bevor das Overlay-Markup in das gerenderte "
+"Bildelement eingefügt wird."
+
+#: inc/MediaCredits/AdminPage.php:241
+msgid ""
+"Fires before the root-tag check. The default list is img, picture and a."
+msgstr ""
+"Wird ausgelöst, bevor der Root-Tag geprüft wird. Die Standardliste ist img, "
+"picture und a."
+
+#: inc/MediaCredits/AdminPage.php:245
+msgid "Media library"
+msgstr "Mediathek"
+
+#: inc/MediaCredits/AdminPage.php:249
+msgid ""
+"Fires once, on first upload, after an IPTC copyright or credit value is read "
+"and before it is saved."
+msgstr ""
+"Wird einmal beim ersten Upload ausgelöst, nachdem ein IPTC-Copyright- oder "
+"Nachweiswert gelesen wurde und bevor er gespeichert wird."
+
+#: inc/MediaCredits/AdminPage.php:252
+msgid "Action:"
+msgstr "Aktion:"
+
+#: inc/MediaCredits/AdminPage.php:254
+msgid ""
+"The seam for page-cache invalidation — the module deliberately knows nothing "
+"about caches."
+msgstr ""
+"Die Schnittstelle für die Invalidierung des Seiten-Cache – das Modul kennt "
+"bewusst keine Caches."
+
