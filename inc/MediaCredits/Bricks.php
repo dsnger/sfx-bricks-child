@@ -48,7 +48,7 @@ class Bricks
         add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
         add_filter('bricks/frontend/render_element', [self::class, 'render_element'], 10, 2);
         add_filter('wp_get_attachment_image_attributes', [self::class, 'image_attributes'], 10, 2);
-        add_action('wp_enqueue_scripts', [self::class, 'enqueue_overlay_styles'], 20);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueue_styles'], 20);
 
         add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
 
@@ -704,13 +704,39 @@ class Bricks
     }
 
     /**
-     * The overlay stylesheet, and only in overlay mode. It lives here rather
-     * than in the Controller because the overlay is this class's output;
-     * the Controller registers classes and holds no logic of its own.
+     * Whether the module stylesheet is needed at all.
+     *
+     * The stylesheet carries two independent concerns: overlay positioning
+     * (`.sfx-credit--overlay` and the `*:has(> .sfx-credit--overlay)` parent
+     * rule), needed only in overlay mode; and `.sfx-credit__seal` sizing,
+     * needed whenever a seal CAN render — which is any output mode,
+     * including a hand-placed {sfx_media_credit} tag with auto-output
+     * switched off, as long as credit_display is 'icon' or 'icon_text'.
+     * Gating the whole file on overlay mode left the seal unstyled
+     * (measured: 1890px instead of 32) in exactly the two routes the
+     * settings page recommends.
+     *
+     * Deliberately pure — no option reads — so it can be unit tested without
+     * stubbing wp_enqueue_style / get_stylesheet_directory / filemtime.
      */
-    public static function enqueue_overlay_styles(): void
+    public static function needs_stylesheet(string $mode, string $display): bool
     {
-        if ((string) Settings::get('output_mode') !== 'overlay') {
+        return $mode === 'overlay' || $display === 'icon' || $display === 'icon_text';
+    }
+
+    /**
+     * The module stylesheet, loaded whenever needs_stylesheet() says it is
+     * needed. It lives here rather than in the Controller because both
+     * things it styles — the overlay and the seal — are this class's
+     * output; the Controller registers classes and holds no logic of its
+     * own.
+     */
+    public static function enqueue_styles(): void
+    {
+        $mode    = (string) Settings::get('output_mode');
+        $display = (string) Settings::get('credit_display');
+
+        if (!self::needs_stylesheet($mode, $display)) {
             return;
         }
 

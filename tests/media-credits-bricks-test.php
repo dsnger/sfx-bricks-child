@@ -737,6 +737,18 @@ assert_contains('sfx-credit--overlay', $out, 'Case 18d: a malformed skip entry d
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_overlay_skip_tags']);
 Bricks::reset_decisions();
 
+// ---------------------------------- Case 19: needs_stylesheet() predicate
+// The stylesheet carries the overlay rules AND the seal's sizing. A seal
+// can render in ANY output mode, so the predicate must say true whenever
+// EITHER concern applies, not only in overlay mode.
+
+assert_true(Bricks::needs_stylesheet('overlay', 'text'), 'Case 19a: overlay mode always needs the stylesheet, regardless of display');
+assert_true(Bricks::needs_stylesheet('caption', 'icon'), 'Case 19b: caption mode with an icon seal needs the stylesheet');
+assert_true(Bricks::needs_stylesheet('caption', 'icon_text'), 'Case 19c: caption mode with icon_text needs the stylesheet');
+assert_true(Bricks::needs_stylesheet('off', 'icon'), 'Case 19d: auto-output OFF but a seal can still render via a hand-placed {sfx_media_credit} tag — this is the bug being fixed');
+assert_same(false, Bricks::needs_stylesheet('caption', 'text'), 'Case 19e: text-only display in caption mode needs nothing');
+assert_same(false, Bricks::needs_stylesheet('off', 'text'), 'Case 19f: the default configuration (off + text) must not enqueue anything');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

@@ -290,7 +290,7 @@ Stated precisely, because the earlier draft overstated it: this attribute is **a
 
 ### CSS
 
-One stylesheet, enqueued only when the feature is on and `output_mode === 'overlay'`:
+One stylesheet, enqueued only when the feature is on and either `output_mode === 'overlay'` or `credit_display` is `icon`/`icon_text` — the seal it sizes can render in every output mode, not only overlay, so gating on overlay mode alone left it unstyled in the recommended tag and caption routes:
 
 ```css
 .sfx-credit--overlay {
