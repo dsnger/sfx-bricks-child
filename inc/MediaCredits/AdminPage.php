@@ -190,6 +190,71 @@ class AdminPage
                             <li><?php esc_html_e('Add no-credit in the image element\'s CSS classes field (Style tab) — not the global class picker — to exclude it from automatic output.', 'sfxtheme'); ?></li>
                         </ul>
                     </div>
+                    <div class="sfx-card">
+                        <h2 class="sfx-section-title"><?php esc_html_e('Hooks for developers', 'sfxtheme'); ?></h2>
+                        <p class="sfx-description"><?php esc_html_e('Extension points for adjusting copyright and AI-marking behaviour from code, grouped by where each one fires. Signatures are shown as-is and are not translated.', 'sfxtheme'); ?></p>
+
+                        <h3 class="sfx-section-title"><?php esc_html_e('Composition', 'sfxtheme'); ?></h3>
+                        <ul class="sfx-tips-list">
+                            <li>
+                                <code>apply_filters('sfx_media_credits_labels', array $labels): array</code><br>
+                                <?php esc_html_e('Fires when the label vocabulary is built. Reword the AI and alteration labels; their keys stay fixed.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_parts', array $parts, int $attachment_id): array</code><br>
+                                <?php esc_html_e('Fires after the copyright and AI values are resolved, before composition. The AI key you return is authoritative — its label and seal always follow from it.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_copyright_prefix', string $prefix, string $copyright, int $attachment_id): string</code><br>
+                                <?php esc_html_e('Fires only when the copyright text does not already start with ©, (c) or Copyright.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_separator', string $separator, int $attachment_id): string</code><br>
+                                <?php esc_html_e('Fires only when both a copyright and an AI part are present, right before they are joined.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_seal_html', string $html, int $icon_id, string $ai_key, int $size, int $attachment_id): string</code><br>
+                                <?php esc_html_e('Fires after the seal image markup is built, only when a seal is actually rendered.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_line', string $line, int $attachment_id, array $parts): string</code><br>
+                                <?php esc_html_e('The last word before the composed credit line is escaped. Replace it outright when nothing else fits.', 'sfxtheme'); ?>
+                            </li>
+                        </ul>
+
+                        <h3 class="sfx-section-title"><?php esc_html_e('Output', 'sfxtheme'); ?></h3>
+                        <ul class="sfx-tips-list">
+                            <li>
+                                <code>apply_filters('sfx_media_credits_should_auto_output', bool $should, string $mode, int $attachment_id, $element): bool</code><br>
+                                <?php esc_html_e('Decides once per element whether automatic caption or overlay output happens at all.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_caption_auto_html', string $html, int $attachment_id, array $settings): string</code><br>
+                                <?php esc_html_e('Covers automatic caption output only. A hand-placed {sfx_media_credit} tag goes through a different path.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_overlay_html', string $html, int $attachment_id, string $root_tag): string</code><br>
+                                <?php esc_html_e('Fires right before the overlay markup is spliced into the rendered image element.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <code>apply_filters('sfx_media_credits_overlay_skip_tags', array $tags): array</code><br>
+                                <?php esc_html_e('Fires before the root-tag check. The default list is img, picture and a.', 'sfxtheme'); ?>
+                            </li>
+                        </ul>
+
+                        <h3 class="sfx-section-title"><?php esc_html_e('Media library', 'sfxtheme'); ?></h3>
+                        <ul class="sfx-tips-list">
+                            <li>
+                                <code>apply_filters('sfx_media_credits_iptc_value', string $value, array $image_meta, int $attachment_id): string</code><br>
+                                <?php esc_html_e('Fires once, on first upload, after an IPTC copyright or credit value is read and before it is saved.', 'sfxtheme'); ?>
+                            </li>
+                            <li>
+                                <strong><?php esc_html_e('Action:', 'sfxtheme'); ?></strong>
+                                <code>do_action('sfx_media_credits_saved', int $attachment_id, string $copyright, string $ai_key, string $context)</code><br>
+                                <?php esc_html_e('The seam for page-cache invalidation — the module deliberately knows nothing about caches.', 'sfxtheme'); ?>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
