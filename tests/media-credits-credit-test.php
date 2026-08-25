@@ -291,6 +291,214 @@ assert_contains(Credit::META_COPYRIGHT, $uninstall, 'Case 9g: the copyright meta
 assert_contains(Credit::META_AI, $uninstall, 'Case 9h: the AI meta is purged');
 assert_contains(Credit::META_IPTC_MARKER, $uninstall, 'Case 9i: the IPTC marker goes too, or a reinstall skips the prefill');
 
+// ---------------------------------------------- Case 10: composition hooks
+//
+// Four new filters on the composition path. The rule three Gate passes
+// converged on: the validated ai_key is authoritative, and ai_label /
+// icon_id are ALWAYS derived from it — a filter cannot supply either
+// independently, however plausible the override looks.
+
+test_reset();
+$GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+
+// -- sfx_media_credits_parts: copyright -------------------------------------
+
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto Müller';
+Credit::reset_cache();
+$baseline = Credit::for(5);
+assert_same('©&nbsp;Foto Müller', $baseline['line'], 'Case 10a: sanity baseline before any parts filter runs');
+
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['copyright'] = 'New Owner';
+    return $parts;
+};
+Credit::reset_cache();
+assert_same('©&nbsp;New Owner', Credit::for(5)['line'], 'Case 10b: a parts filter can replace the copyright, prefix still applied');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// A non-array return is discarded outright: the credit is byte-identical to
+// the unfiltered read.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function () {
+    return 'not an array';
+};
+Credit::reset_cache();
+assert_same($baseline, Credit::for(5), 'Case 10c: a non-array parts filter return leaves the credit byte-identical to unfiltered');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// -- sfx_media_credits_parts: AI-tuple coherence -----------------------------
+// The validated ai_key is authoritative; ai_label and icon_id are ALWAYS
+// derived from it. Two Gate passes each found a hole here — see the addendum
+// section 1, "sfx_media_credits_parts".
+
+$GLOBALS['test_post_meta'][5][Credit::META_AI] = 'ai_generated';
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['seal_ai_generated' => 90];
+$GLOBALS['test_is_image'][90] = true;
+
+// An unknown key with no ai_label supplied: the whole tuple clears.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['ai_key'] = 'ai_hallucinated';
+    unset($parts['ai_label']);
+    return $parts;
+};
+Credit::reset_cache();
+$credit = Credit::for(5);
+assert_same('', $credit['ai_key'], 'Case 10d: an unknown ai_key sanitizes to empty');
+assert_same('', $credit['ai_label'], 'Case 10e: and clears the label with it');
+assert_same(0, $credit['icon_id'], 'Case 10f: and clears the seal with it');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// The stale-label hole from pass 1: an unknown key WITH an explicit label.
+// The label is discarded regardless — it is never read for this purpose.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['ai_key']   = 'ai_hallucinated';
+    $parts['ai_label'] = 'Erfunden';
+    return $parts;
+};
+Credit::reset_cache();
+assert_same('', Credit::for(5)['ai_label'], 'Case 10g: a stale/explicit label on an invalid key is discarded, not disclosed');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// A different VALID key, no label supplied: the label is re-derived from the
+// new key, not carried over from the old one.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['ai_key'] = 'ai_edited';
+    unset($parts['ai_label']);
+    return $parts;
+};
+Credit::reset_cache();
+assert_same('KI-bearbeitet', Credit::for(5)['ai_label'], 'Case 10h: a valid new key re-derives its own label');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// The pass-2 hole: a valid key paired with another key's seal id. The seal
+// stays tied to the key that was actually validated, not to what the filter
+// supplied.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['ai_key']  = 'ai_edited';
+    $parts['icon_id'] = 90; // the ai_generated seal, not ai_edited's
+    return $parts;
+};
+Credit::reset_cache();
+assert_same(0, Credit::for(5)['icon_id'], 'Case 10i: a mismatched icon_id is discarded; ai_edited has no seal configured, so 0');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// An explicitly emptied key with a non-empty label: the label is forced empty.
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['ai_key']   = '';
+    $parts['ai_label'] = 'Should not appear';
+    return $parts;
+};
+Credit::reset_cache();
+$credit = Credit::for(5);
+assert_same('', $credit['ai_key'], 'Case 10j: an explicitly emptied key stays empty');
+assert_same('', $credit['ai_label'], 'Case 10k: and forces the label empty too, whatever the filter supplied');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+// -- sfx_media_credits_copyright_prefix --------------------------------------
+
+test_reset();
+$GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto Müller';
+
+$prefix_calls = 0;
+$GLOBALS['test_filter_returns']['sfx_media_credits_copyright_prefix'] = static function ($prefix, $args) use (&$prefix_calls) {
+    $prefix_calls++;
+    return '(c) ';
+};
+Credit::reset_cache();
+assert_same('(c) Foto Müller', Credit::for(5)['line'], 'Case 10l: copyright_prefix filter replaces the default prefix');
+assert_same(1, $prefix_calls, 'Case 10m: and is consulted exactly once when it actually prepends');
+
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = '© Foto Müller';
+$prefix_calls = 0;
+Credit::reset_cache();
+assert_same('© Foto Müller', Credit::for(5)['line'], 'Case 10n: an existing mark is still left alone with the filter registered');
+assert_same(0, $prefix_calls, 'Case 10o: the prefix filter is not consulted when a mark already exists');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_copyright_prefix']);
+
+// -- sfx_media_credits_separator ----------------------------------------------
+
+test_reset();
+$GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto Müller';
+$GLOBALS['test_post_meta'][5][Credit::META_AI]        = 'ai_generated';
+
+$sep_calls = 0;
+$GLOBALS['test_filter_returns']['sfx_media_credits_separator'] = static function ($sep, $args) use (&$sep_calls) {
+    $sep_calls++;
+    return ' | ';
+};
+Credit::reset_cache();
+assert_same('©&nbsp;Foto Müller | KI-generiert', Credit::for(5)['line'], 'Case 10p: separator filter replaces the default, both parts present');
+assert_same(1, $sep_calls, 'Case 10q: consulted exactly once when both parts exist');
+
+$GLOBALS['test_post_meta'][5][Credit::META_AI] = '';
+$sep_calls = 0;
+Credit::reset_cache();
+assert_same('©&nbsp;Foto Müller', Credit::for(5)['line'], 'Case 10r: with one part the line carries no separator at all');
+assert_same(0, $sep_calls, 'Case 10s: and the filter is not consulted for a one-part credit');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_separator']);
+
+// -- sfx_media_credits_seal_html -----------------------------------------------
+
+test_reset();
+$GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+$GLOBALS['test_post_meta'][5][Credit::META_AI] = 'ai_generated';
+$GLOBALS['test_options'][Settings::OPTION_NAME] = [
+    'credit_display'    => 'icon',
+    'icon_size'         => 32,
+    'seal_ai_generated' => 90,
+];
+$GLOBALS['test_is_image'][90] = true;
+$GLOBALS['test_attachment_img'][90] = 'https://example.test/seal.svg';
+
+$seen_attachment_id = null;
+$GLOBALS['test_filter_returns']['sfx_media_credits_seal_html'] = static function ($html, $args) use (&$seen_attachment_id) {
+    $seen_attachment_id = $args[3] ?? null;
+    return '<span class="sfx-credit__seal-replacement"></span>';
+};
+Credit::reset_cache();
+assert_same('<span class="sfx-credit__seal-replacement"></span>', Credit::for(5)['line'], 'Case 10t: seal_html filter replaces the <img>');
+assert_same(5, $seen_attachment_id, 'Case 10u: and receives the credited attachment id as its fifth argument');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_seal_html']);
+
+// -- Upstream escaping: each lands on the existing gate ------------------------
+// Proving rather than assuming (addendum §1): each filter fires upstream of
+// the sfx_media_credits_line gate, so none of them needs its own escaping —
+// but that has to be demonstrated per hook, not inferred from one.
+
+test_reset();
+$GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = 'Foto';
+
+$GLOBALS['test_filter_returns']['sfx_media_credits_copyright_prefix'] = static function () {
+    return '{post_title}';
+};
+Credit::reset_cache();
+assert_same('&#123;post_title&#125;Foto', Credit::for(5)['line'], 'Case 10v: copyright_prefix output is caught by the existing gate');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_copyright_prefix']);
+
+$GLOBALS['test_post_meta'][5][Credit::META_AI] = 'ai_generated';
+$GLOBALS['test_filter_returns']['sfx_media_credits_separator'] = static function () {
+    return '{post_title}';
+};
+Credit::reset_cache();
+assert_same('©&nbsp;Foto&#123;post_title&#125;KI-generiert', Credit::for(5)['line'], 'Case 10w: separator output is caught by the existing gate');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_separator']);
+
+$GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = '';
+$GLOBALS['test_options'][Settings::OPTION_NAME] = [
+    'credit_display'    => 'icon',
+    'seal_ai_generated' => 90,
+];
+$GLOBALS['test_is_image'][90] = true;
+$GLOBALS['test_attachment_img'][90] = 'https://example.test/seal.svg';
+$GLOBALS['test_filter_returns']['sfx_media_credits_seal_html'] = static function () {
+    return '{post_title}';
+};
+Credit::reset_cache();
+assert_same('&#123;post_title&#125;', Credit::for(5)['line'], 'Case 10x: seal_html output is caught by the existing gate');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_seal_html']);
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

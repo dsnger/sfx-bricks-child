@@ -80,7 +80,10 @@ class Credit
             'icon_id'   => $icon_id,
         ];
 
-        $line = self::compose($copyright, $ai_key, $ai_label, $icon_id);
+        $filtered = apply_filters('sfx_media_credits_parts', $parts, $attachment_id);
+        $parts    = self::validate_parts(is_array($filtered) ? $filtered : $parts, $parts);
+
+        $line = self::compose($parts['copyright'], $parts['ai_key'], $parts['ai_label'], $parts['icon_id'], $attachment_id);
 
         if ($line !== '') {
             $line = (string) apply_filters('sfx_media_credits_line', $line, $attachment_id, $parts);
@@ -95,8 +98,11 @@ class Credit
     /**
      * The copyright fragment, escaped, with `©` prepended unless the editor
      * already wrote one.
+     *
+     * $attachment_id defaults to 0 so the public signature stays backwards
+     * compatible; compose() is the only caller and always supplies it.
      */
-    public static function with_copyright_prefix(string $text): string
+    public static function with_copyright_prefix(string $text, int $attachment_id = 0): string
     {
         $escaped = esc_html($text);
 
@@ -104,26 +110,36 @@ class Credit
             return $escaped;
         }
 
-        return '©&nbsp;' . $escaped;
+        $prefix = (string) apply_filters('sfx_media_credits_copyright_prefix', '©&nbsp;', $text, $attachment_id);
+
+        return $prefix . $escaped;
     }
 
-    private static function compose(string $copyright, string $ai_key, string $ai_label, int $icon_id): string
+    private static function compose(string $copyright, string $ai_key, string $ai_label, int $icon_id, int $attachment_id): string
     {
         $bits = [];
 
         if ($copyright !== '') {
-            $bits[] = self::with_copyright_prefix($copyright);
+            $bits[] = self::with_copyright_prefix($copyright, $attachment_id);
         }
 
-        $ai = self::ai_part($ai_key, $ai_label, $icon_id);
+        $ai = self::ai_part($ai_key, $ai_label, $icon_id, $attachment_id);
         if ($ai !== '') {
             $bits[] = $ai;
         }
 
-        return implode('&nbsp;·&nbsp;', $bits);
+        // Only consulted when both parts are present, so a one-part credit
+        // never triggers a leading/trailing separator by accident.
+        if (count($bits) <= 1) {
+            return implode('', $bits);
+        }
+
+        $separator = (string) apply_filters('sfx_media_credits_separator', '&nbsp;·&nbsp;', $attachment_id);
+
+        return implode($separator, $bits);
     }
 
-    private static function ai_part(string $ai_key, string $ai_label, int $icon_id): string
+    private static function ai_part(string $ai_key, string $ai_label, int $icon_id, int $attachment_id): string
     {
         if ($ai_key === '') {
             return '';
@@ -149,7 +165,41 @@ class Credit
             $size
         );
 
+        $img = (string) apply_filters('sfx_media_credits_seal_html', $img, $icon_id, $ai_key, $size, $attachment_id);
+
         return $display === 'icon' ? $img : $img . '&nbsp;' . esc_html($ai_label);
+    }
+
+    /**
+     * Re-validate the parts array a `sfx_media_credits_parts` filter returned.
+     *
+     * The validated ai_key is authoritative. ai_label and icon_id are ALWAYS
+     * derived from it, and any values the filter supplied for them are
+     * discarded — never read here at all. Two Gate passes found holes when an
+     * earlier draft let a filter set one and fall back independently on the
+     * others: an invalid key with a stale label kept disclosing a marking
+     * data-sfx-ai no longer carried, and a valid key could be paired with
+     * another key's seal.
+     *
+     * @param array<string, mixed> $filtered the filter's return value
+     * @param array<string, mixed> $original the unfiltered parts, as the fallback
+     * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int}
+     */
+    private static function validate_parts(array $filtered, array $original): array
+    {
+        $labels = Settings::get_labels();
+
+        $ai_key = (string) ($filtered['ai_key'] ?? $original['ai_key']);
+        if (!isset($labels[$ai_key])) {
+            $ai_key = '';
+        }
+
+        return [
+            'copyright' => (string) ($filtered['copyright'] ?? $original['copyright']),
+            'ai_key'    => $ai_key,
+            'ai_label'  => $ai_key === '' ? '' : $labels[$ai_key],
+            'icon_id'   => $ai_key === '' ? 0 : (int) Settings::get('seal_' . $ai_key),
+        ];
     }
 
     /** Test seam for the per-request cache. */
