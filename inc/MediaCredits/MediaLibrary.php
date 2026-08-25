@@ -350,8 +350,8 @@ class MediaLibrary
         // spellings, or suppress the prefill for a source it does not
         // trust by returning ''. Fires after iptc_copyright() has picked
         // copyright/credit, before the empty check and the write — so a
-        // filter can veto the write, but never resurrect a value
-        // iptc_copyright() found nothing for.
+        // filter can veto the write by returning '', or supply a value from
+        // a field iptc_copyright() does not read at all.
         $value = sanitize_text_field((string) apply_filters('sfx_media_credits_iptc_value', $value, $image_meta, $id));
 
         if ($value === '') {

@@ -6509,7 +6509,30 @@ msgstr ""
 "Wird ausgelöst, bevor der Root-Tag geprüft wird. Die Standardliste ist img, "
 "picture und a."
 
-#: inc/MediaCredits/AdminPage.php:245
+#: inc/MediaCredits/AdminPage.php:242
+msgid ""
+"The list is global, not per attachment: it is the one hook of the twelve "
+"with no attachment id, so a site cannot make the skip decision for a "
+"single image."
+msgstr ""
+"Die Liste gilt global, nicht pro Anhang: Sie ist der einzige der zwölf "
+"Hooks ohne Attachment-ID, daher kannst du die Skip-Entscheidung nicht für "
+"ein einzelnes Bild treffen."
+
+#: inc/MediaCredits/AdminPage.php:243
+msgid ""
+"Adding figure to the list while \"Force a wrapper\" is on can leave an "
+"empty wrapper: the wrapper is written at settings time whenever a credit "
+"exists, and the skip list is only checked later, when the overlay itself "
+"is built — the two do not know about each other."
+msgstr ""
+"Wenn du figure zur Liste hinzufügst, während „Wrapper erzwingen“ aktiv "
+"ist, kann ein leerer Wrapper übrig bleiben: Der Wrapper wird schon beim "
+"Erzeugen der Einstellungen geschrieben, sobald ein Nachweis existiert, und "
+"die Skip-Liste wird erst später geprüft, wenn das Overlay selbst gebaut "
+"wird – die beiden wissen nichts voneinander."
+
+#: inc/MediaCredits/AdminPage.php:247
 msgid "Media library"
 msgstr "Mediathek"
 

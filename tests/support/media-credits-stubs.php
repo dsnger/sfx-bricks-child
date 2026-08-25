@@ -97,6 +97,18 @@ function wp_kses_post($content)
     // Enough for our contract: strip script tags, leave everything else,
     // and in particular leave braces alone — the real wp_kses_post() does
     // not touch them either, which is exactly why escape_braces() exists.
+    //
+    // NOT a model of real wp_kses_post(): this stub deletes a <script> tag
+    // AND its text content. Real wp_kses_post() strips only the disallowed
+    // tag and keeps the inner text, so
+    // '<script>alert(1)</script><em>ok</em>' becomes 'alert(1)<em>ok</em>'
+    // in production, not '<em>ok</em>'. Cases 16b and 17b in
+    // media-credits-bricks-test.php assert the stub's exact output — that
+    // reflects THIS STUB, not a production contract. Do not read those two
+    // exact strings as what real WordPress would render. The security
+    // property those cases test — no executable script survives — holds
+    // either way, which is why the stub was left as-is rather than modelled
+    // more faithfully after kses.
     return preg_replace('#<script.*?</script>#is', '', (string) $content);
 }
 

@@ -256,7 +256,21 @@ class Bricks
             self::$auto_output_decisions = new \SplObjectStorage();
         }
 
-        self::$auto_output_decisions[$element] = $should;
+        // First answer wins. The memo's correctness rests on
+        // bricks/element/settings firing exactly once per element instance;
+        // we cannot confirm that without reading Bricks' own source. If it
+        // ever re-ran init() on an instance we already saw, a second write
+        // here — happening after force_wrapper had already written
+        // $settings['tag'] — would reproduce exactly the disagreement this
+        // memoisation exists to prevent. Refusing to overwrite makes that an
+        // unreachable question rather than an unverified assumption.
+        //
+        // isset() rather than ::contains() — same ArrayAccess lookup,
+        // consistent with consume_decision() below, and contains() is
+        // deprecated as of PHP 8.5.
+        if (!isset(self::$auto_output_decisions[$element])) {
+            self::$auto_output_decisions[$element] = $should;
+        }
     }
 
     /**
@@ -325,6 +339,17 @@ class Bricks
         }
 
         $mode = (string) Settings::get('output_mode');
+
+        // Nothing downstream can act on an answer for a mode that never
+        // auto-outputs anything. The addendum's signature documents $mode as
+        // 'caption' | 'overlay' only — firing with 'off' (the default) would
+        // hand every third-party callback a third value it was never told
+        // about, on every image element on every page. Gating here, rather
+        // than widening the documented domain, is what keeps that contract
+        // honest.
+        if ($mode !== 'caption' && $mode !== 'overlay') {
+            return $settings;
+        }
 
         // The should_auto_output decision is taken ONCE, here, before the
         // mode branch below and therefore before force_wrapper can write

@@ -81,7 +81,7 @@ class Credit
         ];
 
         $filtered = apply_filters('sfx_media_credits_parts', $parts, $attachment_id);
-        $parts    = self::validate_parts(is_array($filtered) ? $filtered : $parts, $parts);
+        $parts    = self::validate_parts(is_array($filtered) ? $filtered : $parts, $parts, $labels);
 
         $line = self::compose($parts['copyright'], $parts['ai_key'], $parts['ai_label'], $parts['icon_id'], $attachment_id);
 
@@ -183,12 +183,14 @@ class Credit
      *
      * @param array<string, mixed> $filtered the filter's return value
      * @param array<string, mixed> $original the unfiltered parts, as the fallback
+     * @param array<string, string> $labels the label map for(), already resolved once — passed
+     *   in rather than re-fetched, since sfx_media_credits_labels is a
+     *   pre-existing filter with possible third-party callbacks, and this
+     *   is on every for() call, not only when a parts filter is registered
      * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int}
      */
-    private static function validate_parts(array $filtered, array $original): array
+    private static function validate_parts(array $filtered, array $original, array $labels): array
     {
-        $labels = Settings::get_labels();
-
         $ai_key = (string) ($filtered['ai_key'] ?? $original['ai_key']);
         if (!isset($labels[$ai_key])) {
             $ai_key = '';

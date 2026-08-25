@@ -239,6 +239,8 @@ class AdminPage
                             <li>
                                 <code>apply_filters('sfx_media_credits_overlay_skip_tags', array $tags): array</code><br>
                                 <?php esc_html_e('Fires before the root-tag check. The default list is img, picture and a.', 'sfxtheme'); ?>
+                                <?php esc_html_e('The list is global, not per attachment: it is the one hook of the twelve with no attachment id, so a site cannot make the skip decision for a single image.', 'sfxtheme'); ?>
+                                <?php esc_html_e('Adding figure to the list while "Force a wrapper" is on can leave an empty wrapper: the wrapper is written at settings time whenever a credit exists, and the skip list is only checked later, when the overlay itself is built — the two do not know about each other.', 'sfxtheme'); ?>
                             </li>
                         </ul>
 

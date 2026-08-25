@@ -491,6 +491,37 @@ assert_contains('Foto Müller', Bricks::render_element($html, $element), 'Case 1
 
 Bricks::reset_decisions();
 
+// 15h: output_mode 'off' — the default (Settings.php:81) and the one value
+// the addendum's signature does not admit ($mode: 'caption' | 'overlay').
+// The filter must not fire at all, not fire-with-'off', so a third-party
+// callback branching on $mode never has to handle a value it was never
+// told about. A call-count spy proves absence, not just an unchanged
+// $should default, since a filter returning true is indistinguishable from
+// no filter running at all on that axis alone.
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'off'];
+
+$calls = 0;
+$GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output'] = static function ($should, array $args) use (&$calls) {
+    $calls++;
+    return $should;
+};
+
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out     = Bricks::element_settings($element->settings, $element);
+assert_same(0, $calls, 'Case 15h: should_auto_output is never fired by element_settings() when output_mode is off');
+assert_same(false, isset($out['caption']), 'Case 15h2: caption untouched in off mode');
+assert_same(false, isset($out['tag']), 'Case 15h3: no tag key set in off mode');
+
+$element->settings = $out;
+$html   = '<figure><img src="a"></figure>';
+$result = Bricks::render_element($html, $element);
+assert_same(0, $calls, 'Case 15h4: should_auto_output is still never fired once render_element() consumes the (absent) decision');
+assert_same($html, $result, 'Case 15h5: render_element injects nothing in off mode');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output']);
+Bricks::reset_decisions();
+
 // -------------------------------- Case 16: sfx_media_credits_caption_auto_html
 //
 // Downstream of the escaping gate: captionCustom is copied verbatim into the
