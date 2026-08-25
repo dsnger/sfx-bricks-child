@@ -41,6 +41,18 @@ class AdminPage
             'sfx-theme-settings',
             self::page_title(),
             self::page_title(),
+            // Known gap, deliberately left as is: AccessControl also admits a
+            // role-based SFX_THEME_ADMINS user who lacks manage_options, and
+            // WordPress then hides this entry from them. Seven sibling modules
+            // have the same shape. The parent menu and PasswordProtected solve
+            // it with 'read' — but PasswordProtected can, because it writes
+            // through its own nonce-checked handler. This module saves via
+            // options.php, and lowering the cap there means filtering
+            // option_page_capability_*, which core applies before it decides
+            // the request is even an update (wp-admin/options.php:47 vs :240).
+            // That filter hands the caller the global All Settings screen on a
+            // bare GET, and guarding it means enumerating core's pre-update
+            // branches. Fixing this properly means moving off options.php.
             'manage_options',
             self::$menu_slug,
             [self::class, 'render_page']
@@ -173,7 +185,10 @@ class AdminPage
                                 <?php foreach ($labels as $slug => $label) :
                                     $field = 'seal_' . $slug;
                                     $id    = (int) ($options[$field] ?? 0);
-                                    $url   = $id > 0 ? wp_get_attachment_image_url($id, 'thumbnail') : '';
+                                    // Cast: core returns string|false, and the markup below tests
+                                    // this once strictly and twice for truthiness. Without it an
+                                    // unresolvable URL prints src="" and hides its own controls.
+                                    $url   = $id > 0 ? (string) wp_get_attachment_image_url($id, 'thumbnail') : '';
                                     ?>
                                     <tr>
                                         <th scope="row"><?php echo esc_html($label); ?></th>
