@@ -388,6 +388,109 @@ assert_same(false, isset($attr['data-sfx-ai']), 'Case 14f: sink 4 (the attribute
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
 Credit::reset_cache();
 
+// ------------------------------ Case 15: sfx_media_credits_should_auto_output
+//
+// Gate A pass 3's finding: the decision is taken ONCE, at settings time, and
+// memoised against the element OBJECT — never $id or $uid, and never
+// re-evaluated at render time. Pass 1 and pass 2 both got this wrong in ways
+// that left a `figure` wrapper with no credit inside it; see the addendum's
+// should_auto_output subsection for the full history.
+
+test_reset();
+\Bricks\Query::reset();
+Bricks::reset_decisions();
+
+// 15a: caption mode, filter false — caption/captionCustom left untouched.
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'caption'];
+$GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output'] = static function ($should, array $args) {
+    return false;
+};
+
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out     = Bricks::element_settings($element->settings, $element);
+assert_same(false, isset($out['caption']), 'Case 15a: caption untouched when should_auto_output returns false');
+assert_same(false, isset($out['captionCustom']), 'Case 15a2: captionCustom untouched too');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output']);
+Bricks::reset_decisions();
+
+// 15b/15c: overlay mode + force_wrapper, filter false — settings-time half:
+// no tag key is written at all (this is the pass-1 finding: a `figure`
+// forced open for a credit that never arrives). Render-time half: the SAME
+// decision, consumed rather than re-evaluated, injects nothing.
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay', 'force_wrapper' => 1];
+$GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output'] = static function ($should, array $args) {
+    return false;
+};
+
+$element = new Test_Bricks_Element([], ['id' => 5]);
+$out     = Bricks::element_settings($element->settings, $element);
+assert_same(false, isset($out['tag']), 'Case 15b: no tag key set, even with force_wrapper on, when should_auto_output is false');
+
+$element->settings = $out;
+$html   = '<figure><img src="a"></figure>';
+$result = Bricks::render_element($html, $element);
+assert_same($html, $result, 'Case 15c: render_element injects nothing, consuming the settings-time decision rather than re-evaluating');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output']);
+Bricks::reset_decisions();
+
+// 15d: the filter must not be consulted by image_attributes() at all — the
+// machine-readable marking survives even should_auto_output returning false.
+seed_attachment(5, '', 'ai_generated');
+$GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output'] = static function ($should, array $args) {
+    return false;
+};
+$attachment = new WP_Post(['ID' => 5, 'post_type' => 'attachment']);
+$attr       = Bricks::image_attributes(['src' => 'x'], $attachment);
+assert_same('ai_generated', $attr['data-sfx-ai'] ?? null, 'Case 15d: data-sfx-ai survives should_auto_output returning false');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output']);
+Bricks::reset_decisions();
+
+// 15e/15f: loop safety, the pass-3 finding. Two DISTINCT element instances
+// carrying the SAME id — exactly what Bricks constructs for one element
+// rendered across a query loop of many posts (frontend.php:743, base.php:74-76)
+// — must each get their OWN decision. A filter that returns true for the
+// first call and false for the second proves the memo does not collide.
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay'];
+
+$calls = 0;
+$GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output'] = static function ($should, array $args) use (&$calls) {
+    $calls++;
+    return $calls === 1;
+};
+
+$first  = new Test_Bricks_Element([], ['id' => 5], 'image', 'loop-image');
+$second = new Test_Bricks_Element([], ['id' => 5], 'image', 'loop-image');
+assert_same('loop-image', $first->id, 'Case 15e0: sanity — both loop instances carry the same $id');
+assert_same($first->id, $second->id, 'Case 15e1: sanity — the ids are identical, only the instances differ');
+
+$first->settings  = Bricks::element_settings($first->settings, $first);
+$second->settings = Bricks::element_settings($second->settings, $second);
+assert_same(2, $calls, 'Case 15e2: the filter ran once per instance, not once per id');
+
+$html = '<figure><img src="a"></figure>';
+assert_contains('Foto Müller', Bricks::render_element($html, $first), 'Case 15e: the first loop iteration (filter returned true) gets its credit');
+assert_same($html, Bricks::render_element($html, $second), 'Case 15f: the second loop iteration — SAME id, DIFFERENT instance — gets none; keying on $id would freeze the first decision for both');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_should_auto_output']);
+Bricks::reset_decisions();
+
+// 15g: no filter registered — render_element() falls back to evaluating for
+// itself when element_settings() never saw the instance, and behaviour is
+// byte-identical to before this task.
+seed_attachment(5, 'Foto Müller');
+$GLOBALS['test_options'][Settings::OPTION_NAME] = ['output_mode' => 'overlay'];
+$element = new Test_Bricks_Element(['caption' => 'none'], ['id' => 5]);
+$html    = '<figure><img src="a"></figure>';
+assert_contains('Foto Müller', Bricks::render_element($html, $element), 'Case 15g: no settings-time decision recorded — render_element evaluates the filter itself and injects as before');
+
+Bricks::reset_decisions();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

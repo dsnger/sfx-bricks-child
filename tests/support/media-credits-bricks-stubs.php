@@ -39,6 +39,12 @@ namespace {
     /**
      * Stand-in for a Bricks element instance: the three things our filters
      * touch, and the one method they call.
+     *
+     * $id mirrors Bricks' own element id (base.php:74-76): it comes from the
+     * stored element definition, not the instance, so a query loop rendering
+     * one element for many posts constructs many DISTINCT instances that all
+     * carry the SAME $id. That is precisely the shape the loop-safety test
+     * needs to construct on purpose — see Case 15 in the bricks test.
      */
     class Test_Bricks_Element
     {
@@ -49,6 +55,8 @@ namespace {
 
         public string $tag = 'figure';
 
+        public string $id = 'stub-element-id';
+
         /** @var array<string, mixed>|null what get_normalized_image_settings() returns */
         public ?array $normalized = null;
 
@@ -56,11 +64,12 @@ namespace {
          * @param array<string, mixed> $settings
          * @param array<string, mixed>|null $normalized
          */
-        public function __construct(array $settings = [], ?array $normalized = null, string $name = 'image')
+        public function __construct(array $settings = [], ?array $normalized = null, string $name = 'image', string $id = 'stub-element-id')
         {
             $this->settings   = $settings;
             $this->normalized = $normalized;
             $this->name       = $name;
+            $this->id         = $id;
         }
 
         /**

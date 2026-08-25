@@ -21,6 +21,25 @@ class Bricks
 
     public const MARKER_CLASS = 'sfx-credit';
 
+    /**
+     * The should_auto_output decision, taken once per element in
+     * element_settings() and consumed once in render_element().
+     *
+     * Keyed on the element OBJECT INSTANCE, never $id or $uid. Bricks
+     * constructs a fresh instance per render (frontend.php:743) and hands
+     * that same instance to both bricks/element/settings and
+     * bricks/frontend/render_element, so object identity is stable across
+     * the two moments this hook cares about. But $uid is assigned from $id,
+     * and $id comes from the STORED element definition (base.php:74-76) — so
+     * one element rendered inside a query loop over twenty posts presents
+     * the same id twenty times. Keying on it would freeze the first post's
+     * decision for the other nineteen, silently, and worst in exactly the
+     * case this module most expects: a loop over attachments.
+     *
+     * @var \SplObjectStorage<object, bool>|null
+     */
+    private static ?\SplObjectStorage $auto_output_decisions = null;
+
     public static function register(): void
     {
         add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
@@ -224,6 +243,49 @@ class Bricks
     }
 
     /**
+     * Remember the settings-time should_auto_output decision for one
+     * element instance, so render_element() can consume it instead of
+     * re-running the filter and risking a second, disagreeing answer.
+     */
+    private static function remember_decision(object $element, bool $should): void
+    {
+        if (self::$auto_output_decisions === null) {
+            self::$auto_output_decisions = new \SplObjectStorage();
+        }
+
+        self::$auto_output_decisions[$element] = $should;
+    }
+
+    /**
+     * Consume the decision remembered for one element instance, or null if
+     * element_settings() never saw this instance.
+     *
+     * Removes the entry on every call — found or not — so the storage
+     * cannot grow across a page. This is called for every image element
+     * bricks/frontend/render_element fires for, regardless of output mode,
+     * which is what keeps a caption-mode page's decisions from piling up
+     * unconsumed: only render_element() ever removes an entry, and it runs
+     * for every image render, not only overlay-mode ones.
+     */
+    private static function consume_decision(object $element): ?bool
+    {
+        if (self::$auto_output_decisions === null || !isset(self::$auto_output_decisions[$element])) {
+            return null;
+        }
+
+        $should = self::$auto_output_decisions[$element];
+        unset(self::$auto_output_decisions[$element]);
+
+        return $should;
+    }
+
+    /** Test seam, alongside Credit::reset_cache(). */
+    public static function reset_decisions(): void
+    {
+        self::$auto_output_decisions = null;
+    }
+
+    /**
      * Mechanisms 1 and 2, in a fixed order because both write captionCustom.
      *
      * This filter fires inside Element::init() immediately before render()
@@ -260,6 +322,22 @@ class Bricks
         }
 
         $mode = (string) Settings::get('output_mode');
+
+        // The should_auto_output decision is taken ONCE, here, before the
+        // mode branch below and therefore before force_wrapper can write
+        // $settings['tag']. render_element() consumes this same decision
+        // rather than re-evaluating: Bricks assigns the filtered settings
+        // back onto the element (base.php:2948-2953) between the two
+        // moments, so a deterministic callback keyed on
+        // isset($element->settings['tag']) would answer differently before
+        // and after force_wrapper writes that key if it ran twice — exactly
+        // the wrapper-with-no-credit outcome this hook exists to prevent.
+        $should = (bool) apply_filters('sfx_media_credits_should_auto_output', true, $mode, $id, $element);
+        self::remember_decision($element, $should);
+
+        if (!$should) {
+            return $settings;
+        }
 
         if ($mode === 'overlay') {
             // The overlay needs a wrapper to attach to. Setting the key is
@@ -440,6 +518,14 @@ class Bricks
             return $html;
         }
 
+        // Consume the settings-time decision unconditionally, before the
+        // mode check below. bricks/frontend/render_element fires for every
+        // image element on every frontend render regardless of output mode,
+        // so this is the only place a caption-mode (or off-mode) decision
+        // ever gets removed — deferring this past the mode check would leave
+        // those entries in the storage for the rest of the page.
+        $should = self::consume_decision($element);
+
         if ((string) Settings::get('output_mode') !== 'overlay') {
             return $html;
         }
@@ -453,6 +539,19 @@ class Bricks
         $id = self::image_id_from_element($element, $settings);
 
         if ($id <= 0) {
+            return $html;
+        }
+
+        // If element_settings() never saw this instance, no decision was
+        // remembered — evaluate once, here, rather than leaving the element
+        // unfiltered. Evaluating again when a decision WAS remembered is
+        // exactly the pass-2 mistake: two independent evaluations can
+        // legitimately disagree even for a deterministic callback.
+        if ($should === null) {
+            $should = (bool) apply_filters('sfx_media_credits_should_auto_output', true, 'overlay', $id, $element);
+        }
+
+        if (!$should) {
             return $html;
         }
 
