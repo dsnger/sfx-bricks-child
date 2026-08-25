@@ -323,6 +323,71 @@ $attr = Bricks::image_attributes(['src' => 'x'], new WP_Post(['ID' => 6, 'post_t
 assert_same(false, isset($attr['data-sfx-ai']), 'Case 13b: no AI marking, no attribute');
 assert_same('not an array', Bricks::image_attributes('not an array', $attachment), 'Case 13c: a non-array passes through');
 
+// ------------------------------- Case 14: sfx_media_credits_parts, the four sinks
+//
+// Gate A pass 1's blocker: Credit::for() returns the raw $parts array
+// ALONGSIDE the gated line (Credit.php:92-95), and four separate consumers
+// read it, each with its own escaping. Asserting the composed line and
+// inferring the rest was exactly the reasoning pass 1 refuted, so each sink
+// gets its own assertion here, and every escaping assertion is an exact
+// string — a not_contains('{echo:') would still pass on a double-encoded
+// '&amp;#123;echo:phpinfo&amp;#125;', which is visibly broken output.
+
+test_reset();
+\Bricks\Query::reset();
+seed_attachment(5, 'Foto Müller', 'ai_generated');
+$post = new WP_Post(['ID' => 5, 'post_type' => 'attachment']);
+
+// Baseline, unfiltered: this is the label a coherence bug would leak.
+assert_same('KI-generiert', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 14a: baseline label before any parts filter runs');
+
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['copyright'] = '{echo:phpinfo}';
+    $parts['ai_key']    = 'ai_hallucinated'; // not in Settings::get_labels(): must sanitize to ''
+    unset($parts['ai_label']);               // and no explicit label bridges the gap either
+    return $parts;
+};
+Credit::reset_cache();
+
+// Sink 1: Credit::for()['line'], through the gate at Credit.php:88-93.
+// with_copyright_prefix() runs esc_html() (a no-op on braces — they are not
+// HTML-special) and prepends '©&nbsp;'; the ai part is '' because the
+// invalid key clears the whole tuple, so compose() never reaches the
+// separator and the line is copyright alone. wp_kses_post() is a no-op on
+// brace-only input, and escape_braces() runs last.
+assert_same('©&nbsp;&#123;echo:phpinfo&#125;', Credit::for(5)['line'], 'Case 14b: sink 1 (the composed line) is brace-escaped, exact string');
+
+// Sink 2: a dynamic tag, through Bricks::raw_value(). It returns the RAW
+// parts value for its own control to escape — no © prefix, no ai part, no
+// wp_kses_post() — brace-escaped only (Bricks.php:165).
+assert_same('&#123;echo:phpinfo&#125;', Bricks::render_tag('{sfx_media_copyright}', $post, null), 'Case 14c: sink 2 (raw_value dynamic tag) brace-escapes the copyright on its own, independent of the line gate');
+
+// Coherence, same sink: the invalid ai_key must not leave the PREVIOUS
+// label readable through the tag. It must be empty, not "KI-generiert".
+assert_same('', Bricks::render_tag('{sfx_media_ai_label}', $post, null), 'Case 14d: sink 2 coherence — an invalid ai_key empties the label tag, not the stale one from Case 14a');
+
+// Sink 3: a tag substituted into a caption, through Bricks::substitute().
+// It wraps the value in the marker span and runs
+// escape_braces(esc_html(...)) — esc_html() is again a no-op on braces, so
+// the escaped fragment is identical to sink 2's, now inside the span.
+$element = new Test_Bricks_Element(
+    ['caption' => 'custom', 'captionCustom' => '{sfx_media_copyright}'],
+    ['id' => 5]
+);
+$out = Bricks::element_settings($element->settings, $element);
+assert_same('<span class="sfx-credit">&#123;echo:phpinfo&#125;</span>', $out['captionCustom'], 'Case 14e: sink 3 (substitute, a tag inside a caption) brace-escapes the tag value, exact string');
+
+// Sink 4: the machine-readable attribute, through Bricks::image_attributes().
+// It reads ai_key alone — never ai_label, never copyright — and the invalid
+// key sanitizes to ''. The attribute must therefore be ABSENT: never the
+// filter's 'ai_hallucinated' text, and never a fallback to the previous
+// 'ai_generated' slug either.
+$attr = Bricks::image_attributes(['src' => 'x'], $post);
+assert_same(false, isset($attr['data-sfx-ai']), 'Case 14f: sink 4 (the attribute) — an invalid ai_key leaves data-sfx-ai absent, never filter text');
+
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+Credit::reset_cache();
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
