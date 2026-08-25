@@ -492,12 +492,17 @@ class Bricks
      * A bare substring test would also fire on the words in prose and on
      * `sfx-credit-note`, and suppressing a disclosure by accident is the
      * expensive direction of this mistake.
+     *
+     * `(?i:class)` and not a /i on the whole pattern: HTML attribute NAMES are
+     * case-insensitive, so `CLASS="sfx-credit"` carries our marker and must
+     * dedup — but CSS class names are case-SENSITIVE, so `SFX-Credit` is a
+     * different class and must not. Missing the first prints the credit twice.
      */
     public static function has_marker(string $html): bool
     {
         $class = preg_quote(self::MARKER_CLASS, '/');
 
-        return preg_match('/class\s*=\s*(["\'])(?:[^"\']*\s)?' . $class . '(?:\s[^"\']*)?\1/', $html) === 1;
+        return preg_match('/(?i:class)\s*=\s*(["\'])(?:[^"\']*\s)?' . $class . '(?:\s[^"\']*)?\1/', $html) === 1;
     }
 
     /**
@@ -652,8 +657,14 @@ class Bricks
             return $html;
         }
 
+        // strripos, not strrpos: root_tag() matches case-insensitively and
+        // lowercases, so $root never carries the source casing. Bricks only
+        // admits a tag that is strictly in its allow-list, whose base is
+        // lowercase — but that list is filterable (bricks/allowed_html_tags),
+        // and an uppercase entry there would make this search miss its own
+        // root and drop the overlay without a sign.
         $closing = '</' . $root . '>';
-        $pos     = strrpos($html, $closing);
+        $pos     = strripos($html, $closing);
 
         if ($pos === false) {
             return $html;

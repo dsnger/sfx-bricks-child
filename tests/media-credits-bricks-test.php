@@ -759,6 +759,48 @@ assert_same(false, Bricks::needs_stylesheet('off', 'text'), 'Case 19f: the defau
 assert_same('.sfx-credit__seal{width:32px;height:auto}', Bricks::seal_style_rule(32), 'Case 20a: a normal size produces exactly one well-formed rule');
 assert_same('.sfx-credit__seal{width:9999px;height:auto}', Bricks::seal_style_rule(9999), 'Case 20b: an out-of-range value is rendered honestly, not clamped or rejected here — Settings::get() already clamps icon_size to 8-128 before this method ever sees it');
 
+// ------------------- Case 21: a mixed-case root still takes its overlay
+//
+// root_tag() matches case-insensitively and lowercases, so $root never carries
+// the source casing; the closing-tag search must therefore be case-insensitive
+// too. Bricks admits only tags strictly present in its allow-list, whose base
+// is lowercase — but that list is filterable, so an uppercase entry there would
+// otherwise make inject_overlay() miss its own closing tag and return the HTML
+// untouched, dropping the credit with no sign that anything happened.
+//
+// Asserted as exact output, not by substring: a "contains" check passes just as
+// well when the span lands before the root or twice.
+
+assert_same(
+    '<Figure class="x"><img src="a.jpg" /><span class="sfx-credit sfx-credit--overlay">©&nbsp;Foto</span></Figure>',
+    Bricks::inject_overlay('<Figure class="x"><img src="a.jpg" /></Figure>', '©&nbsp;Foto', 5),
+    'Case 21a: a <Figure> root takes the overlay, spliced before the closing tag, casing preserved'
+);
+
+// 21b pins LAST occurrence, not merely case-insensitive matching: the decoy
+// closing tag sits earlier in the string, so a first-match search would splice
+// inside the img attribute and produce mangled markup.
+assert_same(
+    '<Figure class="x"><img src="a.jpg" data-note="</FIGURE>" /><span class="sfx-credit sfx-credit--overlay">©&nbsp;Foto</span></Figure>',
+    Bricks::inject_overlay('<Figure class="x"><img src="a.jpg" data-note="</FIGURE>" /></Figure>', '©&nbsp;Foto', 5),
+    'Case 21b: an earlier differently-cased closing tag does not steal the splice'
+);
+
+Bricks::reset_decisions();
+
+// ----------------- Case 22: has_marker and HTML attribute-name casing
+//
+// HTML attribute names are case-insensitive, CSS class names are not. A marker
+// carried by CLASS= must dedup; a differently-cased class VALUE is a different
+// class and must not, or a real credit gets suppressed by a near-miss.
+
+assert_same(true, Bricks::has_marker('<span class="sfx-credit">x</span>'), 'Case 22a: lowercase class attribute');
+assert_same(true, Bricks::has_marker('<span CLASS="sfx-credit">x</span>'), 'Case 22b: uppercase CLASS attribute still carries the marker');
+assert_same(true, Bricks::has_marker('<span Class="sfx-credit">x</span>'), 'Case 22c: mixed-case attribute name too');
+assert_same(false, Bricks::has_marker('<span class="SFX-Credit">x</span>'), 'Case 22d: a differently-cased class value is a different class');
+assert_same(false, Bricks::has_marker('<span class="sfx-credit-note">x</span>'), 'Case 22e: a longer class sharing the prefix is not the marker');
+
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
