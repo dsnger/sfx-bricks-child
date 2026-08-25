@@ -6189,3 +6189,394 @@ msgstr "Ist aktuelle Seite"
 
 msgid "Is ancestor of current page"
 msgstr "Ist der aktuellen Seite übergeordnet"
+
+# ============================================
+# Media Credits
+# ============================================
+
+#: inc/MediaCredits/MediaLibrary.php:89 inc/MediaCredits/MediaLibrary.php:194
+msgid "Copyright"
+msgstr "Copyright"
+
+#: inc/MediaCredits/MediaLibrary.php:92 inc/MediaCredits/MediaLibrary.php:197
+msgid "Free text, e.g. © Photographer or an agency notice."
+msgstr "Freitext, z. B. © Fotograf oder ein Agenturvermerk."
+
+#: inc/MediaCredits/MediaLibrary.php:96 inc/MediaCredits/MediaLibrary.php:201
+#: inc/MediaCredits/Bricks.php:53
+msgid "AI marking"
+msgstr "KI-Kennzeichnung"
+
+#: inc/MediaCredits/MediaLibrary.php:99 inc/MediaCredits/MediaLibrary.php:204
+msgid "How this file was produced or altered."
+msgstr "Wie diese Datei erstellt oder verändert wurde."
+
+#: inc/MediaCredits/MediaLibrary.php:126
+msgid "No marking"
+msgstr "Keine Kennzeichnung"
+
+#: inc/MediaCredits/MediaLibrary.php:156 inc/MediaCredits/AdminPage.php:79
+#: inc/MediaCredits/Bricks.php:50
+#: inc/ThemeSettingsOverview/OverviewProvider.php:73
+msgid "Media Credits"
+msgstr "Media Credits"
+
+#: inc/MediaCredits/MediaLibrary.php:333
+msgid "Credit"
+msgstr "Bildnachweis"
+
+#. translators: %s: the site-wide fallback copyright notice
+#: inc/MediaCredits/MediaLibrary.php:369
+msgid "%s (fallback)"
+msgstr "%s (Fallback)"
+
+#: inc/MediaCredits/MediaLibrary.php:394
+msgid "All credits"
+msgstr "Alle Nachweise"
+
+#: inc/MediaCredits/MediaLibrary.php:395
+msgid "Without copyright"
+msgstr "Ohne Copyright"
+
+#: inc/MediaCredits/MediaLibrary.php:396
+msgid "With AI marking"
+msgstr "Mit KI-Kennzeichnung"
+
+#: inc/MediaCredits/AdminPage.php:58
+msgid "Choose a seal image"
+msgstr "Siegelbild auswählen"
+
+#: inc/MediaCredits/AdminPage.php:89
+msgid "Off — place {sfx_media_credit} yourself"
+msgstr "Aus – {sfx_media_credit} selbst platzieren"
+
+#: inc/MediaCredits/AdminPage.php:90
+msgid "Caption (recommended)"
+msgstr "Bildunterschrift (empfohlen)"
+
+#: inc/MediaCredits/AdminPage.php:91
+msgid "Overlay on the image"
+msgstr "Overlay auf dem Bild"
+
+#: inc/MediaCredits/AdminPage.php:120
+msgid "Text only"
+msgstr "Nur Text"
+
+#: inc/MediaCredits/AdminPage.php:121
+msgid "Seal only"
+msgstr "Nur Siegel"
+
+#: inc/MediaCredits/AdminPage.php:122
+msgid "Seal and text"
+msgstr "Siegel und Text"
+
+#: inc/MediaCredits/AdminPage.php:84
+msgid "Automatic output"
+msgstr "Automatische Ausgabe"
+
+#: inc/MediaCredits/AdminPage.php:106
+msgid "Force a wrapper"
+msgstr "Wrapper erzwingen"
+
+#: inc/MediaCredits/AdminPage.php:110
+msgid ""
+"Overlay mode only: give image elements that have no HTML tag a figure "
+"wrapper to attach the credit to."
+msgstr ""
+"Nur im Overlay-Modus: Bildelemente ohne HTML tag erhalten einen "
+"figure-Wrapper, an den der Nachweis angehängt wird."
+
+#: inc/MediaCredits/AdminPage.php:115
+msgid "AI marking style"
+msgstr "Stil der KI-Kennzeichnung"
+
+#: inc/MediaCredits/AdminPage.php:137
+msgid "Seal size (px)"
+msgstr "Siegelgröße (px)"
+
+#: inc/MediaCredits/AdminPage.php:146
+msgid "Fallback copyright"
+msgstr "Fallback-Copyright"
+
+#: inc/MediaCredits/AdminPage.php:151
+msgid ""
+"Used when an attachment has no copyright of its own. Careful: this gives "
+"EVERY image a credit, logos and icons included. Leave empty unless the site "
+"owns its imagery."
+msgstr ""
+"Wird verwendet, wenn ein Anhang kein eigenes Copyright hat. Vorsicht: "
+"Dadurch erhält JEDES Bild einen Nachweis, Logos und Icons eingeschlossen. "
+"Leer lassen, außer die Website besitzt die Bildrechte selbst."
+
+#: inc/MediaCredits/AdminPage.php:156
+msgid "AI seals"
+msgstr "KI-Siegel"
+
+#: inc/MediaCredits/AdminPage.php:170
+msgid "Choose image"
+msgstr "Bild auswählen"
+
+#: inc/MediaCredits/AdminPage.php:183
+msgid "How output works"
+msgstr "So funktioniert die Ausgabe"
+
+#: inc/MediaCredits/AdminPage.php:185
+msgid ""
+"Place {sfx_media_credit} in an image element's Custom caption to control "
+"exactly where the credit appears. This works everywhere and is unaffected "
+"by the limits below."
+msgstr ""
+"Platziere {sfx_media_credit} in der Custom caption eines Bildelements, um "
+"genau zu steuern, wo der Nachweis erscheint. Das funktioniert überall und "
+"ist von den folgenden Einschränkungen nicht betroffen."
+
+#: inc/MediaCredits/AdminPage.php:186
+msgid ""
+"Caption mode is the reliable automatic mode: it writes the credit into the "
+"element's own caption, so Bricks renders valid markup and styles it with "
+"its own caption controls."
+msgstr ""
+"Der Bildunterschrift-Modus ist der zuverlässige automatische Modus: Er "
+"schreibt den Nachweis in die eigene Bildunterschrift des Elements, sodass "
+"Bricks gültiges Markup rendert und es mit seinen eigenen "
+"Bildunterschrift-Einstellungen gestaltet."
+
+#: inc/MediaCredits/AdminPage.php:187
+msgid ""
+"Overlay mode needs something to attach to. Set the image element's HTML tag "
+"to figure, or switch on \"Force a wrapper\" above."
+msgstr ""
+"Der Overlay-Modus braucht etwas, woran er sich anheften kann. Setze das "
+"HTML tag des Bildelements auf figure oder aktiviere oben „Wrapper "
+"erzwingen“."
+
+#: inc/MediaCredits/AdminPage.php:188
+msgid ""
+"Overlay cannot attach to a responsive image using Sources that has neither "
+"a link nor a caption — Bricks makes that a picture element. Use caption "
+"mode for those."
+msgstr ""
+"Das Overlay kann sich nicht an ein responsives Bild mit Sources anheften, "
+"das weder einen Link noch eine Bildunterschrift hat – daraus macht Bricks "
+"ein picture-Element. Verwende dafür den Bildunterschrift-Modus."
+
+#: inc/MediaCredits/AdminPage.php:189
+msgid ""
+"While editing, an overlay may only appear after the canvas reloads. Bricks "
+"does not run the output filter when it re-renders a single element."
+msgstr ""
+"Während der Bearbeitung erscheint ein Overlay möglicherweise erst nach "
+"einem Neuladen des Canvas. Bricks führt den Ausgabefilter beim erneuten "
+"Rendern eines einzelnen Elements nicht aus."
+
+#: inc/MediaCredits/AdminPage.php:190
+msgid ""
+"Add no-credit in the image element's CSS classes field (Style tab) — not "
+"the global class picker — to exclude it from automatic output."
+msgstr ""
+"Füge no-credit im Feld CSS classes des Bildelements hinzu (Style tab) – "
+"nicht im globalen Class Picker – um es von der automatischen Ausgabe "
+"auszuschließen."
+
+#: inc/MediaCredits/Bricks.php:52
+msgid "Copyright notice"
+msgstr "Copyright-Hinweis"
+
+#: inc/MediaCredits/Bricks.php:54
+msgid "Credit line"
+msgstr "Nachweiszeile"
+
+#: inc/GeneralThemeOptions/Settings.php:75
+msgid "Enable Media Credits"
+msgstr "Media Credits aktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php:76
+msgid ""
+"Adds a copyright notice and an AI marking to every media attachment, usable "
+"in Bricks image elements."
+msgstr ""
+"Fügt jedem Medien-Anhang einen Copyright-Hinweis und eine KI-Kennzeichnung "
+"hinzu, nutzbar in Bricks-Bildelementen."
+
+#: inc/ImportExport/Controller.php:291
+msgid "Media Credits Settings"
+msgstr "Media-Credits-Einstellungen"
+
+#: inc/ImportExport/Controller.php:292
+msgid "Copyright and AI-labelling output settings"
+msgstr "Ausgabeeinstellungen für Copyright und KI-Kennzeichnung"
+
+#: inc/MediaCredits/AdminPage.php:194
+msgid "Hooks for developers"
+msgstr "Hooks für Entwickler"
+
+#: inc/MediaCredits/AdminPage.php:195
+msgid ""
+"Extension points for adjusting copyright and AI-marking behaviour from code, "
+"grouped by where each one fires. Signatures are shown as-is and are not "
+"translated."
+msgstr ""
+"Erweiterungspunkte, um das Verhalten von Copyright und KI-Kennzeichnung per "
+"Code anzupassen, gruppiert danach, wo sie jeweils ausgelöst werden. "
+"Signaturen werden unverändert angezeigt und nicht übersetzt."
+
+#: inc/MediaCredits/AdminPage.php:197
+msgid "Composition"
+msgstr "Zusammensetzung"
+
+#: inc/MediaCredits/AdminPage.php:201
+msgid ""
+"Fires when the label vocabulary is built. Reword the AI and alteration "
+"labels; their keys stay fixed."
+msgstr ""
+"Wird ausgelöst, wenn das Vokabular der Labels aufgebaut wird. Ändere den "
+"Wortlaut der KI- und Änderungs-Labels; die Schlüssel bleiben fest."
+
+#: inc/MediaCredits/AdminPage.php:205
+msgid ""
+"Fires after the copyright and AI values are resolved, before composition. The "
+"AI key you return is authoritative — its label and seal always follow from "
+"it."
+msgstr ""
+"Wird ausgelöst, nachdem Copyright- und KI-Werte aufgelöst wurden, vor der "
+"Zusammensetzung. Der von dir zurückgegebene KI-Schlüssel ist maßgeblich – "
+"Label und Siegel folgen immer daraus."
+
+#: inc/MediaCredits/AdminPage.php:209
+msgid ""
+"Fires only when the copyright text does not already start with ©, (c) or "
+"Copyright."
+msgstr ""
+"Wird nur ausgelöst, wenn der Copyright-Text nicht bereits mit ©, (c) oder "
+"Copyright beginnt."
+
+#: inc/MediaCredits/AdminPage.php:213
+msgid ""
+"Fires only when both a copyright and an AI part are present, right before "
+"they are joined."
+msgstr ""
+"Wird nur ausgelöst, wenn sowohl ein Copyright- als auch ein KI-Teil vorhanden "
+"sind, unmittelbar bevor sie zusammengefügt werden."
+
+#: inc/MediaCredits/AdminPage.php:217
+msgid ""
+"Fires after the seal image markup is built, only when a seal is actually "
+"rendered."
+msgstr ""
+"Wird ausgelöst, nachdem das Markup des Siegelbilds erstellt wurde, nur wenn "
+"tatsächlich ein Siegel gerendert wird."
+
+#: inc/MediaCredits/AdminPage.php:221
+msgid ""
+"The last word before the composed credit line is escaped. Replace it outright "
+"when nothing else fits."
+msgstr ""
+"Das letzte Wort, bevor die zusammengesetzte Nachweiszeile escaped wird. "
+"Ersetze sie komplett, wenn nichts anderes passt."
+
+#: inc/MediaCredits/AdminPage.php:225
+msgid "Output"
+msgstr "Ausgabe"
+
+#: inc/MediaCredits/AdminPage.php:229
+msgid ""
+"Decides once per element whether automatic caption or overlay output happens "
+"at all."
+msgstr ""
+"Entscheidet einmal pro Element, ob automatische Bildunterschrift- oder "
+"Overlay-Ausgabe überhaupt stattfindet."
+
+#: inc/MediaCredits/AdminPage.php:233
+msgid ""
+"Covers automatic caption output only. A hand-placed {sfx_media_credit} tag "
+"goes through a different path."
+msgstr ""
+"Betrifft nur die automatische Bildunterschrift-Ausgabe. Ein von Hand "
+"platziertes {sfx_media_credit}-Tag läuft über einen anderen Pfad."
+
+#: inc/MediaCredits/AdminPage.php:237
+msgid ""
+"Fires right before the overlay markup is spliced into the rendered image "
+"element."
+msgstr ""
+"Wird ausgelöst, unmittelbar bevor das Overlay-Markup in das gerenderte "
+"Bildelement eingefügt wird."
+
+#: inc/MediaCredits/AdminPage.php:241
+msgid ""
+"Fires before the root-tag check. The default list is img, picture and a."
+msgstr ""
+"Wird ausgelöst, bevor der Root-Tag geprüft wird. Die Standardliste ist img, "
+"picture und a."
+
+#: inc/MediaCredits/AdminPage.php:242
+msgid ""
+"The list is global, not per attachment: it is the one hook of the twelve "
+"with no attachment id, so a site cannot make the skip decision for a "
+"single image."
+msgstr ""
+"Die Liste gilt global, nicht pro Anhang: Sie ist der einzige der zwölf "
+"Hooks ohne Attachment-ID, daher kannst du die Skip-Entscheidung nicht für "
+"ein einzelnes Bild treffen."
+
+#: inc/MediaCredits/AdminPage.php:243
+msgid ""
+"Adding figure to the list while \"Force a wrapper\" is on can leave an "
+"empty wrapper: the wrapper is written at settings time whenever a credit "
+"exists, and the skip list is only checked later, when the overlay itself "
+"is built — the two do not know about each other."
+msgstr ""
+"Wenn du figure zur Liste hinzufügst, während „Wrapper erzwingen“ aktiv "
+"ist, kann ein leerer Wrapper übrig bleiben: Der Wrapper wird schon beim "
+"Erzeugen der Einstellungen geschrieben, sobald ein Nachweis existiert, und "
+"die Skip-Liste wird erst später geprüft, wenn das Overlay selbst gebaut "
+"wird – die beiden wissen nichts voneinander."
+
+#: inc/MediaCredits/AdminPage.php:247
+msgid "Media library"
+msgstr "Mediathek"
+
+#: inc/MediaCredits/AdminPage.php:249
+msgid ""
+"Fires once, on first upload, after an IPTC copyright or credit value is read "
+"and before it is saved."
+msgstr ""
+"Wird einmal beim ersten Upload ausgelöst, nachdem ein IPTC-Copyright- oder "
+"Nachweiswert gelesen wurde und bevor er gespeichert wird."
+
+#: inc/MediaCredits/AdminPage.php:252
+msgid "Action:"
+msgstr "Aktion:"
+
+#: inc/MediaCredits/AdminPage.php:254
+msgid ""
+"The seam for page-cache invalidation — the module deliberately knows nothing "
+"about caches."
+msgstr ""
+"Die Schnittstelle für die Invalidierung des Seiten-Cache – das Modul kennt "
+"bewusst keine Caches."
+
+
+#: inc/MediaCredits/AdminPage.php:25
+msgid ""
+"Copyright notices and AI markings on media, with optional automatic output "
+"in Bricks image elements."
+msgstr ""
+"Urheberrechtsangaben und KI-Kennzeichnungen an Mediendateien, mit optionaler "
+"automatischer Ausgabe in Bricks-Bild-Elementen."
+
+#: inc/MediaCredits/Settings.php:48
+msgid "AI-generated"
+msgstr "KI-generiert"
+
+#: inc/MediaCredits/Settings.php:49
+msgid "AI-edited"
+msgstr "KI-bearbeitet"
+
+#: inc/MediaCredits/Settings.php:50
+msgid "AI-assisted"
+msgstr "KI-unterstützt"
+
+#: inc/MediaCredits/Settings.php:51
+msgid "Digitally altered"
+msgstr "Digital verändert"

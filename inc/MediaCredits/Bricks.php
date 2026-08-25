@@ -1,0 +1,832 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SFX\MediaCredits;
+
+/**
+ * Bricks integration.
+ *
+ * Three mechanisms, only the last of which touches rendered HTML:
+ *   1. tag substitution inside the Image element's own captionCustom setting
+ *   2. caption auto-output, written as a setting
+ *   3. overlay auto-output, injected into an existing wrapper
+ */
+class Bricks
+{
+    public const PREFIX = 'sfx_media_';
+
+    /** @var list<string> */
+    public const KEYS = ['copyright', 'ai_label', 'credit'];
+
+    public const MARKER_CLASS = 'sfx-credit';
+
+    /** The root tags an overlay is never injected into, unless filtered. */
+    private const DEFAULT_OVERLAY_SKIP_TAGS = ['img', 'picture', 'a'];
+
+    /**
+     * The should_auto_output decision, taken once per element in
+     * element_settings() and consumed once in render_element().
+     *
+     * Keyed on the element OBJECT INSTANCE, never $id or $uid. Bricks
+     * constructs a fresh instance per render (frontend.php:743) and hands
+     * that same instance to both bricks/element/settings and
+     * bricks/frontend/render_element, so object identity is stable across
+     * the two moments this hook cares about. But $uid is assigned from $id,
+     * and $id comes from the STORED element definition (base.php:74-76) — so
+     * one element rendered inside a query loop over twenty posts presents
+     * the same id twenty times. Keying on it would freeze the first post's
+     * decision for the other nineteen, silently, and worst in exactly the
+     * case this module most expects: a loop over attachments.
+     *
+     * @var \SplObjectStorage<object, bool>|null
+     */
+    private static ?\SplObjectStorage $auto_output_decisions = null;
+
+    public static function register(): void
+    {
+        add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
+        add_filter('bricks/frontend/render_element', [self::class, 'render_element'], 10, 2);
+        add_filter('wp_get_attachment_image_attributes', [self::class, 'image_attributes'], 10, 2);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueue_styles'], 20);
+
+        add_filter('bricks/dynamic_tags_list', [self::class, 'add_tags_to_builder']);
+
+        // Priority 20 is load-bearing, not a preference. Bricks occupies
+        // priority 10 and registers at include time, before our
+        // after_setup_theme hook can fire — so a priority-10 registration of
+        // ours always runs second at that priority anyway. Its handler does
+        // not know our tags and hands them on re-wrapped as '{tag}'
+        // (providers.php:562), which is why the parser below tolerates braces.
+        add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 20, 3);
+
+        add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 10, 3);
+    }
+
+    /**
+     * @param array<string, mixed> $tags
+     * @return array<string, mixed>
+     */
+    public static function add_tags_to_builder(array $tags): array
+    {
+        $group  = __('Media Credits', 'sfxtheme');
+        $labels = [
+            'copyright' => __('Copyright notice', 'sfxtheme'),
+            'ai_label'  => __('AI marking', 'sfxtheme'),
+            'credit'    => __('Credit line', 'sfxtheme'),
+        ];
+
+        foreach (self::KEYS as $key) {
+            $tags[] = [
+                'name'  => '{' . self::PREFIX . $key . '}',
+                'label' => $labels[$key],
+                'group' => $group,
+            ];
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Resolve a tag in a single-value context.
+     *
+     * Bricks seeds this filter with the tag itself, so the incoming $tag
+     * doubles as "nobody has resolved this yet". Anything we return for a tag
+     * we do not own — '', null, a normalised copy — destroys the value for
+     * every provider after us, so every miss returns the ORIGINAL $tag.
+     *
+     * @param mixed $tag
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_tag($tag, $post, $context)
+    {
+        if (!is_string($tag)) {
+            return $tag;
+        }
+
+        $needle = $tag;
+
+        // One pair only — Bricks strips just the outermost pair too.
+        if (strlen($needle) > 1 && $needle[0] === '{' && substr($needle, -1) === '}') {
+            $needle = substr($needle, 1, -1);
+        }
+
+        $parsed = self::parse($needle);
+
+        if ($parsed === null) {
+            return $tag;
+        }
+
+        $value = self::raw_value($post, $parsed['key'], $parsed['id']);
+
+        return $value === null ? $tag : $value;
+    }
+
+    /**
+     * Resolve every one of our tags inside a block of content.
+     *
+     * @param mixed $content
+     * @param mixed $post
+     * @param mixed $context
+     * @return mixed
+     */
+    public static function render_content($content, $post, $context)
+    {
+        if (!is_string($content) || strpos($content, '{' . self::PREFIX) === false) {
+            return $content;
+        }
+
+        $pattern = '/\{' . preg_quote(self::PREFIX, '/') . '(' . implode('|', self::KEYS) . ')(?::(\d+))?\}/';
+
+        return preg_replace_callback(
+            $pattern,
+            static function (array $m) use ($post): string {
+                $value = self::raw_value($post, $m[1], isset($m[2]) ? (int) $m[2] : 0);
+
+                if ($value === null) {
+                    return $m[0];
+                }
+
+                // The composed line is HTML by contract; the two text values
+                // are not, and this context writes straight into markup.
+                // escape_braces() runs last, not esc_html() — the module's
+                // rule that it is always the FINAL operation, made true here
+                // rather than resting on esc_html()'s $double_encode=false
+                // default happening to leave an existing entity alone.
+                return $m[1] === 'credit' ? $value : Credit::escape_braces(esc_html($value));
+            },
+            $content
+        );
+    }
+
+    /**
+     * One tag's value, or null for "not one of ours".
+     *
+     * Text values come back raw for their consuming control to escape, as in
+     * NavMenuQuery — but always brace-escaped, because that is not an escaping
+     * choice, it is the boundary that stops stored text becoming a Bricks tag.
+     */
+    public static function raw_value($post, string $key, int $explicit_id = 0): ?string
+    {
+        if (!in_array($key, self::KEYS, true)) {
+            return null;
+        }
+
+        $id = $explicit_id > 0 ? $explicit_id : self::resolve_id($post);
+
+        if ($id <= 0) {
+            return '';
+        }
+
+        $credit = Credit::for($id);
+
+        switch ($key) {
+            case 'copyright':
+                return Credit::escape_braces($credit['copyright']);
+            case 'ai_label':
+                return Credit::escape_braces($credit['ai_label']);
+            case 'credit':
+                return $credit['line'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Attachment context, first hit wins: Bricks loop object, the global
+     * $post, then the current post's featured image.
+     *
+     * Inside an image element the tag has already been substituted by
+     * element_settings(), so this list is never consulted there.
+     */
+    public static function resolve_id($post): int
+    {
+        if (class_exists('Bricks\Query') && \Bricks\Query::is_looping()) {
+            $loop_object = \Bricks\Query::get_loop_object();
+
+            if ($loop_object instanceof \WP_Post && $loop_object->post_type === 'attachment') {
+                return (int) $loop_object->ID;
+            }
+        }
+
+        if ($post instanceof \WP_Post && $post->post_type === 'attachment') {
+            return (int) $post->ID;
+        }
+
+        $post_id = $post instanceof \WP_Post ? (int) $post->ID : (int) get_the_ID();
+
+        return $post_id > 0 ? (int) get_post_thumbnail_id($post_id) : 0;
+    }
+
+    /**
+     * @return array{key: string, id: int}|null
+     */
+    private static function parse(string $needle): ?array
+    {
+        if (strpos($needle, self::PREFIX) !== 0) {
+            return null;
+        }
+
+        $rest = substr($needle, strlen(self::PREFIX));
+        $id   = 0;
+
+        if (strpos($rest, ':') !== false) {
+            [$rest, $suffix] = explode(':', $rest, 2);
+
+            if ($suffix === '' || !ctype_digit($suffix)) {
+                return null;
+            }
+
+            $id = (int) $suffix;
+        }
+
+        return in_array($rest, self::KEYS, true) ? ['key' => $rest, 'id' => $id] : null;
+    }
+
+    /**
+     * Remember the settings-time should_auto_output decision for one
+     * element instance, so render_element() can consume it instead of
+     * re-running the filter and risking a second, disagreeing answer.
+     */
+    private static function remember_decision(object $element, bool $should): void
+    {
+        if (self::$auto_output_decisions === null) {
+            self::$auto_output_decisions = new \SplObjectStorage();
+        }
+
+        // First answer wins. The memo's correctness rests on
+        // bricks/element/settings firing exactly once per element instance;
+        // we cannot confirm that without reading Bricks' own source. If it
+        // ever re-ran init() on an instance we already saw, a second write
+        // here — happening after force_wrapper had already written
+        // $settings['tag'] — would reproduce exactly the disagreement this
+        // memoisation exists to prevent. Refusing to overwrite makes that an
+        // unreachable question rather than an unverified assumption.
+        //
+        // isset() rather than ::contains() — same ArrayAccess lookup,
+        // consistent with consume_decision() below, and contains() is
+        // deprecated as of PHP 8.5.
+        if (!isset(self::$auto_output_decisions[$element])) {
+            self::$auto_output_decisions[$element] = $should;
+        }
+    }
+
+    /**
+     * Consume the decision remembered for one element instance, or null if
+     * element_settings() never saw this instance.
+     *
+     * Removes the entry on every call — found or not — so the storage
+     * cannot grow across a page. This is called for every image element
+     * bricks/frontend/render_element fires for, regardless of output mode,
+     * which is what keeps a caption-mode page's decisions from piling up
+     * unconsumed: only render_element() ever removes an entry, and it runs
+     * for every image render, not only overlay-mode ones.
+     */
+    private static function consume_decision(object $element): ?bool
+    {
+        if (self::$auto_output_decisions === null || !isset(self::$auto_output_decisions[$element])) {
+            return null;
+        }
+
+        $should = self::$auto_output_decisions[$element];
+        unset(self::$auto_output_decisions[$element]);
+
+        return $should;
+    }
+
+    /** Test seam, alongside Credit::reset_cache(). */
+    public static function reset_decisions(): void
+    {
+        self::$auto_output_decisions = null;
+    }
+
+    /**
+     * Mechanisms 1 and 2, in a fixed order because both write captionCustom.
+     *
+     * This filter fires inside Element::init() immediately before render()
+     * (base.php:2948), which is the only moment where the element and our tag
+     * are in the same room: captionCustom is never passed through
+     * render_dynamic_data() (image.php:805-806), so a tag left in it survives
+     * into the page and is resolved much later, against the wrong context.
+     *
+     * @param mixed $settings
+     * @param mixed $element
+     * @return mixed
+     */
+    public static function element_settings($settings, $element)
+    {
+        if (!is_array($settings) || !is_object($element) || ($element->name ?? '') !== 'image') {
+            return $settings;
+        }
+
+        $id = self::image_id_from_element($element, $settings);
+
+        if ($id <= 0) {
+            return $settings;
+        }
+
+        // 1 · substitute our tags where the editor placed them
+        $caption_custom = (string) ($settings['captionCustom'] ?? '');
+
+        if (strpos($caption_custom, '{' . self::PREFIX) !== false) {
+            $settings['captionCustom'] = self::substitute($caption_custom, $id);
+        }
+
+        if (self::has_no_credit_class($settings)) {
+            return $settings;
+        }
+
+        $mode = (string) Settings::get('output_mode');
+
+        // Nothing downstream can act on an answer for a mode that never
+        // auto-outputs anything. The addendum's signature documents $mode as
+        // 'caption' | 'overlay' only — firing with 'off' (the default) would
+        // hand every third-party callback a third value it was never told
+        // about, on every image element on every page. Gating here, rather
+        // than widening the documented domain, is what keeps that contract
+        // honest.
+        if ($mode !== 'caption' && $mode !== 'overlay') {
+            return $settings;
+        }
+
+        // The should_auto_output decision is taken ONCE, here, before the
+        // mode branch below and therefore before force_wrapper can write
+        // $settings['tag']. render_element() consumes this same decision
+        // rather than re-evaluating: Bricks assigns the filtered settings
+        // back onto the element (base.php:2948-2953) between the two
+        // moments, so a deterministic callback keyed on
+        // isset($element->settings['tag']) would answer differently before
+        // and after force_wrapper writes that key if it ran twice — exactly
+        // the wrapper-with-no-credit outcome this hook exists to prevent.
+        $should = (bool) apply_filters('sfx_media_credits_should_auto_output', true, $mode, $id, $element);
+        self::remember_decision($element, $should);
+
+        if (!$should) {
+            return $settings;
+        }
+
+        if ($mode === 'overlay') {
+            // The overlay needs a wrapper to attach to. Setting the key is
+            // what flips $has_html_tag (image.php:822); the tag NAME comes
+            // from the constructor and is already 'figure' for this element
+            // (image.php:10), so an element that chose 'div' keeps it.
+            if (Settings::get('force_wrapper') && !isset($settings['tag']) && Credit::for($id)['line'] !== '') {
+                $settings['tag'] = 'figure';
+            }
+
+            return $settings;
+        }
+
+        if ($mode !== 'caption') {
+            return $settings;
+        }
+
+        // 2 · caption auto-output, written as a setting rather than injected
+        $default_type = is_array($element->theme_styles ?? null) && !empty($element->theme_styles['caption'])
+            ? (string) $element->theme_styles['caption']
+            : 'attachment';
+
+        $effective = self::effective_caption($settings, $id, $default_type);
+
+        // Tested against the EFFECTIVE caption on purpose: a marker sitting in
+        // a captionCustom that Bricks is not going to render would otherwise
+        // suppress the disclosure entirely.
+        if (self::has_marker($effective)) {
+            return $settings;
+        }
+
+        $line = Credit::for($id)['line'];
+
+        if ($line === '') {
+            return $settings;
+        }
+
+        $default_credit = '<span class="' . self::MARKER_CLASS . '">' . $line . '</span>';
+
+        // This is a page-content sink: captionCustom is copied VERBATIM into
+        // the caption (image.php:805-806) and never passed through Bricks'
+        // own render_dynamic_data(), so whatever the filter returns here
+        // lands in the assembled document unprotected. finish_fragment()
+        // gives it the same three-step treatment the module's own gate
+        // applies elsewhere: kses, marker restored, braces escaped last.
+        $filtered = (string) apply_filters('sfx_media_credits_caption_auto_html', $default_credit, $id, $settings);
+        $credit   = self::finish_fragment($filtered, $default_credit);
+
+        $settings['caption']       = 'custom';
+        $settings['captionCustom'] = $effective === '' ? $credit : $effective . '<br>' . $credit;
+
+        return $settings;
+    }
+
+    /**
+     * Replace our tags in one string, each wrapped in the marker span.
+     */
+    public static function substitute(string $text, int $id): string
+    {
+        $pattern = '/\{' . preg_quote(self::PREFIX, '/') . '(' . implode('|', self::KEYS) . ')(?::(\d+))?\}/';
+
+        return (string) preg_replace_callback(
+            $pattern,
+            static function (array $m) use ($id): string {
+                $target = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : $id;
+                $credit = Credit::for($target);
+
+                if ($m[1] === 'credit') {
+                    $value = $credit['line'];
+                } else {
+                    $raw   = $m[1] === 'copyright' ? $credit['copyright'] : $credit['ai_label'];
+                    $value = Credit::escape_braces(esc_html($raw));
+                }
+
+                if ($value === '') {
+                    return '';
+                }
+
+                return '<span class="' . self::MARKER_CLASS . '">' . $value . '</span>';
+            },
+            $text
+        );
+    }
+
+    /**
+     * What Bricks will actually render as the caption.
+     *
+     * Reproduces image.php:794-810 branch for branch. The third branch is the
+     * subtle one: type 'custom' with an EMPTY field still falls through to the
+     * attachment caption, so treating "custom" as "captionCustom" would let us
+     * overwrite a caption the editor never touched.
+     *
+     * @param array<string, mixed> $settings
+     */
+    public static function effective_caption(array $settings, int $image_id, string $default_type = 'attachment'): string
+    {
+        $type = isset($settings['caption']) ? (string) $settings['caption'] : $default_type;
+
+        if ($type === 'none') {
+            return '';
+        }
+
+        // empty() first, trim() after — Bricks' own order (image.php:805-806).
+        // The difference is not academic: '0' is empty to PHP and therefore
+        // falls through to the attachment caption, and a whitespace-only
+        // custom caption is NOT empty and therefore trims to ''. Testing
+        // trim() !== '' instead would get both backwards.
+        if ($type === 'custom' && !empty($settings['captionCustom'])) {
+            return trim((string) $settings['captionCustom']);
+        }
+
+        if ($image_id <= 0) {
+            return '';
+        }
+
+        $attachment = get_post($image_id);
+
+        return $attachment ? (string) ($attachment->post_excerpt ?? '') : '';
+    }
+
+    /**
+     * Is our marker class present as a class-attribute token?
+     *
+     * A bare substring test would also fire on the words in prose and on
+     * `sfx-credit-note`, and suppressing a disclosure by accident is the
+     * expensive direction of this mistake.
+     *
+     * `(?i:class)` and not a /i on the whole pattern: HTML attribute NAMES are
+     * case-insensitive, so `CLASS="sfx-credit"` carries our marker and must
+     * dedup — but CSS class names are case-SENSITIVE, so `SFX-Credit` is a
+     * different class and must not. Missing the first prints the credit twice.
+     */
+    public static function has_marker(string $html): bool
+    {
+        $class = preg_quote(self::MARKER_CLASS, '/');
+
+        return preg_match('/(?i:class)\s*=\s*(["\'])(?:[^"\']*\s)?' . $class . '(?:\s[^"\']*)?\1/', $html) === 1;
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    public static function has_no_credit_class(array $settings): bool
+    {
+        $classes = trim((string) ($settings['_cssClasses'] ?? ''));
+
+        if ($classes === '') {
+            return false;
+        }
+
+        $tokens = preg_split('/\s+/', $classes, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return in_array('no-credit', $tokens, true);
+    }
+
+    /**
+     * The three-step treatment every filtered page-content fragment gets,
+     * shared by caption_auto_html and overlay_html — the only two hooks in
+     * this module whose return is written into page content unprotected.
+     *
+     * Order is the whole point: kses so a filter cannot add script, the
+     * marker restored so a filter cannot silently break dedup, and
+     * escape_braces LAST so neither the filter nor the wrapping step can
+     * reintroduce a Bricks dynamic-data tag.
+     *
+     * An empty return (before or after kses strips it down to nothing) falls
+     * back to $fallback rather than suppressing output: should_auto_output
+     * already exists as the dedicated way to suppress a credit, so an empty
+     * string is far more likely a filter bug than a decision.
+     */
+    private static function finish_fragment(string $filtered, string $fallback, string $extra_class = ''): string
+    {
+        if (trim($filtered) === '') {
+            return $fallback;
+        }
+
+        $html = wp_kses_post($filtered);
+
+        if (trim($html) === '') {
+            return $fallback;
+        }
+
+        if (!self::has_marker($html)) {
+            $class = self::MARKER_CLASS . ($extra_class !== '' ? ' ' . $extra_class : '');
+            $html  = '<span class="' . $class . '">' . $html . '</span>';
+        }
+
+        return Credit::escape_braces($html);
+    }
+
+    /**
+     * The element's attachment id, through Bricks' own resolver so a dynamic
+     * image source is honoured. A provider returning a URL rather than an id
+     * leaves id at 0 (image.php:738-760) — those images get no credit, which
+     * the spec accepts.
+     *
+     * @param mixed $element
+     * @param array<string, mixed> $settings
+     */
+    public static function image_id_from_element($element, array $settings): int
+    {
+        if (!is_object($element) || !method_exists($element, 'get_normalized_image_settings')) {
+            return 0;
+        }
+
+        $image = $element->get_normalized_image_settings($settings);
+
+        return is_array($image) && !empty($image['id']) ? (int) $image['id'] : 0;
+    }
+
+    /**
+     * Overlay auto-output — the only place this module writes HTML.
+     *
+     * Only fires on the frontend render path: Ajax::render_element() calls
+     * init() directly and never applies this filter (ajax.php:885-891), so
+     * while editing, an overlay appears on a full canvas load and not on the
+     * single element being re-rendered. Mechanisms 1 and 2 live inside init()
+     * and have no such gap, which is why caption mode is the recommended one.
+     *
+     * @param mixed $html
+     * @param mixed $element
+     * @return mixed
+     */
+    public static function render_element($html, $element)
+    {
+        if (!is_string($html) || $html === '' || !is_object($element) || ($element->name ?? '') !== 'image') {
+            return $html;
+        }
+
+        // Consume the settings-time decision unconditionally, before the
+        // mode check below. bricks/frontend/render_element fires for every
+        // image element on every frontend render regardless of output mode,
+        // so this is the only place a caption-mode (or off-mode) decision
+        // ever gets removed — deferring this past the mode check would leave
+        // those entries in the storage for the rest of the page.
+        $should = self::consume_decision($element);
+
+        if ((string) Settings::get('output_mode') !== 'overlay') {
+            return $html;
+        }
+
+        $settings = is_array($element->settings ?? null) ? $element->settings : [];
+
+        if (self::has_no_credit_class($settings) || self::has_marker($html)) {
+            return $html;
+        }
+
+        $id = self::image_id_from_element($element, $settings);
+
+        if ($id <= 0) {
+            return $html;
+        }
+
+        // If element_settings() never saw this instance, no decision was
+        // remembered — evaluate once, here, rather than leaving the element
+        // unfiltered. Evaluating again when a decision WAS remembered is
+        // exactly the pass-2 mistake: two independent evaluations can
+        // legitimately disagree even for a deterministic callback.
+        if ($should === null) {
+            $should = (bool) apply_filters('sfx_media_credits_should_auto_output', true, 'overlay', $id, $element);
+        }
+
+        if (!$should) {
+            return $html;
+        }
+
+        $line = Credit::for($id)['line'];
+
+        return $line === '' ? $html : self::inject_overlay($html, $line, $id);
+    }
+
+    /**
+     * Insert the overlay before the root element's closing tag — and only when
+     * there is a root element to insert into. Bricks renders no wrapper at all
+     * unless a caption, overlay, gradient or tag is set (image.php:822), and
+     * wrapping the bare `<img>` ourselves would move a box in someone's
+     * layout for a credit they may not even have configured.
+     */
+    public static function inject_overlay(string $html, string $line, int $attachment_id = 0): string
+    {
+        $root = self::root_tag($html);
+
+        $skip_tags = self::sanitize_skip_tags(
+            apply_filters('sfx_media_credits_overlay_skip_tags', self::DEFAULT_OVERLAY_SKIP_TAGS),
+            self::DEFAULT_OVERLAY_SKIP_TAGS
+        );
+
+        if ($root === '' || in_array($root, $skip_tags, true)) {
+            return $html;
+        }
+
+        // strripos, not strrpos: root_tag() matches case-insensitively and
+        // lowercases, so $root never carries the source casing. Bricks only
+        // admits a tag that is strictly in its allow-list, whose base is
+        // lowercase — but that list is filterable (bricks/allowed_html_tags),
+        // and an uppercase entry there would make this search miss its own
+        // root and drop the overlay without a sign.
+        $closing = '</' . $root . '>';
+        $pos     = strripos($html, $closing);
+
+        if ($pos === false) {
+            return $html;
+        }
+
+        $default_span = '<span class="' . self::MARKER_CLASS . ' ' . self::MARKER_CLASS . '--overlay">' . $line . '</span>';
+
+        // Same sink, same three-step treatment as the caption branch: the
+        // return is spliced straight into the rendered HTML.
+        $filtered = (string) apply_filters('sfx_media_credits_overlay_html', $default_span, $attachment_id, $root);
+        $span     = self::finish_fragment($filtered, $default_span, self::MARKER_CLASS . '--overlay');
+
+        return substr($html, 0, $pos) . $span . substr($html, $pos);
+    }
+
+    public static function root_tag(string $html): string
+    {
+        return preg_match('/^\s*<([a-z0-9-]+)/i', $html, $m) === 1 ? strtolower($m[1]) : '';
+    }
+
+    /**
+     * Sanitise a sfx_media_credits_overlay_skip_tags return. The value is
+     * compared against a root tag already extracted by root_tag()'s own
+     * [a-z0-9-]+ regex, so a malformed entry can never actually match — but
+     * validating here keeps that comparison honest rather than accidental.
+     *
+     * @param mixed $tags
+     * @param list<string> $fallback used verbatim when $tags is not an array
+     * @return list<string>
+     */
+    private static function sanitize_skip_tags($tags, array $fallback): array
+    {
+        if (!is_array($tags)) {
+            return $fallback;
+        }
+
+        $clean = [];
+
+        foreach ($tags as $tag) {
+            $tag = strtolower((string) $tag);
+
+            if (preg_match('/^[a-z0-9-]+$/', $tag) === 1) {
+                $clean[] = $tag;
+            }
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Whether the module stylesheet is needed at all.
+     *
+     * The stylesheet carries two independent concerns: overlay positioning
+     * (`.sfx-credit--overlay` and the `*:has(> .sfx-credit--overlay)` parent
+     * rule), needed only in overlay mode; and `.sfx-credit__seal` sizing,
+     * needed whenever a seal CAN render — which is any output mode,
+     * including a hand-placed {sfx_media_credit} tag with auto-output
+     * switched off, as long as credit_display is 'icon' or 'icon_text'.
+     * Gating the whole file on overlay mode left the seal unstyled
+     * (measured: 1890px instead of 32) in exactly the two routes the
+     * settings page recommends.
+     *
+     * Deliberately pure — no option reads — so it can be unit tested without
+     * stubbing wp_enqueue_style / get_stylesheet_directory / filemtime.
+     */
+    public static function needs_stylesheet(string $mode, string $display): bool
+    {
+        return $mode === 'overlay' || $display === 'icon' || $display === 'icon_text';
+    }
+
+    /**
+     * The `.sfx-credit__seal` sizing rule, built from the icon_size setting.
+     *
+     * The static stylesheet cannot carry this: the size is a site-wide
+     * setting, not a constant, so it has to be generated per request. It
+     * also cannot rely on the img's width/height attributes — those are
+     * presentational hints that lose to any CSS rule, and Bricks stretches
+     * every <img> inside its image element to full width (measured 1890px
+     * for a 32px seal). A class selector wins without !important, so one
+     * generated rule is enough.
+     *
+     * height is deliberately `auto`, not the same pixel value: the markup
+     * also sets height="{$size}" alongside width, which would force a
+     * square. Real seals are rarely square (one measured seal is 417×119),
+     * so constraining width and letting height follow preserves the aspect
+     * ratio — a deliberate improvement over what the attributes alone would
+     * have produced, had they worked.
+     *
+     * Deliberately pure — no option reads — so it can be unit tested without
+     * stubbing wp_add_inline_style.
+     */
+    public static function seal_style_rule(int $size): string
+    {
+        return sprintf('.sfx-credit__seal{width:%dpx;height:auto}', $size);
+    }
+
+    /**
+     * The module stylesheet, loaded whenever needs_stylesheet() says it is
+     * needed. It lives here rather than in the Controller because both
+     * things it styles — the overlay and the seal — are this class's
+     * output; the Controller registers classes and holds no logic of its
+     * own.
+     */
+    public static function enqueue_styles(): void
+    {
+        $mode    = (string) Settings::get('output_mode');
+        $display = (string) Settings::get('credit_display');
+
+        if (!self::needs_stylesheet($mode, $display)) {
+            return;
+        }
+
+        $path = get_stylesheet_directory() . '/inc/MediaCredits/assets/media-credits.css';
+
+        if (!file_exists($path)) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'sfx-media-credits',
+            get_stylesheet_directory_uri() . '/inc/MediaCredits/assets/media-credits.css',
+            [],
+            (string) filemtime($path)
+        );
+
+        // The seal's size is a setting, so it cannot live in the static
+        // stylesheet — see seal_style_rule() for why it also cannot rely on
+        // the width/height attributes.
+        $size = (int) Settings::get('icon_size');
+        wp_add_inline_style('sfx-media-credits', self::seal_style_rule($size));
+    }
+
+    /**
+     * The machine-readable half: a data attribute on every image WordPress
+     * renders through wp_get_attachment_image(), which is how Bricks emits the
+     * Image element (image.php:1153).
+     *
+     * Not a provenance marking in the sense of AI Act Art. 50(2) — it does not
+     * survive the file leaving the page. It is the cheap part that helps.
+     *
+     * @param mixed $attr
+     * @param mixed $attachment
+     * @return mixed
+     */
+    public static function image_attributes($attr, $attachment)
+    {
+        if (!is_array($attr)) {
+            return $attr;
+        }
+
+        $id = is_object($attachment) ? (int) ($attachment->ID ?? 0) : (int) $attachment;
+
+        if ($id <= 0) {
+            return $attr;
+        }
+
+        $ai_key = Credit::for($id)['ai_key'];
+
+        if ($ai_key !== '') {
+            $attr['data-sfx-ai'] = esc_attr($ai_key);
+        }
+
+        return $attr;
+    }
+}
