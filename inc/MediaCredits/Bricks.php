@@ -725,6 +725,32 @@ class Bricks
     }
 
     /**
+     * The `.sfx-credit__seal` sizing rule, built from the icon_size setting.
+     *
+     * The static stylesheet cannot carry this: the size is a site-wide
+     * setting, not a constant, so it has to be generated per request. It
+     * also cannot rely on the img's width/height attributes — those are
+     * presentational hints that lose to any CSS rule, and Bricks stretches
+     * every <img> inside its image element to full width (measured 1890px
+     * for a 32px seal). A class selector wins without !important, so one
+     * generated rule is enough.
+     *
+     * height is deliberately `auto`, not the same pixel value: the markup
+     * also sets height="{$size}" alongside width, which would force a
+     * square. Real seals are rarely square (one measured seal is 417×119),
+     * so constraining width and letting height follow preserves the aspect
+     * ratio — a deliberate improvement over what the attributes alone would
+     * have produced, had they worked.
+     *
+     * Deliberately pure — no option reads — so it can be unit tested without
+     * stubbing wp_add_inline_style.
+     */
+    public static function seal_style_rule(int $size): string
+    {
+        return sprintf('.sfx-credit__seal{width:%dpx;height:auto}', $size);
+    }
+
+    /**
      * The module stylesheet, loaded whenever needs_stylesheet() says it is
      * needed. It lives here rather than in the Controller because both
      * things it styles — the overlay and the seal — are this class's
@@ -752,6 +778,12 @@ class Bricks
             [],
             (string) filemtime($path)
         );
+
+        // The seal's size is a setting, so it cannot live in the static
+        // stylesheet — see seal_style_rule() for why it also cannot rely on
+        // the width/height attributes.
+        $size = (int) Settings::get('icon_size');
+        wp_add_inline_style('sfx-media-credits', self::seal_style_rule($size));
     }
 
     /**

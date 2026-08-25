@@ -749,6 +749,16 @@ assert_true(Bricks::needs_stylesheet('off', 'icon'), 'Case 19d: auto-output OFF 
 assert_same(false, Bricks::needs_stylesheet('caption', 'text'), 'Case 19e: text-only display in caption mode needs nothing');
 assert_same(false, Bricks::needs_stylesheet('off', 'text'), 'Case 19f: the default configuration (off + text) must not enqueue anything');
 
+// ---------------------------------- Case 20: seal_style_rule() rule string
+// The seal's pixel size is a setting, so it cannot live in the static
+// stylesheet — it has to be generated per request and attached as an
+// inline rule. width is pinned, height is 'auto' so the seal keeps its
+// own aspect ratio instead of being forced square by the img's height
+// attribute.
+
+assert_same('.sfx-credit__seal{width:32px;height:auto}', Bricks::seal_style_rule(32), 'Case 20a: a normal size produces exactly one well-formed rule');
+assert_same('.sfx-credit__seal{width:9999px;height:auto}', Bricks::seal_style_rule(9999), 'Case 20b: an out-of-range value is rendered honestly, not clamped or rejected here — Settings::get() already clamps icon_size to 8-128 before this method ever sees it');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;
