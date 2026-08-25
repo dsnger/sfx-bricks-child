@@ -237,9 +237,30 @@ create_github_release() {
         exit 1
     fi
     
-    # Create release with changelog content
-    local release_notes=$(awk '/^## \['"${version}"'\]/,/^## \[/ {if (!/^## \[/ || /^## \['"${version}"'\]/) print}' "${CHANGELOG_FILE}" | sed '1d' | sed '/^## \[/q' | sed '$d')
-    
+    # Create release with changelog content.
+    #
+    # Not an awk range pattern: /^## \[x.y.z\]/,/^## \[/ starts and ends on the
+    # SAME line, because the end pattern also matches the heading that opened
+    # it. The range therefore yielded exactly one line, which the following
+    # `sed 1d` then deleted — every release from v0.19.1 to v0.20.0 was
+    # published with an empty body before this was found. Walk the file with a
+    # flag instead, and stop at the next heading.
+    local release_notes=$(awk -v ver="${version}" '
+        index($0, "## [" ver "]") == 1 { found=1; next }
+        found && /^## \[/ { exit }
+        found { print }
+    ' "${CHANGELOG_FILE}" | sed -e '/./,$!d' | awk '
+        { lines[n++] = $0 }
+        END { last = n - 1; while (last >= 0 && lines[last] == "") last--;
+              for (i = 0; i <= last; i++) print lines[i] }
+    ')
+
+    if [ -z "${release_notes}" ]; then
+        print_error "No changelog section found for ${version} in ${CHANGELOG_FILE}."
+        print_error "Refusing to publish a release with an empty body."
+        exit 1
+    fi
+
     gh release create "${tag_name}" \
         --title "${tag_name}" \
         --notes "${release_notes}"
