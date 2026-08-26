@@ -94,14 +94,6 @@ class Settings
                 'default'     => 0,
                 'group'       => 'general',
             ],
-            [
-                'id'          => 'delete_on_uninstall',
-                'label'       => __('Delete Data on Uninstall', 'sfxtheme'),
-                'description' => __('Delete all theme settings and data when the theme is deleted. This does not affect the theme when it is just deactivated.', 'sfxtheme'),
-                'type'        => 'checkbox',
-                'default'     => 0,
-                'group'       => 'general',
-            ],
             
         ];
     }

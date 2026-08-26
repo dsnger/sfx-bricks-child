@@ -297,12 +297,32 @@ assert_contains("['subset', 'dashboard_subset']", $import_export, 'Case 9e: both
 // import because one site never got widened.
 assert_not_contains('$group[\'type\'] === \'dashboard_subset\'', $import_export, 'Case 9e2: no un-widened bare dashboard_subset comparison survives anywhere in the file');
 
-$uninstall = file_get_contents(dirname(__DIR__) . '/uninstall.php');
+// 9f-9i ask SFX\DataPurge what it deletes rather than reading uninstall.php's
+// text. The purge moved out of that file into a class both it and the Danger
+// Zone button call, and an assertion on the old file's contents would have
+// gone quietly green-then-wrong. The contract is the list, not the location.
+require_once dirname(__DIR__) . '/inc/DataPurge.php';
 
-assert_contains("'sfx_media_credits_options'", $uninstall, 'Case 9f: the option is purged');
-assert_contains(Credit::META_COPYRIGHT, $uninstall, 'Case 9g: the copyright meta is purged');
-assert_contains(Credit::META_AI, $uninstall, 'Case 9h: the AI meta is purged');
-assert_contains(Credit::META_IPTC_MARKER, $uninstall, 'Case 9i: the IPTC marker goes too, or a reinstall skips the prefill');
+assert_same(
+    true,
+    in_array('sfx_media_credits_options', \SFX\DataPurge::option_names(), true),
+    'Case 9f: the option is purged'
+);
+assert_same(
+    true,
+    in_array(Credit::META_COPYRIGHT, \SFX\DataPurge::meta_keys(), true),
+    'Case 9g: the copyright meta is purged'
+);
+assert_same(
+    true,
+    in_array(Credit::META_AI, \SFX\DataPurge::meta_keys(), true),
+    'Case 9h: the AI meta is purged'
+);
+assert_same(
+    true,
+    in_array(Credit::META_IPTC_MARKER, \SFX\DataPurge::meta_keys(), true),
+    'Case 9i: the IPTC marker goes too, or a reinstall skips the prefill'
+);
 
 // ---------------------------------------------- Case 10: composition hooks
 //

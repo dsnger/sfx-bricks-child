@@ -14,6 +14,64 @@ class AdminPage
   {
     add_action('admin_menu', [self::class, 'add_submenu_page']);
     add_action('admin_head', [self::class, 'add_inline_styles']);
+    add_action('admin_post_sfx_purge_theme_data', [self::class, 'handle_purge']);
+  }
+
+  /**
+   * The Danger Zone's handler.
+   *
+   * Four gates before anything is deleted, in this order: the nonce, the
+   * theme's own access gate, manage_options, and the typed phrase. The last
+   * one is the reason this is safe to expose at all — the disabled button in
+   * the browser is convenience and is simply absent from a request built by
+   * hand.
+   */
+  public static function handle_purge(): void
+  {
+    check_admin_referer('sfx_purge_theme_data');
+    \SFX\AccessControl::die_if_unauthorized_theme();
+
+    if (!current_user_can('manage_options')) {
+      wp_die(
+        esc_html__('You do not have permission to delete theme data.', 'sfxtheme'),
+        esc_html__('Access Denied', 'sfxtheme'),
+        ['response' => 403, 'back_link' => true]
+      );
+    }
+
+    $typed = isset($_POST['sfx_purge_confirmation']) && is_string($_POST['sfx_purge_confirmation'])
+      ? wp_unslash($_POST['sfx_purge_confirmation'])
+      : '';
+
+    if (!\SFX\DataPurge::confirmed($typed)) {
+      wp_die(
+        esc_html__('The confirmation phrase did not match. Nothing was deleted.', 'sfxtheme'),
+        esc_html__('Not confirmed', 'sfxtheme'),
+        ['response' => 400, 'back_link' => true]
+      );
+    }
+
+    // Media Credits meta is editor-authored content, so it needs its own
+    // deliberate act rather than riding along with the settings.
+    $include_media_credits = !empty($_POST['sfx_purge_media_credits']);
+
+    $report = \SFX\DataPurge::run($include_media_credits);
+
+    // The counts travel in the URL so the notice can report what actually
+    // happened. An irreversible operation that always claims success is worse
+    // than one that admits it removed less than expected.
+    wp_safe_redirect(
+      add_query_arg(
+        [
+          'sfx-purged'     => '1',
+          'sfx-options'    => (int) $report['options'],
+          'sfx-meta'       => (int) $report['meta_keys'],
+          'sfx-transients' => (int) $report['transients'],
+        ],
+        admin_url('admin.php?page=' . self::$menu_slug)
+      )
+    );
+    exit;
   }
 
   public static function add_submenu_page(): void
@@ -131,6 +189,39 @@ class AdminPage
         background-color: #00a32a !important;
         border-color: #00a32a !important;
         color: #fff !important;
+      }
+      /* Danger Zone — set apart on purpose: this is the one control on the
+         page that cannot be undone by saving again. */
+      .sfx-danger-zone {
+        margin-top: 3rem;
+        padding: 1.25rem 1.5rem;
+        border: 1px solid #d63638;
+        border-left-width: 4px;
+        border-radius: 4px;
+        background: #fcf0f1;
+        max-width: 48rem;
+      }
+
+      .sfx-danger-zone h2 {
+        margin-top: 0;
+        color: #8a1f21;
+      }
+
+      .sfx-danger-zone code {
+        background: #fff;
+        border: 1px solid #dcdcde;
+        padding: 0.1em 0.4em;
+      }
+
+      .sfx-danger-zone__button:not(:disabled) {
+        border-color: #d63638;
+        color: #d63638;
+      }
+
+      .sfx-danger-zone__button:not(:disabled):hover {
+        background: #d63638;
+        border-color: #d63638;
+        color: #fff;
       }
     </style>
     <script>
@@ -257,7 +348,130 @@ class AdminPage
         submit_button();
         ?>
       </form>
+
+      <?php self::render_danger_zone(); ?>
     </div>
+    <?php
+  }
+
+  /**
+   * Delete every setting this theme stored, while the theme is still active.
+   *
+   * WordPress runs no uninstall routine for a theme — uninstall.php is a
+   * plugin convention and delete_theme() never includes it. The only moment
+   * this can happen is now, from a screen the theme itself renders, which is
+   * why the control lives here rather than behind a promise about later.
+   */
+  private static function render_danger_zone(): void
+  {
+    $present = 0;
+
+    foreach (\SFX\DataPurge::option_names() as $option) {
+      if (get_option($option, null) !== null) {
+        $present++;
+      }
+    }
+
+    if (isset($_GET['sfx-purged'])) {
+      $removed_options    = isset($_GET['sfx-options']) ? absint($_GET['sfx-options']) : 0;
+      $removed_meta       = isset($_GET['sfx-meta']) ? absint($_GET['sfx-meta']) : 0;
+      $removed_transients = isset($_GET['sfx-transients']) ? absint($_GET['sfx-transients']) : 0;
+
+      wp_admin_notice(
+        sprintf(
+          /* translators: 1: settings removed, 2: cached rows removed */
+          esc_html__('Theme data deleted: %1$d settings and %2$d cached rows.', 'sfxtheme'),
+          $removed_options,
+          $removed_transients
+        ) . ' ' . ($removed_meta > 0
+          ? esc_html__('The copyright and AI markings on your media were deleted as well.', 'sfxtheme')
+          : esc_html__('Your content, including the copyright and AI markings on your media, was not touched.', 'sfxtheme')),
+        // Every count, not just the options. A second purge with the media
+        // box ticked removes attachment meta while the options are already
+        // gone, and transients regenerate between runs — both are successful
+        // purges that would otherwise be styled as failures.
+        [
+          'type'        => ($removed_options + $removed_meta + $removed_transients) > 0 ? 'success' : 'warning',
+          'dismissible' => true,
+        ]
+      );
+    }
+    ?>
+    <div class="sfx-danger-zone">
+      <h2><?php esc_html_e('Danger Zone', 'sfxtheme'); ?></h2>
+
+      <p>
+        <?php esc_html_e('Deletes every setting this theme stored, right now. There is no undo.', 'sfxtheme'); ?>
+      </p>
+
+      <p>
+        <strong><?php esc_html_e('Will be deleted:', 'sfxtheme'); ?></strong>
+        <?php
+        printf(
+          /* translators: %d: number of stored settings found on this site */
+          esc_html__('all theme settings (%d found on this site) and the theme\'s cached data, on this site only.', 'sfxtheme'),
+          (int) $present
+        );
+        ?>
+        <br>
+        <strong><?php esc_html_e('Will be kept:', 'sfxtheme'); ?></strong>
+        <?php esc_html_e('your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>
+      </p>
+
+      <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <input type="hidden" name="action" value="sfx_purge_theme_data">
+        <?php wp_nonce_field('sfx_purge_theme_data'); ?>
+
+        <p>
+          <label for="sfx-purge-confirmation">
+            <?php
+            printf(
+              /* translators: %s: the exact phrase the user must type */
+              esc_html__('Type %s to enable the button:', 'sfxtheme'),
+              '<code>' . esc_html(\SFX\DataPurge::CONFIRMATION_PHRASE) . '</code>'
+            );
+            ?>
+          </label>
+          <br>
+          <input type="text" id="sfx-purge-confirmation" name="sfx_purge_confirmation"
+                 class="regular-text" autocomplete="off" spellcheck="false"
+                 data-expected="<?php echo esc_attr(\SFX\DataPurge::CONFIRMATION_PHRASE); ?>">
+        </p>
+
+        <p>
+          <label for="sfx-purge-media-credits">
+            <input type="checkbox" id="sfx-purge-media-credits" name="sfx_purge_media_credits" value="1">
+            <?php esc_html_e('Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this.', 'sfxtheme'); ?>
+          </label>
+        </p>
+
+        <p>
+          <button type="submit" id="sfx-purge-submit" class="button button-secondary sfx-danger-zone__button">
+            <?php esc_html_e('Delete all theme data now', 'sfxtheme'); ?>
+          </button>
+        </p>
+      </form>
+    </div>
+
+    <script>
+      (function () {
+        var field = document.getElementById('sfx-purge-confirmation');
+        var button = document.getElementById('sfx-purge-submit');
+
+        if (!field || !button) {
+          return;
+        }
+
+        // Disabled from here, not from the markup: with JavaScript off the
+        // button has to stay usable, and the server-side check on the typed
+        // phrase is what actually guards the deletion either way.
+        button.disabled = true;
+
+        field.addEventListener('input', function () {
+          button.disabled = field.value.trim() !== field.dataset.expected;
+        });
+      }());
+    </script>
     <?php
   }
 

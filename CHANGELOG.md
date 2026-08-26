@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.21.0] - 2026-08-26
+
+### Added
+
+- **Danger Zone** on General Theme Options — deletes every setting this theme stored, on demand, while the theme is still active. WordPress runs no uninstall routine for a theme, so this is the only moment it can happen at all.
+  - Double confirmation: type the theme slug into a field, then press the button. The phrase is verified **on the server**, so a request built by hand meets the same guard; the browser-side enabling is convenience only, and the button stays usable with JavaScript off.
+  - Settings, caches and the theme's own transients go. Your content stays — contact infos, social accounts, custom scripts, posts, pages and media files are untouched.
+  - The copyright and AI markings on your media are **kept unless you tick a second box**. They are typed by an editor and can matter legally, so they need their own deliberate act.
+  - The notice reports what was actually removed rather than assuming success, and the action is scoped to the current site.
+
+### Changed
+
+- The **Delete Data on Uninstall** switch is gone. It promised to delete theme data "when the theme is deleted", which WordPress cannot deliver: `uninstall.php` is a plugin convention, `delete_theme()` never includes it, and an active theme cannot be deleted — by the time the files go, none of the theme's code is loaded to run anything. The Danger Zone replaces it with a control that runs.
+
+### Removed
+
+- `uninstall.php`. Never executed by WordPress for a theme, and with the opt-in switch gone it would have purged unconditionally behind no gate but `ABSPATH`. It also resolved its own dependencies through `get_stylesheet_directory()`, which names the *active* theme rather than the one being deleted.
+- The Text Snippets migration helper, obsolete since the feature was removed in v0.13.0. Its one-time option cleanup is long finished, and the legacy-post purge it advertised was never reachable — the admin notice had been reporting leftover snippets with no way to remove them.
+
+### Fixed
+
+- The purge list inherited from `uninstall.php` named `thumbnail_size_w`, a **WordPress core option**, directly beside a comment claiming core options were excluded. Running it would have reset the site's thumbnail width. It never ran, so this never bit; making the purge reachable would have armed it.
+- Options belonging to plugins are no longer at risk. This theme and several plugins share the `sfx_` prefix, so the purge works from an explicit list of options traced to this theme's own history — never a prefix sweep. The same rule now applies to transients, which an earlier draft swept by prefix and would have cleared other plugins' rate limits and form state.
+
 ## [0.20.0] - 2026-08-25
 
 ### Added

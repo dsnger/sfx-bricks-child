@@ -11,6 +11,7 @@ alwaysApply: true
 - Feature registry: `inc/*/Controller.php` must implement `get_feature_config()` and is auto-registered.
 - Admin UI: `SFX\SFXBricksChildAdmin` renders feature cards from the registry.
 - Access control: `AccessControl` uses `SFX_THEME_ADMINS` (role or capability) and `SFX_THEME_DASHBOARD` (usernames). If undefined, access is locked.
+- Data lifecycle: every option a feature stores must be listed in `SFX\DataPurge::OPTION_NAMES` (`inc/DataPurge.php`) — nothing else deletes options, and WordPress runs no uninstall routine for a theme. Never delete by `sfx_` prefix: this site's plugins share it.
 - Assets:
   - Frontend: `assets/css/frontend/styles.css`
   - Builder: `assets/css/builder/styles.css`
