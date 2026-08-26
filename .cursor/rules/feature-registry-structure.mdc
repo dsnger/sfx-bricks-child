@@ -34,6 +34,32 @@ alwaysApply: false
 - `callback` (callable, optional)
 - `error` (string, used for error_log on missing class)
 
+## Adding a feature: register its options for deletion
+
+**Every option a feature stores must be added to `SFX\DataPurge::OPTION_NAMES`
+in `inc/DataPurge.php`.** Nothing else in the theme ever deletes an option, so
+one this list does not name stays in the customer's database forever — and
+after the theme is removed there is no longer any UI that could reach it.
+
+This is not theoretical: the list lived in `uninstall.php` for years, was never
+revisited as modules were added, and had drifted in both directions — it missed
+options that existed and named `thumbnail_size_w`, a WordPress **core** option
+it had no business deleting.
+
+- Deleting by `sfx_` prefix instead is **not** an option: this site's own
+  plugins use the same prefix, so a prefix sweep would take their data too.
+  Membership of the list is the only ownership claim that holds.
+- `tests/data-purge-test.php` Case 2 fails when a module declares an
+  `OPTION_NAME` constant the purge does not carry. Declare your option as a
+  constant and the test will remind you; write it as a bare literal and nothing
+  will.
+- Content is out of scope. `DataPurge` deletes settings, caches and the Media
+  Credits attachment meta. CPT posts an editor typed stay.
+
+The purge runs from the Danger Zone on the General Theme Options screen, while
+the theme is still active. WordPress executes no uninstall routine for a theme,
+so there is no later.
+
 ## Current registered features (summary)
 - `GeneralThemeOptions` (always on)
 - `ImageOptimizer` (gated by `sfx_general_options.enable_image_optimizer`)
@@ -44,3 +70,4 @@ alwaysApply: false
 - `ContactInfos` (CPT-based, has Bricks dynamic tag `{contact_info:field}`)
 - `SocialMediaAccounts` (CPT-based, shortcode)
 - `CustomScriptsManager` (CPT-based, conditional script injection)
+- `MediaCredits` (gated by `sfx_general_options.enable_media_credits`, Bricks tags + caption/overlay output)
