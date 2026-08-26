@@ -41,9 +41,13 @@ namespace SFX;
  * and sfx_contact_infos_options are ours for that reason, and are on the list.
  * Establish ownership from history, not from a grep.
  *
- * A third case: sfx_mailcatch and sfx_custom_dashboard_svg_migration have no
- * owner in this repository's history or in any plugin. Unknown provenance is a
- * reason to leave something alone, so they are deliberately absent.
+ * A third case: sfx_mailcatch, sfx_custom_dashboard_svg_migration and
+ * sfx_webp_conversion_offset have no owner in this repository's history or in
+ * any plugin — the last one is not in ImageOptimizer's legacy key map either.
+ * Unknown provenance is a reason to leave something alone, so they are
+ * deliberately absent. sfx_webp_conversion_offset was briefly on the list
+ * because it looks like the sfx_webp_* family: that is prefix reasoning, the
+ * exact thing this file rejects, and it is how the entry got here.
  *
  * Membership of this list is the only ownership claim that holds.
  */
@@ -77,7 +81,11 @@ class DataPurge
         // General Theme Options
         'sfx_general_options',
 
-        // Custom Dashboard
+        // Custom Dashboard. The migration key never appears as a literal in
+        // the code — Controller.php:455,481 builds it as
+        // Settings::$option_name . '_icon_migration_version' — so it is the
+        // concrete case the docblock warns about: a grep for the option name
+        // finds nothing, and only reading the code proves it is ours.
         'sfx_custom_dashboard',
         'sfx_custom_dashboard_icon_migration_version',
 
@@ -127,7 +135,6 @@ class DataPurge
         'sfx_webp_conversion_log',
         'sfx_webp_migration_complete',
         'sfx_webp_conversion_complete',
-        'sfx_webp_conversion_offset',
         'webp_conversion_complete',
         'webp_conversion_log',
 
