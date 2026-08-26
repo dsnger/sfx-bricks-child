@@ -17,6 +17,14 @@ if [ -z "$THEME_VERSION" ]; then
   exit 1
 fi
 
+# A package without the Composer autoloader fatals on theme load
+# (functions.php requires vendor/autoload.php). vendor/ is not in git,
+# so a build from a clean export would ship exactly that — refuse.
+if [ ! -f "${THEME_DIR}/vendor/autoload.php" ]; then
+  echo "Error: vendor/autoload.php not found. Run 'composer install --no-dev --optimize-autoloader' before building."
+  exit 1
+fi
+
 echo "Building ${THEME_NAME} version ${THEME_VERSION}..."
 ZIP_NAME="${THEME_NAME}-v${THEME_VERSION}.zip"
 
