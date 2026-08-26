@@ -6580,3 +6580,106 @@ msgstr "KI-unterstützt"
 #: inc/MediaCredits/Settings.php:51
 msgid "Digitally altered"
 msgstr "Digital verändert"
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Danger Zone"
+msgstr "Gefahrenbereich"
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Deletes every setting this theme stored, right now. There is no undo."
+msgstr ""
+"Löscht sofort jede Einstellung, die dieses Theme gespeichert hat. Das lässt "
+"sich nicht rückgängig machen."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Deleted:"
+msgstr "Wird gelöscht:"
+
+#. translators: %d: number of stored settings found on this site
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid ""
+"all theme settings (%d found on this site), the copyright and AI markings on "
+"your media, and the theme's cached data."
+msgstr ""
+"alle Theme-Einstellungen (%d auf dieser Seite gefunden), die "
+"Urheberrechtsangaben und KI-Kennzeichnungen an deinen Mediendateien sowie die "
+"zwischengespeicherten Daten des Themes."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Not deleted:"
+msgstr "Bleibt erhalten:"
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid ""
+"your content. Contact infos, social accounts, custom scripts, posts, pages "
+"and media files all stay exactly as they are."
+msgstr ""
+"deine Inhalte. Firmeninformationen, Social-Media-Konten, eigene Skripte, "
+"Beiträge, Seiten und Mediendateien bleiben unverändert."
+
+#. translators: %s: the exact phrase the user must type
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Type %s to enable the button:"
+msgstr "Tippe %s ein, um den Knopf freizuschalten:"
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Delete all theme data now"
+msgstr "Alle Theme-Daten jetzt löschen"
+
+#. translators: 1: options removed, 2: attachment meta keys removed, 3: cached rows removed
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid ""
+"Theme data deleted: %1$d settings, %2$d media metadata keys, %3$d cached "
+"rows. Your content was not touched."
+msgstr ""
+"Theme-Daten gelöscht: %1$d Einstellungen, %2$d Medien-Metadaten, %3$d "
+"zwischengespeicherte Einträge. Deine Inhalte wurden nicht angetastet."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "You do not have permission to delete theme data."
+msgstr "Du hast keine Berechtigung, Theme-Daten zu löschen."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "The confirmation phrase did not match. Nothing was deleted."
+msgstr "Der Bestätigungstext stimmt nicht. Es wurde nichts gelöscht."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Not confirmed"
+msgstr "Nicht bestätigt"
+
+#. translators: 1: settings removed, 2: cached rows removed
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Theme data deleted: %1$d settings and %2$d cached rows."
+msgstr "Theme-Daten gelöscht: %1$d Einstellungen und %2$d zwischengespeicherte Einträge."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "The copyright and AI markings on your media were deleted as well."
+msgstr "Die Urheberrechtsangaben und KI-Kennzeichnungen an deinen Mediendateien wurden ebenfalls gelöscht."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Your content, including the copyright and AI markings on your media, was not touched."
+msgstr ""
+"Deine Inhalte wurden nicht angetastet, auch nicht die Urheberrechtsangaben "
+"und KI-Kennzeichnungen an deinen Mediendateien."
+
+#. translators: %d: number of stored settings found on this site
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "all theme settings (%d found on this site) and the theme's cached data, on this site only."
+msgstr ""
+"alle Theme-Einstellungen (%d auf dieser Seite gefunden) und die "
+"zwischengespeicherten Daten des Themes – nur für diese Seite."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below."
+msgstr ""
+"deine Inhalte. Firmeninformationen, Social-Media-Konten, eigene Skripte, "
+"Beiträge, Seiten und Mediendateien bleiben unverändert – ebenso die "
+"Urheberrechtsangaben an deinen Mediendateien, sofern du unten kein Häkchen "
+"setzt."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this."
+msgstr ""
+"Auch die Urheberrechtsangaben und KI-Kennzeichnungen an meinen Mediendateien "
+"löschen. Diese hat jemand von Hand eingetragen und sie können rechtlich "
+"relevant sein – ohne Häkchen bleiben sie erhalten."
