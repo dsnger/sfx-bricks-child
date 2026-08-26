@@ -27,11 +27,16 @@ repo's own (PRs #25, #28, #30 and #32).
 for every head it reviews; Greptile creates one only when it has inline findings. Pass
 the bot's login:
 
-```
+```sh
 BOT_LOGIN=coderabbitai[bot]   # or greptile-apps[bot]
-gh api repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
-  --jq "[.[] | select(.user.login==\"$BOT_LOGIN\" and .commit_id==\"<HEAD_SHA>\")] | length"
+gh api --paginate --slurp repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
+  | jq "[.[][] | select(.user.login==\"$BOT_LOGIN\" and .commit_id==\"<HEAD_SHA>\")] | length"
 ```
+
+`--paginate` matters: without it `gh api` returns only the first 30 reviews, so a
+match on a later page reads as `0` — the exact false negative this command exists to
+rule out. `--slurp` cannot be combined with `gh`'s own `--jq`, hence the pipe to `jq`
+and the `.[][]` that flattens the array-of-pages.
 
 For CodeRabbit, `0` means the head was not reviewed, whatever the check or the comment
 says. **For Greptile a `0` proves nothing.** It creates a review record when it posts
