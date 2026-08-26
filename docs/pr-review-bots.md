@@ -6,7 +6,7 @@ the authority. The table is descriptive: it records where each bot's findings ha
 been *observed*, which may be `inconsistent`.
 
 Format follows dev-workflow-kit `docs/pr-review-bots.md`; the observations are this
-repo's own (PRs #25 and #28).
+repo's own (PRs #25, #28, #30 and #32).
 
 | Bot | Enabled | Where findings appear | Notes (plan/tier limits, completion signal, quirks) |
 |---|---|---|---|
@@ -16,19 +16,38 @@ repo's own (PRs #25 and #28).
 **Routing — these lists are authoritative.**
 
 - **Wait for (block on it):** *none.* CodeRabbit's check is green even when no review
-  ran, and Greptile has no signal at all.
+  ran, and Greptile has no check or status you can block on — its footer is evidence you
+  read after the fact, not a signal to wait on.
 - **Process opportunistically (never block):** CodeRabbit and Greptile. Read both
   channels (inline comments *and* the PR-level summary body) at the start of the pass;
   a later post is a follow-up, not something to wait on up front.
 - **Ignore:** none observed on this repo so far.
 
-**Per-head review count** (the arbiter for "was this head reviewed", any bot):
+**Per-head review count** — for bots that create review records. CodeRabbit creates one
+for every head it reviews; Greptile creates one only when it has inline findings. Pass
+the bot's login:
 
-```
-gh api repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
-  --jq '[.[] | select(.user.login=="coderabbitai[bot]" and .commit_id=="<HEAD_SHA>")] | length'
+```sh
+BOT_LOGIN=coderabbitai[bot]   # or greptile-apps[bot]
+gh api --paginate --slurp repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
+  | jq "[.[][] | select(.user.login==\"$BOT_LOGIN\" and .commit_id==\"<HEAD_SHA>\")] | length"
 ```
 
-`0` means the head was not reviewed, whatever the check or the comment says. With no
-bot under **Wait for**, a `0` does not block the merge — it only means the merge ships
-without that bot's opinion, which is the human's call to record.
+`--paginate` matters: without it `gh api` returns only the first 30 reviews, so a
+match on a later page reads as `0` — the exact false negative this command exists to
+rule out. `--slurp` cannot be combined with `gh`'s own `--jq`, hence the pipe to `jq`
+and the `.[][]` that flattens the array-of-pages.
+
+For CodeRabbit, `0` means the head was not reviewed, whatever the check or the comment
+says. **For Greptile a `0` proves nothing.** It creates a review record when it posts
+inline findings (#25, #28 and #30 each have one, `COMMENTED`) and none when it finds
+nothing — on #32 the query returned `0` while Greptile's own footer named the head it
+had just reviewed. So a non-zero count is real positive evidence, a zero is
+inconclusive, and the complete signal is that footer: "Last reviewed commit" in its
+summary comment. With no
+bot under **Wait for**, a `0` does not block the merge and needs no record — an absent
+review from an opportunistically-routed bot is a non-event (`CLAUDE.md` §5, human
+exceptions).
+
+**Revisit when:** a bot's plan/tier changes (a Pro→Free downgrade turns a findings bot
+into a summary-only one, and back), or a bot is enabled/disabled.
