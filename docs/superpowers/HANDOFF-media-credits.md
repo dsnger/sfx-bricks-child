@@ -1,6 +1,6 @@
 # Handoff — Media Credits
 
-**Date:** 2026-08-25 · **Status:** shipped in **v0.20.0**, merged to `main`, released
+**Date:** 2026-08-26 · **Status:** shipped in **v0.20.0**, merged to `main`, released
 
 ## Where this stands
 
@@ -10,8 +10,19 @@ zip asset. 18/18 test suites green on `main`, working tree clean.
 Two bodies of work, both in: the module (`inc/MediaCredits/`) and its twelve-hook
 extension surface, documented on the settings page.
 
-**There is no pending task.** What follows is what a next session needs in order not to
-break it, and the things that were deliberately left undone.
+**There is no pending task in this module.** What follows is what a next session needs in
+order not to break it, and the things that were deliberately left undone.
+
+### The one thing still worth acting on
+
+Every `figcaption` on Daniel's local install computes to `display: none` — including one
+the editor set that this module never touched, and disabling the module's stylesheet does
+not restore them. So **caption mode, which the settings page recommends as the reliable
+one, writes the credit correctly and shows nothing on that install.**
+
+Not this module's bug: it is a theme or Bricks caption-visibility matter, and it is
+unresolved. It is listed here first because it is the only item that changes what a user
+sees, and because it was previously buried far enough down the page to be missed.
 
 ## The four things a shortcut would break
 
@@ -51,11 +62,12 @@ purpose — it writes options wholesale and could clobber local config).
 
 ## Open, deliberately
 
-- **`uninstall.php` is inert.** WordPress never loads a theme's `uninstall.php`, so the
-  purge cannot run. True, known, recorded in the file itself and in the design spec, and
-  the whole file has always been inert. Daniel's decision on 2026-08-25: leave it.
-  Repairing the mechanism has a consequence — `delete_on_uninstall` would then really
-  destroy every copyright notice and AI label on the site.
+- **`uninstall.php` is gone**, and with it the `delete_on_uninstall` switch. Resolved in
+  v0.21.0, not still open: WordPress never loads a theme's `uninstall.php`, so the switch
+  promised something with no moment to happen in. A Danger Zone on General Theme Options
+  now purges on demand while the theme is active, `SFX\DataPurge` holds the list, and the
+  Media Credits attachment meta goes only when explicitly ticked — it is editor-typed
+  content. See `docs/superpowers/specs/2026-08-25-theme-data-purge-design.md`.
 - **Eight modules pass `manage_options` to `add_submenu_page()`** while `AccessControl`
   also admits a role-based `SFX_THEME_ADMINS` user who lacks it, so such a user is
   authorised and then has the entry hidden. The full reasoning, including why the obvious
@@ -69,13 +81,6 @@ purpose — it writes options wholesale and could clobber local config).
   Defence-in-depth missing, not an open hole — an unregistered page has no callback.
 - **14 GitHub Releases below v0.14.0 still have empty bodies.** No changelog section
   exists for them; filling those would mean inventing history.
-
-## Not our bug, still Daniel's problem
-
-Every `figcaption` on the local site computes to `display: none`, including one the editor
-set that the module never touched. Disabling the module's stylesheet does not restore
-them. So on that install caption mode — the mode the settings page recommends — writes the
-credit correctly and shows nothing. A theme/Bricks caption-visibility matter, unresolved.
 
 ## The local test instance — keep it
 
@@ -100,9 +105,15 @@ Current settings there: `output_mode=overlay`, `force_wrapper=1`,
   `wp_set_current_user()` an administrator first. Not a defect; a sensible guard.
 - **Do not trust in-page CSS rule enumeration.** Walking `document.styleSheets` failed
   twice here to find rules that demonstrably applied. Disable a stylesheet and re-measure.
-- **Reading the Bricks parent theme or `wp-includes/` prompts for permission.** Keep
-  subagents inside the child theme and hand them the facts they need — but do read core
-  yourself when a claim depends on it. Two findings this session turned on exactly that.
+- **Stay inside `sfx-bricks-child.local`.** The session may list other paths as working
+  directories — `wp-branicks-theme` under `WEBSITES_ONLINE` is one, and it is an unrelated
+  client project. Do not read or search it. Scope every grep: an unscoped one reaches every
+  declared directory and returns matches that read like evidence. Inside the site root,
+  `wp-includes/` and the Bricks parent theme are fair game and worth reading — two findings
+  here turned on checking a claim against core rather than trusting a summary of it.
+- **A subagent's finding is a claim to verify, not a fact to relay.** One reported files in
+  the branicks directory that do not exist there, and it was repeated onward unchecked.
+  Same rule as for the PR bots.
 
 ## Bot and release tooling — what to expect
 
@@ -114,7 +125,10 @@ Current settings there: `output_mode=overlay`, `force_wrapper=1`,
   `pass` with the reason *"Review rate limited"* and no review ran. Read the reason.
 - **Its merge-risk badge lags.** It stayed at 🟡 Moderate for a commit after CodeRabbit
   had itself retracted two of the three items, in a comment.
-- **`./release.sh <version> "<notes>"` does the whole release.** Its changelog extractor
-  was broken from the start and published an empty body for every release from v0.19.1 to
-  v0.20.0; fixed in `1547cd2`, and it now aborts rather than publish a blank one. After
-  any release, check the body is non-empty, not just that the release exists.
+- **`./release.sh <version> "<notes>"` does the whole release**, and has had two gaps:
+  - Its changelog extractor was broken from the start and published an empty body for
+    every release from v0.19.1 to v0.20.0. Fixed in `1547cd2`; it now aborts rather than
+    publish a blank one. Check the body is non-empty, not just that the release exists.
+  - **It does not push the release commit.** With v0.21.0 the tag and the GitHub Release
+    were out while `origin/main` still advertised the old version. After every release run
+    `git rev-list --count origin/main..main` and push if it is not 0.
