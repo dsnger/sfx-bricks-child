@@ -28,6 +28,7 @@ $required = [
     '/inc/CustomDashboard/docs/',
     '/inc/ImageOptimizer/FIX-NOTES.md',
     '/release',
+    '/todos.md',
     'FORBIDDEN_PATHS=(',
 ];
 

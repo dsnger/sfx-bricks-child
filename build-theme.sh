@@ -65,6 +65,7 @@ EXCLUDE=(
   "/inc/ImageOptimizer/FIX-NOTES.md"
   "/release"
   "/release.sh"
+  "/todos.md"
   "/build-theme.sh"
   "/package-lock.json"
   "/composer.lock"
@@ -96,6 +97,7 @@ FORBIDDEN_PATHS=(
   test-github-updater.php
   env-example.txt
   release
+  todos.md
   build-theme.sh
   release.sh
   inc/CustomDashboard/docs
