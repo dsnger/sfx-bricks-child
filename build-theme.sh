@@ -28,8 +28,12 @@ fi
 echo "Building ${THEME_NAME} version ${THEME_VERSION}..."
 ZIP_NAME="${THEME_NAME}-v${THEME_VERSION}.zip"
 
-# Create temporary build directory
+# Create temporary build directory. One EXIT trap covers every failure path from
+# here on — set -e would otherwise leave a full copy of the theme in the system
+# temp dir after a failed rsync, zip or mv.
 BUILD_DIR=$(mktemp -d)
+ZIP_TMP=""
+trap 'rm -rf "$BUILD_DIR"; rm -f "$ZIP_TMP"' EXIT
 DEST_DIR="${BUILD_DIR}/${THEME_NAME}"
 mkdir -p "$DEST_DIR"
 
@@ -56,6 +60,12 @@ EXCLUDE=(
   "/.superpowers/"
   "/.cloud/"
   "/.codex/"
+  "/.context/"
+  "/.mcp.json"
+  "/.mcp/"
+  "/AGENTS.md"
+  "/CLAUDE.md"
+  "/todos.md"
   "/.agents/"
   "/docs/"
   "/tests/"
@@ -69,6 +79,7 @@ EXCLUDE=(
   "/package-lock.json"
   "/composer.lock"
   "*.zip"
+  ".*.zip.??????"
   "*.log"
   "*.sql"
   "*.bak"
@@ -90,6 +101,13 @@ FORBIDDEN_PATHS=(
   .superpowers
   .cloud
   .codex
+  .context
+  .mcp.json
+  .mcp
+  .gitattributes
+  AGENTS.md
+  CLAUDE.md
+  todos.md
   .agents
   docs
   tests
@@ -124,15 +142,24 @@ done
 if [ -n "$leaked" ]; then
   echo "Error: development paths leaked into the package:"
   printf '%s' "$leaked"
-  rm -rf "$BUILD_DIR"
   exit 1
 fi
 
-# Create the zip file
+# Create the zip file. Write to a fresh temp path and move it into place: `zip -r`
+# UPDATES an existing archive of the same name rather than replacing it, so a file
+# that has since become forbidden — or been deleted from the theme — survives a
+# same-version rebuild and ships, with every exclude and guard above still passing.
+# The temp name is unique per run (two concurrent builds must not hand each other a
+# half-written archive) and lives in THEME_DIR so the mv is a same-filesystem rename.
+# The trap removes it on any exit path — set -e would otherwise leave residue behind.
 cd "$BUILD_DIR"
-zip -r "$THEME_DIR/$ZIP_NAME" "$THEME_NAME"
+ZIP_TMP=$(mktemp "$THEME_DIR/.${ZIP_NAME}.XXXXXX")
+rm -f "$ZIP_TMP"
+zip -r "$ZIP_TMP" "$THEME_NAME"
+mv -f "$ZIP_TMP" "$THEME_DIR/$ZIP_NAME"
 
-# Clean up
+# Clean up (the EXIT trap also covers this; doing it here keeps the success path
+# explicit and makes the trap a backstop rather than the only cleanup).
 cd "$THEME_DIR"
 rm -rf "$BUILD_DIR"
 

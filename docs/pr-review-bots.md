@@ -30,5 +30,9 @@ gh api repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
 ```
 
 `0` means the head was not reviewed, whatever the check or the comment says. With no
-bot under **Wait for**, a `0` does not block the merge — it only means the merge ships
-without that bot's opinion, which is the human's call to record.
+bot under **Wait for**, a `0` does not block the merge and needs no record — an absent
+review from an opportunistically-routed bot is a non-event (`CLAUDE.md` §5, human
+exceptions).
+
+**Revisit when:** a bot's plan/tier changes (a Pro→Free downgrade turns a findings bot
+into a summary-only one, and back), or a bot is enabled/disabled.

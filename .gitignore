@@ -65,6 +65,8 @@ Thumbs.db*
 
 # Ignore build artifacts (keep *.sh tracked — release.sh / build-theme.sh are repo scripts)
 *.zip
+# build-theme.sh's per-run temp archive, if a build dies before its trap fires
+.*.zip.??????
 *.tar
 *.gz
 *.bz2
@@ -75,3 +77,13 @@ Thumbs.db*
 *.pkg
 *.deb
 *.rpm
+
+# Codex gate state: review artifacts and the hook's per-workspace counters and
+# markers. The .context/codex-gate.on adoption marker is committed and must stay
+# tracked, so it is negated back in explicitly.
+/.context/codex-reviews/
+/.context/codex-gate.*
+!/.context/codex-gate.on
+
+# mcp-codex-dev writes per-run session state here; .mcp.json itself stays tracked.
+/.mcp/
