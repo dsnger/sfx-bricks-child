@@ -11,10 +11,14 @@
   plus Core Framework's UNLAYERED rules — the :where(:root) * border reset
   and the .bricks-*-<v> compat rules.
 
-  Run: open in any browser (title/body shows PASS/FAIL), or headless:
+  Run headless:
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-      --headless --disable-gpu --virtual-time-budget=2000 \
+      --headless --disable-gpu --allow-file-access-from-files \
+      --virtual-time-budget=2000 \
       --dump-dom tests/buttons-cascade-test.html | grep '<title>'
+  Or open in a browser (title/body shows PASS/FAIL) — via a local server
+  (e.g. `python3 -m http.server`); plain file:// blocks the CSSOM access
+  t8 needs unless Chrome runs with --allow-file-access-from-files.
 -->
 
 <!-- 1. Bricks frontend-layer.min.css (simulated): loads FIRST, layered. -->
@@ -101,6 +105,40 @@
        the layered block — assert the token actually reaches the element. */
     check('t7 --_mix from the layer resolves on filled buttons',
       cs('t1').getPropertyValue('--_mix').trim(), 'black');
+
+    /* t8 — hover/active chrome. :hover cannot be forced from page JS, so
+       assert the rules structurally instead: the filled-chrome rule must
+       sit at the TOP LEVEL of buttons.css (a re-layered rule would be
+       wrapped in a CSSLayerBlockRule and lose to the unlayered globals
+       again) and carry the exact color-mix declarations for both states.
+       Combined with t1-t6 — which prove unlayered rules of this selector
+       beat the hostile globals — this pins the hovered/active chrome. */
+    const norm = v => v.replace(/\s+/g, ' ').trim();
+    let filledRule = null, cssomHint = 'false';
+    try {
+      const sheet = [...document.styleSheets].find(s => s.href && s.href.includes('buttons.css'));
+      filledRule = [...sheet.cssRules].find(r =>
+        r instanceof CSSStyleRule &&
+        r.selectorText.includes('bricks-background-') &&
+        r.selectorText.includes(':not(.outline)'));
+    } catch (e) {
+      cssomHint = `CSSOM blocked (${e.name}) — serve via http or run Chrome with --allow-file-access-from-files`;
+    }
+
+    check('t8 filled chrome rule exists unlayered (top level)', filledRule ? 'true' : cssomHint, 'true');
+    const state = sel => {
+      const r = filledRule && [...filledRule.cssRules].find(r => r.selectorText === sel);
+      return {
+        bg: r ? norm(r.style.getPropertyValue('background-color')) : '(rule missing)',
+        border: r ? norm(r.style.getPropertyValue('border-color')) : '(rule missing)',
+      };
+    };
+    const hov = state('&:hover'), act = state('&:active');
+    const MIX = pct => `color-mix(in oklab, var(--sfx-btn-color) ${pct}%, var(--_mix))`;
+    check('t8 hover bg is 85% color-mix', hov.bg, MIX(85));
+    check('t8 hover border is 85% color-mix', hov.border, MIX(85));
+    check('t8 active bg is 75% color-mix', act.bg, MIX(75));
+    check('t8 active border is 75% color-mix', act.border, MIX(75));
 
     const failed = results.filter(r => !r.ok);
     document.title = failed.length ? `FAIL:${failed.length}` : 'PASS';
