@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # PR events share a per-PR group so new pushes supersede stale runs; non-PR
+  # events (push to main) get a unique per-run group so no pending main run is
+  # ever replaced or canceled.
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # The group covers the whole matrix, so a new push supersedes every leg at once.
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    # Runner pinned to an OS release and every action pinned to a commit SHA with a
+    # version comment: a major-only `@v4` moves under you, and a moving CI dependency
+    # makes the run irreproducible. Bump deliberately, and verify rather than trust
+    # the comment:
+    #   gh api repos/<owner>/<repo>/commits/<tag> --jq .sha
+    #   gh api repos/<owner>/<repo>/releases/tags/<tag> --jq .published_at
+    # A release published hours ago has had no time to be found wanting. Both SHAs
+    # below were checked this way (checkout v7.0.0: 2026-06-18; setup-php 2.37.2:
+    # 2026-06-08).
+    runs-on: ubuntu-24.04
+    # composer.json declares "php": ">=8.0" and the theme is installed on client
+    # sites across that whole range, so CI runs every supported minor — not just
+    # the version it is developed against. fail-fast: false so one broken minor
+    # does not hide the state of the others.
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+    name: quality (PHP ${{ matrix.php }})
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # By default checkout leaves the job token behind for later steps to use.
+          # Nothing here needs authenticated git, so drop it rather than leave a
+          # usable credential lying around for whatever a later step runs.
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      # Frozen lockfile: a resolving install can silently pull new code into CI and
+      # makes the run non-reproducible.
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      # ONE quality command — the same thing CI runs and a human runs.
+      # Chains syntax lint + the test battery.
+      - run: ./quality.sh
