@@ -103,21 +103,18 @@
   &[class*="bricks-background-"]:not(.bricks-background-text),
   &[class*="btn--"]:not(.btn--text):not(.btn--icon-slide) {
     --_mix: var(--sfx-btn-mix, black);
-    background-color: var(--sfx-btn-color);
     color: var(--sfx-btn-color-fg);
-    border-color: var(--sfx-btn-color);
+    /* background-color and border-color (idle, hover, active) live in
+       the unlayered "FILLED CHROME" block at the bottom of this file —
+       see there for the reasoning. */
 
     &:hover {
       transform: translateY(-1px);
       box-shadow: var(--sfx-btn-shadow-hover);
-      background-color: color-mix(in oklab, var(--sfx-btn-color) 85%, var(--_mix));
-      border-color: color-mix(in oklab, var(--sfx-btn-color) 85%, var(--_mix));
     }
 
     &:active {
       transform: translateY(0);
-      background-color: color-mix(in oklab, var(--sfx-btn-color) 75%, var(--_mix));
-      border-color: color-mix(in oklab, var(--sfx-btn-color) 75%, var(--_mix));
     }
   }
 
@@ -204,10 +201,14 @@
 
      Note: the color and border-color declarations for the variant-color
      swap (idle + hover) are NOT in this layered block. They live
-     unlayered at the bottom of this file so they win over Bricks' two
-     unlayered global rules:
+     unlayered at the bottom of this file so they win over the unlayered
+     globals some setups ship — e.g. Core Framework's config-dependent
+     output:
        :where(:root) *                  { border-color: var(--border-primary); }
        :where(:root) .bricks-color-<v>  { color: var(--<v>); }
+     (Bricks' own .bricks-color-<v> rule sits in @layer bricks since
+     Bricks 2.0 and loses to sfx.components anyway — unless
+     disableBricksCascadeLayer is set, which makes it unlayered too.)
      See the "Unlayered outline chrome" block below for the reasoning. */
   &.outline {
     background-color: transparent;
@@ -335,26 +336,64 @@ button.bricks-button,
 }
 
 /* ========================================
+   UNLAYERED FILLED CHROME
+   ----------------------------------------
+   background-color and border-color of the FILLED button live OUTSIDE
+   @layer sfx.components on purpose — all three states, because a
+   layered color-mix hover value would lose to the unlayered idle value
+   and freeze the chrome mid-hover.
+
+   Unlayered author declarations always beat layered ones (regardless
+   of selector specificity). Two kinds of unlayered globals hit filled
+   buttons:
+
+     Core Framework (config-dependent output):
+       :where(:root) *                      { border-color: var(--border-primary); }
+       :where(:root) .bricks-background-<v> { background-color: var(--<v>); }
+     Bricks with its cascade layer disabled (disableBricksCascadeLayer;
+     Bricks >= 2.0 default ships this rule inside @layer bricks, which
+     sfx.components already beats):
+       .bricks-background-<v>               { background-color: var(--bricks-color-<v>); }
+
+   Keeping bg/border inside the layer let these globals win — observed
+   as filled buttons wearing a pale --border-primary frame, and as
+   --btn-<v>-bg never reaching the background despite the contract in
+   the file header.
+
+   Out here they compete on plain specificity instead:
+     idle:  0,6,0   hover/active: 0,7,0   (globals above: 0,0,0 / 0,1,0)
+
+   No !important. Bricks element settings (#brxe-… at 1,0,0) and any
+   selector of equal or higher specificity still override — same as
+   normal CSS. Everything else (padding, radius, shadow, transition,
+   transform) stays inside the layer, as do the tokens (--sfx-btn-color,
+   --_mix) — only the contested properties move out. :not(.outline)
+   keeps this block off outline buttons, whose chrome follows below.
+   ======================================== */
+:is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button):not(.outline):is([class*="bricks-background-"]:not(.bricks-background-text), [class*="btn--"]:not(.btn--text):not(.btn--icon-slide)) {
+  background-color: var(--sfx-btn-color);
+  border-color: var(--sfx-btn-color);
+
+  &:hover {
+    background-color: color-mix(in oklab, var(--sfx-btn-color) 85%, var(--_mix));
+    border-color: color-mix(in oklab, var(--sfx-btn-color) 85%, var(--_mix));
+  }
+
+  &:active {
+    background-color: color-mix(in oklab, var(--sfx-btn-color) 75%, var(--_mix));
+    border-color: color-mix(in oklab, var(--sfx-btn-color) 75%, var(--_mix));
+  }
+}
+
+/* ========================================
    UNLAYERED OUTLINE CHROME
    ----------------------------------------
-   These two declarations live OUTSIDE @layer sfx.components on purpose.
-
-   Bricks ships two unlayered global rules:
-     :where(:root) *                  { border-color: var(--border-primary); }
-     :where(:root) .bricks-color-<v>  { color: var(--<v>); }
-
-   Unlayered author declarations always beat layered ones (regardless of
-   selector specificity), so keeping the variant-colored border and the
-   hover text-swap inside @layer sfx.components would let Bricks' globals
-   neutralize them every time.
-
-   Lifting these specific properties out of the layer lets them compete
-   on plain specificity instead. The selectors below resolve to:
-     idle:  0,5,0   (beats Bricks .bricks-color-<v> at 0,1,0)
-     hover: 0,6,0   (beats Bricks at 0,1,0 with margin to spare)
-
-   No !important needed. The user can still override these with any
-   selector of equal or higher specificity — same as normal CSS.
+   Same mechanism as the filled chrome above: the variant-colored text
+   and border of the outline button must beat the unlayered globals —
+   Core Framework's :where(:root) * border reset and its
+   :where(:root) .bricks-color-<v> { color: var(--<v>); } compat rule,
+   or Bricks' own .bricks-color-<v> when its cascade layer is disabled.
+   Specificity: idle 0,6,0, hover 0,7,0.
 
    All other outline behavior (background-color transparent, hover bg,
    transform, border-width) stays inside the layer so users can still

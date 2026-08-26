@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>RUNNING</title>
+<!--
+  Cascade acceptance test for assets/css/frontend/modules/buttons.css.
+
+  Reproduces the hostile environment from the 2026-08-24 visitessen report:
+  Bricks >= 2.0 static CSS in @layer bricks (declared before the sfx layers)
+  plus Core Framework's UNLAYERED rules — the :where(:root) * border reset
+  and the .bricks-*-<v> compat rules.
+
+  Run: open in any browser (title/body shows PASS/FAIL), or headless:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --virtual-time-budget=2000 \
+      --dump-dom tests/buttons-cascade-test.html | grep '<title>'
+-->
+
+<!-- 1. Bricks frontend-layer.min.css (simulated): loads FIRST, layered. -->
+<style>
+  @layer bricks {
+    :root {
+      --bricks-color-primary: #ffd64f;
+      --bricks-bg-light: #f5f6f7;
+    }
+    .bricks-color-primary   { color: var(--bricks-color-primary); }
+    .bricks-background-primary { background-color: var(--bricks-color-primary); }
+    .bricks-background-light   { background-color: var(--bricks-bg-light); }
+  }
+</style>
+
+<!-- 2. Child theme CSS: declares @layer sfx.* AFTER bricks, so sfx wins layer-vs-layer. -->
+<link rel="stylesheet" href="../assets/css/frontend/styles.css">
+<link rel="stylesheet" href="../assets/css/frontend/modules/buttons.css">
+
+<!-- 3. Core Framework (simulated): UNLAYERED tokens, preflight border reset,
+     and Bricks-color compat rules — the rules that beat everything layered. -->
+<style>
+  :root { --primary: #10b981; --light: #f8fafc; --dark: #111827; }
+  :where(:root) * { border-color: hotpink; }
+  :where(:root) .bricks-background-primary { background-color: var(--primary); }
+  :where(:root) .bricks-background-light   { background-color: var(--light); }
+  :where(:root) .bricks-color-primary      { color: var(--primary); }
+</style>
+
+<!-- 4. Bricks builder element setting (simulated): unlayered ID rule, must keep winning. -->
+<style>
+  #brxe-test { background-color: purple; border-color: purple; }
+</style>
+</head>
+<body>
+  <a id="t1" class="brxe-button bricks-button bricks-background-primary" href="#">Primary</a>
+  <a id="t2" class="brxe-button bricks-button outline bricks-color-primary" href="#">Primary Umriss</a>
+  <a id="t3" class="brxe-button bricks-button bricks-background-light" href="#">Light</a>
+  <a id="t4" class="brxe-button bricks-button outline bricks-color-light" href="#">Light Umriss</a>
+  <a id="t5" class="brxe-button bricks-button bricks-background-primary" style="--btn-primary-bg: red" href="#">Token-Vertrag</a>
+  <a id="brxe-test" class="brxe-button bricks-button bricks-background-primary" href="#">Element-Setting</a>
+
+  <pre id="out" style="font: 13px/1.5 monospace"></pre>
+
+  <script>
+    const HOTPINK = 'rgb(255, 105, 180)';
+    const PRIMARY = 'rgb(16, 185, 129)';   /* --primary #10b981 */
+    const LIGHT   = 'rgb(248, 250, 252)';  /* --light   #f8fafc */
+    const RED     = 'rgb(255, 0, 0)';
+    const PURPLE  = 'rgb(128, 0, 128)';
+
+    const cs = id => getComputedStyle(document.getElementById(id));
+    const results = [];
+    const check = (name, actual, expected) =>
+      results.push({ name, ok: actual === expected, actual, expected });
+
+    let s = cs('t1');
+    check('t1 filled primary: bg = variant color', s.backgroundColor, PRIMARY);
+    check('t1 filled primary: border = fill, not hotpink', s.borderTopColor, s.backgroundColor);
+
+    s = cs('t2');
+    check('t2 outline primary: bg transparent', s.backgroundColor, 'rgba(0, 0, 0, 0)');
+    check('t2 outline primary: text = variant color', s.color, PRIMARY);
+    check('t2 outline primary: border = variant color', s.borderTopColor, PRIMARY);
+
+    s = cs('t3');
+    check('t3 filled light: bg = light', s.backgroundColor, LIGHT);
+    check('t3 filled light: border = fill, not hotpink', s.borderTopColor, s.backgroundColor);
+
+    s = cs('t4');
+    check('t4 outline light: bg transparent', s.backgroundColor, 'rgba(0, 0, 0, 0)');
+    check('t4 outline light: text = light', s.color, LIGHT);
+    check('t4 outline light: border = light', s.borderTopColor, LIGHT);
+
+    s = cs('t5');
+    check('t5 contract: --btn-primary-bg colors the background', s.backgroundColor, RED);
+    check('t5 contract: border follows --btn-primary-bg', s.borderTopColor, RED);
+
+    s = cs('brxe-test');
+    check('t6 element setting still wins: bg', s.backgroundColor, PURPLE);
+    check('t6 element setting still wins: border', s.borderTopColor, PURPLE);
+
+    /* The unlayered hover/active color-mix reads --_mix, which is set in
+       the layered block — assert the token actually reaches the element. */
+    check('t7 --_mix from the layer resolves on filled buttons',
+      cs('t1').getPropertyValue('--_mix').trim(), 'black');
+
+    const failed = results.filter(r => !r.ok);
+    document.title = failed.length ? `FAIL:${failed.length}` : 'PASS';
+    document.getElementById('out').textContent = results
+      .map(r => `${r.ok ? 'PASS' : 'FAIL'}  ${r.name}` + (r.ok ? '' : `  (ist: ${r.actual}, soll: ${r.expected})`))
+      .join('\n') + `\n\n${failed.length ? failed.length + ' FAILED' : 'ALL PASS'}`;
+  </script>
+</body>
+</html>
