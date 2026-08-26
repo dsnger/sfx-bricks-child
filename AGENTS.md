@@ -118,7 +118,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — a bare `for f in tests/*-test.php` loop returns only the last test's status |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was run and seen to exit cleanly (22 tests passed, 0 syntax errors), and
+`quality.sh` was run and seen to exit cleanly (23 tests passed, 0 syntax errors), and
 seen to fail on a syntax error outside `inc/` and on an empty test glob. `build-theme.sh`
 was not run in that session — it writes a release artifact — so treat its row as
 documented, not verified.

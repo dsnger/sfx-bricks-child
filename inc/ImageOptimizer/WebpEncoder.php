@@ -9,13 +9,34 @@ namespace SFX\ImageOptimizer;
  * WP's WebP editors only set the quality value; they do not tune the libwebp
  * encoder method, do not enable lossless mode, and do not expose alpha quality.
  * This class fills those gaps so the admin quality slider has visible effect
- * across its range — in particular, quality=100 produces lossless WebP.
+ * across its range — in particular, quality=100 requests lossless WebP wherever
+ * the backend exposes it: always under Imagick, and under GD only on builds
+ * that define IMG_WEBP_LOSSLESS. GD builds without it encode lossy at quality
+ * 100 instead (see webpArg()), because naming the absent constant is a fatal.
  */
 final class WebpEncoder
 {
     public static function isLosslessQuality(int $q): bool
     {
         return $q >= 100;
+    }
+
+    /**
+     * Choose the third argument to imagewebp(): the lossless marker, or a
+     * plain quality value.
+     *
+     * A GD build can support WebP output yet not define IMG_WEBP_LOSSLESS
+     * (seen on PHP 8.4 at IONOS, while PHP 8.5 under MAMP defines it), and
+     * naming an undefined constant is a fatal Error in PHP 8. So this method
+     * names no constant at all: the caller resolves the marker behind its own
+     * defined() check and passes null when the build lacks it. No argument any
+     * caller can pass makes this evaluate a constant that may not exist.
+     */
+    public static function webpArg(int $quality, ?int $lossless_marker): int
+    {
+        return self::isLosslessQuality($quality) && $lossless_marker !== null
+            ? $lossless_marker
+            : $quality;
     }
 
     /**
@@ -92,7 +113,7 @@ final class WebpEncoder
         }
 
         $temp = $path . '.tmp';
-        $arg = self::isLosslessQuality($quality) ? IMG_WEBP_LOSSLESS : $quality;
+        $arg = self::webpArg($quality, defined('IMG_WEBP_LOSSLESS') ? IMG_WEBP_LOSSLESS : null);
         if (!@imagewebp($resource, $temp, $arg)) {
             @unlink($temp);
             return new \WP_Error('webp_encoder_gd', 'imagewebp returned false');
