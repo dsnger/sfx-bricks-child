@@ -118,14 +118,18 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — a bare `for f in tests/*-test.php` loop returns only the last test's status |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was run and seen to exit cleanly (21 tests passed, 0 syntax errors), and
+`quality.sh` was run and seen to exit cleanly (22 tests passed, 0 syntax errors), and
 seen to fail on a syntax error outside `inc/` and on an empty test glob. `build-theme.sh`
 was not run in that session — it writes a release artifact — so treat its row as
 documented, not verified.
 
-**Prompt artifacts** (`CLAUDE.md`, `AGENTS.md`, anything under `.claude/`, `skills/`,
-`commands/`) are also checked against `docs/prompt-standards.md`; name that file in the
-gate prompt when the change touches one.
+**Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
+in the gate prompt when the change touches one. Which files those are is defined once,
+in CLAUDE.md §5 under "What counts as prose" — read it there. It is deliberately not
+restated here: a second copy drifted narrower than the original within a day of being
+written. `tests/prompt-artifact-paths-test.php` pins the citation and fails if this
+paragraph starts listing the paths again — it does not police every possible way to
+smuggle a copy back in, so keep the rule where it is defined.
 
 **Local PHP:** development runs under MAMP (`/Applications/MAMP/bin/php/php8.5.2/bin/php`).
 `quality.sh` resolves `$PHP` (a bare command name goes through PATH, an absolute path is

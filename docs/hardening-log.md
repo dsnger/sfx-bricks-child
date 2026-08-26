@@ -84,3 +84,4 @@ leading bold title).
 
 | date | fingerprint | finding | source | severity | rung | ref |
 |------|-------------|---------|--------|----------|------|-----|
+| 2026-08-26 | docs-drift | AGENTS.md restated CLAUDE.md §5's prompt-artifact path list without `plugins/` | bot | minor | 4 test | tests/prompt-artifact-paths-test.php |
