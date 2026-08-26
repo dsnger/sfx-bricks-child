@@ -6592,7 +6592,7 @@ msgstr ""
 "sich nicht rückgängig machen."
 
 #: inc/GeneralThemeOptions/AdminPage.php
-msgid "Deleted:"
+msgid "Will be deleted:"
 msgstr "Wird gelöscht:"
 
 #. translators: %d: number of stored settings found on this site
@@ -6606,7 +6606,7 @@ msgstr ""
 "zwischengespeicherten Daten des Themes."
 
 #: inc/GeneralThemeOptions/AdminPage.php
-msgid "Not deleted:"
+msgid "Will be kept:"
 msgstr "Bleibt erhalten:"
 
 #: inc/GeneralThemeOptions/AdminPage.php

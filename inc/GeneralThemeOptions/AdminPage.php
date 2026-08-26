@@ -386,7 +386,14 @@ class AdminPage
         ) . ' ' . ($removed_meta > 0
           ? esc_html__('The copyright and AI markings on your media were deleted as well.', 'sfxtheme')
           : esc_html__('Your content, including the copyright and AI markings on your media, was not touched.', 'sfxtheme')),
-        ['type' => $removed_options > 0 ? 'success' : 'warning', 'dismissible' => true]
+        // Every count, not just the options. A second purge with the media
+        // box ticked removes attachment meta while the options are already
+        // gone, and transients regenerate between runs — both are successful
+        // purges that would otherwise be styled as failures.
+        [
+          'type'        => ($removed_options + $removed_meta + $removed_transients) > 0 ? 'success' : 'warning',
+          'dismissible' => true,
+        ]
       );
     }
     ?>
@@ -398,7 +405,7 @@ class AdminPage
       </p>
 
       <p>
-        <strong><?php esc_html_e('Deleted:', 'sfxtheme'); ?></strong>
+        <strong><?php esc_html_e('Will be deleted:', 'sfxtheme'); ?></strong>
         <?php
         printf(
           /* translators: %d: number of stored settings found on this site */
@@ -407,7 +414,7 @@ class AdminPage
         );
         ?>
         <br>
-        <strong><?php esc_html_e('Not deleted:', 'sfxtheme'); ?></strong>
+        <strong><?php esc_html_e('Will be kept:', 'sfxtheme'); ?></strong>
         <?php esc_html_e('your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>
       </p>
 

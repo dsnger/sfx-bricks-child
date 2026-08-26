@@ -8,9 +8,13 @@ namespace SFX;
  * Deletes everything this theme stored — settings, not content.
  *
  * WordPress never executes a theme's uninstall.php, so the only moment this
- * can run is while the theme is still active. It is therefore driven from the
- * Danger Zone on the General Theme Options screen, and uninstall.php calls the
- * same code so there is one implementation rather than two.
+ * can run is while the theme is still active.
+ *
+ * The Danger Zone on the General Theme Options screen is therefore the ONLY
+ * execution path. There is deliberately no uninstall.php: one existed, called
+ * this class behind no gate but ABSPATH, and was deleted rather than kept as
+ * future-proofing. Do not reintroduce it — a file WordPress never runs, that
+ * would delete everything unconditionally if it ever did, is a liability.
  *
  * ─────────────────────────────────────────────────────────────────────────
  *  ADDING A FEATURE? ADD ITS OPTIONS TO OPTION_NAMES BELOW.
@@ -27,10 +31,21 @@ namespace SFX;
  * ─────────────────────────────────────────────────────────────────────────
  *
  * Why a list and not the `sfx_` prefix: the prefix is not evidence of
- * ownership. This site's own plugins use it too — sfx_mailcatch,
- * sfx_animation_options, sfx_company_logo_options and others belong to
- * plugins, not to this theme. Deleting by prefix would take their data with
- * ours. Membership of this list is the only ownership claim that holds.
+ * ownership. This site's own plugins use it too — sfx_animation_options
+ * (SFX Animations), sfx_feedback_* (SFX Feedback), sfx_drilldown_style_css*
+ * (SFX Drilldown Menu). Deleting by prefix would take their data with ours.
+ *
+ * Nor is absence from the current tree evidence that an option is foreign: a
+ * module this theme REMOVED leaves rows behind that no longer appear anywhere
+ * in the code, and reads exactly like a stranger's data. sfx_company_logo_options
+ * and sfx_contact_infos_options are ours for that reason, and are on the list.
+ * Establish ownership from history, not from a grep.
+ *
+ * A third case: sfx_mailcatch and sfx_custom_dashboard_svg_migration have no
+ * owner in this repository's history or in any plugin. Unknown provenance is a
+ * reason to leave something alone, so they are deliberately absent.
+ *
+ * Membership of this list is the only ownership claim that holds.
  */
 class DataPurge
 {
