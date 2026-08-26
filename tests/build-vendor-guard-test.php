@@ -38,8 +38,33 @@ assert_true($exit === 0, "build must succeed with vendor/autoload.php present, g
 assert_true(is_file($fixture . '/sfx-bricks-child-v9.9.9.zip'), 'zip must be produced');
 
 cleanup($fixture);
+
+// The same prerequisite must also run in release.sh's preflight, BEFORE the
+// release commit and tag push: build_theme runs after both, so a late guard
+// failure would leave a half-rolled-back release (bump commit kept as HEAD,
+// tag deleted locally and on the remote). Pin the check into the existing
+// pre-mutation section, check_git_status().
+$release = file_get_contents(dirname(__DIR__) . '/release.sh');
+assert_true($release !== false && $release !== '', 'release.sh must be readable');
+$preflight = extract_function($release, 'check_git_status() {');
+assert_true($preflight !== null, 'check_git_status() must exist in release.sh');
+assert_true(
+    str_contains($preflight, 'vendor/autoload.php'),
+    'release.sh preflight (check_git_status) must verify vendor/autoload.php before any release mutation'
+);
+
 echo "All build-vendor-guard tests passed.\n";
 exit(0);
+
+function extract_function(string $haystack, string $opener): ?string
+{
+    $start = strpos($haystack, $opener);
+    if ($start === false) {
+        return null;
+    }
+    $end = strpos($haystack, "\n}", $start);
+    return $end === false ? null : substr($haystack, $start, $end - $start);
+}
 
 /** @return array{0:int,1:string} */
 function run_build(string $dir): array

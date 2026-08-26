@@ -162,6 +162,15 @@ check_git_status() {
         print_error "Production zip exclude list is missing required development paths."
         exit 1
     fi
+
+    # Must fail HERE, before the release commit and tag push: build-theme.sh
+    # carries the same guard, but by the time build_theme runs the tag is
+    # already on the remote and rollback leaves the bump commit as HEAD.
+    print_status "Checking Composer autoloader..."
+    if [ ! -f "vendor/autoload.php" ]; then
+        print_error "vendor/autoload.php not found. Run 'composer install --no-dev --optimize-autoloader' before releasing."
+        exit 1
+    fi
 }
 
 # Function to create git tag and push
