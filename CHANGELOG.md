@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.22.0] - 2026-08-26
+
+### Fixed
+
+- **Filled buttons no longer lose their border and background to unlayered framework rules.** Both properties sat inside `@layer sfx.components`, where any unlayered author rule wins regardless of specificity — Core Framework's config-dependent `:where(:root) * { border-color: var(--border-primary) }` reset painted a pale frame around every filled button, and its `.bricks-background-<v>` compat rule kept `--btn-<v>-bg` from ever reaching the background. Background and border (idle, hover, active) now live in an unlayered "FILLED CHROME" block — the same pattern the outline button already used. The `--btn-<v>-bg` token contract now applies to the background as documented, hover/active color-mix included; Bricks element settings (`#brxe-…`) still win. The cascade comments now attribute the competing rules correctly: the `:where(:root)` globals come from Core Framework, and Bricks ships its static `.bricks-color-<v>` / `.bricks-background-<v>` rules inside `@layer bricks` since 2.0. (#28)
+- **A theme package can no longer be built without the Composer autoloader.** A zip built from a clean git export ships without `vendor/` and fatals on activation ("Composer autoloader not found"). `build-theme.sh` now refuses to package when `vendor/autoload.php` is missing, and `release.sh` checks the same prerequisite in its preflight — before the release commit, tag, and push, so a late failure cannot leave a half-rolled-back release. Published release assets (v0.19.7, v0.20.0, v0.21.0 checked) were never affected. (#30)
+
+### Added
+
+- `tests/buttons-cascade-test.html` — browser acceptance test reproducing the hostile cascade (Bricks in `@layer bricks` plus unlayered Core Framework rules) against the real theme CSS, with structural checks pinning the unlayered hover/active declarations.
+- `tests/build-vendor-guard-test.php` — behavioural fixture test for the build guard and the release preflight.
+- `docs/pr-review-bots.md` — the per-repo PR-review-bot matrix for the dev-workflow.
+
 ## [0.21.0] - 2026-08-26
 
 ### Added
