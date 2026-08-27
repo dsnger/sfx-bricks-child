@@ -6,10 +6,10 @@ namespace SFX\ImageOptimizer;
 /**
  * Direct libwebp encoder that bypasses WP_Image_Editor::save() for WebP output.
  *
- * WP's WebP editors only set the quality value; they do not tune the libwebp
- * encoder method, do not enable lossless mode, and do not expose alpha quality.
- * This class fills those gaps so the admin quality slider has visible effect
- * across its range — in particular, quality=100 requests lossless WebP wherever
+ * WP's WebP editors only set the quality value; they do not enable lossless
+ * mode and do not expose alpha quality. This class fills those gaps so the
+ * admin quality slider has visible effect across its range — in particular,
+ * quality=100 requests lossless WebP wherever
  * the backend exposes it: always under Imagick, and under GD only on builds
  * that define IMG_WEBP_LOSSLESS. GD builds without it encode lossy at quality
  * 100 instead (see webpArg()), because naming the absent constant is a fatal.
@@ -19,6 +19,34 @@ final class WebpEncoder
     public static function isLosslessQuality(int $q): bool
     {
         return $q >= 100;
+    }
+
+    /**
+     * The libwebp options to set on the Imagick instance for a given quality,
+     * as option => value.
+     *
+     * Lossy encodes set nothing, so libwebp's own defaults apply — in
+     * particular webp:method 4. An earlier version forced webp:method 6, its
+     * maximum effort level, which made uploads fail outright: on ImageMagick
+     * 7.1.0-23 encoding one 1672x941 PNG measured 6.13s at method 6 against
+     * 0.79s at the default, to produce a file 4% smaller (84,032 vs 87,622
+     * bytes). The optimizer encodes once per configured max width, and the
+     * whole upload request was separately measured at ~56s end to end — the
+     * per-size benchmark above is the encode alone, so it does not account for
+     * the resize, verify and rename around each one. That overran the 30s
+     * mod_fastcgi idle timeout on the affected host, which returned HTTP 500
+     * after every converted file had already been written to disk.
+     *
+     * This is a seam, not indirection for its own sake: encodeImagick() needs
+     * a live \Imagick instance, so an override reintroduced inline there could
+     * only be observed by a test that has one. Returning the decision as data
+     * keeps it assertable.
+     */
+    public static function imagickOptions(int $quality): array
+    {
+        return self::isLosslessQuality($quality)
+            ? ['webp:lossless' => 'true']
+            : [];
     }
 
     /**
@@ -77,11 +105,11 @@ final class WebpEncoder
             // the editor as one-shot, so mutating it here is safe.
             $src->setImageFormat('webp');
 
-            if (self::isLosslessQuality($quality)) {
-                $src->setOption('webp:lossless', 'true');
-            } else {
+            foreach (self::imagickOptions($quality) as $option => $value) {
+                $src->setOption($option, $value);
+            }
+            if (!self::isLosslessQuality($quality)) {
                 $src->setImageCompressionQuality($quality);
-                $src->setOption('webp:method', '6');
             }
 
             // Reset page geometry. Imagick keeps a canvas/page rectangle from

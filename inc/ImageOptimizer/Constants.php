@@ -48,8 +48,20 @@ final class Constants
     public const DEFAULT_RESIZE_MODE = 'width';
 
     /**
-     * Encoder version. Bump when WebP/AVIF encoder behavior changes so existing
-     * images get re-flagged for reprocessing via pixrefiner_stamp comparison.
+     * Encoder version. Bumping it re-flags every already-converted image for
+     * reprocessing via pixrefiner_stamp comparison — a full pass over the
+     * media library on every installed site.
+     *
+     * One rule decides it. Bump when existing output is wrong: corrupt,
+     * mis-encoded, or no longer what the current settings ask for. Otherwise
+     * bump only for a migration someone has explicitly approved, whose
+     * measured benefit is worth that pass. Output that is merely larger,
+     * slower to produce, or unlike what a newer encoder would emit is not a
+     * reason by itself.
+     *
+     * Dropping the libwebp `webp:method` override is the second case
+     * declined: files encoded at method 6 are correct and marginally smaller
+     * than the default produces, so this deliberately stayed at 2.
      */
     public const ENCODER_VERSION = 2;
 
