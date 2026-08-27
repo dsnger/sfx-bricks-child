@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.22.1] - 2026-08-27
+
+Fixes two defects in the Image Optimizer WebP encoder that broke media uploads, each affecting a different class of host.
+
+- GD-only hosts: IMG_WEBP_LOSSLESS was named without a defined() guard, so an upload at quality 100 raised a fatal Undefined constant error on GD builds that do not define it (observed on PHP 8.4 at IONOS, while PHP 8.5 under MAMP does define it). Uploads returned HTTP 500 with the file written to disk but no attachment row created. The marker is now resolved behind its own defined() check and passed to a testable helper.
+
+- Imagick hosts: the encoder forced webp:method 6, libwebp's maximum effort level. Measured on ImageMagick 7.1.0-23, that cost 6.13s per encode against 0.79s at the default method 4, for a file only 4 percent smaller. Across the configured sizes a single upload ran about 56s and overran the 30s FastCGI idle timeout, returning HTTP 500 after the converted files had already been written. The override is removed, so libwebp's default applies.
+
+ENCODER_VERSION deliberately stays at 2: existing WebP files remain valid and are not reprocessed.
+
 ## [0.22.0] - 2026-08-26
 
 ### Fixed
