@@ -59,9 +59,12 @@ final class Constants
      * slower to produce, or unlike what a newer encoder would emit is not a
      * reason by itself.
      *
-     * Dropping the libwebp `webp:method` override is the second case
-     * declined: files encoded at method 6 are correct and marginally smaller
-     * than the default produces, so this deliberately stayed at 2.
+     * This stayed at 2 when the forced libwebp `webp:method` override was
+     * removed. What was declined there is the bump, not the removal: new
+     * encodes use the backend default from that point on, while the method-6
+     * files already on disk are correct and marginally smaller than the
+     * default produces, so reprocessing them would replace valid files with
+     * larger ones.
      */
     public const ENCODER_VERSION = 2;
 
