@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.22.2] - 2026-08-27
+
+Hardens the Image Optimizer quality setting and removes dead code.
+
+- An out-of-range or malformed sfx_webp_quality value is no longer used as an encoder setting. Two writers could store one: ImportExport sanitises the key with absint(), which makes a value non-negative without making it in range, and the legacy option migration copied a webp_quality across unexamined. This mattered because the lossless threshold is quality >= 100, so a stored 250 did not mean better quality, it silently selected lossless. On a 1672x941 PNG that measured 834,772 bytes in 1.94s against 87,622 bytes in 0.74s at quality 80.
+
+- Invalid values now fall back to the default of 80 rather than being clamped to the nearest bound. Clamping 250 would select 100, which is the lossless threshold, and would leave the site on the slow path this guards against. A deliberate 100 set in the admin UI is in range and still selects lossless.
+
+- The type is validated before the range. Casting first would accept malformed data, because (int) is 1 for true and for a non-empty array, which is in range and the worst quality the module encodes at.
+
+- Validation runs at both ends: a pre_update_option_sfx_webp_quality filter registered before the legacy migration, and on read, since the filter is absent while the feature is disabled, is not reached by direct SQL, and never saw rows written by earlier versions.
+
+- Removed inc/ImageOptimizer/image-optimizer-orig.php, 2,424 lines of the original PixRefiner v3.6 kept after the module was rewritten. Nothing loaded it. It shipped in every package, had no ABSPATH guard, defined 42 functions in the global namespace, and contained a GET-driven option write with no nonce.
+
 ## [0.22.1] - 2026-08-27
 
 Fixes two defects in the Image Optimizer WebP encoder that broke media uploads, each affecting a different class of host.
