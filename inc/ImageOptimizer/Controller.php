@@ -32,6 +32,14 @@ class Controller
      */
     public function __construct()
     {
+        // Validate quality at the WordPress write boundary, so writers this
+        // module must not call are covered without calling them: ImportExport
+        // sanitises this key with absint() and, per AGENTS.md, stays a catalogue
+        // naming other modules' export contracts rather than calling them. Registered first on purpose -- migrate_legacy_options()
+        // below writes a legacy value through update_option and would slip past a
+        // filter added after it. Not a complete boundary; see get_quality().
+        add_filter('pre_update_option_sfx_webp_quality', [Settings::class, 'sanitize_quality']);
+
         // Migrate legacy options (deprecated, remove in v0.9.0+)
         Settings::migrate_legacy_options();
         

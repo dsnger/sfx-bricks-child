@@ -138,9 +138,57 @@ class Settings
         return get_option('sfx_webp_resize_mode', Constants::DEFAULT_RESIZE_MODE);
     }
 
+    /**
+     * Reduce any stored or imported quality to a usable one.
+     *
+     * In-range values pass through. Anything else returns DEFAULT_QUALITY
+     * rather than the nearest bound, because clamping 250 would pick
+     * MAX_QUALITY and MAX_QUALITY is the lossless threshold. On one 1672x941
+     * PNG that measured 834,772 bytes in 1.94s against 87,622 bytes in 0.74s at
+     * quality 80 -- one sample, but the direction is what matters. Reading
+     * an unusable value as a request for the most expensive setting is the
+     * worst available guess. A deliberate 100 from the UI is in range and
+     * still selects lossless.
+     *
+     * Accepts an int, or a string of decimal digits with an optional leading
+     * minus once surrounding whitespace is trimmed -- no leading plus, and a
+     * negative parses then fails the range check. Every other type defaults,
+     * including a whole-number float, which is what json_decode makes of 85.0.
+     */
+    public static function sanitize_quality($value): int
+    {
+        // Type before range: (int) is 1 for true and for a non-empty array,
+        // which is in range, so casting first turns those into an accepted
+        // setting at the worst quality this module encodes. An empty array
+        // casts to 0 and the range check would catch it, but only by accident.
+        if (is_int($value)) {
+            $quality = $value;
+        } elseif (is_string($value) && preg_match('/^\s*-?\d+\s*$/', $value) === 1) {
+            $quality = (int) trim($value);
+        } else {
+            return Constants::DEFAULT_QUALITY;
+        }
+
+        return ($quality >= Constants::MIN_QUALITY && $quality <= Constants::MAX_QUALITY)
+            ? $quality
+            : Constants::DEFAULT_QUALITY;
+    }
+
+    /**
+     * The WebP/AVIF encoder quality, always within MIN_QUALITY..MAX_QUALITY.
+     *
+     * Validated on read as well as on write, and the two are not redundant.
+     * Controller registers this rule on `pre_update_option_sfx_webp_quality`,
+     * covering update_option writers -- ImportExport and
+     * migrate_legacy_options among them -- without this module being called by
+     * any of them, since AGENTS.md keeps ImportExport a catalogue that names
+     * other modules' export contracts rather than calling them. That filter is absent while the feature is disabled, is not
+     * reached by add_option or by direct SQL, and cannot have seen rows written
+     * before it existed. Reading is where those are caught.
+     */
     public static function get_quality(): int
     {
-        return (int) get_option('sfx_webp_quality', Constants::DEFAULT_QUALITY);
+        return self::sanitize_quality(get_option('sfx_webp_quality', Constants::DEFAULT_QUALITY));
     }
 
     public static function get_batch_size(): int

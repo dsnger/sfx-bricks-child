@@ -17,7 +17,7 @@ alwaysApply: false
 ## Settings (Options API, prefixed)
 - `sfx_webp_max_widths`, `sfx_webp_max_heights`
 - `sfx_webp_resize_mode` (`width` or `height`)
-- `sfx_webp_quality` (0-100)
+- `sfx_webp_quality` (1-100; values outside the range fall back to the default)
 - `sfx_webp_batch_size`
 - `sfx_webp_preserve_originals`
 - `sfx_webp_disable_auto_conversion`
