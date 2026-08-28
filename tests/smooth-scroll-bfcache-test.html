@@ -1,0 +1,126 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SmoothScroll bfcache check</title>
+<style>
+  body { font: 14px/1.6 ui-monospace, monospace; margin: 2rem; }
+  #verdict { font-size: 1.3rem; font-weight: bold; padding: .5rem 0; }
+  .pad { height: 400vh; }
+</style>
+
+<h1>SmoothScroll bfcache regression check</h1>
+<p>
+  The rAF loop must survive a back/forward-cache restore, and repeated restores
+  must not stack a second loop on one Lenis instance.
+</p>
+<ol>
+  <li>Click <a id="away" href="?away=1">navigate away</a>, then press Back.</li>
+  <li>Scroll a little so frames are produced, and let the verdict settle.</li>
+  <li>Repeat once — one cycle cannot show a repeat regression.</li>
+</ol>
+<p><b>Keep the tab in the foreground.</b> rAF callbacks do not run in a background
+tab, so a backgrounded run reports INCOMPLETE rather than a bogus failure.</p>
+<div id="verdict">waiting for a back/forward restore…</div>
+<pre id="out"></pre>
+<div class="pad"></div>
+
+<script>
+(function () {
+  // The away page must not install any of this: its body is replaced, so a
+  // reporter left running there would throw on every tick.
+  if (new URLSearchParams(location.search).has('away')) {
+    document.body.innerHTML = '<h1>Away page</h1><p>Press the browser Back button.</p>';
+    return;
+  }
+
+  // Everything is measured against the module's own driver, lenis.raf(), which
+  // its loop is the only caller of. Counting requestAnimationFrame requests
+  // instead reads as "resumed" even when the loop is dead, because Lenis
+  // schedules frames of its own on restore.
+  //
+  // __clock is an independent rAF loop used as a reference. A cycle is healthy
+  // only when driver calls keep pace with it: "at least one call" would accept
+  // a restart that ticks once and stalls, which leaves the page just as frozen.
+  // No frames at all means the tab was backgrounded and the run proves nothing.
+  var MIN_FRAMES = 3;   // below this a cycle is unmeasured, not failing
+  var SLACK = 1;        // the clock starts one frame before the restarted loop
+
+  window.__clock = 0;
+  window.__driver = 0;
+  window.__maxDriverCallsPerFrame = 0;
+  var lastTs = -1, callsThisFrame = 0;
+
+  (function tick() { window.__clock++; requestAnimationFrame(tick); })();
+
+  (function wrapDriver() {
+    if (window.sfxLenis && !window.sfxLenis.__wrapped) {
+      var orig = window.sfxLenis.raf.bind(window.sfxLenis);
+      window.sfxLenis.raf = function (t) {
+        window.__driver++;
+        // Every callback scheduled for one frame gets the same timestamp, so a
+        // second loop shows up as a second driver call within one frame.
+        callsThisFrame = (t === lastTs) ? callsThisFrame + 1 : 1;
+        lastTs = t;
+        if (callsThisFrame > window.__maxDriverCallsPerFrame) {
+          window.__maxDriverCallsPerFrame = callsThisFrame;
+        }
+        return orig(t);
+      };
+      window.sfxLenis.__wrapped = true;
+      return;
+    }
+    setTimeout(wrapDriver, 50);
+  })();
+
+  window.sfxSmoothScroll = {
+    duration: 1.2, orientation: 'vertical', gestureOrientation: 'vertical',
+    smoothWheel: true, syncTouch: true, wheelMultiplier: 1, touchMultiplier: 2,
+    infinite: false, easing: '', defaultEasing: '', anchors: false, anchorOffset: 0
+  };
+
+  // One entry per bfcache restore; counters are monotonic, so a cycle ends
+  // where the next one begins.
+  window.__cycles = [];
+  window.addEventListener('pageshow', function (event) {
+    if (!event.persisted) { return; }
+    window.__cycles.push({ clock: window.__clock, driver: window.__driver });
+  });
+
+  function report() {
+    var c = window.__cycles;
+    var spans = c.map(function (start, i) {
+      var end = c[i + 1] || { clock: window.__clock, driver: window.__driver };
+      return { frames: end.clock - start.clock, driverCalls: end.driver - start.driver };
+    });
+    var measured = spans.filter(function (s) { return s.frames >= MIN_FRAMES; });
+    var stalled = measured.filter(function (s) { return s.driverCalls < s.frames - SLACK; });
+    var result = {
+      restoreCycles: c.length,
+      perCycle: spans,
+      measuredCycles: measured.length,
+      maxDriverCallsPerFrame: window.__maxDriverCallsPerFrame
+    };
+    var text;
+    if (!c.length) {
+      text = 'waiting for a back/forward restore…';
+    } else if (stalled.length) {
+      text = 'FAIL — the loop did not keep ticking after a bfcache restore';
+    } else if (window.__maxDriverCallsPerFrame > 1) {
+      text = 'FAIL — ' + window.__maxDriverCallsPerFrame + ' loops running on one Lenis instance';
+    } else if (measured.length < c.length) {
+      text = 'INCOMPLETE — a cycle produced too few frames; foreground the tab and scroll';
+    } else if (measured.length < 2) {
+      text = 'PARTIAL — loop resumed; go away and back once more';
+    } else {
+      text = 'PASS — loop kept ticking on every restore, exactly one loop running';
+    }
+    document.getElementById('verdict').textContent = text;
+    document.getElementById('out').textContent = JSON.stringify(result, null, 2);
+    window.__result = result;
+  }
+
+  setInterval(report, 500);
+})();
+</script>
+
+<script src="../assets/libs/lenis/lenis.min.js"></script>
+<script src="../inc/SmoothScroll/assets/smooth-scroll.js"></script>
