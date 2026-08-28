@@ -9,6 +9,21 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **No automated check covers the theme's own JavaScript** (Codex Gate B on
+      PR #36, raised in all three passes, 2026-08-28): `quality.sh` runs
+      `tests/*-test.php` only, so 13 own JS files under `inc/*/assets/` (~4,370
+      lines, excluding the vendored `jquery.mjs.nestedSortable.js`) have no
+      regression signal at all — including the bfcache rAF lifecycle PR #36 fixed,
+      which ships with `tests/smooth-scroll-bfcache-test.html`, a *manual* browser
+      harness. Two steps, and only the first is generic: (1) a Node leg in
+      `quality.sh` (a `node` resolution mirroring `$PHP`, a loop over
+      `tests/*-test.mjs`), plus `setup-node` in `.github/workflows/quality.yml` and
+      an `AGENTS.md` Commands row; (2) the tests themselves. `smooth-scroll.js` is
+      the only own file that stubs cleanly — it touches almost no DOM — and stubs
+      there prove the *wiring*, not real bfcache semantics, because "`load` does not
+      fire again on restore" would be set by the stub rather than observed. The
+      admin scripts need jsdom or a real browser, i.e. a `package.json` and npm dev
+      dependencies this repo does not have. Own branch; do not attach to a fix PR.
 - [ ] **release.sh rollback leaves the bump commit as HEAD** (from Greptile on
       PR #30, 2026-08-26): any failure after the release commit — not just a
       missing autoloader, e.g. a zip/rsync failure in `build_theme` — triggers
