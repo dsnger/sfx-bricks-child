@@ -67,10 +67,16 @@
     window.sfxLenis = lenis;
 
     var rafId = null;
+    var destroyed = false;
 
     function raf(time) {
       lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
+      // lenis.raf() runs Lenis' own subscribers, one of which may destroy the
+      // instance; requeueing unconditionally would revive the loop on a dead
+      // one, because stop() can only cancel a callback that has not fired yet.
+      if (!destroyed) {
+        rafId = requestAnimationFrame(raf);
+      }
     }
 
     function stop() {
@@ -80,16 +86,34 @@
       }
     }
 
+    // `pagehide` also fires when the page enters the bfcache, and neither
+    // `load` nor our interaction triggers fire again on restore -- so without
+    // this the loop stays dead for the rest of the page's life. A dead loop is
+    // not "no smooth scroll": Lenis keeps preventDefault()-ing wheel events it
+    // never acts on, which freezes the page entirely.
+    function onPageShow(event) {
+      if (event.persisted && rafId === null) {
+        rafId = requestAnimationFrame(raf);
+      }
+    }
+
     // Cancel our loop whenever the instance is destroyed (e.g. by a page
     // transition library) or the page is being unloaded, so raf() does not
     // keep firing against a dead instance.
     var originalDestroy = lenis.destroy.bind(lenis);
     lenis.destroy = function () {
+      destroyed = true;
       stop();
+      window.removeEventListener('pagehide', stop);
+      window.removeEventListener('pageshow', onPageShow);
       return originalDestroy();
     };
 
-    window.addEventListener('pagehide', stop, { once: true });
+    // Not `{ once: true }`: every bfcache entry must stop the loop, so the
+    // `rafId === null` guard above stays true and back/forward cycles never
+    // stack a second loop on one Lenis instance.
+    window.addEventListener('pagehide', stop);
+    window.addEventListener('pageshow', onPageShow);
 
     rafId = requestAnimationFrame(raf);
 
