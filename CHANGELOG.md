@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.22.3] - 2026-08-28
+
+Fixes a page that cannot be scrolled after using the browser's Back button, when Smooth Scroll is active.
+
+- Returning to a page via Back left it unscrollable — not merely without the smooth effect, but frozen to mouse wheel and trackpad alike. The module stopped its animation loop on pagehide, which also fires when the browser puts the page into its back/forward cache. On restore neither load nor the module's own interaction triggers fire again, so nothing started the loop back up, and there was no pageshow handler anywhere in the module.
+
+- A stopped loop is worse than no smooth scroll. Lenis runs with smoothWheel and keeps calling preventDefault() on wheel events it no longer acts on, so native scrolling is disabled as well.
+
+- The loop now resumes on a persisted pageshow, and cannot be started twice on one Lenis instance. pagehide stops it on every bfcache entry, so the guard that prevents a second loop stays accurate across repeated back/forward navigation.
+
+- Closes a pre-existing race in the same loop: destroying Lenis from inside its own frame callback revived it, because cancelling only reaches a callback that has not fired yet. Measured both ways — the old code kept driving a destroyed instance on every frame that followed, the new code stops.
+
+- The bug looked like it affected only logged-in users. Password-protected pages send no-store to logged-out visitors, which suppresses the back/forward cache entirely; pages without that protection affected everyone, so the fix does not rely on that distinction.
+
+- Adds tests/smooth-scroll-bfcache-test.html, a manual browser harness, excluded from the distributed package. It counts calls to the module's own driver against an independent frame clock, because counting requestAnimationFrame requests reports "resumed" even on the broken module — Lenis schedules frames of its own on restore.
+
 ## [0.22.2] - 2026-08-27
 
 Hardens the Image Optimizer quality setting and removes dead code.
