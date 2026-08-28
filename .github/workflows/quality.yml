@@ -24,9 +24,9 @@ jobs:
     # the comment:
     #   gh api repos/<owner>/<repo>/commits/<tag> --jq .sha
     #   gh api repos/<owner>/<repo>/releases/tags/<tag> --jq .published_at
-    # A release published hours ago has had no time to be found wanting. Both SHAs
-    # below were checked this way (checkout v7.0.0: 2026-06-18; setup-php 2.37.2:
-    # 2026-06-08).
+    # A release published hours ago has had no time to be found wanting. All three
+    # SHAs below were checked this way (checkout v7.0.0: 2026-06-18; setup-php
+    # 2.37.2: 2026-06-08; setup-node v7.0.0: 2026-07-14).
     runs-on: ubuntu-24.04
     # composer.json declares "php": ">=8.0" and the theme is installed on client
     # sites across that whole range, so CI runs every supported minor — not just
@@ -49,6 +49,15 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+
+      # quality.sh is one battery and refuses to run without Node, so every leg
+      # needs it — not a separate job. That runs the JS tests once per PHP leg,
+      # which is redundant but costs seconds; the alternative would be a
+      # quality.sh that silently skips them here, which is the hole the whole
+      # leg exists to close.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
 
       # Frozen lockfile: a resolving install can silently pull new code into CI and
       # makes the run non-reproducible.

@@ -115,13 +115,15 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | quality (the whole battery — what CI runs) | `./quality.sh` |
 | typecheck | TODO — no static analyser installed (PHPStan/Psalm); see `todos.md` |
 | lint | `./quality.sh` (syntax-lint stage), or `php -l <file>` for one file |
-| test | `./quality.sh` — a bare `for f in tests/*-test.php` loop returns only the last test's status |
+| test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was run and seen to exit cleanly (25 tests passed, 0 syntax errors), and
-seen to fail on a syntax error outside `inc/` and on an empty test glob. `build-theme.sh`
-was not run in that session — it writes a release artifact — so treat its row as
-documented, not verified.
+`quality.sh` was run and seen to exit cleanly (25 PHP tests, 1 JS test, 0 syntax errors),
+and seen to fail on a syntax error outside `inc/`, on an empty test glob for either
+battery, and on a failing JS test. Its Node resolution was seen to reject an unusable
+override with every fallback removed, and a control run with a real Node in the same
+stripped environment passed. `build-theme.sh` was not run in that session — it writes a
+release artifact — so treat its row as documented, not verified.
 
 **Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
 in the gate prompt when the change touches one. Which files those are is defined once,
@@ -136,3 +138,14 @@ smuggle a copy back in, so keep the rule where it is defined.
 used as given), then `php` on PATH, then that MAMP path, so it works in CI and locally
 without editing. WP-CLI cannot reach the local socket — use
 `php` plus `wp-load.php` for anything needing a booted WordPress.
+
+**Local Node:** `quality.sh` resolves `$NODE` the same way, then `node` on PATH, then
+`~/.local/share/fnm/aliases/default/bin/node`. That last one is the fnm *alias*, not
+fnm's multishell path, which changes per shell session — a bare `node` is invisible in a
+shell where fnm was never initialised. Node 18 is the floor — a guard against something
+ancient or fake answering the probe, not a support statement: 18 and 20 are both past
+end-of-life, and the JS test needs nothing newer than 14. CI runs 22. Neither interpreter
+is optional — no usable Node is a hard error, because a
+battery that reports PASS without having run the JS tests is the hole the JS battery
+exists to close. Both resolvers probe every candidate rather than trust it:
+`NODE=/usr/bin/true` reported every test as passed before that was added.

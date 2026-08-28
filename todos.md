@@ -9,21 +9,6 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **No automated check covers the theme's own JavaScript** (Codex Gate B on
-      PR #36, raised in all three passes, 2026-08-28): `quality.sh` runs
-      `tests/*-test.php` only, so 13 own JS files under `inc/*/assets/` (~4,370
-      lines, excluding the vendored `jquery.mjs.nestedSortable.js`) have no
-      regression signal at all — including the bfcache rAF lifecycle PR #36 fixed,
-      which ships with `tests/smooth-scroll-bfcache-test.html`, a *manual* browser
-      harness. Two steps, and only the first is generic: (1) a Node leg in
-      `quality.sh` (a `node` resolution mirroring `$PHP`, a loop over
-      `tests/*-test.mjs`), plus `setup-node` in `.github/workflows/quality.yml` and
-      an `AGENTS.md` Commands row; (2) the tests themselves. `smooth-scroll.js` is
-      the only own file that stubs cleanly — it touches almost no DOM — and stubs
-      there prove the *wiring*, not real bfcache semantics, because "`load` does not
-      fire again on restore" would be set by the stub rather than observed. The
-      admin scripts need jsdom or a real browser, i.e. a `package.json` and npm dev
-      dependencies this repo does not have. Own branch; do not attach to a fix PR.
 - [ ] **release.sh rollback leaves the bump commit as HEAD** (from Greptile on
       PR #30, 2026-08-26): any failure after the release commit — not just a
       missing autoloader, e.g. a zip/rsync failure in `build_theme` — triggers
@@ -59,6 +44,17 @@ references an entry here must still be able to find it.
       regenerated. Regenerate and add the step together.
 - [ ] No static analyser installed (PHPStan/Psalm). `AGENTS.md` § Commands
       lists the `typecheck` row as TODO and points here.
+- [ ] **The admin JavaScript is still untested** (follow-up to the Node test leg,
+      2026-08-28): the leg runs in CI, but `tests/smooth-scroll-lifecycle-test.mjs`
+      is the only JS test, and it pins wiring rather than real bfcache semantics —
+      its premise is set by its own stub. The other 12 own files hold ~4,130 lines;
+      one of them, `inc/SecurityHeader/assets/admin-script.js`, is an empty
+      placeholder. The remaining 11 (largest: `inc/CustomDashboard/assets/admin-script.js`
+      at 1,318) are admin UI, and between them — not each of them — they touch real
+      DOM, jQuery (9 of the 11) and admin-ajax (5 of the 11). Hand-stubbing that is
+      not practical, so covering them needs jsdom or a browser runner: the first npm
+      dev dependency and the `package.json` this repo has so far avoided. Decide
+      whether that trade is worth it before writing tests one file at a time.
 
 ## Tooling revalidation
 - [ ] Re-check `docs/prompt-standards.md` against the current model-specific
@@ -66,3 +62,13 @@ references an entry here must still be able to find it.
       Code, new Codex model for the gates).
 
 ## Done
+- [x] **A Node test leg now covers the theme's own JavaScript** (raised by Codex
+      Gate B on PR #36 in all three passes; done 2026-08-28): `quality.sh` used to
+      run `tests/*-test.php` only, so 13 own JS files under `inc/*/assets/`
+      (~4,370 lines, excluding the vendored `jquery.mjs.nestedSortable.js`) had no
+      regression signal at all — including the bfcache rAF lifecycle fixed in
+      v0.22.3, which shipped with `tests/smooth-scroll-bfcache-test.html`, a
+      *manual* harness. Step (1) is complete: `quality.sh` resolves and probes
+      `$NODE` the way it already did `$PHP`, runs a `tests/*-test.mjs` battery with
+      the same empty-glob guard, and CI sets up Node in every PHP leg. Step (2) has
+      barely started — see the open follow-up under `## Someday`.
