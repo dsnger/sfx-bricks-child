@@ -141,8 +141,16 @@ EOF
     print_success "Updated ${CHANGELOG_FILE} with new version entry"
 }
 
-# Function to check git status
+# Preflight: working tree, project checks, and — for a publishing release — the
+# destination the release commit will be pushed to. Takes the RC flag, because
+# an RC never pushes and must stay releasable from a local-only or detached
+# checkout.
+# The name is narrower than what this does, and stays: tests/build-vendor-guard-test.php
+# anchors on it to prove the invariant-5 autoloader guard runs before the release
+# commit. Renaming it buys nothing and would drag an unrelated invariant test into
+# this diff.
 check_git_status() {
+    local is_rc=${1:-false}
     if [ -n "$(git status --porcelain)" ]; then
         print_warning "Uncommitted changes detected. Please commit or stash them before releasing."
         git status --short
@@ -171,6 +179,61 @@ check_git_status() {
         print_error "vendor/autoload.php not found. Run 'composer install --no-dev --optimize-autoloader' before releasing."
         exit 1
     fi
+
+    # Destination checks LAST, and only for a publishing release. An RC pushes
+    # nothing, so it needs no destination and stays valid from a detached or
+    # local-only checkout, as it always was. This must not short-circuit the
+    # shared checks above: they are invariant guards that apply to every build,
+    # and an early return here would silently skip the invariant-5 autoloader
+    # guard for RCs.
+    if [ "$is_rc" = true ]; then
+        print_status "RC release: skipping branch and remote checks"
+        return 0
+    fi
+
+        # Resolve the branch now, while failing is still free. The release commit is
+        # pushed at the very end, after the GitHub release exists; a detached HEAD
+        # discovered at that point would leave a published release with no branch to
+        # push to and no good remedy.
+        RELEASE_BRANCH=$(git symbolic-ref --quiet --short HEAD) || {
+            print_error "HEAD is detached. Check out the branch you are releasing from first --"
+            print_error "the release commit has to be pushed somewhere."
+            exit 1
+        }
+        print_success "Releasing from branch: ${RELEASE_BRANCH}"
+
+        # The release commit is pushed at the end, and `git push` sends every commit
+        # the remote is missing -- not just the one this script makes. AGENTS.md
+        # invariant 7 allows exactly one commit to reach the remote without a PR, so
+        # require the branch to be level with its remote counterpart first. It also
+        # catches a missing or diverged remote branch before anything is published.
+        # It does NOT prove the later push will be accepted: a protected branch or a
+        # hook can still reject it, which is why that failure is handled too.
+        #
+        # refs/heads/ explicitly: an unqualified `git fetch origin <name>` is also
+        # satisfied by a TAG of that name, and FETCH_HEAD would then compare equal
+        # while the branch does not exist at all.
+        print_status "Checking ${RELEASE_BRANCH} against origin..."
+        local fetch_err
+        if ! fetch_err=$(git fetch --quiet origin "refs/heads/${RELEASE_BRANCH}" 2>&1); then
+            print_error "Could not fetch refs/heads/${RELEASE_BRANCH} from origin:"
+            print_error "  ${fetch_err}"
+            print_error "If the branch simply is not there, push it first -- through a PR."
+            exit 1
+        fi
+        if [ "$(git rev-parse HEAD)" != "$(git rev-parse FETCH_HEAD)" ]; then
+            print_error "${RELEASE_BRANCH} is not level with origin/${RELEASE_BRANCH}."
+            print_error "Local:  $(git rev-parse --short HEAD)"
+            print_error "Remote: $(git rev-parse --short FETCH_HEAD)"
+            print_error "Releasing would push whatever else is sitting here, which invariant 7"
+            print_error "reserves for pull requests. Land or drop those commits first."
+            exit 1
+        fi
+        # Remembered as the lease for the final push: if origin moves between here
+    # and then, the push must be refused rather than quietly making whatever was
+    # removed reachable again.
+    REMOTE_BASE=$(git rev-parse FETCH_HEAD)
+    print_success "${RELEASE_BRANCH} is level with origin"
 }
 
 # Function to create git tag and push
@@ -361,6 +424,16 @@ show_usage() {
     echo "  5. Build theme package"
     echo "  6. Create GitHub release with zip file (skip if RC)"
     echo "  7. Clean up local zip file after upload (if published)"
+    echo "  8. Push the release commit to its branch. Skipped for RC, whose commit and"
+    echo "     tag stay local, and for --skip-bump, which creates no commit at all."
+    echo ""
+    echo "Failure model:"
+    echo "  - Rollback (reset, clean, delete tag) only fires for failures in the main"
+    echo "    flow. Failures INSIDE the helper steps do not trigger it - the ERR trap"
+    echo "    is not inherited without 'set -E'. Verified by probe; see todos.md."
+    echo "  - The trap is cleared once step 6 returns, so nothing after it rolls back."
+    echo "  - If step 8 fails, the release and tag are intact and whether the commit"
+    echo "    reached the remote is UNKNOWN - the script prints how to find out."
     echo ""
     echo "Prerequisites:"
     echo "  - Git repository with remote origin"
@@ -404,6 +477,9 @@ main() {
     local new_version=""
     local release_notes_arg=""
     local is_rc=false
+    # Local and initialised: the final summary reads it, and an inherited
+    # environment value would otherwise report a leftover zip after a clean run.
+    local zip_left_behind=0
     local skip_bump=false
     
     # Parse arguments - handle --rc / --skip-bump flags and extract version/notes
@@ -487,7 +563,7 @@ main() {
     echo ""
     
     # Check git status
-    check_git_status
+    check_git_status "$is_rc"
     
     # Update version in style.css (skip if re-releasing same RC version)
     if [ "$SKIP_VERSION_UPDATE" != true ]; then
@@ -513,8 +589,29 @@ main() {
         fi
         
         git commit -m "$commit_msg"
+        # Pin the SHA now. The push at the end must send exactly this commit and
+        # nothing that appeared after it: invariant 7's exception covers one
+        # generated commit, not whatever HEAD happens to be by then.
+        RELEASE_COMMIT=$(git rev-parse HEAD)
+
+        # Enforce invariant 7's exception rather than assume it: the commit that
+        # gets pushed without a PR must contain these two generated files and
+        # nothing else. `git add` names them explicitly and the preflight demands
+        # a clean tree, so this should never fire -- which is the point.
+        local committed
+        committed=$(git show --name-only --format= HEAD | grep -v '^$' | sort | tr '\n' ' ')
+        if [ "$committed" != "CHANGELOG.md style.css " ]; then
+            print_error "The release commit contains more than ${STYLE_FILE} and ${CHANGELOG_FILE}:"
+            print_error "  ${committed}"
+            print_error "AGENTS.md invariant 7 allows only that one generated commit to reach"
+            print_error "origin without a pull request. Refusing before anything is published."
+            exit 1
+        fi
     else
         print_status "Skipping version and changelog updates (re-releasing same RC version)"
+        # No commit was created in this mode, and the final push is skipped for it.
+        # RELEASE_COMMIT is still set so nothing downstream reads an unset variable.
+        RELEASE_COMMIT=$(git rev-parse HEAD)
     fi
 
     # Create git tag (skip push if RC)
@@ -531,21 +628,64 @@ main() {
     
     # Create GitHub release (skip if RC)
     if [ "$is_rc" = true ]; then
+        trap - ERR
         print_warning "Skipping GitHub release creation (RC release - not publishing)"
         local zip_file="${THEME_NAME}-v${new_version}.zip"
         print_status "RC release package available locally: ${zip_file}"
     else
         create_github_release "${new_version}"
-        
-        # Clean up zip file after successful release
+
+        # The release is public from here on, so nothing may roll back any
+        # more: rollback() deletes the tag on the remote, and a published
+        # release whose tag has been deleted is a worse outcome than anything
+        # the remaining steps can produce. Note this must clear BEFORE the zip
+        # cleanup below and not after it — a failing `rm` is unlikely, but it
+        # is a local tidy-up and must never cost the tag of a live release.
+        trap - ERR
+
+        # Clean up zip file after successful release. Non-fatal on purpose:
+        # this is local tidy-up after the release is already public, and
+        # `set -e` would otherwise abort before the release commit is pushed,
+        # reintroducing the very bug this push exists to fix.
         local zip_file="${THEME_NAME}-v${new_version}.zip"
         if [ -f "${zip_file}" ]; then
             print_status "Cleaning up zip file..."
-            rm "${zip_file}"
-            print_success "Removed zip file: ${zip_file}"
+            if rm "${zip_file}"; then
+                print_success "Removed zip file: ${zip_file}"
+            else
+                zip_left_behind=1
+                print_warning "Could not remove ${zip_file} - the release is unaffected; delete it yourself."
+            fi
         fi
     fi
-    
+
+    # Push the release commit. Without this the tag is on the remote and the
+    # version bump is not, so the branch keeps reporting the previous version
+    # -- and the NEXT release reads that stale version out of style.css, which
+    # is where the mistake finally surfaces, far from its cause.
+    # The branch name is resolved in the preflight, not here: `git push origin
+    # HEAD` cannot work from a detached HEAD, and discovering that after the
+    # release is published leaves no good move.
+    if [ "$is_rc" != true ] && [ "$SKIP_VERSION_UPDATE" != true ]; then
+        print_status "Updating ${RELEASE_BRANCH} on origin..."
+        # --force-with-lease is not about forcing: it pins the update to the exact
+        # remote SHA the preflight approved. If origin was rewound or the branch
+        # deleted in the meantime, this refuses instead of resurrecting ancestry.
+        if git push --force-with-lease="refs/heads/${RELEASE_BRANCH}:${REMOTE_BASE}" \
+                origin "${RELEASE_COMMIT}:refs/heads/${RELEASE_BRANCH}"; then
+            print_success "${RELEASE_BRANCH} on origin is up to date"
+        else
+            print_error "Release ${new_version} is published; updating ${RELEASE_BRANCH} failed."
+            print_error "The release and its tag are intact -- nothing was rolled back."
+            print_error "Whether the commit reached origin is UNKNOWN: a push can fail after"
+            print_error "the server accepted it. Do not simply retry."
+            print_error "Release commit: ${RELEASE_COMMIT}"
+            print_error "Expected remote state at preflight: ${REMOTE_BASE}"
+            print_error "Recovery steps: see 'Critical warning' in .cursor/rules/publish-release.mdc"
+            exit 1
+        fi
+    fi
+
     # Success!
     echo ""
     if [ "$is_rc" = true ]; then
@@ -564,16 +704,18 @@ main() {
     else
         print_success "🎉 Release ${new_version} completed successfully!"
         print_success "Release URL: https://github.com/dsnger/sfx-bricks-child/releases/tag/v${new_version}"
-        print_success "Zip file uploaded and cleaned up"
+        if [ "${zip_left_behind:-0}" -eq 1 ]; then
+            print_success "Zip file uploaded"
+            print_warning "The local zip is still there: ${THEME_NAME}-v${new_version}.zip"
+        else
+            print_success "Zip file uploaded and cleaned up"
+        fi
         echo ""
         print_status "Next steps:"
         echo "  - Test the release on a staging site"
         echo "  - Update documentation if needed"
         echo "  - Notify users of the new release"
     fi
-    
-    # Remove error trap
-    trap - ERR
 }
 
 # Run main function with all arguments

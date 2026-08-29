@@ -18,6 +18,11 @@ alwaysApply: true
 - Git working tree must be clean (the script enforces this).
 - GitHub CLI (`gh`) must be installed and authenticated for non-RC releases.
 - `build-theme.sh` must exist and be executable.
+- For a publishing (non-RC) release, HEAD must be on a branch — not detached — and that
+  branch must be exactly level with `refs/heads/<branch>` on origin. The script fetches
+  and compares before it publishes anything, because the final push would otherwise send
+  every commit the remote is missing, and `AGENTS.md` invariant 7 reserves that for pull
+  requests. An RC skips these checks: it publishes and pushes nothing.
 
 ## What `release.sh` does
 - Updates `style.css` version (unless re-releasing same RC).
@@ -26,12 +31,57 @@ alwaysApply: true
 - Creates a git tag `vX.Y.Z`.
 - Builds the theme zip via `build-theme.sh`.
 - Creates a GitHub release and uploads the zip (skipped for RC).
-- Cleans up the local zip after upload (skipped for RC).
+- Cleans up the local zip after upload (skipped for RC); a failure here only warns.
+- Pushes the release commit to its branch (skipped for RC). Without this the tag is on
+  the remote and the version bump is not, which the next release reads back as a stale
+  version out of `style.css`. It pushes the pinned commit SHA, not `HEAD`, so only the
+  generated commit travels. `--skip-bump` creates no commit, so this step is skipped.
 
 ## RC (release candidate) behavior
 - Use `--rc` or include `_rc` in the version (e.g., `1.2.3_rc`).
 - No tag push and no GitHub release; zip is kept locally.
 
 ## Critical warning
-- On failure, `release.sh` runs `git reset --hard` and `git clean -fd`.
+- On failure, `release.sh` may run `git reset --hard` and `git clean -fd`.
 - Do not run the script if there are untracked files you want to keep.
+- **The rollback covers less than it looks like.** The `ERR` trap is armed with `set -e`
+  but without `set -E`, so it fires only for failures in `main` itself. A failure inside
+  `create_git_tag`, `build_theme` or `create_github_release` ends the script *without*
+  rolling anything back. Verified by probe, not read off the source.
+- Once `gh release create` succeeds the release is public, and from that point nothing
+  rolls back by design: deleting the tag of a published release would be worse than any
+  state the remaining steps can leave. The trap is cleared explicitly when
+  `create_github_release` returns.
+- If the final branch push fails, the release and its tag are intact and whether the
+  commit reached the remote is UNKNOWN — a push can fail after the server accepted it.
+  Settle it before doing anything else, which is also what the script prints:
+
+  The script prints two SHAs: the release commit, and the remote state its preflight
+  approved. Use those, not `HEAD` — it may have moved.
+
+  ```sh
+  git fetch origin refs/heads/<branch> \
+    && { git merge-base --is-ancestor <release-commit> FETCH_HEAD \
+         && echo arrived || echo missing; }
+  ```
+
+  `refs/heads/` and the `&&` both matter: an unqualified fetch can be answered by a
+  same-named tag, and a failed fetch leaves a stale `FETCH_HEAD` that reads as arrived.
+
+  **Arrived** → nothing to do. **Missing** → retry with the same lease the script used,
+  never a plain push, or a remote that was rewound in the meantime gets rolled forward:
+
+  ```sh
+  git push --force-with-lease=refs/heads/<branch>:<preflight-remote-sha> \
+    origin <release-commit>:refs/heads/<branch>
+  ```
+
+  If that is refused, either origin moved since the release started or the push was
+  rejected for another reason — a protected branch or a server hook. Stop and look
+  before pushing anything; the release itself is already published and is not at risk.
+
+  Missing → push again. Rejected (protected branch, non-fast-forward) → fix the cause;
+  rerunning will not help.
+- A **publishing** release refuses to run from a detached HEAD, because the release commit
+  needs a branch to be pushed to and discovering that after publication leaves no good
+  move. An RC has no destination and is still valid detached.

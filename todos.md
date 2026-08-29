@@ -20,6 +20,26 @@ references an entry here must still be able to find it.
       restore the pre-release HEAD is a separate, riskier change (the trap
       fires for every ERR, and eating a commit on an unrelated failure would
       be worse) and needs its own design pass.
+      Narrowed 2026-08-28: the trap is now cleared explicitly when
+      `create_github_release` returns — before the zip cleanup — so neither that
+      cleanup nor the new release-commit push can roll anything back. Deleting
+      the tag of a published release would have been worse than the unpushed
+      commit the push was added to fix. See the entry below, though: the window
+      is also much smaller than it reads, which changes what this finding is
+      worth fixing for.
+- [ ] **The release rollback does not fire for failures inside its helpers**
+      (Codex Gate B on the release-push PR, 2026-08-28): `release.sh` arms
+      `trap rollback ERR` with `set -e` but *without* `set -E`, so the trap runs
+      only for failures in `main` itself. A failure inside `create_git_tag`,
+      `build_theme` or `create_github_release` — including a `gh release upload`
+      that fails after `gh release create` succeeded — ends the script with no
+      rollback at all. Verified with a probe, not read off the source. Two
+      consequences: the rollback is largely decorative for the steps that
+      actually fail, and a failed upload leaves a published release without its
+      zip and with the version bump unpushed. Enabling `set -E` is NOT the fix
+      on its own — it would let an upload failure delete the tag of a live
+      release. This needs explicit checked phases with the irreversible boundary
+      at a successful `gh release create`, which is its own design pass.
 
 ## Someday
 - [ ] **Two pre-existing docs disagree with `AGENTS.md`** (Codex Gate B pass 3,

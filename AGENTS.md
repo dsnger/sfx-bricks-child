@@ -89,6 +89,13 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
    *Why:* the bot review gate (`docs/pr-review-bots.md`) only sees changes that arrive
    through a PR. This is instruction-backed, not enforced — `main` currently carries no
    branch protection and no ruleset, so nothing stops a direct push but this rule.
+   *One named exception, and only this one:* the release commit `release.sh` makes and
+   pushes. It carries `style.css` and `CHANGELOG.md` and nothing else, both generated
+   from the version argument and the release notes, so there is nothing for a reviewer
+   to find. That commit has always been made directly on the release branch; since
+   2026-08-28 the script pushes it as well, because leaving that to a human hand is
+   what let v0.22.3 be tagged on the remote while the bump stayed local. Everything
+   else — including any change to `release.sh` itself — goes through a PR.
 
 ## Don'ts
 
