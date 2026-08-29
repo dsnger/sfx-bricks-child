@@ -77,9 +77,24 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
    WPOptimizer, CustomDashboard, CustomScriptsManager, ImportExport. Don't add more, and
    don't report the existing ones as new violations.
 
-5. **A built package must contain `vendor/autoload.php`.**
-   *Why:* a shipped RC was once built without it and installed broken. Guarded in
-   `build-theme.sh` and preflighted in `release.sh` — defense in depth, both stay.
+5. **A built package must contain a WORKING `vendor/autoload.php`.**
+   *Why:* a shipped RC was once built without it and installed broken. Existence is not
+   the property that matters — on 2026-08-28 a one-line `<?php` placeholder, written into
+   the checkout by a test harness, satisfied every file-exists check and produced a package
+   whose autoloader loads no class at all. Checking the file's shape is not enough either —
+   a vendor/ holding only `autoload.php` and `ClassLoader.php` looks plausible and fatals on
+   `require`, because Composer's entry point pulls in `composer/autoload_real.php`. Both
+   guards therefore RESOLVE CLASSES through it. Weaker predicates all failed in review: an
+   object exposing `loadClass()` passed, and so did a loader advertising the `SFX\` prefix
+   while it pointed at a directory that was not there. Both guards now require
+   `SFX\SFXBricksChildTheme` *and* `SFX\SFXBricksChildAdmin` to resolve — two classes, because
+   a stale `--optimize-autoloader` classmap can carry one and miss the other, and because
+   `functions.php` also requires the first by hand. Both discard the autoloader's own output and
+   demand a marker back on stdout rather than trusting an exit code, and `build-theme.sh` runs
+   `quality.sh`'s numeric version probe on its interpreter — `PHP=/usr/bin/true` waved
+   everything through until it did. Defense in depth, both stay. `tests/build-vendor-guard-test.php`
+   pins the build side across missing, placeholder and real; the `stubvendor` scenario in
+   `tests/support/release-push-harness.sh` drives release.sh end to end with the placeholder.
 
 6. **The release version lives in `style.css`.**
    *Why:* it is what WordPress and the GitHub updater read. A git tag alone does not make
@@ -143,7 +158,9 @@ smuggle a copy back in, so keep the rule where it is defined.
 **Local PHP:** development runs under MAMP (`/Applications/MAMP/bin/php/php8.5.2/bin/php`).
 `quality.sh` resolves `$PHP` (a bare command name goes through PATH, an absolute path is
 used as given), then `php` on PATH, then that MAMP path, so it works in CI and locally
-without editing. WP-CLI cannot reach the local socket — use
+without editing. `build-theme.sh` uses the same three candidates and the same version probe (it does
+not repeat quality.sh's linter check, which is about linting rather than loading) — it needs
+PHP now, because verifying the Composer autoloader means loading it. WP-CLI cannot reach the local socket — use
 `php` plus `wp-load.php` for anything needing a booted WordPress.
 
 **Local Node:** `quality.sh` resolves `$NODE` the same way, then `node` on PATH, then

@@ -12,7 +12,8 @@
 #   tests/support/release-push-harness.sh <repo> [release.sh]
 #
 # Scenarios: normal, rc (run detached — an RC needs no destination), rcnovendor
-# (the invariant-5 guard must still fire for an RC), rcnoexclude (so must the
+# (the invariant-5 guard must still fire for an RC), stubvendor (a placeholder
+# autoloader must stop the release), rcnoexclude (so must the
 # package-exclude guard), detached (no branch to push
 # to), tagnotbranch (origin
 # has only a same-named tag), notlevel (an unpushed local commit is present),
@@ -125,8 +126,15 @@ run_scenario() {
   # release.sh preflights the Composer autoloader — invariant 5. `rcnovendor`
   # withholds it to prove an RC still reaches that guard: the RC exemption is
   # meant to skip the destination checks only.
-  if [ "$scenario" != rcnovendor ]; then
+  # A real vendor/, copied from the caller: release.sh now LOADS the autoloader
+  # and checks it maps this theme's classes, so a placeholder aborts every
+  # scenario in the preflight. `stubvendor` deliberately keeps the placeholder,
+  # which is how that guard is exercised end to end.
+  if [ "$scenario" = stubvendor ]; then
     mkdir -p vendor && printf '<?php\n' > vendor/autoload.php
+  elif [ "$scenario" != rcnovendor ]; then
+    [ -d "$SRC/vendor" ] || { fail "caller has no vendor/ — run composer install"; return; }
+    cp -R "$SRC/vendor" vendor
   fi
 
   # Break the package exclude list, so the SECOND shared guard fails. rcnovendor
@@ -239,6 +247,13 @@ HOOK
       check "no tag created locally"               ""           "$local_tags"
       check "nothing was published"                ""           "$gh_order"
       ;;
+    stubvendor)
+      check "refuses a placeholder autoloader"     failed       "$([ "$rc" -ne 0 ] && echo failed || echo ok)"
+      check "says it does not load the classes"    yes          "$(grep -qa "does not load this theme's classes" "$tmp/out" && echo yes || echo no)"
+      check "no commit was made"                   "$base_head" "$local_head"
+      check "no tag created locally"               ""           "$local_tags"
+      check "nothing was published"                ""           "$gh_order"
+      ;;
     rcnovendor)
       check "refuses without vendor/autoload.php"  failed       "$([ "$rc" -ne 0 ] && echo failed || echo ok)"
       check "names the autoloader"                 yes          "$(grep -qa 'vendor/autoload.php not found' "$tmp/out" && echo yes || echo no)"
@@ -284,7 +299,7 @@ HOOK
 }
 
 echo "release-push-harness: ${RELEASE_SH:-<committed copy>}"
-for s in normal rc rcnovendor rcnoexclude detached tagnotbranch notlevel cleanupfails pushfails; do run_scenario "$s"; done
+for s in normal rc rcnovendor rcnoexclude stubvendor detached tagnotbranch notlevel cleanupfails pushfails; do run_scenario "$s"; done
 
 if [ "$failures" -ne 0 ]; then
   echo "HARNESS: FAIL ($failures of $checks assertions)"
