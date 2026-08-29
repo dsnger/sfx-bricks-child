@@ -174,9 +174,25 @@ check_git_status() {
     # Must fail HERE, before the release commit and tag push: build-theme.sh
     # carries the same guard, but by the time build_theme runs the tag is
     # already on the remote and rollback leaves the bump commit as HEAD.
+    # Load it, do not just look at it. A one-line `<?php` placeholder satisfied a
+    # file-exists check and would have shipped a theme that loads no class; that
+    # happened here on 2026-08-28, from a test harness that wrote into the real
+    # checkout. Requiring the file returns Composer's ClassLoader when it is real.
     print_status "Checking Composer autoloader..."
     if [ ! -f "vendor/autoload.php" ]; then
         print_error "vendor/autoload.php not found. Run 'composer install --no-dev --optimize-autoloader' before releasing."
+        exit 1
+    fi
+    # An exit code alone would be satisfied by any stub interpreter, so demand the
+    # marker back on stdout — the same reason quality.sh probes its own $PHP.
+    if [ "$(php -r 'ob_start(); require $argv[1]; ob_end_clean();
+            echo (class_exists("SFX\\SFXBricksChildTheme")
+                  && class_exists("SFX\\SFXBricksChildAdmin")) ? "THEME-OK" : "";' \
+            "vendor/autoload.php" 2>/dev/null)" != "THEME-OK" ]; then
+        print_error "vendor/autoload.php does not load this theme's classes."
+        print_error "A file that merely exists, or a vendor/ without this theme's PSR-4 map,"
+        print_error "produces a package that fatals on activation."
+        print_error "Run 'composer install --no-dev --optimize-autoloader' before releasing."
         exit 1
     fi
 

@@ -17,11 +17,68 @@ if [ -z "$THEME_VERSION" ]; then
   exit 1
 fi
 
-# A package without the Composer autoloader fatals on theme load
-# (functions.php requires vendor/autoload.php). vendor/ is not in git,
-# so a build from a clean export would ship exactly that — refuse.
+# A package without a WORKING Composer autoloader fatals on theme load
+# (functions.php requires vendor/autoload.php). vendor/ is not in git, so a
+# build from a clean export would ship exactly that — refuse.
+#
+# Existence is not the property that matters: a one-line `<?php` placeholder
+# passed the old is-file check here on 2026-08-28 and would have shipped a theme
+# that loads no class. Neither is shape: a vendor/ holding only autoload.php and
+# ClassLoader.php looks plausible and fatals on require, because Composer's
+# entry point pulls in composer/autoload_real.php. So load it for real.
 if [ ! -f "${THEME_DIR}/vendor/autoload.php" ]; then
   echo "Error: vendor/autoload.php not found. Run 'composer install --no-dev --optimize-autoloader' before building."
+  exit 1
+fi
+
+# Resolve PHP the way quality.sh does, including its version probe. An exit code
+# alone is satisfied by `PHP=/usr/bin/true`, and a bare "it ran" by PHP 7.4 —
+# both would wave broken autoloaders through.
+php_bin=""
+for candidate in "${PHP:-}" php /Applications/MAMP/bin/php/php8.5.2/bin/php; do
+  [ -n "$candidate" ] || continue
+  case "$candidate" in
+    */*) [ -x "$candidate" ] || continue ;;
+    *) command -v "$candidate" >/dev/null 2>&1 || continue ;;
+  esac
+  # Version as a number PHP computed, not a string it could have echoed.
+  # `|| ver=""`: under `set -e` a failing command substitution aborts the whole
+  # script, so an unusable $PHP would stop the build instead of falling through
+  # to the next candidate.
+  ver=$("$candidate" -r 'echo PHP_VERSION_ID + 1;' 2>/dev/null) || ver=""
+  case "$ver" in '' | *[!0-9]*) continue ;; esac
+  [ "$ver" -gt 80000 ] || continue
+  php_bin=$candidate
+  break
+done
+if [ -z "$php_bin" ]; then
+  echo "Error: no usable PHP >= 8.0 found (tried \$PHP, php on PATH, the MAMP build)."
+  echo "       PHP is needed to verify the Composer autoloader before packaging."
+  exit 1
+fi
+
+# Load it, and RESOLVE a class through it. Weaker checks all failed in review: a
+# file that exists (a `<?php` placeholder passed), a file whose shape looks right
+# (a half-copied vendor/ fatals on require), an object with loadClass() (a
+# hand-written stub passed), a loader advertising the SFX\ prefix (a prefix
+# pointing at a directory that is not there passed). Only resolving the class
+# proves the package will boot. Output from the autoloader is discarded so it
+# cannot forge the marker.
+# ponytail: this stops accidents — a stub, a half-copied tree, someone else's
+# vendor/. A deliberately crafted fake still wins and is not the threat model.
+probe=$("$php_bin" -r '
+    ob_start();
+    require $argv[1];
+    ob_end_clean();
+    // Two classes, and deliberately not only the one functions.php also requires
+    // by hand: a stale --optimize-autoloader classmap can carry one and miss the
+    // other, which still fatals on activation.
+    echo (class_exists("SFX\\SFXBricksChildTheme")
+          && class_exists("SFX\\SFXBricksChildAdmin")) ? "LOADER-OK" : "";
+' "${THEME_DIR}/vendor/autoload.php" 2>/dev/null) || probe=""
+if [ "$probe" != "LOADER-OK" ]; then
+  echo "Error: vendor/autoload.php does not resolve this theme's classes."
+  echo "       Run 'composer install --no-dev --optimize-autoloader' before building."
   exit 1
 fi
 
