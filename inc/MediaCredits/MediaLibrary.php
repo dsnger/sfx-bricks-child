@@ -276,6 +276,20 @@ class MediaLibrary
                     self::notify_saved($id, 'meta');
                 }
             }
+            // Hitting the bound means a listener chain longer than any real
+            // one. Dropping what is still queued is the only safe end to it —
+            // but silently is not, because "a credit changed and nothing was
+            // told" is the whole failure this action exists to prevent.
+            if (self::$dirty !== []) {
+                error_log(sprintf(
+                    'sfx-bricks-child: sfx_media_credits_saved stopped after %d flush rounds; %d attachment(s) not announced: %s. A listener is writing credit fields in a chain — break the cycle in the listener.',
+                    $rounds,
+                    count(self::$dirty),
+                    implode(', ', array_keys(self::$dirty))
+                ));
+
+                self::$dirty = [];
+            }
         } finally {
             self::$flushing = false;
         }
