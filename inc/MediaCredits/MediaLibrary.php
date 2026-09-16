@@ -20,6 +20,25 @@ class MediaLibrary
         add_filter('attachment_fields_to_edit', [self::class, 'fields'], 10, 2);
         add_filter('attachment_fields_to_save', [self::class, 'save'], 10, 2);
         add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
+        // Notification follows actual META WRITES, not the shape of a request.
+        // See mark_dirty(): a REST request that writes one field and then
+        // rejects the other answers 400 with the first one already persisted,
+        // so anything keyed on a successful response misses it.
+        add_action('added_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        add_action('updated_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        add_action('deleted_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        // Two flush points, same callback. rest_request_after_callbacks runs
+        // for EVERY REST outcome — WP_REST_Server::respond_to_request() applies
+        // it before a WP_Error becomes a response (class-wp-rest-server.php:1318)
+        // — which is what catches the 400-after-partial-write above;
+        // rest_after_insert_attachment would not, because the controller
+        // returns before firing it. shutdown is the catch-all for everything
+        // that is not a REST request at all: WP-CLI, another plugin. Flushing
+        // twice is harmless, the first one empties the list, and neither
+        // inspects the request, so the URL-sideload branch that fires an
+        // after-insert action without writing meta finds nothing dirty.
+        add_filter('rest_request_after_callbacks', [self::class, 'flush_dirty_rest'], 10, 1);
+        add_action('shutdown', [self::class, 'flush_dirty'], 0);
         add_filter('manage_media_columns', [self::class, 'columns']);
         add_action('manage_media_custom_column', [self::class, 'column'], 10, 2);
         add_action('restrict_manage_posts', [self::class, 'filter_dropdown']);
@@ -64,30 +83,216 @@ class MediaLibrary
     }
 
     /**
-     * Underscore-prefixed so the keys stay out of the Custom Fields box, and
-     * out of REST: this is not a public API, it is two fields and a marker.
+     * Underscore-prefixed so the keys stay out of the Custom Fields box.
+     *
+     * The two editor-facing fields are in REST; the IPTC marker is not. The
+     * marker records "we have already looked at this file's embedded data",
+     * which is bookkeeping for prefill_iptc() and not a value anyone should
+     * set — exposing it would only offer a way to disable the prefill by
+     * accident.
+     *
+     * An underscore-prefixed key is protected meta, so register_meta()
+     * defaults its auth_callback to __return_false. show_in_rest alone would
+     * therefore make the fields readable and still refuse every write, which
+     * is why can_edit_attachment() is passed explicitly.
+     *
+     * object_subtype scopes all three to attachments. Without it the keys are
+     * registered for every post type, and show_in_rest would surface them on
+     * posts, pages and every CPT — three keys that can never hold a value
+     * there.
      */
     public static function register_meta(): void
     {
         register_meta('post', Credit::META_COPYRIGHT, [
+            'object_subtype'    => 'attachment',
             'type'              => 'string',
             'single'            => true,
-            'show_in_rest'      => false,
+            'show_in_rest'      => true,
+            'auth_callback'     => [self::class, 'can_edit_attachment'],
             'sanitize_callback' => 'sanitize_text_field',
         ]);
 
         register_meta('post', Credit::META_AI, [
+            'object_subtype'    => 'attachment',
             'type'              => 'string',
             'single'            => true,
-            'show_in_rest'      => false,
+            'show_in_rest'      => ['schema' => ['type' => 'string', 'enum' => self::ai_key_enum()]],
+            'auth_callback'     => [self::class, 'can_edit_attachment'],
             'sanitize_callback' => [self::class, 'sanitize_ai_key'],
         ]);
 
         register_meta('post', Credit::META_IPTC_MARKER, [
-            'type'         => 'string',
-            'single'       => true,
-            'show_in_rest' => false,
+            'object_subtype' => 'attachment',
+            'type'           => 'string',
+            'single'         => true,
+            'show_in_rest'   => false,
         ]);
+    }
+
+    /**
+     * The AI marking's accepted values, as a REST schema enum.
+     *
+     * sanitize_ai_key() already turns an unrecognised slug into '', which is
+     * right for a <select> that cannot submit one. Over REST it would mean a
+     * typo silently clears the field and answers 200 — the failure that sent
+     * us here. The enum makes the same value a 400 that names the key.
+     *
+     * get_default_labels(), not get_labels(): the slug set is closed, and
+     * get_labels() only re-words it. Reading the filtered map here would also
+     * fire sfx_media_credits_labels on init, before a theme or plugin hooking
+     * a later action has registered.
+     *
+     * @return list<string>
+     */
+    private static function ai_key_enum(): array
+    {
+        return array_merge([''], array_keys(Settings::get_default_labels()));
+    }
+
+    /**
+     * Who may write the two fields over REST: whoever may edit that
+     * attachment. Same gate wp-admin applies — an Author reaches their own
+     * uploads, a Subscriber reaches nothing.
+     *
+     * map_meta_cap() passes the value it would have used (false, for
+     * protected meta) as $allowed; it is ignored deliberately, because that
+     * default is the very thing being replaced.
+     *
+     * The answer is about $user_id, NOT about the current session. They are
+     * the same user on a REST write, which is why current_user_can() looked
+     * right; they are not on user_can($other, 'edit_post_meta', $id, $key),
+     * which core supports (capabilities.php:999) and which would otherwise
+     * have been answered about whoever happened to be logged in.
+     *
+     * @param mixed $allowed   what map_meta_cap() decided before this filter
+     * @param mixed $meta_key
+     * @param mixed $object_id the attachment being written
+     * @param mixed $user_id   the user being asked about
+     */
+    public static function can_edit_attachment($allowed, $meta_key, $object_id, $user_id = 0): bool
+    {
+        $id   = (int) $object_id;
+        $user = (int) $user_id;
+
+        return $id > 0 && $user > 0 && user_can($user, 'edit_post', $id);
+    }
+
+    /** @var array<int, bool> attachments whose credit meta this request changed */
+    private static array $dirty = [];
+
+    /** @var bool guards flush_dirty() against re-entry from its own listeners */
+    private static bool $flushing = false;
+
+    /**
+     * Record that a credit field was actually written.
+     *
+     * Hooked on added_/updated_/deleted_post_meta rather than on any request
+     * lifecycle, because the write is the thing the action is about and a
+     * request is not a reliable proxy for it. Two concrete ways they diverge,
+     * both reproduced:
+     *
+     *   - A REST write carrying a valid copyright and an invalid AI slug
+     *     persists the copyright, then answers 400 (WP_REST_Meta_Fields
+     *     validates and writes key by key, meta-fields.php:194-216). Anything
+     *     hooked on a successful response never fires, and the stored credit
+     *     is left with a stale cache in front of it.
+     *   - The attachments controller's URL-sideload branch fires
+     *     rest_after_insert_attachment without ever reaching update_value()
+     *     (attachments-controller.php:543-546), so a request merely CARRYING
+     *     the keys proves nothing about a write.
+     *
+     * @param mixed $meta_id
+     * @param mixed $object_id
+     * @param mixed $meta_key
+     */
+    public static function mark_dirty($meta_id, $object_id, $meta_key): void
+    {
+        if ($meta_key !== Credit::META_COPYRIGHT && $meta_key !== Credit::META_AI) {
+            return;
+        }
+
+        $id = (int) $object_id;
+
+        if ($id > 0 && get_post_type($id) === 'attachment') {
+            self::$dirty[$id] = true;
+        }
+    }
+
+    /**
+     * Fire the action for writes no contexted path claimed.
+     *
+     * save() and prefill_iptc() call notify_saved() themselves and it clears
+     * the mark, so this only ever sees a write that came through the meta API
+     * directly — REST, WP-CLI, another plugin. Priority 0 on shutdown so a
+     * listener that needs a booted WordPress still has one.
+     */
+    /**
+     * Filter shim: flush, then hand the response back untouched.
+     *
+     * @param mixed $response
+     * @return mixed the same response
+     */
+    public static function flush_dirty_rest($response)
+    {
+        self::flush_dirty();
+
+        return $response;
+    }
+
+    public static function flush_dirty(): void
+    {
+        // Reentrancy: a listener may write a credit field itself, which marks
+        // another attachment while this loop is running. Drain rather than
+        // snapshot once, or that write is never announced. Bounded by a guard
+        // against the degenerate case — a listener that writes the SAME field
+        // it is told about would otherwise spin forever.
+        if (self::$flushing) {
+            return;
+        }
+
+        self::$flushing = true;
+
+        try {
+            $rounds = 0;
+
+            while (self::$dirty !== [] && $rounds++ < 10) {
+                $ids = array_keys(self::$dirty);
+
+                self::$dirty = [];
+
+                foreach ($ids as $id) {
+                    $id = (int) $id;
+
+                    // wp_delete_attachment() deletes an attachment's meta
+                    // before its row (post.php:6884,6891), so an ordinary
+                    // deletion marks it dirty and then removes it. Announcing
+                    // that as a save would hand every listener a nonexistent
+                    // id and two empty strings — a cache-invalidation hook
+                    // being told a deleted attachment's credit just changed.
+                    if (get_post_type($id) !== 'attachment') {
+                        continue;
+                    }
+
+                    self::notify_saved($id, 'meta');
+                }
+            }
+            // Hitting the bound means a listener chain longer than any real
+            // one. Dropping what is still queued is the only safe end to it —
+            // but silently is not, because "a credit changed and nothing was
+            // told" is the whole failure this action exists to prevent.
+            if (self::$dirty !== []) {
+                error_log(sprintf(
+                    'sfx-bricks-child: sfx_media_credits_saved stopped after %d flush rounds; %d attachment(s) not announced: %s. A listener is writing credit fields in a chain — break the cycle in the listener.',
+                    $rounds,
+                    count(self::$dirty),
+                    implode(', ', array_keys(self::$dirty))
+                ));
+
+                self::$dirty = [];
+            }
+        } finally {
+            self::$flushing = false;
+        }
     }
 
     /**
@@ -280,9 +485,11 @@ class MediaLibrary
      * Re-read both fields' current values and fire sfx_media_credits_saved.
      *
      * Shared by save() (context 'save', at least one field present in the
-     * submitted payload) and prefill_iptc() (context 'iptc', immediately
-     * after the one write that path can ever make) so the action's contract
-     * — and its docblock — lives in exactly one place.
+     * submitted payload), prefill_iptc() (context 'iptc', immediately after
+     * the one write that path can ever make) and flush_dirty() (context
+     * 'meta', a write that reached the meta API without going through either
+     * — a REST write, WP-CLI, another plugin) so the action's contract — and
+     * its docblock — lives in exactly one place.
      *
      * This is the seam the parent spec deliberately left open. That spec
      * lists page-cache invalidation in its Out of Scope table as "add when a
@@ -300,6 +507,10 @@ class MediaLibrary
      */
     private static function notify_saved(int $id, string $context): void
     {
+        // This write is now accounted for; flush_dirty() must not repeat it
+        // under the generic 'meta' context.
+        unset(self::$dirty[$id]);
+
         $copyright = (string) get_post_meta($id, Credit::META_COPYRIGHT, true);
         $ai_key    = (string) get_post_meta($id, Credit::META_AI, true);
 
@@ -312,11 +523,19 @@ class MediaLibrary
          * value: comparing old and new would cost every save an extra read
          * to serve a listener that can compare for itself.
          *
+         * That applies to 'save' and 'iptc'. The 'meta' context keys on the
+         * write, and update_metadata() does not write an identical value, so
+         * an unchanged re-submission announces nothing; it also coalesces two
+         * fields in one request into one notification. Deletion is silent —
+         * see flush_dirty().
+         *
          * @param int    $attachment_id
          * @param string $copyright     current value, re-read after the write
          * @param string $ai_key        current value, re-read after the write
-         * @param string $context       'save' (attachment_fields_to_save) or
-         *                              'iptc' (the one-shot prefill)
+         * @param string $context       'save' (attachment_fields_to_save),
+         *                              'iptc' (the one-shot prefill), or
+         *                              'meta' (written straight through the
+         *                              meta API — REST, WP-CLI, a plugin)
          */
         do_action('sfx_media_credits_saved', $id, $copyright, $ai_key, $context);
     }

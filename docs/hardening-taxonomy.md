@@ -22,4 +22,12 @@ the synonyms a future reader might search for instead.
 - `orders-missing-idempotency-key` — a retryable order write accepted without an idempotency key
 -->
 
-_None yet — `dev-workflow:harden-finding` adds them as findings arrive._
+- `harness-unguarded-real-state` — a manual verification harness creates or mutates
+  real-environment state outside a guaranteed teardown or guard path
+  (aliases: harness cleanup, teardown, fixture leak, stray fixture, scratch guard,
+  `cd` guard, live-site write, `trap`, `register_shutdown_function`). Covers both
+  halves: a fixture removed inline instead of from the single teardown, and a guard
+  that decides where the harness operates without failing fatally. This project's
+  harnesses (`tests/support/*`) run against the real checkout and the real site,
+  which is what makes the class worth its own name here rather than a generic
+  test-hygiene one.

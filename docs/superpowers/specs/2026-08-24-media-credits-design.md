@@ -103,6 +103,17 @@ Two post meta on the attachment, underscore-prefixed so they stay out of the Cus
 
 Registered through `register_meta('post', …)` with `single => true`, `show_in_rest => false`.
 
+> **Superseded 2026-09-16 (PR #40).** The REST half of that line no longer holds.
+> `_sfx_media_copyright` and `_sfx_media_ai` are now `show_in_rest => true` with an
+> `auth_callback` checking `edit_post` on the attachment, so they are publicly readable
+> (media is public) and writable by anyone who may edit that attachment — which is what
+> lets an API client with an application password set a credit. `_sfx_media_ai`
+> additionally carries a schema `enum`, so an unrecognised slug is a `400` instead of
+> the `''` the sanitize column still correctly describes for the wp-admin path.
+> `_sfx_media_iptc_prefilled` stays `show_in_rest => false`. All three gained
+> `object_subtype => 'attachment'`. Current behaviour lives in
+> `inc/MediaCredits/MediaLibrary.php::register_meta()`.
+
 **Meta lifecycle, two tiers** — this is the theme's existing contract, not a new rule:
 
 - **Feature switched off** (`enable_media_credits` unchecked): nothing is touched. Neither meta nor settings. The toggle hides the fields; it must not silently discard a site's copyright records. No `handle_*()` in `GeneralThemeOptions\Controller`, unlike ImageOptimizer or SmoothScroll — `PasswordProtected` and `NavMenuQuery` already set that precedent.

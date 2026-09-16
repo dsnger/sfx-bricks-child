@@ -278,7 +278,7 @@ Fires in `MediaLibrary::prefill_iptc()` after `iptc_copyright()` has picked `cop
 
 ```php
 do_action('sfx_media_credits_saved', int $attachment_id, string $copyright, string $ai_key, string $context)
-// $context: 'save' | 'iptc'
+// $context: 'save' | 'iptc' | 'meta'
 ```
 
 Firing contract, made precise after pass 2 found the first wording ambiguous for partial saves:
@@ -290,6 +290,18 @@ Firing contract, made precise after pass 2 found the first wording ambiguous for
 - From `MediaLibrary::prefill_iptc()`, context `iptc` — fires **only after an actual copyright write**.
   That path has several earlier no-write returns (both one-shot guards, a non-image, an empty IPTC value,
   a field the editor already filled), and none of them should wake a listener.
+- From `MediaLibrary::flush_dirty()`, context `meta` — **added 2026-09-16 (PR #40)**, when the two
+  fields became writable over the REST API. Fires for a write that reached the meta API without going
+  through either path above: a REST write, WP-CLI, another plugin. It is keyed on the WRITE
+  (`added_`/`updated_`/`deleted_post_meta`), not on a request, because the two come apart in at least two
+  reproduced ways: a REST request carrying a valid copyright and an invalid AI slug **persists the
+  copyright and then answers 400**, and the attachments controller's URL-sideload branch fires
+  `rest_after_insert_attachment` without ever reaching `update_value()`. Flushed at
+  `rest_request_after_callbacks`, which `WP_REST_Server::respond_to_request()` applies for **every** REST
+  outcome, before a `WP_Error` becomes a response (`class-wp-rest-server.php:1318`) — that is what catches
+  the 400-after-partial-write; `rest_after_insert_attachment` does not, because the controller returns
+  first. Flushed again on `shutdown` priority 0 for writes outside a REST request. `notify_saved()` clears the mark, so a write
+  the `save`/`iptc` paths already announced is never repeated under this context.
 - Both arguments always carry the **current post-write values of both fields**, re-read after the writes,
   so a listener never has to guess which one changed or fetch them itself.
 
@@ -298,6 +310,17 @@ Firing contract, made precise after pass 2 found the first wording ambiguous for
 Fires on every save that touches either field, whether or not the value changed. Not de-duplicated:
 comparing old and new would mean an extra read on every attachment save to serve a listener that can
 compare for itself.
+
+**That sentence scopes to `save` and `iptc` only.** The `meta` context added in PR #40 keys on the WRITE,
+and `update_metadata()` performs no write when the submitted value equals the stored one — so an
+identical re-submission over REST is accepted with 200 and announces nothing. It also **coalesces**: two
+fields written in one request mark the attachment once and produce one notification, a listener's own credit write is drained
+within the same bounded flush and **does** produce its own notification there — one listener write was
+measured as two notifications in one flush, not one. Nothing is lost by either,
+because the action carries current values rather than a diff; a listener that must see every request,
+change or not, wants a REST hook and not this one. Deletion is deliberately silent: `wp_delete_attachment()`
+removes an attachment's meta before its row, so the mark is discarded rather than announced as a save of
+a post that no longer exists.
 
 **`Credit::reset_cache()` runs immediately before the action fires.** Pass 1 caught this: `Credit::for()`
 memoises per request (`Credit.php:50-52`, `:92`), and neither `save()` nor `prefill_iptc()` invalidates

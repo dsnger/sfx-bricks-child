@@ -1,5 +1,14 @@
 # Media Credits Implementation Plan
 
+> **Historical — executed and merged (PR #25, v0.20.0).** The code blocks below record
+> what was written then, not what is in the tree now, and they are deliberately not
+> updated: rewriting an executed plan destroys the record of what was actually done.
+> Read `inc/MediaCredits/` for current behaviour. One divergence is worth naming because
+> it inverts a stated contract: the `register_meta()` snippet below registers all three
+> keys `show_in_rest => false` and its comment calls them "out of REST". Since PR #40
+> (2026-09-16) the two editor-facing keys are in REST and writable by anyone who may edit
+> the attachment — see the superseded note in the spec.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give every media attachment a copyright notice and an AI/alteration label, and get them onto the page from a Bricks Image element.

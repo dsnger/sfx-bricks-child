@@ -129,6 +129,17 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
   stay out (`sfx_password_protected_options` holds a password hash and a bearer token
   and is purged but never exported).
 - **Don't commit `vendor/`** — it is gitignored; `composer install` restores it.
+- **Don't let a verification harness touch real state outside a guaranteed
+  teardown.** The manual harnesses (`tests/support/*`) run against the real
+  checkout and the real site, where a fatal skips whatever cleanup sits below it.
+  So every fixture is removed from **one** teardown path — a `trap` in bash, a
+  single `register_shutdown_function` in PHP — declared before the first fixture
+  is created, never inline after the check that used it; and every guard that
+  decides *where* the harness operates fails fatally rather than continuing in the
+  wrong directory. Both halves are paid for: a harness once destroyed the real
+  `vendor/` because its `cd` failed without stopping the script, and
+  `media-credits-rest-live-check.php` shipped a review round with one of its three
+  fixtures deleted inline, which a fatal would have left on the site.
 
 ## Commands
 
