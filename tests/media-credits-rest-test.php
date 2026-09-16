@@ -99,38 +99,54 @@ test_reset();
 // $allowed is whatever map_meta_cap() decided before the callback ran. For
 // protected meta that is false, and it must not be what decides the answer —
 // passing it through would restore exactly the behaviour being fixed.
-test_grant_cap('edit_post', 42, true);
+test_grant_cap(7, 'edit_post', 42, true);
 
 assert_same(
     true,
-    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 42),
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 42, 7),
     'Case 3a: a user who may edit the attachment may write the field'
 );
 
 assert_same(
     false,
-    MediaLibrary::can_edit_attachment(true, Credit::META_COPYRIGHT, 43),
+    MediaLibrary::can_edit_attachment(true, Credit::META_COPYRIGHT, 43, 7),
     'Case 3b: a user who may not edit it may not write, whatever $allowed said'
+);
+
+// The question is about the user map_meta_cap() named, not about the current
+// session. user_can($other, 'edit_post_meta', …) is a supported call, and an
+// implementation reaching for current_user_can() answers it about the wrong
+// person — silently, and in whichever direction the session happens to sit.
+assert_same(
+    false,
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 42, 8),
+    'Case 3c: a different user gets a different answer for the same attachment'
 );
 
 // REST hands the id through as a string on some routes, and a meta write with
 // no object at all resolves to 0.
 assert_same(
     true,
-    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, '42'),
-    'Case 3c: a numeric-string id is the same attachment'
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, '42', '7'),
+    'Case 3d: numeric-string id and user are the same id and user'
 );
 
 assert_same(
     false,
-    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 0),
-    'Case 3d: no attachment, no write'
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 0, 7),
+    'Case 3e: no attachment, no write'
 );
 
 assert_same(
     false,
-    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, -1),
-    'Case 3e: nor a negative id'
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, -1, 7),
+    'Case 3f: nor a negative id'
+);
+
+assert_same(
+    false,
+    MediaLibrary::can_edit_attachment(false, Credit::META_COPYRIGHT, 42, 0),
+    'Case 3g: and a logged-out caller is nobody, whatever the attachment allows'
 );
 
 // ------------------------------------------------------------- epilogue

@@ -20,6 +20,7 @@ class MediaLibrary
         add_filter('attachment_fields_to_edit', [self::class, 'fields'], 10, 2);
         add_filter('attachment_fields_to_save', [self::class, 'save'], 10, 2);
         add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
+        add_action('rest_after_insert_attachment', [self::class, 'notify_rest_save'], 10, 2);
         add_filter('manage_media_columns', [self::class, 'columns']);
         add_action('manage_media_custom_column', [self::class, 'column'], 10, 2);
         add_action('restrict_manage_posts', [self::class, 'filter_dropdown']);
@@ -139,15 +140,67 @@ class MediaLibrary
      * protected meta) as $allowed; it is ignored deliberately, because that
      * default is the very thing being replaced.
      *
+     * The answer is about $user_id, NOT about the current session. They are
+     * the same user on a REST write, which is why current_user_can() looked
+     * right; they are not on user_can($other, 'edit_post_meta', $id, $key),
+     * which core supports (capabilities.php:999) and which would otherwise
+     * have been answered about whoever happened to be logged in.
+     *
      * @param mixed $allowed   what map_meta_cap() decided before this filter
      * @param mixed $meta_key
      * @param mixed $object_id the attachment being written
+     * @param mixed $user_id   the user being asked about
      */
-    public static function can_edit_attachment($allowed, $meta_key, $object_id): bool
+    public static function can_edit_attachment($allowed, $meta_key, $object_id, $user_id = 0): bool
     {
-        $id = (int) $object_id;
+        $id   = (int) $object_id;
+        $user = (int) $user_id;
 
-        return $id > 0 && current_user_can('edit_post', $id);
+        return $id > 0 && $user > 0 && user_can($user, 'edit_post', $id);
+    }
+
+    /**
+     * Fire the save notification for a credit written over REST.
+     *
+     * sfx_media_credits_saved is documented as firing on every save that
+     * touches either field, and its reason for existing is page-cache
+     * invalidation. A REST write reaches update_metadata() directly through
+     * WP_REST_Meta_Fields, so neither save() nor prefill_iptc() runs and a
+     * cached disclosure would silently go stale — the one failure the hook
+     * exists to prevent.
+     *
+     * rest_after_insert_attachment, because core fires it AFTER
+     * WP_REST_Meta_Fields::update_value() on both the create and the update
+     * path, and exactly once: WP_REST_Posts_Controller::update_item() returns
+     * early for attachments and leaves the action to the attachments
+     * subclass (posts-controller.php:1041-1045).
+     *
+     * Only when the request actually carried one of the two keys. An
+     * unrelated media edit — a new title, a new alt text — is not a credit
+     * save and must not wake a listener.
+     *
+     * @param mixed $attachment
+     * @param mixed $request
+     */
+    public static function notify_rest_save($attachment, $request): void
+    {
+        $id = isset($attachment->ID) ? (int) $attachment->ID : 0;
+
+        if ($id <= 0 || !($request instanceof \WP_REST_Request)) {
+            return;
+        }
+
+        $meta = $request['meta'];
+
+        if (!is_array($meta)) {
+            return;
+        }
+
+        if (!array_key_exists(Credit::META_COPYRIGHT, $meta) && !array_key_exists(Credit::META_AI, $meta)) {
+            return;
+        }
+
+        self::notify_saved($id, 'rest');
     }
 
     /**

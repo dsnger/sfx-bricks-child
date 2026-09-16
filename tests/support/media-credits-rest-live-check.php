@@ -69,6 +69,16 @@ if (empty($general['enable_media_credits'])) {
     exit(2);
 }
 
+// Multisite is refused rather than half-supported: wp_delete_user() there only
+// drops site membership and leaves the account on the network
+// (wp-admin/includes/user.php:440-449), so even a clean run would leak a user.
+// Doing this properly means network-wide lookup and wpmu_delete_user, which no
+// one has needed here.
+if (is_multisite()) {
+    fwrite(STDERR, "error: this harness does not support Multisite — teardown could not remove its own user.\n");
+    exit(2);
+}
+
 $admins = get_users(['role' => 'administrator', 'number' => 1]);
 
 if (!$admins) {
@@ -112,35 +122,84 @@ function check(string $message, $expected, $actual): void
 //     along with the content wp_delete_user() reassigns or destroys.
 //     Reproduced on PHP 8.5: `(int) new WP_Error(...) === 1`.
 //
-// Searching for the token answers both: it finds a fixture whose id was never
-// returned, and it cannot match anything this run did not create.
+// Searching for the token finds a fixture whose id was never returned. But a
+// search is a QUERY, and pre_get_posts / users_pre_query let any plugin on the
+// site widen one — so the search only proposes candidates. Every candidate is
+// then re-read and must carry the token in its own stored field before it is
+// deleted. That check, not the query, is what makes teardown unable to reach
+// something this run did not create.
+//
+// For posts the token lives in META, not in the title. Case 7 renames the
+// attachment on purpose, and a title-borne token went with it: teardown then
+// declined to delete the fixture AND its own leftover check could not see it,
+// so the run reported success and left an attachment on the site. A fixture's
+// identity has to sit somewhere the test cannot plausibly write. `meta_input`
+// stores it inside wp_insert_post(), so there is still no window where the row
+// exists untagged. The user needs no equivalent: its token IS its user_login,
+// written with the row, and nothing renames a user here.
+//
+// Deletion is verified rather than assumed: wp_delete_post() can be refused by
+// pre_delete_post, and a handler that printed "removed" without looking would
+// be the same kind of lie the rest of this file exists to catch.
+
+const FIXTURE_META = '_sfx_live_check_token';
 
 $token = 'sfxlivecheck' . wp_generate_password(12, false, false);
 
 register_shutdown_function(static function () use ($token): void {
-    $posts = get_posts([
+    $candidates = get_posts([
         'post_type'   => ['attachment', 'post'],
         'post_status' => 'any',
         'numberposts' => -1,
         'fields'      => 'ids',
-        's'           => $token,
+        'meta_key'    => FIXTURE_META,
+        'meta_value'  => $token,
     ]);
 
-    foreach ($posts as $id) {
+    $posts = 0;
+
+    foreach ($candidates as $id) {
+        if (get_post_meta((int) $id, FIXTURE_META, true) !== $token) {
+            continue;
+        }
+
         wp_delete_post((int) $id, true);
+        $posts++;
     }
 
-    $users = get_users(['search' => '*' . $token . '*', 'fields' => 'ID']);
+    $candidates = get_users(['search' => '*' . $token . '*', 'fields' => 'ID']);
+    $users      = 0;
 
-    if ($users) {
+    if ($candidates) {
         require_once ABSPATH . 'wp-admin/includes/user.php';
 
-        foreach ($users as $id) {
+        foreach ($candidates as $id) {
+            $user = get_userdata((int) $id);
+
+            if (!$user || $user->user_login !== $token) {
+                continue;
+            }
+
             wp_delete_user((int) $id);
+            $users++;
         }
     }
 
-    printf("  (fixtures removed: %d post(s), %d user(s))\n", count($posts), count($users));
+    $left = count(get_posts([
+        'post_type'   => ['attachment', 'post'],
+        'post_status' => 'any',
+        'numberposts' => -1,
+        'fields'      => 'ids',
+        'meta_key'    => FIXTURE_META,
+        'meta_value'  => $token,
+    ])) + count(get_users(['search' => '*' . $token . '*', 'fields' => 'ID']));
+
+    if ($left > 0) {
+        fwrite(STDERR, "  TEARDOWN FAILED: {$left} fixture(s) still on the site, token {$token}\n");
+        exit(3);
+    }
+
+    printf("  (fixtures removed: %d post(s), %d user(s))\n", $posts, $users);
 });
 
 /**
@@ -173,6 +232,7 @@ $attachment_id = fixture_id(wp_insert_post([
     'post_title'     => 'sfx media credits live check ' . $token,
     'post_author'    => $admin->ID,
     'post_mime_type' => 'image/jpeg',
+    'meta_input'     => [FIXTURE_META => $token],
 ], true), 'attachment');
 
 $subscriber_id = fixture_id(wp_insert_user([
@@ -216,11 +276,24 @@ check('AI marking comes back in the response', 'ai_generated', $meta['_sfx_media
 
 echo "\nCase 2 — the IPTC marker is neither exposed nor writable\n";
 
-$before = (string) get_post_meta($attachment_id, '_sfx_media_iptc_prefilled', true);
+// Seeded, so "absent from the response" is a statement about exposure rather
+// than about an empty value, and read back through a GET that is checked for
+// 200 first: an error response carries no meta either, so asserting absence
+// against an unchecked response would pass for a request that never looked.
+update_post_meta($attachment_id, '_sfx_media_iptc_prefilled', '1');
+
+$response = rest_do_request(new WP_REST_Request('GET', '/wp/v2/media/' . $attachment_id));
+$meta     = (array) ($response->get_data()['meta'] ?? []);
+
+check('the attachment is readable', 200, $response->get_status());
+check('the response carries a meta object', true, is_array($response->get_data()['meta'] ?? null));
+check('the seeded marker is still absent from it', false, array_key_exists('_sfx_media_iptc_prefilled', $meta));
+
+// Write protection is a separate question from exposure, so it gets its own
+// request rather than sharing the one above.
 $response = write_meta($attachment_id, ['_sfx_media_iptc_prefilled' => 'tampered']);
 
-check('the marker is absent from the response', false, array_key_exists('_sfx_media_iptc_prefilled', (array) ($response->get_data()['meta'] ?? [])));
-check('the marker is unchanged', $before, (string) get_post_meta($attachment_id, '_sfx_media_iptc_prefilled', true));
+check('the marker is unchanged by a write attempt', '1', (string) get_post_meta($attachment_id, '_sfx_media_iptc_prefilled', true));
 
 // --------------------------------- Case 3: an unknown AI slug is an error
 
@@ -260,6 +333,7 @@ $post_id  = fixture_id(wp_insert_post([
     'post_status' => 'draft',
     'post_title'  => 'sfx media credits live check (subtype scope) ' . $token,
     'post_author' => $admin->ID,
+    'meta_input'  => [FIXTURE_META => $token],
 ], true), 'draft post');
 
 $response = rest_do_request(new WP_REST_Request('GET', '/wp/v2/posts/' . $post_id));
@@ -284,6 +358,34 @@ check('an unknown slug still sanitises to empty', '', get_post_meta($attachment_
 
 update_post_meta($attachment_id, '_sfx_media_copyright', '  <b>Agentur Nord</b>  ');
 check('copyright is still stripped and trimmed', 'Agentur Nord', get_post_meta($attachment_id, '_sfx_media_copyright', true));
+
+// ------------------ Case 7: a REST write still fires the save action
+
+echo "\nCase 7 — sfx_media_credits_saved fires for a REST write\n";
+
+// The action's documented reason for existing is page-cache invalidation. A
+// REST write reaches update_metadata() directly, so without a hook of its own
+// a cached disclosure would go stale in silence.
+$fired = [];
+
+add_action('sfx_media_credits_saved', static function ($id, $copyright, $ai_key, $context) use (&$fired): void {
+    $fired[] = ['id' => $id, 'copyright' => $copyright, 'ai' => $ai_key, 'context' => $context];
+}, 10, 4);
+
+write_meta($attachment_id, ['_sfx_media_copyright' => 'Agentur Nord']);
+
+check('it fired exactly once', 1, count($fired));
+check('with context rest', 'rest', $fired[0]['context'] ?? null);
+check('for this attachment', $attachment_id, $fired[0]['id'] ?? null);
+check('carrying the post-write value', 'Agentur Nord', $fired[0]['copyright'] ?? null);
+
+// An unrelated media edit is not a credit save.
+$fired   = [];
+$request = new WP_REST_Request('POST', '/wp/v2/media/' . $attachment_id);
+$request->set_body_params(['title' => 'renamed, no credit fields']);
+rest_do_request($request);
+
+check('and not for an edit that touched neither field', 0, count($fired));
 
 // ------------------------------------------------------------- epilogue
 

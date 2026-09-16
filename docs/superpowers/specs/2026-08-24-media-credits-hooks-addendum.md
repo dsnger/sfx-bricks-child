@@ -278,7 +278,7 @@ Fires in `MediaLibrary::prefill_iptc()` after `iptc_copyright()` has picked `cop
 
 ```php
 do_action('sfx_media_credits_saved', int $attachment_id, string $copyright, string $ai_key, string $context)
-// $context: 'save' | 'iptc'
+// $context: 'save' | 'iptc' | 'rest'
 ```
 
 Firing contract, made precise after pass 2 found the first wording ambiguous for partial saves:
@@ -290,6 +290,14 @@ Firing contract, made precise after pass 2 found the first wording ambiguous for
 - From `MediaLibrary::prefill_iptc()`, context `iptc` — fires **only after an actual copyright write**.
   That path has several earlier no-write returns (both one-shot guards, a non-image, an empty IPTC value,
   a field the editor already filled), and none of them should wake a listener.
+- From `MediaLibrary::notify_rest_save()`, context `rest` — **added 2026-09-16 (PR #40)**, when the two
+  fields became writable over the REST API. A REST write reaches `update_metadata()` directly through
+  `WP_REST_Meta_Fields`, so neither of the two paths above runs and a cached disclosure would have gone
+  stale without a word — the one failure this action exists to prevent. Hooked on
+  `rest_after_insert_attachment`, which core fires **after** the meta update and **exactly once** on both
+  the create and the update path (`class-wp-rest-posts-controller.php:1041-1045` returns early for
+  attachments and leaves the action to the subclass). Fires only when the request carried
+  `_sfx_media_copyright` or `_sfx_media_ai`: an unrelated media edit is not a credit save.
 - Both arguments always carry the **current post-write values of both fields**, re-read after the writes,
   so a listener never has to guess which one changed or fetch them itself.
 

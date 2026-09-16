@@ -58,7 +58,7 @@ $test_filters        = [];   // hook name => list of registrations
 $test_is_admin       = true; // is_admin() return value
 $test_actions_fired  = [];   // hook name => list of arg-lists, one per do_action() call
 $test_registered_meta = []; // meta key => args array, as passed to register_meta()
-$test_caps           = [];   // capability => [object id => bool]
+$test_caps           = [];   // user id => [capability => [object id => bool]]
 
 // ------------------------------------------------------ WordPress doubles
 
@@ -266,24 +266,30 @@ function register_meta($object_type, $meta_key, $args = [], $deprecated = null):
 }
 
 /**
- * Driven by $test_caps, set through test_grant_cap(). Unknown capability or
- * unknown object id means no, which matches the only default that is safe to
- * assume of a permission check.
+ * Driven by $test_caps, set through test_grant_cap(). Unknown user, capability
+ * or object id means no, which matches the only default that is safe to assume
+ * of a permission check.
+ *
+ * Keyed by user on purpose: can_edit_attachment() answers about the user
+ * map_meta_cap() names, not about the current session, and a stub that ignored
+ * the user argument could not tell a correct implementation from one that
+ * silently answers about whoever is logged in.
  */
-function current_user_can($capability, ...$args): bool
+function user_can($user, $capability, ...$args): bool
 {
     global $test_caps;
 
+    $user_id   = is_object($user) ? (int) ($user->ID ?? 0) : (int) $user;
     $object_id = isset($args[0]) ? (int) $args[0] : 0;
 
-    return $test_caps[$capability][$object_id] ?? false;
+    return $test_caps[$user_id][$capability][$object_id] ?? false;
 }
 
-function test_grant_cap(string $capability, int $object_id, bool $allowed = true): void
+function test_grant_cap(int $user_id, string $capability, int $object_id, bool $allowed = true): void
 {
     global $test_caps;
 
-    $test_caps[$capability][$object_id] = $allowed;
+    $test_caps[$user_id][$capability][$object_id] = $allowed;
 }
 
 /** The args one register_meta() call was made with, or null if never called. */
