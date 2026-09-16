@@ -20,7 +20,25 @@ class MediaLibrary
         add_filter('attachment_fields_to_edit', [self::class, 'fields'], 10, 2);
         add_filter('attachment_fields_to_save', [self::class, 'save'], 10, 2);
         add_filter('wp_generate_attachment_metadata', [self::class, 'prefill_iptc'], 10, 3);
-        add_action('rest_after_insert_attachment', [self::class, 'notify_rest_save'], 10, 2);
+        // Notification follows actual META WRITES, not the shape of a request.
+        // See mark_dirty(): a REST request that writes one field and then
+        // rejects the other answers 400 with the first one already persisted,
+        // so anything keyed on a successful response misses it.
+        add_action('added_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        add_action('updated_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        add_action('deleted_post_meta', [self::class, 'mark_dirty'], 10, 3);
+        // Two flush points, same callback. rest_request_after_callbacks runs
+        // for EVERY REST outcome — WP_REST_Server::respond_to_request() applies
+        // it before a WP_Error becomes a response (class-wp-rest-server.php:1318)
+        // — which is what catches the 400-after-partial-write above;
+        // rest_after_insert_attachment would not, because the controller
+        // returns before firing it. shutdown is the catch-all for everything
+        // that is not a REST request at all: WP-CLI, another plugin. Flushing
+        // twice is harmless, the first one empties the list, and neither
+        // inspects the request, so the URL-sideload branch that fires an
+        // after-insert action without writing meta finds nothing dirty.
+        add_filter('rest_request_after_callbacks', [self::class, 'flush_dirty_rest'], 10, 1);
+        add_action('shutdown', [self::class, 'flush_dirty'], 0);
         add_filter('manage_media_columns', [self::class, 'columns']);
         add_action('manage_media_custom_column', [self::class, 'column'], 10, 2);
         add_action('restrict_manage_posts', [self::class, 'filter_dropdown']);
@@ -159,48 +177,74 @@ class MediaLibrary
         return $id > 0 && $user > 0 && user_can($user, 'edit_post', $id);
     }
 
+    /** @var array<int, bool> attachments whose credit meta this request changed */
+    private static array $dirty = [];
+
     /**
-     * Fire the save notification for a credit written over REST.
+     * Record that a credit field was actually written.
      *
-     * sfx_media_credits_saved is documented as firing on every save that
-     * touches either field, and its reason for existing is page-cache
-     * invalidation. A REST write reaches update_metadata() directly through
-     * WP_REST_Meta_Fields, so neither save() nor prefill_iptc() runs and a
-     * cached disclosure would silently go stale — the one failure the hook
-     * exists to prevent.
+     * Hooked on added_/updated_/deleted_post_meta rather than on any request
+     * lifecycle, because the write is the thing the action is about and a
+     * request is not a reliable proxy for it. Two concrete ways they diverge,
+     * both reproduced:
      *
-     * rest_after_insert_attachment, because core fires it AFTER
-     * WP_REST_Meta_Fields::update_value() on both the create and the update
-     * path, and exactly once: WP_REST_Posts_Controller::update_item() returns
-     * early for attachments and leaves the action to the attachments
-     * subclass (posts-controller.php:1041-1045).
+     *   - A REST write carrying a valid copyright and an invalid AI slug
+     *     persists the copyright, then answers 400 (WP_REST_Meta_Fields
+     *     validates and writes key by key, meta-fields.php:194-216). Anything
+     *     hooked on a successful response never fires, and the stored credit
+     *     is left with a stale cache in front of it.
+     *   - The attachments controller's URL-sideload branch fires
+     *     rest_after_insert_attachment without ever reaching update_value()
+     *     (attachments-controller.php:543-546), so a request merely CARRYING
+     *     the keys proves nothing about a write.
      *
-     * Only when the request actually carried one of the two keys. An
-     * unrelated media edit — a new title, a new alt text — is not a credit
-     * save and must not wake a listener.
-     *
-     * @param mixed $attachment
-     * @param mixed $request
+     * @param mixed $meta_id
+     * @param mixed $object_id
+     * @param mixed $meta_key
      */
-    public static function notify_rest_save($attachment, $request): void
+    public static function mark_dirty($meta_id, $object_id, $meta_key): void
     {
-        $id = isset($attachment->ID) ? (int) $attachment->ID : 0;
-
-        if ($id <= 0 || !($request instanceof \WP_REST_Request)) {
+        if ($meta_key !== Credit::META_COPYRIGHT && $meta_key !== Credit::META_AI) {
             return;
         }
 
-        $meta = $request['meta'];
+        $id = (int) $object_id;
 
-        if (!is_array($meta)) {
-            return;
+        if ($id > 0 && get_post_type($id) === 'attachment') {
+            self::$dirty[$id] = true;
         }
+    }
 
-        if (!array_key_exists(Credit::META_COPYRIGHT, $meta) && !array_key_exists(Credit::META_AI, $meta)) {
-            return;
+    /**
+     * Fire the action for writes no contexted path claimed.
+     *
+     * save() and prefill_iptc() call notify_saved() themselves and it clears
+     * the mark, so this only ever sees a write that came through the meta API
+     * directly — REST, WP-CLI, another plugin. Priority 0 on shutdown so a
+     * listener that needs a booted WordPress still has one.
+     */
+    /**
+     * Filter shim: flush, then hand the response back untouched.
+     *
+     * @param mixed $response
+     * @return mixed the same response
+     */
+    public static function flush_dirty_rest($response)
+    {
+        self::flush_dirty();
+
+        return $response;
+    }
+
+    public static function flush_dirty(): void
+    {
+        $ids = array_keys(self::$dirty);
+
+        self::$dirty = [];
+
+        foreach ($ids as $id) {
+            self::notify_saved((int) $id, 'meta');
         }
-
-        self::notify_saved($id, 'rest');
     }
 
     /**
@@ -393,9 +437,11 @@ class MediaLibrary
      * Re-read both fields' current values and fire sfx_media_credits_saved.
      *
      * Shared by save() (context 'save', at least one field present in the
-     * submitted payload) and prefill_iptc() (context 'iptc', immediately
-     * after the one write that path can ever make) so the action's contract
-     * — and its docblock — lives in exactly one place.
+     * submitted payload), prefill_iptc() (context 'iptc', immediately after
+     * the one write that path can ever make) and flush_dirty() (context
+     * 'meta', a write that reached the meta API without going through either
+     * — a REST write, WP-CLI, another plugin) so the action's contract — and
+     * its docblock — lives in exactly one place.
      *
      * This is the seam the parent spec deliberately left open. That spec
      * lists page-cache invalidation in its Out of Scope table as "add when a
@@ -413,6 +459,10 @@ class MediaLibrary
      */
     private static function notify_saved(int $id, string $context): void
     {
+        // This write is now accounted for; flush_dirty() must not repeat it
+        // under the generic 'meta' context.
+        unset(self::$dirty[$id]);
+
         $copyright = (string) get_post_meta($id, Credit::META_COPYRIGHT, true);
         $ai_key    = (string) get_post_meta($id, Credit::META_AI, true);
 
@@ -428,8 +478,10 @@ class MediaLibrary
          * @param int    $attachment_id
          * @param string $copyright     current value, re-read after the write
          * @param string $ai_key        current value, re-read after the write
-         * @param string $context       'save' (attachment_fields_to_save) or
-         *                              'iptc' (the one-shot prefill)
+         * @param string $context       'save' (attachment_fields_to_save),
+         *                              'iptc' (the one-shot prefill), or
+         *                              'meta' (written straight through the
+         *                              meta API — REST, WP-CLI, a plugin)
          */
         do_action('sfx_media_credits_saved', $id, $copyright, $ai_key, $context);
     }

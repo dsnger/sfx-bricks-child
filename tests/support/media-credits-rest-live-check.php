@@ -129,14 +129,20 @@ function check(string $message, $expected, $actual): void
 // deleted. That check, not the query, is what makes teardown unable to reach
 // something this run did not create.
 //
-// For posts the token lives in META, not in the title. Case 7 renames the
-// attachment on purpose, and a title-borne token went with it: teardown then
-// declined to delete the fixture AND its own leftover check could not see it,
-// so the run reported success and left an attachment on the site. A fixture's
-// identity has to sit somewhere the test cannot plausibly write. `meta_input`
-// stores it inside wp_insert_post(), so there is still no window where the row
-// exists untagged. The user needs no equivalent: its token IS its user_login,
-// written with the row, and nothing renames a user here.
+// For posts the token is carried TWICE, in post_name and in meta, and either
+// one identifies a fixture. Neither alone is enough:
+//
+//   - The title cannot hold it. Case 7 renames the attachment on purpose, and
+//     a title-borne token went with it: teardown declined to delete the fixture
+//     AND its own leftover check could not see it, so the run reported success
+//     and left an attachment behind.
+//   - Meta alone leaves a window. wp_insert_post() writes the row (post.php:5027)
+//     before meta_input (:5111), so a fatal in between leaves an untagged
+//     orphan that a meta-only search cannot find.
+//
+// post_name goes in the initial INSERT, so there is no window; meta survives
+// anything that rewrites the slug. The user needs neither: its token IS its
+// user_login, written with the row, and nothing renames a user here.
 //
 // Deletion is verified rather than assumed: wp_delete_post() can be refused by
 // pre_delete_post, and a handler that printed "removed" without looking would
@@ -144,25 +150,59 @@ function check(string $message, $expected, $actual): void
 
 const FIXTURE_META = '_sfx_live_check_token';
 
-$token = 'sfxlivecheck' . wp_generate_password(12, false, false);
+/**
+ * Posts this run created, by either carrier of the token.
+ *
+ * Two queries, because a search is only a proposal: pre_get_posts lets any
+ * plugin widen one, so every candidate is re-read and must carry the token in
+ * post_name or in meta before it counts. That re-read, not the query, is what
+ * keeps teardown off anything this run did not create.
+ *
+ * @return list<int>
+ */
+function fixture_posts(string $token): array
+{
+    $base = [
+        'post_type'        => ['attachment', 'post'],
+        'post_status'      => 'any',
+        'numberposts'      => -1,
+        'fields'           => 'ids',
+        'suppress_filters' => false,
+    ];
 
-register_shutdown_function(static function () use ($token): void {
-    $candidates = get_posts([
-        'post_type'   => ['attachment', 'post'],
-        'post_status' => 'any',
-        'numberposts' => -1,
-        'fields'      => 'ids',
-        'meta_key'    => FIXTURE_META,
-        'meta_value'  => $token,
-    ]);
+    $candidates = array_merge(
+        get_posts($base + ['meta_key' => FIXTURE_META, 'meta_value' => $token]),
+        get_posts($base + ['post_name__in' => [$token]])
+    );
 
-    $posts = 0;
+    $confirmed = [];
 
-    foreach ($candidates as $id) {
-        if (get_post_meta((int) $id, FIXTURE_META, true) !== $token) {
+    foreach (array_unique(array_map('intval', $candidates)) as $id) {
+        $post = get_post($id);
+
+        if (!$post) {
             continue;
         }
 
+        if ($post->post_name === $token || get_post_meta($id, FIXTURE_META, true) === $token) {
+            $confirmed[] = $id;
+        }
+    }
+
+    return $confirmed;
+}
+
+// Lowercase, because post_name goes through sanitize_title() and a mixed-case
+// token comes back lowercased — the slug lookup then silently matches nothing,
+// which is exactly the leak this carrier exists to prevent. Caught by probing a
+// fatal before the token meta was written.
+$token = 'sfxlivecheck' . strtolower(wp_generate_password(16, false, false));
+
+register_shutdown_function(static function () use ($token): void {
+    $candidates = fixture_posts($token);
+    $posts      = 0;
+
+    foreach ($candidates as $id) {
         wp_delete_post((int) $id, true);
         $posts++;
     }
@@ -185,14 +225,7 @@ register_shutdown_function(static function () use ($token): void {
         }
     }
 
-    $left = count(get_posts([
-        'post_type'   => ['attachment', 'post'],
-        'post_status' => 'any',
-        'numberposts' => -1,
-        'fields'      => 'ids',
-        'meta_key'    => FIXTURE_META,
-        'meta_value'  => $token,
-    ])) + count(get_users(['search' => '*' . $token . '*', 'fields' => 'ID']));
+    $left = count(fixture_posts($token)) + count(get_users(['search' => '*' . $token . '*', 'fields' => 'ID']));
 
     if ($left > 0) {
         fwrite(STDERR, "  TEARDOWN FAILED: {$left} fixture(s) still on the site, token {$token}\n");
@@ -232,8 +265,17 @@ $attachment_id = fixture_id(wp_insert_post([
     'post_title'     => 'sfx media credits live check ' . $token,
     'post_author'    => $admin->ID,
     'post_mime_type' => 'image/jpeg',
+    'post_name'      => $token,
     'meta_input'     => [FIXTURE_META => $token],
 ], true), 'attachment');
+
+// The slug is one of the two things teardown recognises a fixture by, so a
+// sanitiser or a uniquifier quietly changing it has to be an error here rather
+// than a leak later.
+if (get_post($attachment_id)->post_name !== $token) {
+    fwrite(STDERR, "error: the fixture slug was rewritten to '" . get_post($attachment_id)->post_name . "'; teardown could not rely on it.\n");
+    exit(2);
+}
 
 $subscriber_id = fixture_id(wp_insert_user([
     'user_login' => $token,
@@ -333,6 +375,7 @@ $post_id  = fixture_id(wp_insert_post([
     'post_status' => 'draft',
     'post_title'  => 'sfx media credits live check (subtype scope) ' . $token,
     'post_author' => $admin->ID,
+    'post_name'   => $token,
     'meta_input'  => [FIXTURE_META => $token],
 ], true), 'draft post');
 
@@ -375,17 +418,34 @@ add_action('sfx_media_credits_saved', static function ($id, $copyright, $ai_key,
 write_meta($attachment_id, ['_sfx_media_copyright' => 'Agentur Nord']);
 
 check('it fired exactly once', 1, count($fired));
-check('with context rest', 'rest', $fired[0]['context'] ?? null);
+check('with context meta', 'meta', $fired[0]['context'] ?? null);
 check('for this attachment', $attachment_id, $fired[0]['id'] ?? null);
 check('carrying the post-write value', 'Agentur Nord', $fired[0]['copyright'] ?? null);
 
-// An unrelated media edit is not a credit save.
+// An unrelated media edit is not a credit save — but only a SUCCESSFUL one
+// proves that. A rejected request writes nothing either, so "no notification"
+// would pass for a request that never got as far as trying.
 $fired   = [];
 $request = new WP_REST_Request('POST', '/wp/v2/media/' . $attachment_id);
 $request->set_body_params(['title' => 'renamed, no credit fields']);
-rest_do_request($request);
+$response = rest_do_request($request);
 
-check('and not for an edit that touched neither field', 0, count($fired));
+check('an unrelated edit succeeds', 200, $response->get_status());
+check('and really changed the title', 'renamed, no credit fields', get_post($attachment_id)->post_title);
+check('and fired nothing', 0, count($fired));
+
+// The partial-failure path, which is why this is keyed on writes and not on a
+// successful response: a valid copyright beside an invalid slug is PERSISTED
+// and then answered 400.
+$fired    = [];
+$response = write_meta($attachment_id, [
+    '_sfx_media_copyright' => 'Partially Persisted',
+    '_sfx_media_ai'        => 'not-a-real-key',
+]);
+
+check('a mixed write is rejected', 400, $response->get_status());
+check('yet the copyright was stored anyway', 'Partially Persisted', get_post_meta($attachment_id, '_sfx_media_copyright', true));
+check('and the save action still fired for it', 1, count($fired));
 
 // ------------------------------------------------------------- epilogue
 
