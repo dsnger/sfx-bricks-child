@@ -22,9 +22,10 @@ declare(strict_types=1);
  * Locally that is MAMP's PHP (see AGENTS.md § Local PHP); WP-CLI cannot reach
  * the socket, which is why this boots wp-load.php by hand.
  *
- * Creates its own attachment post and its own subscriber, and deletes both on
- * the way out — including when an assertion fails. It never writes to media
- * that was already there.
+ * Creates its own fixtures — an attachment, a subscriber and a draft post —
+ * and deletes every one of them on the way out, including when an assertion
+ * fails and when a fatal ends the run early. It never writes to media that
+ * was already there.
  */
 
 // ---------------------------------------------------------------- bootstrap
@@ -96,16 +97,23 @@ function check(string $message, $expected, $actual): void
 }
 
 // ------------------------------------------------------------------ fixtures
-// Both are torn down by a shutdown handler rather than at the end of the happy
-// path: a fatal or a failed assertion must not leave a stray subscriber account
-// and a stray attachment behind on a real site.
+// Every fixture is torn down by one shutdown handler rather than at the point
+// it stops being needed: a fatal between creating one and deleting it would
+// otherwise leave it behind on a real site. That includes $post_id, which is
+// created much further down for Case 5 — it is declared here so the handler
+// closes over it, and Case 5 does not delete it itself.
 
 $attachment_id = 0;
 $subscriber_id = 0;
+$post_id       = 0;
 
-register_shutdown_function(static function () use (&$attachment_id, &$subscriber_id): void {
+register_shutdown_function(static function () use (&$attachment_id, &$subscriber_id, &$post_id): void {
     if ($attachment_id > 0) {
         wp_delete_attachment($attachment_id, true);
+    }
+
+    if ($post_id > 0) {
+        wp_delete_post($post_id, true);
     }
 
     if ($subscriber_id > 0) {
@@ -213,6 +221,8 @@ echo "\nCase 5 — object_subtype keeps the keys off posts and pages\n";
 
 wp_set_current_user($admin->ID);
 
+// Assigned to the variable the shutdown handler closes over, so this post is
+// removed by the same teardown as the other two fixtures.
 $post_id = (int) wp_insert_post([
     'post_type'   => 'post',
     'post_status' => 'draft',
@@ -225,8 +235,6 @@ if ($post_id > 0) {
     $keys     = array_keys((array) ($response->get_data()['meta'] ?? []));
 
     check('no media-credit key on a post', [], array_values(preg_grep('/^_sfx_media_/', $keys)));
-
-    wp_delete_post($post_id, true);
 } else {
     echo "  skip a post could not be created\n";
 }
