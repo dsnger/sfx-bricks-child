@@ -314,8 +314,9 @@ compare for itself.
 **That sentence scopes to `save` and `iptc` only.** The `meta` context added in PR #40 keys on the WRITE,
 and `update_metadata()` performs no write when the submitted value equals the stored one — so an
 identical re-submission over REST is accepted with 200 and announces nothing. It also **coalesces**: two
-fields written in one request mark the attachment once and produce one notification, and a listener's own
-credit write is drained in the same flush rather than announced separately. Nothing is lost by either,
+fields written in one request mark the attachment once and produce one notification, a listener's own credit write is drained
+within the same bounded flush and **does** produce its own notification there — one listener write was
+measured as two notifications in one flush, not one. Nothing is lost by either,
 because the action carries current values rather than a diff; a listener that must see every request,
 change or not, wants a REST hook and not this one. Deletion is deliberately silent: `wp_delete_attachment()`
 removes an attachment's meta before its row, so the mark is discarded rather than announced as a save of
