@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.23.0] - 2026-09-16
+
+Media credit fields — copyright and AI marking — can now be read and written through the WordPress REST API, so an API client with an application password can set them.
+
+- The two editor-facing fields were registered `show_in_rest => false`, so a REST write was accepted with **200 and silently dropped**. They are now exposed, with an `auth_callback` requiring `edit_post` on the attachment — the same gate wp-admin applies. Underscore-prefixed keys are protected meta, so exposing them alone would have made them readable and still refused every write; the explicit callback is what makes them writable.
+
+- The AI marking carries a REST schema enum. An unrecognised slug is now a 400 naming the key, instead of being quietly stored as "no marking" — a typo used to clear the field and report success.
+
+- The internal IPTC prefill marker stays closed. It records that a file's embedded data has already been read once; exposing it would only offer a way to disable the prefill by accident.
+
+- All three keys are now scoped to attachments, so they no longer register for every post type.
+
+- `sfx_media_credits_saved` now fires for writes that reach the meta API directly, under the new context `meta`. Without it, a credit set over REST left a page cache serving the old disclosure. It keys on the meta write rather than on a successful response, because WordPress writes REST meta key by key: a request carrying a valid copyright and an invalid AI slug persists the copyright and then answers 400. Deleting an attachment is deliberately silent, and re-submitting an identical value writes nothing and so announces nothing.
+
+Note for site operators: the copyright is now readable by anonymous REST clients, since media items are public. That is intended — it is rendered under the image anyway — but the field should not be used for internal notes. WP Optimizer's REST switches block this path entirely where they are enabled.
+
 ## [0.22.3] - 2026-08-28
 
 Fixes a page that cannot be scrolled after using the browser's Back button, when Smooth Scroll is active.
