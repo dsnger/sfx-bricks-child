@@ -85,3 +85,4 @@ leading bold title).
 | date | fingerprint | finding | source | severity | rung | ref |
 |------|-------------|---------|--------|----------|------|-----|
 | 2026-08-26 | docs-drift | AGENTS.md restated CLAUDE.md §5's prompt-artifact path list without `plugins/` | bot | minor | 4 test | tests/prompt-artifact-paths-test.php |
+| 2026-09-16 | harness-unguarded-real-state | media-credits-rest-live-check.php deleted its Case 5 draft post inline, so a fatal left it on the live site | bot | minor | 1 prose | AGENTS.md § Don'ts, "verification harness ... guaranteed teardown" |
