@@ -311,6 +311,16 @@ Fires on every save that touches either field, whether or not the value changed.
 comparing old and new would mean an extra read on every attachment save to serve a listener that can
 compare for itself.
 
+**That sentence scopes to `save` and `iptc` only.** The `meta` context added in PR #40 keys on the WRITE,
+and `update_metadata()` performs no write when the submitted value equals the stored one — so an
+identical re-submission over REST is accepted with 200 and announces nothing. It also **coalesces**: two
+fields written in one request mark the attachment once and produce one notification, and a listener's own
+credit write is drained in the same flush rather than announced separately. Nothing is lost by either,
+because the action carries current values rather than a diff; a listener that must see every request,
+change or not, wants a REST hook and not this one. Deletion is deliberately silent: `wp_delete_attachment()`
+removes an attachment's meta before its row, so the mark is discarded rather than announced as a save of
+a post that no longer exists.
+
 **`Credit::reset_cache()` runs immediately before the action fires.** Pass 1 caught this: `Credit::for()`
 memoises per request (`Credit.php:50-52`, `:92`), and neither `save()` nor `prefill_iptc()` invalidates
 it, so a listener doing the obvious thing — calling `Credit::for($attachment_id)` to see what changed —

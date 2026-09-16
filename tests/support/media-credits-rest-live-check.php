@@ -52,60 +52,25 @@ if ($load === '' || !is_file($load)) {
     exit(2);
 }
 
-define('WP_USE_THEMES', false);
-require $load;
+// Teardown is armed BEFORE WordPress loads, not after.
+//
+// wp-settings.php:166 registers WordPress's own shutdown callback during the
+// load. Anything registered afterwards runs after it, so an exit() or a fatal
+// inside an earlier shutdown listener would end the process with this file's
+// fixtures still on the site. Registering first puts this handler ahead of
+// every listener WordPress or a plugin adds. It cannot use WordPress functions
+// to build its token, hence random_bytes(), and it checks that WordPress is
+// actually there before touching anything.
+//
+// Lowercase hex: post_name goes through sanitize_title(), and a mixed-case
+// token comes back lowercased — the slug lookup then silently matches nothing,
+// which is the leak this carrier exists to prevent.
+const FIXTURE_META = '_sfx_live_check_token';
+const TOKEN_PREFIX = 'sfxlivecheck';
 
-if (!function_exists('rest_do_request')) {
-    fwrite(STDERR, "error: WordPress booted but the REST API is unavailable.\n");
-    exit(2);
-}
+$token = TOKEN_PREFIX . bin2hex(random_bytes(8));
 
-// The module is opt-in. Without it register_meta() never runs and every case
-// below would fail for a reason that has nothing to do with the contract.
-$general = get_option('sfx_general_options');
-
-if (empty($general['enable_media_credits'])) {
-    fwrite(STDERR, "error: Media Credits is disabled (sfx_general_options[enable_media_credits]).\nEnable it in General Theme Options and re-run.\n");
-    exit(2);
-}
-
-// Multisite is refused rather than half-supported: wp_delete_user() there only
-// drops site membership and leaves the account on the network
-// (wp-admin/includes/user.php:440-449), so even a clean run would leak a user.
-// Doing this properly means network-wide lookup and wpmu_delete_user, which no
-// one has needed here.
-if (is_multisite()) {
-    fwrite(STDERR, "error: this harness does not support Multisite — teardown could not remove its own user.\n");
-    exit(2);
-}
-
-$admins = get_users(['role' => 'administrator', 'number' => 1]);
-
-if (!$admins) {
-    fwrite(STDERR, "error: no administrator on this site to act as.\n");
-    exit(2);
-}
-
-$admin = $admins[0];
-
-// ---------------------------------------------------------------- assertions
-
-$failures = 0;
-
-function check(string $message, $expected, $actual): void
-{
-    global $failures;
-
-    if ($expected === $actual) {
-        echo "  ok   {$message}\n";
-
-        return;
-    }
-
-    echo '  FAIL ' . $message . ' (expected ' . var_export($expected, true)
-        . ', got ' . var_export($actual, true) . ")\n";
-    $failures++;
-}
+define('TOKEN', $token);
 
 // ------------------------------------------------------------------ fixtures
 //
@@ -147,8 +112,6 @@ function check(string $message, $expected, $actual): void
 // Deletion is verified rather than assumed: wp_delete_post() can be refused by
 // pre_delete_post, and a handler that printed "removed" without looking would
 // be the same kind of lie the rest of this file exists to catch.
-
-const FIXTURE_META = '_sfx_live_check_token';
 
 /**
  * Posts this run created, by either carrier of the token.
@@ -192,13 +155,15 @@ function fixture_posts(string $token): array
     return $confirmed;
 }
 
-// Lowercase, because post_name goes through sanitize_title() and a mixed-case
-// token comes back lowercased — the slug lookup then silently matches nothing,
-// which is exactly the leak this carrier exists to prevent. Caught by probing a
-// fatal before the token meta was written.
-$token = 'sfxlivecheck' . strtolower(wp_generate_password(16, false, false));
+$token = TOKEN;
 
 register_shutdown_function(static function () use ($token): void {
+    // Registered before WordPress was, so it may run in a process where the
+    // fixtures were never created — or where WP never finished loading.
+    if (!function_exists('get_posts')) {
+        return;
+    }
+
     $candidates = fixture_posts($token);
     $posts      = 0;
 
@@ -234,6 +199,64 @@ register_shutdown_function(static function () use ($token): void {
 
     printf("  (fixtures removed: %d post(s), %d user(s))\n", $posts, $users);
 });
+
+define('WP_USE_THEMES', false);
+require $load;
+
+if (!function_exists('rest_do_request')) {
+    fwrite(STDERR, "error: WordPress booted but the REST API is unavailable.\n");
+    exit(2);
+}
+
+// The module is opt-in. Without it register_meta() never runs and every case
+// below would fail for a reason that has nothing to do with the contract.
+$general = get_option('sfx_general_options');
+
+if (empty($general['enable_media_credits'])) {
+    fwrite(STDERR, "error: Media Credits is disabled (sfx_general_options[enable_media_credits]).\nEnable it in General Theme Options and re-run.\n");
+    exit(2);
+}
+
+// Multisite is refused rather than half-supported: wp_delete_user() there only
+// drops site membership and leaves the account on the network
+// (wp-admin/includes/user.php:440-449), so even a clean run would leak a user.
+// Doing this properly means network-wide lookup and wpmu_delete_user, which no
+// one has needed here.
+if (is_multisite()) {
+    fwrite(STDERR, "error: this harness does not support Multisite — teardown could not remove its own user.\n");
+    exit(2);
+}
+
+$admins = get_users(['role' => 'administrator', 'number' => 1]);
+
+if (!$admins) {
+    fwrite(STDERR, "error: no administrator on this site to act as.\n");
+    exit(2);
+}
+
+$admin = $admins[0];
+
+use SFX\MediaCredits\MediaLibrary;
+
+// ---------------------------------------------------------------- assertions
+
+$failures = 0;
+
+function check(string $message, $expected, $actual): void
+{
+    global $failures;
+
+    if ($expected === $actual) {
+        echo "  ok   {$message}\n";
+
+        return;
+    }
+
+    echo '  FAIL ' . $message . ' (expected ' . var_export($expected, true)
+        . ', got ' . var_export($actual, true) . ")\n";
+    $failures++;
+}
+
 
 /**
  * wp_insert_post() returns 0 on failure and wp_insert_user() a WP_Error, and
@@ -409,18 +432,38 @@ echo "\nCase 7 — sfx_media_credits_saved fires for a REST write\n";
 // The action's documented reason for existing is page-cache invalidation. A
 // REST write reaches update_metadata() directly, so without a hook of its own
 // a cached disclosure would go stale in silence.
+// Case 6 wrote through update_post_meta() and left the attachment marked, so
+// drain that before listening — otherwise the notification counted below is
+// Case 6's, and the REST write this case exists to exercise proves nothing.
+MediaLibrary::flush_dirty();
+
 $fired = [];
 
 add_action('sfx_media_credits_saved', static function ($id, $copyright, $ai_key, $context) use (&$fired): void {
     $fired[] = ['id' => $id, 'copyright' => $copyright, 'ai' => $ai_key, 'context' => $context];
 }, 10, 4);
 
-write_meta($attachment_id, ['_sfx_media_copyright' => 'Agentur Nord']);
+// A value nothing above has stored. It has to be a real CHANGE: update_metadata()
+// skips an identical write, so no updated_post_meta fires and nothing is marked
+// — and re-submitting Case 6's value made this case pass on Case 6's pending
+// notification rather than on its own. That is also the honest boundary of the
+// 'meta' context, and the spec now says so.
+write_meta($attachment_id, ['_sfx_media_copyright' => 'Bildarchiv Süd']);
+
+check('the REST write landed', 'Bildarchiv Süd', get_post_meta($attachment_id, '_sfx_media_copyright', true));
 
 check('it fired exactly once', 1, count($fired));
 check('with context meta', 'meta', $fired[0]['context'] ?? null);
 check('for this attachment', $attachment_id, $fired[0]['id'] ?? null);
-check('carrying the post-write value', 'Agentur Nord', $fired[0]['copyright'] ?? null);
+check('carrying the post-write value', 'Bildarchiv Süd', $fired[0]['copyright'] ?? null);
+
+// The boundary, stated as a test rather than only in prose: writing the SAME
+// value again is not a change, so nothing is marked and nothing fires.
+$fired    = [];
+$response = write_meta($attachment_id, ['_sfx_media_copyright' => 'Bildarchiv Süd']);
+
+check('an identical re-write is accepted', 200, $response->get_status());
+check('but announces nothing, because nothing changed', 0, count($fired));
 
 // An unrelated media edit is not a credit save — but only a SUCCESSFUL one
 // proves that. A rejected request writes nothing either, so "no notification"

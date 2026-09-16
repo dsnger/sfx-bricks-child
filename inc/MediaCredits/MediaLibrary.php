@@ -180,6 +180,9 @@ class MediaLibrary
     /** @var array<int, bool> attachments whose credit meta this request changed */
     private static array $dirty = [];
 
+    /** @var bool guards flush_dirty() against re-entry from its own listeners */
+    private static bool $flushing = false;
+
     /**
      * Record that a credit field was actually written.
      *
@@ -238,12 +241,43 @@ class MediaLibrary
 
     public static function flush_dirty(): void
     {
-        $ids = array_keys(self::$dirty);
+        // Reentrancy: a listener may write a credit field itself, which marks
+        // another attachment while this loop is running. Drain rather than
+        // snapshot once, or that write is never announced. Bounded by a guard
+        // against the degenerate case — a listener that writes the SAME field
+        // it is told about would otherwise spin forever.
+        if (self::$flushing) {
+            return;
+        }
 
-        self::$dirty = [];
+        self::$flushing = true;
 
-        foreach ($ids as $id) {
-            self::notify_saved((int) $id, 'meta');
+        try {
+            $rounds = 0;
+
+            while (self::$dirty !== [] && $rounds++ < 10) {
+                $ids = array_keys(self::$dirty);
+
+                self::$dirty = [];
+
+                foreach ($ids as $id) {
+                    $id = (int) $id;
+
+                    // wp_delete_attachment() deletes an attachment's meta
+                    // before its row (post.php:6884,6891), so an ordinary
+                    // deletion marks it dirty and then removes it. Announcing
+                    // that as a save would hand every listener a nonexistent
+                    // id and two empty strings — a cache-invalidation hook
+                    // being told a deleted attachment's credit just changed.
+                    if (get_post_type($id) !== 'attachment') {
+                        continue;
+                    }
+
+                    self::notify_saved($id, 'meta');
+                }
+            }
+        } finally {
+            self::$flushing = false;
         }
     }
 
@@ -474,6 +508,12 @@ class MediaLibrary
          * one-shot IPTC prefill. Not de-duplicated against the previous
          * value: comparing old and new would cost every save an extra read
          * to serve a listener that can compare for itself.
+         *
+         * That applies to 'save' and 'iptc'. The 'meta' context keys on the
+         * write, and update_metadata() does not write an identical value, so
+         * an unchanged re-submission announces nothing; it also coalesces two
+         * fields in one request into one notification. Deletion is silent —
+         * see flush_dirty().
          *
          * @param int    $attachment_id
          * @param string $copyright     current value, re-read after the write
