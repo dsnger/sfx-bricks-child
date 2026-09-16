@@ -8,6 +8,14 @@ declare(strict_types=1);
  * The two editor-facing fields are writable over REST; the IPTC marker is
  * not. Before this, all three carried show_in_rest => false and a write over
  * REST was accepted with 200 and silently dropped.
+ *
+ * Scope, and it is deliberately narrow: this asserts what the module ASKS
+ * for, against stubs. It cannot see whether WordPress honours the request —
+ * protected-meta auth, the schema validator and map_meta_cap all live in
+ * core, and any of them could change under a registration that still reads
+ * correctly here. tests/support/media-credits-rest-live-check.php asks that
+ * other question by dispatching real REST requests against a booted
+ * WordPress; it is manual, because CI has no WordPress to boot.
  */
 
 require __DIR__ . '/support/media-credits-stubs.php';
