@@ -22,10 +22,11 @@ declare(strict_types=1);
  * Locally that is MAMP's PHP (see AGENTS.md § Local PHP); WP-CLI cannot reach
  * the socket, which is why this boots wp-load.php by hand.
  *
- * Creates its own fixtures — an attachment, a subscriber and a draft post —
- * and deletes every one of them on the way out, including when an assertion
- * fails and when a fatal ends the run early. It never writes to media that
- * was already there.
+ * Creates its own fixtures — an attachment, a subscriber and a draft post,
+ * each tagged with a per-run token — and deletes everything carrying that
+ * token on the way out, including when an assertion fails and when a fatal
+ * ends the run early. It never writes to media that was already there, and
+ * teardown cannot reach anything this run did not create.
  */
 
 // ---------------------------------------------------------------- bootstrap
@@ -97,57 +98,89 @@ function check(string $message, $expected, $actual): void
 }
 
 // ------------------------------------------------------------------ fixtures
-// Every fixture is torn down by one shutdown handler rather than at the point
-// it stops being needed: a fatal between creating one and deleting it would
-// otherwise leave it behind on a real site. That includes $post_id, which is
-// created much further down for Case 5 — it is declared here so the handler
-// closes over it, and Case 5 does not delete it itself.
+//
+// Teardown identifies fixtures by a per-run TOKEN carried in their own data,
+// not by the ids the create calls returned. Two reasons, both of them holes
+// an id-based teardown actually had:
+//
+//   - An id is known only once the create call RETURNS, while core fires
+//     add_attachment, save_post and user_register before that. A fatal inside
+//     one of those hooks left the object behind with the captured id still 0.
+//   - An id can be wrong. `(int)` on the WP_Error that wp_insert_user()
+//     returns on failure yields 1 — not 0 — so a `<= 0` guard passed it
+//     through and teardown deleted USER 1, the site's first administrator,
+//     along with the content wp_delete_user() reassigns or destroys.
+//     Reproduced on PHP 8.5: `(int) new WP_Error(...) === 1`.
+//
+// Searching for the token answers both: it finds a fixture whose id was never
+// returned, and it cannot match anything this run did not create.
 
-$attachment_id = 0;
-$subscriber_id = 0;
-$post_id       = 0;
+$token = 'sfxlivecheck' . wp_generate_password(12, false, false);
 
-register_shutdown_function(static function () use (&$attachment_id, &$subscriber_id, &$post_id): void {
-    if ($attachment_id > 0) {
-        wp_delete_attachment($attachment_id, true);
+register_shutdown_function(static function () use ($token): void {
+    $posts = get_posts([
+        'post_type'   => ['attachment', 'post'],
+        'post_status' => 'any',
+        'numberposts' => -1,
+        'fields'      => 'ids',
+        's'           => $token,
+    ]);
+
+    foreach ($posts as $id) {
+        wp_delete_post((int) $id, true);
     }
 
-    if ($post_id > 0) {
-        wp_delete_post($post_id, true);
-    }
+    $users = get_users(['search' => '*' . $token . '*', 'fields' => 'ID']);
 
-    if ($subscriber_id > 0) {
+    if ($users) {
         require_once ABSPATH . 'wp-admin/includes/user.php';
-        wp_delete_user($subscriber_id);
+
+        foreach ($users as $id) {
+            wp_delete_user((int) $id);
+        }
     }
 
-    echo "  (fixtures removed)\n";
+    printf("  (fixtures removed: %d post(s), %d user(s))\n", count($posts), count($users));
 });
 
-$attachment_id = (int) wp_insert_post([
-    'post_type'   => 'attachment',
-    'post_status' => 'inherit',
-    'post_title'  => 'sfx media credits live check',
-    'post_author' => $admin->ID,
+/**
+ * wp_insert_post() returns 0 on failure and wp_insert_user() a WP_Error, and
+ * casting the latter to int gives 1. Both go through here so neither can reach
+ * a caller as a plausible-looking id.
+ *
+ * @param int|WP_Error $created
+ */
+function fixture_id($created, string $what): int
+{
+    if (is_wp_error($created)) {
+        fwrite(STDERR, "error: could not create the fixture {$what}: " . $created->get_error_message() . "\n");
+        exit(2);
+    }
+
+    $id = is_scalar($created) ? (int) $created : 0;
+
+    if ($id <= 0) {
+        fwrite(STDERR, "error: could not create the fixture {$what}.\n");
+        exit(2);
+    }
+
+    return $id;
+}
+
+$attachment_id = fixture_id(wp_insert_post([
+    'post_type'      => 'attachment',
+    'post_status'    => 'inherit',
+    'post_title'     => 'sfx media credits live check ' . $token,
+    'post_author'    => $admin->ID,
     'post_mime_type' => 'image/jpeg',
-]);
+], true), 'attachment');
 
-if ($attachment_id <= 0) {
-    fwrite(STDERR, "error: could not create the fixture attachment.\n");
-    exit(2);
-}
-
-$subscriber_id = (int) wp_insert_user([
-    'user_login' => 'sfx_live_check_' . wp_generate_password(8, false),
+$subscriber_id = fixture_id(wp_insert_user([
+    'user_login' => $token,
     'user_pass'  => wp_generate_password(),
-    'user_email' => 'sfx-live-check-' . wp_generate_password(8, false) . '@example.invalid',
+    'user_email' => $token . '@example.invalid',
     'role'       => 'subscriber',
-]);
-
-if ($subscriber_id <= 0) {
-    fwrite(STDERR, "error: could not create the fixture subscriber.\n");
-    exit(2);
-}
+]), 'subscriber');
 
 echo "attachment {$attachment_id}, admin {$admin->user_login}, throwaway subscriber {$subscriber_id}\n";
 
@@ -221,23 +254,23 @@ echo "\nCase 5 — object_subtype keeps the keys off posts and pages\n";
 
 wp_set_current_user($admin->ID);
 
-// Assigned to the variable the shutdown handler closes over, so this post is
-// removed by the same teardown as the other two fixtures.
-$post_id = (int) wp_insert_post([
+// Carries the token like every fixture, so the same teardown removes it.
+$post_id  = fixture_id(wp_insert_post([
     'post_type'   => 'post',
     'post_status' => 'draft',
-    'post_title'  => 'sfx media credits live check (subtype scope)',
+    'post_title'  => 'sfx media credits live check (subtype scope) ' . $token,
     'post_author' => $admin->ID,
-]);
+], true), 'draft post');
 
-if ($post_id > 0) {
-    $response = rest_do_request(new WP_REST_Request('GET', '/wp/v2/posts/' . $post_id));
-    $keys     = array_keys((array) ($response->get_data()['meta'] ?? []));
+$response = rest_do_request(new WP_REST_Request('GET', '/wp/v2/posts/' . $post_id));
+$data     = (array) $response->get_data();
 
-    check('no media-credit key on a post', [], array_values(preg_grep('/^_sfx_media_/', $keys)));
-} else {
-    echo "  skip a post could not be created\n";
-}
+// Assert the request succeeded before reading its meta. An error response
+// carries no meta either, so "no _sfx_media_ key in the payload" would other-
+// wise pass for a 404 — a green tick for a request that never looked.
+check('the post is readable over REST', 200, $response->get_status());
+check('the response carries a meta object', true, is_array($data['meta'] ?? null));
+check('no media-credit key on a post', [], array_values(preg_grep('/^_sfx_media_/', array_keys((array) ($data['meta'] ?? [])))));
 
 // ------------------ Case 6: the wp-admin save path still sanitises
 
