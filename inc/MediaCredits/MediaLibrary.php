@@ -64,30 +64,90 @@ class MediaLibrary
     }
 
     /**
-     * Underscore-prefixed so the keys stay out of the Custom Fields box, and
-     * out of REST: this is not a public API, it is two fields and a marker.
+     * Underscore-prefixed so the keys stay out of the Custom Fields box.
+     *
+     * The two editor-facing fields are in REST; the IPTC marker is not. The
+     * marker records "we have already looked at this file's embedded data",
+     * which is bookkeeping for prefill_iptc() and not a value anyone should
+     * set — exposing it would only offer a way to disable the prefill by
+     * accident.
+     *
+     * An underscore-prefixed key is protected meta, so register_meta()
+     * defaults its auth_callback to __return_false. show_in_rest alone would
+     * therefore make the fields readable and still refuse every write, which
+     * is why can_edit_attachment() is passed explicitly.
+     *
+     * object_subtype scopes all three to attachments. Without it the keys are
+     * registered for every post type, and show_in_rest would surface them on
+     * posts, pages and every CPT — three keys that can never hold a value
+     * there.
      */
     public static function register_meta(): void
     {
         register_meta('post', Credit::META_COPYRIGHT, [
+            'object_subtype'    => 'attachment',
             'type'              => 'string',
             'single'            => true,
-            'show_in_rest'      => false,
+            'show_in_rest'      => true,
+            'auth_callback'     => [self::class, 'can_edit_attachment'],
             'sanitize_callback' => 'sanitize_text_field',
         ]);
 
         register_meta('post', Credit::META_AI, [
+            'object_subtype'    => 'attachment',
             'type'              => 'string',
             'single'            => true,
-            'show_in_rest'      => false,
+            'show_in_rest'      => ['schema' => ['type' => 'string', 'enum' => self::ai_key_enum()]],
+            'auth_callback'     => [self::class, 'can_edit_attachment'],
             'sanitize_callback' => [self::class, 'sanitize_ai_key'],
         ]);
 
         register_meta('post', Credit::META_IPTC_MARKER, [
-            'type'         => 'string',
-            'single'       => true,
-            'show_in_rest' => false,
+            'object_subtype' => 'attachment',
+            'type'           => 'string',
+            'single'         => true,
+            'show_in_rest'   => false,
         ]);
+    }
+
+    /**
+     * The AI marking's accepted values, as a REST schema enum.
+     *
+     * sanitize_ai_key() already turns an unrecognised slug into '', which is
+     * right for a <select> that cannot submit one. Over REST it would mean a
+     * typo silently clears the field and answers 200 — the failure that sent
+     * us here. The enum makes the same value a 400 that names the key.
+     *
+     * get_default_labels(), not get_labels(): the slug set is closed, and
+     * get_labels() only re-words it. Reading the filtered map here would also
+     * fire sfx_media_credits_labels on init, before a theme or plugin hooking
+     * a later action has registered.
+     *
+     * @return list<string>
+     */
+    private static function ai_key_enum(): array
+    {
+        return array_merge([''], array_keys(Settings::get_default_labels()));
+    }
+
+    /**
+     * Who may write the two fields over REST: whoever may edit that
+     * attachment. Same gate wp-admin applies — an Author reaches their own
+     * uploads, a Subscriber reaches nothing.
+     *
+     * map_meta_cap() passes the value it would have used (false, for
+     * protected meta) as $allowed; it is ignored deliberately, because that
+     * default is the very thing being replaced.
+     *
+     * @param mixed $allowed   what map_meta_cap() decided before this filter
+     * @param mixed $meta_key
+     * @param mixed $object_id the attachment being written
+     */
+    public static function can_edit_attachment($allowed, $meta_key, $object_id): bool
+    {
+        $id = (int) $object_id;
+
+        return $id > 0 && current_user_can('edit_post', $id);
     }
 
     /**

@@ -57,6 +57,8 @@ $test_filter_returns = [];   // filter name => callable(mixed $value, array $arg
 $test_filters        = [];   // hook name => list of registrations
 $test_is_admin       = true; // is_admin() return value
 $test_actions_fired  = [];   // hook name => list of arg-lists, one per do_action() call
+$test_registered_meta = []; // meta key => args array, as passed to register_meta()
+$test_caps           = [];   // capability => [object id => bool]
 
 // ------------------------------------------------------ WordPress doubles
 
@@ -249,6 +251,50 @@ function add_action($hook, $callback, $priority = 10, $accepted_args = 1): bool
 }
 
 /**
+ * Records the args verbatim. Core normalises them (defaulting auth_callback
+ * to __return_false for a protected key, among other things); this stub does
+ * not, on purpose — the point of the REST test is what register_meta() was
+ * ASKED for, since a default the caller did not set is exactly the bug.
+ */
+function register_meta($object_type, $meta_key, $args = [], $deprecated = null): bool
+{
+    global $test_registered_meta;
+
+    $test_registered_meta[$meta_key] = $args;
+
+    return true;
+}
+
+/**
+ * Driven by $test_caps, set through test_grant_cap(). Unknown capability or
+ * unknown object id means no, which matches the only default that is safe to
+ * assume of a permission check.
+ */
+function current_user_can($capability, ...$args): bool
+{
+    global $test_caps;
+
+    $object_id = isset($args[0]) ? (int) $args[0] : 0;
+
+    return $test_caps[$capability][$object_id] ?? false;
+}
+
+function test_grant_cap(string $capability, int $object_id, bool $allowed = true): void
+{
+    global $test_caps;
+
+    $test_caps[$capability][$object_id] = $allowed;
+}
+
+/** The args one register_meta() call was made with, or null if never called. */
+function test_registered_meta(string $meta_key): ?array
+{
+    global $test_registered_meta;
+
+    return $test_registered_meta[$meta_key] ?? null;
+}
+
+/**
  * Every call is recorded (so a test can assert count and arguments even with
  * no listener registered), and every registered add_action() callback for
  * that hook is actually invoked, in registration order, each with its own
@@ -294,8 +340,11 @@ function test_reset(): void
 {
     global $test_options, $test_post_meta, $test_attachment_url, $test_attachment_img,
            $test_is_image, $test_filter_returns, $test_filters, $test_is_admin, $test_actions_fired,
-           $test_thumbnail_ids, $test_current_post_id, $test_posts;
+           $test_thumbnail_ids, $test_current_post_id, $test_posts,
+           $test_registered_meta, $test_caps;
 
+    $test_registered_meta = [];
+    $test_caps            = [];
     $test_options         = [];
     $test_post_meta       = [];
     $test_attachment_url  = [];
