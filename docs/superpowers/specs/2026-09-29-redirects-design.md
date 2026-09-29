@@ -515,7 +515,9 @@ canonical query (relative targets resolve against `home_url()`).
   its target plus that target with every query an exact rule on the same path keys
   on. A revisited address on a chain this rule is part of is refused; a chain that
   ends anywhere else is allowed, however it gets there. Up to 10 hops are followed
-  and the address the 10th hop reaches is still checked.
+  and the address the 10th hop reaches is still checked. The simulation runs under
+  the write lock, so one save spends at most 200 rule lookups across all start
+  points; a spent budget counts as "no loop found".
 
   **Known gaps, stated:** loop detection over rules with passthrough queries is not
   decidable from finitely many start points, so cycles that only appear for a query

@@ -582,6 +582,18 @@ $v = Rule::validate(['source' => '/' . $marker . '/scheme', 'target' => $other_s
 $saved = Repository::save($v['rule'], 0, 'manual');
 check('a same-path scheme change is allowed', ($saved['status'] ?? '') === 'created', 'got ' . var_export($saved, true));
 
+// Lookup budget: 250 query-keyed rules on one path must not turn a regex save into
+// a long lock hold. More seeds than the budget are not fetched or walked.
+for ($n = 1; $n <= 250; $n++) {
+    add_rule(['source' => '/' . $marker . '/k?q=' . $n, 'target' => '/' . $marker . '/k-end', 'status_code' => '301']);
+}
+$v = Rule::validate(['source' => '^/' . $marker . '/k-start$', 'match_type' => 'regex', 'target' => '/' . $marker . '/k', 'status_code' => '301', 'enabled' => true, 'note' => 'sfx live harness']);
+$t0 = microtime(true);
+$saved = Repository::save($v['rule'], 0, 'manual');
+$took = microtime(true) - $t0;
+check('a regex save over 250 query-keyed rules succeeds', ($saved['status'] ?? '') === 'created', 'got ' . var_export($saved, true));
+check('… within the lookup budget (under 3 s, the lock waits 5 s)', $took < 3.0, sprintf('took %.2f s', $took));
+
 echo "\n410\n";
 $r = http_get($gone_url);
 check('410 rule on the Bricks page answers 410', $r['status'] === 410, describe($r));

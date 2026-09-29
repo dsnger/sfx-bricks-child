@@ -1182,6 +1182,14 @@ final class Repository
     private const MAX_SIMULATED_HOPS = 10;
 
     /**
+     * Rule lookups one save may spend on the simulation, across all start points.
+     * It runs under the write lock; unbounded, a path with hundreds of
+     * query-keyed rules would hold the lock long enough to time out other
+     * writers. Exhausted budget = no loop found (best effort, see the spec).
+     */
+    private const MAX_SIMULATED_LOOKUPS = 200;
+
+    /**
      * Cycles the exact reverse-edge check cannot see — through regex rules,
      * through query passthrough (^/b$ → /a?x=1 beside /a?x=1 → /b): the rule set
      * WITH this rule in place is run through the real matcher, hop by hop, from
@@ -1230,10 +1238,12 @@ final class Repository
             $wpdb  = self::db();
             $table = self::table();
             $keyed = $wpdb->get_col($wpdb->prepare(
-                // ponytail: every query-keyed exact rule on that path seeds a walk;
-                // fine for the hundreds, a cap would silently skip loops.
-                "SELECT source FROM `{$table}` WHERE enabled = 1 AND match_type = 'exact' AND source LIKE %s ORDER BY id ASC",
-                $wpdb->esc_like($path . '?') . '%'
+                // Each query-keyed exact rule on that path seeds a walk. More seeds
+                // than the lookup budget could never all be walked, so no more are
+                // fetched (best effort, see MAX_SIMULATED_LOOKUPS).
+                "SELECT source FROM `{$table}` WHERE enabled = 1 AND match_type = 'exact' AND source LIKE %s ORDER BY id ASC LIMIT %d",
+                $wpdb->esc_like($path . '?') . '%',
+                self::MAX_SIMULATED_LOOKUPS
             ));
             if (self::failed() || !is_array($keyed)) {
                 return false;
@@ -1246,8 +1256,12 @@ final class Repository
             }
         }
 
+        $budget = self::MAX_SIMULATED_LOOKUPS;
         foreach ($seeds as $seed) {
-            $result = self::follow_chain($seed, $self, $home);
+            if ($budget <= 0) {
+                break;
+            }
+            $result = self::follow_chain($seed, $self, $home, $budget);
             if ($result !== null) {
                 return $result;
             }
@@ -1261,7 +1275,7 @@ final class Repository
      *                      (its scheme is kept), optionally with "?query"
      * @return string|false|null  message, false on a read error, null = the chain ends
      */
-    private static function follow_chain(string $start, array $self, string $home): string|false|null
+    private static function follow_chain(string $start, array $self, string $home, int &$budget): string|false|null
     {
         $seen    = [];
         $via     = [];
@@ -1302,6 +1316,10 @@ final class Repository
                 return null; // longer than this: counted as ending (browsers stop it)
             }
 
+            if ($budget <= 0) {
+                return null; // lookup budget spent: counted as ending
+            }
+            $budget--;
             $candidates = self::find_candidates($path, $query);
             if ($candidates === null) {
                 return false;
