@@ -294,6 +294,16 @@ class Controller
                 'type'        => 'subset',
                 'fields'      => ['output_mode', 'force_wrapper', 'credit_display', 'icon_size', 'fallback_copyright'],
             ],
+            // Settings only. The rules live in their own table and travel as
+            // CSV from Tools → Redirects, not in this JSON; the 404 log is
+            // site-local and travels nowhere. Out-of-range imported values are
+            // clamped by Redirects\Settings::get().
+            'redirects' => [
+                'label' => __('Redirects Settings', 'sfxtheme'),
+                'description' => __('404 logging, retention and automatic redirects (rules are exported as CSV on the Redirects screen)', 'sfxtheme'),
+                'option_key' => 'sfx_redirects_options',
+                'type' => 'single',
+            ],
             // NOTE: the seal_* attachment ids are deliberately NOT exported.
             // They are meaningful only on the site that stored them; on the
             // target site the same id resolves to whatever image happens to

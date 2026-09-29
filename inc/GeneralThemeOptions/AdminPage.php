@@ -63,10 +63,13 @@ class AdminPage
     wp_safe_redirect(
       add_query_arg(
         [
-          'sfx-purged'     => '1',
-          'sfx-options'    => (int) $report['options'],
-          'sfx-meta'       => (int) $report['meta_keys'],
-          'sfx-transients' => (int) $report['transients'],
+          'sfx-purged'        => '1',
+          'sfx-options'       => (int) $report['options'],
+          'sfx-meta'          => (int) $report['meta_keys'],
+          'sfx-transients'    => (int) $report['transients'],
+          'sfx-tables'        => (int) $report['tables'],
+          'sfx-tables-locked' => $report['tables_locked'] ? 1 : 0,
+          'sfx-tables-failed' => $report['tables_failed'] ? 1 : 0,
         ],
         admin_url('admin.php?page=' . self::$menu_slug)
       )
@@ -376,6 +379,9 @@ class AdminPage
       $removed_options    = isset($_GET['sfx-options']) ? absint($_GET['sfx-options']) : 0;
       $removed_meta       = isset($_GET['sfx-meta']) ? absint($_GET['sfx-meta']) : 0;
       $removed_transients = isset($_GET['sfx-transients']) ? absint($_GET['sfx-transients']) : 0;
+      $removed_tables     = isset($_GET['sfx-tables']) ? absint($_GET['sfx-tables']) : 0;
+      $tables_locked      = !empty($_GET['sfx-tables-locked']);
+      $tables_failed      = !empty($_GET['sfx-tables-failed']);
 
       wp_admin_notice(
         sprintf(
@@ -383,15 +389,26 @@ class AdminPage
           esc_html__('Theme data deleted: %1$d settings and %2$d cached rows.', 'sfxtheme'),
           $removed_options,
           $removed_transients
+        ) . ' ' . sprintf(
+          /* translators: %d: number of redirect tables (rules, 404 log) removed */
+          esc_html__('Redirect tables deleted: %d.', 'sfxtheme'),
+          $removed_tables
         ) . ' ' . ($removed_meta > 0
           ? esc_html__('The copyright and AI markings on your media were deleted as well.', 'sfxtheme')
-          : esc_html__('Your content, including the copyright and AI markings on your media, was not touched.', 'sfxtheme')),
+          : esc_html__('Your posts, pages and media, including the copyright and AI markings, were not touched.', 'sfxtheme'))
+        . ($tables_locked
+          ? ' ' . esc_html__('Redirect tables not deleted: another redirect change was in progress. Run the purge again to delete them.', 'sfxtheme')
+          : '')
+        . ($tables_failed
+          ? ' ' . esc_html__('Some redirect tables could not be deleted because of a database error. Run the purge again.', 'sfxtheme')
+          : ''),
         // Every count, not just the options. A second purge with the media
         // box ticked removes attachment meta while the options are already
         // gone, and transients regenerate between runs — both are successful
-        // purges that would otherwise be styled as failures.
+        // purges that would otherwise be styled as failures. Tables left
+        // behind under the lock are a partial result, so they warn.
         [
-          'type'        => ($removed_options + $removed_meta + $removed_transients) > 0 ? 'success' : 'warning',
+          'type'        => !$tables_locked && !$tables_failed && ($removed_options + $removed_meta + $removed_transients + $removed_tables) > 0 ? 'success' : 'warning',
           'dismissible' => true,
         ]
       );
@@ -413,6 +430,7 @@ class AdminPage
           (int) $present
         );
         ?>
+        <?php esc_html_e('This includes every redirect rule and the 404 log.', 'sfxtheme'); ?>
         <br>
         <strong><?php esc_html_e('Will be kept:', 'sfxtheme'); ?></strong>
         <?php esc_html_e('your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>

@@ -13,6 +13,10 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__, 2) . '/');
 }
 
+if (!defined('DB_NAME')) {
+    define('DB_NAME', 'test_db');
+}
+
 $failures = 0;
 
 // ------------------------------------------------------------- assertions
@@ -46,13 +50,34 @@ $test_meta_deleted = [];
 /** SQL statements the $wpdb double received. */
 $test_queries = [];
 
+/** Tables that exist, full names. Empty by default: most cases are not about them. */
+$test_tables = [];
+
+/** Whether GET_LOCK succeeds. */
+$test_lock_free = true;
+
+/** IS_USED_LOCK checks that still find the lock ours; null = never lost. */
+$test_lock_checks_left = null;
+
+/** A DROP that silently leaves the table in place. */
+$test_drop_fails = false;
+
+/** Hooks passed to wp_clear_scheduled_hook(). */
+$test_cleared_hooks = [];
+
 function test_reset(): void
 {
-    global $test_options, $test_meta_deleted, $test_queries;
+    global $test_options, $test_meta_deleted, $test_queries, $test_tables,
+           $test_lock_free, $test_lock_checks_left, $test_drop_fails, $test_cleared_hooks;
 
-    $test_options      = [];
-    $test_meta_deleted = [];
-    $test_queries      = [];
+    $test_options          = [];
+    $test_meta_deleted     = [];
+    $test_queries          = [];
+    $test_tables           = [];
+    $test_lock_free        = true;
+    $test_lock_checks_left = null;
+    $test_drop_fails       = false;
+    $test_cleared_hooks    = [];
 }
 
 // ------------------------------------------------------ WordPress doubles
@@ -86,6 +111,15 @@ function delete_post_meta_by_key(string $key): bool
     return true;
 }
 
+function wp_clear_scheduled_hook(string $hook, array $args = []): int
+{
+    global $test_cleared_hooks;
+
+    $test_cleared_hooks[] = $hook;
+
+    return 0;
+}
+
 function get_stylesheet_directory(): string
 {
     return dirname(__DIR__, 2);
@@ -99,7 +133,9 @@ function get_stylesheet_directory(): string
 class Test_WPDB
 {
     public string $options = 'wp_options';
+    public string $last_error = '';
     public string $postmeta = 'wp_postmeta';
+    public string $prefix = 'wp_';
 
     public function prepare(string $sql, mixed ...$args): string
     {
@@ -115,11 +151,48 @@ class Test_WPDB
 
     public function query(string $sql): int
     {
-        global $test_queries;
+        global $test_queries, $test_tables, $test_drop_fails;
 
         $test_queries[] = $sql;
 
+        if (preg_match('/^DROP TABLE IF EXISTS `([^`]+)`$/', $sql, $m) === 1 && !$test_drop_fails) {
+            $test_tables = array_values(array_diff($test_tables, [$m[1]]));
+        }
+
         return $this->rows_affected;
+    }
+
+    /**
+     * Answers the three questions the table drop asks: the lock, whether it
+     * is still ours, and whether a table exists. The LIKE pattern is
+     * unescaped before the lookup, so a pattern that skipped esc_like() still
+     * resolves — Case 7 asserts on the escaping separately.
+     */
+    public function get_var(string $sql): ?string
+    {
+        global $test_queries, $test_tables, $test_lock_free, $test_lock_checks_left;
+
+        $test_queries[] = $sql;
+
+        if (strpos($sql, 'SELECT GET_LOCK(') === 0) {
+            return $test_lock_free ? '1' : '0';
+        }
+
+        if (strpos($sql, 'SELECT IS_USED_LOCK(') === 0) {
+            if ($test_lock_checks_left === null) {
+                return '1';
+            }
+
+            return $test_lock_checks_left-- > 0 ? '1' : '0';
+        }
+
+        if (preg_match("/^SHOW TABLES LIKE '(.*)'$/", $sql, $m) === 1) {
+            $name = stripcslashes($m[1]);
+
+            return in_array($name, $test_tables, true) ? $name : null;
+        }
+
+        return null;
     }
 
     /** Core escapes the LIKE wildcards % and _; so does this. */

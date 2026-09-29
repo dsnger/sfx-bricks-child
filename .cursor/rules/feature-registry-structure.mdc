@@ -27,7 +27,7 @@ alwaysApply: false
 ## Feature config schema (current usage)
 - `class` (string, required)
 - `menu_slug`, `page_title`, `description` (strings, optional)
-- `url` (string, optional) for CPT-based features
+- `url` (string, optional) explicit destination for the feature tile — CPT list screens, or a page outside the theme menu (Redirects lives under Tools)
 - `show_in_theme_settings` (bool, optional)
 - `activation_option_name` + `activation_option_key` (strings, optional)
 - `hook` (string|null, optional)
@@ -53,8 +53,9 @@ it had no business deleting.
   `OPTION_NAME` constant the purge does not carry. Declare your option as a
   constant and the test will remind you; write it as a bare literal and nothing
   will.
-- Content is out of scope. `DataPurge` deletes settings, caches and the Media
-  Credits attachment meta. CPT posts an editor typed stay.
+- Content is out of scope. `DataPurge` deletes settings, caches, the Media
+  Credits attachment meta and the Redirects module's two tables (`TABLE_NAMES` —
+  editor work, named in the Danger Zone warning). CPT posts an editor typed stay.
 
 The purge runs from the Danger Zone on the General Theme Options screen, while
 the theme is still active. WordPress executes no uninstall routine for a theme,
@@ -71,3 +72,4 @@ so there is no later.
 - `SocialMediaAccounts` (CPT-based, shortcode)
 - `CustomScriptsManager` (CPT-based, conditional script injection)
 - `MediaCredits` (gated by `sfx_general_options.enable_media_credits`, Bricks tags + caption/overlay output)
+- `Redirects` (gated by `sfx_general_options.enable_redirects`, Tools → Redirects for `edit_others_posts`, own tables `sfx_redirects` / `sfx_redirects_404`)

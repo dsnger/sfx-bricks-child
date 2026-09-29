@@ -9,7 +9,7 @@
 - new `inc/Redirects/*`
 - one toggle in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
-- `inc/DataPurge.php`: two option names, one transient prefix, a new `TABLE_NAMES` list, a `tables` count
+- `inc/DataPurge.php`: two option names, two transient prefixes, a new `TABLE_NAMES` list, `tables` / `tables_locked` / `tables_failed` results
 - `inc/GeneralThemeOptions/AdminPage.php`: purge screen copy + report the `tables` count
 - one settings group in `inc/ImportExport/Controller.php`
 - German strings in `languages/de_DE.po` / `.mo`
@@ -301,14 +301,14 @@ scalar fields must be strings; `ids[]` must be an array whose every element is a
 digit string (`absint`'d, zeros dropped); `$_FILES['file']` must have the standard
 upload shape. Ops matched against the fixed list above; anything else rejected.
 
-**Outcome notices:** handlers call `add_settings_error('sfx_redirects', …)`, store them
-with `set_transient('settings_errors', get_settings_errors(), 30)` and redirect with
-`wp_safe_redirect(add_query_arg(['tab' => …, 'settings-updated' => 'true'], page_url()))`
-— exactly PasswordProtected's mechanism, including the `settings-updated` argument
-core needs to consume the transient; the page renders `settings_errors('sfx_redirects')`.
-That transient is core-owned and site-global; two admins saving in the same second
-can see each other's notice. Accepted: it is what every settings screen in WordPress
-does.
+**Outcome notices:** handlers call `add_settings_error('sfx_redirects', …)` with **plain
+text**, park them in the module's **per-user** transient `sfx_redirects_notices_<user_id>`
+(60 s) via `AdminPage::finish($tab)` and redirect with `wp_safe_redirect(page_url($tab))`;
+the page prints them in `AdminPage::render_notices()`, escaping every line at the echo
+site (invariant 3). Core's site-global `settings_errors` transient is **never** used:
+core's `settings_errors()` prints any pending notice unescaped on other screens, and
+these notices can carry CSV cells an editor uploaded (Gate B pass 2 finding).
+`sfx_redirects_notices_` joins `DataPurge::TRANSIENT_PREFIXES`.
 
 A failed rule validation redirects back to the form **with the submitted values**
 (stored in the per-user transient `sfx_redirects_form_<user_id>`, 5 minutes, deleted
@@ -364,7 +364,10 @@ Accepted forms:
 
 - **site-relative**: starts with exactly one `/`; second character is not `/` or `\`;
 - **absolute**: `wp_parse_url` gives scheme `http`/`https`, a non-empty host, **no
-  user/pass**; port allowed.
+  user/pass**; port allowed. The host must be a plain ASCII name (IDNs as punycode) or
+  a canonical dotted-quad IPv4 address — percent-encoded hosts and shortened/hex/integer
+  IPv4 forms are rejected, because browsers normalise them and the loop checks would
+  compare the wrong host. Bracketed IPv6 hosts are not supported (stated).
 
 Rejected additionally: any backslash, whitespace or control character anywhere; any
 value where `wp_sanitize_redirect($t) !== $t` (so what we validate is exactly what
@@ -517,11 +520,11 @@ not obtained within 5 s → the operation is refused with "Another redirect chan
 progress, try again".
 
 **Connection loss:** `wpdb` transparently reconnects after "server has gone away",
-which silently drops the lock and any open transaction. Before its final write/`COMMIT`
-a locked operation therefore checks `SELECT IS_USED_LOCK(name) = CONNECTION_ID()`; if
-the lock is no longer ours, it rolls back (if anything is still open), reports a
-database error and stops. Stated limit: a reconnect between that check and the commit
-is not detected.
+which silently drops the lock and any open transaction. Before **each** write (and
+before `COMMIT`) a locked operation therefore checks `SELECT IS_USED_LOCK(name) =
+CONNECTION_ID()`; if the lock is no longer ours, it rolls back (if anything is still
+open), reports a database error and stops. Stated limit: a reconnect between that check
+and the write it guards is not detected.
 
 ### Database error contract
 
@@ -753,7 +756,7 @@ directly in a spreadsheet; a spreadsheet that re-saves the file may drop the quo
   stored.
 - At most **5000 records** per file (more → rejected before any write, "split the
   file"). `set_time_limit(120)` where allowed.
-- Each record → `Rule::validate()` → `Repository::upsert()` by `source_hash`
+- Each record → `Rule::validate()` → `Repository::import()` (an upsert per record by `source_hash`)
   (an update keeps `hits` and `last_hit` and sets `origin = import` — the importer
   takes ownership; new rows get `origin = import`); `loop_conflict()` and the regex cap
   apply.
@@ -768,7 +771,8 @@ directly in a spreadsheet; a spreadsheet that re-saves the file may drop the quo
 ## Integration points
 
 - **DataPurge**: add `sfx_redirects_options` and `sfx_redirects_db_version` to
-  `OPTION_NAMES`; add `sfx_redirects_form_` to `TRANSIENT_PREFIXES`; add
+  `OPTION_NAMES`; add `sfx_redirects_form_` and `sfx_redirects_notices_` to
+  `TRANSIENT_PREFIXES`; add
   `TABLE_NAMES = ['sfx_redirects', 'sfx_redirects_404']` and drop them in `run()`
   (`DROP TABLE IF EXISTS` on `$wpdb->prefix . $name`, counted when the table existed
   before and is gone after), unschedule `sfx_redirects_cleanup`, and return a `tables`

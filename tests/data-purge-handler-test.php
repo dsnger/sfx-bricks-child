@@ -8,7 +8,8 @@ declare(strict_types=1);
  * Nothing here checks that the purge works — that is data-purge-test.php. This
  * file checks the opposite: that a request which fails ANY gate never reaches
  * DataPurge::run(). Each case removes exactly one gate's precondition and
- * asserts nothing was deleted.
+ * asserts nothing was deleted. The last cases follow the Redirects table
+ * count and lock flag from the handler's redirect to the screen's notice.
  */
 
 require __DIR__ . '/support/data-purge-handler-stubs.php';
@@ -107,6 +108,67 @@ $result = run_handler();
 
 assert_same('redirect', $result['stopped'], 'Case 8b: the opt-in request still completes');
 assert_true($GLOBALS['test_deleted_meta'] > 0, 'Case 8c: and with the checkbox the meta is deleted');
+
+// ----------- the Redirects table count and the lock reach the screen
+//
+// The counts travel from run() through the redirect's query args to the
+// notice. Asserted at both ends: a count the handler drops, or one the screen
+// never reads, would each report less than was deleted.
+
+/**
+ * Render the Danger Zone with the given query args and return its notice.
+ *
+ * @return array{message:string, type:string}
+ */
+function render_notice(array $get): array
+{
+    global $test_notices;
+
+    $_GET         = $get;
+    $test_notices = [];
+
+    $render = new ReflectionMethod(AdminPage::class, 'render_danger_zone');
+    ob_start();
+    $render->invoke(null);
+    ob_end_clean();
+
+    return $test_notices[0] ?? ['message' => '', 'type' => ''];
+}
+
+test_gates_reset();
+run_handler();
+
+assert_same(2, $GLOBALS['test_redirect_args']['sfx-tables'] ?? null, 'Case 9a: both dropped tables are counted in the redirect');
+assert_same(0, $GLOBALS['test_redirect_args']['sfx-tables-locked'] ?? null, 'Case 9b: a free lock is not reported as held');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(strpos($notice['message'], 'Redirect tables deleted: 2.') !== false, 'Case 9c: the notice reports the table count');
+assert_true(strpos($notice['message'], 'another redirect change was in progress') === false, 'Case 9d: and no lock message');
+assert_same('success', $notice['type'], 'Case 9e: a full purge is a success');
+
+test_gates_reset();
+$GLOBALS['test_lock_free'] = false;
+run_handler();
+
+assert_same(0, $GLOBALS['test_redirect_args']['sfx-tables'] ?? null, 'Case 10a: without the lock no table is counted');
+assert_same(1, $GLOBALS['test_redirect_args']['sfx-tables-locked'] ?? null, 'Case 10b: the held lock travels in the redirect');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(
+    strpos($notice['message'], 'Redirect tables not deleted: another redirect change was in progress.') !== false,
+    'Case 10c: the notice says why the tables are still there'
+);
+assert_same('warning', $notice['type'], 'Case 10d: a purge that left the tables is a partial result, styled as one');
+
+// The Danger Zone says the rules go before the phrase is typed, not after.
+$_GET = [];
+ob_start();
+(new ReflectionMethod(AdminPage::class, 'render_danger_zone'))->invoke(null);
+$screen = (string) ob_get_clean();
+
+assert_true(strpos($screen, 'every redirect rule and the 404 log') !== false, 'Case 11: the warning names the redirect rules and the 404 log');
 
 // ------------------------------------------------------------- epilogue
 
