@@ -57,8 +57,10 @@ final class Controller
             'class' => self::class,
             'menu_slug' => AdminPage::$menu_slug,
             'url' => admin_url('tools.php?page=sfx-redirects'),
-            'page_title' => __(AdminPage::$page_title, 'sfxtheme'),
-            'description' => __(AdminPage::$description, 'sfxtheme'),
+            // Literals, so string extraction finds them (a variable inside __() is
+            // invisible to makepot). Keep in sync with AdminPage's statics.
+            'page_title' => __('Redirects', 'sfxtheme'),
+            'description' => __('Manage redirects (301, 302, 307, 308, 410), log 404 errors and create redirects automatically when a page\'s address changes.', 'sfxtheme'),
             'activation_option_name' => 'sfx_general_options',
             'activation_option_key' => 'enable_redirects',
             'option_value' => true,

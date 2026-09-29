@@ -127,6 +127,22 @@ final class AdminPage
             self::finish('redirects');
         }
 
+        // A from_404 id counts only when that log row exists and logs exactly the
+        // path this rule now redirects. An editor who changed the source (or a
+        // stale link) must not mark the rule "404" or delete an unrelated row.
+        if ($from_404 > 0) {
+            $logged = $checked['rule']['match_type'] === 'exact' ? Repository::log_path($from_404) : null;
+            if ($logged === false) {
+                // Unreadable is not "missing": save nothing rather than guess the origin.
+                self::notice(__('A database error occurred; the change was not saved.', 'sfxtheme'));
+                self::keep_form($form);
+                self::finish('redirects');
+            }
+            if ($logged !== $checked['rule']['source']) {
+                $from_404 = 0;
+            }
+        }
+
         $result = Repository::save($checked['rule'], $id, $from_404 > 0 ? '404' : 'manual');
 
         switch ($result['status']) {

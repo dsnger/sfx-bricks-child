@@ -7509,3 +7509,12 @@ msgstr "Einige Weiterleitungstabellen konnten wegen eines Datenbankfehlers nicht
 #: inc/Redirects/RedirectsTable.php
 msgid "Created"
 msgstr "Erstellt"
+
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "This would create a redirect loop with rule #%d."
+msgstr "Das würde eine Weiterleitungsschleife mit Regel #%d erzeugen."
+
+#: inc/Redirects/Repository.php
+msgid "The target leads back to the source; the redirect would loop."
+msgstr "Das Ziel führt zurück zur Quelle; die Weiterleitung würde sich im Kreis drehen."

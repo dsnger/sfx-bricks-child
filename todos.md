@@ -9,6 +9,13 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Database-backed tests in CI for the Redirects module** (Greptile on PR #41,
+      2026-09-29; deferred by Daniel): schema install, database-backed matching, the
+      slug monitor and the loop simulation are only exercised by the manual harness
+      `tests/support/redirects-live-check.php` against the local MAMP site;
+      `quality.sh` and CI cannot catch regressions there. Needs a WordPress + MySQL
+      test environment in CI (e.g. a MySQL service + wp-env or the core test suite) —
+      its own design pass.
 - [ ] **release.sh rollback leaves the bump commit as HEAD** (from Greptile on
       PR #30, 2026-08-26): any failure after the release commit — not just a
       missing autoloader, e.g. a zip/rsync failure in `build_theme` — triggers

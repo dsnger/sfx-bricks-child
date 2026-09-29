@@ -128,6 +128,9 @@ function render_notice(array $get): array
     $test_notices = [];
 
     $render = new ReflectionMethod(AdminPage::class, 'render_danger_zone');
+    if (PHP_VERSION_ID < 80100) {
+        $render->setAccessible(true); // PHP 8.0 (CI's floor); deprecated from 8.5
+    }
     ob_start();
     $render->invoke(null);
     ob_end_clean();
@@ -165,7 +168,11 @@ assert_same('warning', $notice['type'], 'Case 10d: a purge that left the tables 
 // The Danger Zone says the rules go before the phrase is typed, not after.
 $_GET = [];
 ob_start();
-(new ReflectionMethod(AdminPage::class, 'render_danger_zone'))->invoke(null);
+$render = new ReflectionMethod(AdminPage::class, 'render_danger_zone');
+if (PHP_VERSION_ID < 80100) {
+    $render->setAccessible(true); // PHP 8.0 (CI's floor); deprecated from 8.5
+}
+$render->invoke(null);
 $screen = (string) ob_get_clean();
 
 assert_true(strpos($screen, 'every redirect rule and the 404 log') !== false, 'Case 11: the warning names the redirect rules and the 404 log');

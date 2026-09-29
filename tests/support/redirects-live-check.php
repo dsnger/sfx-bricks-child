@@ -539,6 +539,49 @@ check_redirect('302 passes the raw query through in sent order', $r, 302, $home 
 $cc = strtolower($r['headers']['cache-control'] ?? '');
 check('302 sends nocache headers', str_contains($cc, 'no-store') || str_contains($cc, 'no-cache'), 'Cache-Control ' . var_export($r['headers']['cache-control'] ?? null, true));
 
+echo "\nloop guard\n";
+// Two regex rules pointing at each other (PR #41 review): the second must be refused.
+$loop_a = add_rule(['source' => '^/' . $marker . '/loop-a$', 'match_type' => 'regex', 'target' => '/' . $marker . '/loop-b', 'status_code' => '301']);
+$loop_b = Rule::validate(['source' => '^/' . $marker . '/loop-b$', 'match_type' => 'regex', 'target' => '/' . $marker . '/loop-a', 'status_code' => '301', 'enabled' => true, 'note' => 'sfx live harness']);
+$loop_saved = Repository::save($loop_b['rule'], 0, 'manual');
+check('regex ↔ regex loop is refused on save', ($loop_saved['status'] ?? '') === 'conflict', 'got ' . var_export($loop_saved, true));
+$loop_c = Rule::validate(['source' => '/' . $marker . '/loop-b', 'target' => '/' . $marker . '/loop-a', 'status_code' => '301', 'match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
+$loop_saved = Repository::save($loop_c['rule'], 0, 'manual');
+check('exact → regex loop is refused on save', ($loop_saved['status'] ?? '') === 'conflict', 'got ' . var_export($loop_saved, true));
+
+// Query passthrough cycle: regex ^/q-b$ → /q-a?x=1, then exact /q-a?x=1 → /q-b must be refused.
+add_rule(['source' => '^/' . $marker . '/q-b$', 'match_type' => 'regex', 'target' => '/' . $marker . '/q-a?x=1', 'status_code' => '301']);
+$v = Rule::validate(['source' => '/' . $marker . '/q-a?x=1', 'target' => '/' . $marker . '/q-b', 'status_code' => '301', 'match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
+$saved = Repository::save($v['rule'], 0, 'manual');
+check('query-keyed loop through a regex is refused', ($saved['status'] ?? '') === 'conflict', 'got ' . var_export($saved, true));
+
+// A chain that ends is allowed: /c-a → /c-b → (regex) /c-a?x=1 → (exact) /c-done.
+add_rule(['source' => '^/' . $marker . '/c-b$', 'match_type' => 'regex', 'target' => '/' . $marker . '/c-a?x=1', 'status_code' => '301']);
+add_rule(['source' => '/' . $marker . '/c-a?x=1', 'target' => '/' . $marker . '/c-done', 'status_code' => '301']);
+$v = Rule::validate(['source' => '/' . $marker . '/c-a', 'target' => '/' . $marker . '/c-b', 'status_code' => '301', 'match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
+$saved = Repository::save($v['rule'], 0, 'manual');
+check('a non-cyclic chain through a regex is allowed', ($saved['status'] ?? '') === 'created', 'got ' . var_export($saved, true));
+
+// A rule redirecting to the URL being requested is skipped at runtime, so it ends a chain.
+add_rule(['source' => '^/' . $marker . '/s-b$', 'match_type' => 'regex', 'target' => '/' . $marker . '/s-b', 'status_code' => '301']);
+$v = Rule::validate(['source' => '^/' . $marker . '/s-[ab]$', 'match_type' => 'regex', 'target' => '/' . $marker . '/s-b', 'status_code' => '301', 'enabled' => true, 'note' => 'sfx live harness']);
+$saved = Repository::save($v['rule'], 0, 'manual');
+check('a chain ending at a self-redirect (skipped at runtime) is allowed', ($saved['status'] ?? '') === 'created', 'got ' . var_export($saved, true));
+
+// Ten-edge cycle: regex r1→r2 … r9→r0, then exact r0 → r1 closes it on the 10th hop.
+for ($n = 1; $n <= 9; $n++) {
+    add_rule(['source' => '^/' . $marker . '/r' . $n . '$', 'match_type' => 'regex', 'target' => '/' . $marker . '/r' . (($n + 1) % 10), 'status_code' => '301']);
+}
+$v = Rule::validate(['source' => '/' . $marker . '/r0', 'target' => '/' . $marker . '/r1', 'status_code' => '301', 'match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
+$saved = Repository::save($v['rule'], 0, 'manual');
+check('a ten-edge cycle is refused (the 10th hop is still checked)', ($saved['status'] ?? '') === 'conflict', 'got ' . var_export($saved, true));
+
+// A scheme change on the same path is one redirect, not a loop.
+$other_scheme = str_starts_with($home, 'https://') ? 'http://' : 'https://';
+$v = Rule::validate(['source' => '/' . $marker . '/scheme', 'target' => $other_scheme . wp_parse_url($home, PHP_URL_HOST) . '/' . $marker . '/scheme', 'status_code' => '301', 'match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
+$saved = Repository::save($v['rule'], 0, 'manual');
+check('a same-path scheme change is allowed', ($saved['status'] ?? '') === 'created', 'got ' . var_export($saved, true));
+
 echo "\n410\n";
 $r = http_get($gone_url);
 check('410 rule on the Bricks page answers 410', $r['status'] === 410, describe($r));

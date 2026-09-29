@@ -91,8 +91,8 @@ test style the theme uses (`tests/*-test.php`, inline stubs, no PHPUnit).
 Toggle `enable_redirects` in `GeneralThemeOptions\Settings::get_fields()`, **default 0**
 (opt-in). Overview entry `enable_redirects` in
 `OverviewProvider::build_builtin_modules_group()`. No new bare strings reach the
-registry (invariant 4): `AdminPage::$page_title` / `$description` are wrapped in
-`__()` where used, as ContactInfos does.
+registry (invariant 4): `get_feature_config()` passes **literal** strings to `__()`
+(a variable inside `__()` is invisible to string extraction — PR #41 review).
 
 ### Naming
 
@@ -288,7 +288,7 @@ are `wp_nonce_url` links to `admin-post.php` (never a `GET` on the page itself).
 
 | admin-post action (= nonce action) | Input | Effect |
 |---|---|---|
-| `sfx_redirects_save_rule` | `id` (0 = new), source, match_type, target, status_code, enabled, note, optional `from_404` id | insert/update; on success delete the 404 row `from_404` |
+| `sfx_redirects_save_rule` | `id` (0 = new), source, match_type, target, status_code, enabled, note, optional `from_404` id | insert/update; on success delete the 404 row `from_404` — only if it exists and logs exactly the saved exact source (see 404 log) |
 | `sfx_redirects_rule_action` | `id`, `op` ∈ {enable, disable, delete, reset} | single-row action |
 | `sfx_redirects_bulk` | `ids[]`, `op` ∈ {enable, disable, delete, reset} | bulk; per-row outcome counted |
 | `sfx_redirects_404_action` | `ids[]` or `id`, `op` ∈ {delete, clear_all} | delete rows / empty the log |
@@ -506,8 +506,34 @@ canonical query (relative targets resolve against `home_url()`).
   excluded from its own reverse-edge lookup (by id). Queries are ignored in this comparison on
   purpose: a path-only source matches every query and passes it through, so
   `/a → /b` plus `/b → /a?x=1` is a loop and is rejected. (Conservative: a
-  query-specific pair that would not loop is also rejected; use a different path.) Bulk enable skips conflicting rows and reports them. Longer chains
-  are not detected (browsers stop them); stated, not guarded.
+  query-specific pair that would not loop is also rejected; use a different path.) Bulk enable skips conflicting rows and reports them.
+- **Chain simulation — best effort, not complete** (added after PR #41 review): for
+  every rule becoming enabled — exact or regex — `Repository::matcher_cycle()` runs
+  the rule set *with this rule in place* through `Rule::pick()` hop by hop, with
+  runtime semantics (query passthrough, the target's scheme, a redirect to the
+  current URL is skipped). Start points: an exact rule's source; for a regex rule
+  its target plus that target with every query an exact rule on the same path keys
+  on. A revisited address on a chain this rule is part of is refused; a chain that
+  ends anywhere else is allowed, however it gets there. Up to 10 hops are followed
+  and the address the 10th hop reaches is still checked.
+
+  **Known gaps, stated:** loop detection over rules with passthrough queries is not
+  decidable from finitely many start points, so cycles that only appear for a query
+  no start point carries (e.g. a path-only rule into a regex whose *downstream*
+  exact rule keys on a query), regex targets with `$n` placeholders, and chains
+  longer than 10 hops are not caught. The simulation also does not model the
+  request types rules never apply to (feeds, `robots.txt`, sitemaps …): a chain
+  through such an address may be refused although it would end there at runtime —
+  the conservative direction. A missed loop costs a visitor one
+  "too many redirects" browser error and is visible in the hit counters; it is a
+  usability safeguard, not a security boundary.
+
+  **Accepted direction of error (decided by Daniel, 2026-09-29, PR #41):** the
+  simulation compares addresses by their canonical identity and does not model
+  every runtime effect (excluded request types, the 2000-byte target cap reached
+  through long passed-through queries, …). Where that makes it refuse a save whose
+  chain would in fact end at runtime, that is accepted — a false refusal is visible
+  and has a workaround; further completeness work is out of scope.
 
 ### Write serialisation
 
@@ -613,7 +639,9 @@ not cleaned — and receives no new rows either. The Data Purge unschedules it
 404 screen: sort by hits / last seen, search by path (`esc_like` + `prepare`), bulk
 delete, "Clear log", and per row **"Create redirect"** — opens the rule form with
 source = that path and `from_404` = the row id; a rule saved with `from_404` gets
-`origin = 404` (otherwise the form sets `manual`). The 404 row is deleted **only after the
+`origin = 404` (otherwise the form sets `manual`) — **only** when that log row still
+exists and its path equals the saved exact rule's source; otherwise the id is ignored
+and no log row is deleted (PR #41 review). The 404 row is deleted **only after the
 rule was written successfully**, and only that row. A concurrent 404 for the same path
 may re-create the row a moment later; harmless.
 
@@ -876,5 +904,5 @@ follows the single-teardown rule.
 Conditional matching (role, referrer, cookie, language), groups, .htaccess/Nginx
 export, importers from other plugins, JSON import/export of rules, per-hit log,
 IP/user-agent logging, query-aware regex, REST/WP-CLI, wildcard syntax (regex covers
-it), term-based permalink tracking, child-page tracking, chain detection beyond two
-rules, page-cache integration, multisite network-wide rules.
+it), term-based permalink tracking, child-page tracking, complete loop detection
+(see the stated gaps under Loop prevention), page-cache integration, multisite network-wide rules.

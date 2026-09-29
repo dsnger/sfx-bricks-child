@@ -834,6 +834,30 @@ final class Repository
         return $result;
     }
 
+    /**
+     * The logged path of one 404 row.
+     *
+     * @return string|false|null  the path; null when the row does not exist;
+     *         false when it could not be read (never mistaken for "missing")
+     */
+    public static function log_path(int $id): string|false|null
+    {
+        if (!self::ready()) {
+            return false;
+        }
+        if ($id <= 0) {
+            return null;
+        }
+        $wpdb  = self::db();
+        $table = self::log_table();
+        $path  = $wpdb->get_var($wpdb->prepare("SELECT path FROM `{$table}` WHERE id = %d", $id));
+        if (self::failed()) {
+            return false;
+        }
+
+        return is_string($path) ? $path : null;
+    }
+
     public static function delete_404(array $ids): int|false
     {
         if (!self::ready()) {
@@ -1105,17 +1129,21 @@ final class Repository
     }
 
     /**
-     * Save-time loop check (spec "Loop prevention"). Applies to transitions to an
-     * enabled exact rule. This method only fetches the reverse edges — enabled
-     * exact rules whose source PATH equals this rule's same-host target path,
-     * with or without a query — and leaves the decision to Rule::loop_conflict().
+     * Save-time loop check (spec "Loop prevention") for every transition to an
+     * enabled rule. Exact rules first get the conservative reverse-edge check
+     * (enabled exact rules whose source PATH equals this rule's target path,
+     * decided by Rule::loop_conflict()); every rule, exact or regex, then gets
+     * the matcher-based chain simulation in matcher_cycle().
      *
      * @return string|false|null  message on conflict, false on a read error, null = no loop
      */
     private static function loop_error(array $rule, int $id): string|false|null
     {
-        if (!$rule['enabled'] || $rule['match_type'] !== 'exact') {
+        if (!$rule['enabled']) {
             return null;
+        }
+        if ($rule['match_type'] !== 'exact') {
+            return self::matcher_cycle($rule, $id);
         }
 
         $home    = home_url();
@@ -1145,7 +1173,156 @@ final class Repository
             }
         }
 
-        return Rule::loop_conflict($rule, $id, $reverse, $home);
+        $conflict = Rule::loop_conflict($rule, $id, $reverse, $home);
+
+        return $conflict ?? self::matcher_cycle($rule, $id);
+    }
+
+    /** Redirect hops followed when simulating a chain; beyond this browsers stop it anyway. */
+    private const MAX_SIMULATED_HOPS = 10;
+
+    /**
+     * Cycles the exact reverse-edge check cannot see — through regex rules,
+     * through query passthrough (^/b$ → /a?x=1 beside /a?x=1 → /b): the rule set
+     * WITH this rule in place is run through the real matcher, hop by hop, from
+     * where this rule applies. A revisited address on a chain this rule is part
+     * of is a loop. Runtime semantics are kept: a rule whose target is the
+     * current URL is skipped, and a chain ending elsewhere is fine however it
+     * gets there. Best effort, not complete — the stated gaps are in the spec
+     * ("Loop prevention"); where it errs, it errs towards refusing a save.
+     *
+     * Starting points: an exact rule's own source; for a regex rule its target
+     * (it cannot be enumerated which paths it matches) plus that target with each
+     * query an exact rule keys on, because a regex passes the query through.
+     *
+     * ponytail: a regex target with $n placeholders depends on the request and
+     * is not followed; chains longer than MAX_SIMULATED_HOPS count as ending.
+     *
+     * @return string|false|null  message, false on a read error, null = no cycle
+     */
+    private static function matcher_cycle(array $rule, int $id): string|false|null
+    {
+        $target = (string) $rule['target'];
+        if ((int) $rule['status_code'] === 410) {
+            return null;
+        }
+
+        $home = home_url();
+        $self = [
+            'id'          => $id > 0 ? $id : PHP_INT_MAX, // a new rule sorts last, as it will
+            'source'      => (string) $rule['source'],
+            'match_type'  => (string) $rule['match_type'],
+            'target'      => $target,
+            'status_code' => (int) $rule['status_code'],
+        ];
+
+        if ($rule['match_type'] === 'exact') {
+            $seeds = [(string) $rule['source']];
+        } elseif (preg_match('/\$[1-9]/', $target) === 1) {
+            return null;
+        } else {
+            $first = Rule::target_path($target, $home);
+            if ($first === null) {
+                return null; // external: the chain leaves this site
+            }
+            $seeds = [$target]; // as written: its scheme is part of what the runtime compares
+            $path  = explode('?', $first, 2)[0];
+            $wpdb  = self::db();
+            $table = self::table();
+            $keyed = $wpdb->get_col($wpdb->prepare(
+                // ponytail: every query-keyed exact rule on that path seeds a walk;
+                // fine for the hundreds, a cap would silently skip loops.
+                "SELECT source FROM `{$table}` WHERE enabled = 1 AND match_type = 'exact' AND source LIKE %s ORDER BY id ASC",
+                $wpdb->esc_like($path . '?') . '%'
+            ));
+            if (self::failed() || !is_array($keyed)) {
+                return false;
+            }
+            // Same address as the target, with each keyed query — and the
+            // target's own scheme and host, not the home URL's.
+            $base = strtok($target, '?#');
+            foreach ($keyed as $source) {
+                $seeds[] = $base . '?' . explode('?', (string) $source, 2)[1];
+            }
+        }
+
+        foreach ($seeds as $seed) {
+            $result = self::follow_chain($seed, $self, $home);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $start a home-relative source or an absolute target URL
+     *                      (its scheme is kept), optionally with "?query"
+     * @return string|false|null  message, false on a read error, null = the chain ends
+     */
+    private static function follow_chain(string $start, array $self, string $home): string|false|null
+    {
+        $seen    = [];
+        $via     = [];
+        // Absolute between hops: the scheme a target names is part of what the
+        // runtime compares (an https site may redirect /a to http://…/a once).
+        $current = Rule::absolute_target($start, $home);
+
+        // One more iteration than hops, so the address reached by the last hop
+        // is still checked against the visited set.
+        for ($hop = 0; $hop <= self::MAX_SIMULATED_HOPS; $hop++) {
+            $local = Rule::target_path($current, $home);
+            if ($local === null) {
+                return null; // left the site
+            }
+            [$path, $query] = array_pad(explode('?', $local, 2), 2, '');
+            // Lookup uses the canonical query; passthrough uses the query as sent,
+            // exactly as the Controller does.
+            $raw_query = (string) (wp_parse_url($current, PHP_URL_QUERY) ?? '');
+            $identity  = Rule::url_identity($current);
+
+            if (isset($seen[$identity])) {
+                if (!in_array($self['id'], $via, true)) {
+                    return null; // an existing loop elsewhere, not this rule's doing
+                }
+                $others = array_values(array_unique(array_diff($via, [$self['id']])));
+                if ($others === []) {
+                    return __('The target leads back to the source; the redirect would loop.', 'sfxtheme');
+                }
+
+                return sprintf(
+                    /* translators: %d: id of the other redirect rule */
+                    __('This would create a redirect loop with rule #%d.', 'sfxtheme'),
+                    $others[0]
+                );
+            }
+            $seen[$identity] = true;
+            if ($hop === self::MAX_SIMULATED_HOPS) {
+                return null; // longer than this: counted as ending (browsers stop it)
+            }
+
+            $candidates = self::find_candidates($path, $query);
+            if ($candidates === null) {
+                return false;
+            }
+            $candidates   = array_values(array_filter($candidates, static fn(array $c): bool => $c['id'] !== $self['id']));
+            $candidates[] = $self;
+            usort($candidates, static fn(array $a, array $b): int => $a['id'] <=> $b['id']);
+
+            $hit = Rule::pick($candidates, $path, $query, $raw_query, $home);
+            if ($hit === null || $hit['url'] === null) {
+                return null; // no rule, or 410: the chain ends
+            }
+            // The runtime skips a redirect to the URL being requested.
+            if (Rule::url_identity($hit['url']) === $identity) {
+                return null;
+            }
+            $via[]   = $hit['id'];
+            $current = $hit['url'];
+        }
+
+        return null;
     }
 
     // ------------------------------------------------------------------
