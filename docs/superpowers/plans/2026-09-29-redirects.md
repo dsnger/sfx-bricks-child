@@ -438,3 +438,106 @@ form-refill transient, export exception, stale rows) · Admin screen · CSV impo
 - [ ] `./quality.sh` green; Gate B (CLAUDE.md §5) ≥3 passes, final clean; close the cycle
       with `git reset --soft <parent of first WIP>` and one real commit (several WIP
       snapshots exist); push; `gh pr create`. Do not merge.
+
+---
+
+## Addendum A — Redirection import, permanent-redirect cache, target picker
+
+**Spec:** "Addendum A" at the end of the spec — the contract for A1–A3. Same branch,
+same global constraints as above. Waves: Tasks A-1, A-2, A-3 run in parallel (disjoint
+files); A-3 codes against the A-1 interface below.
+
+### Interfaces (fixed)
+
+```php
+// Rule (pure)
+public const REDIRECTION_COLUMNS = ['source','target','regex','code','type','hits','title','status'];
+/** 'ours' | 'redirection' | error string (mixed header) — takes the raw header row. */
+public static function csv_dialect(array $header): string;
+/** Header map for a Redirection export (same shape/contract as csv_header_map). */
+public static function redirection_header_map(array $header): array; // {map, errors}
+/** One Redirection record → validate() input, or a skip reason (translated string). */
+public static function redirection_record(array $record, array $map, string $home_url): array|string;
+public static function redirection_unescape(string $cell): string;
+// csv_escape_cell(): now also looks at the first non-whitespace character.
+
+// Settings
+// new key 'permanent_cache' (int, allowed PERMANENT_CACHE_CHOICES = [3600, 86400, 604800, 0]), default 3600
+public const PERMANENT_CACHE_CHOICES = [3600, 86400, 604800, 0];
+```
+
+### Task A-1 — Rule: Redirection dialect (files: `inc/Redirects/Rule.php`, `tests/redirects-rule-test.php`)
+
+- [ ] Tests first for everything under the addendum's Testing bullet for Rule (detection
+      incl. mixed → error; every row of the A1 table; home-path cases on `https://ex.test/blog`
+      and `https://ex.test:8443/blog`; regex importability scan: `^/a/(b|c)$` ok,
+      `^/a|/b$`, `^/a\K$`, `^/a(?x)# $`, `^/a(*SKIP)$`, `^/a(?|x)$`, `/a/(.*)` rejected,
+      `[|]` inside a class ok, escaped `\|` ok; replacement syntax `\1`, `${1}`, `$10`
+      rejected; transform tags and `%userid%` rejected; protocol-relative target;
+      `[FORMULA] ` single/doubled/not-dangerous; a real export line through
+      `fgetcsv($h, 0, ',', '"', '')`; `csv_escape_cell(" =x")` escaped).
+- [ ] `csv_unescape_cell()` mirrors the widened escape (a `'` before leading whitespace
+      and a trigger is removed); round-trip test `" =x"` → export → import.
+- [ ] Implement. Messages in `sfxtheme`. `redirection_record` returns input for
+      `validate()` with keys source, match_type, target, status_code (string), enabled
+      (bool), note.
+
+### Task A-2 — Cache header (files: `inc/Redirects/Settings.php`, `inc/Redirects/Controller.php`, `tests/redirects-settings-test.php`, `tests/support/redirects-live-check.php`)
+
+- [ ] Settings: key, default, `validate_snapshot` (non-choice → error, keep stored),
+      `get()` (non-choice → default); the settings form field is rendered by AdminPage
+      (Task A-3) — expose `Settings::permanent_cache_labels(): array<int,string>`.
+- [ ] Controller::send_match per spec A2 (after successful `wp_redirect`, final code via
+      `http_response_code()` is 301/308, value > 0, not logged in, `DONOTCACHEPAGE` not
+      defined-and-true, and (no `Cache-Control` in `headers_list()` **or** (`is_404()`
+      **and** that header's value equals `wp_get_nocache_headers()['Cache-Control']`)) →
+      `Cache-Control: private, max-age=n` + `Expires`; otherwise headers untouched).
+- [ ] Tests: settings cases; harness: the existing 301 check (non-existent source, so
+      core's 404 nocache ran first) asserts `private, max-age=3600` and an `Expires`
+      header whose date is ~1 h ahead; the existing 302 check still asserts
+      no-cache/no-store; a 308 fixture gets the same header; with `permanent_cache` set to
+      `0` (harness-owned option, restored by teardown) the 301 carries no positive
+      `max-age` (core's `max-age=0` may be there); with `86400` the 301 carries
+      `max-age=86400` (the value is read, not hard-coded).
+      Logged-in, `DONOTCACHEPAGE` and foreign-`Cache-Control` branches and a cancelled
+      `wp_redirect` or a filter changing its status: verified by code review, not by the harness (they need another
+      module's state or a filter on the live site); stated.
+
+### Task A-3 — Admin: import dispatch, cache setting field, target picker (files: `inc/Redirects/AdminPage.php`, `inc/Redirects/assets/redirects-admin.js`, `tests/redirects-handlers-test.php`)
+
+- [ ] Import handler: after reading the header, `Rule::csv_dialect()`; error → reject the
+      file; `redirection` → `redirection_header_map` + `redirection_record(…, home_url())`
+      per record (skip reasons join the existing skipped list); notice names the format.
+      Import help lists the Redirection support and the stated differences.
+- [ ] Settings tab: `permanent_cache` select using `Settings::permanent_cache_labels()`,
+      with the spec's explanatory text; the status-code hint in the rule form names the
+      current value and carries the same explanation (future responses only; already
+      cached redirects keep their time; shared caches are told not to store it).
+- [ ] Picker per spec A3: `wp_ajax_sfx_redirects_search` registered in `register()`,
+      handler checks nonce + capability first; server-side path conversion; JS (debounce,
+      latest-request guard, native select, textContent only), enqueued on this page only
+      via `admin_enqueue_scripts` with the page hook, `wp_localize_script` strings + nonce.
+- [ ] Handler test: search endpoint — bad nonce → dies before any query; no capability →
+      dies before any query; positive baseline (nonce + capability ok, GET with a valid
+      `type` and `q`, stubbed `WP_Query`/`get_terms`) reaches the stubbed
+      `wp_send_json_success` with the stubbed item's label and path, and the stub records
+      that `WP_Query` received `s`, `post_type`, `post_status` `publish` and 20 per page; `register()` hooks exactly
+      `[AdminPage::class, <search handler>]` on `wp_ajax_sfx_redirects_search`.
+- [ ] German strings for every new message (languages/de_DE.po + .mo) — done by the
+      controller after all three tasks.
+
+### Controller acceptance (after A-1…A-3)
+
+All acceptance steps run through a setup/teardown script like the pre-release UI check
+(module state, test users, rules and tables restored or removed by one teardown; rules
+created in the browser are deleted there before teardown and the teardown drops what it
+created).
+
+- [ ] Over HTTP with generated auth cookies (as in the pre-release UI check): upload a
+      Redirection-format CSV through the real import handler → expected rules created,
+      unsupported rows skipped with reasons; call the search endpoint as an editor → a
+      page's path comes back; as a subscriber-level user → refused.
+- [ ] Browser (Chrome, logged-in admin): pick a page in the target picker, the target
+      field fills with its path; save works; with JavaScript off the plain target field
+      still works. The latest-request guard is verified by reading the code (a local site
+      answers too fast to force out-of-order responses); stated.

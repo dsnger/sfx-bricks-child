@@ -1003,16 +1003,29 @@ JSON path).
 
 In `send_match()`, **after** `wp_redirect()` returned true (a filter may cancel or change
 it) and before `exit`: if `http_response_code()` is 301 or 308, the value is > 0, the
-visitor is **not logged in**, and no earlier `Cache-Control` header (`headers_list()`)
-contains `no-store` or `private` (PasswordProtected and core set those for protected or
-personal responses), send `Cache-Control: public, max-age=<n>` and `Expires: <now + n,
-GMT>`. Otherwise leave the headers alone. 302/307 keep `nocache_headers()`; 410
-unchanged.
+visitor is **not logged in**, `DONOTCACHEPAGE` is not defined-and-true (the
+ecosystem-wide "do not cache" signal PasswordProtected already sets), **and** the only
+cache policy already on the response is one we recognise — either there is no
+`Cache-Control` header at all, or the main query is a 404 (`is_404()`) and the
+`Cache-Control` value in `headers_list()` is **exactly** core's
+`wp_get_nocache_headers()['Cache-Control']` (what `WP::handle_404()` sent) — then send `Cache-Control:
+private, max-age=<n>` and `Expires: <now + n, GMT>`, replacing earlier values. In every
+other case (any other `Cache-Control` value, a logged-in visitor, `DONOTCACHEPAGE`) the
+existing headers stay untouched. Stated limit: code that calls core's `nocache_headers()`
+itself on a 404 request without defining `DONOTCACHEPAGE` is indistinguishable from core's
+404 handling and is replaced. **Accepted by Daniel on 2026-09-29 (PR #41)**: the
+replacement header is `private` (browser only, never a shared cache), limited in time,
+and applies to a redirect response only; findings about this case are out of scope. Most redirected addresses
+no longer exist, so the 404 case is the common one; without it the setting would be
+useless. `private` (not `public`) keeps the redirect out of shared caches and CDNs;
+only the visitor's own browser keeps it for `n` seconds. With `0` the module adds nothing. 302/307 keep
+`nocache_headers()`; 410 unchanged.
 
 The rule form's status hint and the setting's description say: the time applies to
 responses sent from now on — a browser that already cached a 301 keeps it for the time
-it was given (without a header, possibly indefinitely); shared caches and CDNs in front
-of WordPress may honour `max-age` too.
+it was given (without a header, possibly indefinitely). Shared caches and CDNs are not
+meant to store it (`private`); a page cache in front of WordPress may still apply its
+own rules (see "Page caches").
 
 ### A3. Target picker ("redirect to an existing page")
 
@@ -1059,7 +1072,9 @@ hand-typed address.
 - `tests/redirects-settings-test.php`: `permanent_cache` validation and `get()` mapping.
 - `tests/redirects-handlers-test.php`: the search endpoint dies on a bad nonce and on a
   missing capability before any query.
-- Live harness: a 301 answers with `Cache-Control: public, max-age=3600`.
+- Live harness: a 301 on a non-existent source (the common case, after core's 404
+  nocache headers) answers with `Cache-Control: private, max-age=3600` and an `Expires`
+  header; a 302 still answers `no-cache`/`no-store`.
 - Manual check over HTTP: a Redirection-format CSV uploaded through the real import
   handler creates the expected rules and skips the unsupported ones with reasons; the
   search endpoint returns a page's path for an editor.
