@@ -908,3 +908,158 @@ export, importers from other plugins, JSON import/export of rules, per-hit log,
 IP/user-agent logging, query-aware regex, REST/WP-CLI, wildcard syntax (regex covers
 it), term-based permalink tracking, child-page tracking, complete loop detection
 (see the stated gaps under Loop prevention), page-cache integration, multisite network-wide rules.
+
+## Addendum A — Redirection import, permanent-redirect cache, target picker (2026-09-29)
+
+Requested by Daniel on PR #41 after comparing with the Redirection plugin's feature set
+(https://redirection.me/support/) and another redirect plugin's target UI. Three
+additions, same PR.
+
+### A1. Import CSV files exported by the Redirection plugin
+
+Many client sites run the plugin *Redirection* (John Godley). Its CSV export (verified
+in its source, `includes/import-export/format/class-csv.php`) has the header
+
+```
+source,target,regex,code,type,hits,title,status
+```
+
+`regex` `1`/`0`; `code` an HTTP code; `type` the action (`url`, `error`, and also
+`random`, `pass`, `nothing`); `title` free text; `status` `active`/`disabled`. Cells its
+sanitizer considers dangerous are prefixed with `[FORMULA] ` (a doubled prefix protects a
+value that itself starts with the prefix). Sources and targets are **root-relative**
+(they include a sub-directory install's home path). The CSV does not carry
+Redirection's per-rule query mode, case/slash flags, groups, match conditions or logs.
+
+The goal is a **safe subset**: import what means the same thing here, skip everything
+else **with a reason per record** — never import something that would behave
+differently in a way the editor cannot see.
+
+**Detection:** after header normalisation (BOM, trim, lowercase), a header containing
+both `regex` and `code` is a Redirection export. If it **also** contains `status_code`
+or `match_type`, the whole file is rejected as ambiguous ("mixed column names"). Anything
+else is our own format, unchanged. The import notice names the recognised format.
+
+**Per-record mapping** — `Rule::redirection_record(array $record, array $map, string
+$home_url): array|string` (the full home URL is passed in, so Rule stays pure and knows
+scheme, host, port and path) returns our `validate()` input or a skip reason; the result
+then goes through the same `Rule::validate()` / `Repository::import()` path as our own
+format (no second write path):
+
+| Redirection | Result |
+|---|---|
+| `type` `url` with `code` 301/302/307/308 | redirect with that code |
+| `type` `error` with `code` 410 | 410 rule (target ignored) |
+| any other `type`/`code` pair (`random`, `pass`, `nothing`, 303, 304, 404, 451, 5xx …) | skipped: "action/code not supported" |
+| exact `source` | root-relative → home-relative: the home path is removed when it is a whole-segment prefix (followed by `/`, `?`, `#` or the end); a source outside the home path is skipped: "source outside this site's home path" |
+| `target` starting with `//` (protocol-relative, an external authority) | prefixed with the home URL's scheme (`//cdn.test/x` → `https://cdn.test/x`), then validated as an absolute URL |
+| `target` starting with a single `/` | inside the home path (same boundary rule) → home-relative; outside it → made absolute with the home URL's scheme, host and port, so it still points where it did |
+| regex `source` on a sub-directory install | must begin with `^` followed literally by the home path and `/`; that home path is removed (`^/blog/old$` → `^/old$`); otherwise skipped: "pattern outside this site's home path" |
+| `regex` `1` | regex rule — **only** if the pattern provably matches the whole subject: starts with `^`, ends with an unescaped `$`, contains no top-level alternation (`|` outside parentheses, found by a scan that honours escapes and character classes), and no `\K`, no `(*…)` verb and no `(?` construct other than the non-capturing group
+`(?:` (this excludes inline flags such as `(?x)`, which could turn the final `$` into a
+comment, and lookarounds); otherwise skipped: "regex not importable safely — Redirection replaces only the matched part; anchor the whole pattern with ^…$". Such patterns make Redirection's `preg_replace` result equal the whole target, which is our semantics. |
+| regex target containing `\1`-style or `${1}` references, or `$10`+ | skipped: "replacement syntax not supported (use $1–$9)" |
+| target containing Redirection's transform/variable tags (`[userid]`, `[userlogin]`, `[unixtime]`, `[md5]`, `[upper]`, `[lower]`, `[dashes]`, `[underscores]`, with or without `/`) or its legacy tokens `%userid%`, `%userlogin%`, `%userurl%` | skipped: "dynamic target tags not supported" |
+| `regex` anything else | exact rule |
+| `status` `disabled` → false, anything else → true | `enabled` |
+| `title` | `note` |
+| `hits` | ignored: new rules start at 0; updating an existing rule keeps its counters (as for our own format) |
+
+`[FORMULA] ` unescaping follows Redirection's own rule: a doubled prefix loses one; a
+single prefix is removed only when the remainder is a value its sanitizer would have
+escaped (first non-whitespace, non-control character `= + - @` or a full-width variant).
+Our own `'`-escape is not applied to Redirection files. To keep such a value safe on our
+**export**, `Rule::csv_escape_cell()` now also checks the first non-whitespace character
+(not only the first byte).
+
+**Semantics differences, stated in the import help:** our rules match the canonical path
+— lowercase (ASCII), no trailing slash, percent-encoding normalised; an exact path rule
+matches any query and passes it through, a regex never sees the query. So an imported
+rule can match more, fewer, or differently-cased requests than it did in Redirection,
+and regex captures are lowercased before they enter the target. Groups, conditions and
+logs are not imported. Yoast / Rank Math formats are not supported (not verified).
+
+Same limits as our own import (2 MB, 5000 records, partial commit, loop/cap checks,
+`origin = import`).
+
+### A2. Browser cache time for 301 and 308
+
+Browsers may cache a 301/308 for a very long time when no cache header limits it, so a
+mistaken permanent redirect sticks. Redirection sends a cache header for this ("HTTP Cache Header",
+default one hour).
+
+New setting `permanent_cache` in `sfx_redirects_options`:
+
+| Value (seconds) | Label |
+|---|---|
+| `3600` (default) | 1 hour |
+| `86400` | 1 day |
+| `604800` | 1 week |
+| `0` | no cache header from this module |
+
+`validate_snapshot()` rejects a value outside the set with an error and keeps the stored
+one; `get()` maps a stored value outside the set to the default (covers the ImportExport
+JSON path).
+
+In `send_match()`, **after** `wp_redirect()` returned true (a filter may cancel or change
+it) and before `exit`: if `http_response_code()` is 301 or 308, the value is > 0, the
+visitor is **not logged in**, and no earlier `Cache-Control` header (`headers_list()`)
+contains `no-store` or `private` (PasswordProtected and core set those for protected or
+personal responses), send `Cache-Control: public, max-age=<n>` and `Expires: <now + n,
+GMT>`. Otherwise leave the headers alone. 302/307 keep `nocache_headers()`; 410
+unchanged.
+
+The rule form's status hint and the setting's description say: the time applies to
+responses sent from now on — a browser that already cached a 301 keeps it for the time
+it was given (without a header, possibly indefinitely); shared caches and CDNs in front
+of WordPress may honour `max-age` too.
+
+### A3. Target picker ("redirect to an existing page")
+
+Next to the target field, a type select — **Custom URL** (default), every viewable post
+type except attachments (`get_post_types(['public' => true])` filtered by
+`is_post_type_viewable()`), and **Term archive** (option value `__term`, which no post
+type name can take) — and, for a non-custom type, a search box plus a native `<select>`
+of results (accessible by keyboard and screen reader without extra ARIA work). Choosing
+a result **writes its address into the target field**: home-relative when the permalink
+(or term link) has the home URL's scheme, host and effective port and lies inside the
+home path (whole-segment rule), otherwise the absolute URL as returned. The conversion
+happens on the server, in the search endpoint (`path` in the response). Attachments are left out: an attachment
+of a draft or private post has status `inherit` and would leak through a search. What is stored is exactly what is stored today: the address. A
+later rename is covered by the slug monitor's auto rule (one extra hop), as for a
+hand-typed address.
+
+- Search endpoint: `wp_ajax_sfx_redirects_search` (admin-ajax, `GET`), `check_ajax_referer
+  ('sfx_redirects_search')` **and** `current_user_can(AdminPage::CAPABILITY)` before
+  anything else; input `type` (a post type from the allowed list or `__term`; anything
+  else → `wp_send_json_error`, 400) and `q` (string, trimmed, 2–100 chars, otherwise an
+  empty result); returns at most 20 `{label, path}` items as JSON
+  (`wp_send_json_success`). Posts: `WP_Query` with `s`, `post_status` `publish`,
+  `no_found_rows`, `suppress_filters` false, 20 per page. Terms: `get_terms` with
+  `search`, public taxonomies, `hide_empty` false, 20. Labels are plain text; the page
+  escapes them when it builds the list (DOM `textContent`, never `innerHTML`). Not the
+  core REST search route, because WPOptimizer can switch the REST API off.
+- A read, not a write — invariant 2 does not apply, but the capability + nonce pair is
+  used anyway: the endpoint discloses titles and paths.
+- Plain JavaScript (`inc/Redirects/assets/redirects-admin.js`), enqueued only on the
+  Redirects page; no library. Searches are debounced (300 ms) and a response is only
+  applied if it answers the latest request (a request counter), so a slow earlier answer
+  cannot overwrite newer results; a failed request shows a short message in the select. Without JavaScript the target is a plain text field, as
+  now (progressive enhancement). All strings through `wp_localize_script` in
+  `sfxtheme`.
+
+### Testing (addendum)
+
+- `tests/redirects-rule-test.php`: format detection (ours, Redirection, mixed →
+  rejected); `redirection_record` for every row of the A1 table, including home-path
+  stripping on a sub-directory install, anchored/unanchored regex, replacement syntax,
+  transform tags, unsupported actions; `[FORMULA] ` unescaping (single, doubled,
+  not-dangerous remainder); a real Redirection export line parsed through
+  `fgetcsv(…, ',', '"', '')`; `csv_escape_cell` with leading whitespace before `=`.
+- `tests/redirects-settings-test.php`: `permanent_cache` validation and `get()` mapping.
+- `tests/redirects-handlers-test.php`: the search endpoint dies on a bad nonce and on a
+  missing capability before any query.
+- Live harness: a 301 answers with `Cache-Control: public, max-age=3600`.
+- Manual check over HTTP: a Redirection-format CSV uploaded through the real import
+  handler creates the expected rules and skips the unsupported ones with reasons; the
+  search endpoint returns a page's path for an editor.
