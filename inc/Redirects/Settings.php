@@ -14,12 +14,16 @@ final class Settings
 {
     public const OPTION_NAME = 'sfx_redirects_options';
 
+    /** Seconds a browser may keep a 301/308 (spec Addendum A2); 0 = send no cache header. */
+    public const PERMANENT_CACHE_CHOICES = [3600, 86400, 604800, 0];
+
     private const TYPES = [
         'log_404'            => 'bool',
         'log_referrer'       => 'bool',
         'log_retention_days' => 'int',
         'log_max_rows'       => 'int',
         'auto_slug_redirect' => 'bool',
+        'permanent_cache'    => 'choice',
     ];
 
     /**
@@ -40,6 +44,18 @@ final class Settings
             'log_retention_days' => 30,
             'log_max_rows'       => 5000,
             'auto_slug_redirect' => true,
+            'permanent_cache'    => 3600,
+        ];
+    }
+
+    /** @return array<int,string> choice => label, in PERMANENT_CACHE_CHOICES order */
+    public static function permanent_cache_labels(): array
+    {
+        return [
+            3600   => __('1 hour', 'sfxtheme'),
+            86400  => __('1 day', 'sfxtheme'),
+            604800 => __('1 week', 'sfxtheme'),
+            0      => __('No cache header from this module', 'sfxtheme'),
         ];
     }
 
@@ -61,9 +77,11 @@ final class Settings
             if (!array_key_exists($key, $stored)) {
                 continue;
             }
-            $values[$key] = self::TYPES[$key] === 'bool'
-                ? self::stored_bool($stored[$key], $default)
-                : self::stored_int($key, $stored[$key], $default);
+            $values[$key] = match (self::TYPES[$key]) {
+                'bool'   => self::stored_bool($stored[$key], $default),
+                'choice' => self::stored_choice($stored[$key], $default),
+                default  => self::stored_int($key, $stored[$key], $default),
+            };
         }
 
         return $values;
@@ -90,6 +108,21 @@ final class Settings
             if ($type === 'bool') {
                 // NOT !empty(): !empty(['x']) is true, so ?log_404[]=x would read as checked.
                 $values[$key] = isset($post[$key]) && is_scalar($post[$key]) && (bool) $post[$key];
+                continue;
+            }
+
+            if ($type === 'choice') {
+                $stored = self::stored_choice($existing[$key], self::defaults()[$key]);
+                // Absent is not a value (a form without the field): keep the stored one silently.
+                if (!array_key_exists($key, $post)) {
+                    $values[$key] = $stored;
+                    continue;
+                }
+                $chosen = self::stored_choice(is_string($post[$key]) ? trim($post[$key]) : null, -1);
+                $values[$key] = $chosen === -1 ? $stored : $chosen;
+                if ($chosen === -1) {
+                    $errors[] = __('The browser cache time for permanent redirects must be one of the offered values. The previous value was kept.', 'sfxtheme');
+                }
                 continue;
             }
 
@@ -203,6 +236,19 @@ final class Settings
     private static function stored_bool($value, bool $default): bool
     {
         return is_scalar($value) ? (bool) $value : $default;
+    }
+
+    /**
+     * Only an int or a plain digit string naming one of the choices; anything
+     * else — another number, a float, whitespace, a bool — is not a choice.
+     */
+    private static function stored_choice($value, int $default): int
+    {
+        if (is_string($value) && preg_match('/\A\d+\z/', $value) === 1) {
+            $value = (int) $value;
+        }
+
+        return is_int($value) && in_array($value, self::PERMANENT_CACHE_CHOICES, true) ? $value : $default;
     }
 
     /**

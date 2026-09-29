@@ -144,10 +144,45 @@ final class Controller
 
         // Sent exactly as pick() built it: the same string the identity check saw.
         if (wp_redirect((string) $match['url'], $match['status_code'], 'SFX Redirects')) {
+            $seconds = Settings::get()['permanent_cache'];
+            if (self::may_set_permanent_cache($seconds)) {
+                // Replacing (header()'s default): core's 404 nocache values go.
+                header('Cache-Control: private, max-age=' . $seconds);
+                header('Expires: ' . gmdate('D, d M Y H:i:s', time() + $seconds) . ' GMT');
+            }
             Repository::record_hit($match['id']);
             exit;
         }
         // A filter cancelled the redirect: no hit, no exit, the page renders.
+    }
+
+    /**
+     * Spec Addendum A2. A browser keeps a 301/308 without a cache limit for as
+     * long as it likes, so a mistaken permanent redirect sticks; we bound it —
+     * but only on a response whose cache policy we recognise. The final code is
+     * read back because a wp_redirect_status filter may have changed it. A
+     * logged-in visitor, DONOTCACHEPAGE, or any Cache-Control someone else chose
+     * wins. The one Cache-Control we replace is core's own 404 nocache value
+     * (WP::handle_404() ran first, since most redirected sources no longer
+     * exist); without that case the setting would almost never apply.
+     */
+    private static function may_set_permanent_cache(int $seconds): bool
+    {
+        if ($seconds <= 0 || !in_array(http_response_code(), [301, 308], true)
+            || is_user_logged_in() || (defined('DONOTCACHEPAGE') && DONOTCACHEPAGE)) {
+            return false;
+        }
+
+        $cache_control = [];
+        foreach (headers_list() as $line) {
+            [$name, $value] = array_pad(explode(':', $line, 2), 2, '');
+            if (strcasecmp(trim($name), 'Cache-Control') === 0) {
+                $cache_control[] = trim($value);
+            }
+        }
+
+        return $cache_control === []
+            || (is_404() && $cache_control === [wp_get_nocache_headers()['Cache-Control'] ?? null]);
     }
 
     /**

@@ -50,6 +50,7 @@ assert_true(Settings::defaults() === [
     'log_retention_days' => 30,
     'log_max_rows'       => 5000,
     'auto_slug_redirect' => true,
+    'permanent_cache'    => 3600,
 ], '1: defaults match the spec');
 
 // 2. A full, valid form comes back typed, no errors, in defaults() key order.
@@ -67,6 +68,7 @@ assert_true($r['values'] === [
     'log_retention_days' => 90,
     'log_max_rows'       => 20000,
     'auto_slug_redirect' => true,
+    'permanent_cache'    => 3600,
 ], '2: valid form is typed and in defaults() order');
 
 // 3. Absent checkboxes are false, not "unchanged".
@@ -185,5 +187,51 @@ assert_true(
     in_array(['admin_post_sfx_redirects_save_settings', [Settings::class, 'save_from_request']], $test_actions, true),
     '11: register() adds admin_post_sfx_redirects_save_settings'
 );
+
+// 12. permanent_cache (spec Addendum A2): the choices and their order are fixed.
+assert_true(Settings::PERMANENT_CACHE_CHOICES === [3600, 86400, 604800, 0], '12: choices per the spec');
+$labels = Settings::permanent_cache_labels();
+assert_true(array_keys($labels) === Settings::PERMANENT_CACHE_CHOICES, '12: one label per choice, in choice order');
+assert_true($labels[3600] === '1 hour' && $labels[86400] === '1 day' && $labels[604800] === '1 week'
+    && $labels[0] === 'No cache header from this module', '12: labels per the spec table');
+
+// 13. validate_snapshot: every choice is accepted silently, as an int.
+foreach (Settings::PERMANENT_CACHE_CHOICES as $choice) {
+    $r = snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000', 'permanent_cache' => (string) $choice], ['permanent_cache' => 86400]);
+    assert_true($r['values']['permanent_cache'] === $choice, "13: {$choice} accepted");
+    assert_true($r['errors'] === [], "13: {$choice} is no error");
+}
+$r = snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000', 'permanent_cache' => ' 604800 ']);
+assert_true($r['values']['permanent_cache'] === 604800 && $r['errors'] === [], '13: surrounding whitespace tolerated');
+
+// 14. validate_snapshot: a value outside the set keeps the STORED one and reports one error.
+foreach (['1', '7200', '-3600', '', 'abc', '3600.0', '03600x', ['3600']] as $input) {
+    $r = snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000', 'permanent_cache' => $input], ['permanent_cache' => 604800]);
+    $shown = var_export($input, true);
+    assert_true($r['values']['permanent_cache'] === 604800, "14: {$shown} keeps the stored value");
+    assert_true(count($r['errors']) === 1 && is_string($r['errors'][0]), "14: {$shown} reports one error");
+}
+// A stored value that is itself outside the set falls back to the default, not to itself.
+$r = Settings::validate_snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000', 'permanent_cache' => 'x'], ['permanent_cache' => 99]);
+assert_true($r['values']['permanent_cache'] === 3600, '14: an invalid stored fallback maps to the default');
+
+// 15. A form without the field (not a value at all) keeps the stored one silently.
+$r = snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000'], ['permanent_cache' => 0]);
+assert_true($r['values']['permanent_cache'] === 0 && $r['errors'] === [], '15: absent field keeps the stored value without an error');
+
+// 16. get(): stored values outside the set map to the default (ImportExport JSON path).
+foreach ([3600, 86400, 604800, 0, '86400', '0'] as $stored) {
+    $test_options = [Settings::OPTION_NAME => ['permanent_cache' => $stored]];
+    assert_true(Settings::get()['permanent_cache'] === (int) $stored, '16: stored ' . var_export($stored, true) . ' read as a choice');
+}
+foreach ([1, 7200, -3600, '7200', '', 'abc', 3600.0, true, null, ['3600'], '3600 '] as $stored) {
+    $test_options = [Settings::OPTION_NAME => ['permanent_cache' => $stored]];
+    assert_true(Settings::get()['permanent_cache'] === 3600, '16: stored ' . var_export($stored, true) . ' maps to the default');
+}
+
+// 17. Round trip with a non-default choice.
+$r = snapshot(['log_retention_days' => '30', 'log_max_rows' => '5000', 'permanent_cache' => '0']);
+$test_options = [Settings::OPTION_NAME => $r['values']];
+assert_true(Settings::get() === $r['values'], '17: get() of a validated snapshot with permanent_cache=0 is identical to it');
 
 echo "OK\n";

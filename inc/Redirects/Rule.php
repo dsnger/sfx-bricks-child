@@ -62,6 +62,21 @@ final class Rule
     /** Leading characters a spreadsheet may execute as a formula; "'" so the escape itself round-trips. */
     private const CSV_TRIGGERS = ['=', '+', '-', '@', "\t", "\r", "\n", "'", "\u{FF1D}", "\u{FF0B}", "\u{FF0D}", "\u{FF20}"];
 
+    /** Formula starts that still count after leading blanks and control characters. */
+    private const CSV_FORMULA_STARTS = ['=', '+', '-', '@', "\u{FF1D}", "\u{FF0B}", "\u{FF0D}", "\u{FF20}"];
+
+    /** Column order of a CSV export by the Redirection plugin (John Godley). */
+    public const REDIRECTION_COLUMNS = ['source', 'target', 'regex', 'code', 'type', 'hits', 'title', 'status'];
+
+    /** Redirection's marker for a cell its sanitizer considered dangerous. */
+    private const REDIRECTION_FORMULA_PREFIX = '[FORMULA] ';
+
+    /** Redirection "type" → the codes we import for it; everything else is skipped. */
+    private const REDIRECTION_ACTIONS = [
+        'url'   => ['301', '302', '307', '308'],
+        'error' => ['410'],
+    ];
+
     // ---------------------------------------------------------------- canonical forms
 
     /**
@@ -619,7 +634,9 @@ final class Rule
     /**
      * Prefix a formula-like cell with "'" so a spreadsheet opening the file
      * shows it as text. "'" is itself a trigger, which keeps the transform
-     * reversible: "'=x" → "''=x" → "'=x".
+     * reversible: "'=x" → "''=x" → "'=x". A formula start after leading blanks
+     * or control characters counts too (" =x" → "' =x"), since spreadsheets
+     * may trim them.
      */
     public static function csv_escape_cell(string $cell): string
     {
@@ -650,37 +667,138 @@ final class Rule
      */
     public static function csv_header_map(array $header): array
     {
-        $map = [];
-        $errors = [];
-        $seen = [];
+        return self::header_map($header, self::CSV_COLUMNS);
+    }
 
-        foreach (array_values($header) as $index => $name) {
-            $name = is_string($name) ? $name : '';
-            if ($index === 0 && str_starts_with($name, "\xEF\xBB\xBF")) {
-                $name = substr($name, 3);
+    /**
+     * Which format a header row belongs to. A header with both "regex" and
+     * "code" is a Redirection export; if it also has one of our own column
+     * names, nobody can tell which columns the author meant, so the file is
+     * rejected.
+     *
+     * @param list<string> $header raw header row
+     * @return string 'ours', 'redirection', or an error message
+     */
+    public static function csv_dialect(array $header): string
+    {
+        $theirs = self::header_map($header, self::REDIRECTION_COLUMNS)['map'];
+        if (!isset($theirs['regex'], $theirs['code'])) {
+            return 'ours';
+        }
+
+        $ours = self::header_map($header, self::CSV_COLUMNS)['map'];
+        if (isset($ours['status_code']) || isset($ours['match_type'])) {
+            return __('The header mixes column names of the Redirection plugin (regex, code) with this theme\'s (status_code, match_type); use one format.', 'sfxtheme');
+        }
+
+        return 'redirection';
+    }
+
+    /**
+     * Header map for a Redirection export: same normalisation, errors and
+     * shape as csv_header_map().
+     *
+     * @param list<string> $header raw header row
+     * @return array{map: array<string,int>, errors: list<string>}
+     */
+    public static function redirection_header_map(array $header): array
+    {
+        return self::header_map($header, self::REDIRECTION_COLUMNS);
+    }
+
+    /**
+     * Maps one Redirection record to validate() input — only what behaves the
+     * same here (spec Addendum A1); everything else is skipped with a reason.
+     *
+     * @param string $home_url the full home URL (scheme, host, port, path)
+     * @return array|string validate() input, or the reason this record is skipped
+     */
+    public static function redirection_record(array $record, array $map, string $home_url): array|string
+    {
+        if (count($record) > (int) ($map[self::CSV_WIDTH_KEY] ?? 0)) {
+            return __('This record has more fields than the header (an unterminated quote or a stray comma?).', 'sfxtheme');
+        }
+
+        $cell = static function (string $name) use ($record, $map): string {
+            if (!isset($map[$name])) {
+                return '';
             }
-            $name = strtolower(trim($name));
-            if ($name === '') {
-                continue;
+            $value = $record[$map[$name]] ?? '';
+
+            return is_string($value) ? self::redirection_unescape($value) : '';
+        };
+
+        $type = strtolower(trim($cell('type')));
+        $code = trim($cell('code'));
+        if (!in_array($code, self::REDIRECTION_ACTIONS[$type] ?? [], true)) {
+            /* translators: 1: Redirection action type, 2: HTTP status code */
+            return sprintf(__('Action "%1$s" with code "%2$s" is not supported.', 'sfxtheme'), $type, $code);
+        }
+
+        $home = wp_parse_url($home_url);
+        $home = is_array($home) ? $home : [];
+        $home_path = rtrim((string) ($home['path'] ?? ''), '/');
+
+        $regex = trim($cell('regex')) === '1';
+        $source = $cell('source');
+        if ($regex) {
+            if (!self::regex_matches_whole_subject($source)) {
+                return __('Regex not importable safely: Redirection replaces only the matched part; anchor the whole pattern with ^…$.', 'sfxtheme');
             }
-            if (isset($seen[$name])) {
-                /* translators: %s: CSV column name */
-                $errors[] = sprintf(__('The column "%s" appears more than once in the header.', 'sfxtheme'), $name);
-                continue;
+            if ($home_path !== '') {
+                $source = self::strip_home_from_pattern($source, $home_path);
+                if ($source === null) {
+                    return __('Pattern outside this site\'s home path.', 'sfxtheme');
+                }
             }
-            $seen[$name] = true;
-            if (in_array($name, self::CSV_COLUMNS, true)) {
-                $map[$name] = $index;
+        } else {
+            $source = self::strip_home_with_rest($source, $home_path);
+            if ($source === null) {
+                return __('Source outside this site\'s home path.', 'sfxtheme');
             }
         }
 
-        if (!isset($map['source'])) {
-            $errors[] = __('The header has no "source" column.', 'sfxtheme');
+        $target = '';
+        if ($code !== '410') {
+            $target = $cell('target');
+            if (preg_match('~\[/?(userid|userlogin|unixtime|md5|upper|lower|dashes|underscores)\b[^\]]*\]|%(userid|userlogin|userurl)%~i', $target) === 1) {
+                return __('Dynamic target tags are not supported.', 'sfxtheme');
+            }
+            // \1 and ${1} are preg_replace references; "$10" is group 10 there,
+            // but $1 followed by 0 here; "$0" is the whole match there.
+            if ($regex && preg_match('~\\\\[0-9]|\$\{|\$0|\$[1-9][0-9]~', $target) === 1) {
+                return __('Replacement syntax not supported (use $1–$9).', 'sfxtheme');
+            }
+            $target = self::redirection_target($target, $home, $home_path);
         }
 
-        $map[self::CSV_WIDTH_KEY] = count($header);
+        return [
+            'source'      => $source,
+            'match_type'  => $regex ? 'regex' : 'exact',
+            'target'      => $target,
+            'status_code' => $code,
+            'enabled'     => strtolower(trim($cell('status'))) !== 'disabled',
+            'note'        => $cell('title'),
+        ];
+    }
 
-        return ['map' => $map, 'errors' => $errors];
+    /**
+     * Redirection's own rule: a doubled "[FORMULA] " loses one; a single one is
+     * removed only when the rest is a value its sanitizer would have escaped.
+     */
+    public static function redirection_unescape(string $cell): string
+    {
+        $prefix = self::REDIRECTION_FORMULA_PREFIX;
+        if (!str_starts_with($cell, $prefix)) {
+            return $cell;
+        }
+
+        $rest = substr($cell, strlen($prefix));
+        if (str_starts_with($rest, $prefix) || self::formula_after_blanks($rest)) {
+            return $rest;
+        }
+
+        return $cell;
     }
 
     /**
@@ -722,6 +840,46 @@ final class Rule
     }
 
     // ---------------------------------------------------------------- private helpers
+
+    /**
+     * @param list<string> $header raw header row
+     * @param list<string> $columns the names this format knows
+     * @return array{map: array<string,int>, errors: list<string>}
+     */
+    private static function header_map(array $header, array $columns): array
+    {
+        $map = [];
+        $errors = [];
+        $seen = [];
+
+        foreach (array_values($header) as $index => $name) {
+            $name = is_string($name) ? $name : '';
+            if ($index === 0 && str_starts_with($name, "\xEF\xBB\xBF")) {
+                $name = substr($name, 3);
+            }
+            $name = strtolower(trim($name));
+            if ($name === '') {
+                continue;
+            }
+            if (isset($seen[$name])) {
+                /* translators: %s: CSV column name */
+                $errors[] = sprintf(__('The column "%s" appears more than once in the header.', 'sfxtheme'), $name);
+                continue;
+            }
+            $seen[$name] = true;
+            if (in_array($name, $columns, true)) {
+                $map[$name] = $index;
+            }
+        }
+
+        if (!isset($map['source'])) {
+            $errors[] = __('The header has no "source" column.', 'sfxtheme');
+        }
+
+        $map[self::CSV_WIDTH_KEY] = count($header);
+
+        return ['map' => $map, 'errors' => $errors];
+    }
 
     /**
      * @param list<array> $rows regex candidates
@@ -828,15 +986,17 @@ final class Rule
     }
 
     /** @return string|null the home-relative path, or null when $path is not under the home path */
-    private static function strip_home(string $path, string $home_path): ?string
+    private static function strip_home(string $path, string $home_path, bool $case_sensitive = false): ?string
     {
         $home = rtrim($home_path, '/');
         if ($home === '') {
             return $path;
         }
 
-        $lower_path = strtolower($path);
-        $lower_home = strtolower($home);
+        // Sources are matched case-insensitively anyway; a destination is an
+        // address the browser will request, so its case must survive exactly.
+        $lower_path = $case_sensitive ? $path : strtolower($path);
+        $lower_home = $case_sensitive ? $home : strtolower($home);
         if ($lower_path === $lower_home) {
             return '/';
         }
@@ -957,6 +1117,166 @@ final class Rule
         foreach (self::CSV_TRIGGERS as $trigger) {
             if (str_starts_with($cell, $trigger)) {
                 return true;
+            }
+        }
+
+        return self::formula_after_blanks($cell);
+    }
+
+    /**
+     * The first character that is not a blank or a control character (bytes
+     * up to 0x20, as Redirection's sanitizer skips them) starts a formula.
+     */
+    private static function formula_after_blanks(string $cell): bool
+    {
+        $rest = ltrim($cell, "\x00..\x20");
+        foreach (self::CSV_FORMULA_STARTS as $start) {
+            if (str_starts_with($rest, $start)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Strip the home path from a root-relative address whose query or fragment
+     * may follow the path directly ("/blog?x" → "/?x").
+     *
+     * @return string|null null when the path is not under the home path
+     */
+    private static function strip_home_with_rest(string $value, string $home_path, bool $case_sensitive = false): ?string
+    {
+        $cut = strcspn($value, '?#');
+        $path = self::strip_home(substr($value, 0, $cut), $home_path, $case_sensitive);
+
+        return $path === null ? null : $path . substr($value, $cut);
+    }
+
+    /**
+     * A Redirection pattern on a sub-directory install sees the full request
+     * path, so it must start with "^" + home path + "/" (literal or quoted);
+     * that prefix becomes "^/".
+     */
+    private static function strip_home_from_pattern(string $pattern, string $home_path): ?string
+    {
+        // Only a home path made of characters that mean themselves in a regex
+        // (letters, digits, "/", "_", "-", and "." in its escaped form "\.") can
+        // be recognised as a literal prefix. Anything else — "(", "+", an
+        // unescaped "." — would be pattern syntax, and stripping it would change
+        // what the rule matches.
+        if (preg_match('~^[A-Za-z0-9/_.-]*$~', $home_path) !== 1) {
+            return null;
+        }
+        $candidates = [str_replace('.', '\\.', $home_path)];
+        if (!str_contains($home_path, '.')) {
+            $candidates[] = $home_path;
+        }
+        foreach ($candidates as $home) {
+            $prefix = '^' . $home . '/';
+            if (strncasecmp($pattern, $prefix, strlen($prefix)) === 0) {
+                return '^/' . substr($pattern, strlen($prefix));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Redirection targets are root-relative. "//host" keeps its authority and
+     * gets the home scheme; "/x" inside the home path becomes home-relative,
+     * outside it absolute on the home origin so it still points where it did.
+     */
+    private static function redirection_target(string $target, array $home, string $home_path): string
+    {
+        $scheme = (string) ($home['scheme'] ?? 'https');
+        if (str_starts_with($target, '//')) {
+            return $scheme . ':' . $target;
+        }
+        if (!str_starts_with($target, '/')) {
+            return $target;
+        }
+
+        $relative = self::strip_home_with_rest($target, $home_path, true);
+        if ($relative !== null) {
+            return $relative;
+        }
+
+        $port = isset($home['port']) ? ':' . (int) $home['port'] : '';
+
+        return $scheme . '://' . (string) ($home['host'] ?? '') . $port . $target;
+    }
+
+    /**
+     * True only when the pattern provably matches the whole subject, so that
+     * Redirection's preg_replace() result equals the whole target (our
+     * semantics): "^" first, an unescaped "$" last, no top-level "|", and none
+     * of "\K", "(*…)", "\Q" or a "(?" other than "(?:" — inline flags such as
+     * (?x) could turn the final "$" into a comment. Conservative: anything the
+     * scan cannot prove is rejected.
+     */
+    private static function regex_matches_whole_subject(string $pattern): bool
+    {
+        $length = strlen($pattern);
+        if ($length < 2 || $pattern[0] !== '^') {
+            return false;
+        }
+
+        $depth = 0;
+        $in_class = false;
+        $class_start = 0;
+        for ($i = 1; $i < $length; $i++) {
+            $char = $pattern[$i];
+
+            if ($char === '\\') {
+                $next = $pattern[$i + 1] ?? '';
+                if ($next === 'K' || $next === 'Q') {
+                    return false;
+                }
+                // "\cX" consumes one more character.
+                $i += $next === 'c' ? 2 : 1;
+                continue;
+            }
+
+            if ($in_class) {
+                if ($char === '[' && in_array($pattern[$i + 1] ?? '', [':', '.', '='], true)) {
+                    $close = strpos($pattern, $pattern[$i + 1] . ']', $i + 2);
+                    if ($close === false) {
+                        return false;
+                    }
+                    $i = $close + 1;
+                } elseif ($char === ']' && $i > $class_start) {
+                    $in_class = false;
+                }
+                continue;
+            }
+
+            switch ($char) {
+                case '[':
+                    $in_class = true;
+                    // A "]" right after "[" or "[^" is a literal.
+                    $class_start = ($pattern[$i + 1] ?? '') === '^' ? $i + 2 : $i + 1;
+                    break;
+                case '(':
+                    $next = $pattern[$i + 1] ?? '';
+                    if ($next === '*' || ($next === '?' && ($pattern[$i + 2] ?? '') !== ':')) {
+                        return false;
+                    }
+                    $depth++;
+                    break;
+                case ')':
+                    $depth--;
+                    break;
+                case '|':
+                    if ($depth === 0) {
+                        return false;
+                    }
+                    break;
+                case '$':
+                    if ($i === $length - 1) {
+                        return $depth === 0;
+                    }
+                    break;
             }
         }
 

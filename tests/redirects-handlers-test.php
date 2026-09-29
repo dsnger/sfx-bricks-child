@@ -5,13 +5,16 @@ declare(strict_types=1);
 /**
  * Authorization of every Redirects admin-post handler (invariant 2).
  *
- * For each of the seven actions: a failed nonce and a failed capability each
+ * For each of the seven actions, and for the target picker's admin-ajax
+ * search: a failed nonce and a failed capability each
  * stop the handler before $wpdb sees a single call or any option/transient is
  * written. A positive baseline proves the stops are the guard's doing — a
  * handler that always died would otherwise pass every negative case. The
- * baseline runs with the schema NOT ready, so each handler ends at the
- * throwing wp_safe_redirect stub (export included: it redirects with an
- * error instead of streaming and calling exit).
+ * baseline runs with the schema NOT ready, so each admin-post handler ends at
+ * the throwing wp_safe_redirect stub (export included: it redirects with an
+ * error instead of streaming and calling exit). The picker's search endpoint
+ * is a GET admin-ajax handler; its baseline ends at the stubbed
+ * wp_send_json_success.
  */
 
 namespace SFX {
@@ -26,7 +29,8 @@ namespace SFX {
 }
 
 namespace {
-    // Every handler under test is a form POST; the settings save refuses anything else.
+    // The admin-post handlers are form POSTs (the settings save refuses anything else);
+    // the search endpoint reads GET and does not look at the method.
     $_SERVER['REQUEST_METHOD'] = 'POST';
 
     $test_options   = [];
@@ -202,6 +206,100 @@ namespace {
         return $number === 1 ? $single : $plural;
     }
 
+    // ---- Target picker search (admin-ajax): nonce, JSON exits, query stubs.
+    $test_ajax_nonce_seen = [];
+    $test_queries = [];      // WP_Query args, one entry per construction
+    $test_terms_calls = 0;
+    $test_json = null;       // [kind, data, status] of the last wp_send_json_* call
+
+    function check_ajax_referer($action = -1, $query_arg = false, $stop = true)
+    {
+        global $test_nonce_ok, $test_ajax_nonce_seen;
+        $test_ajax_nonce_seen[] = $action;
+        if (!$test_nonce_ok) {
+            throw new RuntimeException('nonce');
+        }
+
+        return 1;
+    }
+
+    function wp_send_json_success($data = null, $status = null, $flags = 0)
+    {
+        global $test_json;
+        $test_json = ['success', $data, $status];
+        throw new RuntimeException('json_success');
+    }
+
+    function wp_send_json_error($data = null, $status = null, $flags = 0)
+    {
+        global $test_json;
+        $test_json = ['error', $data, $status];
+        throw new RuntimeException('json_error');
+    }
+
+    class WP_Query
+    {
+        public array $posts = [];
+
+        public function __construct($args = [])
+        {
+            global $test_queries;
+            $test_queries[] = $args;
+            $this->posts = [(object) ['ID' => 12, 'post_title' => 'About']];
+        }
+    }
+
+    function get_post_types($args = [], $output = 'names', $operator = 'and')
+    {
+        return [
+            'page'       => (object) ['name' => 'page', 'labels' => (object) ['singular_name' => 'Page']],
+            'attachment' => (object) ['name' => 'attachment', 'labels' => (object) ['singular_name' => 'Media']],
+        ];
+    }
+
+    function is_post_type_viewable($post_type)
+    {
+        return true;
+    }
+
+    function get_taxonomies($args = [], $output = 'names', $operator = 'and')
+    {
+        return ['category' => 'category'];
+    }
+
+    function get_terms($args = [], $deprecated = '')
+    {
+        global $test_terms_calls;
+        $test_terms_calls++;
+
+        return [];
+    }
+
+    function get_permalink($post = 0, $leavename = false)
+    {
+        return 'https://example.test/about/';
+    }
+
+    function get_the_title($post = 0)
+    {
+        return 'About';
+    }
+
+    function wp_strip_all_tags($text, $remove_breaks = false)
+    {
+        return strip_tags((string) $text);
+    }
+
+    function wp_parse_url($url, $component = -1)
+    {
+        return parse_url($url, $component);
+    }
+
+    function is_wp_error($thing)
+    {
+        return false;
+    }
+
     require_once __DIR__ . '/../inc/Redirects/Rule.php';
     require_once __DIR__ . '/../inc/Redirects/Settings.php';
     require_once __DIR__ . '/../inc/Redirects/Repository.php';
@@ -324,8 +422,69 @@ namespace {
         assert_true($hooked['admin_post_' . $action] === $handler, "6: admin_post_{$action} calls its handler");
     }
 
-    // Every action × (nonce-fail, cap-fail, baseline) ran.
-    assert_true($ran === 21, "counter: expected 21 cases, ran {$ran}");
+    // 7. Target picker search: the same three cases for the admin-ajax endpoint.
+    /** @return array{stopped:string, db_calls:int, writes:int} */
+    function run_search_case(bool $nonce_ok, bool $can): array
+    {
+        global $wpdb, $test_writes, $test_nonce_ok, $test_can, $test_caps_seen,
+            $test_ajax_nonce_seen, $test_queries, $test_terms_calls, $test_json;
+
+        $wpdb->calls = [];
+        $test_writes = [];
+        $test_caps_seen = [];
+        $test_ajax_nonce_seen = [];
+        $test_queries = [];
+        $test_terms_calls = 0;
+        $test_json = null;
+        $test_nonce_ok = $nonce_ok;
+        $test_can = $can;
+
+        $_GET = ['action' => 'sfx_redirects_search', 'type' => 'page', 'q' => '  About '];
+        $_POST = [];
+
+        try {
+            AdminPage::handle_search();
+        } catch (RuntimeException $e) {
+            return ['stopped' => $e->getMessage(), 'db_calls' => count($wpdb->calls), 'writes' => count($test_writes)];
+        }
+
+        return ['stopped' => 'nothing', 'db_calls' => count($wpdb->calls), 'writes' => count($test_writes)];
+    }
+
+    $r = run_search_case(false, true);
+    assert_true($r['stopped'] === 'nonce', "search: a failed nonce stops the handler (got {$r['stopped']})");
+    assert_true($test_queries === [] && $test_terms_calls === 0 && $r['db_calls'] === 0, 'search: a failed nonce runs no query');
+    assert_true($test_caps_seen === [], 'search: the nonce is checked before the capability');
+    $ran++;
+
+    $r = run_search_case(true, false);
+    assert_true($r['stopped'] === 'json_error', "search: a missing capability dies (got {$r['stopped']})");
+    assert_true(($test_json[2] ?? null) === 403, 'search: a missing capability answers 403');
+    assert_true($test_queries === [] && $test_terms_calls === 0 && $r['db_calls'] === 0, 'search: a missing capability runs no query');
+    assert_true(in_array('edit_others_posts', $test_caps_seen, true), 'search: the module capability was checked');
+    $ran++;
+
+    $r = run_search_case(true, true);
+    assert_true($r['stopped'] === 'json_success', "search: baseline reaches wp_send_json_success (got {$r['stopped']})");
+    assert_true($test_ajax_nonce_seen === ['sfx_redirects_search'], 'search: the nonce was checked for exactly this action');
+    assert_true($test_json[1] === [['label' => 'About', 'path' => '/about/']], 'search: baseline returns the stubbed item as {label, path} with a home-relative path');
+    assert_true(count($test_queries) === 1, 'search: exactly one WP_Query');
+    $args = $test_queries[0];
+    assert_true(($args['s'] ?? null) === 'About', 'search: WP_Query gets the trimmed search term');
+    assert_true(($args['post_type'] ?? null) === 'page', 'search: WP_Query gets the requested post type');
+    assert_true(($args['post_status'] ?? null) === 'publish', 'search: WP_Query only asks for published posts');
+    assert_true(($args['posts_per_page'] ?? null) === 20, 'search: WP_Query asks for 20 results');
+    assert_true($r['writes'] === 0, 'search: the read writes nothing');
+    $ran++;
+
+    // register() hooks the search endpoint.
+    assert_true(
+        ($hooked['wp_ajax_sfx_redirects_search'] ?? null) === [AdminPage::class, 'handle_search'],
+        '7: wp_ajax_sfx_redirects_search calls AdminPage::handle_search'
+    );
+
+    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's three.
+    assert_true($ran === 24, "counter: expected 24 cases, ran {$ran}");
 
     echo "OK\n";
 }

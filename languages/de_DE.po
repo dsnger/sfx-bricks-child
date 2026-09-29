@@ -7518,3 +7518,169 @@ msgstr "Das würde eine Weiterleitungsschleife mit Regel #%d erzeugen."
 #: inc/Redirects/Repository.php
 msgid "The target leads back to the source; the redirect would loop."
 msgstr "Das Ziel führt zurück zur Quelle; die Weiterleitung würde sich im Kreis drehen."
+
+#: inc/Redirects/AdminPage.php
+msgid "Type at least 2 characters."
+msgstr "Gib mindestens 2 Zeichen ein."
+
+#: inc/Redirects/AdminPage.php
+msgid "Searching…"
+msgstr "Suche läuft …"
+
+#: inc/Redirects/AdminPage.php
+msgid "No results."
+msgstr "Keine Ergebnisse."
+
+#: inc/Redirects/AdminPage.php
+msgid "Choose a result"
+msgstr "Ergebnis auswählen"
+
+#: inc/Redirects/AdminPage.php
+msgid "The search failed. Try again."
+msgstr "Die Suche ist fehlgeschlagen. Versuche es erneut."
+
+#: inc/Redirects/AdminPage.php
+msgid "File format: Redirection plugin export."
+msgstr "Dateiformat: Export des Redirection-Plugins."
+
+#: inc/Redirects/AdminPage.php
+msgid "File format: this module's CSV."
+msgstr "Dateiformat: CSV dieses Moduls."
+
+#: inc/Redirects/AdminPage.php
+msgid "Unknown content type."
+msgstr "Unbekannter Inhaltstyp."
+
+#: inc/Redirects/AdminPage.php
+msgid "The search failed."
+msgstr "Die Suche ist fehlgeschlagen."
+
+#. translators: %d: post id
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "(no title) #%d"
+msgstr "(ohne Titel) #%d"
+
+#: inc/Redirects/AdminPage.php
+msgid "Pick an existing target"
+msgstr "Vorhandenes Ziel auswählen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Custom URL"
+msgstr "Eigene URL"
+
+#: inc/Redirects/AdminPage.php
+msgid "Term archive"
+msgstr "Begriffsarchiv"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search"
+msgstr "Suchen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search results"
+msgstr "Suchergebnisse"
+
+#: inc/Redirects/AdminPage.php
+msgid "Choosing a result writes its address into the target field."
+msgstr "Wenn du ein Ergebnis auswählst, wird seine Adresse in das Zielfeld übernommen."
+
+#. translators: %s: cache time, e.g. "1 hour"
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Browsers may keep a 301 or 308 for %s (see the settings) — use 302 while testing."
+msgstr "Browser dürfen eine 301 oder 308 für %s speichern (siehe Einstellungen) – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "This module sends no cache header for 301 and 308, so browsers may keep them indefinitely — use 302 while testing."
+msgstr "Dieses Modul sendet für 301 und 308 keinen Cache-Header, daher speichern Browser sie womöglich unbegrenzt – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect."
+msgstr "Die Cache-Dauer gilt für Antworten, die ab jetzt gesendet werden: Ein Browser, der eine 301 oder 308 bereits gespeichert hat, behält sie für die damals mitgegebene Dauer (ohne Header womöglich unbegrenzt). Wenn dieses Modul den Header sendet, weist es zugleich gemeinsam genutzte Caches und CDNs an, die Weiterleitung nicht zu speichern."
+
+#: inc/Redirects/AdminPage.php
+msgid "Redirection plugin exports"
+msgstr "Exporte des Redirection-Plugins"
+
+#: inc/Redirects/AdminPage.php
+msgid "A CSV exported by the Redirection plugin is recognised by its header and imported as far as it means the same here. A file mixing both formats' column names is rejected."
+msgstr "Eine vom Redirection-Plugin exportierte CSV wird an ihrer Kopfzeile erkannt und so weit importiert, wie sie hier dasselbe bedeutet. Eine Datei, die Spaltennamen beider Formate mischt, wird abgelehnt."
+
+#: inc/Redirects/AdminPage.php
+msgid "Imported: redirects with 301, 302, 307 or 308 and 410 rules; the title becomes the note, a disabled rule stays disabled. Hits are not imported — new rules start at 0, an updated rule keeps its counters."
+msgstr "Importiert werden: Weiterleitungen mit 301, 302, 307 oder 308 sowie 410-Regeln; der Titel wird zur Notiz, eine deaktivierte Regel bleibt deaktiviert. Treffer werden nicht importiert – neue Regeln beginnen bei 0, eine aktualisierte Regel behält ihre Zähler."
+
+#: inc/Redirects/AdminPage.php
+msgid "Skipped with a reason: other actions and codes, regular expressions that do not match the whole path (^…$), \\1 or ${1} references, dynamic target tags, and sources outside this site's home path."
+msgstr "Mit Begründung übersprungen werden: andere Aktionen und Codes, reguläre Ausdrücke, die nicht den ganzen Pfad erfassen (^…$), Verweise wie \\1 oder ${1}, dynamische Ziel-Tags und Quellen außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/AdminPage.php
+msgid "Rules here match the canonical path — lowercase, without a trailing slash, percent-encoding normalised. An exact rule without a query string matches any query string and passes it on; an exact rule with a query string matches only that query; a regular expression never sees the query. An imported rule can therefore match more, fewer or differently-cased requests than it did in Redirection, and regex captures are lowercased before they enter the target."
+msgstr "Regeln prüfen hier den kanonischen Pfad – kleingeschrieben, ohne abschließenden Schrägstrich, mit normalisierter Prozentkodierung. Eine exakte Regel ohne Query-String greift bei jedem Query-String und gibt ihn weiter, eine exakte Regel mit Query-String nur bei genau diesem; ein regulärer Ausdruck sieht den Query-String nie. Eine importierte Regel kann daher auf mehr, weniger oder anders geschriebene Anfragen greifen als in Redirection, und Gruppen aus regulären Ausdrücken werden kleingeschrieben, bevor sie ins Ziel übernommen werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "Groups, conditions, per-rule query and case settings and logs are not part of the export and are not imported. Exports from Yoast or Rank Math are not supported."
+msgstr "Gruppen, Bedingungen, regelbezogene Einstellungen für Query-String und Groß-/Kleinschreibung sowie Protokolle sind nicht Teil des Exports und werden nicht importiert. Exporte aus Yoast oder Rank Math werden nicht unterstützt."
+
+#: inc/Redirects/AdminPage.php
+msgid "Browser cache for 301 and 308"
+msgstr "Browser-Cache für 301 und 308"
+
+#: inc/Redirects/AdminPage.php
+msgid "How long a visitor's browser may keep a permanent redirect. Without a cache header, browsers may keep a 301 or 308 indefinitely, so a mistaken one sticks. Not sent to logged-in users."
+msgstr "Wie lange der Browser eines Besuchers eine dauerhafte Weiterleitung speichern darf. Ohne Cache-Header speichern Browser eine 301 oder 308 womöglich unbegrenzt, sodass eine fehlerhafte hängen bleibt. Wird an angemeldete Benutzer nicht gesendet."
+
+#: inc/Redirects/AdminPage.php
+msgid "The time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect; a page cache in front of WordPress may still apply its own rules."
+msgstr "Die Dauer gilt für Antworten, die ab jetzt gesendet werden: Ein Browser, der eine 301 oder 308 bereits gespeichert hat, behält sie für die damals mitgegebene Dauer (ohne Header womöglich unbegrenzt). Wenn dieses Modul den Header sendet, weist es zugleich gemeinsam genutzte Caches und CDNs an, die Weiterleitung nicht zu speichern; ein Seiten-Cache vor WordPress kann trotzdem eigene Regeln anwenden."
+
+#: inc/Redirects/Rule.php
+msgid "The header mixes column names of the Redirection plugin (regex, code) with this theme's (status_code, match_type); use one format."
+msgstr "Die Kopfzeile mischt Spaltennamen des Redirection-Plugins („regex“, „code“) mit denen dieses Themes („status_code“, „match_type“); verwende nur ein Format."
+
+#. translators: 1: Redirection action type, 2: HTTP status code
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "Action \"%1$s\" with code \"%2$s\" is not supported."
+msgstr "Aktion „%1$s“ mit Code „%2$s“ wird nicht unterstützt."
+
+#: inc/Redirects/Rule.php
+msgid "Regex not importable safely: Redirection replaces only the matched part; anchor the whole pattern with ^…$."
+msgstr "Regulärer Ausdruck nicht sicher importierbar: Redirection ersetzt nur den passenden Teil; verankere das ganze Muster mit ^…$."
+
+#: inc/Redirects/Rule.php
+msgid "Pattern outside this site's home path."
+msgstr "Muster außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/Rule.php
+msgid "Source outside this site's home path."
+msgstr "Quelle außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/Rule.php
+msgid "Dynamic target tags are not supported."
+msgstr "Dynamische Ziel-Tags werden nicht unterstützt."
+
+#: inc/Redirects/Rule.php
+msgid "Replacement syntax not supported (use $1–$9)."
+msgstr "Ersetzungssyntax wird nicht unterstützt (verwende $1–$9)."
+
+#: inc/Redirects/Settings.php
+msgid "1 hour"
+msgstr "1 Stunde"
+
+#: inc/Redirects/Settings.php
+msgid "1 day"
+msgstr "1 Tag"
+
+#: inc/Redirects/Settings.php
+msgid "1 week"
+msgstr "1 Woche"
+
+#: inc/Redirects/Settings.php
+msgid "No cache header from this module"
+msgstr "Kein Cache-Header von diesem Modul"
+
+#: inc/Redirects/Settings.php
+msgid "The browser cache time for permanent redirects must be one of the offered values. The previous value was kept."
+msgstr "Die Browser-Cache-Dauer für dauerhafte Weiterleitungen muss einer der angebotenen Werte sein. Der bisherige Wert wurde beibehalten."

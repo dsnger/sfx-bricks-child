@@ -404,6 +404,25 @@ function check_redirect(string $label, array $r, int $status, string $location):
     );
 }
 
+/**
+ * Spec Addendum A2: a 301/308 carries `private, max-age=<n>` and an Expires about
+ * n seconds ahead. The harness sources do not exist, so core's 404 nocache
+ * headers were sent first and had to be replaced.
+ */
+function check_permanent_cache(string $label, array $r, int $seconds): void
+{
+    $cc      = $r['headers']['cache-control'] ?? '';
+    $expires = strtotime($r['headers']['expires'] ?? '');
+    $ahead   = $expires === false ? null : $expires - time();
+    check(
+        "{$label} carries Cache-Control private, max-age={$seconds} and Expires ≈ now+{$seconds}",
+        str_contains($cc, 'private') && preg_match('/(?:^|[\s,])max-age=' . $seconds . '(?:$|[\s,])/', $cc) === 1
+            && $ahead !== null && abs($ahead - $seconds) <= 120,
+        'Cache-Control ' . var_export($r['headers']['cache-control'] ?? null, true)
+            . ', Expires ' . var_export($r['headers']['expires'] ?? null, true)
+    );
+}
+
 function add_rule(array $input): int
 {
     $validated = Rule::validate($input + ['match_type' => 'exact', 'enabled' => true, 'note' => 'sfx live harness']);
@@ -523,11 +542,17 @@ $id_regex = add_rule([
 ]);
 $id_gone  = add_rule(['source' => $gone_path, 'target' => '', 'status_code' => '410']);
 $id_temp  = add_rule(['source' => $temp, 'target' => $b, 'status_code' => '302']);
+$p308     = "/{$marker}/p308";
+$cache    = "/{$marker}/cache";   // own rule, so A's hit count stays as checked below
+add_rule(['source' => $p308, 'target' => $b, 'status_code' => '308']);
+add_rule(['source' => $cache, 'target' => $b, 'status_code' => '301']);
 
 // ---------------------------------------------------------------- HTTP checks
 
 echo "\nredirects\n";
-check_redirect('exact 301: A → B', http_get($home . $a), 301, $home . $b);
+$r = http_get($home . $a);
+check_redirect('exact 301: A → B', $r, 301, $home . $b);
+check_permanent_cache('301 (default setting)', $r, 3600);
 check_redirect('exact 301 passes the query through: A?x=1 → B?x=1', http_get($home . $a . '?x=1'), 301, $home . $b . '?x=1');
 
 $r = http_get($home . '/' . $marker . '/blog/' . rawurlencode('über'));
@@ -538,6 +563,28 @@ $r = http_get($home . $temp . '?z=2&q=1');
 check_redirect('302 passes the raw query through in sent order', $r, 302, $home . $b . '?z=2&q=1');
 $cc = strtolower($r['headers']['cache-control'] ?? '');
 check('302 sends nocache headers', str_contains($cc, 'no-store') || str_contains($cc, 'no-cache'), 'Cache-Control ' . var_export($r['headers']['cache-control'] ?? null, true));
+
+echo "\npermanent-redirect cache\n";
+$r = http_get($home . $p308);
+check_redirect('exact 308: p308 → B', $r, 308, $home . $b);
+check_permanent_cache('308 (default setting)', $r, 3600);
+
+// The value is read from the option, not hard-coded. Harness-owned option,
+// restored exactly by the teardown.
+update_option(Settings::OPTION_NAME, ['permanent_cache' => 86400] + Settings::defaults());
+$r = http_get($home . $cache);
+check_redirect('301 with permanent_cache 86400', $r, 301, $home . $b);
+check_permanent_cache('301 (86400)', $r, 86400);
+
+update_option(Settings::OPTION_NAME, ['permanent_cache' => 0] + Settings::defaults());
+$r = http_get($home . $cache);
+check_redirect('301 with permanent_cache 0', $r, 301, $home . $b);
+preg_match_all('/max-age=(\d+)/', $r['headers']['cache-control'] ?? '', $ages);
+check('301 with permanent_cache 0 carries no positive max-age (core\'s max-age=0 may stay)',
+    array_filter(array_map('intval', $ages[1])) === [],
+    'Cache-Control ' . var_export($r['headers']['cache-control'] ?? null, true));
+
+update_option(Settings::OPTION_NAME, Settings::defaults());
 
 echo "\nloop guard\n";
 // Two regex rules pointing at each other (PR #41 review): the second must be refused.

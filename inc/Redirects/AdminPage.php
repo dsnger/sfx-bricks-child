@@ -46,8 +46,16 @@ final class AdminPage
 
     private const CSV_EXPORT_COLUMNS = ['source', 'target', 'status_code', 'match_type', 'enabled', 'note', 'hits', 'last_hit', 'origin'];
 
+    /** Target picker: the type select's value for term archives (no post type can be named so). */
+    /** A colon is not allowed in a post type key (sanitize_key), so no post type can collide. */
+    private const PICKER_TERM = ':term';
+    private const PICKER_LIMIT = 20;
+
     /** Distinct codes per notice; keeps each add_settings_error() entry separate. */
     private static int $notice_seq = 0;
+
+    /** add_submenu_page()'s hook suffix, so the script loads on this page only. */
+    private static string $hook_suffix = '';
 
     public static function register(): void
     {
@@ -55,11 +63,13 @@ final class AdminPage
         foreach (self::HANDLERS as $action => $method) {
             add_action('admin_post_' . $action, [self::class, $method]);
         }
+        add_action('wp_ajax_sfx_redirects_search', [self::class, 'handle_search']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
     }
 
     public static function add_menu(): void
     {
-        add_submenu_page(
+        self::$hook_suffix = (string) add_submenu_page(
             'tools.php',
             __('Redirects', 'sfxtheme'),
             __('Redirects', 'sfxtheme'),
@@ -67,6 +77,34 @@ final class AdminPage
             self::$menu_slug,
             [self::class, 'render_page']
         );
+    }
+
+    /** The target picker's script, on the Redirects page only (spec A3). */
+    public static function enqueue_assets($hook_suffix): void
+    {
+        if (self::$hook_suffix === '' || $hook_suffix !== self::$hook_suffix) {
+            return;
+        }
+
+        $file = '/inc/Redirects/assets/redirects-admin.js';
+        wp_enqueue_script(
+            'sfx-redirects-admin',
+            get_stylesheet_directory_uri() . $file,
+            [],
+            (string) filemtime(get_stylesheet_directory() . $file),
+            true
+        );
+        wp_localize_script('sfx-redirects-admin', 'sfxRedirectsPicker', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('sfx_redirects_search'),
+            'i18n'    => [
+                'minChars'  => __('Type at least 2 characters.', 'sfxtheme'),
+                'searching' => __('Searching…', 'sfxtheme'),
+                'noResults' => __('No results.', 'sfxtheme'),
+                'choose'    => __('Choose a result', 'sfxtheme'),
+                'error'     => __('The search failed. Try again.', 'sfxtheme'),
+            ],
+        ]);
     }
 
     public static function page_url(string $tab = ''): string
@@ -371,7 +409,16 @@ final class AdminPage
             self::finish('import');
         }
 
-        $mapped = Rule::csv_header_map($header);
+        // A mixed header comes back as an error message: the whole file is rejected.
+        $dialect = Rule::csv_dialect($header);
+        if ($dialect !== 'ours' && $dialect !== 'redirection') {
+            self::notice($dialect);
+            self::notice(__('Nothing was imported.', 'sfxtheme'));
+            self::finish('import');
+        }
+        $redirection = $dialect === 'redirection';
+
+        $mapped = $redirection ? Rule::redirection_header_map($header) : Rule::csv_header_map($header);
         if ($mapped['errors'] !== []) {
             foreach ($mapped['errors'] as $message) {
                 self::notice($message);
@@ -380,10 +427,13 @@ final class AdminPage
             self::finish('import');
         }
 
-        $valid   = [];
-        $skipped = [];
+        $valid    = [];
+        $skipped  = [];
+        $home_url = home_url();
         foreach ($records as [$record, $row]) {
-            $input = Rule::csv_record($row, $mapped['map']);
+            $input = $redirection
+                ? Rule::redirection_record($row, $mapped['map'], $home_url)
+                : Rule::csv_record($row, $mapped['map']);
             if (is_string($input)) {
                 $skipped[] = self::record_message($record, $input);
                 continue;
@@ -398,6 +448,10 @@ final class AdminPage
 
         $result = Repository::import($valid);
         $clean  = $skipped === [] && $result['conflicts'] === [] && $result['failed'] === 0;
+
+        self::notice($redirection
+            ? __('File format: Redirection plugin export.', 'sfxtheme')
+            : __('File format: this module\'s CSV.', 'sfxtheme'), 'info');
 
         self::notice(sprintf(
             /* translators: 1: created, 2: updated, 3: unchanged, 4: skipped (invalid), 5: not imported (conflict), 6: failed (database error) */
@@ -465,6 +519,84 @@ final class AdminPage
         }
         fclose($out);
         exit;
+    }
+
+    /**
+     * Target picker search (admin-ajax, GET). A read, but it discloses titles
+     * and paths, so nonce AND capability come first (spec A3). Returns at most
+     * PICKER_LIMIT {label, path} items; labels are plain text, the page puts
+     * them into the DOM with textContent.
+     */
+    public static function handle_search(): void
+    {
+        check_ajax_referer('sfx_redirects_search');
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_send_json_error(['message' => __('You are not allowed to do this.', 'sfxtheme')], 403);
+        }
+
+        $request = wp_unslash($_GET);
+        $type    = $request['type'] ?? null;
+        if (!is_string($type) || ($type !== self::PICKER_TERM && !isset(self::picker_post_types()[$type]))) {
+            wp_send_json_error(['message' => __('Unknown content type.', 'sfxtheme')], 400);
+        }
+        $q = isset($request['q']) && is_string($request['q']) ? trim($request['q']) : '';
+        $length = mb_strlen($q);
+        if ($length < 2 || $length > 100) {
+            wp_send_json_success([]);
+        }
+
+        $home_url = home_url();
+        $items    = [];
+
+        if ($type === self::PICKER_TERM) {
+            $taxonomies = get_taxonomies(['public' => true]);
+            // An empty taxonomy list would make get_terms() search every taxonomy.
+            $terms = $taxonomies === [] ? [] : get_terms([
+                'taxonomy'   => array_values($taxonomies),
+                'search'     => $q,
+                'hide_empty' => false,
+                'number'     => self::PICKER_LIMIT,
+            ]);
+            if (is_wp_error($terms)) {
+                wp_send_json_error(['message' => __('The search failed.', 'sfxtheme')], 500);
+            }
+            foreach ($terms as $term) {
+                $link = get_term_link($term);
+                if (is_wp_error($link) || !is_string($link) || $link === '') {
+                    continue;
+                }
+                $taxonomy = get_taxonomy($term->taxonomy);
+                $name     = self::plain_text((string) $term->name);
+                $items[]  = [
+                    'label' => $taxonomy ? $name . ' (' . self::plain_text((string) $taxonomy->labels->singular_name) . ')' : $name,
+                    'path'  => self::picker_path($link, $home_url),
+                ];
+            }
+        } else {
+            $query = new \WP_Query([
+                's'                   => $q,
+                'post_type'           => $type,
+                'post_status'         => 'publish',
+                'posts_per_page'      => self::PICKER_LIMIT,
+                'no_found_rows'       => true,
+                'suppress_filters'    => false,
+                'ignore_sticky_posts' => true,
+            ]);
+            foreach ($query->posts as $post) {
+                $link = get_permalink($post);
+                if (!is_string($link) || $link === '') {
+                    continue;
+                }
+                $label = self::plain_text((string) get_the_title($post));
+                $items[] = [
+                    /* translators: %d: post id */
+                    'label' => $label !== '' ? $label : sprintf(__('(no title) #%d', 'sfxtheme'), (int) $post->ID),
+                    'path'  => self::picker_path($link, $home_url),
+                ];
+            }
+        }
+
+        wp_send_json_success($items);
     }
 
     // ------------------------------------------------------------------
@@ -670,6 +802,75 @@ final class AdminPage
         return __('The redirect database tables are not installed.', 'sfxtheme');
     }
 
+    /**
+     * Viewable post types for the picker, attachments excluded: an attachment of
+     * a draft or private post has status "inherit" and would leak through.
+     *
+     * @return array<string,string> name => label
+     */
+    private static function picker_post_types(): array
+    {
+        $types = [];
+        foreach (get_post_types(['public' => true], 'objects') as $name => $object) {
+            if ($name === 'attachment' || !is_post_type_viewable($object)) {
+                continue;
+            }
+            $types[(string) $name] = (string) ($object->labels->singular_name ?? $name);
+        }
+
+        return $types;
+    }
+
+    /**
+     * A permalink or term link → what the target field stores: home-relative
+     * when scheme, host and effective port equal home's and the path lies
+     * inside the home path (whole segment, case-sensitive: it is a destination);
+     * otherwise the absolute URL unchanged.
+     */
+    private static function picker_path(string $link, string $home_url): string
+    {
+        $parts = wp_parse_url($link);
+        $home  = wp_parse_url($home_url);
+        if (!is_array($parts) || !is_array($home)) {
+            return $link;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $port   = static fn(array $p, string $s): int => isset($p['port']) ? (int) $p['port'] : ($s === 'https' ? 443 : 80);
+        if ($scheme === '' || $scheme !== strtolower((string) ($home['scheme'] ?? ''))
+            || strtolower((string) ($parts['host'] ?? '')) !== strtolower((string) ($home['host'] ?? ''))
+            || $port($parts, $scheme) !== $port($home, $scheme)
+        ) {
+            return $link;
+        }
+
+        $path      = (string) ($parts['path'] ?? '');
+        $home_path = rtrim((string) ($home['path'] ?? ''), '/');
+        if ($home_path !== '') {
+            // Case-sensitive: this becomes a destination the browser requests.
+            if (rtrim($path, '/') === $home_path) {
+                $path = substr($path, strlen($home_path));
+            } elseif (str_starts_with($path, $home_path . '/')) {
+                $path = substr($path, strlen($home_path));
+            } else {
+                return $link;
+            }
+        }
+        if ($path === '') {
+            $path = '/';
+        }
+
+        return $path
+            . (isset($parts['query']) ? '?' . $parts['query'] : '')
+            . (isset($parts['fragment']) ? '#' . $parts['fragment'] : '');
+    }
+
+    /** Titles and term names may carry markup and entities; the picker wants plain text. */
+    private static function plain_text(string $value): string
+    {
+        return trim(html_entity_decode(wp_strip_all_tags($value), ENT_QUOTES, 'UTF-8'));
+    }
+
     // ------------------------------------------------------------------
     // Screen
     // ------------------------------------------------------------------
@@ -745,6 +946,8 @@ final class AdminPage
             '308' => __('308 Permanent Redirect', 'sfxtheme'),
             '410' => __('410 Gone', 'sfxtheme'),
         ];
+        $cache  = Settings::get()['permanent_cache'];
+        $labels = Settings::permanent_cache_labels();
         ?>
         <div class="card" style="max-width: none;">
             <h2 id="sfx-redirect-form">
@@ -786,6 +989,26 @@ final class AdminPage
                         <td>
                             <input type="text" class="large-text code" id="sfx-redirects-target" name="target" value="<?php echo esc_attr($form['target']); ?>" placeholder="/new-page/" />
                             <p class="description"><?php esc_html_e('A path on this site starting with / or a full http(s) URL. Regular expressions can use $1 to $9 in the path. Ignored for 410.', 'sfxtheme'); ?></p>
+                            <?php // Hidden until the script shows it: without JavaScript the target stays a plain text field. ?>
+                            <div id="sfx-redirects-picker" hidden>
+                                <p>
+                                    <label for="sfx-redirects-picker-type"><?php esc_html_e('Pick an existing target', 'sfxtheme'); ?></label><br />
+                                    <select id="sfx-redirects-picker-type">
+                                        <option value=""><?php esc_html_e('Custom URL', 'sfxtheme'); ?></option>
+                                        <?php foreach (self::picker_post_types() as $name => $label) : ?>
+                                            <option value="<?php echo esc_attr($name); ?>"><?php echo esc_html($label); ?></option>
+                                        <?php endforeach; ?>
+                                        <option value="<?php echo esc_attr(self::PICKER_TERM); ?>"><?php esc_html_e('Term archive', 'sfxtheme'); ?></option>
+                                    </select>
+                                </p>
+                                <p id="sfx-redirects-picker-search" hidden>
+                                    <label for="sfx-redirects-picker-q"><?php esc_html_e('Search', 'sfxtheme'); ?></label>
+                                    <input type="search" id="sfx-redirects-picker-q" class="regular-text" maxlength="100" autocomplete="off" />
+                                    <label for="sfx-redirects-picker-results" class="screen-reader-text"><?php esc_html_e('Search results', 'sfxtheme'); ?></label>
+                                    <select id="sfx-redirects-picker-results"></select>
+                                </p>
+                                <p class="description"><?php esc_html_e('Choosing a result writes its address into the target field.', 'sfxtheme'); ?></p>
+                            </div>
                         </td>
                     </tr>
                     <tr>
@@ -796,7 +1019,15 @@ final class AdminPage
                                     <option value="<?php echo esc_attr((string) $code); ?>" <?php selected($form['status_code'], (string) $code); ?>><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <p class="description"><strong><?php esc_html_e('301 and 308 are cached permanently by browsers — use 302 while testing.', 'sfxtheme'); ?></strong></p>
+                            <p class="description"><strong><?php
+                            if ($cache > 0) {
+                                /* translators: %s: cache time, e.g. "1 hour" */
+                                echo esc_html(sprintf(__('Browsers may keep a 301 or 308 for %s (see the settings) — use 302 while testing.', 'sfxtheme'), $labels[$cache] ?? (string) $cache));
+                            } else {
+                                esc_html_e('This module sends no cache header for 301 and 308, so browsers may keep them indefinitely — use 302 while testing.', 'sfxtheme');
+                            }
+                            ?></strong></p>
+                            <p class="description"><?php esc_html_e('The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect.', 'sfxtheme'); ?></p>
                             <p class="description"><?php esc_html_e('A page cache or CDN in front of WordPress may keep serving the old page until it is purged.', 'sfxtheme'); ?></p>
                         </td>
                     </tr>
@@ -937,6 +1168,16 @@ final class AdminPage
                 <li><?php esc_html_e('A rule whose source already exists is updated; its hit counter is kept. Invalid rows are skipped and listed.', 'sfxtheme'); ?></li>
                 <li><?php esc_html_e('Cells starting with = + - @ are exported with a leading \' so a spreadsheet does not run them as formulas; the import removes it again. A spreadsheet that re-saves the file may drop these quotes.', 'sfxtheme'); ?></li>
             </ul>
+
+            <h3><?php esc_html_e('Redirection plugin exports', 'sfxtheme'); ?></h3>
+            <p><?php esc_html_e('A CSV exported by the Redirection plugin is recognised by its header and imported as far as it means the same here. A file mixing both formats\' column names is rejected.', 'sfxtheme'); ?></p>
+            <pre class="code"><?php echo esc_html('source,target,regex,code,type,hits,title,status'); ?></pre>
+            <ul class="ul-disc">
+                <li><?php esc_html_e('Imported: redirects with 301, 302, 307 or 308 and 410 rules; the title becomes the note, a disabled rule stays disabled. Hits are not imported — new rules start at 0, an updated rule keeps its counters.', 'sfxtheme'); ?></li>
+                <li><?php esc_html_e('Skipped with a reason: other actions and codes, regular expressions that do not match the whole path (^…$), \\1 or ${1} references, dynamic target tags, and sources outside this site\'s home path.', 'sfxtheme'); ?></li>
+                <li><?php esc_html_e('Rules here match the canonical path — lowercase, without a trailing slash, percent-encoding normalised. An exact rule without a query string matches any query string and passes it on; an exact rule with a query string matches only that query; a regular expression never sees the query. An imported rule can therefore match more, fewer or differently-cased requests than it did in Redirection, and regex captures are lowercased before they enter the target.', 'sfxtheme'); ?></li>
+                <li><?php esc_html_e('Groups, conditions, per-rule query and case settings and logs are not part of the export and are not imported. Exports from Yoast or Rank Math are not supported.', 'sfxtheme'); ?></li>
+            </ul>
         </div>
 
         <div class="card" style="max-width: none;">
@@ -994,6 +1235,18 @@ final class AdminPage
                     <th scope="row"><?php esc_html_e('Automatic redirects', 'sfxtheme'); ?></th>
                     <td>
                         <label><input type="checkbox" name="auto_slug_redirect" value="1" <?php checked($settings['auto_slug_redirect']); ?> /> <?php esc_html_e('Create a redirect when the address of a published post or page changes', 'sfxtheme'); ?></label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="sfx-redirects-permanent-cache"><?php esc_html_e('Browser cache for 301 and 308', 'sfxtheme'); ?></label></th>
+                    <td>
+                        <select id="sfx-redirects-permanent-cache" name="permanent_cache">
+                            <?php foreach (Settings::permanent_cache_labels() as $seconds => $label) : ?>
+                                <option value="<?php echo esc_attr((string) $seconds); ?>" <?php selected($settings['permanent_cache'], $seconds); ?>><?php echo esc_html($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e('How long a visitor\'s browser may keep a permanent redirect. Without a cache header, browsers may keep a 301 or 308 indefinitely, so a mistaken one sticks. Not sent to logged-in users.', 'sfxtheme'); ?></p>
+                        <p class="description"><?php esc_html_e('The time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect; a page cache in front of WordPress may still apply its own rules.', 'sfxtheme'); ?></p>
                     </td>
                 </tr>
             </table>

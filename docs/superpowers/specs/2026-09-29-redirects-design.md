@@ -253,10 +253,12 @@ therefore lasts at most until the next failing request.
 | `log_retention_days` | int | 1–365 | 30 | delete 404 rows with older `last_seen` |
 | `log_max_rows` | int | 100–50000 | 5000 | keep at most this many 404 rows |
 | `auto_slug_redirect` | bool | | true | create redirects on slug change |
+| `permanent_cache` | int | one of 3600, 86400, 604800, 0 | 3600 | browser cache time for 301/308 (Addendum A2) |
 
 Pattern: PasswordProtected's — `TYPES`, `defaults()`, pure `validate_snapshot($post,
-$existing)`, admin-post save. **`get()` clamps every stored value into its range and
-falls back to the default for a wrong type**, so a value written by any other path
+$existing)`, admin-post save. **`get()` clamps every stored range value into its range,
+maps a `permanent_cache` value outside its choices to the default, and falls back to the
+default for a wrong type**, so a value written by any other path
 (the ImportExport JSON import writes options through its own generic sanitiser) can
 never reach cleanup out of range.
 
@@ -606,8 +608,8 @@ Matching runs inside WordPress. A full-page cache that answers before WordPress 
 (Varnish, a CDN, advanced-cache.php drop-ins) keeps serving a cached page for a URL
 that just got a rule, and those requests are not counted. Purging such caches after
 editing rules is the site operator's job; the module does not integrate with cache
-plugins. Browsers cache 301/308 permanently — stated in the admin UI next to the
-status-code select ("use 302 while testing").
+plugins. How long browsers keep a 301/308 is governed by Addendum A2 (default: one
+hour); the status-code hint in the admin UI names the current setting.
 
 ## 404 log
 
@@ -770,7 +772,9 @@ source,target,status_code,match_type,enabled,note
 ### Spreadsheet safety (CSV injection)
 
 On export, a cell whose first character is one of `= + - @ \t \r \n '` **or a
-full-width `＝ ＋ － ＠`** is prefixed with `'`. On import, a cell starting with `'`
+full-width `＝ ＋ － ＠`** — or whose first character after leading bytes up to 0x20
+(whitespace, control characters) is one of `= + - @` or a full-width variant (Addendum
+A1) — is prefixed with `'`; import removes that one `'` under the same rule. On import, a cell starting with `'`
 followed by one of those same characters has that one `'` removed. Because a leading
 `'` is itself in the set, the transform is reversible: `'=x` exports as `''=x` and
 imports back as `'=x`. Scope stated in the UI help text: this protects a file opened
@@ -904,7 +908,7 @@ follows the single-teardown rule.
 ## Out of scope
 
 Conditional matching (role, referrer, cookie, language), groups, .htaccess/Nginx
-export, importers from other plugins, JSON import/export of rules, per-hit log,
+export, importers from other plugins (except the Redirection CSV subset of Addendum A1), JSON import/export of rules, per-hit log,
 IP/user-agent logging, query-aware regex, REST/WP-CLI, wildcard syntax (regex covers
 it), term-based permalink tracking, child-page tracking, complete loop detection
 (see the stated gaps under Loop prevention), page-cache integration, multisite network-wide rules.
@@ -953,8 +957,8 @@ format (no second write path):
 | any other `type`/`code` pair (`random`, `pass`, `nothing`, 303, 304, 404, 451, 5xx …) | skipped: "action/code not supported" |
 | exact `source` | root-relative → home-relative: the home path is removed when it is a whole-segment prefix (followed by `/`, `?`, `#` or the end); a source outside the home path is skipped: "source outside this site's home path" |
 | `target` starting with `//` (protocol-relative, an external authority) | prefixed with the home URL's scheme (`//cdn.test/x` → `https://cdn.test/x`), then validated as an absolute URL |
-| `target` starting with a single `/` | inside the home path (same boundary rule) → home-relative; outside it → made absolute with the home URL's scheme, host and port, so it still points where it did |
-| regex `source` on a sub-directory install | must begin with `^` followed literally by the home path and `/`; that home path is removed (`^/blog/old$` → `^/old$`); otherwise skipped: "pattern outside this site's home path" |
+| `target` starting with a single `/` | inside the home path (same boundary rule, but **case-sensitive** — a destination's case is kept exactly) → home-relative; outside it → made absolute with the home URL's scheme, host and port, so it still points where it did |
+| regex `source` on a sub-directory install | must begin with `^` followed literally by the home path and `/` — only possible when the home path consists of letters, digits, `/`, `_`, `-` and `.`, with every `.` written escaped (`\.`) in the pattern; that home path is removed (`^/blog/old$` → `^/old$`); otherwise skipped: "pattern outside this site's home path" |
 | `regex` `1` | regex rule — **only** if the pattern provably matches the whole subject: starts with `^`, ends with an unescaped `$`, contains no top-level alternation (`|` outside parentheses, found by a scan that honours escapes and character classes), and no `\K`, no `(*…)` verb and no `(?` construct other than the non-capturing group
 `(?:` (this excludes inline flags such as `(?x)`, which could turn the final `$` into a
 comment, and lookarounds); otherwise skipped: "regex not importable safely — Redirection replaces only the matched part; anchor the whole pattern with ^…$". Such patterns make Redirection's `preg_replace` result equal the whole target, which is our semantics. |
@@ -1031,20 +1035,21 @@ own rules (see "Page caches").
 
 Next to the target field, a type select — **Custom URL** (default), every viewable post
 type except attachments (`get_post_types(['public' => true])` filtered by
-`is_post_type_viewable()`), and **Term archive** (option value `__term`, which no post
-type name can take) — and, for a non-custom type, a search box plus a native `<select>`
+`is_post_type_viewable()`), and **Term archive** (option value `:term` — a colon cannot occur in a post
+type key, so no post type can collide) — and, for a non-custom type, a search box plus a native `<select>`
 of results (accessible by keyboard and screen reader without extra ARIA work). Choosing
 a result **writes its address into the target field**: home-relative when the permalink
 (or term link) has the home URL's scheme, host and effective port and lies inside the
-home path (whole-segment rule), otherwise the absolute URL as returned. The conversion
+home path (whole-segment rule, case-sensitive), otherwise the absolute URL as returned. The conversion
 happens on the server, in the search endpoint (`path` in the response). Attachments are left out: an attachment
 of a draft or private post has status `inherit` and would leak through a search. What is stored is exactly what is stored today: the address. A
-later rename is covered by the slug monitor's auto rule (one extra hop), as for a
-hand-typed address.
+later rename of a **post** is covered by the slug monitor's auto rule (one extra hop), as
+for a hand-typed address; renaming a **term** is not monitored, so a term target can go
+stale (stated).
 
 - Search endpoint: `wp_ajax_sfx_redirects_search` (admin-ajax, `GET`), `check_ajax_referer
   ('sfx_redirects_search')` **and** `current_user_can(AdminPage::CAPABILITY)` before
-  anything else; input `type` (a post type from the allowed list or `__term`; anything
+  anything else; input `type` (a post type from the allowed list or `:term`; anything
   else → `wp_send_json_error`, 400) and `q` (string, trimmed, 2–100 chars, otherwise an
   empty result); returns at most 20 `{label, path}` items as JSON
   (`wp_send_json_success`). Posts: `WP_Query` with `s`, `post_status` `publish`,

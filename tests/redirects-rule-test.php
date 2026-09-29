@@ -434,4 +434,235 @@ foreach (['http://127.1/a', 'http://0x7f000001/a', 'http://2130706433/a', 'http:
 assert_true(Rule::target_ok('http://127.0.0.1/a'), 'target_ok: canonical IPv4 accepted');
 assert_true(Rule::target_ok('https://shop2.example.com/a'), 'target_ok: hostname with digits accepted');
 
+// ---------------------------------------------------------------- CSV: widened escape (Addendum A1)
+
+foreach ([' =x', "  +1", " \t-1", "\x01@x", ' ＝x'] as $danger) {
+    $escaped = Rule::csv_escape_cell($danger);
+    assert_same("'" . $danger, $escaped, 'csv: escape after leading blank ' . var_export($danger, true));
+    assert_same($danger, Rule::csv_unescape_cell($escaped), 'csv: unescape after leading blank ' . var_export($danger, true));
+}
+assert_same(' x', Rule::csv_escape_cell(' x'), 'csv: leading blank before a safe character unchanged');
+assert_same(' ', Rule::csv_escape_cell(' '), 'csv: blank-only cell unchanged');
+assert_same("' x", Rule::csv_unescape_cell("' x"), "csv: ' before a blank and a safe character is not an escape");
+$fh = fopen('php://memory', 'w+');
+fputcsv($fh, array_map([Rule::class, 'csv_escape_cell'], ['/a', '/b', '301', 'exact', '1', ' =x']), ',', '"', '');
+rewind($fh);
+$back = fgetcsv($fh, 0, ',', '"', '');
+fclose($fh);
+assert_same("' =x", $back[5], 'csv: " =x" exported escaped');
+assert_same(' =x', Rule::csv_record($back, $map)['note'], 'csv: " =x" round-trips through export and import');
+
+// ---------------------------------------------------------------- Redirection dialect (Addendum A1)
+
+assert_same('ours', Rule::csv_dialect(['source', 'target', 'status_code', 'match_type', 'enabled', 'note']), 'dialect: our header');
+assert_same('ours', Rule::csv_dialect(['source', 'target']), 'dialect: minimal header is ours');
+assert_same('ours', Rule::csv_dialect(['source', 'regex']), 'dialect: regex without code is ours');
+assert_same('redirection', Rule::csv_dialect(Rule::REDIRECTION_COLUMNS), 'dialect: Redirection header');
+assert_same('redirection', Rule::csv_dialect(["\xEF\xBB\xBFSource", ' TARGET ', 'Regex', 'CODE']), 'dialect: Redirection header normalised (BOM, spaces, case)');
+foreach (['status_code', 'Match_Type'] as $ours_column) {
+    $d = Rule::csv_dialect(['source', 'target', 'regex', 'code', $ours_column]);
+    assert_true(!in_array($d, ['ours', 'redirection'], true) && $d !== '', "dialect: mixed header with {$ours_column} → error message");
+}
+
+$rh = Rule::redirection_header_map(["\xEF\xBB\xBFsource", 'Target', 'regex', 'code', 'type', 'hits', 'title', 'status', 'status_code']);
+assert_same([], $rh['errors'], 'redirection header: normalised, unknown column ignored');
+assert_same(0, $rh['map']['source'], 'redirection header: BOM stripped');
+assert_same(1, $rh['map']['target'], 'redirection header: lowercased');
+assert_true(!isset($rh['map']['status_code']), 'redirection header: our column name is not a Redirection column');
+assert_true(Rule::redirection_header_map(['target', 'regex', 'code'])['errors'] !== [], 'redirection header: missing source rejected');
+assert_true(Rule::redirection_header_map(['source', 'code', 'Code'])['errors'] !== [], 'redirection header: duplicate rejected');
+
+$rmap = Rule::redirection_header_map(Rule::REDIRECTION_COLUMNS)['map'];
+
+/** A Redirection export record (column order of REDIRECTION_COLUMNS) with overrides. */
+function red(array $overrides = []): array
+{
+    $cells = array_merge([
+        'source' => '/old',
+        'target' => '/new',
+        'regex'  => '0',
+        'code'   => '301',
+        'type'   => 'url',
+        'hits'   => '7',
+        'title'  => 'Moved',
+        'status' => 'active',
+    ], $overrides);
+
+    return array_values($cells);
+}
+
+function red_record(array $overrides = [], string $home = HOME)
+{
+    global $rmap;
+
+    return Rule::redirection_record(red($overrides), $rmap, $home);
+}
+
+/** Asserts a skip whose reason contains $needle. */
+function assert_skip(array $overrides, string $needle, string $message, string $home = HOME): void
+{
+    $r = red_record($overrides, $home);
+    assert_true(is_string($r), "{$message}: skipped");
+    assert_true(stripos($r, $needle) !== false, "{$message}: reason names \"{$needle}\" (got: {$r})");
+}
+
+const BLOG = 'https://ex.test/blog';
+const PORT_BLOG = 'https://ex.test:8443/blog';
+
+// Codes and actions.
+foreach (['301', '302', '307', '308'] as $code) {
+    $r = red_record(['code' => $code]);
+    assert_same(['source' => '/old', 'match_type' => 'exact', 'target' => '/new', 'status_code' => $code, 'enabled' => true, 'note' => 'Moved'], $r, "redirection: url {$code}");
+    assert_same([], Rule::validate($r)['errors'], "redirection: url {$code} validates");
+}
+$r = red_record(['type' => 'error', 'code' => '410', 'target' => '']);
+assert_same(['source' => '/old', 'match_type' => 'exact', 'target' => '', 'status_code' => '410', 'enabled' => true, 'note' => 'Moved'], $r, 'redirection: error 410');
+assert_same([], Rule::validate($r)['errors'], 'redirection: error 410 validates');
+assert_same('', red_record(['type' => 'error', 'code' => '410', 'target' => '/ignored/[userid]'])['target'], 'redirection: 410 target ignored');
+foreach ([
+    ['random', '301'], ['pass', '301'], ['nothing', '301'], ['url', '303'], ['url', '304'], ['url', '404'],
+    ['url', '451'], ['url', '410'], ['error', '404'], ['error', '500'], ['error', '301'], ['url', ''], ['', '301'],
+] as [$type, $code]) {
+    assert_skip(['type' => $type, 'code' => $code], 'not supported', "redirection: {$type}/{$code}");
+}
+assert_same('301', red_record(['type' => ' URL ', 'code' => ' 301 '])['status_code'], 'redirection: type and code trimmed, type case-insensitive');
+
+// enabled, note, hits.
+assert_same(false, red_record(['status' => 'disabled'])['enabled'], 'redirection: disabled → false');
+assert_same(false, red_record(['status' => ' Disabled '])['enabled'], 'redirection: Disabled (case, spaces) → false');
+foreach (['active', '', 'whatever'] as $status) {
+    assert_same(true, red_record(['status' => $status])['enabled'], "redirection: status '{$status}' → true");
+}
+assert_same('Moved', red_record(['hits' => '999'])['note'], 'redirection: title → note, hits ignored');
+assert_true(is_string(Rule::redirection_record(array_merge(red(), ['extra']), $rmap, HOME)), 'redirection: more fields than header is a record error');
+assert_same('/old', Rule::redirection_record(['/old', '/new', '0', '301', 'url'], $rmap, HOME)['source'], 'redirection: fewer fields are fine');
+
+// Exact sources on a sub-directory install (whole-segment strip).
+foreach ([BLOG, PORT_BLOG, BLOG . '/'] as $home) {
+    assert_same('/old', red_record(['source' => '/blog/old'], $home)['source'], "redirection: /blog/old → /old on {$home}");
+    assert_same('/', red_record(['source' => '/blog'], $home)['source'], "redirection: /blog → / on {$home}");
+    assert_same('/', red_record(['source' => '/blog/'], $home)['source'], "redirection: /blog/ → / on {$home}");
+    assert_same('/?x=1', red_record(['source' => '/blog?x=1'], $home)['source'], "redirection: /blog?x=1 → /?x=1 on {$home}");
+    assert_same('/#x', red_record(['source' => '/blog#x'], $home)['source'], "redirection: /blog#x keeps its boundary on {$home}");
+    assert_same('/Old', red_record(['source' => '/Blog/Old'], $home)['source'], "redirection: home path strip is case-insensitive on {$home}");
+    assert_skip(['source' => '/blogger'], 'home path', "redirection: /blogger outside {$home}", $home);
+    assert_skip(['source' => '/other'], 'home path', "redirection: /other outside {$home}", $home);
+}
+assert_same('/blog/old', red_record(['source' => '/blog/old'])['source'], 'redirection: root install keeps the source');
+
+// Regex sources on a sub-directory install.
+$r = red_record(['source' => '^/blog/(.*)$', 'regex' => '1', 'target' => '/blog/new/$1'], BLOG);
+assert_same(['source' => '^/(.*)$', 'match_type' => 'regex', 'target' => '/new/$1', 'status_code' => '301', 'enabled' => true, 'note' => 'Moved'], $r, 'redirection: regex source and target home path stripped');
+assert_same([], Rule::validate($r)['errors'], 'redirection: stripped regex rule validates');
+assert_same('^/old$', red_record(['source' => '^/blog/old$', 'regex' => '1'], PORT_BLOG)['source'], 'redirection: ^/blog/old$ → ^/old$ (port home)');
+assert_same('^/x$', red_record(['source' => '^/my\.site/x$', 'regex' => '1'], 'https://ex.test/my.site')['source'], 'redirection: quoted home path accepted');
+// An unescaped "." is pattern syntax (any character), so it proves no literal prefix.
+assert_true(is_string(red_record(['source' => '^/my.site/x$', 'regex' => '1'], 'https://ex.test/my.site')), 'redirection: unescaped "." home path is not a literal prefix');
+foreach (['^/other/(.*)$', '^/blogger$', '^/blog$', '^/(blog)/x$', '^.*/blog/x$'] as $pattern) {
+    assert_skip(['source' => $pattern, 'regex' => '1'], 'home path', "redirection: regex {$pattern} outside home path", BLOG);
+}
+assert_same('^/blog/x$', red_record(['source' => '^/blog/x$', 'regex' => '1'])['source'], 'redirection: root install keeps the pattern');
+assert_same('exact', red_record(['regex' => '2'])['match_type'], 'redirection: regex other than 1 → exact');
+assert_same('regex', red_record(['source' => '^/a$', 'regex' => ' 1 '])['match_type'], 'redirection: regex 1 trimmed');
+
+// Regex importability scan.
+foreach ([
+    '^/a/(b|c)$', '^/a/(?:b|c)$', '^/a[|]$', '^/a\|b$', '^/a\\\\$', '^/a/[]|]$', '^/a/[^]|]$',
+    '^/[[:alpha:]|]+$', '^/a/(b(c|d))$', '^/a[(|)]$',
+] as $pattern) {
+    $r = red_record(['source' => $pattern, 'regex' => '1']);
+    assert_true(is_array($r), "regex scan accepts {$pattern}" . (is_string($r) ? " (got: {$r})" : ''));
+    assert_same($pattern, $r['source'], "regex scan keeps {$pattern}");
+}
+foreach ([
+    '^/a|/b$', '^/a\K$', '^/a(?x)# $', '^/a(*SKIP)$', '^/a(?|x)$', '/a/(.*)', '^/a/(.*)', '/a/(.*)$',
+    '^/a\$', '^/a(?=x)$', '^/a(?<!x)$', '^/a(?i)$', '(*UTF)^/a$', '^/a\Q$', '^/a\c$', '^/a[$]', '^/(a)|(b)$',
+    '^/a\(|b$', '^/a[\]|]|b$', '',
+] as $pattern) {
+    assert_skip(['source' => $pattern, 'regex' => '1'], 'importable', 'regex scan rejects ' . var_export($pattern, true));
+}
+
+// Replacement syntax (regex rules only).
+foreach (['/\1', '/x/${1}', '/$10', '/$0'] as $target) {
+    assert_skip(['source' => '^/(a)$', 'regex' => '1', 'target' => $target], 'replacement syntax', "redirection: regex target {$target}");
+}
+foreach (['/$1', '/$9-$1', '/a$1b'] as $target) {
+    assert_same($target, red_record(['source' => '^/(a)$', 'regex' => '1', 'target' => $target])['target'], "redirection: regex target {$target} kept");
+}
+
+// Transform tags and legacy tokens.
+foreach (['/u/[userid]', '/[upper]x[/upper]', '/[userlogin /]', '/[unixtime]', '/[md5]x[/md5]', '/[lower]X[/lower]', '/[dashes]a_b[/dashes]', '/[underscores]a-b[/underscores]', '/%userid%', '/%userlogin%', '/%userurl%', 'https://other.test/?u=[userid]'] as $target) {
+    assert_skip(['target' => $target], 'dynamic target tags', "redirection: target {$target}");
+}
+assert_same('/[other]', red_record(['target' => '/[other]'])['target'], 'redirection: unknown bracket text is not a tag');
+
+// Targets.
+assert_same('https://cdn.test/x', red_record(['target' => '//cdn.test/x'])['target'], 'redirection: protocol-relative target gets the home scheme');
+assert_same('http://cdn.test/x', red_record(['target' => '//cdn.test/x'], 'http://ex.test')['target'], 'redirection: protocol-relative target, http home');
+assert_same('https://cdn.test/x', red_record(['source' => '/blog/old', 'target' => '//cdn.test/x'], BLOG)['target'], 'redirection: protocol-relative target is not home-path stripped');
+assert_same('https://other.test/x', red_record(['source' => '/blog/old', 'target' => 'https://other.test/x'], BLOG)['target'], 'redirection: absolute target as is');
+assert_same('/new', red_record(['target' => '/new'])['target'], 'redirection: root install relative target as is');
+foreach ([BLOG => 'https://ex.test', PORT_BLOG => 'https://ex.test:8443'] as $home => $origin) {
+    assert_same('/new?a=1', red_record(['source' => '/blog/old', 'target' => '/blog/new?a=1'], $home)['target'], "redirection: target inside home path → home-relative on {$home}");
+    assert_same('/', red_record(['source' => '/blog/old', 'target' => '/blog'], $home)['target'], "redirection: target = home path → / on {$home}");
+    assert_same($origin . '/other?a=1#f', red_record(['source' => '/blog/old', 'target' => '/other?a=1#f'], $home)['target'], "redirection: target outside home path → absolute on {$home}");
+    assert_same($origin . '/blogger', red_record(['source' => '/blog/old', 'target' => '/blogger'], $home)['target'], "redirection: /blogger target → absolute on {$home}");
+}
+assert_same([], Rule::validate(red_record(['source' => '/blog/old', 'target' => '/other'], PORT_BLOG))['errors'], 'redirection: absolute port target validates');
+
+// [FORMULA] unescaping, Redirection's own rule.
+assert_same('=1+1', Rule::redirection_unescape('[FORMULA] =1+1'), 'formula: single prefix before = removed');
+assert_same(" \t-x", Rule::redirection_unescape("[FORMULA]  \t-x"), 'formula: single prefix before blank + - removed');
+assert_same('＝x', Rule::redirection_unescape('[FORMULA] ＝x'), 'formula: single prefix before full-width = removed');
+assert_same('@x', Rule::redirection_unescape('[FORMULA] @x'), 'formula: single prefix before @ removed');
+assert_same('[FORMULA] x', Rule::redirection_unescape('[FORMULA] [FORMULA] x'), 'formula: doubled prefix loses one');
+assert_same('[FORMULA] =x', Rule::redirection_unescape('[FORMULA] [FORMULA] =x'), 'formula: doubled prefix loses exactly one');
+assert_same('[FORMULA] hello', Rule::redirection_unescape('[FORMULA] hello'), 'formula: not-dangerous remainder keeps the prefix');
+assert_same('[FORMULA]=x', Rule::redirection_unescape('[FORMULA]=x'), 'formula: prefix without its space is not a prefix');
+assert_same("'=x", Rule::redirection_unescape("'=x"), "formula: our ' escape is not applied");
+assert_same('/a', Rule::redirection_unescape('/a'), 'formula: plain value unchanged');
+assert_same('=SUM(A1)', red_record(['title' => '[FORMULA] =SUM(A1)'])['note'], 'formula: record cells are unescaped');
+assert_same("'=x", red_record(['title' => "'=x"])['note'], "formula: record keeps a leading '");
+
+// A real Redirection export, parsed as the import handler reads it.
+$export = "source,target,regex,code,type,hits,title,status\n"
+    . "\"/old-page\",\"/new-page\",0,301,\"url\",12,\"Moved \"\"page\"\"\",\"active\"\n"
+    . "\"^/blog/(\\d+)\\.html$\",\"/news/$1\",1,302,\"url\",0,\"\",\"active\"\n"
+    . "\"/gone\",\"\",0,410,\"error\",3,\"[FORMULA] =cmd\",\"disabled\"\n"
+    . "\"/random\",\"/x\",0,301,\"random\",0,\"\",\"active\"\n";
+$fh = fopen('php://memory', 'w+');
+fwrite($fh, $export);
+rewind($fh);
+$header = fgetcsv($fh, 0, ',', '"', '');
+assert_same('redirection', Rule::csv_dialect($header), 'export: detected as Redirection');
+$emap = Rule::redirection_header_map($header);
+assert_same([], $emap['errors'], 'export: header maps');
+$got = [];
+while (($line = fgetcsv($fh, 0, ',', '"', '')) !== false) {
+    $got[] = Rule::redirection_record($line, $emap['map'], HOME);
+}
+fclose($fh);
+assert_same(['source' => '/old-page', 'match_type' => 'exact', 'target' => '/new-page', 'status_code' => '301', 'enabled' => true, 'note' => 'Moved "page"'], $got[0], 'export: exact 301 line');
+assert_same(['source' => '^/blog/(\d+)\.html$', 'match_type' => 'regex', 'target' => '/news/$1', 'status_code' => '302', 'enabled' => true, 'note' => ''], $got[1], 'export: regex line keeps its backslashes');
+assert_same([], Rule::validate($got[1])['errors'], 'export: regex line validates');
+assert_same(['source' => '/gone', 'match_type' => 'exact', 'target' => '', 'status_code' => '410', 'enabled' => false, 'note' => '=cmd'], $got[2], 'export: disabled 410 line with a formula title');
+assert_true(is_string($got[3]) && str_contains($got[3], 'not supported'), 'export: random action skipped');
+assert_same(4, count($got), 'export: four records read');
+
+// Gate B (addendum) pass 1: a home path with regex syntax can never be stripped
+// as a literal prefix; a dotted one only in its escaped form.
+$rmap = Rule::redirection_header_map(['source', 'target', 'regex', 'code', 'type', 'hits', 'title', 'status'])['map'];
+$rec  = static fn(string $src, string $home): array|string => Rule::redirection_record([$src, '/new/$1', '1', '301', 'url', '0', '', 'active'], $rmap, $home);
+assert_true(is_string($rec('^/foo(bar)/(x)$', 'https://ex.test/foo(bar)')), 'redirection: home path with "(" is not stripped as a literal');
+assert_true(is_string($rec('^/my.site/(x)$', 'https://ex.test/my.site')), 'redirection: unescaped "." in the pattern is not a literal home prefix');
+$ok = $rec('^/my\\.site/(x)$', 'https://ex.test/my.site');
+assert_true(is_array($ok) && $ok['source'] === '^/(x)$', 'redirection: escaped "\\." home prefix is stripped');
+
+// Gate B (addendum) pass 3: a destination keeps its case; a differently-cased
+// home prefix is not this site's home path and the target stays absolute.
+$t = Rule::redirection_record(['/blog/old', '/BLOG/New', '0', '301', 'url', '0', '', 'active'], $rmap, 'https://ex.test/blog');
+assert_true(is_array($t) && $t['target'] === 'https://ex.test/BLOG/New', 'redirection: /BLOG/New on home /blog stays absolute with its case');
+$t = Rule::redirection_record(['/blog/old', '/blog/New', '0', '301', 'url', '0', '', 'active'], $rmap, 'https://ex.test/blog');
+assert_true(is_array($t) && $t['target'] === '/New', 'redirection: /blog/New becomes home-relative /New');
+
 echo "OK\n";
