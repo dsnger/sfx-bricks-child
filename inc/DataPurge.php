@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace SFX;
 
 /**
- * Deletes everything this theme stored — settings, not content.
+ * Deletes everything this theme stored — settings, not content, with one
+ * named exception: the Redirects module's tables (see TABLE_NAMES).
  *
  * WordPress never executes a theme's uninstall.php, so the only moment this
  * can run is while the theme is still active.
@@ -161,6 +162,26 @@ class DataPurge
 
         // Password Protected
         'sfx_password_protected_options',
+
+        // Redirects
+        'sfx_redirects_options',
+        'sfx_redirects_db_version',
+    ];
+
+    /**
+     * Tables this theme created, without the site's table prefix.
+     *
+     * The Redirects module's rules and its 404 log. Unlike everything else
+     * here these are not settings: the rules are editor work. The purge still
+     * takes them, because nothing else ever would — WordPress knows nothing
+     * about a theme's tables — and the Danger Zone says so before the phrase
+     * is typed.
+     *
+     * @var list<string>
+     */
+    private const TABLE_NAMES = [
+        'sfx_redirects',
+        'sfx_redirects_404',
     ];
 
     /**
@@ -201,6 +222,14 @@ class DataPurge
     /**
      * @return list<string>
      */
+    public static function table_names(): array
+    {
+        return self::TABLE_NAMES;
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function meta_keys(): array
     {
         return self::META_KEYS;
@@ -232,6 +261,9 @@ class DataPurge
     /**
      * Delete the theme's settings, and optionally the Media Credits meta.
      *
+     * Also drops the Redirects tables — the one exception to "settings, not
+     * content", see TABLE_NAMES.
+     *
      * Scope note: this is a SINGLE SITE operation. Options, post meta and the
      * transient rows all belong to the current blog's tables, so on multisite
      * it clears this site and no other. That is the intended meaning, not an
@@ -243,10 +275,12 @@ class DataPurge
      *                                    that is editor-authored content and
      *                                    needs its own confirmation.
      *
-     * @return array{options:int, meta_keys:int, transients:int} what was
-     *         actually removed, so the screen can report the real outcome
-     *         instead of assuming one. An irreversible operation that always
-     *         claims success is worse than one that admits a partial result.
+     * @return array{options:int, meta_keys:int, transients:int, tables:int, tables_locked:bool, tables_failed:bool}
+     *         what was actually removed, so the screen can report the real
+     *         outcome instead of assuming one. An irreversible operation that
+     *         always claims success is worse than one that admits a partial
+     *         result. `tables_locked` is true when the redirect tables were
+     *         left (all or some) because another redirect change held the lock.
      */
     public static function run(bool $include_media_credits = false): array
     {
@@ -272,11 +306,108 @@ class DataPurge
             }
         }
 
+        $tables = self::drop_tables();
+
+        // Its callback would find no tables; unscheduled so the event does
+        // not linger in the cron array after the theme's data is gone.
+        wp_clear_scheduled_hook('sfx_redirects_cleanup');
+
         return [
-            'options'    => $options,
-            'meta_keys'  => $meta_keys,
-            'transients' => self::delete_transients(),
+            'options'       => $options,
+            'meta_keys'     => $meta_keys,
+            'transients'    => self::delete_transients(),
+            'tables'        => $tables['dropped'],
+            'tables_locked' => $tables['locked'],
+            'tables_failed' => $tables['failed'],
         ];
+    }
+
+    /**
+     * Drop the theme's tables under the Redirects module's write lock.
+     *
+     * The module serialises every write to its rules table through a MySQL
+     * named lock; dropping the table under a save that is half-way through
+     * would be one more writer it does not expect. The name is computed here
+     * rather than asked of the module's Repository: the purge must work with
+     * that module disabled or gone, so it depends on the formula, not the
+     * class. Keep the two identical.
+     *
+     * A table counts only if it existed before and is gone after — DROP TABLE
+     * IF EXISTS succeeds on a table that was never there, and a failed drop
+     * must not be reported as done.
+     *
+     * A failed SHOW TABLES read is not "absent", and a failed or ineffective
+     * DROP is not "done": both set `failed`, so the screen can say the tables
+     * are still there instead of reporting a clean purge.
+     *
+     * @return array{dropped:int, locked:bool, failed:bool}
+     */
+    private static function drop_tables(): array
+    {
+        global $wpdb;
+
+        $lock = 'sfx_redirects_' . md5(DB_NAME . $wpdb->prefix);
+
+        if ((string) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 5)', $lock)) !== '1') {
+            return ['dropped' => 0, 'locked' => true, 'failed' => false];
+        }
+
+        $dropped = 0;
+        $failed  = false;
+
+        try {
+            foreach (self::TABLE_NAMES as $name) {
+                $table = $wpdb->prefix . $name;
+
+                $before = self::table_exists($table);
+                if ($before === null) {
+                    $failed = true;
+                    continue;
+                }
+                if ($before === false) {
+                    continue;
+                }
+
+                // wpdb reconnects silently after "server has gone away", and
+                // the lock does not survive that. Checked before every drop,
+                // not once, because each drop is its own point of no return.
+                if ((string) $wpdb->get_var($wpdb->prepare('SELECT IS_USED_LOCK(%s) = CONNECTION_ID()', $lock)) !== '1') {
+                    return ['dropped' => $dropped, 'locked' => true, 'failed' => $failed];
+                }
+
+                $result = $wpdb->query("DROP TABLE IF EXISTS `{$table}`");
+                $after  = self::table_exists($table);
+
+                if ($result !== false && $after === false) {
+                    $dropped++;
+                } else {
+                    $failed = true;
+                }
+            }
+        } finally {
+            $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock));
+        }
+
+        return ['dropped' => $dropped, 'locked' => false, 'failed' => $failed];
+    }
+
+    /**
+     * `_` in a table prefix is a LIKE wildcard, hence esc_like().
+     *
+     * @return bool|null  null when the query itself failed — unknown, not absent
+     */
+    private static function table_exists(string $table): ?bool
+    {
+        global $wpdb;
+
+        $wpdb->last_error = '';
+        $found = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table)));
+
+        if ($wpdb->last_error !== '') {
+            return null;
+        }
+
+        return $found === $table;
     }
 
     /**
@@ -301,6 +432,8 @@ class DataPurge
         'sfx_wp_optimizer_',
         'sfx_brand_css_',
         'sfx_css_vars_',
+        'sfx_redirects_form_',
+        'sfx_redirects_notices_',
     ];
 
     /**

@@ -6123,8 +6123,10 @@ msgstr ""
 #~ msgid "Width %dpx"
 #~ msgstr "Breite %dpx"
 
-#~ msgid "Enabled"
-#~ msgstr "Aktiviert"
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Enabled"
+msgstr "Aktiviert"
 
 #. Nav Menu Query feature (Task 11: German translations)
 msgid "Enable Menu Items query type"
@@ -6683,3 +6685,1002 @@ msgstr ""
 "Auch die Urheberrechtsangaben und KI-Kennzeichnungen an meinen Mediendateien "
 "löschen. Diese hat jemand von Hand eingetragen und sie können rechtlich "
 "relevant sein – ohne Häkchen bleiben sie erhalten."
+
+#: inc/Redirects/AdminPage.php
+#: inc/ThemeSettingsOverview/OverviewProvider.php
+msgid "Redirects"
+msgstr "Weiterleitungen"
+
+#: inc/Redirects/AdminPage.php
+msgid "You are not allowed to do this."
+msgstr "Du darfst diese Aktion nicht ausführen."
+
+#: inc/Redirects/AdminPage.php
+msgid "The form was submitted with an invalid rule id."
+msgstr "Das Formular wurde mit einer ungültigen Regel-ID abgeschickt."
+
+#: inc/Redirects/AdminPage.php
+msgid "Redirect saved."
+msgstr "Weiterleitung gespeichert."
+
+#: inc/Redirects/AdminPage.php
+msgid "Redirect updated."
+msgstr "Weiterleitung aktualisiert."
+
+#: inc/Redirects/AdminPage.php
+msgid "Nothing to change — the redirect was already saved like this."
+msgstr "Nichts zu ändern – die Weiterleitung war bereits so gespeichert."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Repository.php
+msgid "A database error occurred; the change was not saved."
+msgstr "Ein Datenbankfehler ist aufgetreten; die Änderung wurde nicht gespeichert."
+
+#: inc/Redirects/AdminPage.php
+msgid "The redirect was saved, but its 404 log entry could not be removed."
+msgstr "Die Weiterleitung wurde gespeichert, aber ihr Eintrag im 404-Protokoll konnte nicht entfernt werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "Unknown action."
+msgstr "Unbekannte Aktion."
+
+#. translators: %d: rule id
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "Rule #%d no longer exists."
+msgstr "Regel #%d existiert nicht mehr."
+
+#: inc/Redirects/AdminPage.php
+msgid "Choose a bulk action."
+msgstr "Wähle eine Mehrfachaktion."
+
+#: inc/Redirects/AdminPage.php
+msgid "The selection was not valid."
+msgstr "Die Auswahl war ungültig."
+
+#: inc/Redirects/AdminPage.php
+msgid "Select at least one redirect."
+msgstr "Wähle mindestens eine Weiterleitung aus."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d selected rule no longer exists."
+msgid_plural "%d selected rules no longer exist."
+msgstr[0] "%d ausgewählte Regel existiert nicht mehr."
+msgstr[1] "%d ausgewählte Regeln existieren nicht mehr."
+
+#: inc/Redirects/AdminPage.php
+msgid "The 404 log was cleared."
+msgstr "Das 404-Protokoll wurde geleert."
+
+#: inc/Redirects/AdminPage.php
+msgid "A database error occurred; the log was not cleared."
+msgstr "Ein Datenbankfehler ist aufgetreten; das Protokoll wurde nicht geleert."
+
+#: inc/Redirects/AdminPage.php
+msgid "Select at least one log entry."
+msgstr "Wähle mindestens einen Protokolleintrag aus."
+
+#: inc/Redirects/AdminPage.php
+msgid "A database error occurred; nothing was deleted."
+msgstr "Ein Datenbankfehler ist aufgetreten; es wurde nichts gelöscht."
+
+#: inc/Redirects/AdminPage.php
+msgid "Nothing was deleted — the entries no longer exist."
+msgstr "Es wurde nichts gelöscht – die Einträge existieren nicht mehr."
+
+#. translators: %d: number of log entries
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d log entry deleted."
+msgid_plural "%d log entries deleted."
+msgstr[0] "%d Protokolleintrag gelöscht."
+msgstr[1] "%d Protokolleinträge gelöscht."
+
+#: inc/Redirects/AdminPage.php
+msgid "Choose a CSV file to import."
+msgstr "Wähle eine CSV-Datei für den Import."
+
+#: inc/Redirects/AdminPage.php
+msgid "The upload could not be verified. Try again."
+msgstr "Der Upload konnte nicht überprüft werden. Versuche es erneut."
+
+#: inc/Redirects/AdminPage.php
+msgid "The file is larger than 2 MB. Split it into smaller files."
+msgstr "Die Datei ist größer als 2 MB. Teile sie in kleinere Dateien auf."
+
+#: inc/Redirects/AdminPage.php
+msgid "Only .csv files can be imported."
+msgstr "Nur .csv-Dateien können importiert werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "The uploaded file could not be read."
+msgstr "Die hochgeladene Datei konnte nicht gelesen werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "The file is empty."
+msgstr "Die Datei ist leer."
+
+#. translators: %d: maximum number of records
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "The file has more than %d records. Nothing was imported; split the file."
+msgstr "Die Datei enthält mehr als %d Datensätze. Es wurde nichts importiert; teile die Datei auf."
+
+#: inc/Redirects/AdminPage.php
+msgid "Nothing was imported."
+msgstr "Es wurde nichts importiert."
+
+#. translators: 1: created, 2: updated, 3: unchanged, 4: skipped (invalid), 5: not imported (conflict), 6: failed (database error)
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Import finished: %1$d created, %2$d updated, %3$d unchanged, %4$d skipped as invalid, %5$d not imported because of a conflict, %6$d failed."
+msgstr "Import abgeschlossen: %1$d erstellt, %2$d aktualisiert, %3$d unverändert, %4$d als ungültig übersprungen, %5$d wegen eines Konflikts nicht importiert, %6$d fehlgeschlagen."
+
+#: inc/Redirects/AdminPage.php
+msgid "Skipped records:"
+msgstr "Übersprungene Datensätze:"
+
+#: inc/Redirects/AdminPage.php
+msgid "Records not imported:"
+msgstr "Nicht importierte Datensätze:"
+
+#. translators: %d: number of records
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d record failed because of a database error."
+msgid_plural "%d records failed because of a database error."
+msgstr[0] "%d Datensatz ist wegen eines Datenbankfehlers fehlgeschlagen."
+msgstr[1] "%d Datensätze sind wegen eines Datenbankfehlers fehlgeschlagen."
+
+#: inc/Redirects/AdminPage.php
+msgid "A database error occurred; the export was not created."
+msgstr "Ein Datenbankfehler ist aufgetreten; der Export wurde nicht erstellt."
+
+#. translators: %d: number of further entries not listed
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "… and %d more."
+msgstr "… und %d weitere."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Repository.php
+msgid "Another redirect change is in progress, try again."
+msgstr "Eine andere Änderung an den Weiterleitungen läuft gerade, versuche es erneut."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d redirect enabled."
+msgid_plural "%d redirects enabled."
+msgstr[0] "%d Weiterleitung aktiviert."
+msgstr[1] "%d Weiterleitungen aktiviert."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d redirect disabled."
+msgid_plural "%d redirects disabled."
+msgstr[0] "%d Weiterleitung deaktiviert."
+msgstr[1] "%d Weiterleitungen deaktiviert."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d redirect deleted."
+msgid_plural "%d redirects deleted."
+msgstr[0] "%d Weiterleitung gelöscht."
+msgstr[1] "%d Weiterleitungen gelöscht."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Hit counter reset for %d redirect."
+msgid_plural "Hit counter reset for %d redirects."
+msgstr[0] "Trefferzähler für %d Weiterleitung zurückgesetzt."
+msgstr[1] "Trefferzähler für %d Weiterleitungen zurückgesetzt."
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d redirect was already in that state."
+msgid_plural "%d redirects were already in that state."
+msgstr[0] "%d Weiterleitung war bereits in diesem Zustand."
+msgstr[1] "%d Weiterleitungen waren bereits in diesem Zustand."
+
+#: inc/Redirects/AdminPage.php
+msgid "Not enabled:"
+msgstr "Nicht aktiviert:"
+
+#. translators: %d: number of rules
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "%d redirect could not be changed because of a database error."
+msgid_plural "%d redirects could not be changed because of a database error."
+msgstr[0] "%d Weiterleitung konnte wegen eines Datenbankfehlers nicht geändert werden."
+msgstr[1] "%d Weiterleitungen konnten wegen eines Datenbankfehlers nicht geändert werden."
+
+#. translators: 1: CSV record number, 2: reason the record was skipped
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "Record %1$d: %2$s"
+msgstr "Datensatz %1$d: %2$s"
+
+#: inc/Redirects/AdminPage.php
+msgid "The file is larger than the server accepts."
+msgstr "Die Datei ist größer, als der Server annimmt."
+
+#: inc/Redirects/AdminPage.php
+msgid "The file was only partially uploaded. Try again."
+msgstr "Die Datei wurde nur teilweise hochgeladen. Versuche es erneut."
+
+#. translators: %d: PHP upload error code
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "The server could not store the upload (error %d)."
+msgstr "Der Server konnte den Upload nicht speichern (Fehler %d)."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Repository.php
+msgid "The redirect database tables are not installed."
+msgstr "Die Datenbanktabellen für Weiterleitungen sind nicht installiert."
+
+#: inc/Redirects/AdminPage.php
+msgid "You are not allowed to access this page."
+msgstr "Du darfst diese Seite nicht aufrufen."
+
+#: inc/Redirects/AdminPage.php
+msgid "404 Log"
+msgstr "404-Protokoll"
+
+#: inc/Redirects/AdminPage.php
+msgid "Import / Export"
+msgstr "Import / Export"
+
+#: inc/Redirects/AdminPage.php
+msgid "The installation is retried on the next admin page load."
+msgstr "Die Installation wird beim nächsten Aufruf einer Admin-Seite erneut versucht."
+
+#: inc/Redirects/AdminPage.php
+msgid "301 Moved Permanently"
+msgstr "301 Dauerhaft verschoben"
+
+#: inc/Redirects/AdminPage.php
+msgid "302 Found (temporary)"
+msgstr "302 Gefunden (vorübergehend)"
+
+#: inc/Redirects/AdminPage.php
+msgid "307 Temporary Redirect"
+msgstr "307 Vorübergehende Weiterleitung"
+
+#: inc/Redirects/AdminPage.php
+msgid "308 Permanent Redirect"
+msgstr "308 Dauerhafte Weiterleitung"
+
+#: inc/Redirects/AdminPage.php
+msgid "410 Gone"
+msgstr "410 Entfernt"
+
+#. translators: %d: rule id
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Edit redirect #%d"
+msgstr "Weiterleitung #%d bearbeiten"
+
+#: inc/Redirects/AdminPage.php
+msgid "Add redirect"
+msgstr "Weiterleitung hinzufügen"
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/RedirectsTable.php
+#: inc/Redirects/Rule.php
+msgid "Source"
+msgstr "Quelle"
+
+#: inc/Redirects/AdminPage.php
+msgid "The path only, e.g. /old-page — case and a trailing slash do not matter. For a regular expression, the pattern without delimiters, e.g. ^/blog/(\\d+)/(.*)$ (write ~ as \\~)."
+msgstr "Nur der Pfad, z. B. /alte-seite – Groß-/Kleinschreibung und ein abschließender Schrägstrich spielen keine Rolle. Bei einem regulären Ausdruck das Muster ohne Begrenzer, z. B. ^/blog/(\\d+)/(.*)$ (schreibe ~ als \\~)."
+
+#: inc/Redirects/AdminPage.php
+msgid "Feeds, sitemaps, robots.txt and favicon.ico are never redirected, so a rule for a feed URL has no effect."
+msgstr "Feeds, Sitemaps, robots.txt und favicon.ico werden nie weitergeleitet; eine Regel für eine Feed-URL hat daher keine Wirkung."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Rule.php
+msgid "Match type"
+msgstr "Vergleichsart"
+
+#: inc/Redirects/AdminPage.php
+msgid "Exact path"
+msgstr "Exakter Pfad"
+
+#: inc/Redirects/AdminPage.php
+msgid "Regular expression"
+msgstr "Regulärer Ausdruck"
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/RedirectsTable.php
+#: inc/Redirects/Rule.php
+msgid "Target"
+msgstr "Ziel"
+
+#: inc/Redirects/AdminPage.php
+msgid "A path on this site starting with / or a full http(s) URL. Regular expressions can use $1 to $9 in the path. Ignored for 410."
+msgstr "Ein Pfad auf dieser Website, beginnend mit /, oder eine vollständige http(s)-URL. Reguläre Ausdrücke können $1 bis $9 im Pfad verwenden. Wird bei 410 ignoriert."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Rule.php
+msgid "Status code"
+msgstr "Statuscode"
+
+#: inc/Redirects/AdminPage.php
+msgid "301 and 308 are cached permanently by browsers — use 302 while testing."
+msgstr "301 und 308 werden von Browsern dauerhaft zwischengespeichert – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "A page cache or CDN in front of WordPress may keep serving the old page until it is purged."
+msgstr "Ein Seiten-Cache oder CDN vor WordPress liefert die alte Seite eventuell weiter aus, bis er geleert wird."
+
+#: inc/Redirects/AdminPage.php
+msgid "This redirect is active"
+msgstr "Diese Weiterleitung ist aktiv"
+
+#: inc/Redirects/AdminPage.php
+msgid "Update redirect"
+msgstr "Weiterleitung aktualisieren"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search redirects"
+msgstr "Weiterleitungen durchsuchen"
+
+#: inc/Redirects/AdminPage.php
+msgid "404 logging is switched off. Existing entries are kept, but no new 404s are recorded."
+msgstr "Die 404-Protokollierung ist ausgeschaltet. Vorhandene Einträge bleiben erhalten, aber neue 404-Fehler werden nicht erfasst."
+
+#: inc/Redirects/AdminPage.php
+msgid "Change this in the settings."
+msgstr "Ändere das in den Einstellungen."
+
+#: inc/Redirects/AdminPage.php
+msgid "Search paths"
+msgstr "Pfade durchsuchen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Delete every entry in the 404 log?"
+msgstr "Alle Einträge im 404-Protokoll löschen?"
+
+#: inc/Redirects/AdminPage.php
+msgid "Clear log"
+msgstr "Protokoll leeren"
+
+#: inc/Redirects/AdminPage.php
+msgid "The list could not be loaded because of a database error."
+msgstr "Die Liste konnte wegen eines Datenbankfehlers nicht geladen werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "CSV file"
+msgstr "CSV-Datei"
+
+#: inc/Redirects/AdminPage.php
+msgid "At most 2 MB and 5000 records per file. Larger files — including an export of more than 5000 redirects — have to be split."
+msgstr "Höchstens 2 MB und 5000 Datensätze pro Datei. Größere Dateien – auch ein Export mit mehr als 5000 Weiterleitungen – müssen aufgeteilt werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "Import CSV"
+msgstr "CSV importieren"
+
+#: inc/Redirects/AdminPage.php
+msgid "Format"
+msgstr "Format"
+
+#: inc/Redirects/AdminPage.php
+msgid "UTF-8, comma-separated, fields in double quotes where needed. The first line names the columns:"
+msgstr "UTF-8, kommagetrennt, Felder bei Bedarf in doppelten Anführungszeichen. Die erste Zeile benennt die Spalten:"
+
+#: inc/Redirects/AdminPage.php
+msgid "\"source\" is required; \"target\" is required unless every row is a 410. Unknown columns are ignored."
+msgstr "„source“ ist Pflicht; „target“ ist Pflicht, außer jede Zeile ist ein 410. Unbekannte Spalten werden ignoriert."
+
+#: inc/Redirects/AdminPage.php
+msgid "Empty cells use the defaults: status code 301, match type exact, enabled 1, empty note. Enabled accepts 1/0, yes/no, true/false."
+msgstr "Leere Zellen verwenden die Standardwerte: Statuscode 301, Vergleichsart exact, enabled 1, leere Notiz. Für enabled gelten 1/0, yes/no, true/false."
+
+#: inc/Redirects/AdminPage.php
+msgid "A rule whose source already exists is updated; its hit counter is kept. Invalid rows are skipped and listed."
+msgstr "Eine Regel, deren Quelle bereits existiert, wird aktualisiert; ihr Trefferzähler bleibt erhalten. Ungültige Zeilen werden übersprungen und aufgelistet."
+
+#: inc/Redirects/AdminPage.php
+msgid "Cells starting with = + - @ are exported with a leading ' so a spreadsheet does not run them as formulas; the import removes it again. A spreadsheet that re-saves the file may drop these quotes."
+msgstr "Zellen, die mit = + - @ beginnen, werden mit einem vorangestellten ' exportiert, damit eine Tabellenkalkulation sie nicht als Formel ausführt; der Import entfernt es wieder. Speichert eine Tabellenkalkulation die Datei erneut, können diese Anführungszeichen verloren gehen."
+
+#: inc/Redirects/AdminPage.php
+msgid "Downloads every redirect as CSV, including hits, last hit and origin (these extra columns are ignored on import)."
+msgstr "Lädt alle Weiterleitungen als CSV herunter, inklusive Treffern, letztem Treffer und Herkunft (diese zusätzlichen Spalten werden beim Import ignoriert)."
+
+#: inc/Redirects/AdminPage.php
+msgid "Download CSV"
+msgstr "CSV herunterladen"
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/RedirectsTable.php
+msgid "404 log"
+msgstr "404-Protokoll"
+
+#: inc/Redirects/AdminPage.php
+msgid "Record 404 errors"
+msgstr "404-Fehler protokollieren"
+
+#: inc/Redirects/AdminPage.php
+msgid "One entry per path with hit count and last visit. No IP addresses, user agents or query strings are stored."
+msgstr "Ein Eintrag pro Pfad mit Trefferzahl und letztem Aufruf. Es werden keine IP-Adressen, User-Agents oder Query-Strings gespeichert."
+
+#: inc/Redirects/AdminPage.php
+msgid "Referrer"
+msgstr "Referrer"
+
+#: inc/Redirects/AdminPage.php
+msgid "Store where the visitor came from (without its query string)"
+msgstr "Speichern, woher der Besucher kam (ohne Query-String)"
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Settings.php
+msgid "Log retention (days)"
+msgstr "Aufbewahrung des Protokolls (Tage)"
+
+#: inc/Redirects/AdminPage.php
+msgid "Entries not seen for longer are deleted (1–365)."
+msgstr "Einträge, die länger nicht aufgetreten sind, werden gelöscht (1–365)."
+
+#: inc/Redirects/AdminPage.php
+#: inc/Redirects/Settings.php
+msgid "Maximum log entries"
+msgstr "Maximale Protokolleinträge"
+
+#: inc/Redirects/AdminPage.php
+msgid "The oldest entries are deleted beyond this number (100–50000)."
+msgstr "Über dieser Anzahl werden die ältesten Einträge gelöscht (100–50000)."
+
+#: inc/Redirects/AdminPage.php
+msgid "Automatic redirects"
+msgstr "Automatische Weiterleitungen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Create a redirect when the address of a published post or page changes"
+msgstr "Eine Weiterleitung anlegen, wenn sich die Adresse eines veröffentlichten Beitrags oder einer Seite ändert"
+
+#: inc/Redirects/AdminPage.php
+msgid "A database error occurred; the rule could not be loaded."
+msgstr "Ein Datenbankfehler ist aufgetreten; die Regel konnte nicht geladen werden."
+
+#: inc/Redirects/NotFoundTable.php
+msgid "Path"
+msgstr "Pfad"
+
+#: inc/Redirects/NotFoundTable.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Hits"
+msgstr "Treffer"
+
+#: inc/Redirects/NotFoundTable.php
+msgid "Last seen"
+msgstr "Zuletzt gesehen"
+
+#: inc/Redirects/NotFoundTable.php
+msgid "First seen"
+msgstr "Zuerst gesehen"
+
+#: inc/Redirects/NotFoundTable.php
+msgid "Last referrer"
+msgstr "Letzter Referrer"
+
+#: inc/Redirects/NotFoundTable.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Select bulk action"
+msgstr "Mehrfachaktion wählen"
+
+#: inc/Redirects/NotFoundTable.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Bulk actions"
+msgstr "Mehrfachaktionen"
+
+#: inc/Redirects/NotFoundTable.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Delete"
+msgstr "Löschen"
+
+#: inc/Redirects/NotFoundTable.php
+#: inc/Redirects/RedirectsTable.php
+msgid "Apply"
+msgstr "Übernehmen"
+
+#: inc/Redirects/NotFoundTable.php
+msgid "No 404s recorded."
+msgstr "Keine 404-Fehler erfasst."
+
+#: inc/Redirects/NotFoundTable.php
+msgid "Select log entry"
+msgstr "Protokolleintrag auswählen"
+
+#: inc/Redirects/NotFoundTable.php
+msgid "Create redirect"
+msgstr "Weiterleitung anlegen"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Code"
+msgstr "Code"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Last hit"
+msgstr "Letzter Treffer"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Origin"
+msgstr "Herkunft"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Enable"
+msgstr "Aktivieren"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Disable"
+msgstr "Deaktivieren"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Reset hits"
+msgstr "Treffer zurücksetzen"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "No redirects yet."
+msgstr "Noch keine Weiterleitungen."
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Select redirect"
+msgstr "Weiterleitung auswählen"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "(regular expression)"
+msgstr "(regulärer Ausdruck)"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Delete this redirect?"
+msgstr "Diese Weiterleitung löschen?"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Manual"
+msgstr "Manuell"
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Automatic (slug change)"
+msgstr "Automatisch (Slug-Änderung)"
+
+#: inc/Redirects/Repository.php
+msgid "The database connection was interrupted during the install."
+msgstr "Die Datenbankverbindung wurde während der Installation unterbrochen."
+
+#. translators: 1: database table name, 2: what is wrong with it
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "Database table %1$s could not be installed: %2$s"
+msgstr "Die Datenbanktabelle %1$s konnte nicht installiert werden: %2$s"
+
+#: inc/Redirects/Repository.php
+msgid "the table does not exist."
+msgstr "die Tabelle existiert nicht."
+
+#: inc/Redirects/Repository.php
+msgid "its columns could not be read."
+msgstr "ihre Spalten konnten nicht gelesen werden."
+
+#. translators: %s: column name
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "column %s is missing."
+msgstr "die Spalte %s fehlt."
+
+#. translators: %s: column name
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "column %s has the wrong type."
+msgstr "die Spalte %s hat den falschen Typ."
+
+#: inc/Redirects/Repository.php
+msgid "column id is not an auto-increment primary key."
+msgstr "die Spalte id ist kein Auto-Increment-Primärschlüssel."
+
+#: inc/Redirects/Repository.php
+msgid "its indexes could not be read."
+msgstr "ihre Indizes konnten nicht gelesen werden."
+
+#: inc/Redirects/Repository.php
+msgid "the primary key is not on column id."
+msgstr "der Primärschlüssel liegt nicht auf der Spalte id."
+
+#. translators: %s: column name
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "the unique key on %s is missing."
+msgstr "der eindeutige Schlüssel auf %s fehlt."
+
+#. translators: 1: rule id, 2: reason the rule was not enabled
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "Rule #%1$d: %2$s"
+msgstr "Regel #%1$d: %2$s"
+
+#. translators: %d: maximum number of enabled regular-expression rules
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "At most %d enabled regular-expression rules are allowed. Disable or delete one first."
+msgstr "Höchstens %d aktive Regeln mit regulärem Ausdruck sind erlaubt. Deaktiviere oder lösche zuerst eine."
+
+#. translators: %d: id of the existing rule
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "A rule for this source already exists (#%d)."
+msgstr "Für diese Quelle existiert bereits eine Regel (#%d)."
+
+#. translators: %s: field label
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "%s must be text."
+msgstr "%s muss Text sein."
+
+#: inc/Redirects/Rule.php
+msgid "Enabled must be yes or no."
+msgstr "Aktiviert muss ja oder nein sein."
+
+#: inc/Redirects/Rule.php
+msgid "Choose a status code of 301, 302, 307, 308 or 410."
+msgstr "Wähle den Statuscode 301, 302, 307, 308 oder 410."
+
+#. translators: %s: field label
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "%s is not valid UTF-8."
+msgstr "%s ist kein gültiges UTF-8."
+
+#. translators: %s: field label
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "%s must not contain control characters."
+msgstr "%s darf keine Steuerzeichen enthalten."
+
+#: inc/Redirects/Rule.php
+msgid "Choose the match type exact or regex."
+msgstr "Wähle die Vergleichsart exact oder regex."
+
+#: inc/Redirects/Rule.php
+msgid "Enter a source."
+msgstr "Gib eine Quelle ein."
+
+#. translators: %d: maximum length in bytes
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The regular expression must be at most %d bytes long."
+msgstr "Der reguläre Ausdruck darf höchstens %d Bytes lang sein."
+
+#: inc/Redirects/Rule.php
+msgid "The regular expression contains an unescaped ~; write \\~ instead."
+msgstr "Der reguläre Ausdruck enthält ein nicht maskiertes ~; schreibe stattdessen \\~."
+
+#: inc/Redirects/Rule.php
+msgid "The regular expression is not valid."
+msgstr "Der reguläre Ausdruck ist ungültig."
+
+#: inc/Redirects/Rule.php
+msgid "Enter the path only, e.g. /old-page."
+msgstr "Gib nur den Pfad ein, z. B. /alte-seite."
+
+#: inc/Redirects/Rule.php
+msgid "The source must not contain #."
+msgstr "Die Quelle darf kein # enthalten."
+
+#. translators: %d: maximum length in bytes
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The source must be at most %d bytes long."
+msgstr "Die Quelle darf höchstens %d Bytes lang sein."
+
+#: inc/Redirects/Rule.php
+msgid "Enter a target."
+msgstr "Gib ein Ziel ein."
+
+#. translators: %d: maximum length in bytes
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The target must be at most %d bytes long."
+msgstr "Das Ziel darf höchstens %d Bytes lang sein."
+
+#: inc/Redirects/Rule.php
+msgid "Placeholders such as $1 are only allowed in the path of the target, not in its scheme or host."
+msgstr "Platzhalter wie $1 sind nur im Pfad des Ziels erlaubt, nicht im Schema oder Host."
+
+#: inc/Redirects/Rule.php
+msgid "Enter a target path starting with / or a full http(s) URL, without spaces, backslashes, ./.. segments or special characters."
+msgstr "Gib einen Zielpfad beginnend mit / oder eine vollständige http(s)-URL ein, ohne Leerzeichen, Backslashes, ./..-Segmente oder Sonderzeichen."
+
+#. translators: %d: number of groups in the regular expression
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The target refers to a group the regular expression does not have (it has %d)."
+msgstr "Das Ziel verweist auf eine Gruppe, die der reguläre Ausdruck nicht hat (er hat %d)."
+
+#. translators: %d: maximum length in bytes
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The note must be at most %d bytes long."
+msgstr "Die Notiz darf höchstens %d Bytes lang sein."
+
+#: inc/Redirects/Rule.php
+msgid "The target is the same address as the source; the redirect would point to itself."
+msgstr "Das Ziel ist dieselbe Adresse wie die Quelle; die Weiterleitung würde auf sich selbst zeigen."
+
+#. translators: %d: id of the other redirect rule
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "This redirect would create a loop: rule #%d redirects its target back to this source."
+msgstr "Diese Weiterleitung würde eine Schleife erzeugen: Regel #%d leitet ihr Ziel zurück auf diese Quelle."
+
+#. translators: %s: CSV column name
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "The column \"%s\" appears more than once in the header."
+msgstr "Die Spalte „%s“ kommt in der Kopfzeile mehrfach vor."
+
+#: inc/Redirects/Rule.php
+msgid "The header has no \"source\" column."
+msgstr "Die Kopfzeile hat keine Spalte „source“."
+
+#: inc/Redirects/Rule.php
+msgid "This record has more fields than the header (an unterminated quote or a stray comma?)."
+msgstr "Dieser Datensatz hat mehr Felder als die Kopfzeile (ein nicht geschlossenes Anführungszeichen oder ein überzähliges Komma?)."
+
+#. translators: %s: the cell value
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "\"%s\" is not a valid value for enabled; use 1/0, yes/no or true/false."
+msgstr "„%s“ ist kein gültiger Wert für enabled; verwende 1/0, yes/no oder true/false."
+
+#. translators: 1: field label, 2: minimum, 3: maximum
+#: inc/Redirects/Settings.php
+#, php-format
+msgid "%1$s must be a whole number between %2$d and %3$d. The previous value was kept."
+msgstr "%1$s muss eine ganze Zahl zwischen %2$d und %3$d sein. Der bisherige Wert wurde beibehalten."
+
+#. translators: 1: field label, 2: minimum, 3: maximum, 4: value used
+#: inc/Redirects/Settings.php
+#, php-format
+msgid "%1$s must be between %2$d and %3$d. It was set to %4$d."
+msgstr "%1$s muss zwischen %2$d und %3$d liegen. Der Wert wurde auf %4$d gesetzt."
+
+#: inc/Redirects/Settings.php
+msgid "Settings saved, but some fields were corrected."
+msgstr "Einstellungen gespeichert, aber einige Felder wurden korrigiert."
+
+#. translators: %d: number of redirect tables (rules, 404 log) removed
+#: inc/GeneralThemeOptions/AdminPage.php
+#, php-format
+msgid "Redirect tables deleted: %d."
+msgstr "Gelöschte Weiterleitungstabellen: %d."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Redirect tables not deleted: another redirect change was in progress. Run the purge again to delete them."
+msgstr "Weiterleitungstabellen nicht gelöscht: Eine andere Änderung an den Weiterleitungen lief gerade. Führe die Bereinigung erneut aus, um sie zu löschen."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "This includes every redirect rule and the 404 log."
+msgstr "Dazu gehören alle Weiterleitungsregeln und das 404-Protokoll."
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Enable Redirects"
+msgstr "Weiterleitungen aktivieren"
+
+#: inc/GeneralThemeOptions/Settings.php
+msgid "Manage redirects (301, 302, 307, 308, 410), log 404 errors and create redirects automatically when a page's address changes."
+msgstr "Weiterleitungen verwalten (301, 302, 307, 308, 410), 404-Fehler protokollieren und automatisch Weiterleitungen anlegen, wenn sich die Adresse einer Seite ändert."
+
+#: inc/ImportExport/Controller.php
+msgid "Redirects Settings"
+msgstr "Weiterleitungs-Einstellungen"
+
+#: inc/ImportExport/Controller.php
+msgid "404 logging, retention and automatic redirects (rules are exported as CSV on the Redirects screen)"
+msgstr "404-Protokollierung, Aufbewahrung und automatische Weiterleitungen (Regeln werden auf der Seite „Weiterleitungen“ als CSV exportiert)"
+
+#: inc/Redirects/Settings.php
+msgid "This action requires a form submission."
+msgstr "Diese Aktion ist nur über das Formular möglich."
+
+#: inc/Redirects/Settings.php
+msgid "The redirect database tables are not installed yet. Open this page again to install them, then retry."
+msgstr "Die Datenbanktabellen für Weiterleitungen sind noch nicht installiert. Öffne diese Seite erneut, um sie zu installieren, und versuche es dann noch einmal."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Your posts, pages and media, including the copyright and AI markings, were not touched."
+msgstr "Deine Beiträge, Seiten und Medien, einschließlich der Copyright- und KI-Kennzeichnungen, wurden nicht angetastet."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "Some redirect tables could not be deleted because of a database error. Run the purge again."
+msgstr "Einige Weiterleitungstabellen konnten wegen eines Datenbankfehlers nicht gelöscht werden. Führe das Löschen erneut aus."
+
+#: inc/Redirects/RedirectsTable.php
+msgid "Created"
+msgstr "Erstellt"
+
+#: inc/Redirects/Repository.php
+#, php-format
+msgid "This would create a redirect loop with rule #%d."
+msgstr "Das würde eine Weiterleitungsschleife mit Regel #%d erzeugen."
+
+#: inc/Redirects/Repository.php
+msgid "The target leads back to the source; the redirect would loop."
+msgstr "Das Ziel führt zurück zur Quelle; die Weiterleitung würde sich im Kreis drehen."
+
+#: inc/Redirects/AdminPage.php
+msgid "Type at least 2 characters."
+msgstr "Gib mindestens 2 Zeichen ein."
+
+#: inc/Redirects/AdminPage.php
+msgid "Searching…"
+msgstr "Suche läuft …"
+
+#: inc/Redirects/AdminPage.php
+msgid "No results."
+msgstr "Keine Ergebnisse."
+
+#: inc/Redirects/AdminPage.php
+msgid "Choose a result"
+msgstr "Ergebnis auswählen"
+
+#: inc/Redirects/AdminPage.php
+msgid "The search failed. Try again."
+msgstr "Die Suche ist fehlgeschlagen. Versuche es erneut."
+
+#: inc/Redirects/AdminPage.php
+msgid "File format: Redirection plugin export."
+msgstr "Dateiformat: Export des Redirection-Plugins."
+
+#: inc/Redirects/AdminPage.php
+msgid "File format: this module's CSV."
+msgstr "Dateiformat: CSV dieses Moduls."
+
+#: inc/Redirects/AdminPage.php
+msgid "Unknown content type."
+msgstr "Unbekannter Inhaltstyp."
+
+#: inc/Redirects/AdminPage.php
+msgid "The search failed."
+msgstr "Die Suche ist fehlgeschlagen."
+
+#. translators: %d: post id
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "(no title) #%d"
+msgstr "(ohne Titel) #%d"
+
+#: inc/Redirects/AdminPage.php
+msgid "Pick an existing target"
+msgstr "Vorhandenes Ziel auswählen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Custom URL"
+msgstr "Eigene URL"
+
+#: inc/Redirects/AdminPage.php
+msgid "Term archive"
+msgstr "Begriffsarchiv"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search"
+msgstr "Suchen"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search results"
+msgstr "Suchergebnisse"
+
+#: inc/Redirects/AdminPage.php
+msgid "Choosing a result writes its address into the target field."
+msgstr "Wenn du ein Ergebnis auswählst, wird seine Adresse in das Zielfeld übernommen."
+
+#. translators: %s: cache time, e.g. "1 hour"
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Browsers may keep a 301 or 308 for %s (see the settings) — use 302 while testing."
+msgstr "Browser dürfen eine 301 oder 308 für %s speichern (siehe Einstellungen) – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "This module sends no cache header for 301 and 308, so browsers may keep them indefinitely — use 302 while testing."
+msgstr "Dieses Modul sendet für 301 und 308 keinen Cache-Header, daher speichern Browser sie womöglich unbegrenzt – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect."
+msgstr "Die Cache-Dauer gilt für Antworten, die ab jetzt gesendet werden: Ein Browser, der eine 301 oder 308 bereits gespeichert hat, behält sie für die damals mitgegebene Dauer (ohne Header womöglich unbegrenzt). Wenn dieses Modul den Header sendet, weist es zugleich gemeinsam genutzte Caches und CDNs an, die Weiterleitung nicht zu speichern."
+
+#: inc/Redirects/AdminPage.php
+msgid "Redirection plugin exports"
+msgstr "Exporte des Redirection-Plugins"
+
+#: inc/Redirects/AdminPage.php
+msgid "A CSV exported by the Redirection plugin is recognised by its header and imported as far as it means the same here. A file mixing both formats' column names is rejected."
+msgstr "Eine vom Redirection-Plugin exportierte CSV wird an ihrer Kopfzeile erkannt und so weit importiert, wie sie hier dasselbe bedeutet. Eine Datei, die Spaltennamen beider Formate mischt, wird abgelehnt."
+
+#: inc/Redirects/AdminPage.php
+msgid "Imported: redirects with 301, 302, 307 or 308 and 410 rules; the title becomes the note, a disabled rule stays disabled. Hits are not imported — new rules start at 0, an updated rule keeps its counters."
+msgstr "Importiert werden: Weiterleitungen mit 301, 302, 307 oder 308 sowie 410-Regeln; der Titel wird zur Notiz, eine deaktivierte Regel bleibt deaktiviert. Treffer werden nicht importiert – neue Regeln beginnen bei 0, eine aktualisierte Regel behält ihre Zähler."
+
+#: inc/Redirects/AdminPage.php
+msgid "Skipped with a reason: other actions and codes, regular expressions that do not match the whole path (^…$), \\1 or ${1} references, dynamic target tags, and sources outside this site's home path."
+msgstr "Mit Begründung übersprungen werden: andere Aktionen und Codes, reguläre Ausdrücke, die nicht den ganzen Pfad erfassen (^…$), Verweise wie \\1 oder ${1}, dynamische Ziel-Tags und Quellen außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/AdminPage.php
+msgid "Rules here match the canonical path — lowercase, without a trailing slash, percent-encoding normalised. An exact rule without a query string matches any query string and passes it on; an exact rule with a query string matches only that query; a regular expression never sees the query. An imported rule can therefore match more, fewer or differently-cased requests than it did in Redirection, and regex captures are lowercased before they enter the target."
+msgstr "Regeln prüfen hier den kanonischen Pfad – kleingeschrieben, ohne abschließenden Schrägstrich, mit normalisierter Prozentkodierung. Eine exakte Regel ohne Query-String greift bei jedem Query-String und gibt ihn weiter, eine exakte Regel mit Query-String nur bei genau diesem; ein regulärer Ausdruck sieht den Query-String nie. Eine importierte Regel kann daher auf mehr, weniger oder anders geschriebene Anfragen greifen als in Redirection, und Gruppen aus regulären Ausdrücken werden kleingeschrieben, bevor sie ins Ziel übernommen werden."
+
+#: inc/Redirects/AdminPage.php
+msgid "Groups, conditions, per-rule query and case settings and logs are not part of the export and are not imported. Exports from Yoast or Rank Math are not supported."
+msgstr "Gruppen, Bedingungen, regelbezogene Einstellungen für Query-String und Groß-/Kleinschreibung sowie Protokolle sind nicht Teil des Exports und werden nicht importiert. Exporte aus Yoast oder Rank Math werden nicht unterstützt."
+
+#: inc/Redirects/AdminPage.php
+msgid "Browser cache for 301 and 308"
+msgstr "Browser-Cache für 301 und 308"
+
+#: inc/Redirects/AdminPage.php
+msgid "How long a visitor's browser may keep a permanent redirect. Without a cache header, browsers may keep a 301 or 308 indefinitely, so a mistaken one sticks. Not sent to logged-in users."
+msgstr "Wie lange der Browser eines Besuchers eine dauerhafte Weiterleitung speichern darf. Ohne Cache-Header speichern Browser eine 301 oder 308 womöglich unbegrenzt, sodass eine fehlerhafte hängen bleibt. Wird an angemeldete Benutzer nicht gesendet."
+
+#: inc/Redirects/AdminPage.php
+msgid "The time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect; a page cache in front of WordPress may still apply its own rules."
+msgstr "Die Dauer gilt für Antworten, die ab jetzt gesendet werden: Ein Browser, der eine 301 oder 308 bereits gespeichert hat, behält sie für die damals mitgegebene Dauer (ohne Header womöglich unbegrenzt). Wenn dieses Modul den Header sendet, weist es zugleich gemeinsam genutzte Caches und CDNs an, die Weiterleitung nicht zu speichern; ein Seiten-Cache vor WordPress kann trotzdem eigene Regeln anwenden."
+
+#: inc/Redirects/Rule.php
+msgid "The header mixes column names of the Redirection plugin (regex, code) with this theme's (status_code, match_type); use one format."
+msgstr "Die Kopfzeile mischt Spaltennamen des Redirection-Plugins („regex“, „code“) mit denen dieses Themes („status_code“, „match_type“); verwende nur ein Format."
+
+#. translators: 1: Redirection action type, 2: HTTP status code
+#: inc/Redirects/Rule.php
+#, php-format
+msgid "Action \"%1$s\" with code \"%2$s\" is not supported."
+msgstr "Aktion „%1$s“ mit Code „%2$s“ wird nicht unterstützt."
+
+#: inc/Redirects/Rule.php
+msgid "Regex not importable safely: Redirection replaces only the matched part; anchor the whole pattern with ^…$."
+msgstr "Regulärer Ausdruck nicht sicher importierbar: Redirection ersetzt nur den passenden Teil; verankere das ganze Muster mit ^…$."
+
+#: inc/Redirects/Rule.php
+msgid "Pattern outside this site's home path."
+msgstr "Muster außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/Rule.php
+msgid "Source outside this site's home path."
+msgstr "Quelle außerhalb des Startseiten-Pfads dieser Website."
+
+#: inc/Redirects/Rule.php
+msgid "Dynamic target tags are not supported."
+msgstr "Dynamische Ziel-Tags werden nicht unterstützt."
+
+#: inc/Redirects/Rule.php
+msgid "Replacement syntax not supported (use $1–$9)."
+msgstr "Ersetzungssyntax wird nicht unterstützt (verwende $1–$9)."
+
+#: inc/Redirects/Settings.php
+msgid "1 hour"
+msgstr "1 Stunde"
+
+#: inc/Redirects/Settings.php
+msgid "1 day"
+msgstr "1 Tag"
+
+#: inc/Redirects/Settings.php
+msgid "1 week"
+msgstr "1 Woche"
+
+#: inc/Redirects/Settings.php
+msgid "No cache header from this module"
+msgstr "Kein Cache-Header von diesem Modul"
+
+#: inc/Redirects/Settings.php
+msgid "The browser cache time for permanent redirects must be one of the offered values. The previous value was kept."
+msgstr "Die Browser-Cache-Dauer für dauerhafte Weiterleitungen muss einer der angebotenen Werte sein. Der bisherige Wert wurde beibehalten."

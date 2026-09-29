@@ -79,6 +79,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_redirects',
+                'label'       => __('Enable Redirects', 'sfxtheme'),
+                'description' => __('Manage redirects (301, 302, 307, 308, 410), log 404 errors and create redirects automatically when a page\'s address changes.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),

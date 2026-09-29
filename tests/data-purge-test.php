@@ -152,7 +152,12 @@ assert_same(
 test_reset();
 DataPurge::run();
 
-$sql = implode("\n", $GLOBALS['test_queries']);
+// The transient statements only: the table drop (Case 7) talks to the
+// database too, and is not what these assertions are about.
+$sql = implode("\n", array_filter(
+    $GLOBALS['test_queries'],
+    static fn(string $q): bool => strpos($q, '_transient_') !== false
+));
 
 assert_true(strpos($sql, '_transient_sfx\_dashboard\_sys\_%') !== false, 'Case 5a: a theme prefix is swept, with its LIKE wildcards escaped');
 assert_true(strpos($sql, '_transient_timeout_sfx\_css\_vars\_%') !== false, 'Case 5b: timeout rows go with their transient');
@@ -199,6 +204,78 @@ foreach (
 ) {
     assert_same(false, DataPurge::confirmed($input), "Case 6c: {$why} does not confirm");
 }
+
+// ------------------- Case 7: the Redirects tables, dropped under the lock
+//
+// The rules table is written only under a MySQL named lock, and the purge
+// takes the same one — computed from the same formula, because DataPurge must
+// not depend on the module's classes. A table counts only when it existed
+// before and is gone after: DROP TABLE IF EXISTS "succeeds" on nothing.
+
+$lock = 'sfx_redirects_' . md5(DB_NAME . 'wp_');
+$both = ['wp_sfx_redirects', 'wp_sfx_redirects_404'];
+
+assert_same(['sfx_redirects', 'sfx_redirects_404'], DataPurge::table_names(), 'Case 7a: the purge names both Redirects tables');
+assert_same(46, strlen($lock), 'Case 7b: the lock name is the 46-character per-site name the module uses');
+
+test_reset();
+$GLOBALS['test_tables'] = $both;
+$report = DataPurge::run();
+$sql    = implode("\n", $GLOBALS['test_queries']);
+
+assert_same(2, $report['tables'], 'Case 7c: both existing tables are dropped and counted');
+assert_same(false, $report['tables_locked'], 'Case 7d: a free lock is not reported as held');
+assert_same([], $GLOBALS['test_tables'], 'Case 7e: and they are gone');
+assert_true(strpos($sql, "SELECT GET_LOCK('{$lock}', 5)") !== false, 'Case 7f: the drop takes the module\'s lock, 5 s timeout');
+assert_true(strpos($sql, "SELECT RELEASE_LOCK('{$lock}')") !== false, 'Case 7g: and releases it');
+assert_same(
+    2,
+    substr_count($sql, "SELECT IS_USED_LOCK('{$lock}') = CONNECTION_ID()"),
+    'Case 7h: the lock is re-checked before each DROP'
+);
+assert_true(strpos($sql, "SHOW TABLES LIKE 'wp\_sfx\_redirects\_404'") !== false, 'Case 7i: the existence check escapes the LIKE wildcards');
+assert_true(in_array('sfx_redirects_cleanup', $GLOBALS['test_cleared_hooks'], true), 'Case 7j: the cleanup cron is unscheduled');
+
+test_reset();
+$GLOBALS['test_tables'] = ['wp_sfx_redirects'];
+$report = DataPurge::run();
+
+assert_same(1, $report['tables'], 'Case 7k: a table that never existed is not counted');
+
+test_reset();
+$GLOBALS['test_tables']     = $both;
+$GLOBALS['test_drop_fails'] = true;
+$report = DataPurge::run();
+
+assert_same(0, $report['tables'], 'Case 7l: a DROP that left the table behind is not counted');
+
+// Another redirect change holds the lock: nothing is dropped, the screen is
+// told why, and the settings purge still goes ahead.
+test_reset();
+$GLOBALS['test_tables']    = $both;
+$GLOBALS['test_lock_free'] = false;
+$GLOBALS['test_options']   = ['sfx_general_options' => ['a' => 1]];
+$report = DataPurge::run();
+$sql    = implode("\n", $GLOBALS['test_queries']);
+
+assert_same(0, $report['tables'], 'Case 7m: without the lock no table is dropped');
+assert_same(true, $report['tables_locked'], 'Case 7n: and the held lock is reported');
+assert_same($both, $GLOBALS['test_tables'], 'Case 7o: both tables survive');
+assert_true(strpos($sql, 'DROP TABLE') === false, 'Case 7p: no DROP was even attempted');
+assert_same(1, $report['options'], 'Case 7q: the settings are purged regardless');
+
+// The lock is lost between the two drops (a silent reconnect): the second
+// table stays, the loss is reported, and the release still runs.
+test_reset();
+$GLOBALS['test_tables']           = $both;
+$GLOBALS['test_lock_checks_left'] = 1;
+$report = DataPurge::run();
+$sql    = implode("\n", $GLOBALS['test_queries']);
+
+assert_same(1, $report['tables'], 'Case 7r: the drop made before the lock was lost is counted');
+assert_same(true, $report['tables_locked'], 'Case 7s: the lost lock is reported');
+assert_same(['wp_sfx_redirects_404'], $GLOBALS['test_tables'], 'Case 7t: the table after the loss is not dropped');
+assert_true(strpos($sql, "SELECT RELEASE_LOCK('{$lock}')") !== false, 'Case 7u: the lock is released on the early exit too');
 
 // ------------------------------------------------------------- epilogue
 

@@ -14,6 +14,10 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__, 2) . '/');
 }
 
+if (!defined('DB_NAME')) {
+    define('DB_NAME', 'test_db');
+}
+
 $failures = 0;
 
 function assert_true(bool $condition, string $message): void
@@ -47,16 +51,29 @@ $test_can_manage_options = true;
 $test_deleted_options    = 0;
 $test_deleted_meta       = 0;
 
+/** The Redirects tables that exist, and whether their lock can be taken. */
+$test_tables    = [];
+$test_lock_free = true;
+
+/** Query args of the last redirect, and the notices the screen raised. */
+$test_redirect_args = [];
+$test_notices       = [];
+
 function test_gates_reset(): void
 {
     global $test_nonce_valid, $test_theme_access, $test_can_manage_options,
-           $test_deleted_options, $test_deleted_meta;
+           $test_deleted_options, $test_deleted_meta, $test_tables, $test_lock_free,
+           $test_redirect_args, $test_notices;
 
     $test_nonce_valid        = true;
     $test_theme_access       = true;
     $test_can_manage_options = true;
     $test_deleted_options    = 0;
     $test_deleted_meta       = 0;
+    $test_tables             = ['wp_sfx_redirects', 'wp_sfx_redirects_404'];
+    $test_lock_free          = true;
+    $test_redirect_args      = [];
+    $test_notices            = [];
 
     $_POST = ['sfx_purge_confirmation' => \SFX\DataPurge::CONFIRMATION_PHRASE];
     $_GET  = [];
@@ -99,6 +116,10 @@ function wp_safe_redirect(string $location, int $status = 302): bool
 
 function add_query_arg(mixed $args, string $url = ''): string
 {
+    global $test_redirect_args;
+
+    $test_redirect_args = $args;
+
     return $url;
 }
 
@@ -120,6 +141,54 @@ function esc_html__(string $text, string $domain = 'default'): string
 function __(string $text, string $domain = 'default'): string
 {
     return $text;
+}
+
+function esc_html_e(string $text, string $domain = 'default'): void
+{
+    echo $text;
+}
+
+function esc_html(string $text): string
+{
+    return $text;
+}
+
+function esc_attr(string $text): string
+{
+    return $text;
+}
+
+function esc_url(string $url): string
+{
+    return $url;
+}
+
+function absint(mixed $value): int
+{
+    return abs((int) $value);
+}
+
+function get_option(string $name, mixed $default = false): mixed
+{
+    return $default;
+}
+
+function wp_nonce_field(string $action = '-1'): string
+{
+    return '';
+}
+
+/** The screen's result notice, captured rather than printed. */
+function wp_admin_notice(string $message, array $args = []): void
+{
+    global $test_notices;
+
+    $test_notices[] = ['message' => $message, 'type' => $args['type'] ?? ''];
+}
+
+function wp_clear_scheduled_hook(string $hook, array $args = []): int
+{
+    return 0;
 }
 
 function delete_option(string $name): bool
@@ -148,15 +217,49 @@ function add_action(string $hook, mixed $callback, int $priority = 10, int $acce
 class Test_Handler_WPDB
 {
     public string $options = 'wp_options';
+    public string $last_error = '';
+    public string $prefix = 'wp_';
 
     public function prepare(string $sql, mixed ...$args): string
     {
+        foreach ($args as $arg) {
+            $sql = preg_replace('/%s/', "'" . (string) $arg . "'", $sql, 1);
+        }
+
         return $sql;
     }
 
     public function query(string $sql): int
     {
+        global $test_tables;
+
+        if (preg_match('/^DROP TABLE IF EXISTS `([^`]+)`$/', $sql, $m) === 1) {
+            $test_tables = array_values(array_diff($test_tables, [$m[1]]));
+        }
+
         return 0;
+    }
+
+    /** The lock, the lock re-check, and SHOW TABLES LIKE — nothing more. */
+    public function get_var(string $sql): ?string
+    {
+        global $test_tables, $test_lock_free;
+
+        if (strpos($sql, 'SELECT GET_LOCK(') === 0) {
+            return $test_lock_free ? '1' : '0';
+        }
+
+        if (strpos($sql, 'SELECT IS_USED_LOCK(') === 0) {
+            return '1';
+        }
+
+        if (preg_match("/^SHOW TABLES LIKE '(.*)'$/", $sql, $m) === 1) {
+            $name = stripcslashes($m[1]);
+
+            return in_array($name, $test_tables, true) ? $name : null;
+        }
+
+        return null;
     }
 
     public function esc_like(string $text): string

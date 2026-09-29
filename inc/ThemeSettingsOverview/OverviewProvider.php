@@ -72,6 +72,9 @@ final class OverviewProvider
             'enable_media_credits' => [
                 'label' => __('Media Credits', 'sfxtheme'),
             ],
+            'enable_redirects' => [
+                'label' => __('Redirects', 'sfxtheme'),
+            ],
         ];
 
         $items = [];

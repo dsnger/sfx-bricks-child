@@ -139,6 +139,14 @@ $test_options['sfx_general_options'] = ['enable_nav_menu_query' => 1];
 $data = OverviewProvider::get_data();
 assert_status($data, 'enable_nav_menu_query', 'active', 'Menu Items query type module active when enabled');
 
+// Redirects: listed, opt-in, switched on
+reset_test_state();
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_redirects', 'inactive', 'Redirects module listed and inactive by default');
+$test_options['sfx_general_options'] = ['enable_redirects' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_redirects', 'active', 'Redirects module active when enabled');
+
 // WP Optimizer partial
 reset_test_state();
 $test_options['sfx_wpoptimizer_options'] = [
