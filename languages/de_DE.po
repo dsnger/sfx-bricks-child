@@ -7684,3 +7684,11 @@ msgstr "Kein Cache-Header von diesem Modul"
 #: inc/Redirects/Settings.php
 msgid "The browser cache time for permanent redirects must be one of the offered values. The previous value was kept."
 msgstr "Die Browser-Cache-Dauer für dauerhafte Weiterleitungen muss einer der angebotenen Werte sein. Der bisherige Wert wurde beibehalten."
+
+#: inc/Redirects/AdminPage.php
+msgid "Loading…"
+msgstr "Wird geladen …"
+
+#: inc/Redirects/AdminPage.php
+msgid "Only the first entries are shown — type in the search box to narrow them down."
+msgstr "Es werden nur die ersten Einträge angezeigt – tippe ins Suchfeld, um sie einzugrenzen."

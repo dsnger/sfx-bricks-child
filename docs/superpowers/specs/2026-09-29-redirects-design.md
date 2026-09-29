@@ -1054,14 +1054,16 @@ stale (stated).
 - Search endpoint: `wp_ajax_sfx_redirects_search` (admin-ajax, `GET`), `check_ajax_referer
   ('sfx_redirects_search')` **and** `current_user_can(AdminPage::CAPABILITY)` before
   anything else; input `type` (a post type from the allowed list or `:term`; anything
-  else → `wp_send_json_error`, 400) and `q` (string, trimmed; empty = list the type's
-  entries, 1–100 chars = search, longer = empty result); returns
+  else → `wp_send_json_error`, 400) and `q` (string, trimmed; fewer than 2 characters = list
+  the type's entries — WordPress's search APIs treat `"0"` as empty —, 2–100 chars =
+  search, longer = empty result); returns
   `{items: at most 200 {label, path}, more: bool}` as JSON (`wp_send_json_success`;
-  201 are fetched so `more` says whether the list was cut). Posts: `WP_Query` with
+  201 are fetched so `more` says whether the list was cut; `more` is decided by the
+  fetched count, not by the entries left after dropping unusable links). Posts: `WP_Query` with
   `post_status` `publish`, `no_found_rows`, `suppress_filters` false, 201 per page, and
   either `s` (search, relevance order) or `orderby` title ASC (list). Terms: `get_terms`
-  over public taxonomies, `hide_empty` false, `orderby` name ASC, 201, plus `search`
-  when `q` is given. Labels are plain text; the page
+  over public taxonomies, `hide_empty` false, `hierarchical` false (so the limit applies
+  in SQL), `orderby` name ASC, 201, plus `search` when `q` is given. Labels are plain text; the page
   escapes them when it builds the list (DOM `textContent`, never `innerHTML`). Not the
   core REST search route, because WPOptimizer can switch the REST API off.
 - A read, not a write — invariant 2 does not apply, but the capability + nonce pair is

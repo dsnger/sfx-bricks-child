@@ -245,7 +245,12 @@ namespace {
         {
             global $test_queries;
             $test_queries[] = $args;
-            $this->posts = [(object) ['ID' => 12, 'post_title' => 'About']];
+            global $test_query_count;
+            $n = (int) ($test_query_count ?? 1);
+            $this->posts = [];
+            for ($i = 0; $i < $n; $i++) {
+                $this->posts[] = (object) ['ID' => 12 + $i, 'post_title' => 'About'];
+            }
         }
     }
 
@@ -422,9 +427,9 @@ namespace {
         assert_true($hooked['admin_post_' . $action] === $handler, "6: admin_post_{$action} calls its handler");
     }
 
-    // 7. Target picker search: the same three cases for the admin-ajax endpoint.
+    // 7. Target picker search: the same four (nonce, capability, search, list) cases for the admin-ajax endpoint.
     /** @return array{stopped:string, db_calls:int, writes:int} */
-    function run_search_case(bool $nonce_ok, bool $can): array
+    function run_search_case(bool $nonce_ok, bool $can, string $q = '  About '): array
     {
         global $wpdb, $test_writes, $test_nonce_ok, $test_can, $test_caps_seen,
             $test_ajax_nonce_seen, $test_queries, $test_terms_calls, $test_json;
@@ -439,7 +444,7 @@ namespace {
         $test_nonce_ok = $nonce_ok;
         $test_can = $can;
 
-        $_GET = ['action' => 'sfx_redirects_search', 'type' => 'page', 'q' => '  About '];
+        $_GET = ['action' => 'sfx_redirects_search', 'type' => 'page', 'q' => $q];
         $_POST = [];
 
         try {
@@ -467,14 +472,35 @@ namespace {
     $r = run_search_case(true, true);
     assert_true($r['stopped'] === 'json_success', "search: baseline reaches wp_send_json_success (got {$r['stopped']})");
     assert_true($test_ajax_nonce_seen === ['sfx_redirects_search'], 'search: the nonce was checked for exactly this action');
-    assert_true($test_json[1] === [['label' => 'About', 'path' => '/about/']], 'search: baseline returns the stubbed item as {label, path} with a home-relative path');
+    assert_true($test_json[1] === ['items' => [['label' => 'About', 'path' => '/about/']], 'more' => false], 'search: baseline returns {items: [{label, path}], more} with a home-relative path');
     assert_true(count($test_queries) === 1, 'search: exactly one WP_Query');
     $args = $test_queries[0];
     assert_true(($args['s'] ?? null) === 'About', 'search: WP_Query gets the trimmed search term');
     assert_true(($args['post_type'] ?? null) === 'page', 'search: WP_Query gets the requested post type');
     assert_true(($args['post_status'] ?? null) === 'publish', 'search: WP_Query only asks for published posts');
-    assert_true(($args['posts_per_page'] ?? null) === 20, 'search: WP_Query asks for 20 results');
+    assert_true(($args['posts_per_page'] ?? null) === 201, 'search: WP_Query asks for the list limit plus one (to know if it was cut)');
+    assert_true(!isset($args['orderby']), 'search: a search keeps WordPress relevance order');
     assert_true($r['writes'] === 0, 'search: the read writes nothing');
+    $ran++;
+
+    // An empty search box lists the type's entries alphabetically (no 's'),
+    // and a one-character query behaves the same (WordPress treats "0" as empty).
+    $r = run_search_case(true, true, '0');
+    assert_true(count($test_queries) === 1 && !isset($test_queries[0]['s']) && ($test_queries[0]['orderby'] ?? null) === 'title', 'list: a one-character query runs the list query instead of searching');
+    assert_true(($test_json[1]['items'] ?? null) === [['label' => 'About', 'path' => '/about/']], 'list: a one-character query returns the list');
+    $r = run_search_case(true, true, '');
+    assert_true($r['stopped'] === 'json_success', "list: an empty query lists (got {$r['stopped']})");
+    $args = $test_queries[0] ?? [];
+    assert_true(!isset($args['s']), 'list: no search term is sent');
+    assert_true(($args['orderby'] ?? null) === 'title' && ($args['order'] ?? null) === 'ASC', 'list: entries are sorted by title');
+    assert_true(($args['post_status'] ?? null) === 'publish' && ($args['posts_per_page'] ?? null) === 201, 'list: published only, limit plus one');
+    assert_true(($test_json[1]['items'] ?? null) === [['label' => 'About', 'path' => '/about/']] && ($test_json[1]['more'] ?? null) === false, 'list: returns the entries, more=false');
+
+    // 201 found → 200 returned, more=true.
+    $test_query_count = 201;
+    $r = run_search_case(true, true, '');
+    $test_query_count = 1;
+    assert_true(count($test_json[1]['items'] ?? []) === 200 && ($test_json[1]['more'] ?? null) === true, 'list: 201 found → 200 items and more=true');
     $ran++;
 
     // register() hooks the search endpoint.
@@ -483,8 +509,8 @@ namespace {
         '7: wp_ajax_sfx_redirects_search calls AdminPage::handle_search'
     );
 
-    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's three.
-    assert_true($ran === 24, "counter: expected 24 cases, ran {$ran}");
+    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's four (nonce, capability, search, list).
+    assert_true($ran === 25, "counter: expected 25 cases, ran {$ran}");
 
     echo "OK\n";
 }

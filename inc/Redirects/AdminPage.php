@@ -49,7 +49,16 @@ final class AdminPage
     /** Target picker: the type select's value for term archives (no post type can be named so). */
     /** A colon is not allowed in a post type key (sanitize_key), so no post type can collide. */
     private const PICKER_TERM = ':term';
-    private const PICKER_LIMIT = 20;
+    /**
+     * Entries the picker lists at once — the whole list when the search box is
+     * empty, or the matches for a search. One more is fetched to know whether
+     * the list was cut. ponytail: 200 keeps the select usable and the query
+     * cheap; a site with more entries narrows them with the search box.
+     */
+    private const PICKER_LIMIT = 200;
+
+    /** More entries than this, and the picker also offers its search box. */
+    private const PICKER_SEARCH_THRESHOLD = 20;
 
     /** Distinct codes per notice; keeps each add_settings_error() entry separate. */
     private static int $notice_seq = 0;
@@ -97,9 +106,10 @@ final class AdminPage
         wp_localize_script('sfx-redirects-admin', 'sfxRedirectsPicker', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('sfx_redirects_search'),
+            'searchThreshold' => self::PICKER_SEARCH_THRESHOLD,
             'i18n'    => [
-                'minChars'  => __('Type at least 2 characters.', 'sfxtheme'),
-                'searching' => __('Searching…', 'sfxtheme'),
+                'loading'   => __('Loading…', 'sfxtheme'),
+                'more'      => __('Only the first entries are shown — type in the search box to narrow them down.', 'sfxtheme'),
                 'noResults' => __('No results.', 'sfxtheme'),
                 'choose'    => __('Choose a result', 'sfxtheme'),
                 'error'     => __('The search failed. Try again.', 'sfxtheme'),
@@ -522,10 +532,12 @@ final class AdminPage
     }
 
     /**
-     * Target picker search (admin-ajax, GET). A read, but it discloses titles
-     * and paths, so nonce AND capability come first (spec A3). Returns at most
-     * PICKER_LIMIT {label, path} items; labels are plain text, the page puts
-     * them into the DOM with textContent.
+     * Target picker list/search (admin-ajax, GET). A read, but it discloses
+     * titles and paths, so nonce AND capability come first (spec A3). A q of
+     * fewer than 2 characters lists the type's entries alphabetically, 2–100
+     * characters search, anything longer returns nothing.
+     * Returns {items: at most PICKER_LIMIT {label, path}, more: bool}; labels
+     * are plain text, the page puts them into the DOM with textContent.
      */
     public static function handle_search(): void
     {
@@ -540,9 +552,13 @@ final class AdminPage
             wp_send_json_error(['message' => __('Unknown content type.', 'sfxtheme')], 400);
         }
         $q = isset($request['q']) && is_string($request['q']) ? trim($request['q']) : '';
-        $length = mb_strlen($q);
-        if ($length < 2 || $length > 100) {
-            wp_send_json_success([]);
+        if (mb_strlen($q) > 100) {
+            wp_send_json_success(['items' => [], 'more' => false]);
+        }
+        // Fewer than two characters list instead of searching: WordPress's search
+        // APIs treat "0" as empty, and one letter narrows nothing useful anyway.
+        if (mb_strlen($q) < 2) {
+            $q = '';
         }
 
         $home_url = home_url();
@@ -551,16 +567,25 @@ final class AdminPage
         if ($type === self::PICKER_TERM) {
             $taxonomies = get_taxonomies(['public' => true]);
             // An empty taxonomy list would make get_terms() search every taxonomy.
-            $terms = $taxonomies === [] ? [] : get_terms([
+            $args = [
                 'taxonomy'   => array_values($taxonomies),
-                'search'     => $q,
                 'hide_empty' => false,
-                'number'     => self::PICKER_LIMIT,
-            ]);
+                'orderby'    => 'name',
+                'order'      => 'ASC',
+                'number'     => self::PICKER_LIMIT + 1,
+                // Otherwise a hierarchical taxonomy makes get_terms() load the
+                // whole tree and slice afterwards, ignoring "number" in SQL.
+                'hierarchical' => false,
+            ];
+            if ($q !== '') {
+                $args['search'] = $q;
+            }
+            $terms = $taxonomies === [] ? [] : get_terms($args);
             if (is_wp_error($terms)) {
                 wp_send_json_error(['message' => __('The search failed.', 'sfxtheme')], 500);
             }
-            foreach ($terms as $term) {
+            $fetched = count($terms);
+            foreach (array_slice($terms, 0, self::PICKER_LIMIT) as $term) {
                 $link = get_term_link($term);
                 if (is_wp_error($link) || !is_string($link) || $link === '') {
                     continue;
@@ -573,16 +598,23 @@ final class AdminPage
                 ];
             }
         } else {
-            $query = new \WP_Query([
-                's'                   => $q,
+            $args = [
                 'post_type'           => $type,
                 'post_status'         => 'publish',
-                'posts_per_page'      => self::PICKER_LIMIT,
+                'posts_per_page'      => self::PICKER_LIMIT + 1,
                 'no_found_rows'       => true,
                 'suppress_filters'    => false,
                 'ignore_sticky_posts' => true,
-            ]);
-            foreach ($query->posts as $post) {
+            ];
+            if ($q !== '') {
+                $args['s'] = $q; // search keeps WordPress's relevance order
+            } else {
+                $args['orderby'] = 'title';
+                $args['order']   = 'ASC';
+            }
+            $query   = new \WP_Query($args);
+            $fetched = count($query->posts);
+            foreach (array_slice($query->posts, 0, self::PICKER_LIMIT) as $post) {
                 $link = get_permalink($post);
                 if (!is_string($link) || $link === '') {
                     continue;
@@ -596,7 +628,9 @@ final class AdminPage
             }
         }
 
-        wp_send_json_success($items);
+        // "More" is decided by what the query found, not by what survived the
+        // link filter: a skipped entry must not hide that the list was cut.
+        wp_send_json_success(['items' => $items, 'more' => $fetched > self::PICKER_LIMIT]);
     }
 
     // ------------------------------------------------------------------
@@ -1002,8 +1036,10 @@ final class AdminPage
                                     </select>
                                 </p>
                                 <p id="sfx-redirects-picker-search" hidden>
-                                    <label for="sfx-redirects-picker-q"><?php esc_html_e('Search', 'sfxtheme'); ?></label>
-                                    <input type="search" id="sfx-redirects-picker-q" class="regular-text" maxlength="100" autocomplete="off" />
+                                    <span id="sfx-redirects-picker-filter" hidden>
+                                        <label for="sfx-redirects-picker-q"><?php esc_html_e('Search', 'sfxtheme'); ?></label>
+                                        <input type="search" id="sfx-redirects-picker-q" class="regular-text" maxlength="100" autocomplete="off" />
+                                    </span>
                                     <label for="sfx-redirects-picker-results" class="screen-reader-text"><?php esc_html_e('Search results', 'sfxtheme'); ?></label>
                                     <select id="sfx-redirects-picker-results"></select>
                                 </p>
