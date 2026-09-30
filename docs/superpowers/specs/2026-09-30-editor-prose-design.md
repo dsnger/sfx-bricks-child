@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–9)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–10)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -268,6 +268,12 @@ It does **not** cover, and the README/help text say so:
   `.prose p` vs the large-quote style's paragraph selector) can win in the editor. This
   is inherent to Bricks' scoper, which the module deliberately reuses; where it matters,
   the prose rule should be as specific as the block rule;
+- **theme-style link colours** in Bricks' post-content mode: for posts Bricks renders
+  through a WordPress-content template, it maps its Post Content link selector onto
+  `.is-root-container` keeping `:not([data-source="bricks"])` (`admin.php:2330`,
+  `block-editor.php:1207`), which is more specific than the Rich Text link selector on
+  the frontend — a prose-class link rule can then win live and lose in the editor. Give
+  prose link rules at least one extra class of specificity where this matters;
 - settings on the Bricks wrapper **element itself** (its own style controls, compiled
   to its element ID) — only global-class CSS is mirrored, so prose styling belongs in
   the class;
@@ -345,7 +351,8 @@ visitessen's `article__prose` already reads `--caption-*`, `--table-*`, `--quote
 between list items, which Bricks' fallback `* + *` also reaches — comes from Bricks'
 contextual spacing (theme style), which the root classes already make work in the
 editor. The baseline styles spacing *inside* elements only: list indent
-(`padding-inline-start`), caption gap (`margin-block-start` on `figcaption`), table cell
+(`padding-inline-start`), caption gap (`margin-block-start` on `figcaption`; overridden by Bricks' fallback
+contextual spacing when that is set, since `img + figcaption` matches `* + *`), table cell
 padding, quote padding.
 
 **What beats the baseline** (all unlayered, so by design): Bricks' "remove default
@@ -472,7 +479,9 @@ Exact expected outputs, not "output differs from input".
   proven active), and all compared values match between frontend and editor; then a
   prose class setting `color` on `p` — wins in both; Bricks typography set on the
   wrapper element itself — wins on the frontend (not mirrored, see What "parity"
-  covers); a nested `h2.brxe-heading` and a component block — no baseline declaration
+  covers); expected values checked, not only differences — e.g. `figcaption` colour
+  equals the distinctive `--caption-color`; once with that token removed, the computed
+  value equals the next link of its chain (`--text-muted`); a nested `h2.brxe-heading` and a component block — no baseline declaration
   applies (DevTools matched rules), inheritance as on the frontend.
 - `./quality.sh` green.
 
