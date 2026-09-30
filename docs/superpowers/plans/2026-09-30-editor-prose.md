@@ -12,6 +12,9 @@
 
 ## Global Constraints
 
+- **Working directory:** every path and command in this plan is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first.
+- **Commits:** every task commits a `WIP: …` snapshot (CLAUDE.md §5 Mechanics — a non-WIP commit closes the Gate-B cycle). The real commit is made once, after Gate B is clean (see "Finish: Gate B and closing commit").
+
 - Bricks ≥ 2.4 for the editor mirroring: `defined('BRICKS_VERSION') && version_compare(BRICKS_VERSION, '2.4', '>=')`.
 - Option `sfx_editor_prose_options`; module toggle `enable_editor_prose` in `sfx_general_options`, default `0`.
 - Capability `manage_options`, nonce via Settings API (`settings_fields`) — invariant 2.
@@ -27,11 +30,11 @@
 
 ## Review Focus
 
-1. **A site with the module on but no class configured and baseline off** — the editor must be untouched (no script). Pinned in Task 1 (`applies_to` false) and Task 5 (controller returns before enqueue).
-2. **A configured class name that does not exist in Bricks** (typo) — editor still gets the root classes, CSS holds only the title rule, admin page names the missing class. Pinned in Task 2 (`build` with unknown name; `missing_classes`).
+1. **A site with the module on but no class configured and baseline off** — the editor must be untouched (no script). Pinned in Task 1 (`applies_to` false) and Task 5 test check 1.
+2. **A configured class name that does not exist in Bricks** (typo) — editor still gets the root classes, CSS holds only the title rule, admin page names the missing class. Pinned in Task 2 (`build` with unknown name; `missing_classes`) and Task 5 test check 5.
 3. **Bricks' compiler throws mid-way** — Bricks' `Assets` statics must be restored, or the rest of the editor page's Bricks CSS breaks. Pinned in Task 2 (statics-restored assertion).
-4. **The settings form submitted with every checkbox unticked** — `all_post_types` and `baseline` must become `false`, not fall back to defaults. Pinned in Task 1 (hidden `0` inputs + sanitize of `'0'`) and Task 5 (form renders the hidden inputs).
-5. **CSS text containing `</script>` or `</style>`** — must not break out of the inline script in the admin document. Pinned in Task 2 (payload JSON contains `<\/script`).
+4. **The settings form submitted with every checkbox unticked** — `all_post_types` and `baseline` must become `false`, not fall back to defaults. Pinned in Task 1 (sanitize of `'0'`) and Task 5 test check 5 (hidden `0` inputs precede the checkboxes).
+5. **CSS text containing `</script>` or `</style>`** — must not break out of the inline script in the admin document. Pinned in Task 5 test check 3 (the controller's real inline script, hostile CSS via the filter).
 
 ---
 
@@ -51,7 +54,9 @@
 | `tests/support/editor-prose-bricks-stubs.php` | Bricks stand-ins for Task 2 |
 | `tests/editor-prose-test.mjs` | Task 3 |
 | `tests/editor-prose-baseline-test.mjs` | Task 4 |
-| Modified: `inc/GeneralThemeOptions/Settings.php`, `inc/ThemeSettingsOverview/OverviewProvider.php`, `tests/theme-settings-overview-provider-test.php`, `inc/DataPurge.php`, `inc/ImportExport/Controller.php`, `languages/de_DE.po/.mo`, `README.md`, `AGENTS.md` | Tasks 6–7 |
+| `tests/editor-prose-controller-test.php` | Task 5 |
+| `tests/support/editor-prose-bricks-stubs-partial.php` | Task 2 (Bricks without `load_webfonts`) |
+| Modified: `inc/DataPurge.php` (Task 1), `inc/GeneralThemeOptions/Settings.php`, `inc/ThemeSettingsOverview/OverviewProvider.php`, `tests/theme-settings-overview-provider-test.php`, `inc/ImportExport/Controller.php`, `languages/de_DE.po/.mo`, `README.md`, `AGENTS.md` | Tasks 6–7 |
 
 ---
 
@@ -59,6 +64,7 @@
 
 **Files:**
 - Create: `inc/EditorProse/Settings.php`, `inc/EditorProse/index.php`
+- Modify: `inc/DataPurge.php` (option list, after the `// Redirects` entries) — `tests/data-purge-test.php` scans every `OPTION_NAME` and fails until the new option is listed
 - Test: `tests/editor-prose-settings-test.php`
 
 **Interfaces:**
@@ -326,11 +332,26 @@ class Settings
 Run: `php tests/editor-prose-settings-test.php`
 Expected: `editor-prose-settings-test: PASS`
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Purge ownership**
+
+Run: `php tests/data-purge-test.php`
+Expected: FAIL "Case 2b: inc/EditorProse/Settings.php declares 'sfx_editor_prose_options' but the purge does not name it".
+
+In `inc/DataPurge.php`, after the Redirects entries of the option list:
+
+```php
+        // Editor Prose
+        'sfx_editor_prose_options',
+```
+
+Run: `./quality.sh`
+Expected: exit 0.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add inc/EditorProse/Settings.php inc/EditorProse/index.php tests/editor-prose-settings-test.php
-git commit -m "feat(editor-prose): settings schema, total sanitizer, gate predicates"
+git add inc/EditorProse/Settings.php inc/EditorProse/index.php tests/editor-prose-settings-test.php inc/DataPurge.php
+git commit -m "WIP: editor-prose settings"
 ```
 
 ---
@@ -338,7 +359,7 @@ git commit -m "feat(editor-prose): settings schema, total sanitizer, gate predic
 ### Task 2: Payload — classes, compiled CSS, links
 
 **Files:**
-- Create: `inc/EditorProse/Payload.php`, `tests/support/editor-prose-bricks-stubs.php`
+- Create: `inc/EditorProse/Payload.php`, `tests/support/editor-prose-bricks-stubs.php`, `tests/support/editor-prose-bricks-stubs-partial.php`
 - Test: `tests/editor-prose-payload-test.php`
 
 **Interfaces:**
@@ -376,25 +397,35 @@ namespace Bricks {
         public static function generate_global_classes($key = 'global_classes')
         {
             self::$seen[] = [$key, self::$global_classes_elements];
-            self::$inline_css['dirty'] = 'x';
+            $map = self::$global_classes_elements;
+            // Dirty every static the way a real compile can, before returning or throwing.
+            self::$global_classes_elements = ['dirty' => ['x']];
+            self::$inline_css = ['dirty' => 'x'];
+            self::$inline_css_breakpoints = ['dirty' => 'x'];
+            self::$unique_inline_css = ['dirty'];
             self::$inline_css_dynamic_data = 'dirty';
+            self::$current_generating_element = 'dirty';
             if (self::$throw) {
                 throw new \RuntimeException('boom');
             }
-            if (self::$global_classes_elements === []) {
+            if ($map === []) {
                 return null;
             }
             $css = '';
-            foreach (self::$global_classes_elements as $id => $els) {
-                $css .= ".{$id}.brxe-{$els[0]} { color: red; }\n";
+            foreach ($map as $id => $els) {
+                $css .= ".{$id}.brxe-{$els[0]} { font-family: \"Inter\"; }\n";
             }
             return $css;
         }
 
         public static function load_webfonts($css, $return_html_links = false)
         {
+            // Only answers the HTML-links mode with a font actually used in $css.
+            if ($return_html_links !== true || strpos((string) $css, 'Inter') === false) {
+                return null;
+            }
             return '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-                . '<link rel="stylesheet" href="https://fonts.example/css?family=A&amp;display=swap">';
+                . '<link rel="stylesheet" href="https://fonts.example/css?family=Inter&amp;display=swap">';
         }
     }
 }
@@ -436,12 +467,27 @@ function opts(array $o = []): array
     return array_merge(['classes' => [], 'element' => 'text', 'all_post_types' => true, 'post_types' => [], 'baseline' => false, 'title_gap' => ''], $o);
 }
 
+const TITLE_1EM = ".editor-styles-wrapper .editor-post-title { margin-block-end: 1em; }\n";
+
 // 1. No Bricks loaded: classes still ship, CSS is only the title rule.
-$p = Payload::build(opts(['classes' => ['prose'], 'title_gap' => '2rem']), 'post');
+$p = Payload::build(opts(['classes' => ['prose'], 'title_gap' => '1em']), 'post');
 assert_same(['brxe-text', 'prose'], $p['classes'], '1: classes without Bricks');
-assert_same(".editor-styles-wrapper .editor-post-title { margin-block-end: 2rem; }\n", $p['css'], '1: title rule only');
+assert_same(TITLE_1EM, $p['css'], '1: title rule only');
 assert_same([], $p['links'], '1: no links');
 assert_same(['prose'], Payload::missing_classes(['prose']), '1: all missing without Bricks');
+
+// 2. Bricks present but load_webfonts missing: the API counts as unavailable -> title rule only.
+//    Separate process, because a class cannot lose a method once declared.
+$child = sprintf(
+    'function apply_filters($h, $v) { return $v; } require %s; require %s; '
+    . '\Bricks\Database::$global_data["globalClasses"] = [["id" => "abc", "name" => "prose"]]; '
+    . 'echo json_encode(\SFX\EditorProse\Payload::build(["classes" => ["prose"], "element" => "text", "all_post_types" => true, "post_types" => [], "baseline" => false, "title_gap" => "1em"], "post"));',
+    var_export(__DIR__ . '/../inc/EditorProse/Payload.php', true),
+    var_export(__DIR__ . '/support/editor-prose-bricks-stubs-partial.php', true)
+);
+$out = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child));
+$partial = json_decode((string) $out, true);
+assert_same(TITLE_1EM, $partial['css'] ?? null, '2: missing load_webfonts -> title rule only');
 
 require_once __DIR__ . '/support/editor-prose-bricks-stubs.php';
 
@@ -451,55 +497,105 @@ require_once __DIR__ . '/support/editor-prose-bricks-stubs.php';
     'junk',
 ];
 
-// 2. Title rule.
-assert_same('', Payload::title_rule(''), '2: empty gap -> no rule');
+assert_same('', Payload::title_rule(''), '3: empty gap -> no rule');
 
-// 3. Compiled, scoped, one call for all classes in settings order, element from settings.
+// 4. Compiled, scoped, one call for all classes in settings order, element from settings.
 \Bricks\Assets::$seen = [];
 $p = Payload::build(opts(['classes' => ['second', 'prose', 'typo'], 'element' => 'post-content']), 'page');
-assert_same(['brxe-post-content', 'second', 'prose', 'typo'], $p['classes'], '3: classes');
-assert_same(".block-editor-iframe__body .def.brxe-post-content { color: red; }\n.block-editor-iframe__body .abc.brxe-post-content { color: red; }\n", $p['css'], '3: compiled + scoped');
-assert_same([['sfx_editor_prose', ['def' => ['post-content'], 'abc' => ['post-content']]]], \Bricks\Assets::$seen, '3: one compiler call, ordered map');
-assert_same(['https://fonts.example/css?family=A&display=swap'], $p['links'], '3: stylesheet links only, decoded');
-assert_same(['typo'], Payload::missing_classes(['second', 'prose', 'typo']), '3: missing names');
+assert_same(['brxe-post-content', 'second', 'prose', 'typo'], $p['classes'], '4: classes');
+assert_same(".block-editor-iframe__body .def.brxe-post-content { font-family: \"Inter\"; }\n.block-editor-iframe__body .abc.brxe-post-content { font-family: \"Inter\"; }\n", $p['css'], '4: compiled + scoped');
+assert_same([['sfx_editor_prose', ['def' => ['post-content'], 'abc' => ['post-content']]]], \Bricks\Assets::$seen, '4: one compiler call, ordered map');
+assert_same(['https://fonts.example/css?family=Inter&display=swap'], $p['links'], '4: stylesheet links only, decoded');
+assert_same(['typo'], Payload::missing_classes(['second', 'prose', 'typo']), '4: missing names');
 
-// 4. Statics restored after a normal call and after a throw.
-\Bricks\Assets::$inline_css = ['keep' => 'me'];
-\Bricks\Assets::$inline_css_dynamic_data = 'orig';
-\Bricks\Assets::$global_classes_elements = ['orig' => ['div']];
+// 5. All six statics restored, after a normal call and after a throw.
+function seed(): array
+{
+    \Bricks\Assets::$global_classes_elements = ['orig' => ['div']];
+    \Bricks\Assets::$inline_css = ['keep' => 'me'];
+    \Bricks\Assets::$inline_css_breakpoints = ['bp' => 'orig'];
+    \Bricks\Assets::$unique_inline_css = ['orig'];
+    \Bricks\Assets::$inline_css_dynamic_data = 'orig';
+    \Bricks\Assets::$current_generating_element = 'orig-el';
+    return snapshot_statics();
+}
+function snapshot_statics(): array
+{
+    return [
+        \Bricks\Assets::$global_classes_elements,
+        \Bricks\Assets::$inline_css,
+        \Bricks\Assets::$inline_css_breakpoints,
+        \Bricks\Assets::$unique_inline_css,
+        \Bricks\Assets::$inline_css_dynamic_data,
+        \Bricks\Assets::$current_generating_element,
+    ];
+}
+$before = seed();
 Payload::build(opts(['classes' => ['prose']]), 'post');
-assert_same(['keep' => 'me'], \Bricks\Assets::$inline_css, '4: inline_css restored');
-assert_same('orig', \Bricks\Assets::$inline_css_dynamic_data, '4: dynamic data restored');
-assert_same(['orig' => ['div']], \Bricks\Assets::$global_classes_elements, '4: elements map restored');
+assert_same($before, snapshot_statics(), '5: all six statics restored after a normal compile');
 
+$before = seed();
 \Bricks\Assets::$throw = true;
 $p = Payload::build(opts(['classes' => ['prose'], 'title_gap' => '1em', 'baseline' => true]), 'post', 'https://site.test/prose.css?ver=1');
-assert_same(".editor-styles-wrapper .editor-post-title { margin-block-end: 1em; }\n", $p['css'], '4: throw -> title rule only');
-assert_same(['https://site.test/prose.css?ver=1'], $p['links'], '4: baseline link survives a throw');
-assert_same(['brxe-text', 'prose', 'sfx-prose'], $p['classes'], '4: classes survive a throw');
-assert_same(['keep' => 'me'], \Bricks\Assets::$inline_css, '4: restored after throw');
-assert_same('orig', \Bricks\Assets::$inline_css_dynamic_data, '4: dynamic restored after throw');
 \Bricks\Assets::$throw = false;
+assert_same($before, snapshot_statics(), '5: all six statics restored after a throw');
+assert_same(TITLE_1EM, $p['css'], '5: throw -> title rule only');
+assert_same(['https://site.test/prose.css?ver=1'], $p['links'], '5: baseline link survives a throw');
+assert_same(['brxe-text', 'prose', 'sfx-prose'], $p['classes'], '5: classes survive a throw');
 
-// 5. Unknown only -> compiler not called, css empty.
+// 6. Unknown only -> compiler not called, css empty.
 \Bricks\Assets::$seen = [];
 $p = Payload::build(opts(['classes' => ['typo']]), 'post');
-assert_same([], \Bricks\Assets::$seen, '5: compiler not called for unknown names');
-assert_same('', $p['css'], '5: empty css');
+assert_same([], \Bricks\Assets::$seen, '6: compiler not called for unknown names');
+assert_same('', $p['css'], '6: empty css');
 
-// 6. Baseline: link first, sfx-prose class last.
+// 7. Baseline: link first, sfx-prose class last.
 $p = Payload::build(opts(['classes' => ['prose'], 'baseline' => true]), 'post', 'https://site.test/prose.css?ver=1');
-assert_same(['https://site.test/prose.css?ver=1', 'https://fonts.example/css?family=A&display=swap'], $p['links'], '6: baseline link first');
-assert_same('sfx-prose', end($p['classes']), '6: sfx-prose added');
-
-// 7. Script-breaking text survives JSON encoding safely (Review Focus 5).
-$json = json_encode(['css' => 'a{content:"</script><script>x</style>"}']);
-assert_same(false, strpos($json, '</script'), '7: json_encode escapes </script');
+assert_same(['https://site.test/prose.css?ver=1', 'https://fonts.example/css?family=Inter&display=swap'], $p['links'], '7: baseline link first');
+assert_same('sfx-prose', end($p['classes']), '7: sfx-prose added');
 
 echo "editor-prose-payload-test: PASS\n";
 ```
 
-(`wp_json_encode` wraps `json_encode` with the same default flags — no `JSON_UNESCAPED_SLASHES` — so check 7 pins the escaping the controller relies on.)
+`tests/support/editor-prose-bricks-stubs-partial.php` (Bricks with every API except `load_webfonts`):
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Bricks {
+    class Database
+    {
+        public static $global_data = [];
+    }
+
+    class Assets
+    {
+        public static $global_classes_elements = [];
+        public static $inline_css = [];
+        public static $inline_css_breakpoints = [];
+        public static $unique_inline_css = [];
+        public static $inline_css_dynamic_data = '';
+        public static $current_generating_element = null;
+
+        public static function generate_global_classes($key = 'global_classes')
+        {
+            return ".abc.brxe-text { color: red; }\n";
+        }
+    }
+}
+
+namespace Bricks\Integrations {
+    class Block_Editor
+    {
+        public static function scope_css_for_gutenberg($css, $map = false)
+        {
+            return $css;
+        }
+    }
+}
+```
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -598,10 +694,6 @@ class Payload
     /** Stylesheet hrefs Bricks would load for fonts used in $css; preconnect links ignored. */
     public static function font_links(string $css): array
     {
-        if (!method_exists('Bricks\Assets', 'load_webfonts')) {
-            return [];
-        }
-
         $html = (string) \Bricks\Assets::load_webfonts($css, true);
         preg_match_all('/<link\b[^>]*>/i', $html, $tags);
 
@@ -633,6 +725,7 @@ class Payload
         if (!class_exists('Bricks\Database') || !class_exists('Bricks\Assets')
             || !class_exists('Bricks\Integrations\Block_Editor')
             || !method_exists('Bricks\Assets', 'generate_global_classes')
+            || !method_exists('Bricks\Assets', 'load_webfonts')
             || !method_exists('Bricks\Integrations\Block_Editor', 'scope_css_for_gutenberg')
             || !property_exists('Bricks\Database', 'global_data')) {
             return false;
@@ -669,8 +762,8 @@ Expected: `editor-prose-payload-test: PASS`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add inc/EditorProse/Payload.php tests/support/editor-prose-bricks-stubs.php tests/editor-prose-payload-test.php
-git commit -m "feat(editor-prose): payload built through Bricks' compiler and editor scoper"
+git add inc/EditorProse/Payload.php tests/support/editor-prose-bricks-stubs.php tests/support/editor-prose-bricks-stubs-partial.php tests/editor-prose-payload-test.php
+git commit -m "WIP: editor-prose payload"
 ```
 
 ---
@@ -827,6 +920,18 @@ function load(extra = {}) {
   frame.listeners.load[0]();
   assert.equal(observers.length, 2, '5: new document observed');
   assert.deepEqual(d2.root.classList.set, ['brxe-text'], '5: new document root classed');
+  assert.equal(d2.head.children[0].id, 'sfx-editor-prose', '5: new document gets the style');
+
+  // A second, different document in the same iframe (reload / device switch).
+  const d3 = new Doc();
+  makeWin(d3, observers);
+  d3.root = new El('div');
+  frame.contentDocument = d3;
+  frame.listeners.load[0]();
+  assert.equal(observers.length, 3, '5: replacement document observed');
+  assert.deepEqual(d3.root.classList.set, ['brxe-text'], '5: replacement root classed');
+  assert.equal(d3.head.children[0].id, 'sfx-editor-prose', '5: replacement document gets the style');
+  assert.equal(d2.head.children.length, 1, '5: old document untouched by the replacement');
 }
 
 // 6. Auto-start only with config present.
@@ -949,7 +1054,7 @@ Expected: `editor-prose-test: PASS`
 
 ```bash
 git add inc/EditorProse/assets/editor-prose.js tests/editor-prose-test.mjs
-git commit -m "feat(editor-prose): canvas sync script for root classes, style and links"
+git commit -m "WIP: editor-prose canvas script"
 ```
 
 ---
@@ -961,7 +1066,7 @@ git commit -m "feat(editor-prose): canvas sync script for root classes, style an
 - Test: `tests/editor-prose-baseline-test.mjs`
 
 **Interfaces:**
-- Produces: `inc/EditorProse/assets/prose.css`, loaded by Task 5 (frontend handle `sfx-prose`, canvas link).
+- Produces: `inc/EditorProse/assets/prose.css`, loaded by Task 5 (frontend handle `sfx-prose`, no dependencies; canvas link). It starts with the same layer-order statement as `assets/css/frontend/styles.css`, so it does not depend on that file (which `disable_bricks_css` can drop via its `bricks-frontend` dependency).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -970,9 +1075,11 @@ git commit -m "feat(editor-prose): canvas sync script for root classes, style an
 ```js
 /**
  * Pin the structural contract of the Editor Prose baseline (spec "Baseline"):
- * everything inside `@layer sfx.components`, every selector anchored on
- * `:where(.sfx-prose)`, Bricks elements excluded from every descendant rule,
- * no !important, no rem literals, and every var() chain ending in a literal.
+ * the sfx layer-order statement first (identical to styles.css), then exactly one
+ * `@layer sfx.components` block and nothing else; every rule inside it anchored on
+ * `:where(.sfx-prose)`, Bricks elements excluded from every descendant rule, no
+ * nested at-rules, no !important, no rem literals, every var() with a fallback.
+ * The checker is run against broken fixtures too, so it cannot pass vacuously.
  * Visual behaviour is covered by the browser verification.
  *
  * Run: node tests/editor-prose-baseline-test.mjs
@@ -984,24 +1091,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const css = readFileSync(join(ROOT, 'inc/EditorProse/assets/prose.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const SOURCE = readFileSync(join(ROOT, 'inc/EditorProse/assets/prose.css'), 'utf8');
+const ORDER = readFileSync(join(ROOT, 'assets/css/frontend/styles.css'), 'utf8').match(/@layer[^;{]+;/)[0];
 const EXCLUDE = ':not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *))';
-
-// 1. One top-level block: @layer sfx.components { … }
-const trimmed = css.trim();
-assert.ok(trimmed.startsWith('@layer sfx.components {'), '1: starts with the layer block');
-assert.ok(trimmed.endsWith('}'), '1: ends with the layer block');
-
-// 2. Walk rules at depth 1: collect selector preludes and declaration bodies.
-const rules = [];
-let depth = 0, buf = '', prelude = '';
-for (const ch of trimmed) {
-  if (ch === '{') { depth++; if (depth === 2) { prelude = buf.trim(); buf = ''; continue; } if (depth === 1) { buf = ''; continue; } }
-  if (ch === '}') { if (depth === 2) rules.push({ prelude, body: buf.trim() }); depth--; buf = ''; continue; }
-  buf += ch;
-}
-assert.equal(depth, 0, '2: braces balanced');
-assert.ok(rules.length >= 15, '2: rules found');
 
 function splitTop(list) {
   const out = []; let d = 0, cur = '';
@@ -1010,38 +1102,84 @@ function splitTop(list) {
   return out;
 }
 
-for (const { prelude, body } of rules) {
-  for (const sel of splitTop(prelude)) {
-    assert.ok(sel.startsWith(':where(.sfx-prose)'), `3: selector anchored: ${sel}`);
-    if (sel !== ':where(.sfx-prose)') {
-      const base = sel.replace(/::[a-z-]+$/, '');
-      assert.ok(base.endsWith(EXCLUDE), `4: Bricks elements excluded: ${sel}`);
+function checkVars(text, where) {
+  let i = text.indexOf('var(');
+  while (i !== -1) {
+    let d = 0, j = i + 3, args = '';
+    for (; j < text.length; j++) {
+      const c = text[j];
+      if (c === '(') d++;
+      if (c === ')') { d--; if (d === 0) break; }
+      if (d >= 1 && !(d === 1 && c === '(')) args += c;
     }
+    const parts = splitTop(args);
+    if (parts.length < 2 || parts.slice(1).join(',').trim() === '') throw new Error(`var without fallback in ${where}: var(${args})`);
+    checkVars(parts.slice(1).join(','), where); // any var() inside the fallback, at any position
+    i = text.indexOf('var(', j + 1);
   }
-  assert.ok(!/!important/.test(body), `5: no !important in ${prelude}`);
-  assert.ok(!/\d(\.\d+)?rem\b/.test(body), `6: no rem literal in ${prelude}`);
-
-  // 7. Every var() has a fallback, recursively, ending in a non-var literal.
-  const checkVar = (s, where) => {
-    let i = s.indexOf('var(');
-    while (i !== -1) {
-      let d = 0, j = i + 3, args = '';
-      for (; j < s.length; j++) { const c = s[j]; if (c === '(') d++; if (c === ')') { d--; if (d === 0) break; } if (d >= 1 && !(d === 1 && c === '(')) args += c; }
-      const parts = splitTop(args);
-      assert.ok(parts.length >= 2, `7: var without fallback in ${where}: var(${args})`);
-      const fallback = parts.slice(1).join(',').trim();
-      assert.ok(fallback.length > 0, `7: empty fallback in ${where}`);
-      if (fallback.startsWith('var(')) checkVar(fallback, where);
-      i = s.indexOf('var(', j + 1);
-    }
-  };
-  checkVar(body, prelude);
 }
 
-// 8. Link rules exclude button links.
-const linkRules = rules.filter((r) => splitTop(r.prelude).some((s) => /\)\s+a(:|$)/.test(s) || / a:/.test(s)));
-assert.ok(linkRules.length >= 2, '8: link and hover rules present');
-for (const r of linkRules) assert.ok(r.prelude.includes(':not(.wp-block-button__link, .wp-element-button)'), `8: button links excluded in ${r.prelude}`);
+/** Throws on the first violation; returns the rule count. */
+function check(raw) {
+  let css = raw.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!css.startsWith(ORDER)) throw new Error('layer-order statement missing or not first');
+  css = css.slice(ORDER.length).trim();
+  if (!css.startsWith('@layer sfx.components {')) throw new Error('second statement is not the sfx.components block');
+  // Find the matching close of the layer block; nothing may follow it.
+  let d = 0, end = -1;
+  for (let k = 0; k < css.length; k++) { if (css[k] === '{') d++; if (css[k] === '}') { d--; if (d === 0) { end = k; break; } } }
+  if (end === -1) throw new Error('unbalanced braces');
+  if (css.slice(end + 1).trim() !== '') throw new Error('content outside the sfx.components block');
+  const inner = css.slice('@layer sfx.components {'.length, end);
+
+  let count = 0, pos = 0;
+  while (pos < inner.length) {
+    const open = inner.indexOf('{', pos);
+    if (open === -1) { if (inner.slice(pos).trim() !== '') throw new Error('stray text in layer'); break; }
+    const prelude = inner.slice(pos, open).trim();
+    const close = inner.indexOf('}', open);
+    const body = inner.slice(open + 1, close);
+    if (close === -1 || body.includes('{')) throw new Error(`nested block in ${prelude}`);
+    if (prelude.startsWith('@')) throw new Error(`at-rule inside the layer: ${prelude}`);
+    for (const sel of splitTop(prelude)) {
+      if (!sel.startsWith(':where(.sfx-prose)')) throw new Error(`selector not anchored: ${sel}`);
+      if (sel !== ':where(.sfx-prose)' && !sel.replace(/::[a-z-]+$/, '').endsWith(EXCLUDE)) throw new Error(`Bricks elements not excluded: ${sel}`);
+    }
+    if (/!important/.test(body)) throw new Error(`!important in ${prelude}`);
+    if (/\d(\.\d+)?rem\b/.test(body)) throw new Error(`rem literal in ${prelude}`);
+    checkVars(body, prelude);
+    count++;
+    pos = close + 1;
+  }
+  return count;
+}
+
+// 1. The real file passes and has the expected size.
+const n = check(SOURCE);
+assert.ok(n >= 20, `1: rules found (${n})`);
+
+// 2. The checker rejects each kind of violation (so a pass above means something).
+const bad = {
+  'rule outside the layer': SOURCE + '\nbody { color: red !important; }',
+  'second layer': SOURCE + '\n@layer sfx.theme { :where(.sfx-prose) p' + EXCLUDE + ' { color: red; } }',
+  'unanchored selector': SOURCE.replace(':where(.sfx-prose) hr:', 'hr:'),
+  'missing exclusion': SOURCE.replace(':where(.sfx-prose) hr' + EXCLUDE, ':where(.sfx-prose) hr'),
+  'important': SOURCE.replace('cursor: pointer;', 'cursor: pointer !important;'),
+  'rem literal': SOURCE.replace('padding: 0.1em 0.3em;', 'padding: 0.1rem 0.3em;'),
+  'var without fallback': SOURCE.replace('var(--text-body, inherit)', 'var(--text-body)'),
+  'inner var without fallback': SOURCE.replace('var(--link, var(--primary, currentColor))', 'var(--link, var(--primary))'),
+  'nested at-rule': SOURCE.replace('@layer sfx.components {', '@layer sfx.components {\n@media (min-width: 1px) { :where(.sfx-prose) { color: red; } }'),
+  'order statement missing': SOURCE.replace(ORDER, ''),
+};
+for (const [label, text] of Object.entries(bad)) {
+  assert.notEqual(text, SOURCE, `2: fixture "${label}" actually changes the file`);
+  assert.throws(() => check(text), `2: checker rejects "${label}"`);
+}
+
+// 3. Link rules exclude button links.
+const linkPreludes = SOURCE.split('{').map((x) => x.split('}').pop().trim()).filter((p) => /\) a(:|$)/.test(p));
+assert.ok(linkPreludes.length >= 2, '3: link and hover rules present');
+for (const p of linkPreludes) assert.ok(p.includes(':not(.wp-block-button__link, .wp-element-button)'), `3: button links excluded in ${p}`);
 
 console.log('editor-prose-baseline-test: PASS');
 ```
@@ -1061,7 +1199,11 @@ Expected: `ENOENT … inc/EditorProse/assets/prose.css`.
    site's prose class, Core Framework — wins without !important. Values read the
    site's tokens, then Core Framework's, then a literal (em/inherit, never rem:
    Bricks' default root is 62.5 %). Bricks elements inside the prose area get no
-   declarations from here. Block spacing is Bricks' contextual spacing, not ours. */
+   declarations from here. Block spacing is Bricks' contextual spacing, not ours.
+   The order statement repeats assets/css/frontend/styles.css so the sfx.* order is
+   the same whichever file loads first (this one has no dependency on that file). */
+@layer sfx.reset, sfx.utilities, sfx.components, sfx.theme;
+
 @layer sfx.components {
 
   :where(.sfx-prose) {
@@ -1188,7 +1330,7 @@ Expected: `editor-prose-baseline-test: PASS`
 
 ```bash
 git add inc/EditorProse/assets/prose.css tests/editor-prose-baseline-test.mjs
-git commit -m "feat(editor-prose): layered, token-based baseline prose.css"
+git commit -m "WIP: editor-prose baseline css"
 ```
 
 ---
@@ -1197,11 +1339,146 @@ git commit -m "feat(editor-prose): layered, token-based baseline prose.css"
 
 **Files:**
 - Create: `inc/EditorProse/Controller.php`, `inc/EditorProse/AdminPage.php`
-- Test: covered by `./quality.sh` syntax lint + PSR-4 case test, and by Task 8's browser verification (the hooks need a booted editor).
+- Test: `tests/editor-prose-controller-test.php` (hooks called directly against WordPress stand-ins); the booted editor is Task 8.
 
 **Interfaces:**
 - Consumes: `Settings::get()`, `Settings::applies_to()`, `Settings::bricks_ok()` (Task 1); `Payload::build()`, `Payload::missing_classes()` (Task 2); `editor-prose.js` (Task 3); `prose.css` (Task 4).
 - Produces: `SFX\EditorProse\Controller::get_feature_config(): array` (auto-discovered), handles `sfx-editor-prose` (script) and `sfx-prose` (style); `AdminPage::$menu_slug = 'sfx-editor-prose'`.
+
+- [ ] **Step 0: Write the failing controller test**
+
+`tests/editor-prose-controller-test.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace SFX {
+    class AccessControl
+    {
+        public static function can_access_theme_settings(): bool { return true; }
+        public static function die_if_unauthorized_theme(): void {}
+    }
+}
+
+namespace {
+    define('BRICKS_VERSION', '2.4.2');
+
+    $test_options = [];
+    $enqueued_scripts = [];
+    $inline_scripts = [];
+    $enqueued_styles = [];
+    $screen = null;
+    $css_suffix = '';
+
+    function get_option($name, $default = false) { global $test_options; return array_key_exists($name, $test_options) ? $test_options[$name] : $default; }
+    function add_action($hook, $cb, $p = 10, $a = 1) { return true; }
+    function register_setting($g, $n, $a = []) { return true; }
+    function post_type_exists($pt) { return in_array($pt, ['post', 'page'], true); }
+    function use_block_editor_for_post_type($pt) { return true; }
+    function is_admin() { return true; }
+    function get_current_screen() { global $screen; return $screen; }
+    function get_the_ID() { return 7; }
+    function get_post_type($id) { return 'post'; }
+    function get_stylesheet_directory() { return dirname(__DIR__); }
+    function get_stylesheet_directory_uri() { return 'https://site.test/wp-content/themes/sfx-bricks-child'; }
+    function add_query_arg($k, $v, $url) { return $url . '?' . $k . '=' . $v; }
+    function wp_json_encode($data) { return json_encode($data); } // same default flags as WordPress
+    function apply_filters($hook, $value, ...$args) { global $css_suffix; return $hook === 'sfx_editor_prose_css' ? $value . $css_suffix : $value; }
+    function wp_enqueue_script($h, $src, $deps, $ver, $footer) { global $enqueued_scripts; $enqueued_scripts[$h] = [$src, $deps, $footer]; }
+    function wp_add_inline_script($h, $js, $pos) { global $inline_scripts; $inline_scripts[$h] = [$js, $pos]; }
+    function wp_enqueue_style($h, $src, $deps, $ver) { global $enqueued_styles; $enqueued_styles[$h] = [$src, $deps]; }
+    function __($t, $d = null) { return $t; }
+    function esc_html__($t, $d = null) { return htmlspecialchars($t); }
+    function esc_html_e($t, $d = null) { echo htmlspecialchars($t); }
+    function esc_html($t) { return htmlspecialchars((string) $t); }
+    function esc_attr($t) { return htmlspecialchars((string) $t, ENT_QUOTES); }
+    function settings_fields($g) { echo '<!--fields:' . $g . '-->'; }
+    function submit_button() { echo '<button>save</button>'; }
+    function selected($a, $b) { echo $a === $b ? ' selected' : ''; }
+    function checked($c) { echo $c ? ' checked' : ''; }
+    function get_post_types($args, $out) { return [(object) ['name' => 'post', 'labels' => (object) ['singular_name' => 'Post']]]; }
+
+    require_once __DIR__ . '/../inc/EditorProse/Settings.php';
+    require_once __DIR__ . '/../inc/EditorProse/Payload.php';
+    require_once __DIR__ . '/../inc/EditorProse/AdminPage.php';
+    require_once __DIR__ . '/../inc/EditorProse/Controller.php';
+
+    use SFX\EditorProse\AdminPage;
+    use SFX\EditorProse\Controller;
+
+    function assert_true($cond, string $message): void
+    {
+        if (!$cond) { fwrite(STDERR, "FAIL: {$message}\n"); exit(1); }
+    }
+    function reset_state(array $options, string $base = 'post'): void
+    {
+        global $test_options, $enqueued_scripts, $inline_scripts, $enqueued_styles, $screen;
+        $test_options = ['sfx_editor_prose_options' => $options];
+        $enqueued_scripts = $inline_scripts = $enqueued_styles = [];
+        $screen = new class($base) {
+            public $base;
+            public function __construct($b) { $this->base = $b; }
+            public function is_block_editor() { return true; }
+        };
+    }
+
+    // 1. Module on, nothing configured -> editor untouched (Review Focus 1).
+    reset_state([]);
+    Controller::enqueue_editor();
+    assert_true($enqueued_scripts === [] && $inline_scripts === [], '1: no script without classes or baseline');
+
+    // 2. Not the post editor (widgets / site editor) -> untouched.
+    reset_state(['classes' => 'prose'], 'widgets');
+    Controller::enqueue_editor();
+    assert_true($enqueued_scripts === [], '2: widgets screen ignored');
+
+    // 3. Configured -> script in the footer plus config before it; CSS that tries to end the
+    //    script element is serialized safely and decodes losslessly (Review Focus 5).
+    reset_state(['classes' => 'prose', 'title_gap' => '1em']);
+    $css_suffix = '</script><script>alert(1)</script>';
+    Controller::enqueue_editor();
+    $css_suffix = '';
+    assert_true(isset($enqueued_scripts['sfx-editor-prose']) && $enqueued_scripts['sfx-editor-prose'][2] === true, '3: script enqueued in footer');
+    [$js, $pos] = $inline_scripts['sfx-editor-prose'];
+    assert_true($pos === 'before', '3: config before the script');
+    assert_true(stripos($js, '</script') === false, '3: no literal </script in the inline script');
+    $json = substr($js, strlen('window.sfxEditorProseConfig = '), -1);
+    $config = json_decode($json, true);
+    assert_true($config['classes'] === ['brxe-text', 'prose'], '3: classes in config');
+    assert_true(str_ends_with($config['css'], '</script><script>alert(1)</script>'), '3: css decodes losslessly');
+
+    // 4. Baseline: editor config carries the versioned prose.css link; frontend enqueues it without dependencies.
+    reset_state(['baseline' => '1']);
+    Controller::enqueue_editor();
+    $config = json_decode(substr($inline_scripts['sfx-editor-prose'][0], strlen('window.sfxEditorProseConfig = '), -1), true);
+    assert_true(str_starts_with($config['links'][0], 'https://site.test/wp-content/themes/sfx-bricks-child/inc/EditorProse/assets/prose.css?ver='), '4: baseline link in editor config');
+    Controller::enqueue_frontend();
+    assert_true(isset($enqueued_styles['sfx-prose']) && $enqueued_styles['sfx-prose'][1] === [], '4: frontend baseline enqueued without dependencies');
+    reset_state(['classes' => 'prose']);
+    Controller::enqueue_frontend();
+    assert_true(!isset($enqueued_styles['sfx-prose']), '4: no frontend baseline when off');
+
+    // 5. Settings page: hidden "0" inputs precede both checkboxes (Review Focus 4); missing class named (Review Focus 2).
+    reset_state(['classes' => 'typo', 'baseline' => '1']);
+    ob_start();
+    AdminPage::render_page();
+    $html = (string) ob_get_clean();
+    foreach (['all_post_types', 'baseline'] as $key) {
+        $hidden = strpos($html, 'type="hidden" name="sfx_editor_prose_options[' . $key . ']" value="0"');
+        $box = strpos($html, 'type="checkbox" name="sfx_editor_prose_options[' . $key . ']" value="1"');
+        assert_true($hidden !== false && $box !== false && $hidden < $box, "5: hidden 0 before the {$key} checkbox");
+    }
+    assert_true(strpos($html, 'No Bricks global class with this name: typo') !== false, '5: missing class named');
+    assert_true(strpos($html, 'sfx-prose') !== false, '5: baseline hint shown');
+
+    echo "editor-prose-controller-test: PASS\n";
+}
+```
+
+Run: `php tests/editor-prose-controller-test.php`
+Expected: fatal "Failed opening required …/inc/EditorProse/AdminPage.php".
 
 - [ ] **Step 1: Write the controller**
 
@@ -1277,7 +1554,7 @@ class Controller
         wp_enqueue_style(
             'sfx-prose',
             get_stylesheet_directory_uri() . '/inc/EditorProse/assets/prose.css',
-            ['sfx-frontend'], // after styles.css, which fixes the sfx.* layer order
+            [], // prose.css carries its own sfx.* layer-order statement; no dependency on a handle disable_bricks_css can drop
             (string) filemtime($file)
         );
     }
@@ -1436,7 +1713,8 @@ class AdminPage
                         <ul class="sfx-tips-list">
                             <li><?php esc_html_e('Everything in the prose class — typography, lists, links, figures, tables — is mirrored into the editor. Design it in Bricks, in the class, not on the element.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Spacing between blocks comes from the Bricks theme style (contextual spacing).', 'sfxtheme'); ?></li>
-                            <li><?php esc_html_e('Not mirrored: rules that depend on elements outside the content, settings on the wrapper element itself, relative url() paths. Breakpoints follow the editor width; use the device preview.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Not mirrored: rules that depend on elements outside the content, settings on the wrapper element itself, wrapper attributes, relative url() paths. Breakpoints follow the editor width; use the device preview.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Where a prose rule competes with a WordPress block style, a Bricks theme-style link colour or a component class, the editor can resolve it differently. Make such prose rules one class more specific. Details: theme README, "Editor Prose: authoring notes".', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Anyone who can edit Bricks global classes can put CSS into the editor of every post shown here. Only give that permission to people trusted with all drafts.', 'sfxtheme'); ?></li>
                         </ul>
                     </div>
@@ -1448,27 +1726,26 @@ class AdminPage
 }
 ```
 
-- [ ] **Step 3: Lint and battery**
+- [ ] **Step 3: Run the controller test, lint and battery**
 
-Run: `php -l inc/EditorProse/Controller.php && php -l inc/EditorProse/AdminPage.php && ./quality.sh`
-Expected: `No syntax errors detected` twice; `quality.sh` exits 0 (includes the PSR-4 case test).
+Run: `php tests/editor-prose-controller-test.php && ./quality.sh`
+Expected: `editor-prose-controller-test: PASS`; `quality.sh` exits 0 (includes syntax lint and the PSR-4 case test).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add inc/EditorProse/Controller.php inc/EditorProse/AdminPage.php
-git commit -m "feat(editor-prose): controller hooks and settings page"
+git add inc/EditorProse/Controller.php inc/EditorProse/AdminPage.php tests/editor-prose-controller-test.php
+git commit -m "WIP: editor-prose controller and admin page"
 ```
 
 ---
 
-### Task 6: Wire into the theme — toggle, overview, purge, import/export
+### Task 6: Wire into the theme — toggle, overview, import/export
 
 **Files:**
 - Modify: `inc/GeneralThemeOptions/Settings.php` (after the `enable_redirects` entry, ~line 88)
 - Modify: `inc/ThemeSettingsOverview/OverviewProvider.php` (after `enable_redirects`, ~line 77)
 - Modify: `tests/theme-settings-overview-provider-test.php` (after the Redirects block, ~line 148)
-- Modify: `inc/DataPurge.php` (option list, after `// Redirects`)
 - Modify: `inc/ImportExport/Controller.php` (settings groups ~line 306; `sanitize_option_value` ~line 1276)
 
 **Interfaces:**
@@ -1521,14 +1798,7 @@ Expected: FAIL on "Editor Prose module listed and inactive by default".
 Run: `php tests/theme-settings-overview-provider-test.php`
 Expected: exits 0 with its PASS line.
 
-- [ ] **Step 5: Purge and import/export**
-
-`inc/DataPurge.php`, after the Redirects entries in the option list:
-
-```php
-        // Editor Prose
-        'sfx_editor_prose_options',
-```
+- [ ] **Step 5: Import/export**
 
 `inc/ImportExport/Controller.php`, in the settings groups after `'redirects' => [...]`:
 
@@ -1557,8 +1827,8 @@ Run: `./quality.sh`
 Expected: exit 0.
 
 ```bash
-git add inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php tests/theme-settings-overview-provider-test.php inc/DataPurge.php inc/ImportExport/Controller.php
-git commit -m "feat(editor-prose): module toggle, overview entry, purge and export"
+git add inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php tests/theme-settings-overview-provider-test.php inc/ImportExport/Controller.php
+git commit -m "WIP: editor-prose toggle, overview, export"
 ```
 
 ---
@@ -1594,74 +1864,99 @@ and a new section before `## Requirements`:
 ```markdown
 ## Editor Prose: authoring notes
 
-- Put prose styling in the **Bricks global class**, not on the element; element settings are not mirrored.
+- Put prose styling in the **Bricks global class**, not on the element: settings on the wrapper element itself (compiled to its ID) are not mirrored.
 - Write the class CSS nested under the class (or `%root%`). Avoid braces inside `content:` strings — Bricks' editor scoper can break on them.
-- Not mirrored: rules depending on elements outside the content (`body.single-post …`, variables set on a surrounding section), relative `url()`s, editor-only structural differences (`:last-child` next to the block appender).
-- Breakpoints follow the editor canvas width. Use the editor's device preview to check tablet/mobile rules.
-- With several prose classes, list them in the order they have on the frontend element.
+- **Not mirrored:** rules depending on elements outside the content (`body.single-post …`, variables set on a surrounding section); selectors on wrapper attributes other than class; relative `url()`s (they resolve against the admin URL); editor-only structure (`:last-child` next to the block appender, zoom-mode separators); class settings driven by dynamic data.
+- **Breakpoints** follow the editor canvas width, not the content width. Use the editor's device preview to check tablet/mobile rules; percentage spacing and container queries also need the same content width.
+- **Cascade differences you can meet:** the editor prefix makes prose rules one class stronger than on the frontend, so a prose rule that loses to a WordPress block style live (e.g. the large quote) can win in the editor; in Bricks' Post Content mode, theme-style link colours in the editor are more specific than live; against component classes Bricks also loads into the editor, the prose CSS always comes later. Where it matters, give the prose rule one more class of specificity.
+- **Several prose classes:** list them in the order they have on the frontend element. With Bricks' Class Manager load order off, the frontend order is page-wide (first encounter anywhere on the page), so a class used earlier elsewhere can reorder them.
+- A class reused on other element types while Bricks' class chaining is off gets element-specific rules there that the editor does not mirror.
 - Import in **merge** mode keeps existing values where the import is empty; use **replace** for an exact copy of another site's settings.
-- Trust: whoever can edit Bricks global classes can put CSS into the editor of every covered post — give that permission only to people trusted with all drafts.
+- Requires Bricks theme styles in the block editor (Bricks setting); the theme's "Disable Bricks Styling" option makes frontend and editor differ by design.
+- **Trust:** whoever can edit Bricks global classes can put CSS into the editor of every covered post — give that permission only to people trusted with all drafts.
+- **Baseline (`sfx-prose`):** layered and token-based (`--text-*`, `--space-*`, `--link`, `--caption-*`, `--table-*`, `--quote-*` …, each with a Core Framework token and a literal as fallback). Anything unlayered wins: the theme style, Core Framework, your prose class, WordPress block styles. Spacing between blocks and list items is the theme style's contextual spacing; with "remove default padding" on, list indent and quote padding are the theme style's job.
 ```
 
 - [ ] **Step 4: AGENTS.md**
 
 In `AGENTS.md`: add "editor prose mirroring" to the module list in "What this is", and change "the explicit exportable contracts of eleven other modules" to "twelve other modules".
 
-Run: `grep -n "twelve other modules" AGENTS.md && ./quality.sh`
-Expected: one match; battery exit 0 (includes `prompt-artifact-paths-test.php`).
+Run: `grep -c "twelve" AGENTS.md; grep -c "eleven" AGENTS.md; ./quality.sh`
+Expected: first count ≥ 1, second `0`; battery exit 0 (includes `prompt-artifact-paths-test.php`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add languages/de_DE.po languages/de_DE.mo README.md AGENTS.md
-git commit -m "docs(editor-prose): German strings, README section, AGENTS module count"
+git commit -m "WIP: editor-prose i18n and docs"
 ```
 
 ---
 
 ### Task 8: Browser verification on the local site
 
-No code; the spec's verification. Local site: `http://sfx-bricks-child.local` (MAMP). Content is prepared **by hand through wp-admin / the Bricks UI** as ordinary dev content — no script creates or deletes anything.
+No code; the spec's verification (spec "Testing"). Local site: `http://sfx-bricks-child.local` (MAMP). Content is prepared **by hand through wp-admin / the Bricks UI** as ordinary dev content — no script creates or deletes anything. Measurements run in the browser console (read-only `getComputedStyle` / `getBoundingClientRect`); record every result.
 
 - [ ] **Step 1: Preconditions**
 
-Confirm Bricks version: `grep -m1 Version ../bricks/style.css` → `2.4.x`. Enable the module (General Theme Options → Enable Editor Prose). In the Bricks theme style: contextual spacing non-zero (e.g. 1rem / 1.25rem / 2rem) and `html` font size `100%`.
+Confirm Bricks version: `grep -m1 Version ../bricks/style.css` → `2.4.x`. Enable the module (General Theme Options → Enable Editor Prose). In the Bricks theme style: contextual spacing non-zero (e.g. 1rem / 1.25rem / 2rem) and `html` font size `100%`. Bricks setting "theme styles in block editor" on.
 
-- [ ] **Step 2: Fixtures (by hand)**
+- [ ] **Step 2: Settings-page states (Review Focus 1, 2, 4)**
+
+a) Module on, settings empty: open a post in the editor → no `sfx-editor-prose` script in the page (`document.querySelector('script[id^="sfx-editor-prose"]') === null`).
+b) Enter classes `prose-test typo`, save → notice "No Bricks global class with this name: typo".
+c) Untick "All post types" and "Baseline", tick nothing else, save, reload → both unticked; the option in the database (`php -r` with `wp-load.php`, read-only `get_option('sfx_editor_prose_options')`) has `all_post_types => false`, `baseline => false`.
+
+- [ ] **Step 3: Fixtures (by hand)**
 
 1. Bricks global class `prose-test`: styles for `p`, `h2`, `ul`, `a`, `blockquote`, `table`, `figcaption`, a web font family, a tablet-breakpoint `p` font size.
 2. Second global class `prose-two` with a conflicting `p { color }`.
-3. A Bricks single-post template: Rich Text element with classes `prose-test prose-two`, content = post content. (For step 6: a Post Content element variant.)
+3. A Bricks single-post template: Rich Text element with classes `prose-test prose-two`, content = post content. (For Step 7: a Post Content element variant.)
 4. A post with paragraphs, h2/h3, nested list, link, quote with citation, table, image with caption, a nested group, one Bricks component block.
 5. Editor Prose settings: classes `prose-test prose-two`, element Rich Text, all post types, title gap `var(--space-m)`.
 
-- [ ] **Step 3: Parity measurement**
+- [ ] **Step 4: Parity measurement**
 
-Open the post frontend and editor in two tabs at the same window width above the largest breakpoint. After `document.fonts.ready` and the prose `FontFace` reporting `status === 'loaded'` in both, collect for every prose element (top level and `li`, `a`, `figcaption`, `blockquote`, `td`): computed `margin-block-start/end`, `padding`, `border`, `font-family`, `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and `getBoundingClientRect` gaps between top-level blocks. Expected: identical, except the documented limits. Repeat with a tablet device preview vs a frontend window of the same width.
+Match the **viewport** widths: read the editor canvas width (`document.querySelector('iframe[name="editor-canvas"]').clientWidth`) and size a frontend window to exactly that width (DevTools device toolbar), above the largest breakpoint. After `document.fonts.ready` and the prose `FontFace` reporting `status === 'loaded'` in both documents, collect for every prose element (top level and `li`, `a`, `figcaption`, `blockquote`, `td`): computed `margin-block-start/end`, `padding`, `border`, `font-family`, `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and the `getBoundingClientRect` gap between consecutive top-level blocks; the title → first paragraph gap equals `var(--space-m)`. Expected: identical except the documented limits. Repeat with the editor's tablet device preview vs a frontend viewport of the same canvas width (the tablet `p` font size applies in both).
 
-- [ ] **Step 4: Robustness**
+- [ ] **Step 5: Robustness**
 
-In the editor: toggle outline mode, switch to code editor and back, switch device preview. Expected: root keeps `brxe-text prose-test prose-two`; `#sfx-editor-prose` present once in the canvas head. In the admin document (outside the canvas): no `#sfx-editor-prose`, no `data-sfx-editor-prose` links. On the frontend: no `sfx-editor-prose` handle.
+In the editor: toggle outline mode, switch to code editor and back, switch device preview. After each: canvas root keeps `brxe-text prose-test prose-two`; exactly one `#sfx-editor-prose` in the canvas head; the font `<link data-sfx-editor-prose>` elements still present. In the admin document (outside the canvas): no `#sfx-editor-prose`, no `link[data-sfx-editor-prose]`, no element carrying `prose-test`. On the frontend: no `sfx-editor-prose` script.
 
-- [ ] **Step 5: Component block and ordering**
+- [ ] **Step 6: Component block and ordering**
 
-Compare the component block frontend vs editor (record any difference as a finding). Confirm `prose-two` vs `prose-test` resolves the same in both.
+Compare the component block frontend vs editor (record any difference as a finding). Confirm `prose-two` vs `prose-test` `p` colour resolves the same in both.
 
-- [ ] **Step 6: Post Content mode**
+- [ ] **Step 7: Post Content mode**
 
-Switch the template to a Post Content element with the same classes and the setting to Post Content; repeat Step 3 once.
+Switch the template to a Post Content element with the same classes and the setting to Post Content; repeat Step 4 once.
 
-- [ ] **Step 7: Baseline**
+- [ ] **Step 8: Baseline**
 
-Settings: baseline on, no prose classes. Template wrapper classes: `sfx-prose` only. Set distinctive token values in Bricks variables (e.g. `--caption-color: rgb(1, 2, 3)`). Check each covered element: baseline properties applied (e.g. `figcaption` colour `rgb(1, 2, 3)`), frontend = editor. Remove `--caption-color`: colour equals the `--text-muted` value. Add a prose class setting `p { color }`: it wins in both. A nested Bricks heading and the component block: no matched rule from `prose.css` (DevTools → Styles).
+Settings: baseline on, no prose classes. Template wrapper classes: `sfx-prose` only. Post content adds `strong`, inline `code`, `pre`, `hr`, a `details`/`summary`, a nested list, a table with ≥ 4 body rows, a link (hover it via DevTools `:hov`). In Bricks variables set distinctive values for the tokens the baseline reads (e.g. `--caption-color: rgb(1, 2, 3)`, `--table-row-bg-alt: rgb(4, 5, 6)`, `--link: rgb(7, 8, 9)`, `--bold-font-weight: 800`).
 
-- [ ] **Step 8: Record**
+a) **Counterfactual:** for each bare-HTML element (not core-block-styled ones such as table-block cells), record the properties the baseline sets with `sfx-prose` removed from the wrapper, then with it; every such property that nothing else on the test site sets must change.
+b) **Expected values:** `figcaption` colour `rgb(1, 2, 3)`, even table row background `rgb(4, 5, 6)`, link colour `rgb(7, 8, 9)`, `strong` weight `800`; frontend = editor for all compared values.
+c) **Fallback:** delete `--caption-color` → `figcaption` colour equals the `--text-muted` value.
+d) **Precedence:** a prose class with `p { color }` on the wrapper → wins in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
+e) **Exclusion:** a nested Bricks heading and the component block → DevTools "Styles" shows no rule from `prose.css`; inherited values as on the frontend.
+f) **disable_bricks_css:** turn on General Theme Options → Disable Bricks Styling; the frontend still loads `prose.css` (`link#sfx-prose-css`). Turn it off again.
 
-Write the results (pass/fail per step, any differences) into the PR description draft; any unexpected difference becomes a fix task before Gate B.
+- [ ] **Step 9: Record**
+
+Write the results (pass/fail per step, any differences) into the PR description draft; any unexpected difference becomes a fix before Gate B.
 
 ---
+
+## Finish: Gate B and closing commit
+
+1. `./quality.sh` green.
+2. Gate B per CLAUDE.md §5: Codex review of the range `merge-base(main)..HEAD` (the WIP commits) with the findings-file protocol, `reviewType: full`, both branch files; prompt names AGENTS.md, this plan and the spec, and asks the standing lens "which existing statements does this diff falsify?" (README module list, AGENTS.md counts, overview test). Minimum 3 passes; fix Blocker/Major after each as a new `WIP:` commit; the final pass must be clean.
+3. If a Gate-B fix changes specified behaviour, update the spec in the same WIP series.
+4. Close: `git reset --soft <parent of the first WIP commit>` (the spec/plan commits stay), then one commit `feat(editor-prose): mirror Bricks prose into the block editor, optional baseline` whose body lists what was verified (Task 8 results) — the cycle is unprofiled (no story).
+5. Open a pull request; do not merge to `main` (invariant 7).
 
 ## Self-Review Notes
 
 - Spec coverage: settings (T1), gate (T1/T5), payload steps 1–6 (T2/T5), client sync (T3), baseline + loading (T4/T5), admin page status lines (T5), toggle/overview/purge/export + import sanitize dispatch (T6), README/AGENTS/i18n (T7), browser verification incl. baseline (T8).
-- Missing-API degradation is tested for "Bricks absent" (T2 check 1); a partially missing API cannot be simulated in one PHP process with stubs loaded — `bricks_api_available()` covers it by construction.
+- Missing-API degradation: "Bricks absent" (T2 check 1) and "Bricks without `load_webfonts`" in a child process (T2 check 2).
