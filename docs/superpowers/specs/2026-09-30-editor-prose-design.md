@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (revised after Gate-A passes 1–4)
+**Date:** 2026-09-30 (revised after Gate-A passes 1–5)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -114,7 +114,7 @@ Settings API (`settings_fields`) like the other modules.
 
 | Key | Type | Default | Sanitize |
 |---|---|---|---|
-| `classes` | list of Bricks global class names (text field, comma/space separated) | `[]` | each must match `^-?[_a-zA-Z][_a-zA-Z0-9-]*$` after stripping a leading `.`; invalid entries dropped; duplicates removed |
+| `classes` | list of Bricks global class names (text field, comma/space separated) | `[]` | each must match `/^-?[_a-zA-Z][_a-zA-Z0-9-]*$/D` (`D`: no trailing newline) after stripping a leading `.`; invalid entries dropped; duplicates removed |
 | `element` | `text` \| `post-content` — the Bricks element that wraps the content on the frontend | `text` | whitelist, else `text` |
 | `all_post_types` | bool | `true` | bool |
 | `post_types` | list of post type slugs (used only when `all_post_types` is false) | `[]` | keep only registered post types that use the block editor |
@@ -193,7 +193,8 @@ One idempotent `sync()`:
 - find `iframe[name="editor-canvas"]`; if absent, return. On first sight of an iframe
   element, add its `load` listener (tracked in a `WeakSet` of iframe elements, so once
   per element);
-- take its current `contentDocument`; if that document is not yet observed (tracked in a
+- take its current `contentDocument`; if it is `null` or has no `documentElement`,
+  return (the `load` listener retries); if that document is not yet observed (tracked in a
   `WeakSet` of documents), attach one `MutationObserver` to its `documentElement`
   (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`) calling `sync()` —
   **before** looking for the root, so a root portalled in later is seen;
@@ -230,8 +231,10 @@ later; equal-specificity conflicts between a prose class and a component class c
 therefore resolve differently than on the frontend. Accepted limit, documented in the
 README.
 
-Bricks' scoper does not scope every valid construct (statement at-rules such as
-`@layer x;`, braces inside strings). Because the CSS lives only inside the canvas
+Bricks' scoper does not handle every valid construct: statement at-rules such as
+`@layer x;` stay unscoped, and braces inside strings (`content:"}"`) can corrupt the
+rule and leave following rules unscoped. The README advises against braces in
+`content` strings. Because the CSS lives only inside the canvas
 document, anything left unscoped can affect only the canvas, never the admin UI.
 
 ### What "parity" covers
@@ -248,6 +251,9 @@ It does **not** cover, and the README/help text say so:
 - relative `url()`s in class CSS — they resolve against the admin URL in the canvas;
 - selectors on wrapper **attributes** other than class (e.g. `[data-source]`) — only
   classes are reproduced;
+- a class reused on **other element types** while Bricks' class chaining is disabled —
+  Bricks then emits element-specific rules (e.g. Rich Text's link typography) under the
+  bare class on the frontend; the module compiles only for the configured `element`;
 - **breakpoints**: Bricks' responsive rules are viewport media queries; the canvas
   iframe's viewport is narrower than the frontend window at the same content width, so
   a rule for a given breakpoint applies in the editor only when the canvas itself is in
@@ -300,13 +306,13 @@ Exact expected outputs, not "output differs from input".
   insertion are idempotent per document.
 - **Browser verification (no automated fixture harness).** On the local site, prepared
   by hand as ordinary dev content through the Bricks UI: a prose class that styles
-  paragraphs, headings, lists, links, blockquote, table, figure/figcaption and uses a
-  web font; a page template wrapping post content in a Rich Text element with that
+  paragraphs, headings, lists, links, blockquote, table, figure/figcaption, uses a
+  web font and has one tablet-breakpoint override (e.g. paragraph font size); a page template wrapping post content in a Rich Text element with that
   class; a post containing each of those plus a nested group and one component block.
   At matched viewport conditions (frontend window width = canvas width, above the
   largest breakpoint; then once in a tablet device preview vs a frontend window of the
-  same width), after `document.fonts.ready` and a positive `document.fonts.check()` for
-  the prose font in both documents, compare
+  same width), after `document.fonts.ready`, with a `FontFace` for the prose font present in
+  `document.fonts` with `status === 'loaded'` in both documents, compare
   for every prose element (top-level and descendants: `li`, `a`, `figcaption`,
   `blockquote`, `td`) computed `margin-block-start/end`, `padding`, `border`, `font-family`,
   `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and the rendered gap between consecutive top-level blocks
