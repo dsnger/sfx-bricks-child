@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after pass 7)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–8)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -179,7 +179,8 @@ holding only the title rule, and `classes` still ships.
 2. Save the six `Assets` statics Bricks saves in `generate_gutenberg_global_classes_css`;
    set `Assets::$global_classes_elements = [ id => [ $element ], … ]` for all configured
    classes in **one** call, so Bricks applies its own ordering among them;
-   `$css = Assets::generate_global_classes('sfx_editor_prose')`; restore in `finally`.
+   `$css = (string) Assets::generate_global_classes('sfx_editor_prose')` (Bricks returns
+   `null` when nothing is mapped); restore in `finally`.
    A used property/method missing → skip to step 5.
 3. `links`: the baseline URL (if on), then the `href`s of the `rel="stylesheet"` links in
    `Assets::load_webfonts($css, true)` (Bricks returns link HTML in that mode instead of
@@ -240,8 +241,8 @@ later; equal-specificity conflicts between a prose class and a component class c
 therefore resolve differently than on the frontend. Accepted limit, documented in the
 README.
 
-Bricks' scoper does not handle every valid construct: statement at-rules such as
-`@layer x;` stay unscoped, and braces inside strings (`content:"}"`) can corrupt the
+Bricks' scoper does not handle every valid construct: after a statement at-rule such as
+`@layer x;` the following rule can stay unprefixed as well, and braces inside strings (`content:"}"`) can corrupt the
 rule and leave following rules unscoped. The README advises against braces in
 `content` strings. Because the CSS lives only inside the canvas
 document, anything left unscoped can affect only the canvas, never the admin UI.
@@ -258,6 +259,9 @@ It does **not** cover, and the README/help text say so:
   its own nodes (block appender, zoom-mode separators) — the editor's DOM is not the
   frontend's;
 - relative `url()`s in class CSS — they resolve against the admin URL in the canvas;
+- settings on the Bricks wrapper **element itself** (its own style controls, compiled
+  to its element ID) — only global-class CSS is mirrored, so prose styling belongs in
+  the class;
 - selectors on wrapper **attributes** other than class (e.g. `[data-source]`) — only
   classes are reproduced;
 - a class reused on **other element types** while Bricks' class chaining is disabled —
@@ -278,7 +282,8 @@ differ, that is a finding for the plan, not solved speculatively here.
 
 ### Failure behaviour
 
-Bricks missing or older than 2.4 → gate closed, nothing loads. A Bricks API missing or
+Bricks missing or older than 2.4 → editor gate closed, nothing loads in the editor (the
+frontend baseline, if on, does not depend on Bricks). A Bricks API missing or
 throwing → `css` holds only the title rule (or is empty); classes still ship, so Bricks'
 spacing still matches. Nothing is logged; the editor never shows a notice.
 
@@ -287,7 +292,11 @@ spacing still matches. Nothing is logged; the editor never shows a notice.
 Class CSS is Bricks' compiled output of data written by users Bricks' builder permissions
 allow (`builder-permissions.php`) — not necessarily administrators. The module adds no
 new write path; it places CSS Bricks already outputs on the frontend into the canvas
-document only, where it cannot style or read admin UI. The module's own inputs are
+document only, where it cannot style or read admin UI. CSS can, however, observe the
+canvas content (e.g. font requests per `unicode-range`), so **anyone who may write
+Bricks global classes must be trusted with the content of every eligible draft** —
+the same assumption Bricks already makes when it sends component-class CSS and theme
+styles into the editor. The README and help text state this prerequisite. The module's own inputs are
 sanitized as above.
 
 ## Baseline (`prose.css`)
@@ -310,9 +319,13 @@ visitessen's `article__prose` already reads `--caption-*`, `--table-*`, `--quote
 - Everything Bricks-rendered inside the prose area is excluded, as visitessen does, the
   Bricks elements themselves **and** their descendants: selectors end in
   `:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *))`, so a nested
-  `h2.brxe-heading`, an `a.brxe-button` or a component root keeps its own styling
-  (frontend and editor alike). The wrapper itself is not matched (it is not a descendant
-  of itself).
+  `h2.brxe-heading`, an `a.brxe-button` or a component root receives no baseline
+  declaration (frontend and editor alike). For pseudo-elements the exclusion precedes
+  the pseudo-element (`li:not(…)::marker`). The wrapper itself is not matched (it is not
+  a descendant of itself). Exclusion means *no direct declarations*: Bricks elements
+  still inherit the wrapper's font size, line height and colour, exactly as they do on
+  the frontend — so "unchanged" in the tests means "no baseline declaration applies",
+  not "same as without `sfx-prose`".
 - **Inheritable defaults go on the wrapper, not the descendants.** Body font size, line
   height and colour are set on `:where(.sfx-prose)` and inherited; paragraphs get no
   typography rule. So typography a site sets on the Bricks wrapper (unlayered, via the
@@ -437,10 +450,13 @@ Exact expected outputs, not "output differs from input".
 - Browser verification of the baseline on the local site: a wrapper with `sfx-prose` and
   no prose class, content covering every covered element (incl. `strong`, `code`/`pre`,
   `hr`, `details`/`summary`, nested list markers, alternating table rows, link hover) —
-  each element's computed values differ from the same content without `sfx-prose` (so
-  the baseline is proven active) and match between frontend and editor; then a prose
-  class setting `color` on `p` and Bricks typography on the wrapper element — both win;
-  a nested `h2.brxe-heading` and a component block — unchanged by the baseline.
+  for each element, at least one property the baseline sets and nothing else on the
+  test site sets differs from the same content without `sfx-prose` (so the baseline is
+  proven active), and all compared values match between frontend and editor; then a
+  prose class setting `color` on `p` — wins in both; Bricks typography set on the
+  wrapper element itself — wins on the frontend (not mirrored, see What "parity"
+  covers); a nested `h2.brxe-heading` and a component block — no baseline declaration
+  applies (DevTools matched rules), inheritance as on the frontend.
 - `./quality.sh` green.
 
 ## Out of scope
@@ -449,8 +465,9 @@ Exact expected outputs, not "output differs from input".
 - Sidebar width (visitessen snippet).
 - Caching across requests — built once per editor load.
 - Migration of the aurantia / visitessen snippets (after release).
-- Classic editor, non-iframed editor, site editor, widgets screen, Bricks builder canvas,
-  frontend.
+- Editor mirroring in the classic editor, non-iframed editor, site editor, widgets
+  screen, Bricks builder canvas and frontend (the baseline stylesheet itself does load on
+  the frontend and builder canvas when enabled).
 - Class settings with dynamic-data values (finding 6).
 - Cascade order against component classes (see Cascade position and limits).
 - Ancestor-dependent rules, editor-only structural nodes, relative `url()`s (see What
