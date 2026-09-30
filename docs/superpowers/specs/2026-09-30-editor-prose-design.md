@@ -1,12 +1,12 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after, re-review pending)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
 **Scope:**
 
-- new `inc/EditorProse/*` (`Controller.php`, `Settings.php`, `AdminPage.php`, `assets/editor-prose.js`)
+- new `inc/EditorProse/*` (`Controller.php`, `Settings.php`, `AdminPage.php`, `assets/editor-prose.js`, `assets/prose.css`)
 - one toggle `enable_editor_prose` in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
 - `inc/DataPurge.php`: one option name
@@ -28,8 +28,12 @@ block spacing collapses to 0 and the class rules are missing.
 
 The module makes the editor canvas render like the frontend, configured per site with no
 code, so the site snippets (aurantia "Rich-Text: Editor-Styles", visitessen "Magazin:
-Editor-Styles") can be removed. The theme ships **no prose styling of its own**; each
-site's styling stays in its own Bricks class and is mirrored as-is.
+Editor-Styles") can be removed. Each site's styling stays in its own Bricks class and is
+mirrored as-is.
+
+Optionally, the module also ships a **token-based baseline** (`prose.css`, see
+[Baseline](#baseline-prosecss)) so a new site starts with sensible prose styling that
+follows its Core Framework / Bricks variables, and that the site's own class overrides.
 
 Non-goals: see [Out of scope](#out-of-scope).
 
@@ -104,7 +108,7 @@ load-bearing, because Bricks' editor spacing rules carry it too.
 | Spacing | Bricks' own rules, made to match by the root classes — no values read, no fields |
 | Class CSS | Bricks' compiler + Bricks' editor scoper; no fallback to raw `_cssCustom`; requires Bricks ≥ 2.4 |
 | How the canvas gets classes and CSS | One small editor script: sets the root classes and injects the CSS into the canvas document only |
-| Prose styling shipped by the theme | None — each site's Bricks class is the single source |
+| Prose styling shipped by the theme | Optional baseline `prose.css`, off by default, built on the sites' existing token names with literal fallbacks; the site's class always wins |
 | Sidebar width, caching | Out |
 | Filters | One: `sfx_editor_prose_css` |
 
@@ -119,6 +123,7 @@ Settings API (`settings_fields`) like the other modules.
 | `element` | `text` \| `post-content` — the Bricks element that wraps the content on the frontend | `text` | whitelist, else `text` |
 | `all_post_types` | bool | `true` | bool |
 | `post_types` | list of post type slugs (used only when `all_post_types` is false) | `[]` | keep only registered post types that use the block editor |
+| `baseline` | bool — load `prose.css` (frontend + editor) | `false` | coerced like `all_post_types` |
 | `title_gap` | CSS value for the gap below the post title | `''` = no rule | trimmed; max 100 chars; rejected (→ `''`) if it contains any of `; { } < > \ ` or `/*` or `url(` |
 
 `all_post_types` is explicit so that dropping unknown post types (import, a post type
@@ -148,7 +153,8 @@ screen `is_block_editor()` **and** `base === 'post'` (excludes the widgets and s
 editor screens); a post ID resolves (`get_the_ID()`, else `filter_input(INPUT_GET,
 'post', FILTER_VALIDATE_INT)`); the post's type is eligible (`all_post_types`, or in
 `post_types`); Bricks ≥ 2.4 is active (`defined('BRICKS_VERSION') &&
-version_compare(BRICKS_VERSION, '2.4', '>=')`); and `classes` is not empty.
+version_compare(BRICKS_VERSION, '2.4', '>=')`); and `classes` is not empty **or**
+`baseline` is on.
 
 ### Server: build the payload
 
@@ -156,7 +162,8 @@ On `enqueue_block_editor_assets` (admin document only), when the gate holds, enq
 `inc/EditorProse/assets/editor-prose.js` and pass one config object:
 
 ```
-{ classes: ['brxe-<element>', ...classes], css: '<string>', fonts: ['<url>', …] }
+{ classes: ['brxe-<element>', ...classes, ('sfx-prose' if baseline)],
+  css: '<string>', links: [('<prose.css url>' if baseline), '<font url>', …] }
 ```
 
 Building `css`:
@@ -173,7 +180,7 @@ holding only the title rule, and `classes` still ships.
    classes in **one** call, so Bricks applies its own ordering among them;
    `$css = Assets::generate_global_classes('sfx_editor_prose')`; restore in `finally`.
    A used property/method missing → skip to step 5.
-3. `fonts`: the `href`s of the `rel="stylesheet"` links in
+3. `links`: the baseline URL (if on), then the `href`s of the `rel="stylesheet"` links in
    `Assets::load_webfonts($css, true)` (Bricks returns link HTML in that mode instead of
    enqueueing; preconnect links are ignored).
 4. `$css = Block_Editor::scope_css_for_gutenberg($css)` — Bricks' own prefixing
@@ -201,7 +208,7 @@ One idempotent `sync()`:
   **before** looking for the root, so a root portalled in later is seen;
 - if the document has no `.is-root-container` yet, return;
 - ensure `<style id="sfx-editor-prose">` with `css` exists in `<head>` (created once per
-  document; `textContent`, never HTML), one `<link rel="stylesheet">` per font URL, and
+  document; `textContent`, never HTML), one `<link rel="stylesheet">` per `links` URL (in order), and
   `ensureClasses(root, classes)`.
 
 Non-iframed editors are not supported — every rule is scoped to
@@ -282,12 +289,78 @@ new write path; it places CSS Bricks already outputs on the frontend into the ca
 document only, where it cannot style or read admin UI. The module's own inputs are
 sanitized as above.
 
+## Baseline (`prose.css`)
+
+An optional, token-based starting point, following the pattern of the theme's existing
+style modules (`assets/css/frontend/modules/lists.css`): layered, opt-in by class, driven
+by variables. Researched on aurantia and visitessen (2026-09-30, read-only): both define
+the same token names through Bricks variables (Core Framework scale plus site tokens), and
+visitessen's `article__prose` already reads `--caption-*`, `--table-*`, `--quote-*`,
+`--bold-font-weight`.
+
+**Trigger and weight.**
+- Applies inside an element with the class `sfx-prose` (the `sfx-` prefix avoids
+  collisions with a site class named `prose`). On the frontend the site adds `sfx-prose`
+  to the Bricks wrapper (e.g. as a class without styles); in the editor the script adds
+  it to the root when `baseline` is on.
+- Every rule sits in `@layer sfx.components` and uses `:where(.sfx-prose)` (specificity
+  0). Unlayered CSS — Bricks theme styles, the site's prose class, Core Framework —
+  always wins, without `!important`.
+- Everything Bricks-rendered inside the prose area is excluded, as visitessen does:
+  selectors end in `:not(:where(.sfx-prose [class*="brxe-"] *))`, so Bricks elements
+  and component blocks keep their own styling (frontend and editor alike).
+
+**Block spacing is not part of the baseline.** Vertical rhythm between blocks comes from
+Bricks' contextual spacing (theme style), which the root classes already make work in the
+editor. Bricks' "remove default margins" reset is unlayered and would override any
+layered margin anyway. The baseline styles spacing *inside* elements only (list indent
+and item gap, caption gap, table cell padding, quote padding).
+
+**Covered:** headings (colour, font, weight, line height), paragraphs and body text
+(size, line height, colour), links and hover, `strong`, lists (`ul`/`ol`, nested,
+markers), `blockquote` and citation, `figure` / `img` / `figcaption`, `table` (head,
+cells, alternating rows), `code` / `pre`, `hr`, `details`/`summary`.
+**Not covered:** buttons (the theme's `buttons.css` module), gallery and accordion
+layouts, alignwide/alignfull widths (layout, the theme's `content-grid.css`),
+site-specific extras such as an external-link marker.
+
+**Tokens.** No new public names: each value reads the existing site token, then a Core
+Framework token, then a literal. Internal custom properties (`--sfx-prose-*`) are set once
+on `:where(.sfx-prose)`; sites override the public ones.
+
+| Purpose | Chain |
+|---|---|
+| body size / line height / colour | `--text-m` → `1rem`; `--body-line-height` → `--line-height-m` → `1.6`; `--text-body` → `inherit` |
+| heading colour / font / weight | `--text-title` → `inherit`; `--heading-font-family` → `inherit`; `--heading-font-weight` → `700` |
+| link / hover | `--link` → `--primary` → `currentColor`; `--link-hover` → `--link` → `currentColor` |
+| muted text | `--text-muted` → `--muted` → `currentColor` |
+| strong | `--bold-font-weight` → `700` |
+| list indent / item gap | `--list-indent` → `1.5em`; `--list-gap` → `--space-3xs` → `0.25rem` |
+| caption size / colour / gap | `--caption-font-size` → `--text-s` → `0.875rem`; `--caption-color` → muted chain; `--caption-gap` → `--space-2xs` → `0.5rem` |
+| quote padding / border / weight | `--quote-padding-inline` → `--space-m` → `1.5rem`; border `--primary` → `currentColor`; `--quote-font-weight` → `inherit` |
+| table size / head weight / alt row / border | `--table-font-size` → `--text-s` → `0.875rem`; `--table-head-font-weight` → `700`; `--table-row-bg-alt` → `--subtle` → `transparent`; border `--border-primary` → `color-mix(in srgb, currentColor 20%, transparent)` |
+| code background / radius | `--subtle` → `color-mix(in srgb, currentColor 8%, transparent)`; `--radius-s` → `0.25rem` |
+
+Heading **sizes** are left to Core Framework / the theme style, which already size
+`h1`–`h6` globally (unlayered, so a layered size would lose anyway).
+
+**Loading.**
+- Frontend: `wp_enqueue_scripts` enqueues `inc/EditorProse/assets/prose.css` when the
+  module and `baseline` are on (version `filemtime`), everywhere except the Bricks builder
+  main window (as `SmoothScroll` does). Layer order: Bricks declares `@layer bricks`
+  first; `sfx.components` comes later, so the baseline beats Bricks' layered resets but
+  nothing unlayered.
+- Editor: the script inserts it as the first `links` entry in the canvas.
+- Import/export and purge: nothing new — `baseline` lives in `sfx_editor_prose_options`.
+
 ## Admin page
 
 Under the theme settings menu, following `SmoothScroll/AdminPage.php`: the fields, a
 short help text ("everything in the class — typography, lists, links, figures — is
 mirrored; design it in Bricks"), and two status lines:
 - configured classes not found in Bricks (by name);
+- a hint when `baseline` is on: "add the class `sfx-prose` to the Bricks element that
+  wraps the content";
 - a warning if Bricks' `disableThemeStylesInBlockEditor` is on (spacing and root font
   size then cannot match; finding 3).
 
@@ -328,6 +401,14 @@ Exact expected outputs, not "output differs from input".
   rule does not arise. Other Bricks modes (class chaining off, load order on, file CSS
   loading) and multi-class ordering are compiled by Bricks itself and not re-verified
   here; their limits are documented above.
+- `tests/editor-prose-baseline-test.mjs` (Node): parses `prose.css` and asserts every
+  style rule is inside `@layer sfx.components`, every selector starts with
+  `:where(.sfx-prose)`, and no declaration uses `!important`; and that each custom
+  property used ends in a literal fallback (no `var()` chain without one).
+- Browser verification of the baseline on the local site: a wrapper with `sfx-prose` and
+  no prose class — elements styled, frontend vs editor identical by the same comparison;
+  then with a prose class setting `color` on `p` — the class wins; one Bricks element
+  inside the prose area — unchanged by the baseline.
 - `./quality.sh` green.
 
 ## Out of scope
