@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (revised after Gate-A pass 1)
+**Date:** 2026-09-30 (revised after Gate-A passes 1–2)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -12,7 +12,7 @@
 - `inc/DataPurge.php`: one option name
 - one settings group in `inc/ImportExport/Controller.php`
 - German strings in `languages/de_DE.po` / `.mo`
-- tests in `tests/`, one live harness in `tests/support/`
+- tests in `tests/`
 - README section
 
 ## Goal
@@ -34,9 +34,9 @@ Non-goals: see [Out of scope](#out-of-scope).
 ## Approach in one sentence
 
 Give the editor's content root the same classes the frontend wrapper has
-(`brxe-text rich-text-content`), and load the prose class CSS into the editor through
-Bricks' own compiler and editor scoper — so every rule Bricks already sends to the editor
-starts matching, and nothing is re-implemented or rewritten.
+(`brxe-text rich-text-content`), and put the prose class CSS — compiled and scoped by
+Bricks' own functions — into the editor canvas, so every rule Bricks already sends to the
+editor starts matching, and nothing is re-implemented or rewritten.
 
 ## Findings (verified 2026-09-30, Bricks 2.4.2, WP 7.1.2)
 
@@ -56,7 +56,9 @@ Code references are under `wp-content/themes/bricks/includes/`.
 3. **Root font size is handled by Bricks** when theme styles load in the editor:
    `frontend.min.css` sets `html{font-size:62.5%}` (layered); the theme style's `html`
    font-size (aurantia `100%`) is scoped to `.block-editor-iframe__html`, unlayered, and
-   wins. Measured 16px frontend and editor. This depends on Bricks'
+   wins. Measured 16px frontend and editor. Unconditional loading of frontend and
+   theme-style CSS into the editor is marked `@since 2.4` (`admin.php:2058`, `2278`) —
+   the module therefore requires **Bricks ≥ 2.4**. This also depends on Bricks'
    `disableThemeStylesInBlockEditor` being off (`admin.php:2359`) and, in file-loading
    mode, on the theme-style CSS files existing (`admin.php:2424`) — the same
    prerequisites the rhythm relies on.
@@ -71,7 +73,11 @@ Code references are under `wp-content/themes/bricks/includes/`.
 5. Bricks enqueues its editor-canvas CSS on `enqueue_block_assets`, priority 10
    (`admin.php:19`), gated on `$screen->is_block_editor() && $screen->base === 'post' &&
    $post_id` (`admin.php:2045-2056`).
-6. The editor's content root is rendered by React with
+6. Class settings with a **dynamic-data** value (e.g. a colour from a custom field) are
+   written to the separate `Assets::$inline_css_dynamic_data` bucket
+   (`assets.php:4028`), which Bricks' own editor path for component classes also does not
+   output. Not mirrored (see Out of scope).
+7. The editor's content root is rendered by React with
    `className: clsx("is-root-container", className, {is-outline-mode, is-focus-mode,
    is-preview-mode})` (`wp-includes/js/dist/block-editor.js:55038`), so React rewrites
    the class attribute when one of those modes toggles.
@@ -92,8 +98,8 @@ load-bearing, because Bricks' editor spacing rules carry it too.
 |---|---|
 | Root font size | Not handled — Bricks brings the theme style's value (finding 3) |
 | Spacing | Bricks' own rules, made to match by the root classes — no values read, no fields |
-| Class CSS | Bricks' compiler + Bricks' editor scoper; no fallback to raw `_cssCustom` (requires Bricks ≥ 2.3.8) |
-| How the root gets the classes | Small editor script, re-applied when React rewrites the attribute |
+| Class CSS | Bricks' compiler + Bricks' editor scoper; no fallback to raw `_cssCustom`; requires Bricks ≥ 2.4 |
+| How the canvas gets classes and CSS | One small editor script: sets the root classes and injects the CSS into the canvas document only |
 | Prose styling shipped by the theme | None — each site's Bricks class is the single source |
 | Sidebar width, caching | Out |
 | Filters | One: `sfx_editor_prose_css` |
@@ -123,84 +129,103 @@ The module is enabled by `enable_editor_prose` in `sfx_general_options` (default
 
 ## Mechanism
 
-### Gate (shared by CSS and script)
+### Gate
 
 Applies only when all hold, mirroring Bricks (finding 5): `is_admin()`; the current
 screen `is_block_editor()` **and** `base === 'post'` (excludes the widgets and site
-editor screens); a post ID resolves (`get_the_ID()`, else `(int) $_GET['post']` via
-`filter_input(..., FILTER_VALIDATE_INT)`); the post's type is eligible
-(`all_post_types`, or in `post_types`); Bricks is active (`class_exists('\Bricks\Assets')`);
-and `classes` is not empty.
+editor screens); a post ID resolves (`get_the_ID()`, else `filter_input(INPUT_GET,
+'post', FILTER_VALIDATE_INT)`); the post's type is eligible (`all_post_types`, or in
+`post_types`); Bricks ≥ 2.4 is active (`defined('BRICKS_VERSION') &&
+version_compare(BRICKS_VERSION, '2.4', '>=')`); and `classes` is not empty.
 
-### 1. Root classes (script)
+### Server: build the payload
 
-`enqueue_block_editor_assets` enqueues `inc/EditorProse/assets/editor-prose.js` with
-config `{ classes: ['brxe-<element>', ...classes] }`.
+On `enqueue_block_editor_assets` (admin document only), when the gate holds, enqueue
+`inc/EditorProse/assets/editor-prose.js` and pass one config object:
 
-The script finds the editor iframe (`iframe[name="editor-canvas"]`), waits for its
-document, and adds the classes to that document's `.is-root-container`. A single
-`MutationObserver` on the iframe body (`childList`, `subtree`, `attributes`,
-`attributeFilter: ['class']`) re-adds any missing class after React rewrites the
-attribute (finding 6) or remounts the root. It only ever calls `classList.add` for
-missing classes, so its own writes cause no loop. If the iframe is replaced (device
-preview switch), the outer observer on the editor's canvas container re-attaches. If the
-editor is not iframed, it uses the main document's `.is-root-container`.
+```
+{ classes: ['brxe-<element>', ...classes], css: '<string>', fonts: ['<url>', …] }
+```
 
-The class-applying step is a pure function `ensureClasses(element, classes)` exported for
-the Node test.
-
-### 2. Class CSS (inline style in the canvas)
-
-`enqueue_block_assets`, priority 20 (after Bricks' 10). Once per request, a static cache
-in `Controller` holds the built string, so the hook firing twice (admin document and
-iframe asset collection) builds once. Each firing registers (`wp_register_style(
-'sfx-editor-prose', false)`), enqueues, and adds the inline CSS only if the handle has no
-`after` data yet — idempotent in both asset contexts.
-
-Build:
+Building `css`:
 
 1. Map configured class names to IDs via `\Bricks\Database::$global_data['globalClasses']`
-   (the same source `generate_global_classes` reads). Unknown names are skipped; the
-   admin page lists them (see below).
+   (the source `generate_global_classes` reads). Unknown names are skipped; the admin page
+   lists them.
 2. Save the six `Assets` statics Bricks saves in `generate_gutenberg_global_classes_css`;
    set `Assets::$global_classes_elements = [ id => [ $element ], … ]` for all configured
-   classes in **one** call, so Bricks applies its own ordering;
+   classes in **one** call, so Bricks applies its own ordering among them;
    `$css = Assets::generate_global_classes('sfx_editor_prose')`; restore in `finally`.
-   A `Throwable` is caught → no class CSS, the rest still ships. Any of the used
-   properties/methods missing → same.
-3. `Assets::load_webfonts($css)` — fonts used only by the prose class load, as Bricks
-   does for component classes.
+   A `Throwable`, or a used property/method missing, → `css` empty; classes still ship.
+3. `fonts`: the `href`s from `Assets::load_webfonts($css, true)` (Bricks returns link
+   HTML in that mode instead of enqueueing).
 4. `$css = Block_Editor::scope_css_for_gutenberg($css)` — Bricks' own prefixing
    (`.block-editor-iframe__body`), which keeps specificity in step with Bricks' editor
    spacing rules (validated above).
 5. Append the title rule if `title_gap` is set:
    `.editor-styles-wrapper .editor-post-title { margin-block-end: <title_gap>; }`
-6. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`; replace any
-   `</style` (case-insensitive) with `<\/style`; add only if non-empty.
+6. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
 
-A class that is also used by an enabled Bricks component is already output by Bricks
-(finding 2); duplicating it is harmless (identical rules) and not special-cased.
+The payload goes through `wp_add_inline_script(..., 'before')` with `wp_json_encode`
+(JSON-escapes `</`), so no HTML context is involved.
+
+### Client: `editor-prose.js`
+
+One idempotent `sync()`:
+
+- find `iframe[name="editor-canvas"]`; if absent, or its document has no
+  `.is-root-container` yet, return (non-iframed editors are not supported — every rule
+  is scoped to `.block-editor-iframe__body`);
+- in that document: ensure `<style id="sfx-editor-prose">` with `css` exists in `<head>`
+  (create once per document; `textContent`, never HTML), ensure one
+  `<link rel="stylesheet">` per font URL, and `ensureClasses(root, classes)`;
+- if that document is not yet observed, attach one `MutationObserver` to its
+  `documentElement` (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`)
+  calling `sync()`; observed documents are tracked in a `WeakSet`, so a replaced document
+  gets its own observer and the old one is dropped with it.
+
+`sync()` is triggered by one `MutationObserver` on the admin `document.body`
+(`childList`, `subtree`) — which sees the canvas mount after a code-editor → visual
+switch, device-preview iframe replacement, and body portalling — and by the iframe's
+`load` event (listener added when `sync()` first sees an iframe element). No timeout.
+
+`ensureClasses(element, classes)` only calls `classList.add` for missing classes and
+reports whether it changed anything, so the observer's own writes do not loop. It and
+the style/link insertion are exported for the Node test.
+
+### Cascade position and limits
+
+The injected `<style>` is appended last in the canvas `<head>`, after Bricks' editor CSS.
+Among the configured classes Bricks' order applies. Against **other** global classes
+Bricks outputs in the editor (component classes, finding 2) the prose CSS always comes
+later; equal-specificity conflicts between a prose class and a component class can
+therefore resolve differently than on the frontend. Accepted limit, documented in the
+README.
+
+Bricks' scoper does not scope every valid construct (statement at-rules such as
+`@layer x;`, braces inside strings). Because the CSS lives only inside the canvas
+document, anything left unscoped can affect only the canvas, never the admin UI.
 
 ### Bricks component blocks
 
 No exclusion. On the frontend, component blocks sit inside the prose wrapper too, so
-prose rules reach them there as well; mirroring that is parity. The live check compares a
-component block frontend vs editor; if the editor's block wrappers make them differ, that
-is a finding for the plan, not solved speculatively here.
+prose rules reach them there as well; mirroring that is parity. The browser verification
+compares a component block frontend vs editor; if the editor's block wrappers make them
+differ, that is a finding for the plan, not solved speculatively here.
 
 ### Failure behaviour
 
-Bricks missing or a Bricks API missing/throwing drops only the class CSS; the script
-still sets the classes (spacing works) and the title rule still ships. The script does
-nothing if it finds no root within 10 s. Nothing is logged; the editor never shows a
-notice.
+Bricks missing or older than 2.4 → gate closed, nothing loads. A Bricks API missing or
+throwing → `css` holds only the title rule (or is empty); classes still ship, so Bricks'
+spacing still matches. Nothing is logged; the editor never shows a notice.
 
 ### Trust
 
 Class CSS is Bricks' compiled output of data written by users Bricks' builder permissions
 allow (`builder-permissions.php`) — not necessarily administrators. The module adds no
-new write path and outputs the same CSS Bricks already outputs on the frontend. The
-module's own inputs are sanitized as above; the final string has `</style` neutralised.
+new write path; it places CSS Bricks already outputs on the frontend into the canvas
+document only, where it cannot style or read admin UI. The module's own inputs are
+sanitized as above.
 
 ## Admin page
 
@@ -220,18 +245,20 @@ Exact expected outputs, not "output differs from input".
 - `tests/editor-prose-settings-test.php` (pure PHP): sanitizer — class names (valid,
   leading dot, invalid dropped, duplicates), `element` whitelist, `all_post_types` /
   `post_types` (empty + false = nowhere), `title_gap` accepts `2rem`, `0`,
-  `clamp(1rem, 2vw, 2rem)`, `var(--gap, 1rem)`, rejects each forbidden token; CSS
-  assembly — title rule on/off, `</style` neutralised, empty → no output.
+  `clamp(1rem, 2vw, 2rem)`, `var(--gap, 1rem)`, rejects each forbidden token; title
+  rule on/off; empty class list → gate closed.
 - `tests/editor-prose-test.mjs` (Node): `ensureClasses` adds missing classes, keeps
-  existing ones, is a no-op when all present (so the observer cannot loop).
-- Live harness `tests/support/editor-prose-live-check.php` on the local site (Bricks
-  active): creates one test global class and one post it owns, registers **one**
-  `register_shutdown_function` teardown before creating either (restores
-  `bricks_global_classes` to its snapshot, deletes the post), asserts the built CSS
-  contains the class rules prefixed with `.block-editor-iframe__body` and chained
-  `.brxe-text`. Visual comparison (paragraphs, headings, list, image with caption, one
-  component block; frontend vs editor computed styles) done in the browser with the
-  harness's fixtures, and the frontend checked for absence of `sfx-editor-prose`.
+  existing ones, returns "unchanged" when all present (no observer loop); style and link
+  insertion are idempotent per document.
+- **Browser verification (no automated fixture harness).** On the local site, prepared
+  by hand as ordinary dev content through the Bricks UI (a prose class, a page template
+  wrapping post content in a Rich Text element with that class, a post with paragraphs,
+  headings, a list, an image with caption and one component block): compare computed
+  margin, font-size, line-height and colour of every top-level block frontend vs editor,
+  as done on aurantia; toggle outline mode, switch code editor → visual and device
+  preview and confirm classes and style survive; confirm the frontend has no
+  `sfx-editor-prose`. Nothing is created or deleted by a script, so the harness teardown
+  rule does not arise.
 - `./quality.sh` green.
 
 ## Out of scope
@@ -240,7 +267,10 @@ Exact expected outputs, not "output differs from input".
 - Sidebar width (visitessen snippet).
 - Caching across requests — built once per editor load.
 - Migration of the aurantia / visitessen snippets (after release).
-- Classic editor, site editor, widgets screen, Bricks builder canvas, frontend.
+- Classic editor, non-iframed editor, site editor, widgets screen, Bricks builder canvas,
+  frontend.
+- Class settings with dynamic-data values (finding 6).
+- Cascade order against component classes (see Cascade position and limits).
 
 ## Invariants touched
 
@@ -253,4 +283,3 @@ Exact expected outputs, not "output differs from input".
 - **Coupling**: depends on Bricks (parent theme) and WordPress only. ImportExport names
   the option like every other catalogued module; toggle and overview entry follow the
   existing pattern.
-- **Harness teardown**: the live harness follows the single-teardown rule.
