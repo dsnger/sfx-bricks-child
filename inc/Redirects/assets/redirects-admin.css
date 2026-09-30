@@ -1,0 +1,106 @@
+/* Redirects: rule form — three blocks (From, To, Response), label column + field column. */
+
+/* The display rules below must never beat the hidden attribute the script toggles. */
+.sfx-rf [hidden] {
+	display: none !important;
+}
+
+.sfx-rf .sfx-rf-section {
+	margin: 0;
+	padding: 16px 0 8px;
+	border-top: 1px solid #dcdcde;
+}
+
+.sfx-rf .sfx-rf-section:first-of-type {
+	border-top: 0;
+	padding-top: 4px;
+}
+
+.sfx-rf .sfx-rf-section legend {
+	padding: 0;
+	margin-bottom: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #646970;
+}
+
+.sfx-rf .sfx-rf-row {
+	display: grid;
+	grid-template-columns: 140px minmax(0, 1fr);
+	gap: 4px 24px;
+	align-items: start;
+	padding: 8px 0;
+}
+
+.sfx-rf .sfx-rf-label {
+	padding-top: 6px;
+	font-weight: 600;
+}
+
+.sfx-rf .sfx-rf-inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.sfx-rf .sfx-rf-inline + .sfx-rf-inline {
+	margin-top: 8px;
+}
+
+.sfx-rf .sfx-rf-inline select {
+	max-width: 100%;
+}
+
+.sfx-rf #sfx-redirects-picker-search {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.sfx-rf #sfx-redirects-picker-results {
+	min-width: min(18em, 100%);
+}
+
+.sfx-rf .description {
+	margin: 6px 0 0;
+}
+
+.sfx-rf .sfx-rf-more {
+	margin-top: 6px;
+	color: #646970;
+}
+
+.sfx-rf .sfx-rf-more summary {
+	cursor: pointer;
+	list-style: none;
+}
+
+.sfx-rf .sfx-rf-more summary::-webkit-details-marker {
+	display: none;
+}
+
+.sfx-rf .sfx-rf-more summary span {
+	color: #2271b1;
+	text-decoration: underline;
+}
+
+.sfx-rf .sfx-rf-more[open] summary span {
+	text-decoration: none;
+}
+
+.sfx-rf .sfx-rf-more p {
+	margin: 6px 0 0;
+	max-width: 60em;
+}
+
+@media (max-width: 782px) {
+	.sfx-rf .sfx-rf-row {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.sfx-rf .sfx-rf-label {
+		padding-top: 0;
+	}
+}
