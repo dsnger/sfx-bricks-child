@@ -104,3 +104,8 @@
 		padding-top: 0;
 	}
 }
+
+/* 404 log: keep the "Clear log" button clear of the table above it. */
+.sfx-redirects-clear-log {
+	margin-top: 16px;
+}

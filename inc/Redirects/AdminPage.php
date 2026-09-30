@@ -1143,7 +1143,7 @@ final class AdminPage
         $table->prepare_items();
         self::render_list($table, '404', 'sfx_redirects_404_action', __('Search paths', 'sfxtheme'));
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete every entry in the 404 log?', 'sfxtheme')); ?>');">
+        <form class="sfx-redirects-clear-log" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete every entry in the 404 log?', 'sfxtheme')); ?>');">
             <input type="hidden" name="action" value="sfx_redirects_404_action" />
             <input type="hidden" name="op" value="clear_all" />
             <?php wp_nonce_field('sfx_redirects_404_action'); ?>
