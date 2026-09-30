@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–10)
+**Date:** 2026-09-30 (Gate A: 11 passes; baseline section added after pass 6; passes 6 and 11 without Blocker/Major)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -217,8 +217,8 @@ One idempotent `sync()`:
   `<link rel="stylesheet">` per `links` URL. So the layer order matches the frontend.
   Finally `ensureClasses(root, classes)`.
 
-Non-iframed editors are not supported — every rule is scoped to
-`.block-editor-iframe__body`.
+Non-iframed editors are not supported — the class CSS and Bricks' own editor rules are
+scoped to `.block-editor-iframe__body`, which only the iframe has.
 
 The script is enqueued in the footer (`in_footer: true`), so `document.body` exists.
 `sync()` runs once at script start, on every mutation of one `MutationObserver` on the
@@ -378,8 +378,9 @@ layouts, alignwide/alignfull widths (layout, the theme's `content-grid.css`),
 site-specific extras such as an external-link marker.
 
 **Tokens.** No new public names: each value reads the existing site token, then a Core
-Framework token, then a literal. Internal custom properties (`--sfx-prose-*`) are set once
-on `:where(.sfx-prose)`; sites override the public ones.
+Framework token, then a literal. Each rule reads the public tokens **at the element that
+uses them** (e.g. `figcaption { color: var(--caption-color, …) }`), without internal
+aliases, so a token overridden on a descendant takes effect there too.
 
 | Purpose | Chain |
 |---|---|
@@ -392,6 +393,11 @@ on `:where(.sfx-prose)`; sites override the public ones.
 | caption size / colour / gap | `--caption-font-size` → `--text-s` → `0.875em`; `--caption-color` → muted chain; `--caption-gap` → `--space-2xs` → `0.5em` |
 | quote padding / border / weight | `--quote-padding-inline` → `--space-m` → `1.5em`; border `--primary` → `currentColor`; `--quote-font-weight` → `inherit` |
 | table size / head weight / alt row / border | `--table-font-size` → `--text-s` → `0.875em`; `--table-head-font-weight` → `700`; `--table-row-bg-alt` → `--subtle` → `transparent`; border `--border-primary` → `color-mix(in srgb, currentColor 20%, transparent)` |
+| heading line height | `--line-height-s` → `1.2` |
+| table cell padding | `--space-2xs` → `0.5em` (block and inline) |
+| `pre` padding | `--space-s` → `1em`; background and radius as code |
+| `hr` | `border-block-start: 1px solid` border chain as table; no other borders |
+| `summary` | `font-weight: var(--bold-font-weight, 700)`; `cursor: pointer` |
 | code background / radius | `--subtle` → `color-mix(in srgb, currentColor 8%, transparent)`; `--radius-s` → `0.25em` |
 
 Literal fallbacks are `em`/`inherit`, never `rem`: Bricks' default root is 62.5 %, where
