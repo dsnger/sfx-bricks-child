@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (revised after Gate-A passes 1–5)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -15,6 +15,7 @@
 - German strings in `languages/de_DE.po` / `.mo`
 - tests in `tests/`
 - README section
+- `AGENTS.md`: the ImportExport catalogue count ("eleven other modules") becomes twelve
 
 ## Goal
 
@@ -257,8 +258,8 @@ It does **not** cover, and the README/help text say so:
 - **breakpoints**: Bricks' responsive rules are viewport media queries; the canvas
   iframe's viewport is narrower than the frontend window at the same content width, so
   a rule for a given breakpoint applies in the editor only when the canvas itself is in
-  that range (device preview sets it). Parity is per viewport width, not per content
-  width.
+  that range (device preview sets it). Parity is per viewport width; percentage spacing
+  and container queries additionally need the same wrapper content width.
 
 ### Bricks component blocks
 
@@ -300,14 +301,18 @@ Exact expected outputs, not "output differs from input".
   leading dot, invalid dropped, duplicates), `element` whitelist, `all_post_types` /
   `post_types` (empty + false = nowhere), `title_gap` accepts `2rem`, `0`,
   `clamp(1rem, 2vw, 2rem)`, `var(--gap, 1rem)`, rejects each forbidden token; title
-  rule on/off; empty class list → gate closed.
+  rule on/off; empty class list → gate closed. Payload build against stub
+  `\Bricks\Assets` / `Database` / `Block_Editor` classes: compiler throws → only the
+  title rule, and the six saved `Assets` statics hold their prior values afterwards;
+  a missing method → same.
 - `tests/editor-prose-test.mjs` (Node): `ensureClasses` adds missing classes, keeps
   existing ones, returns "unchanged" when all present (no observer loop); style and link
   insertion are idempotent per document.
 - **Browser verification (no automated fixture harness).** On the local site, prepared
   by hand as ordinary dev content through the Bricks UI: a prose class that styles
   paragraphs, headings, lists, links, blockquote, table, figure/figcaption, uses a
-  web font and has one tablet-breakpoint override (e.g. paragraph font size); a page template wrapping post content in a Rich Text element with that
+  web font and has one tablet-breakpoint override (e.g. paragraph font size); a theme
+  style with non-zero contextual spacing and `html` font size `100%`; a page template wrapping post content in a Rich Text element with that
   class; a post containing each of those plus a nested group and one component block.
   At matched viewport conditions (frontend window width = canvas width, above the
   largest breakpoint; then once in a tablet device preview vs a frontend window of the
@@ -321,7 +326,8 @@ Exact expected outputs, not "output differs from input".
   preview; confirm classes, style and links survive. Confirm the frontend has no
   `sfx-editor-prose`. Nothing is created or deleted by a script, so the harness teardown
   rule does not arise. Other Bricks modes (class chaining off, load order on, file CSS
-  loading) are compiled by Bricks itself and not re-verified here.
+  loading) and multi-class ordering are compiled by Bricks itself and not re-verified
+  here; their limits are documented above.
 - `./quality.sh` green.
 
 ## Out of scope
