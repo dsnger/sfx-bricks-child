@@ -39,6 +39,10 @@
 	}
 	var timer = 0;
 	var latest = 0;
+	// The address typed (or loaded for editing) under Custom URL, kept while a
+	// list type is shown so switching back restores it.
+	var customValue = target.value;
+	var wasCustom = true;
 
 	function option(value, text) {
 		var el = document.createElement('option');
@@ -151,11 +155,14 @@
 		query.value = '';
 		filter.hidden = true;
 		var custom = type.value === '';
-		if (!custom) {
-			// A list type starts with nothing chosen: an address picked under the
-			// previous type must not be submitted from a now-hidden field.
-			target.value = '';
+		if (wasCustom && !custom) {
+			customValue = target.value;
 		}
+		// A list type starts with nothing chosen (an address picked under the
+		// previous type must not be submitted from the hidden field); Custom URL
+		// gets back what was typed there.
+		target.value = custom ? customValue : '';
+		wasCustom = custom;
 		setMode(custom);
 		if (custom) {
 			window.clearTimeout(timer);

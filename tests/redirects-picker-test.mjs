@@ -198,4 +198,19 @@ const labels = (sel) => sel.children.map((o) => o.textContent);
   assert.equal(els['sfx-redirects-target-address'].hidden, true, 'and hides the address line');
 }
 
+// Custom URL → list → Custom URL restores the typed address (PR #42 review).
+{
+  const { els, pending } = setup();
+  const type = els['sfx-redirects-picker-type'];
+  const results = els['sfx-redirects-picker-results'];
+  els['sfx-redirects-target'].value = '/typed/';
+  type.value = 'page'; type.dispatch('change');
+  assert.equal(els['sfx-redirects-target'].value, '', 'a list type starts with no target');
+  pending[0].resolve(ok([{ label: 'About', path: '/about/' }]));
+  await flush(); await flush();
+  results.value = '/about/'; results.dispatch('change');
+  type.value = ''; type.dispatch('change');
+  assert.equal(els['sfx-redirects-target'].value, '/typed/', 'back to Custom URL restores the typed address');
+}
+
 console.log('PASS: redirects picker');

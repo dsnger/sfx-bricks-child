@@ -1051,7 +1051,8 @@ changed on Daniel's request, 2026-09-29). Choosing
 a result **writes its address into the target field** — which, while a non-custom type
 is selected, is hidden in favour of the entry list and shown back as a read-only
 "Address: …" line (the field itself stays in the form and is what is submitted;
-switching back to Custom URL shows it again with that value): home-relative when the permalink
+switching to a list type starts with no target; switching back to Custom URL restores
+the address typed there — an entry picked in a list is not carried over): home-relative when the permalink
 (or term link) has the home URL's scheme, host and effective port and lies inside the
 home path (whole-segment rule, case-sensitive), otherwise the absolute URL as returned. The conversion
 happens on the server, in the search endpoint (`path` in the response). Attachments are left out: an attachment
