@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.24.0] - 2026-09-30
+
+New module: **Redirects** — a redirect manager with a 404 log, built into the theme. Off by default; switch it on under General Theme Options → *Enable Redirects*. Managed under **Tools → Redirects** by administrators and editors (`edit_others_posts`).
+
+- **Rules:** exact paths or regular expressions, answered with 301, 302, 307, 308 or 410 (gone). Each rule counts its hits and records the last one. Matching ignores case and a trailing slash; a path-only rule passes the query string on. Loops between rules are refused when saving (best effort), and targets are checked so a rule cannot send visitors to an unintended host.
+
+- **404 log:** addresses that led nowhere, one row per path, with a "Create redirect" link. No IP addresses, no user agents, no query strings are stored; entries are removed after the retention time (30 days by default) and the log can be cleared by hand.
+
+- **Automatic redirects:** when a published post or page gets a new slug or parent, a 301 from the old address is created, and earlier automatic redirects are updated so chains stay one hop. Rules an editor made are never touched.
+
+- **Target picker:** choose a post type or a term archive in front of the target and pick an entry from the list — the address is filled in. Long lists (more than 20 entries) get a search box.
+
+- **CSV import and export**, including files exported from the *Redirection* plugin: what behaves the same here is imported, everything else is skipped with a reason per row.
+
+- **Browser cache time for 301/308** (1 hour by default, configurable): a mistaken permanent redirect no longer sticks in visitors' browsers indefinitely.
+
+The module's two tables (`{prefix}sfx_redirects`, `{prefix}sfx_redirects_404`) are removed by the theme's data purge, which now says so before the confirmation.
+
 ## [0.23.0] - 2026-09-16
 
 Media credit fields — copyright and AI marking — can now be read and written through the WordPress REST API, so an API client with an application password can set them.
