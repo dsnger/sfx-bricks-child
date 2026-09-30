@@ -715,7 +715,8 @@ class Payload
     /** Configured names with no Bricks global class of that name (all of them when Bricks is absent). */
     public static function missing_classes(array $names): array
     {
-        $ids = self::bricks_api_available() ? self::ids_by_name() : [];
+        // Name lookup needs only Bricks' class data, not the whole compiler API.
+        $ids = class_exists('Bricks\Database') && property_exists('Bricks\Database', 'global_data') ? self::ids_by_name() : [];
 
         return array_values(array_filter($names, static fn($n) => !isset($ids[$n])));
     }
@@ -1632,7 +1633,8 @@ class AdminPage
         );
         $bricks = defined('BRICKS_VERSION') ? (string) BRICKS_VERSION : null;
         $missing = Payload::missing_classes($o['classes']);
-        $theme_styles_off = class_exists('Bricks\Database') && \Bricks\Database::get_setting('disableThemeStylesInBlockEditor');
+        // Same parsing as Bricks (admin.php should_enqueue_gutenberg_theme_styles).
+        $theme_styles_off = class_exists('Bricks\Database') && filter_var(\Bricks\Database::get_setting('disableThemeStylesInBlockEditor'), FILTER_VALIDATE_BOOLEAN);
         ?>
         <div class="wrap sfx-editor-prose" style="padding: 0; font-size: 14px;">
             <div class="sfx-flex">
@@ -1904,12 +1906,12 @@ Confirm Bricks version: `grep -m1 Version ../bricks/style.css` → `2.4.x`. Enab
 - [ ] **Step 2: Settings-page states (Review Focus 1, 2, 4)**
 
 a) Module on, settings empty: open a post in the editor → no `sfx-editor-prose` script in the page (`document.querySelector('script[id^="sfx-editor-prose"]') === null`).
-b) Enter classes `prose-test typo`, save → notice "No Bricks global class with this name: typo".
+b) Enter classes `prose-test typo`, save → notice "No Bricks global class with this name: prose-test, typo" (neither exists yet); after Step 3 creates `prose-test`, reload → the notice names only `typo`. Then remove `typo`.
 c) Untick "All post types" and "Baseline", tick nothing else, save, reload → both unticked; the option in the database (`php -r` with `wp-load.php`, read-only `get_option('sfx_editor_prose_options')`) has `all_post_types => false`, `baseline => false`.
 
 - [ ] **Step 3: Fixtures (by hand)**
 
-1. Bricks global class `prose-test`: styles for `p`, `h2`, `ul`, `a`, `blockquote`, `table`, `figcaption`, a web font family, a tablet-breakpoint `p` font size.
+1. Bricks global class `prose-test`: styles for `p`, `h2`, `ul`, `a`, `blockquote`, `table`, `figcaption`, a Google web font family **not used by the theme style or any component class** (so only this module can load it in the editor), a tablet-breakpoint `p` font size.
 2. Second global class `prose-two` with a conflicting `p { color }`.
 3. A Bricks single-post template: Rich Text element with classes `prose-test prose-two`, content = post content. (For Step 7: a Post Content element variant.)
 4. A post with paragraphs, h2/h3, nested list, link, quote with citation, table, image with caption, a nested group, one Bricks component block.
@@ -1935,12 +1937,15 @@ Switch the template to a Post Content element with the same classes and the sett
 
 Settings: baseline on, no prose classes. Template wrapper classes: `sfx-prose` only. Post content adds `strong`, inline `code`, `pre`, `hr`, a `details`/`summary`, a nested list, a table with ≥ 4 body rows, a link (hover it via DevTools `:hov`). In Bricks variables set distinctive values for the tokens the baseline reads (e.g. `--caption-color: rgb(1, 2, 3)`, `--table-row-bg-alt: rgb(4, 5, 6)`, `--link: rgb(7, 8, 9)`, `--bold-font-weight: 800`).
 
-a) **Counterfactual:** for each bare-HTML element (not core-block-styled ones such as table-block cells), record the properties the baseline sets with `sfx-prose` removed from the wrapper, then with it; every such property that nothing else on the test site sets must change.
+Add one **Custom HTML block** holding a bare `<table>` (no block classes) so table cells exist without WordPress' table-block styles.
+
+a) **Counterfactual:** control state = baseline setting **off** and `sfx-prose` removed from the template wrapper (so the editor script does not re-add it); then baseline on and `sfx-prose` back. For each bare-HTML element (the Custom HTML table, not the table block), every property the baseline sets whose baseline value differs from the browser default and that nothing else on the test site sets must change between the two states, on the frontend and in the editor.
 b) **Expected values:** `figcaption` colour `rgb(1, 2, 3)`, even table row background `rgb(4, 5, 6)`, link colour `rgb(7, 8, 9)`, `strong` weight `800`; frontend = editor for all compared values.
 c) **Fallback:** delete `--caption-color` → `figcaption` colour equals the `--text-muted` value.
-d) **Precedence:** a prose class with `p { color }` on the wrapper → wins in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
+d) **Precedence:** add `prose-test` back to the wrapper **and** to the module's classes setting (baseline stays on) → its `p { color }` wins in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
 e) **Exclusion:** a nested Bricks heading and the component block → DevTools "Styles" shows no rule from `prose.css`; inherited values as on the frontend.
-f) **disable_bricks_css:** turn on General Theme Options → Disable Bricks Styling; the frontend still loads `prose.css` (`link#sfx-prose-css`). Turn it off again.
+f) **Import sanitizing:** Import/Export → export "Editor Prose Settings"; in the JSON set `"classes": "a b{ c"` and `"title_gap": "1rem;x"`; import in replace mode → the stored option (read-only `get_option`) has `classes => ['a', 'c']` and `title_gap => ''`.
+g) **disable_bricks_css:** turn on General Theme Options → Disable Bricks Styling; the frontend still loads `prose.css` (`link#sfx-prose-css`). Turn it off again.
 
 - [ ] **Step 9: Record**
 
@@ -1951,7 +1956,7 @@ Write the results (pass/fail per step, any differences) into the PR description 
 ## Finish: Gate B and closing commit
 
 1. `./quality.sh` green.
-2. Gate B per CLAUDE.md §5: Codex review of the range `merge-base(main)..HEAD` (the WIP commits) with the findings-file protocol, `reviewType: full`, both branch files; prompt names AGENTS.md, this plan and the spec, and asks the standing lens "which existing statements does this diff falsify?" (README module list, AGENTS.md counts, overview test). Minimum 3 passes; fix Blocker/Major after each as a new `WIP:` commit; the final pass must be clean.
+2. Gate B per CLAUDE.md §5: Codex review of the range `merge-base(main)..HEAD` (the WIP commits) with the findings-file protocol, `reviewType: full`, both branch files; prompt names AGENTS.md, `docs/prompt-standards.md` (the diff touches AGENTS.md, a prompt artifact), this plan and the spec, and asks the standing lens "which existing statements does this diff falsify?" (README module list, AGENTS.md counts, overview test). Minimum 3 passes; fix Blocker/Major after each as a new `WIP:` commit; the final pass must be clean.
 3. If a Gate-B fix changes specified behaviour, update the spec in the same WIP series.
 4. Close: `git reset --soft <parent of the first WIP commit>` (the spec/plan commits stay), then one commit `feat(editor-prose): mirror Bricks prose into the block editor, optional baseline` whose body lists what was verified (Task 8 results) — the cycle is unprofiled (no story).
 5. Open a pull request; do not merge to `main` (invariant 7).
