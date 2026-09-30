@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-30-editor-prose-design.md` — read it before any task; this plan implements it and does not restate its reasoning.
 
+> **Amended after execution (2026-09-30):** the plan is the historical execution record; where it differs, the spec wins. Changes made during execution: (1) `Payload` always appends a block-margin reset (`html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }`), so fallback CSS is "reset + title rule", not "title rule only"/empty; (2) ImportExport does **not** call `EditorProse\Settings::sanitize()` (AGENTS.md keeps it a catalogue) — imports are sanitized on read by `Settings::get()`; (3) Task 9 renamed the GeneralThemeOptions field `disable_bricks_styles` → `disable_bricks_css`; (4) Task 10 added the Starter (baseline as copyable class CSS).
+
 ## Global Constraints
 
 - **Working directory:** every path and command in this plan is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first.
@@ -1970,7 +1972,7 @@ d) **Precedence:** give `prose-test` a root `color` (on the class itself) and a 
 e) **Exclusion:** a nested Bricks heading and the component block → DevTools "Styles" shows no rule from `prose.css`; inherited values as on the frontend.
 f) **Import sanitizing:** first turn the Editor Prose module **off** (so its own Settings-API sanitizer is not registered and cannot mask the ImportExport dispatch); Import/Export → export "Editor Prose Settings"; in the JSON set `"classes": "a b{ c"` and `"title_gap": "1rem;x"`; import in replace mode → the stored option (read-only `get_option`) has `classes => ['a', 'c']` and `title_gap => ''`. Turn the module back on.
 
-(The `disable_bricks_css` independence is pinned by the controller test — `sfx-prose` enqueued with no dependencies. The UI toggle "Disable Bricks Styling" saves `disable_bricks_styles` while the controller reads `disable_bricks_css` — a pre-existing mismatch outside this feature; report it, do not fix it here.)
+(The `disable_bricks_css` independence is pinned by the controller test — `sfx-prose` enqueued with no dependencies. The UI toggle "Disable Bricks Styling" used to save `disable_bricks_styles` while the controller reads `disable_bricks_css`; fixed on this branch by renaming the field id — see the controller's Task 9 in the SDD ledger and `tests/general-theme-options-bricks-css-key-test.php`.)
 
 - [ ] **Step 9: Record**
 

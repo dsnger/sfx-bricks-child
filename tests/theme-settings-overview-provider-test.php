@@ -147,6 +147,20 @@ $test_options['sfx_general_options'] = ['enable_redirects' => 1];
 $data = OverviewProvider::get_data();
 assert_status($data, 'enable_redirects', 'active', 'Redirects module active when enabled');
 
+// Editor Prose: listed, opt-in, switched on
+reset_test_state();
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_editor_prose', 'inactive', 'Editor Prose module listed and inactive by default');
+$test_options['sfx_general_options'] = ['enable_editor_prose' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_editor_prose', 'active', 'Editor Prose module active when enabled');
+// The test runs against a stub schema; pin the real toggle's declaration and default too.
+$real_schema = (string) file_get_contents(dirname(__DIR__) . '/inc/GeneralThemeOptions/Settings.php');
+assert_true(
+    preg_match("/'id'\s*=>\s*'enable_editor_prose',[^\]]*'default'\s*=>\s*0,/s", $real_schema) === 1,
+    'Editor Prose toggle declared in the real GeneralThemeOptions schema with default 0'
+);
+
 // WP Optimizer partial
 reset_test_state();
 $test_options['sfx_wpoptimizer_options'] = [

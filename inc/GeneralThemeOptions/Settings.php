@@ -87,6 +87,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_editor_prose',
+                'label'       => __('Enable Editor Prose', 'sfxtheme'),
+                'description' => __('Makes the block editor show Gutenberg content like the Bricks frontend (prose class, spacing, optional baseline).', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),
@@ -95,7 +103,7 @@ class Settings
                 'group'       => 'general',
             ],
             [
-                'id'          => 'disable_bricks_styles',
+                'id'          => 'disable_bricks_css',
                 'label'       => __('Disable Bricks Styling', 'sfxtheme'),
                 'description' => __('Remove all default Bricks styling.', 'sfxtheme'),
                 'type'        => 'checkbox',

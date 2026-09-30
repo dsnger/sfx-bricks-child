@@ -2,7 +2,7 @@
 
 WordPress child theme for [Bricks Builder](https://bricksbuilder.io/) with agency-focused content tools, performance toggles, and security helpers.
 
-Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, Password Protection, Redirects, and the Menu Items query type can be enabled or disabled in **General Theme Options**.
+Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, Password Protection, Redirects, Editor Prose, and the Menu Items query type can be enabled or disabled in **General Theme Options**.
 
 ## Features
 
@@ -37,6 +37,22 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 
 - **Custom Dashboard** — configurable wp-admin home (stats, system info, tips, notes; optional Bricks form submissions)
 - **General Theme Options** — master switches for the toggleable modules; delete data on uninstall
+- **Editor Prose** — the block editor shows Gutenberg content like the Bricks frontend: set the prose class(es) and wrapper element (Rich Text or Post Content) under Global Theme Settings → Editor Prose. Everything in the class is mirrored; spacing between blocks comes from the Bricks theme style. Optional token-based baseline (`sfx-prose` class) built on your Core Framework / Bricks variables. Requires Bricks 2.4+.
+
+## Editor Prose: authoring notes
+
+- Put prose styling in the **Bricks global class**, not on the element: settings on the wrapper element itself (compiled to its ID) are not mirrored.
+- Write the class CSS nested under the class (or `%root%`). Avoid braces inside `content:` strings — Bricks' editor scoper can break on them.
+- **Not mirrored:** rules depending on elements outside the content (`body.single-post …`, variables set on a surrounding section); selectors on wrapper attributes other than class; relative `url()`s (they resolve against the admin URL); editor-only structure (`:last-child` next to the block appender, zoom-mode separators); class settings driven by dynamic data.
+- **Breakpoints** follow the editor canvas width, not the content width. Use the editor's device preview to check tablet/mobile rules — in a narrow browser window WordPress may only scale the Tablet preview visually (the canvas keeps its desktop width, so tablet rules do not apply); the Mobile preview or a wider window changes the real canvas width. Percentage spacing and container queries also need the same content width.
+- **Cascade differences you can meet:** the editor prefix makes prose rules one class stronger than on the frontend, so a prose rule that loses to a WordPress block style live (e.g. the large quote) can win in the editor; in Bricks' Post Content mode, theme-style link colours in the editor are more specific than live; against component classes Bricks also loads into the editor, the prose CSS always comes later. Where it matters, give the prose rule one more class of specificity.
+- **Several prose classes:** list them in the order they have on the frontend element. With Bricks' Class Manager load order off, the frontend order is page-wide (first encounter anywhere on the page), so a class used earlier elsewhere can reorder them.
+- A class reused on other element types while Bricks' class chaining is off gets element-specific rules there that the editor does not mirror.
+- **Starting from scratch:** either tick *Baseline* and add `sfx-prose` to the wrapper, or copy the *Starter* from the settings page into a new Bricks global class and adjust it there.
+- Import in **merge** mode keeps existing values where the import is empty; use **replace** for an exact copy of another site's settings.
+- Requires Bricks theme styles in the block editor (Bricks setting). Options that remove Bricks or block CSS on the frontend only (WP Optimizer) make frontend and editor differ by design.
+- **Trust:** whoever can edit Bricks global classes can put CSS into the editor of every covered post — give that permission only to people trusted with all drafts.
+- **Baseline (`sfx-prose`):** layered and token-based (`--text-*`, `--space-*`, `--link`, `--caption-*`, `--table-*`, `--quote-*` …, each with a Core Framework token and a literal as fallback). Anything unlayered wins: the theme style, Core Framework, your prose class, WordPress block styles. Spacing between blocks and list items is the theme style's contextual spacing; with "remove default padding" on, list indent and quote padding are the theme style's job.
 
 ## Requirements
 

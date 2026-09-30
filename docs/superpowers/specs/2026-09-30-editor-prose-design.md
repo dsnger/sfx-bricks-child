@@ -6,12 +6,11 @@
 
 **Scope:**
 
-- new `inc/EditorProse/*` (`Controller.php`, `Settings.php`, `AdminPage.php`, `assets/editor-prose.js`, `assets/prose.css`)
+- new `inc/EditorProse/*` (`Controller.php`, `Settings.php`, `AdminPage.php`, `Starter.php`, `assets/editor-prose.js`, `assets/prose.css`)
 - one toggle `enable_editor_prose` in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
 - `inc/DataPurge.php`: one option name
-- one settings group in `inc/ImportExport/Controller.php`, and its import path calling
-  `EditorProse\Settings::sanitize()` for this option
+- one settings group in `inc/ImportExport/Controller.php`
 - German strings in `languages/de_DE.po` / `.mo`
 - tests in `tests/`
 - README section
@@ -119,7 +118,7 @@ Settings API (`settings_fields`) like the other modules.
 
 | Key | Type | Default | Sanitize |
 |---|---|---|---|
-| `classes` | list of Bricks global class names (text field, comma/space separated) | `[]` | each must match `/^-?[_a-zA-Z][_a-zA-Z0-9-]*$/D` (`D`: no trailing newline) after stripping a leading `.`; invalid entries dropped; duplicates removed |
+| `classes` | list of Bricks global class names (text field, comma/space separated) | `[]` | each is trimmed, a leading `.` stripped, then must match `/^-?[_a-zA-Z][_a-zA-Z0-9-]*$/D`; invalid entries dropped; duplicates removed |
 | `element` | `text` \| `post-content` — the Bricks element that wraps the content on the frontend | `text` | whitelist, else `text` |
 | `all_post_types` | bool | `true` | bool |
 | `post_types` | list of post type slugs (used only when `all_post_types` is false) | `[]` | keep only registered post types that use the block editor |
@@ -138,7 +137,7 @@ false); unknown `element` → `text`; non-string `title_gap` → `''`.
 
 **The same sanitizer runs on every read** (`Settings::get()`), not only on save — so an
 import, a hand-edited option or a value written while the module was disabled can never
-reach the editor unsanitized. The ImportExport group uses the same function. Import **merge** mode keeps
+reach the editor unsanitized. ImportExport stays a catalogue and does not call the module (AGENTS.md); an imported value is sanitized on every read, and while the module is active also on write by the Settings API sanitize callback. Import **merge** mode keeps
 existing values where the import holds an empty value (`ImportExport/Controller.php`
 `deep_merge_arrays`, the behaviour for every module); an exact copy of a site's selection
 needs **replace** mode. The README says so.
@@ -169,9 +168,10 @@ On `enqueue_block_editor_assets` (admin document only), when the gate holds, enq
 
 Building `css`:
 
-The whole build (steps 1–5) runs inside one `try { … } catch (\Throwable) { … }`:
+The build (steps 1–4) runs inside one `try { … } catch (\Throwable) { … }`
+(the reset and title steps run after it, outside the try):
 any failure — Database lookup, compilation, font extraction, scoping — leaves `css`
-holding only the title rule, and `classes` still ships.
+holding only the block-margin reset and the title rule, and `classes` still ships.
 
 1. Map configured class names to IDs via `\Bricks\Database::$global_data['globalClasses']`
    (the source `generate_global_classes` reads). Unknown names are skipped; the admin page
@@ -181,16 +181,17 @@ holding only the title rule, and `classes` still ships.
    classes in **one** call, so Bricks applies its own ordering among them;
    `$css = (string) Assets::generate_global_classes('sfx_editor_prose')` (Bricks returns
    `null` when nothing is mapped); restore in `finally`.
-   A used property/method missing → skip to step 5.
+   A used property/method missing → skip to step 5 (the block-margin reset).
 3. `links`: the baseline URL (if on), then the `href`s of the `rel="stylesheet"` links in
    `Assets::load_webfonts($css, true)` (Bricks returns link HTML in that mode instead of
    enqueueing; preconnect links are ignored).
 4. `$css = Block_Editor::scope_css_for_gutenberg($css)` — Bricks' own prefixing
    (`.block-editor-iframe__body`), which keeps specificity in step with Bricks' editor
    spacing rules (validated above).
-5. Append the title rule if `title_gap` is set:
+5. Append the block-margin reset `html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }`: WordPress' classic editor stylesheet gives every block 28px top/bottom margins (`html :where(.wp-block)`) that the frontend never has. The reset repeats that exact selector (same specificity, injected later), so only that rule is reverted to the layered cascade (Bricks' defaults); block-library rules such as `.wp-block-image`, contextual spacing, prose classes and the title rule still win. Found in the browser verification (2026-09-30); narrowed after Gate B: a broader selector also reverted `.wp-block-image`'s margins.
+6. Append the title rule if `title_gap` is set:
    `.editor-styles-wrapper .editor-post-title { margin-block-end: <title_gap>; }`
-6. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
+7. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
 
 The payload goes through `wp_add_inline_script(..., 'before')` inside a `<script>`
 element of the admin document, encoded with `wp_json_encode($payload, JSON_HEX_TAG |
@@ -301,7 +302,7 @@ differ, that is a finding for the plan, not solved speculatively here.
 
 Bricks missing or older than 2.4 → editor gate closed, nothing loads in the editor (the
 frontend baseline, if on, does not depend on Bricks). A Bricks API missing or
-throwing → `css` holds only the title rule (or is empty); classes still ship, so Bricks'
+throwing → `css` holds only the block-margin reset and the title rule; classes still ship, so Bricks'
 spacing still matches. Nothing is logged; the editor never shows a notice.
 
 ### Trust
@@ -421,6 +422,8 @@ Heading **sizes** are left to Core Framework / the theme style, which already si
   when the class-CSS build fails.
 - Import/export and purge: nothing new — `baseline` lives in `sfx_editor_prose_options`.
 
+**Starter.** The settings page also shows the baseline converted for a site's own class (`Starter::from_file()`): comments and `@layer` removed, `:where(.sfx-prose)` and `.sfx-prose` → `%root%` (the wrapper's zero-specificity `:where()` is dropped — a site's own class is meant to have class specificity) (Bricks' placeholder in a class's custom CSS), token chains unchanged, in a read-only field with a copy button. Generated at render time from `prose.css`, never stored. No header comment (it would be an untranslated user-facing string); the settings page's description explains it. Used instead of the baseline checkbox when a site wants full control.
+
 ## Admin page
 
 Under the theme settings menu, following `SmoothScroll/AdminPage.php`: the fields, a
@@ -431,6 +434,8 @@ mirrored; design it in Bricks"), and these status lines:
   wraps the content";
 - a warning if Bricks' `disableThemeStylesInBlockEditor` is on (spacing and root font
   size then cannot match; finding 3).
+
+Below the form: a read-only starter field with a copy-to-clipboard button (see Baseline → Starter).
 
 All strings `sfxtheme`, escaped at output.
 
@@ -445,7 +450,7 @@ Exact expected outputs, not "output differs from input".
   rule on/off; empty class list with `baseline` off → gate closed, with `baseline` on →
   gate open. Payload build against stub
   `\Bricks\Assets` / `Database` / `Block_Editor` classes: compiler throws → only the
-  title rule, and the six saved `Assets` statics hold their prior values afterwards;
+  block-margin reset and the title rule, and the six saved `Assets` statics hold their prior values afterwards;
   a missing method → same.
 - `tests/editor-prose-test.mjs` (Node): `ensureClasses` adds missing classes, keeps
   existing ones, returns "unchanged" when all present (no observer loop); style and link

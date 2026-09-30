@@ -304,6 +304,14 @@ class Controller
                 'option_key' => 'sfx_redirects_options',
                 'type' => 'single',
             ],
+            // Imported like any array option; EditorProse\Settings::get() re-sanitizes on every read, so an imported value never reaches the editor raw.
+            // Merge mode keeps existing values where the import is empty; use replace for an exact copy.
+            'editor_prose' => [
+                'label' => __('Editor Prose Settings', 'sfxtheme'),
+                'description' => __('Prose classes, wrapper element, post types, baseline and title gap', 'sfxtheme'),
+                'option_key' => 'sfx_editor_prose_options',
+                'type' => 'single',
+            ],
             // NOTE: the seal_* attachment ids are deliberately NOT exported.
             // They are meaningful only on the site that stored them; on the
             // target site the same id resolves to whatever image happens to
