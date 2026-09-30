@@ -193,8 +193,10 @@ holding only the title rule, and `classes` still ships.
 6. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
 
 The payload goes through `wp_add_inline_script(..., 'before')` inside a `<script>`
-element of the admin document; `wp_json_encode` escapes `/` by default, so `</script`
-inside the CSS cannot end the element.
+element of the admin document, encoded with `wp_json_encode($payload, JSON_HEX_TAG |
+JSON_HEX_AMP)`: no literal `<` or `>` reaches the element, so neither `</script` nor
+`<!--<script` in class CSS can end it or put older HTML parsers into a script-escape
+state.
 
 ### Client: `editor-prose.js`
 

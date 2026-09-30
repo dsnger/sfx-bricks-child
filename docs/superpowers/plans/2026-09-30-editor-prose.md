@@ -1386,7 +1386,7 @@ namespace {
     function get_stylesheet_directory() { return dirname(__DIR__); }
     function get_stylesheet_directory_uri() { return 'https://site.test/wp-content/themes/sfx-bricks-child'; }
     function add_query_arg($k, $v, $url) { return $url . '?' . $k . '=' . $v; }
-    function wp_json_encode($data) { return json_encode($data); } // same default flags as WordPress
+    function wp_json_encode($data, $flags = 0) { return json_encode($data, $flags); } // WordPress passes flags through
     function apply_filters($hook, $value, ...$args) { global $css_suffix; return $hook === 'sfx_editor_prose_css' ? $value . $css_suffix : $value; }
     function wp_enqueue_script($h, $src, $deps, $ver, $footer) { global $enqueued_scripts; $enqueued_scripts[$h] = [$src, $deps, $footer]; }
     function wp_add_inline_script($h, $js, $pos) { global $inline_scripts; $inline_scripts[$h] = [$js, $pos]; }
@@ -1439,17 +1439,26 @@ namespace {
     // 3. Configured -> script in the footer plus config before it; CSS that tries to end the
     //    script element is serialized safely and decodes losslessly (Review Focus 5).
     reset_state(['classes' => 'prose', 'title_gap' => '1em']);
-    $css_suffix = '</script><script>alert(1)</script>';
+    $css_suffix = '<!--<script></script><script>alert(1)</script>&';
     Controller::enqueue_editor();
     $css_suffix = '';
     assert_true(isset($enqueued_scripts['sfx-editor-prose']) && $enqueued_scripts['sfx-editor-prose'][2] === true, '3: script enqueued in footer');
     [$js, $pos] = $inline_scripts['sfx-editor-prose'];
     assert_true($pos === 'before', '3: config before the script');
-    assert_true(stripos($js, '</script') === false, '3: no literal </script in the inline script');
+    assert_true(strpbrk($js, '<>') === false, '3: no literal < or > in the inline script');
     $json = substr($js, strlen('window.sfxEditorProseConfig = '), -1);
     $config = json_decode($json, true);
     assert_true($config['classes'] === ['brxe-text', 'prose'], '3: classes in config');
-    assert_true(str_ends_with($config['css'], '</script><script>alert(1)</script>'), '3: css decodes losslessly');
+    assert_true(str_ends_with($config['css'], '<!--<script></script><script>alert(1)</script>&'), '3: css decodes losslessly');
+
+    // 3b. Excluded post type and non-block-editor screen -> untouched.
+    reset_state(['classes' => 'prose', 'all_post_types' => '0', 'post_types' => ['page']]);
+    Controller::enqueue_editor();
+    assert_true($enqueued_scripts === [], '3b: post type not selected');
+    reset_state(['classes' => 'prose']);
+    $screen = new class { public $base = 'post'; public function is_block_editor() { return false; } };
+    Controller::enqueue_editor();
+    assert_true($enqueued_scripts === [], '3b: classic editor screen ignored');
 
     // 4. Baseline: editor config carries the versioned prose.css link; frontend enqueues it without dependencies.
     reset_state(['baseline' => '1']);
@@ -1539,8 +1548,9 @@ class Controller
             (string) filemtime($file),
             true
         );
-        // wp_json_encode escapes "/" by default, so "</script" in CSS cannot end this element.
-        wp_add_inline_script('sfx-editor-prose', 'window.sfxEditorProseConfig = ' . wp_json_encode($payload) . ';', 'before');
+        // JSON_HEX_TAG: no literal < or > reaches the inline <script>, so neither "</script" nor
+        // "<!--<script" in class CSS can end the element or confuse the HTML parser.
+        wp_add_inline_script('sfx-editor-prose', 'window.sfxEditorProseConfig = ' . wp_json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP) . ';', 'before');
     }
 
     public static function enqueue_frontend(): void
@@ -1860,7 +1870,7 @@ List the new strings:
 
 Run: `grep -rhoE "(__|esc_html__|esc_html_e|esc_attr__)\('([^'\\\\]|\\\\.)*', 'sfxtheme'\)" inc/EditorProse inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php inc/ImportExport/Controller.php | sort -u`
 
-For each string not yet in `languages/de_DE.po` (check with `grep -F`), append a `msgid`/`msgstr` pair with a German translation in plain, jargon-free German (du-form is not used in this catalogue — follow the existing entries' register). Keep the `/* translators: */` comment for the `%s` string as `#. translators: %s: comma-separated class names`.
+For each string not yet in `languages/de_DE.po` (check with `grep -F`), append a `msgid`/`msgstr` pair with a German translation in plain, jargon-free German. The catalogue mixes registers; phrase new strings neutrally without direct address where possible, as most module entries do. Keep the `/* translators: */` comment for the `%s` string as `#. translators: %s: comma-separated class names`.
 
 - [ ] **Step 2: Compile and check**
 
@@ -1888,7 +1898,7 @@ and a new section before `## Requirements`:
 - **Several prose classes:** list them in the order they have on the frontend element. With Bricks' Class Manager load order off, the frontend order is page-wide (first encounter anywhere on the page), so a class used earlier elsewhere can reorder them.
 - A class reused on other element types while Bricks' class chaining is off gets element-specific rules there that the editor does not mirror.
 - Import in **merge** mode keeps existing values where the import is empty; use **replace** for an exact copy of another site's settings.
-- Requires Bricks theme styles in the block editor (Bricks setting); the theme's "Disable Bricks Styling" option makes frontend and editor differ by design.
+- Requires Bricks theme styles in the block editor (Bricks setting). Options that remove Bricks or block CSS on the frontend only (WP Optimizer) make frontend and editor differ by design.
 - **Trust:** whoever can edit Bricks global classes can put CSS into the editor of every covered post — give that permission only to people trusted with all drafts.
 - **Baseline (`sfx-prose`):** layered and token-based (`--text-*`, `--space-*`, `--link`, `--caption-*`, `--table-*`, `--quote-*` …, each with a Core Framework token and a literal as fallback). Anything unlayered wins: the theme style, Core Framework, your prose class, WordPress block styles. Spacing between blocks and list items is the theme style's contextual spacing; with "remove default padding" on, list indent and quote padding are the theme style's job.
 ```
@@ -1956,7 +1966,7 @@ Settings: baseline on, no prose classes. Template wrapper classes: `sfx-prose` o
 a) **Counterfactual:** control state = baseline setting **off** and `sfx-prose` removed from the template wrapper (so the editor script does not re-add it); then baseline on and `sfx-prose` back. Before measuring an element in the editor, confirm its `ownerDocument` is the canvas document and `closest('.sfx-prose')` is the canvas root. For each element, every property the baseline sets whose baseline value differs from the browser default and that nothing else on the test site sets (for the table block: see above) must change between the two states, on the frontend and in the editor.
 b) **Expected values:** `figcaption` colour `rgb(1, 2, 3)`, even table row background `rgb(4, 5, 6)`, link colour `rgb(7, 8, 9)`, `strong` weight `800`; frontend = editor for all compared values.
 c) **Fallback:** delete `--caption-color` → `figcaption` colour equals the `--text-muted` value.
-d) **Precedence:** add `prose-test` back to the wrapper **and** to the module's classes setting (baseline stays on) → its `p { color }` wins in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
+d) **Precedence:** give `prose-test` a root `color` (on the class itself) and a `figcaption { color }`, add it back to the wrapper **and** to the module's classes setting (baseline stays on) → paragraph colour follows the class root colour, not `--text-body`, and `figcaption` colour is the class's, not `--caption-color`, in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
 e) **Exclusion:** a nested Bricks heading and the component block → DevTools "Styles" shows no rule from `prose.css`; inherited values as on the frontend.
 f) **Import sanitizing:** first turn the Editor Prose module **off** (so its own Settings-API sanitizer is not registered and cannot mask the ImportExport dispatch); Import/Export → export "Editor Prose Settings"; in the JSON set `"classes": "a b{ c"` and `"title_gap": "1rem;x"`; import in replace mode → the stored option (read-only `get_option`) has `classes => ['a', 'c']` and `title_gap => ''`. Turn the module back on.
 
