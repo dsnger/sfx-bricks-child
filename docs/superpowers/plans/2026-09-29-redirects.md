@@ -521,7 +521,7 @@ public const PERMANENT_CACHE_CHOICES = [3600, 86400, 604800, 0];
       dies before any query; positive baseline (nonce + capability ok, GET with a valid
       `type` and `q`, stubbed `WP_Query`/`get_terms`) reaches the stubbed
       `wp_send_json_success` with the stubbed item's label and path, and the stub records
-      that `WP_Query` received `s`, `post_type`, `post_status` `publish` and 20 per page; `register()` hooks exactly
+      that `WP_Query` received `s`, `post_type`, `post_status` `publish` and the list limit plus one (201; updated when the picker started listing on type choice); `register()` hooks exactly
       `[AdminPage::class, <search handler>]` on `wp_ajax_sfx_redirects_search`.
 - [ ] German strings for every new message (languages/de_DE.po + .mo) — done by the
       controller after all three tasks.

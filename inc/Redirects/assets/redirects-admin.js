@@ -1,10 +1,16 @@
 /**
  * Redirects: target picker (spec Addendum A3).
  *
- * Progressive enhancement: the picker markup ships hidden and is only shown
- * here, so without JavaScript the target stays a plain text field. Results go
- * into a native <select> via textContent, never innerHTML. Searches are
- * debounced, and a response is applied only if it answers the latest request.
+ * Progressive enhancement: the type select ships hidden and is only shown
+ * here, so without JavaScript the target stays a plain text field.
+ *
+ * "Custom URL" shows the target field. Any other type replaces it with a list
+ * of that type's entries, loaded right away; picking one writes its address
+ * into the (then hidden) target field and shows it below. A search box to
+ * narrow the list appears when the list is longer than cfg.searchThreshold,
+ * was cut, or failed to load. Results go into a native <select> via
+ * textContent, never innerHTML. Typing is debounced, and a response is applied
+ * only if it answers the latest request.
  */
 (function () {
 	'use strict';
@@ -18,10 +24,25 @@
 
 	var type = document.getElementById('sfx-redirects-picker-type');
 	var searchRow = document.getElementById('sfx-redirects-picker-search');
-	var query = document.getElementById('sfx-redirects-picker-q');
 	var results = document.getElementById('sfx-redirects-picker-results');
+	var filter = document.getElementById('sfx-redirects-picker-filter');
+	var query = document.getElementById('sfx-redirects-picker-q');
+	var help = document.getElementById('sfx-redirects-target-help');
+	var address = document.getElementById('sfx-redirects-target-address');
+	var addressCode = address ? address.querySelector('code') : null;
+	var label = document.getElementById('sfx-redirects-target-label');
+
+	// wp_localize_script() sends numbers as strings.
+	var threshold = parseInt(cfg.searchThreshold, 10);
+	if (isNaN(threshold)) {
+		threshold = 20;
+	}
 	var timer = 0;
 	var latest = 0;
+	// The address typed (or loaded for editing) under Custom URL, kept while a
+	// list type is shown so switching back restores it.
+	var customValue = target.value;
+	var wasCustom = true;
 
 	function option(value, text) {
 		var el = document.createElement('option');
@@ -35,8 +56,21 @@
 		results.appendChild(option('', text));
 	}
 
-	function render(items) {
-		if (items.length === 0) {
+	function showAddress() {
+		if (!address || !addressCode) {
+			return;
+		}
+		addressCode.textContent = target.value;
+		address.hidden = target.value === '';
+	}
+
+	function render(items, more) {
+		// The search box only earns its place on a long list; once someone has
+		// typed, it stays so the text can be changed back.
+		if (more || items.length > threshold || query.value.trim() !== '') {
+			filter.hidden = false;
+		}
+		if (items.length === 0 && !more) {
 			message(cfg.i18n.noResults);
 			return;
 		}
@@ -47,23 +81,28 @@
 				results.appendChild(option(item.path, item.label + ' — ' + item.path));
 			}
 		});
+		if (more) {
+			var hint = option('', cfg.i18n.more);
+			hint.disabled = true;
+			results.appendChild(hint);
+		}
 	}
 
-	function search() {
+	function load() {
 		window.clearTimeout(timer);
 		var id = ++latest;
-		var term = query.value.trim();
-		if (type.value === '' || term.length < 2) {
-			message(cfg.i18n.minChars);
+		if (type.value === '') {
+			results.textContent = '';
 			return;
 		}
 
-		message(cfg.i18n.searching);
+		// An empty box lists the type's entries; text narrows them.
+		message(cfg.i18n.loading);
 		var params = new URLSearchParams({
 			action: 'sfx_redirects_search',
 			_ajax_nonce: cfg.nonce,
 			type: type.value,
-			q: term
+			q: query.value.trim()
 		});
 		fetch(cfg.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
 			.then(function (response) {
@@ -76,28 +115,63 @@
 				if (id !== latest) {
 					return;
 				}
-				if (!body || body.success !== true || !Array.isArray(body.data)) {
+				if (!body || body.success !== true || !body.data || !Array.isArray(body.data.items)) {
 					throw new Error('response');
 				}
-				render(body.data);
+				render(body.data.items, body.data.more === true);
 			})
 			.catch(function () {
 				if (id === latest) {
 					message(cfg.i18n.error);
+					// Offer the search box as a way to retry, whatever the list length.
+					filter.hidden = false;
 				}
 			});
 	}
 
-	type.addEventListener('change', function () {
-		var custom = type.value === '';
+	// "Custom URL" edits the target directly; any other type picks from a list.
+	function setMode(custom) {
+		target.hidden = !custom;
+		// The visible "Target" label points at whichever control is visible.
+		if (label) {
+			label.htmlFor = custom ? 'sfx-redirects-target' : 'sfx-redirects-picker-results';
+		}
+		if (help) {
+			help.hidden = !custom;
+		}
 		searchRow.hidden = custom;
+		if (custom) {
+			filter.hidden = true;
+			if (address) {
+				address.hidden = true;
+			}
+		} else {
+			showAddress();
+		}
+	}
+
+	type.addEventListener('change', function () {
+		// A new type starts as a plain list; its length decides about the search box.
+		query.value = '';
+		filter.hidden = true;
+		var custom = type.value === '';
+		if (wasCustom && !custom) {
+			customValue = target.value;
+		}
+		// A list type starts with nothing chosen (an address picked under the
+		// previous type must not be submitted from the hidden field); Custom URL
+		// gets back what was typed there.
+		target.value = custom ? customValue : '';
+		wasCustom = custom;
+		setMode(custom);
 		if (custom) {
 			window.clearTimeout(timer);
 			latest++; // drop any answer still in flight
 			results.textContent = '';
+			target.focus();
 			return;
 		}
-		search();
+		load();
 	});
 
 	query.addEventListener('input', function () {
@@ -106,22 +180,24 @@
 		// answer still in flight for it must not repopulate the list.
 		latest++;
 		results.textContent = '';
-		timer = window.setTimeout(search, 300);
+		timer = window.setTimeout(load, 300);
 	});
 
 	// Enter in the search box searches now instead of submitting the rule form.
 	query.addEventListener('keydown', function (event) {
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			search();
+			load();
 		}
 	});
 
 	results.addEventListener('change', function () {
 		if (results.value !== '') {
 			target.value = results.value;
+			showAddress();
 		}
 	});
 
 	picker.hidden = false;
+	setMode(true);
 }());

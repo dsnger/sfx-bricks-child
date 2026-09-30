@@ -7684,3 +7684,69 @@ msgstr "Kein Cache-Header von diesem Modul"
 #: inc/Redirects/Settings.php
 msgid "The browser cache time for permanent redirects must be one of the offered values. The previous value was kept."
 msgstr "Die Browser-Cache-Dauer für dauerhafte Weiterleitungen muss einer der angebotenen Werte sein. Der bisherige Wert wurde beibehalten."
+
+#: inc/Redirects/AdminPage.php
+msgid "Loading…"
+msgstr "Wird geladen …"
+
+#: inc/Redirects/AdminPage.php
+msgid "Only the first entries are shown — type in the search box to narrow them down."
+msgstr "Es werden nur die ersten Einträge angezeigt – tippe ins Suchfeld, um sie einzugrenzen."
+
+#: inc/Redirects/AdminPage.php
+msgid "From"
+msgstr "Von"
+
+#: inc/Redirects/AdminPage.php
+msgid "To"
+msgstr "Nach"
+
+#: inc/Redirects/AdminPage.php
+msgid "Response"
+msgstr "Antwort"
+
+#: inc/Redirects/AdminPage.php
+msgid "Target type"
+msgstr "Zieltyp"
+
+#: inc/Redirects/AdminPage.php
+msgid "Entry"
+msgstr "Eintrag"
+
+#: inc/Redirects/AdminPage.php
+msgid "Search…"
+msgstr "Suchen …"
+
+#: inc/Redirects/AdminPage.php
+msgid "Learn more"
+msgstr "Mehr erfahren"
+
+#: inc/Redirects/AdminPage.php
+msgid "The path only, e.g. /old-page."
+msgstr "Nur der Pfad, z. B. /alte-seite."
+
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Browsers keep a 301 or 308 for %s — use 302 while testing."
+msgstr "Browser merken sich eine 301 oder 308 für %s – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "Browsers may keep a 301 or 308 indefinitely — use 302 while testing."
+msgstr "Browser merken sich eine 301 oder 308 womöglich unbegrenzt – verwende zum Testen 302."
+
+#: inc/Redirects/AdminPage.php
+msgid "The cache time is set on the Settings tab."
+msgstr "Die Cache-Dauer stellst du im Reiter „Einstellungen“ ein."
+
+#: inc/Redirects/AdminPage.php
+msgid "Optional, only visible here"
+msgstr "Optional, nur hier sichtbar"
+
+#: inc/Redirects/AdminPage.php
+msgid "A path like /new-page/ or a full URL."
+msgstr "Ein Pfad wie /neue-seite/ oder eine vollständige URL."
+
+#: inc/Redirects/AdminPage.php
+#, php-format
+msgid "Browsers may keep a 301 or 308 for up to %s — use 302 while testing."
+msgstr "Browser merken sich eine 301 oder 308 womöglich bis zu %s – verwende zum Testen 302."

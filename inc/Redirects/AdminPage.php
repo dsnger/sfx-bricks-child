@@ -12,9 +12,10 @@ namespace SFX\Redirects;
  * only registered for SFX_THEME_ADMINS users and editors (edit_others_posts)
  * manage redirects too.
  *
- * Markup uses core admin classes (form-table, nav-tab, card, notice) rather
- * than the theme's sfx-* classes: the theme's admin stylesheet is only
- * enqueued on the theme's own screens, not on a tools.php page.
+ * Markup uses core admin classes (form-table, nav-tab, card, notice) plus the
+ * module's own sfx-rf-* classes for the rule form (assets/redirects-admin.css,
+ * enqueued on this page only), not the theme's sfx-* admin styles: those are
+ * only enqueued on the theme's own screens, not on a tools.php page.
  */
 final class AdminPage
 {
@@ -49,7 +50,16 @@ final class AdminPage
     /** Target picker: the type select's value for term archives (no post type can be named so). */
     /** A colon is not allowed in a post type key (sanitize_key), so no post type can collide. */
     private const PICKER_TERM = ':term';
-    private const PICKER_LIMIT = 20;
+    /**
+     * Entries the picker lists at once — the whole list when the search box is
+     * empty, or the matches for a search. One more is fetched to know whether
+     * the list was cut. ponytail: 200 keeps the select usable and the query
+     * cheap; a site with more entries narrows them with the search box.
+     */
+    private const PICKER_LIMIT = 200;
+
+    /** More entries than this, and the picker also offers its search box. */
+    private const PICKER_SEARCH_THRESHOLD = 20;
 
     /** Distinct codes per notice; keeps each add_settings_error() entry separate. */
     private static int $notice_seq = 0;
@@ -79,12 +89,20 @@ final class AdminPage
         );
     }
 
-    /** The target picker's script, on the Redirects page only (spec A3). */
+    /** The rule form's stylesheet and the target picker's script, on the Redirects page only (spec A3). */
     public static function enqueue_assets($hook_suffix): void
     {
         if (self::$hook_suffix === '' || $hook_suffix !== self::$hook_suffix) {
             return;
         }
+
+        $css = '/inc/Redirects/assets/redirects-admin.css';
+        wp_enqueue_style(
+            'sfx-redirects-admin',
+            get_stylesheet_directory_uri() . $css,
+            [],
+            (string) filemtime(get_stylesheet_directory() . $css)
+        );
 
         $file = '/inc/Redirects/assets/redirects-admin.js';
         wp_enqueue_script(
@@ -97,9 +115,10 @@ final class AdminPage
         wp_localize_script('sfx-redirects-admin', 'sfxRedirectsPicker', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('sfx_redirects_search'),
+            'searchThreshold' => self::PICKER_SEARCH_THRESHOLD,
             'i18n'    => [
-                'minChars'  => __('Type at least 2 characters.', 'sfxtheme'),
-                'searching' => __('Searching…', 'sfxtheme'),
+                'loading'   => __('Loading…', 'sfxtheme'),
+                'more'      => __('Only the first entries are shown — type in the search box to narrow them down.', 'sfxtheme'),
                 'noResults' => __('No results.', 'sfxtheme'),
                 'choose'    => __('Choose a result', 'sfxtheme'),
                 'error'     => __('The search failed. Try again.', 'sfxtheme'),
@@ -522,10 +541,12 @@ final class AdminPage
     }
 
     /**
-     * Target picker search (admin-ajax, GET). A read, but it discloses titles
-     * and paths, so nonce AND capability come first (spec A3). Returns at most
-     * PICKER_LIMIT {label, path} items; labels are plain text, the page puts
-     * them into the DOM with textContent.
+     * Target picker list/search (admin-ajax, GET). A read, but it discloses
+     * titles and paths, so nonce AND capability come first (spec A3). A q of
+     * fewer than 2 characters lists the type's entries alphabetically, 2–100
+     * characters search, anything longer returns nothing.
+     * Returns {items: at most PICKER_LIMIT {label, path}, more: bool}; labels
+     * are plain text, the page puts them into the DOM with textContent.
      */
     public static function handle_search(): void
     {
@@ -540,9 +561,13 @@ final class AdminPage
             wp_send_json_error(['message' => __('Unknown content type.', 'sfxtheme')], 400);
         }
         $q = isset($request['q']) && is_string($request['q']) ? trim($request['q']) : '';
-        $length = mb_strlen($q);
-        if ($length < 2 || $length > 100) {
-            wp_send_json_success([]);
+        if (mb_strlen($q) > 100) {
+            wp_send_json_success(['items' => [], 'more' => false]);
+        }
+        // Fewer than two characters list instead of searching: WordPress's search
+        // APIs treat "0" as empty, and one letter narrows nothing useful anyway.
+        if (mb_strlen($q) < 2) {
+            $q = '';
         }
 
         $home_url = home_url();
@@ -551,16 +576,25 @@ final class AdminPage
         if ($type === self::PICKER_TERM) {
             $taxonomies = get_taxonomies(['public' => true]);
             // An empty taxonomy list would make get_terms() search every taxonomy.
-            $terms = $taxonomies === [] ? [] : get_terms([
+            $args = [
                 'taxonomy'   => array_values($taxonomies),
-                'search'     => $q,
                 'hide_empty' => false,
-                'number'     => self::PICKER_LIMIT,
-            ]);
+                'orderby'    => 'name',
+                'order'      => 'ASC',
+                'number'     => self::PICKER_LIMIT + 1,
+                // Otherwise a hierarchical taxonomy makes get_terms() load the
+                // whole tree and slice afterwards, ignoring "number" in SQL.
+                'hierarchical' => false,
+            ];
+            if ($q !== '') {
+                $args['search'] = $q;
+            }
+            $terms = $taxonomies === [] ? [] : get_terms($args);
             if (is_wp_error($terms)) {
                 wp_send_json_error(['message' => __('The search failed.', 'sfxtheme')], 500);
             }
-            foreach ($terms as $term) {
+            $fetched = count($terms);
+            foreach (array_slice($terms, 0, self::PICKER_LIMIT) as $term) {
                 $link = get_term_link($term);
                 if (is_wp_error($link) || !is_string($link) || $link === '') {
                     continue;
@@ -573,16 +607,23 @@ final class AdminPage
                 ];
             }
         } else {
-            $query = new \WP_Query([
-                's'                   => $q,
+            $args = [
                 'post_type'           => $type,
                 'post_status'         => 'publish',
-                'posts_per_page'      => self::PICKER_LIMIT,
+                'posts_per_page'      => self::PICKER_LIMIT + 1,
                 'no_found_rows'       => true,
                 'suppress_filters'    => false,
                 'ignore_sticky_posts' => true,
-            ]);
-            foreach ($query->posts as $post) {
+            ];
+            if ($q !== '') {
+                $args['s'] = $q; // search keeps WordPress's relevance order
+            } else {
+                $args['orderby'] = 'title';
+                $args['order']   = 'ASC';
+            }
+            $query   = new \WP_Query($args);
+            $fetched = count($query->posts);
+            foreach (array_slice($query->posts, 0, self::PICKER_LIMIT) as $post) {
                 $link = get_permalink($post);
                 if (!is_string($link) || $link === '') {
                     continue;
@@ -596,7 +637,9 @@ final class AdminPage
             }
         }
 
-        wp_send_json_success($items);
+        // "More" is decided by what the query found, not by what survived the
+        // link filter: a skipped entry must not hide that the list was cut.
+        wp_send_json_success(['items' => $items, 'more' => $fetched > self::PICKER_LIMIT]);
     }
 
     // ------------------------------------------------------------------
@@ -949,7 +992,7 @@ final class AdminPage
         $cache  = Settings::get()['permanent_cache'];
         $labels = Settings::permanent_cache_labels();
         ?>
-        <div class="card" style="max-width: none;">
+        <div class="card sfx-rf" style="max-width: none;">
             <h2 id="sfx-redirect-form">
                 <?php
                 if ($editing) {
@@ -966,33 +1009,38 @@ final class AdminPage
                 <input type="hidden" name="from_404" value="<?php echo esc_attr((string) $form['from_404']); ?>" />
                 <?php wp_nonce_field('sfx_redirects_save_rule'); ?>
 
-                <table class="form-table" role="presentation">
-                    <tr>
-                        <th scope="row"><label for="sfx-redirects-source"><?php esc_html_e('Source', 'sfxtheme'); ?></label></th>
-                        <td>
-                            <input type="text" class="regular-text code" id="sfx-redirects-source" name="source" value="<?php echo esc_attr($form['source']); ?>" placeholder="/old-page" required />
-                            <p class="description"><?php esc_html_e('The path only, e.g. /old-page — case and a trailing slash do not matter. For a regular expression, the pattern without delimiters, e.g. ^/blog/(\d+)/(.*)$ (write ~ as \~).', 'sfxtheme'); ?></p>
-                            <p class="description"><?php esc_html_e('Feeds, sitemaps, robots.txt and favicon.ico are never redirected, so a rule for a feed URL has no effect.', 'sfxtheme'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="sfx-redirects-match-type"><?php esc_html_e('Match type', 'sfxtheme'); ?></label></th>
-                        <td>
-                            <select id="sfx-redirects-match-type" name="match_type">
-                                <option value="exact" <?php selected($form['match_type'], 'exact'); ?>><?php esc_html_e('Exact path', 'sfxtheme'); ?></option>
-                                <option value="regex" <?php selected($form['match_type'], 'regex'); ?>><?php esc_html_e('Regular expression', 'sfxtheme'); ?></option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="sfx-redirects-target"><?php esc_html_e('Target', 'sfxtheme'); ?></label></th>
-                        <td>
-                            <input type="text" class="large-text code" id="sfx-redirects-target" name="target" value="<?php echo esc_attr($form['target']); ?>" placeholder="/new-page/" />
-                            <p class="description"><?php esc_html_e('A path on this site starting with / or a full http(s) URL. Regular expressions can use $1 to $9 in the path. Ignored for 410.', 'sfxtheme'); ?></p>
-                            <?php // Hidden until the script shows it: without JavaScript the target stays a plain text field. ?>
-                            <div id="sfx-redirects-picker" hidden>
-                                <p>
-                                    <label for="sfx-redirects-picker-type"><?php esc_html_e('Pick an existing target', 'sfxtheme'); ?></label><br />
+                <?php // Three blocks: where the request comes from, where it goes, how it is answered. ?>
+                <fieldset class="sfx-rf-section">
+                    <legend><?php esc_html_e('From', 'sfxtheme'); ?></legend>
+                    <div class="sfx-rf-row">
+                        <label class="sfx-rf-label" for="sfx-redirects-source"><?php esc_html_e('Source', 'sfxtheme'); ?></label>
+                        <div class="sfx-rf-field">
+                            <div class="sfx-rf-inline">
+                                <input type="text" class="regular-text code" id="sfx-redirects-source" name="source" value="<?php echo esc_attr($form['source']); ?>" placeholder="/old-page" required />
+                                <label for="sfx-redirects-match-type" class="screen-reader-text"><?php esc_html_e('Match type', 'sfxtheme'); ?></label>
+                                <select id="sfx-redirects-match-type" name="match_type">
+                                    <option value="exact" <?php selected($form['match_type'], 'exact'); ?>><?php esc_html_e('Exact path', 'sfxtheme'); ?></option>
+                                    <option value="regex" <?php selected($form['match_type'], 'regex'); ?>><?php esc_html_e('Regular expression', 'sfxtheme'); ?></option>
+                                </select>
+                            </div>
+                            <details class="sfx-rf-more">
+                                <summary><?php esc_html_e('The path only, e.g. /old-page.', 'sfxtheme'); ?> <span><?php esc_html_e('Learn more', 'sfxtheme'); ?></span></summary>
+                                <p><?php esc_html_e('The path only, e.g. /old-page — case and a trailing slash do not matter. For a regular expression, the pattern without delimiters, e.g. ^/blog/(\d+)/(.*)$ (write ~ as \~).', 'sfxtheme'); ?></p>
+                                <p><?php esc_html_e('Feeds, sitemaps, robots.txt and favicon.ico are never redirected, so a rule for a feed URL has no effect.', 'sfxtheme'); ?></p>
+                            </details>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="sfx-rf-section">
+                    <legend><?php esc_html_e('To', 'sfxtheme'); ?></legend>
+                    <div class="sfx-rf-row">
+                        <label class="sfx-rf-label" id="sfx-redirects-target-label" for="sfx-redirects-target"><?php esc_html_e('Target', 'sfxtheme'); ?></label>
+                        <div class="sfx-rf-field">
+                            <div class="sfx-rf-inline">
+                                <?php // Shown by the script: without JavaScript the target is a plain text field. ?>
+                                <span id="sfx-redirects-picker" hidden>
+                                    <label for="sfx-redirects-picker-type" class="screen-reader-text"><?php esc_html_e('Target type', 'sfxtheme'); ?></label>
                                     <select id="sfx-redirects-picker-type">
                                         <option value=""><?php esc_html_e('Custom URL', 'sfxtheme'); ?></option>
                                         <?php foreach (self::picker_post_types() as $name => $label) : ?>
@@ -1000,50 +1048,61 @@ final class AdminPage
                                         <?php endforeach; ?>
                                         <option value="<?php echo esc_attr(self::PICKER_TERM); ?>"><?php esc_html_e('Term archive', 'sfxtheme'); ?></option>
                                     </select>
-                                </p>
-                                <p id="sfx-redirects-picker-search" hidden>
-                                    <label for="sfx-redirects-picker-q"><?php esc_html_e('Search', 'sfxtheme'); ?></label>
-                                    <input type="search" id="sfx-redirects-picker-q" class="regular-text" maxlength="100" autocomplete="off" />
-                                    <label for="sfx-redirects-picker-results" class="screen-reader-text"><?php esc_html_e('Search results', 'sfxtheme'); ?></label>
+                                </span>
+                                <input type="text" class="regular-text code" id="sfx-redirects-target" name="target" value="<?php echo esc_attr($form['target']); ?>" placeholder="/new-page/" />
+                                <span id="sfx-redirects-picker-search" hidden>
+                                    <label for="sfx-redirects-picker-results" class="screen-reader-text"><?php esc_html_e('Entry', 'sfxtheme'); ?></label>
                                     <select id="sfx-redirects-picker-results"></select>
-                                </p>
-                                <p class="description"><?php esc_html_e('Choosing a result writes its address into the target field.', 'sfxtheme'); ?></p>
+                                </span>
                             </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="sfx-redirects-status"><?php esc_html_e('Status code', 'sfxtheme'); ?></label></th>
-                        <td>
-                            <select id="sfx-redirects-status" name="status_code">
-                                <?php foreach ($statuses as $code => $label) : ?>
-                                    <option value="<?php echo esc_attr((string) $code); ?>" <?php selected($form['status_code'], (string) $code); ?>><?php echo esc_html($label); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description"><strong><?php
-                            if ($cache > 0) {
-                                /* translators: %s: cache time, e.g. "1 hour" */
-                                echo esc_html(sprintf(__('Browsers may keep a 301 or 308 for %s (see the settings) — use 302 while testing.', 'sfxtheme'), $labels[$cache] ?? (string) $cache));
-                            } else {
-                                esc_html_e('This module sends no cache header for 301 and 308, so browsers may keep them indefinitely — use 302 while testing.', 'sfxtheme');
-                            }
-                            ?></strong></p>
-                            <p class="description"><?php esc_html_e('The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect.', 'sfxtheme'); ?></p>
-                            <p class="description"><?php esc_html_e('A page cache or CDN in front of WordPress may keep serving the old page until it is purged.', 'sfxtheme'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Enabled', 'sfxtheme'); ?></th>
-                        <td>
-                            <label><input type="checkbox" name="enabled" value="1" <?php checked($form['enabled']); ?> /> <?php esc_html_e('This redirect is active', 'sfxtheme'); ?></label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="sfx-redirects-note"><?php esc_html_e('Note', 'sfxtheme'); ?></label></th>
-                        <td>
-                            <input type="text" class="regular-text" id="sfx-redirects-note" name="note" value="<?php echo esc_attr($form['note']); ?>" maxlength="255" />
-                        </td>
-                    </tr>
-                </table>
+                            <div id="sfx-redirects-picker-filter" class="sfx-rf-inline" hidden>
+                                <label for="sfx-redirects-picker-q" class="screen-reader-text"><?php esc_html_e('Search', 'sfxtheme'); ?></label>
+                                <input type="search" id="sfx-redirects-picker-q" class="regular-text" maxlength="100" autocomplete="off" placeholder="<?php esc_attr_e('Search…', 'sfxtheme'); ?>" />
+                            </div>
+                            <details class="sfx-rf-more" id="sfx-redirects-target-help">
+                                <summary><?php esc_html_e('A path like /new-page/ or a full URL.', 'sfxtheme'); ?> <span><?php esc_html_e('Learn more', 'sfxtheme'); ?></span></summary>
+                                <p><?php esc_html_e('A path on this site starting with / or a full http(s) URL. Regular expressions can use $1 to $9 in the path. Ignored for 410.', 'sfxtheme'); ?></p>
+                            </details>
+                            <p class="description" id="sfx-redirects-target-address" hidden><?php esc_html_e('Address:', 'sfxtheme'); ?> <code></code></p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="sfx-rf-section">
+                    <legend><?php esc_html_e('Response', 'sfxtheme'); ?></legend>
+                    <div class="sfx-rf-row">
+                        <label class="sfx-rf-label" for="sfx-redirects-status"><?php esc_html_e('Status code', 'sfxtheme'); ?></label>
+                        <div class="sfx-rf-field">
+                            <div class="sfx-rf-inline">
+                                <select id="sfx-redirects-status" name="status_code">
+                                    <?php foreach ($statuses as $code => $label) : ?>
+                                        <option value="<?php echo esc_attr((string) $code); ?>" <?php selected($form['status_code'], (string) $code); ?>><?php echo esc_html($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <label><input type="checkbox" name="enabled" value="1" <?php checked($form['enabled']); ?> /> <?php esc_html_e('Active', 'sfxtheme'); ?></label>
+                            </div>
+                            <details class="sfx-rf-more">
+                                <summary><?php
+                                if ($cache > 0) {
+                                    /* translators: %s: cache time, e.g. "1 hour" */
+                                    echo esc_html(sprintf(__('Browsers may keep a 301 or 308 for up to %s — use 302 while testing.', 'sfxtheme'), $labels[$cache] ?? (string) $cache));
+                                } else {
+                                    esc_html_e('Browsers may keep a 301 or 308 indefinitely — use 302 while testing.', 'sfxtheme');
+                                }
+                                ?> <span><?php esc_html_e('Learn more', 'sfxtheme'); ?></span></summary>
+                                <p><?php esc_html_e('The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect.', 'sfxtheme'); ?></p>
+                                <p><?php esc_html_e('A page cache or CDN in front of WordPress may keep serving the old page until it is purged.', 'sfxtheme'); ?></p>
+                                <p><?php esc_html_e('The cache time is set on the Settings tab.', 'sfxtheme'); ?></p>
+                            </details>
+                        </div>
+                    </div>
+                    <div class="sfx-rf-row">
+                        <label class="sfx-rf-label" for="sfx-redirects-note"><?php esc_html_e('Note', 'sfxtheme'); ?></label>
+                        <div class="sfx-rf-field">
+                            <input type="text" class="regular-text" id="sfx-redirects-note" name="note" value="<?php echo esc_attr($form['note']); ?>" maxlength="255" placeholder="<?php esc_attr_e('Optional, only visible here', 'sfxtheme'); ?>" />
+                        </div>
+                    </div>
+                </fieldset>
 
                 <p class="submit">
                     <?php submit_button($editing ? __('Update redirect', 'sfxtheme') : __('Add redirect', 'sfxtheme'), 'primary', 'submit', false); ?>
@@ -1084,7 +1143,7 @@ final class AdminPage
         $table->prepare_items();
         self::render_list($table, '404', 'sfx_redirects_404_action', __('Search paths', 'sfxtheme'));
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete every entry in the 404 log?', 'sfxtheme')); ?>');">
+        <form class="sfx-redirects-clear-log" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js(__('Delete every entry in the 404 log?', 'sfxtheme')); ?>');">
             <input type="hidden" name="action" value="sfx_redirects_404_action" />
             <input type="hidden" name="op" value="clear_all" />
             <?php wp_nonce_field('sfx_redirects_404_action'); ?>

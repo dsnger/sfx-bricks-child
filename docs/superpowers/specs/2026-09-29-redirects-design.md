@@ -1033,12 +1033,26 @@ own rules (see "Page caches").
 
 ### A3. Target picker ("redirect to an existing page")
 
-Next to the target field, a type select — **Custom URL** (default), every viewable post
+**Form layout** (Daniel, 2026-09-30): the rule form has three labelled blocks — *From*
+(source + match type side by side), *To* (target), *Response* (status code + an
+*Active* checkbox side by side, then the note). Each long explanation sits behind a
+one-line summary in a `<details>` "Learn more"; the rest of the form behaviour is
+unchanged.
+
+In the *To* block, in front of the target field, a type select — **Custom URL** (default), every viewable post
 type except attachments (`get_post_types(['public' => true])` filtered by
 `is_post_type_viewable()`), and **Term archive** (option value `:term` — a colon cannot occur in a post
-type key, so no post type can collide) — and, for a non-custom type, a search box plus a native `<select>`
-of results (accessible by keyboard and screen reader without extra ARIA work). Choosing
-a result **writes its address into the target field**: home-relative when the permalink
+type key, so no post type can collide) — and, for a non-custom type, a native `<select>`
+of that type's entries, **listed as soon as the type is chosen** (alphabetical, at most
+200; a disabled last option says when the list was cut). A search box to narrow the list
+appears only when the list has **more than 20 entries** (or was cut, or loading it
+failed — then it is the way to retry), and stays once someone has typed (accessible by keyboard and screen reader without extra ARIA work;
+changed on Daniel's request, 2026-09-29). Choosing
+a result **writes its address into the target field** — which, while a non-custom type
+is selected, is hidden in favour of the entry list and shown back as a read-only
+"Address: …" line (the field itself stays in the form and is what is submitted;
+switching to a list type starts with no target; switching back to Custom URL restores
+the address typed there — an entry picked in a list is not carried over): home-relative when the permalink
 (or term link) has the home URL's scheme, host and effective port and lies inside the
 home path (whole-segment rule, case-sensitive), otherwise the absolute URL as returned. The conversion
 happens on the server, in the search endpoint (`path` in the response). Attachments are left out: an attachment
@@ -1050,11 +1064,16 @@ stale (stated).
 - Search endpoint: `wp_ajax_sfx_redirects_search` (admin-ajax, `GET`), `check_ajax_referer
   ('sfx_redirects_search')` **and** `current_user_can(AdminPage::CAPABILITY)` before
   anything else; input `type` (a post type from the allowed list or `:term`; anything
-  else → `wp_send_json_error`, 400) and `q` (string, trimmed, 2–100 chars, otherwise an
-  empty result); returns at most 20 `{label, path}` items as JSON
-  (`wp_send_json_success`). Posts: `WP_Query` with `s`, `post_status` `publish`,
-  `no_found_rows`, `suppress_filters` false, 20 per page. Terms: `get_terms` with
-  `search`, public taxonomies, `hide_empty` false, 20. Labels are plain text; the page
+  else → `wp_send_json_error`, 400) and `q` (string, trimmed; fewer than 2 characters = list
+  the type's entries — WordPress's search APIs treat `"0"` as empty —, 2–100 chars =
+  search, longer = empty result); returns
+  `{items: at most 200 {label, path}, more: bool}` as JSON (`wp_send_json_success`;
+  201 are fetched so `more` says whether the list was cut; `more` is decided by the
+  fetched count, not by the entries left after dropping unusable links). Posts: `WP_Query` with
+  `post_status` `publish`, `no_found_rows`, `suppress_filters` false, 201 per page, and
+  either `s` (search, relevance order) or `orderby` title ASC (list). Terms: `get_terms`
+  over public taxonomies, `hide_empty` false, `hierarchical` false (so the limit applies
+  in SQL), `orderby` name ASC, 201, plus `search` when `q` is given. Labels are plain text; the page
   escapes them when it builds the list (DOM `textContent`, never `innerHTML`). Not the
   core REST search route, because WPOptimizer can switch the REST API off.
 - A read, not a write — invariant 2 does not apply, but the capability + nonce pair is
