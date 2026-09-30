@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (revised after Gate-A passes 1–3)
+**Date:** 2026-09-30 (revised after Gate-A passes 1–4)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -10,7 +10,8 @@
 - one toggle `enable_editor_prose` in `inc/GeneralThemeOptions/Settings.php`
 - one entry in `inc/ThemeSettingsOverview/OverviewProvider.php`
 - `inc/DataPurge.php`: one option name
-- one settings group in `inc/ImportExport/Controller.php`
+- one settings group in `inc/ImportExport/Controller.php`, and its import path calling
+  `EditorProse\Settings::sanitize()` for this option
 - German strings in `languages/de_DE.po` / `.mo`
 - tests in `tests/`
 - README section
@@ -124,7 +125,8 @@ removed later) can never widen the selection: with `all_post_types = false` and 
 list, the module applies nowhere.
 
 The sanitizer is total: a non-array option → defaults; a non-array `classes` /
-`post_types` → `[]`; `all_post_types` coerced (`true`/`1`/`'1'` → true, anything else
+`post_types` → `[]`, except that a **string** `classes` (the form submits the text field
+as-is) is split on `[\s,]+` and then validated token by token; `all_post_types` coerced (`true`/`1`/`'1'` → true, anything else
 false); unknown `element` → `text`; non-string `title_gap` → `''`.
 
 **The same sanitizer runs on every read** (`Settings::get()`), not only on save — so an
@@ -203,6 +205,7 @@ One idempotent `sync()`:
 Non-iframed editors are not supported — every rule is scoped to
 `.block-editor-iframe__body`.
 
+The script is enqueued in the footer (`in_footer: true`), so `document.body` exists.
 `sync()` runs once at script start, on every mutation of one `MutationObserver` on the
 admin `document.body` (`childList`, `subtree`) — which sees the canvas mount after a
 code-editor → visual switch and device-preview iframe replacement — and on each iframe
@@ -218,7 +221,10 @@ The injected `<style>` is appended last in the canvas `<head>`, after Bricks' ed
 Among the configured classes: with Bricks' `globalClassesLoadOrder` on, Class-Manager
 order applies, as on the frontend; with it off, Bricks uses encounter order, which here
 is the order of the `classes` setting — so list them in the order they appear on the
-frontend element (help text says so). Against **other** global classes
+frontend element (help text says so). This matches the frontend only when those classes
+are first encountered on the prose wrapper; Bricks' encounter order is page-wide
+(`assets.php:5190`), so if one of them appears earlier on another element of the page,
+the frontend order can differ. Accepted limit, documented. Against **other** global classes
 Bricks outputs in the editor (component classes, finding 2) the prose CSS always comes
 later; equal-specificity conflicts between a prose class and a component class can
 therefore resolve differently than on the frontend. Accepted limit, documented in the
@@ -239,7 +245,14 @@ It does **not** cover, and the README/help text say so:
 - structural selectors (`:last-child`, `:empty`, sibling spacing) where the editor adds
   its own nodes (block appender, zoom-mode separators) — the editor's DOM is not the
   frontend's;
-- relative `url()`s in class CSS — they resolve against the admin URL in the canvas.
+- relative `url()`s in class CSS — they resolve against the admin URL in the canvas;
+- selectors on wrapper **attributes** other than class (e.g. `[data-source]`) — only
+  classes are reproduced;
+- **breakpoints**: Bricks' responsive rules are viewport media queries; the canvas
+  iframe's viewport is narrower than the frontend window at the same content width, so
+  a rule for a given breakpoint applies in the editor only when the canvas itself is in
+  that range (device preview sets it). Parity is per viewport width, not per content
+  width.
 
 ### Bricks component blocks
 
@@ -290,10 +303,13 @@ Exact expected outputs, not "output differs from input".
   paragraphs, headings, lists, links, blockquote, table, figure/figcaption and uses a
   web font; a page template wrapping post content in a Rich Text element with that
   class; a post containing each of those plus a nested group and one component block.
-  At the same content width, after `document.fonts.ready` in both documents, compare
+  At matched viewport conditions (frontend window width = canvas width, above the
+  largest breakpoint; then once in a tablet device preview vs a frontend window of the
+  same width), after `document.fonts.ready` and a positive `document.fonts.check()` for
+  the prose font in both documents, compare
   for every prose element (top-level and descendants: `li`, `a`, `figcaption`,
-  `blockquote`, `td`) computed `margin-block-start/end`, `font-family`, `font-size`,
-  `line-height`, `color`, and the rendered gap between consecutive top-level blocks
+  `blockquote`, `td`) computed `margin-block-start/end`, `padding`, `border`, `font-family`,
+  `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and the rendered gap between consecutive top-level blocks
   (`getBoundingClientRect`). Repeat once with the `element` setting `post-content` and a
   Post Content wrapper. Toggle outline mode, switch code editor → visual, switch device
   preview; confirm classes, style and links survive. Confirm the frontend has no
