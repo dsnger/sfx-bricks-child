@@ -888,7 +888,7 @@ function load(extra = {}) {
   makeWin(cdoc, observers);
   frame.contentDocument = cdoc;
   doc.frame = frame;
-  sync();
+  observers[0].cb(); // the admin-body observer notices the iframe mounting
   assert.equal(observers.length, 2, '4: canvas document observed before root exists');
   assert.equal(observers[1].target, cdoc.documentElement, '4: observes canvas documentElement');
   // JSON: the options object comes from the vm realm, so a strict deep-equal would fail on its prototype.
@@ -1146,7 +1146,7 @@ function check(raw) {
       if (!sel.startsWith(':where(.sfx-prose)')) throw new Error(`selector not anchored: ${sel}`);
       if (sel !== ':where(.sfx-prose)' && !sel.replace(/::[a-z-]+$/, '').endsWith(EXCLUDE)) throw new Error(`Bricks elements not excluded: ${sel}`);
     }
-    if (/!important/.test(body)) throw new Error(`!important in ${prelude}`);
+    if (/!\s*important/i.test(body)) throw new Error(`!important in ${prelude}`);
     if (/\d(\.\d+)?rem\b/.test(body)) throw new Error(`rem literal in ${prelude}`);
     checkVars(body, prelude);
     count++;
@@ -1166,6 +1166,7 @@ const bad = {
   'unanchored selector': SOURCE.replace(':where(.sfx-prose) hr:', 'hr:'),
   'missing exclusion': SOURCE.replace(':where(.sfx-prose) hr' + EXCLUDE, ':where(.sfx-prose) hr'),
   'important': SOURCE.replace('cursor: pointer;', 'cursor: pointer !important;'),
+  'IMPORTANT spaced': SOURCE.replace('cursor: pointer;', 'cursor: pointer ! IMPORTANT;'),
   'rem literal': SOURCE.replace('padding: 0.1em 0.3em;', 'padding: 0.1rem 0.3em;'),
   'var without fallback': SOURCE.replace('var(--text-body, inherit)', 'var(--text-body)'),
   'inner var without fallback': SOURCE.replace('var(--link, var(--primary, currentColor))', 'var(--link, var(--primary))'),
@@ -1748,6 +1749,7 @@ git commit -m "WIP: editor-prose controller and admin page"
 - Modify: `inc/GeneralThemeOptions/Settings.php` (after the `enable_redirects` entry, ~line 88)
 - Modify: `inc/ThemeSettingsOverview/OverviewProvider.php` (after `enable_redirects`, ~line 77)
 - Modify: `tests/theme-settings-overview-provider-test.php` (after the Redirects block, ~line 148)
+- Modify: `tests/support/overview-general-theme-options-settings-stub.php` (add the toggle to the stub's `get_fields()`)
 - Modify: `inc/ImportExport/Controller.php` (settings groups ~line 306; `sanitize_option_value` ~line 1276)
 
 **Interfaces:**
@@ -1765,6 +1767,18 @@ assert_status($data, 'enable_editor_prose', 'inactive', 'Editor Prose module lis
 $test_options['sfx_general_options'] = ['enable_editor_prose' => 1];
 $data = OverviewProvider::get_data();
 assert_status($data, 'enable_editor_prose', 'active', 'Editor Prose module active when enabled');
+// The test runs against a stub schema; pin the real toggle's declaration and default too.
+$real_schema = (string) file_get_contents(dirname(__DIR__) . '/inc/GeneralThemeOptions/Settings.php');
+assert_true(
+    preg_match("/'id'\s*=>\s*'enable_editor_prose',[^\]]*'default'\s*=>\s*0,/s", $real_schema) === 1,
+    'Editor Prose toggle declared in the real GeneralThemeOptions schema with default 0'
+);
+```
+
+and in `tests/support/overview-general-theme-options-settings-stub.php`, `get_fields()`, after `enable_nav_menu_query`:
+
+```php
+            ['id' => 'enable_editor_prose', 'default' => 0],
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -1829,7 +1843,7 @@ Run: `./quality.sh`
 Expected: exit 0.
 
 ```bash
-git add inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php tests/theme-settings-overview-provider-test.php inc/ImportExport/Controller.php
+git add inc/GeneralThemeOptions/Settings.php inc/ThemeSettingsOverview/OverviewProvider.php tests/theme-settings-overview-provider-test.php tests/support/overview-general-theme-options-settings-stub.php inc/ImportExport/Controller.php
 git commit -m "WIP: editor-prose toggle, overview, export"
 ```
 
@@ -1919,7 +1933,7 @@ c) Untick "All post types" and "Baseline", tick nothing else, save, reload → b
 
 - [ ] **Step 4: Parity measurement**
 
-Match the **viewport** widths: read the editor canvas width (`document.querySelector('iframe[name="editor-canvas"]').clientWidth`) and size a frontend window to exactly that width (DevTools device toolbar), above the largest breakpoint. After `document.fonts.ready` and the prose `FontFace` reporting `status === 'loaded'` in both documents, collect for every prose element (top level and `li`, `a`, `figcaption`, `blockquote`, `td`): computed `margin-block-start/end`, `padding`, `border`, `font-family`, `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and the `getBoundingClientRect` gap between consecutive top-level blocks; the title → first paragraph gap equals `var(--space-m)`. Expected: identical except the documented limits. Repeat with the editor's tablet device preview vs a frontend viewport of the same canvas width (the tablet `p` font size applies in both).
+Match the **viewport** widths: read the editor canvas width (`document.querySelector('iframe[name="editor-canvas"]').clientWidth`) and size a frontend window to exactly that width (DevTools device toolbar), above the largest breakpoint. After `document.fonts.ready` and the prose `FontFace` reporting `status === 'loaded'` in both documents, collect for every prose element (top level and `li`, `a`, `figcaption`, `blockquote`, `td`): computed `margin-block-start/end`, `padding`, `border`, `font-family`, `font-weight`, `font-size`, `line-height`, `color`, `text-decoration`, `list-style`, and the `getBoundingClientRect` gap between consecutive top-level blocks; the title → first paragraph gap equals `var(--space-m)` (first confirm the token resolves in the canvas: `getComputedStyle(canvasDocument.body).getPropertyValue('--space-m')` non-empty). Expected: identical except the documented limits. Repeat with the editor's tablet device preview vs a frontend viewport of the same canvas width (the tablet `p` font size applies in both).
 
 - [ ] **Step 5: Robustness**
 
@@ -1937,15 +1951,16 @@ Switch the template to a Post Content element with the same classes and the sett
 
 Settings: baseline on, no prose classes. Template wrapper classes: `sfx-prose` only. Post content adds `strong`, inline `code`, `pre`, `hr`, a `details`/`summary`, a nested list, a table with ≥ 4 body rows, a link (hover it via DevTools `:hov`). In Bricks variables set distinctive values for the tokens the baseline reads (e.g. `--caption-color: rgb(1, 2, 3)`, `--table-row-bg-alt: rgb(4, 5, 6)`, `--link: rgb(7, 8, 9)`, `--bold-font-weight: 800`).
 
-Add one **Custom HTML block** holding a bare `<table>` (no block classes) so table cells exist without WordPress' table-block styles.
+(No Custom HTML block: the editor renders it in its own sandbox iframe, out of the canvas' reach. Table checks use the table block and only properties WordPress' table-block CSS does not set — `font-size`, `th` weight, alternating-row background; cell padding and borders are the block style's by design.)
 
-a) **Counterfactual:** control state = baseline setting **off** and `sfx-prose` removed from the template wrapper (so the editor script does not re-add it); then baseline on and `sfx-prose` back. For each bare-HTML element (the Custom HTML table, not the table block), every property the baseline sets whose baseline value differs from the browser default and that nothing else on the test site sets must change between the two states, on the frontend and in the editor.
+a) **Counterfactual:** control state = baseline setting **off** and `sfx-prose` removed from the template wrapper (so the editor script does not re-add it); then baseline on and `sfx-prose` back. Before measuring an element in the editor, confirm its `ownerDocument` is the canvas document and `closest('.sfx-prose')` is the canvas root. For each element, every property the baseline sets whose baseline value differs from the browser default and that nothing else on the test site sets (for the table block: see above) must change between the two states, on the frontend and in the editor.
 b) **Expected values:** `figcaption` colour `rgb(1, 2, 3)`, even table row background `rgb(4, 5, 6)`, link colour `rgb(7, 8, 9)`, `strong` weight `800`; frontend = editor for all compared values.
 c) **Fallback:** delete `--caption-color` → `figcaption` colour equals the `--text-muted` value.
 d) **Precedence:** add `prose-test` back to the wrapper **and** to the module's classes setting (baseline stays on) → its `p { color }` wins in both. Bricks typography set on the wrapper **element** (font size) → wins on the frontend (not mirrored in the editor — documented).
 e) **Exclusion:** a nested Bricks heading and the component block → DevTools "Styles" shows no rule from `prose.css`; inherited values as on the frontend.
-f) **Import sanitizing:** Import/Export → export "Editor Prose Settings"; in the JSON set `"classes": "a b{ c"` and `"title_gap": "1rem;x"`; import in replace mode → the stored option (read-only `get_option`) has `classes => ['a', 'c']` and `title_gap => ''`.
-g) **disable_bricks_css:** turn on General Theme Options → Disable Bricks Styling; the frontend still loads `prose.css` (`link#sfx-prose-css`). Turn it off again.
+f) **Import sanitizing:** first turn the Editor Prose module **off** (so its own Settings-API sanitizer is not registered and cannot mask the ImportExport dispatch); Import/Export → export "Editor Prose Settings"; in the JSON set `"classes": "a b{ c"` and `"title_gap": "1rem;x"`; import in replace mode → the stored option (read-only `get_option`) has `classes => ['a', 'c']` and `title_gap => ''`. Turn the module back on.
+
+(The `disable_bricks_css` independence is pinned by the controller test — `sfx-prose` enqueued with no dependencies. The UI toggle "Disable Bricks Styling" saves `disable_bricks_styles` while the controller reads `disable_bricks_css` — a pre-existing mismatch outside this feature; report it, do not fix it here.)
 
 - [ ] **Step 9: Record**
 
