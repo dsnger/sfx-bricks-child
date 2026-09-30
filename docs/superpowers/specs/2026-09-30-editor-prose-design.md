@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–8)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after passes 7–9)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -209,9 +209,13 @@ One idempotent `sync()`:
   (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`) calling `sync()` —
   **before** looking for the root, so a root portalled in later is seen;
 - if the document has no `.is-root-container` yet, return;
-- ensure `<style id="sfx-editor-prose">` with `css` exists in `<head>` (created once per
-  document; `textContent`, never HTML), one `<link rel="stylesheet">` per `links` URL (in order), and
-  `ensureClasses(root, classes)`.
+- ensure, in `<head>` and in this order (created once per document): a
+  `<style id="sfx-editor-prose">` whose `textContent` (never HTML) is the theme's
+  sub-layer order statement `@layer sfx.reset, sfx.utilities, sfx.components,
+  sfx.theme;` — the one `assets/css/frontend/styles.css` declares first on the frontend,
+  kept as a constant with a test pinning it to that file — followed by `css`; then one
+  `<link rel="stylesheet">` per `links` URL. So the layer order matches the frontend.
+  Finally `ensureClasses(root, classes)`.
 
 Non-iframed editors are not supported — every rule is scoped to
 `.block-editor-iframe__body`.
@@ -259,6 +263,11 @@ It does **not** cover, and the README/help text say so:
   its own nodes (block appender, zoom-mode separators) — the editor's DOM is not the
   frontend's;
 - relative `url()`s in class CSS — they resolve against the admin URL in the canvas;
+- conflicts with **WordPress block CSS**: Bricks' editor prefix adds one class to every
+  prose selector, so a prose rule that loses to a core block rule on the frontend (e.g.
+  `.prose p` vs the large-quote style's paragraph selector) can win in the editor. This
+  is inherent to Bricks' scoper, which the module deliberately reuses; where it matters,
+  the prose rule should be as specific as the block rule;
 - settings on the Bricks wrapper **element itself** (its own style controls, compiled
   to its element ID) — only global-class CSS is mirrored, so prose styling belongs in
   the class;
@@ -345,14 +354,19 @@ indent and quote padding are the theme style's or the prose class's job; WordPre
 block CSS for the same property (e.g. `.wp-block-table td` border and padding) — the
 baseline styles bare HTML and yields to block styles; and, when Bricks'
 `disableBricksCascadeLayer` is on, Bricks' own frontend resets, which then are unlayered
-too. If the theme's WP Optimizer removes block CSS on the frontend only, frontend and
+too. The theme's own `disable_bricks_css` setting removes Bricks' and block styles on the
+frontend only, while Bricks still loads its styles into the editor; with it on, frontend
+and editor differ by design. If the theme's WP Optimizer removes block CSS on the frontend only, frontend and
 editor can differ for those blocks — an existing site setting, not this module's.
 
 **Covered:** headings (colour, font, weight, line height), body text (size, line height,
 colour — on the wrapper), links and hover, `strong`, lists (`ul`/`ol`, nested,
 markers), `blockquote` and citation, `figure` / `img` / `figcaption`, `table` (head,
 cells, alternating rows), `code` / `pre`, `hr`, `details`/`summary`.
-**Not covered:** buttons (the theme's `buttons.css` module), gallery and accordion
+Link rules also exclude `.wp-block-button__link` and `.wp-element-button`.
+
+**Not covered:** buttons (WordPress' own button block styles and the theme's
+`buttons.css` module), gallery and accordion
 layouts, alignwide/alignfull widths (layout, the theme's `content-grid.css`),
 site-specific extras such as an external-link marker.
 
@@ -364,7 +378,7 @@ on `:where(.sfx-prose)`; sites override the public ones.
 |---|---|
 | body size / line height / colour (on the wrapper) | `--text-m` → `inherit`; `--body-line-height` → `--line-height-m` → `1.6`; `--text-body` → `inherit` |
 | heading colour / font / weight | `--text-title` → `inherit`; `--heading-font-family` → `inherit`; `--heading-font-weight` → `700` |
-| link / hover | `--link` → `--primary` → `currentColor`; `--link-hover` → `--link` → `currentColor` |
+| link / hover | `--link` → `--primary` → `currentColor`; `--link-hover` → `--link` → `--primary` → `currentColor` |
 | muted text | `--text-muted` → `--muted` → `currentColor` |
 | strong | `--bold-font-weight` → `700` |
 | list indent / item gap | `--list-indent` → `1.5em` (item gap: contextual spacing) |
@@ -443,15 +457,18 @@ Exact expected outputs, not "output differs from input".
   rule does not arise. Other Bricks modes (class chaining off, load order on, file CSS
   loading) and multi-class ordering are compiled by Bricks itself and not re-verified
   here; their limits are documented above.
-- `tests/editor-prose-baseline-test.mjs` (Node): parses `prose.css` and asserts every
+- `tests/editor-prose-baseline-test.mjs` (Node): asserts the layer-order constant
+  equals the first `@layer` statement of `assets/css/frontend/styles.css`; parses `prose.css` and asserts every
   style rule is inside `@layer sfx.components`, every selector starts with
   `:where(.sfx-prose)`, and no declaration uses `!important`; and that each custom
   property used ends in a literal fallback (no `var()` chain without one).
 - Browser verification of the baseline on the local site: a wrapper with `sfx-prose` and
   no prose class, content covering every covered element (incl. `strong`, `code`/`pre`,
   `hr`, `details`/`summary`, nested list markers, alternating table rows, link hover) —
-  for each element, at least one property the baseline sets and nothing else on the
-  test site sets differs from the same content without `sfx-prose` (so the baseline is
+  the test site sets distinctive values for the public tokens used (e.g. a unique
+  `--caption-color`), and for each bare-HTML element (not core-block-styled ones such as
+  table-block cells) every property the baseline sets and nothing else on the test site
+  sets differs from the same content without `sfx-prose` (so the baseline is
   proven active), and all compared values match between frontend and editor; then a
   prose class setting `color` on `p` — wins in both; Bricks typography set on the
   wrapper element itself — wins on the frontend (not mirrored, see What "parity"
