@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after, re-review pending)
+**Date:** 2026-09-30 (Gate A: 6 passes, final pass without Blocker/Major; baseline section added after; revised after pass 7)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -128,7 +128,8 @@ Settings API (`settings_fields`) like the other modules.
 
 `all_post_types` is explicit so that dropping unknown post types (import, a post type
 removed later) can never widen the selection: with `all_post_types = false` and an empty
-list, the module applies nowhere.
+list, the editor mirroring applies nowhere (the frontend baseline, if on, is not
+post-type-scoped).
 
 The sanitizer is total: a non-array option → defaults; a non-array `classes` /
 `post_types` → `[]`, except that a **string** `classes` (the form submits the text field
@@ -306,18 +307,36 @@ visitessen's `article__prose` already reads `--caption-*`, `--table-*`, `--quote
 - Every rule sits in `@layer sfx.components` and uses `:where(.sfx-prose)` (specificity
   0). Unlayered CSS — Bricks theme styles, the site's prose class, Core Framework —
   always wins, without `!important`.
-- Everything Bricks-rendered inside the prose area is excluded, as visitessen does:
-  selectors end in `:not(:where(.sfx-prose [class*="brxe-"] *))`, so Bricks elements
-  and component blocks keep their own styling (frontend and editor alike).
+- Everything Bricks-rendered inside the prose area is excluded, as visitessen does, the
+  Bricks elements themselves **and** their descendants: selectors end in
+  `:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *))`, so a nested
+  `h2.brxe-heading`, an `a.brxe-button` or a component root keeps its own styling
+  (frontend and editor alike). The wrapper itself is not matched (it is not a descendant
+  of itself).
+- **Inheritable defaults go on the wrapper, not the descendants.** Body font size, line
+  height and colour are set on `:where(.sfx-prose)` and inherited; paragraphs get no
+  typography rule. So typography a site sets on the Bricks wrapper (unlayered, via the
+  element or its class) wins through normal inheritance. Descendant rules exist only
+  where a descendant needs its own value (headings, links, captions, code, tables).
 
-**Block spacing is not part of the baseline.** Vertical rhythm between blocks comes from
-Bricks' contextual spacing (theme style), which the root classes already make work in the
-editor. Bricks' "remove default margins" reset is unlayered and would override any
-layered margin anyway. The baseline styles spacing *inside* elements only (list indent
-and item gap, caption gap, table cell padding, quote padding).
+**Block spacing is not part of the baseline.** Vertical rhythm between blocks — and
+between list items, which Bricks' fallback `* + *` also reaches — comes from Bricks'
+contextual spacing (theme style), which the root classes already make work in the
+editor. The baseline styles spacing *inside* elements only: list indent
+(`padding-inline-start`), caption gap (`margin-block-start` on `figcaption`), table cell
+padding, quote padding.
 
-**Covered:** headings (colour, font, weight, line height), paragraphs and body text
-(size, line height, colour), links and hover, `strong`, lists (`ul`/`ol`, nested,
+**What beats the baseline** (all unlayered, so by design): Bricks' "remove default
+margins/padding" theme-style resets (`assets.php:1338`) — with padding removal on, list
+indent and quote padding are the theme style's or the prose class's job; WordPress core
+block CSS for the same property (e.g. `.wp-block-table td` border and padding) — the
+baseline styles bare HTML and yields to block styles; and, when Bricks'
+`disableBricksCascadeLayer` is on, Bricks' own frontend resets, which then are unlayered
+too. If the theme's WP Optimizer removes block CSS on the frontend only, frontend and
+editor can differ for those blocks — an existing site setting, not this module's.
+
+**Covered:** headings (colour, font, weight, line height), body text (size, line height,
+colour — on the wrapper), links and hover, `strong`, lists (`ul`/`ol`, nested,
 markers), `blockquote` and citation, `figure` / `img` / `figcaption`, `table` (head,
 cells, alternating rows), `code` / `pre`, `hr`, `details`/`summary`.
 **Not covered:** buttons (the theme's `buttons.css` module), gallery and accordion
@@ -330,34 +349,41 @@ on `:where(.sfx-prose)`; sites override the public ones.
 
 | Purpose | Chain |
 |---|---|
-| body size / line height / colour | `--text-m` → `1rem`; `--body-line-height` → `--line-height-m` → `1.6`; `--text-body` → `inherit` |
+| body size / line height / colour (on the wrapper) | `--text-m` → `inherit`; `--body-line-height` → `--line-height-m` → `1.6`; `--text-body` → `inherit` |
 | heading colour / font / weight | `--text-title` → `inherit`; `--heading-font-family` → `inherit`; `--heading-font-weight` → `700` |
 | link / hover | `--link` → `--primary` → `currentColor`; `--link-hover` → `--link` → `currentColor` |
 | muted text | `--text-muted` → `--muted` → `currentColor` |
 | strong | `--bold-font-weight` → `700` |
-| list indent / item gap | `--list-indent` → `1.5em`; `--list-gap` → `--space-3xs` → `0.25rem` |
-| caption size / colour / gap | `--caption-font-size` → `--text-s` → `0.875rem`; `--caption-color` → muted chain; `--caption-gap` → `--space-2xs` → `0.5rem` |
-| quote padding / border / weight | `--quote-padding-inline` → `--space-m` → `1.5rem`; border `--primary` → `currentColor`; `--quote-font-weight` → `inherit` |
-| table size / head weight / alt row / border | `--table-font-size` → `--text-s` → `0.875rem`; `--table-head-font-weight` → `700`; `--table-row-bg-alt` → `--subtle` → `transparent`; border `--border-primary` → `color-mix(in srgb, currentColor 20%, transparent)` |
-| code background / radius | `--subtle` → `color-mix(in srgb, currentColor 8%, transparent)`; `--radius-s` → `0.25rem` |
+| list indent / item gap | `--list-indent` → `1.5em` (item gap: contextual spacing) |
+| caption size / colour / gap | `--caption-font-size` → `--text-s` → `0.875em`; `--caption-color` → muted chain; `--caption-gap` → `--space-2xs` → `0.5em` |
+| quote padding / border / weight | `--quote-padding-inline` → `--space-m` → `1.5em`; border `--primary` → `currentColor`; `--quote-font-weight` → `inherit` |
+| table size / head weight / alt row / border | `--table-font-size` → `--text-s` → `0.875em`; `--table-head-font-weight` → `700`; `--table-row-bg-alt` → `--subtle` → `transparent`; border `--border-primary` → `color-mix(in srgb, currentColor 20%, transparent)` |
+| code background / radius | `--subtle` → `color-mix(in srgb, currentColor 8%, transparent)`; `--radius-s` → `0.25em` |
+
+Literal fallbacks are `em`/`inherit`, never `rem`: Bricks' default root is 62.5 %, where
+`1rem` is 10px.
 
 Heading **sizes** are left to Core Framework / the theme style, which already size
 `h1`–`h6` globally (unlayered, so a layered size would lose anyway).
 
 **Loading.**
-- Frontend: `wp_enqueue_scripts` enqueues `inc/EditorProse/assets/prose.css` when the
-  module and `baseline` are on (version `filemtime`), everywhere except the Bricks builder
-  main window (as `SmoothScroll` does). Layer order: Bricks declares `@layer bricks`
-  first; `sfx.components` comes later, so the baseline beats Bricks' layered resets but
-  nothing unlayered.
-- Editor: the script inserts it as the first `links` entry in the canvas.
+- Frontend (and therefore the Bricks builder canvas, which renders the frontend):
+  `wp_enqueue_scripts` enqueues `inc/EditorProse/assets/prose.css` when the module and
+  `baseline` are on (version `filemtime`), except in the Bricks builder main window (as
+  `SmoothScroll` does). This path needs no Bricks version and ignores the post-type
+  selection, which governs only the block editor. Layer order: Bricks declares
+  `@layer bricks` first (unless `disableBricksCascadeLayer`); `sfx.components` comes
+  later, so the baseline beats Bricks' layered resets but nothing unlayered.
+- Editor: the script inserts it as the first `links` entry in the canvas, URL with
+  `?ver=<filemtime>`. The baseline URL is set before the `try` block, so it ships even
+  when the class-CSS build fails.
 - Import/export and purge: nothing new — `baseline` lives in `sfx_editor_prose_options`.
 
 ## Admin page
 
 Under the theme settings menu, following `SmoothScroll/AdminPage.php`: the fields, a
 short help text ("everything in the class — typography, lists, links, figures — is
-mirrored; design it in Bricks"), and two status lines:
+mirrored; design it in Bricks"), and these status lines:
 - configured classes not found in Bricks (by name);
 - a hint when `baseline` is on: "add the class `sfx-prose` to the Bricks element that
   wraps the content";
@@ -374,7 +400,8 @@ Exact expected outputs, not "output differs from input".
   leading dot, invalid dropped, duplicates), `element` whitelist, `all_post_types` /
   `post_types` (empty + false = nowhere), `title_gap` accepts `2rem`, `0`,
   `clamp(1rem, 2vw, 2rem)`, `var(--gap, 1rem)`, rejects each forbidden token; title
-  rule on/off; empty class list → gate closed. Payload build against stub
+  rule on/off; empty class list with `baseline` off → gate closed, with `baseline` on →
+  gate open. Payload build against stub
   `\Bricks\Assets` / `Database` / `Block_Editor` classes: compiler throws → only the
   title rule, and the six saved `Assets` statics hold their prior values afterwards;
   a missing method → same.
@@ -397,7 +424,9 @@ Exact expected outputs, not "output differs from input".
   (`getBoundingClientRect`). Repeat once with the `element` setting `post-content` and a
   Post Content wrapper. Toggle outline mode, switch code editor → visual, switch device
   preview; confirm classes, style and links survive. Confirm the frontend has no
-  `sfx-editor-prose`. Nothing is created or deleted by a script, so the harness teardown
+  `sfx-editor-prose`, and the admin document (outside the canvas) has none of the
+  injected classes, style or links. A second configured class with a conflicting rule
+  checks name-to-ID mapping and the documented ordering. Nothing is created or deleted by a script, so the harness teardown
   rule does not arise. Other Bricks modes (class chaining off, load order on, file CSS
   loading) and multi-class ordering are compiled by Bricks itself and not re-verified
   here; their limits are documented above.
@@ -406,9 +435,12 @@ Exact expected outputs, not "output differs from input".
   `:where(.sfx-prose)`, and no declaration uses `!important`; and that each custom
   property used ends in a literal fallback (no `var()` chain without one).
 - Browser verification of the baseline on the local site: a wrapper with `sfx-prose` and
-  no prose class — elements styled, frontend vs editor identical by the same comparison;
-  then with a prose class setting `color` on `p` — the class wins; one Bricks element
-  inside the prose area — unchanged by the baseline.
+  no prose class, content covering every covered element (incl. `strong`, `code`/`pre`,
+  `hr`, `details`/`summary`, nested list markers, alternating table rows, link hover) —
+  each element's computed values differ from the same content without `sfx-prose` (so
+  the baseline is proven active) and match between frontend and editor; then a prose
+  class setting `color` on `p` and Bricks typography on the wrapper element — both win;
+  a nested `h2.brxe-heading` and a component block — unchanged by the baseline.
 - `./quality.sh` green.
 
 ## Out of scope
