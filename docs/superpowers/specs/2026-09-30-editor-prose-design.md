@@ -1,6 +1,6 @@
 # Editor Prose — Design
 
-**Date:** 2026-09-30 (revised after Gate-A passes 1–2)
+**Date:** 2026-09-30 (revised after Gate-A passes 1–3)
 **Branch:** `feature/editor-prose`
 **Story:** none — this cycle is unprofiled (no story file exists for it).
 
@@ -51,10 +51,12 @@ Code references are under `wp-content/themes/bricks/includes/`.
    aurantia, the editor contains
    `.block-editor-iframe__body .brxe-text * + :is(h1…h6)` etc., unmatched.
 2. **Global class CSS reaches the editor only for classes used by enabled Bricks
-   components** (`Block_Editor::generate_gutenberg_global_classes_css`, since 2.3.8). An
-   ordinary prose class wrapping native blocks is not included.
+   components** (`Block_Editor::generate_gutenberg_global_classes_css`, since 2.3.8),
+   plus Style Manager utility classes (`admin.php:2342`). An ordinary prose class
+   wrapping native blocks is not included.
 3. **Root font size is handled by Bricks** when theme styles load in the editor:
-   `frontend.min.css` sets `html{font-size:62.5%}` (layered); the theme style's `html`
+   Bricks' frontend CSS (`frontend-layer.min.css`, layered, or `frontend.min.css` when
+   cascade layers are disabled) sets `html{font-size:62.5%}`; the theme style's `html`
    font-size (aurantia `100%`) is scoped to `.block-editor-iframe__html`, unlayered, and
    wins. Measured 16px frontend and editor. Unconditional loading of frontend and
    theme-style CSS into the editor is marked `@since 2.4` (`admin.php:2058`, `2278`) —
@@ -73,10 +75,10 @@ Code references are under `wp-content/themes/bricks/includes/`.
 5. Bricks enqueues its editor-canvas CSS on `enqueue_block_assets`, priority 10
    (`admin.php:19`), gated on `$screen->is_block_editor() && $screen->base === 'post' &&
    $post_id` (`admin.php:2045-2056`).
-6. Class settings with a **dynamic-data** value (e.g. a colour from a custom field) are
+6. Some class settings with a **dynamic-data** value (e.g. a typography colour) are
    written to the separate `Assets::$inline_css_dynamic_data` bucket
    (`assets.php:4028`), which Bricks' own editor path for component classes also does not
-   output. Not mirrored (see Out of scope).
+   output. Those are not mirrored (see Out of scope).
 7. The editor's content root is rendered by React with
    `className: clsx("is-root-container", className, {is-outline-mode, is-focus-mode,
    is-preview-mode})` (`wp-includes/js/dist/block-editor.js:55038`), so React rewrites
@@ -121,9 +123,16 @@ Settings API (`settings_fields`) like the other modules.
 removed later) can never widen the selection: with `all_post_types = false` and an empty
 list, the module applies nowhere.
 
+The sanitizer is total: a non-array option → defaults; a non-array `classes` /
+`post_types` → `[]`; `all_post_types` coerced (`true`/`1`/`'1'` → true, anything else
+false); unknown `element` → `text`; non-string `title_gap` → `''`.
+
 **The same sanitizer runs on every read** (`Settings::get()`), not only on save — so an
 import, a hand-edited option or a value written while the module was disabled can never
-reach the editor unsanitized. The ImportExport group uses the same function.
+reach the editor unsanitized. The ImportExport group uses the same function. Import **merge** mode keeps
+existing values where the import holds an empty value (`ImportExport/Controller.php`
+`deep_merge_arrays`, the behaviour for every module); an exact copy of a site's selection
+needs **replace** mode. The README says so.
 
 The module is enabled by `enable_editor_prose` in `sfx_general_options` (default off).
 
@@ -149,6 +158,10 @@ On `enqueue_block_editor_assets` (admin document only), when the gate holds, enq
 
 Building `css`:
 
+The whole build (steps 1–5) runs inside one `try { … } catch (\Throwable) { … }`:
+any failure — Database lookup, compilation, font extraction, scoping — leaves `css`
+holding only the title rule, and `classes` still ships.
+
 1. Map configured class names to IDs via `\Bricks\Database::$global_data['globalClasses']`
    (the source `generate_global_classes` reads). Unknown names are skipped; the admin page
    lists them.
@@ -156,9 +169,10 @@ Building `css`:
    set `Assets::$global_classes_elements = [ id => [ $element ], … ]` for all configured
    classes in **one** call, so Bricks applies its own ordering among them;
    `$css = Assets::generate_global_classes('sfx_editor_prose')`; restore in `finally`.
-   A `Throwable`, or a used property/method missing, → `css` empty; classes still ship.
-3. `fonts`: the `href`s from `Assets::load_webfonts($css, true)` (Bricks returns link
-   HTML in that mode instead of enqueueing).
+   A used property/method missing → skip to step 5.
+3. `fonts`: the `href`s of the `rel="stylesheet"` links in
+   `Assets::load_webfonts($css, true)` (Bricks returns link HTML in that mode instead of
+   enqueueing; preconnect links are ignored).
 4. `$css = Block_Editor::scope_css_for_gutenberg($css)` — Bricks' own prefixing
    (`.block-editor-iframe__body`), which keeps specificity in step with Bricks' editor
    spacing rules (validated above).
@@ -166,28 +180,33 @@ Building `css`:
    `.editor-styles-wrapper .editor-post-title { margin-block-end: <title_gap>; }`
 6. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
 
-The payload goes through `wp_add_inline_script(..., 'before')` with `wp_json_encode`
-(JSON-escapes `</`), so no HTML context is involved.
+The payload goes through `wp_add_inline_script(..., 'before')` inside a `<script>`
+element of the admin document; `wp_json_encode` escapes `/` by default, so `</script`
+inside the CSS cannot end the element.
 
 ### Client: `editor-prose.js`
 
 One idempotent `sync()`:
 
-- find `iframe[name="editor-canvas"]`; if absent, or its document has no
-  `.is-root-container` yet, return (non-iframed editors are not supported — every rule
-  is scoped to `.block-editor-iframe__body`);
-- in that document: ensure `<style id="sfx-editor-prose">` with `css` exists in `<head>`
-  (create once per document; `textContent`, never HTML), ensure one
-  `<link rel="stylesheet">` per font URL, and `ensureClasses(root, classes)`;
-- if that document is not yet observed, attach one `MutationObserver` to its
-  `documentElement` (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`)
-  calling `sync()`; observed documents are tracked in a `WeakSet`, so a replaced document
-  gets its own observer and the old one is dropped with it.
+- find `iframe[name="editor-canvas"]`; if absent, return. On first sight of an iframe
+  element, add its `load` listener (tracked in a `WeakSet` of iframe elements, so once
+  per element);
+- take its current `contentDocument`; if that document is not yet observed (tracked in a
+  `WeakSet` of documents), attach one `MutationObserver` to its `documentElement`
+  (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`) calling `sync()` —
+  **before** looking for the root, so a root portalled in later is seen;
+- if the document has no `.is-root-container` yet, return;
+- ensure `<style id="sfx-editor-prose">` with `css` exists in `<head>` (created once per
+  document; `textContent`, never HTML), one `<link rel="stylesheet">` per font URL, and
+  `ensureClasses(root, classes)`.
 
-`sync()` is triggered by one `MutationObserver` on the admin `document.body`
-(`childList`, `subtree`) — which sees the canvas mount after a code-editor → visual
-switch, device-preview iframe replacement, and body portalling — and by the iframe's
-`load` event (listener added when `sync()` first sees an iframe element). No timeout.
+Non-iframed editors are not supported — every rule is scoped to
+`.block-editor-iframe__body`.
+
+`sync()` runs once at script start, on every mutation of one `MutationObserver` on the
+admin `document.body` (`childList`, `subtree`) — which sees the canvas mount after a
+code-editor → visual switch and device-preview iframe replacement — and on each iframe
+`load`. No timeout.
 
 `ensureClasses(element, classes)` only calls `classList.add` for missing classes and
 reports whether it changed anything, so the observer's own writes do not loop. It and
@@ -196,7 +215,10 @@ the style/link insertion are exported for the Node test.
 ### Cascade position and limits
 
 The injected `<style>` is appended last in the canvas `<head>`, after Bricks' editor CSS.
-Among the configured classes Bricks' order applies. Against **other** global classes
+Among the configured classes: with Bricks' `globalClassesLoadOrder` on, Class-Manager
+order applies, as on the frontend; with it off, Bricks uses encounter order, which here
+is the order of the `classes` setting — so list them in the order they appear on the
+frontend element (help text says so). Against **other** global classes
 Bricks outputs in the editor (component classes, finding 2) the prose CSS always comes
 later; equal-specificity conflicts between a prose class and a component class can
 therefore resolve differently than on the frontend. Accepted limit, documented in the
@@ -205,6 +227,19 @@ README.
 Bricks' scoper does not scope every valid construct (statement at-rules such as
 `@layer x;`, braces inside strings). Because the CSS lives only inside the canvas
 document, anything left unscoped can affect only the canvas, never the admin UI.
+
+### What "parity" covers
+
+Parity holds for prose whose rules depend only on the wrapper element and what is inside
+it, plus globals Bricks already supplies to the editor (variables, theme styles, fonts).
+It does **not** cover, and the README/help text say so:
+
+- rules depending on frontend ancestors or body classes (`body.single-post .prose p`,
+  a variable defined on an enclosing section) — the editor has no such ancestors;
+- structural selectors (`:last-child`, `:empty`, sibling spacing) where the editor adds
+  its own nodes (block appender, zoom-mode separators) — the editor's DOM is not the
+  frontend's;
+- relative `url()`s in class CSS — they resolve against the admin URL in the canvas.
 
 ### Bricks component blocks
 
@@ -251,14 +286,20 @@ Exact expected outputs, not "output differs from input".
   existing ones, returns "unchanged" when all present (no observer loop); style and link
   insertion are idempotent per document.
 - **Browser verification (no automated fixture harness).** On the local site, prepared
-  by hand as ordinary dev content through the Bricks UI (a prose class, a page template
-  wrapping post content in a Rich Text element with that class, a post with paragraphs,
-  headings, a list, an image with caption and one component block): compare computed
-  margin, font-size, line-height and colour of every top-level block frontend vs editor,
-  as done on aurantia; toggle outline mode, switch code editor → visual and device
-  preview and confirm classes and style survive; confirm the frontend has no
+  by hand as ordinary dev content through the Bricks UI: a prose class that styles
+  paragraphs, headings, lists, links, blockquote, table, figure/figcaption and uses a
+  web font; a page template wrapping post content in a Rich Text element with that
+  class; a post containing each of those plus a nested group and one component block.
+  At the same content width, after `document.fonts.ready` in both documents, compare
+  for every prose element (top-level and descendants: `li`, `a`, `figcaption`,
+  `blockquote`, `td`) computed `margin-block-start/end`, `font-family`, `font-size`,
+  `line-height`, `color`, and the rendered gap between consecutive top-level blocks
+  (`getBoundingClientRect`). Repeat once with the `element` setting `post-content` and a
+  Post Content wrapper. Toggle outline mode, switch code editor → visual, switch device
+  preview; confirm classes, style and links survive. Confirm the frontend has no
   `sfx-editor-prose`. Nothing is created or deleted by a script, so the harness teardown
-  rule does not arise.
+  rule does not arise. Other Bricks modes (class chaining off, load order on, file CSS
+  loading) are compiled by Bricks itself and not re-verified here.
 - `./quality.sh` green.
 
 ## Out of scope
@@ -271,6 +312,8 @@ Exact expected outputs, not "output differs from input".
   frontend.
 - Class settings with dynamic-data values (finding 6).
 - Cascade order against component classes (see Cascade position and limits).
+- Ancestor-dependent rules, editor-only structural nodes, relative `url()`s (see What
+  "parity" covers).
 
 ## Invariants touched
 
