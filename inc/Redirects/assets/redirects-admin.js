@@ -151,6 +151,11 @@
 		query.value = '';
 		filter.hidden = true;
 		var custom = type.value === '';
+		if (!custom) {
+			// A list type starts with nothing chosen: an address picked under the
+			// previous type must not be submitted from a now-hidden field.
+			target.value = '';
+		}
 		setMode(custom);
 		if (custom) {
 			window.clearTimeout(timer);

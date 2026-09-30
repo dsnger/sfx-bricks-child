@@ -274,10 +274,26 @@ namespace {
 
     function get_terms($args = [], $deprecated = '')
     {
-        global $test_terms_calls;
+        global $test_terms_calls, $test_terms_args, $test_terms_count;
         $test_terms_calls++;
+        $test_terms_args = $args;
 
-        return [];
+        $terms = [];
+        for ($i = 0; $i < (int) ($test_terms_count ?? 0); $i++) {
+            $terms[] = (object) ['term_id' => 100 + $i, 'name' => 'News', 'taxonomy' => 'category'];
+        }
+
+        return $terms;
+    }
+
+    function get_term_link($term, $taxonomy = '')
+    {
+        return 'https://example.test/category/news/';
+    }
+
+    function get_taxonomy($taxonomy)
+    {
+        return (object) ['labels' => (object) ['singular_name' => 'Category']];
     }
 
     function get_permalink($post = 0, $leavename = false)
@@ -427,9 +443,9 @@ namespace {
         assert_true($hooked['admin_post_' . $action] === $handler, "6: admin_post_{$action} calls its handler");
     }
 
-    // 7. Target picker search: the same four (nonce, capability, search, list) cases for the admin-ajax endpoint.
+    // 7. Target picker search: five cases for the admin-ajax endpoint (nonce, capability, search, list, terms).
     /** @return array{stopped:string, db_calls:int, writes:int} */
-    function run_search_case(bool $nonce_ok, bool $can, string $q = '  About '): array
+    function run_search_case(bool $nonce_ok, bool $can, string $q = '  About ', string $type = 'page'): array
     {
         global $wpdb, $test_writes, $test_nonce_ok, $test_can, $test_caps_seen,
             $test_ajax_nonce_seen, $test_queries, $test_terms_calls, $test_json;
@@ -444,7 +460,7 @@ namespace {
         $test_nonce_ok = $nonce_ok;
         $test_can = $can;
 
-        $_GET = ['action' => 'sfx_redirects_search', 'type' => 'page', 'q' => $q];
+        $_GET = ['action' => 'sfx_redirects_search', 'type' => $type, 'q' => $q];
         $_POST = [];
 
         try {
@@ -503,14 +519,30 @@ namespace {
     assert_true(count($test_json[1]['items'] ?? []) === 200 && ($test_json[1]['more'] ?? null) === true, 'list: 201 found → 200 items and more=true');
     $ran++;
 
+    // Term archive: listed alphabetically, non-hierarchically (so the limit is in
+    // SQL), limit plus one; 201 found → 200 items and more=true.
+    $test_terms_count = 1;
+    $r = run_search_case(true, true, '', ':term');
+    assert_true($r['stopped'] === 'json_success', "terms: the term archive lists (got {$r['stopped']})");
+    assert_true(($test_terms_args['hierarchical'] ?? null) === false, 'terms: loaded non-hierarchically');
+    assert_true(($test_terms_args['number'] ?? null) === 201 && ($test_terms_args['orderby'] ?? null) === 'name' && !isset($test_terms_args['search']), 'terms: list = name order, limit plus one, no search');
+    assert_true(($test_json[1]['items'] ?? null) === [['label' => 'News (Category)', 'path' => '/category/news/']], 'terms: returns label with taxonomy and a home-relative path');
+    $r = run_search_case(true, true, 'news', ':term');
+    assert_true(($test_terms_args['search'] ?? null) === 'news', 'terms: a query is passed as search');
+    $test_terms_count = 201;
+    $r = run_search_case(true, true, '', ':term');
+    $test_terms_count = 0;
+    assert_true(count($test_json[1]['items'] ?? []) === 200 && ($test_json[1]['more'] ?? null) === true, 'terms: 201 found → 200 items and more=true');
+    $ran++;
+
     // register() hooks the search endpoint.
     assert_true(
         ($hooked['wp_ajax_sfx_redirects_search'] ?? null) === [AdminPage::class, 'handle_search'],
         '7: wp_ajax_sfx_redirects_search calls AdminPage::handle_search'
     );
 
-    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's four (nonce, capability, search, list).
-    assert_true($ran === 25, "counter: expected 25 cases, ran {$ran}");
+    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's five (nonce, capability, search, list, terms).
+    assert_true($ran === 26, "counter: expected 26 cases, ran {$ran}");
 
     echo "OK\n";
 }
