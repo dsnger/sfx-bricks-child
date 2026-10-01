@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.25.0] - 2026-10-01
+
+New module: **Editor Prose** — the block editor shows Gutenberg content like the Bricks frontend. Off by default; switch it on under General Theme Options → *Enable Editor Prose*, then set the prose class(es) and the wrapper element (Rich Text or Post Content) under Global Theme Settings → Editor Prose. Requires Bricks 2.4+.
+
+- **Mirroring:** the editor gets the frontend wrapper's classes, and the prose class CSS — compiled by Bricks itself, including UI settings, breakpoints and web fonts — is loaded into the editor canvas. Bricks' contextual spacing from the theme style applies as on the frontend. Optional gap below the post title.
+
+- **Baseline (optional):** a token-based prose stylesheet (class `sfx-prose`) built on your Core Framework / Bricks variables — headings, links, lists, quotes, tables, captions, code. Your own prose class always wins.
+
+- **Starter:** the settings page offers the baseline as copyable class CSS to start an own Bricks global class.
+
+- Limits and authoring notes: see the README section "Editor Prose: authoring notes".
+
+**Fixed:** *Disable Bricks Styling* never had an effect (the setting was saved under a different key). It works now and keeps the theme's own stylesheets. Sites where the box was ticked show it unticked after the update — tick it again if you want it.
+
+**Theme settings overview widget:** each row now shows title and status badge on one line with the description below, at any width; long entries no longer break or overlap. The custom-dashboard widget is now titled "Theme Settings Overview".
+
 ## [0.24.0] - 2026-09-30
 
 New module: **Redirects** — a redirect manager with a 404 log, built into the theme. Off by default; switch it on under General Theme Options → *Enable Redirects*. Managed under **Tools → Redirects** by administrators and editors (`edit_others_posts`).
