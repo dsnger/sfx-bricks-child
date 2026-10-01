@@ -304,8 +304,10 @@ differ, that is a finding for the plan, not solved speculatively here.
 
 Bricks missing or older than 2.4 → editor gate closed, nothing loads in the editor (the
 frontend baseline, if on, does not depend on Bricks). A Bricks API missing or
-throwing → `css` holds only the block-margin reset and the title rule; classes still ship, so Bricks'
-spacing still matches. With `WP_DEBUG` on, both a missing Bricks API and a thrown build failure are written to the PHP error log (`[sfx-editor-prose] …`); the editor never shows a notice.
+throwing → `css` holds only the block-margin reset and the title rule; classes still ship, so the
+theme style's contextual spacing (Bricks' own editor rules) still matches — everything
+the prose class itself defines, its own spacing included, is missing until the build
+works again. With `WP_DEBUG` on, both a missing Bricks API and a thrown build failure are written to the PHP error log (`[sfx-editor-prose] …`); the editor never shows a notice.
 
 ### Trust
 
