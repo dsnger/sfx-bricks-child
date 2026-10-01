@@ -28,6 +28,18 @@ class Payload
      *  the title rule) still wins. It is injected into the canvas document only, never the admin page. */
     public const BLOCK_MARGIN_RESET = "html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }\n";
 
+    /** Editor-only frames the frontend never has: the classic-theme alignment wrapper around a wide/full block
+     *  and the wrapper around a Bricks component block. An aligned component is left alone: live, Bricks wraps it
+     *  in div.alignwide/alignfull, which the editor's block element (alignment class mirrored by the script) stands for. Live, the prose wrapper's child is the block itself, so
+     *  these frames must not take a width — neither WordPress' classic one (840px, 1100px wide) nor one from a
+     *  prose rule aimed at the wrapper's children. `!important` because the prose class's specificity is
+     *  unknown; only horizontal box values, so vertical spacing stays as it is. */
+    public const EDITOR_FRAME_RESET = '.is-root-container .wp-block[data-align="wide"]:not([data-block]), '
+        . '.is-root-container .wp-block[data-align="full"]:not([data-block]), '
+        . '.is-root-container [data-type^="bricks-components/"]:not([data-align], [data-align] > *, .alignwide, .alignfull), '
+        . '.is-root-container [data-type^="bricks-component-ids/"]:not([data-align], [data-align] > *, .alignwide, .alignfull) '
+        . "{ max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }\n";
+
     public static function build(array $o, string $post_type, string $baseline_url = ''): array
     {
         $classes = array_merge(['brxe-' . $o['element']], $o['classes']);
@@ -53,6 +65,7 @@ class Payload
         }
 
         $css .= self::BLOCK_MARGIN_RESET;
+        $css .= self::EDITOR_FRAME_RESET;
         $css .= self::title_rule($o['title_gap']);
         $css = (string) apply_filters('sfx_editor_prose_css', $css, $post_type);
 

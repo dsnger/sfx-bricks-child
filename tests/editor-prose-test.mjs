@@ -21,12 +21,21 @@ class ClassList {
   constructor() { this.set = []; this.adds = 0; }
   contains(c) { return this.set.includes(c); }
   add(c) { this.adds++; if (!this.set.includes(c)) this.set.push(c); }
+  remove(c) { this.set = this.set.filter((x) => x !== c); }
 }
 class El {
   constructor(tag) { this.tagName = tag; this.classList = new ClassList(); this.children = []; this.attrs = {}; this.listeners = {}; this.id = ''; this.textContent = ''; }
   appendChild(c) { this.children.push(c); return c; }
   setAttribute(k, v) { this.attrs[k] = v; }
   addEventListener(t, f) { (this.listeners[t] ||= []).push(f); }
+  getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
+  hasAttribute(k) { return k in this.attrs; }
+  get firstElementChild() { return this.children[0] || null; }
+  // Only the alignment-frame query is used on the root; the stand-in returns the frames it was given.
+  querySelectorAll(sel) {
+    assert.equal(sel, '.wp-block[data-align]:not([data-block])', 'querySelectorAll selector');
+    return this.frames || [];
+  }
 }
 class Doc {
   constructor() { this.head = new El('head'); this.body = new El('body'); this.documentElement = new El('html'); this.root = null; this.frame = null; this.defaultView = null; }
@@ -106,7 +115,7 @@ function load(extra = {}) {
   assert.equal(observers.length, 2, '4: canvas document observed before root exists');
   assert.equal(observers[1].target, cdoc.documentElement, '4: observes canvas documentElement');
   // JSON: the options object comes from the vm realm, so a strict deep-equal would fail on its prototype.
-  assert.equal(JSON.stringify(observers[1].opts), JSON.stringify({ childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }), '4: observer options');
+  assert.equal(JSON.stringify(observers[1].opts), JSON.stringify({ childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-align'] }), '4: observer options');
   assert.equal(cdoc.head.children.length, 0, '4: nothing inserted without root');
   assert.equal((frame.listeners.load || []).length, 1, '4: load listener added once');
 
@@ -190,6 +199,54 @@ function load(extra = {}) {
   frames.shift()();
   assert.deepEqual(cdoc.root.classList.set, ['brxe-text', 'prose'], '7: new root gets the classes when the frame runs');
   assert.equal(frames.length, 0, '7: no stray frames left');
+}
+
+// 8. mirrorAlign: wide/full frames put their align class on the block inside, swap it on change,
+//    and leave other alignments and non-block children alone; a complete state causes no writes.
+{
+  const { api } = load();
+  const frame = (align, child) => { const f = new El('div'); f.attrs['data-align'] = align; if (child) f.appendChild(child); return f; };
+  const block = () => { const b = new El('figure'); b.attrs['data-block'] = 'x'; return b; };
+  const wide = block(), full = block(), left = block(), plain = new El('figure');
+  const root = new El('div');
+  root.frames = [frame('wide', wide), frame('full', full), frame('left', left), frame('wide', plain), frame('wide', null)];
+  api.mirrorAlign(root);
+  assert.deepEqual(wide.classList.set, ['alignwide'], '8: wide mirrored');
+  assert.deepEqual(full.classList.set, ['alignfull'], '8: full mirrored');
+  assert.deepEqual(left.classList.set, [], '8: left untouched');
+  assert.deepEqual(plain.classList.set, [], '8: child without data-block untouched');
+  const adds = wide.classList.adds;
+  api.mirrorAlign(root);
+  assert.equal(wide.classList.adds, adds, '8: no write when complete (no observer loop)');
+  root.frames[0].attrs['data-align'] = 'full';
+  api.mirrorAlign(root);
+  assert.deepEqual(wide.classList.set, ['alignfull'], '8: wide -> full swaps the class');
+  root.frames[0].attrs['data-align'] = 'left';
+  api.mirrorAlign(root);
+  assert.deepEqual(wide.classList.set, [], '8: full -> left removes the mirrored class');
+}
+
+// 9. Wiring: sync() mirrors alignment on start, and an alignment-only change reaches it through the canvas observer.
+{
+  const { win, doc, observers, api } = load();
+  api.start(win, { classes: ['brxe-text'], css: '', links: [] });
+  const frame = new El('iframe');
+  const cdoc = new Doc();
+  makeWin(cdoc, observers);
+  const fig = new El('figure');
+  fig.attrs['data-block'] = 'x';
+  const wrap = new El('div');
+  wrap.attrs['data-align'] = 'wide';
+  wrap.appendChild(fig);
+  cdoc.root = new El('div');
+  cdoc.root.frames = [wrap];
+  frame.contentDocument = cdoc;
+  doc.frame = frame;
+  observers[0].cb();
+  assert.deepEqual(fig.classList.set, ['alignwide'], '9: mirrored on first sync');
+  wrap.attrs['data-align'] = 'full';
+  observers[1].cb(); // canvas observer fires for the data-align attribute change
+  assert.deepEqual(fig.classList.set, ['alignfull'], '9: data-align change re-mirrors via the observer');
 }
 
 console.log('editor-prose-test: PASS');

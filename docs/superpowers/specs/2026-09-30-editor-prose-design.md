@@ -30,6 +30,14 @@ code, so the site snippets (aurantia "Rich-Text: Editor-Styles", visitessen "Mag
 Editor-Styles") can be removed. Each site's styling stays in its own Bricks class and is
 mirrored as-is.
 
+**Principle: one source.** The prose styling lives in exactly one place, the site's Bricks
+global class, and applies to every rich-text element and field that carries it. The
+module adds no styling of its own to the editor; it only makes the editor's DOM meet the
+same conditions the frontend DOM meets (root classes, WordPress' editor-only block
+frames and defaults), so the class's rules match the same way. Anything site-specific
+— reading widths, alignment widths, component exceptions — belongs in the class, not in
+the module.
+
 Optionally, the module also ships a **token-based baseline** (`prose.css`, see
 [Baseline](#baseline-prosecss)) so a new site starts with sensible prose styling that
 follows its Core Framework / Bricks variables, and that the site's own class overrides.
@@ -171,7 +179,7 @@ Building `css`:
 The build (steps 1–4) runs inside one `try { … } catch (\Throwable) { … }`
 (the reset and title steps run after it, outside the try):
 any failure — Database lookup, compilation, font extraction, scoping — leaves `css`
-holding only the block-margin reset and the title rule, and `classes` still ships.
+holding only the block-margin reset, the editor-frame reset and the title rule, and `classes` still ships.
 
 1. Map configured class names to IDs via `\Bricks\Database::$global_data['globalClasses']`
    (the source `generate_global_classes` reads). Unknown names are skipped; the admin page
@@ -189,9 +197,27 @@ holding only the block-margin reset and the title rule, and `classes` still ship
    (`.block-editor-iframe__body`), which keeps specificity in step with Bricks' editor
    spacing rules (validated above).
 5. Append the block-margin reset `html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }`: WordPress' classic editor stylesheet gives every block 28px top/bottom margins (`html :where(.wp-block)`) that the frontend never has. The reset repeats that exact selector (same specificity, injected later), so only that rule is reverted to the layered cascade (Bricks' defaults); block-library rules such as `.wp-block-image`, contextual spacing, prose classes and the title rule still win. Found in the browser verification (2026-09-30); narrowed after Gate B: a broader selector also reverted `.wp-block-image`'s margins.
-6. Append the title rule if `title_gap` is set:
+6. Append the editor-frame reset (`Payload::EDITOR_FRAME_RESET`): Bricks has no
+   `theme.json`, so WordPress treats it as a classic theme and wraps every wide/full
+   block in an extra `div.wp-block[data-align]` (`block-editor.js`: `isAligned = … &&
+   !themeSupportsLayout`), and Bricks component blocks sit in a block wrapper
+   `[data-type^="bricks-components/"]` or `[data-type^="bricks-component-ids/"]` (both
+   namespaces, `Helpers::get_component_block_name`). Live, the prose wrapper's child is
+   the block itself. An **aligned** component block is excluded
+   (`:not([data-align], [data-align] > *, .alignwide, .alignfull)`): live, Bricks renders it inside a
+   `div.alignwide`/`div.alignfull`, which the editor's block element (with the mirrored
+   class) stands for, so it keeps Bricks' alignment sizing. These frames get `max-width: none; width: auto` and zero horizontal
+   margin/padding, all `!important` (the prose class's specificity is unknown), so
+   neither classic.css (840px, 1100px wide) nor a prose rule aimed at the wrapper's
+   children (a reading-width rule) gives them a width. Vertical values stay, so spacing
+   between blocks is unchanged. Alignment wrappers are matched with
+   `:not([data-block])`, so block elements are never matched as frames (layout themes
+   have no frame: WordPress puts `alignwide`/`alignfull` on the block itself, which is
+   why the component exclusion also skips those classes); left/right/center wrappers keep classic.css' float handling.
+   Found on visitessen (2026-10-01).
+7. Append the title rule if `title_gap` is set:
    `.editor-styles-wrapper .editor-post-title { margin-block-end: <title_gap>; }`
-7. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
+8. `$css = apply_filters('sfx_editor_prose_css', $css, $post_type)`.
 
 The payload goes through `wp_add_inline_script(..., 'before')` inside a `<script>`
 element of the admin document, encoded with `wp_json_encode($payload, JSON_HEX_TAG |
@@ -209,7 +235,7 @@ One idempotent `sync()`:
 - take its current `contentDocument`; if it is `null` or has no `documentElement`,
   return (the `load` listener retries); if that document is not yet observed (tracked in a
   `WeakSet` of documents), attach one `MutationObserver` to its `documentElement`
-  (`childList`, `subtree`, `attributes`, `attributeFilter: ['class']`) calling `sync()` —
+  (`childList`, `subtree`, `attributes`, `attributeFilter: ['class', 'data-align']`) calling `sync()` —
   **before** looking for the root, so a root portalled in later is seen;
 - if the document has no `.is-root-container` yet, return;
 - ensure, in `<head>` and in this order (created once per document): a
@@ -218,7 +244,15 @@ One idempotent `sync()`:
   sfx.theme;` — the one `assets/css/frontend/styles.css` declares first on the frontend,
   kept as a constant with a test pinning it to that file — followed by `css`; then one
   `<link rel="stylesheet">` per `links` URL. So the layer order matches the frontend.
-  Finally `ensureClasses(root, classes)`.
+  Then `ensureClasses(root, classes)`, then `mirrorAlign(root)`: for each
+  `.wp-block[data-align]:not([data-block])` frame whose first child has `data-block`,
+  that block gets `alignwide`/`alignfull` when the frame says `wide`/`full` — the class
+  the block carries live and that the prose class's rules (`figure.alignwide`) match —
+  and loses a mirrored wide/full class that no longer matches (WordPress keeps frame and
+  block across alignment changes, e.g. wide → full or wide → left). React can rewrite the
+  block's class attribute and changes only `data-align` on a retained frame; the canvas
+  observer watches both and `sync()` restores the state. Writes only when something
+  differs, so no observer loop.
 
 Non-iframed editors are not supported — the class CSS and Bricks' own editor rules are
 scoped to `.block-editor-iframe__body`, which only the iframe has.
@@ -297,14 +331,23 @@ It does **not** cover, and the README/help text say so:
 
 No exclusion. On the frontend, component blocks sit inside the prose wrapper too, so
 prose rules reach them there as well; mirroring that is parity. The browser verification
-compares a component block frontend vs editor; if the editor's block wrappers make them
-differ, that is a finding for the plan, not solved speculatively here.
+compares a component block frontend vs editor. The editor's block wrapper around an
+unaligned component took widths the frontend element never gets (visitessen,
+2026-10-01); the editor-frame reset (build step 6) makes it width-neutral (an aligned
+component's block element stands for Bricks' live `div.alignwide` and keeps its sizing), so the component's own class
+decides its width as live.
+
+Remaining structural limit: rules using the child combinator onto a block (`.prose >
+figure.alignwide`, `.prose > .brxe-…`) still do not match in the editor, because the
+frame stays in the DOM; and a site that clamps components live through a rule on the
+wrapper's children sees them unclamped in the editor (that rule now only reaches the
+neutral frame). Use descendant selectors in the class where it matters.
 
 ### Failure behaviour
 
 Bricks missing or older than 2.4 → editor gate closed, nothing loads in the editor (the
 frontend baseline, if on, does not depend on Bricks). A Bricks API missing or
-throwing → `css` holds only the block-margin reset and the title rule; classes still ship, so the
+throwing → `css` holds only the block-margin reset, the editor-frame reset and the title rule; classes still ship, so the
 theme style's contextual spacing (Bricks' own editor rules) still matches — everything
 the prose class itself defines, its own spacing included, is missing until the build
 works again. With `WP_DEBUG` on, both a missing Bricks API and a thrown build failure are written to the PHP error log (`[sfx-editor-prose] …`); the editor never shows a notice.
@@ -454,7 +497,7 @@ Exact expected outputs, not "output differs from input".
   rule on/off; empty class list with `baseline` off → gate closed, with `baseline` on →
   gate open. Payload build against stub
   `\Bricks\Assets` / `Database` / `Block_Editor` classes: compiler throws → only the
-  block-margin reset and the title rule, and the six saved `Assets` statics hold their prior values afterwards;
+  block-margin reset, the editor-frame reset and the title rule, and the six saved `Assets` statics hold their prior values afterwards;
   a missing method → same.
 - `tests/editor-prose-test.mjs` (Node): `ensureClasses` adds missing classes, keeps
   existing ones, returns "unchanged" when all present (no observer loop); style and link
