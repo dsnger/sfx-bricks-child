@@ -11,7 +11,7 @@ published from `dsnger/sfx-bricks-child` and installed on client sites. It ships
 theme-level capability as admin modules under `inc/`: image optimization, WordPress
 optimization/cleanup, media credits, password-protected pages, security headers,
 nav-menu queries, social accounts, contact infos, custom scripts, a custom dashboard,
-import/export, general theme options, smooth scroll, redirects with a 404 log, and a
+import/export, general theme options, smooth scroll, redirects with a 404 log, editor prose mirroring, and a
 settings overview.
 
 Users are site administrators working in wp-admin, plus editors building pages in Bricks.
@@ -38,7 +38,7 @@ Bricks parent theme.
 - **Dependency direction** — modules depend on the theme bootstrap and on WordPress.
   Root-level shared services (`inc/AccessControl.php`, `inc/SFXBricksChildAdmin.php`,
   `inc/MetaFieldManager.php`, `inc/DataPurge.php`) are available to every module.
-  `ImportExport` is a catalogue: it names the explicit exportable contracts of eleven
+  `ImportExport` is a catalogue: it names the explicit exportable contracts of twelve
   other modules by design — with deliberate omissions, see the Don'ts — so it sits outside the
   edge count below rather than being an exception to it.
   Beyond those, three groups of feature-module coupling exist and are deliberate — the

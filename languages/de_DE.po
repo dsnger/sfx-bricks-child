@@ -7750,3 +7750,101 @@ msgstr "Ein Pfad wie /neue-seite/ oder eine vollständige URL."
 #, php-format
 msgid "Browsers may keep a 301 or 308 for up to %s — use 302 while testing."
 msgstr "Browser merken sich eine 301 oder 308 womöglich bis zu %s – verwende zum Testen 302."
+
+msgid "Editor Prose Settings"
+msgstr "Editor-Prose-Einstellungen"
+
+msgid "Editor Prose"
+msgstr "Editor Prose"
+
+msgid "Enable Editor Prose"
+msgstr "Editor Prose aktivieren"
+
+msgid "Makes the block editor show Gutenberg content like the Bricks frontend (prose class, spacing, optional baseline)."
+msgstr "Lässt den Block-Editor Gutenberg-Inhalte wie das Bricks-Frontend darstellen (Prose-Klasse, Abstände, optionale Baseline)."
+
+msgid "Makes the block editor show Gutenberg content like the Bricks frontend: mirrors your prose class and Bricks spacing into the editor, with an optional token-based baseline."
+msgstr "Lässt den Block-Editor Gutenberg-Inhalte wie das Bricks-Frontend darstellen: Die Prose-Klasse und die Bricks-Abstände werden in den Editor gespiegelt, optional mit einer tokenbasierten Baseline."
+
+msgid "Prose classes, wrapper element, post types, baseline and title gap"
+msgstr "Prose-Klassen, Wrapper-Element, Beitragstypen, Baseline und Titelabstand"
+
+#. translators: %s: comma-separated class names
+#, php-format
+msgid "No Bricks global class with this name: %s"
+msgstr "Keine globale Bricks-Klasse mit diesem Namen: %s"
+
+msgid "All post types using the block editor"
+msgstr "Alle Beitragstypen, die den Block-Editor verwenden"
+
+msgid "Anyone who can edit Bricks global classes can put CSS into the editor of every post shown here. Only give that permission to people trusted with all drafts."
+msgstr "Wer globale Bricks-Klassen bearbeiten darf, kann CSS in den Editor jedes hier erfassten Beitrags einbringen. Diese Berechtigung sollte nur Personen erhalten, denen alle Entwürfe anvertraut sind."
+
+msgid "Baseline is on: add the class sfx-prose to the Bricks element that wraps the content."
+msgstr "Die Baseline ist aktiv: Die Klasse sfx-prose muss dem Bricks-Element hinzugefügt werden, das den Inhalt umschließt."
+
+msgid "Baseline"
+msgstr "Baseline"
+
+msgid "Bricks 2.4 or newer is required. The editor is left unchanged until then."
+msgstr "Bricks 2.4 oder neuer ist erforderlich. Bis dahin bleibt der Editor unverändert."
+
+msgid "Bricks global class names, separated by spaces or commas, in the order they appear on the frontend element."
+msgstr "Namen globaler Bricks-Klassen, getrennt durch Leerzeichen oder Kommas, in der Reihenfolge wie am Frontend-Element."
+
+msgid "Bricks theme styles are disabled in the block editor (Bricks settings). Spacing and root font size cannot match the frontend."
+msgstr "Bricks-Theme-Styles sind im Block-Editor deaktiviert (Bricks-Einstellungen). Abstände und Basis-Schriftgröße können nicht mit dem Frontend übereinstimmen."
+
+msgid "Everything in the prose class — typography, lists, links, figures, tables — is mirrored into the editor. Design it in Bricks, in the class, not on the element."
+msgstr "Alles in der Prose-Klasse – Typografie, Listen, Links, Abbildungen, Tabellen – wird in den Editor gespiegelt. Die Gestaltung erfolgt in Bricks, in der Klasse und nicht am Element."
+
+msgid "Gap below the title"
+msgstr "Abstand unter dem Titel"
+
+msgid "How it works"
+msgstr "So funktioniert es"
+
+msgid "Load the token-based prose baseline (frontend and editor)"
+msgstr "Tokenbasierte Prose-Baseline laden (Frontend und Editor)"
+
+msgid "Not mirrored: rules that depend on elements outside the content, structural selectors where the editor adds its own nodes (e.g. :last-child), settings on the wrapper element itself, wrapper attributes, a class reused on other element types while class chaining is off, relative url() paths. Breakpoints follow the editor width; use the device preview."
+msgstr "Nicht gespiegelt: Regeln, die von Elementen außerhalb des Inhalts abhängen, Strukturselektoren, bei denen der Editor eigene Knoten ergänzt (z. B. :last-child), Einstellungen am Wrapper-Element selbst, Wrapper-Attribute, eine Klasse, die bei ausgeschaltetem Class Chaining an anderen Elementtypen wiederverwendet wird, und relative url()-Pfade. Breakpoints folgen der Editor-Breite; dafür die Geräte-Vorschau nutzen."
+
+msgid "Optional. A CSS value, e.g. 2rem or var(--space-m)."
+msgstr "Optional. Ein CSS-Wert, z. B. 2rem oder var(--space-m)."
+
+msgid "Post Content"
+msgstr "Post Content"
+
+msgid "Post types"
+msgstr "Beitragstypen"
+
+msgid "Prose classes"
+msgstr "Prose-Klassen"
+
+msgid "Rich Text"
+msgstr "Rich Text"
+
+msgid "Spacing between blocks comes from the Bricks theme style (contextual spacing)."
+msgstr "Die Abstände zwischen Blöcken stammen aus dem Bricks-Theme-Style (kontextueller Abstand)."
+
+msgid "The list is used only when \"All post types\" is off."
+msgstr "Die Liste gilt nur, wenn „Alle Beitragstypen“ ausgeschaltet ist."
+
+msgid "Where a prose rule competes with a WordPress block style, a Bricks theme-style link colour or a component class, the editor can resolve it differently. Make such prose rules one class more specific. Details: theme README, \"Editor Prose: authoring notes\"."
+msgstr "Konkurriert eine Prose-Regel mit einem WordPress-Block-Style, einer Link-Farbe des Bricks-Theme-Styles oder einer Komponentenklasse, kann der Editor das anders auflösen. Solche Prose-Regeln um eine Klasse spezifischer machen. Details: README des Themes, „Editor Prose: authoring notes“."
+
+msgid "Wrapper element"
+msgstr "Wrapper-Element"
+
+msgid "Starter for your own prose class"
+msgstr "Startvorlage für eine eigene Prose-Klasse"
+
+msgid "The baseline as plain class CSS. Copy it into the custom CSS of a new Bricks global class and adjust it there; you then do not need the baseline checkbox."
+msgstr "Die Baseline als normales Klassen-CSS. In das eigene CSS einer neuen globalen Bricks-Klasse kopieren und dort anpassen; die Baseline-Checkbox brauchst du dann nicht."
+
+msgid "Copied"
+msgstr "Kopiert"
+
+msgid "Copy to clipboard"
+msgstr "In die Zwischenablage kopieren"

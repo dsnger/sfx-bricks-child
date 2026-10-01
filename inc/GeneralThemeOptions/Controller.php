@@ -106,35 +106,45 @@ class Controller
 
   private function disable_bricks_css(): void
   {
-    add_action('wp_enqueue_scripts', function () {
-      // Use WordPress option
-      $options = get_option(self::OPTION_NAME, []);
-      $disable_bricks_css = !empty($options['disable_bricks_css']);
-      if ($disable_bricks_css && !(function_exists('bricks_is_builder') && bricks_is_builder())) {
-        $style_handles = [
-          'bricks-frontend',
-          // 'bricks-builder',
-          'bricks-default-content',
-          'bricks-element-posts',
-          'bricks-isotope',
-          'bricks-element-post-author',
-          'bricks-element-post-comments',
-          'bricks-element-post-navigation',
-          'bricks-element-post-sharing',
-          'bricks-element-post-taxonomy',
-          'bricks-element-related-posts',
-          'bricks-404',
-          'wp-block-library',
-          'classic-theme-styles',
-          'global-styles',
-          'bricks-admin',
-        ];
-        foreach ($style_handles as $handle) {
-          wp_dequeue_style($handle);
-          wp_deregister_style($handle);
-        }
+    add_action('wp_enqueue_scripts', [self::class, 'remove_bricks_styles'], 100);
+  }
+
+  /**
+   * Remove Bricks' default frontend styles. `bricks-frontend` is re-registered
+   * as an empty handle afterwards: the child theme's own stylesheets depend on
+   * it (bricks-child → sfx-frontend → style modules), and WordPress drops any
+   * handle whose dependency is missing.
+   */
+  public static function remove_bricks_styles(): void
+  {
+    // Use WordPress option
+    $options = get_option(self::OPTION_NAME, []);
+    $disable_bricks_css = !empty($options['disable_bricks_css']);
+    if ($disable_bricks_css && !(function_exists('bricks_is_builder') && bricks_is_builder())) {
+      $style_handles = [
+        'bricks-frontend',
+        // 'bricks-builder',
+        'bricks-default-content',
+        'bricks-element-posts',
+        'bricks-isotope',
+        'bricks-element-post-author',
+        'bricks-element-post-comments',
+        'bricks-element-post-navigation',
+        'bricks-element-post-sharing',
+        'bricks-element-post-taxonomy',
+        'bricks-element-related-posts',
+        'bricks-404',
+        'wp-block-library',
+        'classic-theme-styles',
+        'global-styles',
+        'bricks-admin',
+      ];
+      foreach ($style_handles as $handle) {
+        wp_dequeue_style($handle);
+        wp_deregister_style($handle);
       }
-    }, 100);
+      wp_register_style('bricks-frontend', false);
+    }
   }
 
 

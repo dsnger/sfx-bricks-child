@@ -1,0 +1,125 @@
+/* Editor Prose baseline (opt-in: class `sfx-prose` on the Bricks element that wraps
+   the content). Layered on purpose: everything unlayered — Bricks theme styles, the
+   site's prose class, Core Framework — wins without !important. Values read the
+   site's tokens, then Core Framework's, then a literal (em/inherit, never rem:
+   Bricks' default root is 62.5 %). Bricks elements inside the prose area get no
+   declarations from here. Block spacing is Bricks' contextual spacing, not ours.
+   The order statement repeats assets/css/frontend/styles.css so the sfx.* order is
+   the same whichever file loads first (this one has no dependency on that file). */
+@layer sfx.reset, sfx.utilities, sfx.components, sfx.theme;
+
+@layer sfx.components {
+
+  :where(.sfx-prose) {
+    font-size: var(--text-m, inherit);
+    line-height: var(--body-line-height, var(--line-height-m, 1.6));
+    color: var(--text-body, inherit);
+  }
+
+  :where(.sfx-prose) :is(h1, h2, h3, h4, h5, h6):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    color: var(--text-title, inherit);
+    font-family: var(--heading-font-family, inherit);
+    font-weight: var(--heading-font-weight, 700);
+    line-height: var(--line-height-s, 1.2);
+  }
+
+  :where(.sfx-prose) a:not(.wp-block-button__link, .wp-element-button):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    color: var(--link, var(--primary, currentColor));
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  :where(.sfx-prose) a:hover:not(.wp-block-button__link, .wp-element-button):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    color: var(--link-hover, var(--link, var(--primary, currentColor)));
+  }
+
+  :where(.sfx-prose) :is(strong, b):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    font-weight: var(--bold-font-weight, 700);
+  }
+
+  :where(.sfx-prose) :is(ul, ol):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    padding-inline-start: var(--list-indent, 1.5em);
+  }
+
+  :where(.sfx-prose) li:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *))::marker {
+    color: var(--primary, currentColor);
+  }
+
+  :where(.sfx-prose) blockquote:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    margin-inline: 0;
+    padding-inline-start: var(--quote-padding-inline, var(--space-m, 1.5em));
+    border-inline-start: 3px solid var(--primary, currentColor);
+    font-weight: var(--quote-font-weight, inherit);
+  }
+
+  :where(.sfx-prose) blockquote :is(cite, .wp-block-quote__citation):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    display: block;
+    font-style: normal;
+    font-size: var(--caption-font-size, var(--text-s, 0.875em));
+    color: var(--text-muted, var(--muted, currentColor));
+  }
+
+  :where(.sfx-prose) figure:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    margin-inline: 0;
+  }
+
+  :where(.sfx-prose) img:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  :where(.sfx-prose) figcaption:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    margin-block-start: var(--caption-gap, var(--space-2xs, 0.5em));
+    font-size: var(--caption-font-size, var(--text-s, 0.875em));
+    color: var(--caption-color, var(--text-muted, var(--muted, currentColor)));
+  }
+
+  :where(.sfx-prose) table:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: var(--table-font-size, var(--text-s, 0.875em));
+  }
+
+  :where(.sfx-prose) :is(th, td):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    padding: var(--space-2xs, 0.5em);
+    border-block-end: 1px solid var(--border-primary, color-mix(in srgb, currentColor 20%, transparent));
+    text-align: start;
+  }
+
+  :where(.sfx-prose) th:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    font-weight: var(--table-head-font-weight, 700);
+  }
+
+  :where(.sfx-prose) tbody tr:nth-child(2n):not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    background-color: var(--table-row-bg-alt, var(--subtle, transparent));
+  }
+
+  :where(.sfx-prose) code:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-s, 0.25em);
+    background-color: var(--subtle, color-mix(in srgb, currentColor 8%, transparent));
+    font-size: 0.9em;
+  }
+
+  :where(.sfx-prose) pre:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    padding: var(--space-s, 1em);
+    border-radius: var(--radius-s, 0.25em);
+    background-color: var(--subtle, color-mix(in srgb, currentColor 8%, transparent));
+    overflow-x: auto;
+  }
+
+  :where(.sfx-prose) pre code:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    padding: 0;
+    background: none;
+  }
+
+  :where(.sfx-prose) hr:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    border: 0;
+    border-block-start: 1px solid var(--border-primary, color-mix(in srgb, currentColor 20%, transparent));
+  }
+
+  :where(.sfx-prose) summary:not(:where(.sfx-prose [class*="brxe-"], .sfx-prose [class*="brxe-"] *)) {
+    font-weight: var(--bold-font-weight, 700);
+    cursor: pointer;
+  }
+}

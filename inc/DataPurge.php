@@ -166,6 +166,9 @@ class DataPurge
         // Redirects
         'sfx_redirects_options',
         'sfx_redirects_db_version',
+
+        // Editor Prose
+        'sfx_editor_prose_options',
     ];
 
     /**

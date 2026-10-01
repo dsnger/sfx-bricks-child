@@ -75,6 +75,9 @@ final class OverviewProvider
             'enable_redirects' => [
                 'label' => __('Redirects', 'sfxtheme'),
             ],
+            'enable_editor_prose' => [
+                'label' => __('Editor Prose', 'sfxtheme'),
+            ],
         ];
 
         $items = [];

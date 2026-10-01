@@ -43,7 +43,7 @@ class AdminPage
             self::page_title(),
             // Known gap, deliberately left as is: AccessControl also admits a
             // role-based SFX_THEME_ADMINS user who lacks manage_options, and
-            // WordPress then hides this entry from them. Seven sibling modules
+            // WordPress then hides this entry from them. Eight sibling modules
             // have the same shape. The parent menu and PasswordProtected solve
             // it with 'read' — but PasswordProtected can, because it writes
             // through its own nonce-checked handler. This module saves via
