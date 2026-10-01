@@ -3,7 +3,7 @@
  *
  * Gives the canvas root the wrapper's classes and puts the prose CSS (compiled
  * and scoped by Bricks, see Payload.php) into the canvas document only. React
- * rewrites the root's class attribute (outline/focus/preview modes) and may
+ * rewrites the root's and blocks' class attributes (outline/focus/preview modes) and may
  * remount the root or replace the iframe, so observer callbacks schedule one
  * idempotent sync() per animation frame (immediately where requestAnimationFrame is
  * unavailable); start-up and the iframe load call it directly.
@@ -24,6 +24,35 @@
       }
     });
     return changed;
+  }
+
+  // Classic themes (Bricks has no theme.json): the editor wraps a wide/full block in an extra
+  // div.wp-block[data-align] and leaves the align class off the block itself. Live, the block
+  // carries alignwide/alignfull, so the prose class's rules for it only match once mirrored here.
+  var ALIGNS = ['wide', 'full'];
+  // authoredClasses(clientId) returns the block's own className attribute (its "Additional CSS
+  // classes"), so a class the author set is never removed — whenever it was added.
+  function mirrorAlign(rootEl, authoredClasses) {
+    var frames = rootEl.querySelectorAll('.wp-block[data-align]:not([data-block])');
+    Array.prototype.forEach.call(frames, function (frame) {
+      var align = frame.getAttribute('data-align');
+      var block = frame.firstElementChild;
+      if (!block || !block.hasAttribute('data-block')) {
+        return;
+      }
+      var authored = authoredClasses ? String(authoredClasses(block.getAttribute('data-block')) || '').split(/\s+/) : [];
+      // WordPress keeps the frame and the block across alignment changes (wide -> full, wide -> left),
+      // so a mirrored class must go when it no longer matches.
+      ALIGNS.forEach(function (a) {
+        var c = 'align' + a;
+        if (a !== align && block.classList.contains(c) && authored.indexOf(c) === -1) {
+          block.classList.remove(c);
+        }
+      });
+      if (ALIGNS.indexOf(align) !== -1) {
+        ensureClasses(block, ['align' + align]);
+      }
+    });
   }
 
   function ensureAssets(doc, css, links) {
@@ -65,7 +94,7 @@
       if (!seenDocs.has(cdoc)) {
         seenDocs.add(cdoc);
         var Observer = (cdoc.defaultView || win).MutationObserver;
-        new Observer(schedule).observe(cdoc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        new Observer(schedule).observe(cdoc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-align'] });
       }
       var rootEl = cdoc.querySelector('.is-root-container');
       if (!rootEl) {
@@ -73,6 +102,14 @@
       }
       ensureAssets(cdoc, config.css, config.links);
       ensureClasses(rootEl, config.classes);
+      mirrorAlign(rootEl, authoredClasses);
+    }
+
+    // Read from the block editor store at call time; without it nothing counts as authored.
+    function authoredClasses(clientId) {
+      var data = win.wp && win.wp.data;
+      var attrs = data && data.select('core/block-editor') && data.select('core/block-editor').getBlockAttributes(clientId);
+      return (attrs && attrs.className) || '';
     }
 
     var pending = false;
@@ -97,7 +134,7 @@
     return { sync: sync, schedule: schedule };
   }
 
-  root.SFXEditorProse = { LAYER_ORDER: LAYER_ORDER, ensureClasses: ensureClasses, ensureAssets: ensureAssets, start: start };
+  root.SFXEditorProse = { LAYER_ORDER: LAYER_ORDER, ensureClasses: ensureClasses, mirrorAlign: mirrorAlign, ensureAssets: ensureAssets, start: start };
 
   if (root.sfxEditorProseConfig) {
     start(root, root.sfxEditorProseConfig);

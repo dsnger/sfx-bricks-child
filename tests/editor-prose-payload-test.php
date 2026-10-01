@@ -26,7 +26,7 @@ function temp_log(): string
 $log = temp_log();
 ini_set('error_log', $log);
 
-$RESET = Payload::BLOCK_MARGIN_RESET;
+$RESET = Payload::BLOCK_MARGIN_RESET . Payload::EDITOR_FRAME_RESET;
 
 function assert_same($expected, $actual, string $message): void
 {
@@ -47,7 +47,20 @@ const TITLE_1EM = ".editor-styles-wrapper .editor-post-title { margin-block-end:
 $p = Payload::build(opts(['classes' => ['prose'], 'title_gap' => '1em']), 'post');
 assert_same(['brxe-text', 'prose'], $p['classes'], '1: classes without Bricks');
 assert_same($RESET . TITLE_1EM, $p['css'], '1: reset + title rule only');
-assert_same("html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }\n", $RESET, '1: reset string pinned');
+assert_same("html :where(.wp-block) { margin-top: revert-layer; margin-bottom: revert-layer; }\n", Payload::BLOCK_MARGIN_RESET, '1: reset string pinned');
+// Editor-only frames: both alignment wrappers (not the block itself) and both Bricks component block namespaces;
+// horizontal box values only, so vertical spacing between blocks is untouched.
+[$frame_selectors, $frame_body] = explode('{', Payload::EDITOR_FRAME_RESET, 2);
+assert_same(
+    implode(', ', ['.is-root-container .wp-block[data-align="wide"]:not([data-block])', '.is-root-container .wp-block[data-align="full"]:not([data-block])', '.is-root-container [data-type^="bricks-components/"]:not([data-align], [data-align] > *, .alignwide, .alignfull)', '.is-root-container [data-type^="bricks-component-ids/"]:not([data-align], [data-align] > *, .alignwide, .alignfull)']),
+    trim($frame_selectors),
+    '1: frame selectors pinned'
+);
+assert_same(
+    ['max-width: none !important', 'width: auto !important', 'margin-left: 0 !important', 'margin-right: 0 !important', 'padding-left: 0 !important', 'padding-right: 0 !important'],
+    array_values(array_filter(array_map('trim', explode(';', rtrim(trim($frame_body), '}'))))),
+    '1: frame declarations pinned (horizontal only)'
+);
 assert_same([], $p['links'], '1: no links');
 assert_same(['prose'], Payload::missing_classes(['prose']), '1: all missing without Bricks');
 
@@ -62,7 +75,7 @@ $child = sprintf(
 );
 $out = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child));
 $partial = json_decode((string) $out, true);
-assert_same(\SFX\EditorProse\Payload::BLOCK_MARGIN_RESET . TITLE_1EM, $partial['payload']['css'] ?? null, '2: missing load_webfonts -> reset + title rule only');
+assert_same($RESET . TITLE_1EM, $partial['payload']['css'] ?? null, '2: missing load_webfonts -> reset + title rule only');
 assert_same(false, $partial['called'] ?? null, '2: compiler not invoked when load_webfonts is missing');
 
 // 2b. Same partial stubs under WP_DEBUG: the unavailable API is logged.
