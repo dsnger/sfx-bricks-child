@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.25.1] - 2026-10-01
+
+Editor Prose: wide/full images and Bricks component blocks now take the same widths in the block editor as on the frontend. WordPress' classic-theme editor frames are width-neutral, the wide/full alignment class is mirrored onto the block, and an author's own alignment classes are kept.
+
 ## [0.25.0] - 2026-10-01
 
 New module: **Editor Prose** — the block editor shows Gutenberg content like the Bricks frontend. Off by default; switch it on under General Theme Options → *Enable Editor Prose*, then set the prose class(es) and the wrapper element (Rich Text or Post Content) under Global Theme Settings → Editor Prose. Requires Bricks 2.4+.
