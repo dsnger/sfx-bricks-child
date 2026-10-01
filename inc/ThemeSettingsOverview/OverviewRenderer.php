@@ -191,16 +191,16 @@ final class OverviewRenderer
         echo '</span>';
         echo '</span>';
         echo '<span class="sfx-theme-overview__item-meta">';
-
         self::render_badge($status);
+        echo '</span>';
 
+        // Own grid row under the label, so title and badge always share the first row.
         if (! empty($item['detail'])) {
             echo '<span class="sfx-theme-overview__item-detail">';
             echo esc_html((string) $item['detail']);
             echo '</span>';
         }
 
-        echo '</span>';
         echo '</li>';
     }
 

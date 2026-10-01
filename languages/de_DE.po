@@ -884,8 +884,8 @@ msgstr "Website-Zustand"
 
 #: inc/CustomDashboard/DashboardRenderer.php:1094
 #: inc/CustomDashboard/Settings.php:2834
-msgid "SFX Theme Settings Overview"
-msgstr "SFX Theme-Einstellungen Übersicht"
+msgid "Theme Settings Overview"
+msgstr "Theme-Einstellungen Übersicht"
 
 #: inc/CustomDashboard/DashboardRenderer.php:1098
 #: inc/CustomDashboard/Settings.php:2836

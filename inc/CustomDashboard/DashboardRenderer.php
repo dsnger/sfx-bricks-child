@@ -1091,7 +1091,7 @@ class DashboardRenderer
                 'callback' => 'wp_dashboard_site_health',
             ],
             'sfx_theme_settings_overview' => [
-                'title' => __('SFX Theme Settings Overview', 'sfxtheme'),
+                'title' => __('Theme Settings Overview', 'sfxtheme'),
                 'callback' => [\SFX\ThemeSettingsOverview\Controller::class, 'render_widget'],
             ],
             'dashboard_right_now' => [
