@@ -49,6 +49,7 @@ class Payload
             }
         } catch (\Throwable $e) {
             $css = '';
+            self::log_debug('Bricks class CSS could not be built: ' . $e->getMessage());
         }
 
         $css .= self::BLOCK_MARGIN_RESET;
@@ -61,6 +62,7 @@ class Payload
     public static function compile(array $names, string $element): string
     {
         if (!self::bricks_api_available()) {
+            self::log_debug('Bricks API unavailable; class CSS skipped.');
             return '';
         }
 
@@ -104,6 +106,14 @@ class Payload
         }
 
         return $out;
+    }
+
+    /** Debug-only trace for class-CSS problems; the editor itself never shows a notice. */
+    private static function log_debug(string $message): void
+    {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[sfx-editor-prose] ' . $message);
+        }
     }
 
     public static function title_rule(string $gap): string

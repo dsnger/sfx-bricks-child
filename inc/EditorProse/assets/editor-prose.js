@@ -4,8 +4,9 @@
  * Gives the canvas root the wrapper's classes and puts the prose CSS (compiled
  * and scoped by Bricks, see Payload.php) into the canvas document only. React
  * rewrites the root's class attribute (outline/focus/preview modes) and may
- * remount the root or replace the iframe, so one idempotent sync() runs on every
- * relevant mutation.
+ * remount the root or replace the iframe, so observer callbacks schedule one
+ * idempotent sync() per animation frame (immediately where requestAnimationFrame is
+ * unavailable); start-up and the iframe load call it directly.
  */
 (function (root) {
   'use strict';
@@ -48,7 +49,6 @@
     var seenFrames = new WeakSet();
     var seenDocs = new WeakSet();
 
-    // ponytail: runs on every admin-body mutation; it is two querySelector calls, cheap enough.
     function sync() {
       var frame = doc.querySelector('iframe[name="editor-canvas"]');
       if (!frame) {
@@ -65,7 +65,7 @@
       if (!seenDocs.has(cdoc)) {
         seenDocs.add(cdoc);
         var Observer = (cdoc.defaultView || win).MutationObserver;
-        new Observer(sync).observe(cdoc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        new Observer(schedule).observe(cdoc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       }
       var rootEl = cdoc.querySelector('.is-root-container');
       if (!rootEl) {
@@ -75,9 +75,26 @@
       ensureClasses(rootEl, config.classes);
     }
 
-    new win.MutationObserver(sync).observe(doc.body, { childList: true, subtree: true });
+    var pending = false;
+    // Many class changes arrive in one burst while editing; run sync() at most once per frame.
+    function schedule() {
+      if (typeof win.requestAnimationFrame !== 'function') {
+        sync();
+        return;
+      }
+      if (pending) {
+        return;
+      }
+      pending = true;
+      win.requestAnimationFrame(function () {
+        pending = false;
+        sync();
+      });
+    }
+
+    new win.MutationObserver(schedule).observe(doc.body, { childList: true, subtree: true });
     sync();
-    return { sync: sync };
+    return { sync: sync, schedule: schedule };
   }
 
   root.SFXEditorProse = { LAYER_ORDER: LAYER_ORDER, ensureClasses: ensureClasses, ensureAssets: ensureAssets, start: start };

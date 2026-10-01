@@ -224,10 +224,12 @@ Non-iframed editors are not supported — the class CSS and Bricks' own editor r
 scoped to `.block-editor-iframe__body`, which only the iframe has.
 
 The script is enqueued in the footer (`in_footer: true`), so `document.body` exists.
-`sync()` runs once at script start, on every mutation of one `MutationObserver` on the
-admin `document.body` (`childList`, `subtree`) — which sees the canvas mount after a
-code-editor → visual switch and device-preview iframe replacement — and on each iframe
-`load`. No timeout.
+`sync()` runs once at script start and on each iframe `load`, called directly. Two
+`MutationObserver`s trigger it otherwise — one on the admin `document.body` (`childList`,
+`subtree`), which sees the canvas mount after a code-editor → visual switch and
+device-preview iframe replacement, and one per canvas document. Their callbacks are
+coalesced to at most one `sync()` per animation frame via `requestAnimationFrame`
+(immediate when it is unavailable). No timeout.
 
 `ensureClasses(element, classes)` only calls `classList.add` for missing classes and
 reports whether it changed anything, so the observer's own writes do not loop. It and
@@ -303,7 +305,7 @@ differ, that is a finding for the plan, not solved speculatively here.
 Bricks missing or older than 2.4 → editor gate closed, nothing loads in the editor (the
 frontend baseline, if on, does not depend on Bricks). A Bricks API missing or
 throwing → `css` holds only the block-margin reset and the title rule; classes still ship, so Bricks'
-spacing still matches. Nothing is logged; the editor never shows a notice.
+spacing still matches. With `WP_DEBUG` on, both a missing Bricks API and a thrown build failure are written to the PHP error log (`[sfx-editor-prose] …`); the editor never shows a notice.
 
 ### Trust
 

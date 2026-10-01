@@ -157,4 +157,39 @@ function load(extra = {}) {
   assert.equal(started.observers.length, 1, '6: config -> started');
 }
 
+// 7. With requestAnimationFrame, observer bursts coalesce to one sync per frame.
+{
+  const frames = [];
+  const { win, doc, observers, api } = load({ requestAnimationFrame: (fn) => frames.push(fn) });
+  api.start(win, { classes: ['brxe-text', 'prose'], css: '.p{}', links: [] });
+  const frame = new El('iframe');
+  const cdoc = new Doc();
+  makeWin(cdoc, observers);
+  cdoc.root = new El('div');
+  frame.contentDocument = cdoc;
+  doc.frame = frame;
+  observers[0].cb();
+  frames.shift()();
+  assert.equal(observers.length, 2, '7: canvas observed');
+  cdoc.root = new El('div');
+  observers[0].cb();
+  observers[0].cb();
+  observers[0].cb();
+  assert.equal(frames.length, 1, '7: three callbacks -> one frame');
+  assert.deepEqual(cdoc.root.classList.set, [], '7: not synced before the frame runs');
+  frames.shift()();
+  assert.deepEqual(cdoc.root.classList.set, ['brxe-text', 'prose'], '7: frame syncs');
+  observers[1].cb();
+  assert.equal(frames.length, 1, '7: next callback queues exactly one new frame');
+  observers[1].cb();
+  observers[1].cb();
+  observers[1].cb();
+  observers[0].cb();
+  assert.equal(frames.length, 1, '7: canvas + admin bursts -> still exactly one queued frame');
+  cdoc.root = new El('div');
+  frames.shift()();
+  assert.deepEqual(cdoc.root.classList.set, ['brxe-text', 'prose'], '7: new root gets the classes when the frame runs');
+  assert.equal(frames.length, 0, '7: no stray frames left');
+}
+
 console.log('editor-prose-test: PASS');

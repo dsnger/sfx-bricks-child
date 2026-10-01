@@ -8,6 +8,24 @@ require_once __DIR__ . '/../inc/EditorProse/Payload.php';
 
 use SFX\EditorProse\Payload;
 
+$tmp_logs = [];
+register_shutdown_function(static function () use (&$tmp_logs) {
+    foreach ($tmp_logs as $f) {
+        @unlink($f);
+    }
+});
+function temp_log(): string
+{
+    global $tmp_logs;
+    $f = sys_get_temp_dir() . '/ep-log-' . getmypid() . '-' . bin2hex(random_bytes(4));
+    $tmp_logs[] = $f; // registered for cleanup before the file exists
+    touch($f);
+    return $f;
+}
+
+$log = temp_log();
+ini_set('error_log', $log);
+
 $RESET = Payload::BLOCK_MARGIN_RESET;
 
 function assert_same($expected, $actual, string $message): void
@@ -46,6 +64,32 @@ $out = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child));
 $partial = json_decode((string) $out, true);
 assert_same(\SFX\EditorProse\Payload::BLOCK_MARGIN_RESET . TITLE_1EM, $partial['payload']['css'] ?? null, '2: missing load_webfonts -> reset + title rule only');
 assert_same(false, $partial['called'] ?? null, '2: compiler not invoked when load_webfonts is missing');
+
+// 2b. Same partial stubs under WP_DEBUG: the unavailable API is logged.
+$child_log = temp_log();
+$child_debug = sprintf(
+    'define("WP_DEBUG", true); ini_set("error_log", %s); function apply_filters($h, $v) { return $v; } require %s; require %s; '
+    . '\Bricks\Database::$global_data["globalClasses"] = [["id" => "abc", "name" => "prose"]]; '
+    . '\SFX\EditorProse\Payload::build(["classes" => ["prose"], "element" => "text", "all_post_types" => true, "post_types" => [], "baseline" => false, "title_gap" => ""], "post");',
+    var_export($child_log, true),
+    var_export(__DIR__ . '/../inc/EditorProse/Payload.php', true),
+    var_export(__DIR__ . '/support/editor-prose-bricks-stubs-partial.php', true)
+);
+shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child_debug));
+assert_same(true, strpos((string) file_get_contents($child_log), '[sfx-editor-prose] Bricks API unavailable; class CSS skipped.') !== false, '2b: unavailable API logged with WP_DEBUG');
+
+// 2c. WP_DEBUG=false with a throwing compiler: nothing is logged (pins the `&& WP_DEBUG` half of the guard).
+$child_log2 = temp_log();
+$child_off = sprintf(
+    'define("WP_DEBUG", false); ini_set("error_log", %s); function apply_filters($h, $v) { return $v; } require %s; require %s; '
+    . '\Bricks\Database::$global_data["globalClasses"] = [["id" => "abc", "name" => "prose"]]; \Bricks\Assets::$throw = true; '
+    . '\SFX\EditorProse\Payload::build(["classes" => ["prose"], "element" => "text", "all_post_types" => true, "post_types" => [], "baseline" => false, "title_gap" => ""], "post");',
+    var_export($child_log2, true),
+    var_export(__DIR__ . '/../inc/EditorProse/Payload.php', true),
+    var_export(__DIR__ . '/support/editor-prose-bricks-stubs.php', true)
+);
+shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child_off));
+assert_same('', (string) file_get_contents($child_log2), '2c: no log with WP_DEBUG=false');
 
 require_once __DIR__ . '/support/editor-prose-bricks-stubs.php';
 
@@ -96,10 +140,17 @@ $before = seed();
 \Bricks\Assets::$throw = true;
 $p = Payload::build(opts(['classes' => ['prose'], 'title_gap' => '1em', 'baseline' => true]), 'post', 'https://site.test/prose.css?ver=1');
 \Bricks\Assets::$throw = false;
+assert_same('', (string) file_get_contents($log), '5: no log without WP_DEBUG');
 assert_same($before, snapshot_statics(), '5: all six statics restored after a throw');
 assert_same($RESET . TITLE_1EM, $p['css'], '5: throw -> reset + title rule only');
 assert_same(['https://site.test/prose.css?ver=1'], $p['links'], '5: baseline link survives a throw');
 assert_same(['brxe-text', 'prose', 'sfx-prose'], $p['classes'], '5: classes survive a throw');
+
+define('WP_DEBUG', true);
+\Bricks\Assets::$throw = true;
+Payload::build(opts(['classes' => ['prose']]), 'post');
+\Bricks\Assets::$throw = false;
+assert_same(true, strpos((string) file_get_contents($log), '[sfx-editor-prose] Bricks class CSS could not be built: boom') !== false, '5: failure logged with WP_DEBUG');
 
 // 6. Unknown only -> compiler not called, css is the reset only.
 \Bricks\Assets::$seen = [];
