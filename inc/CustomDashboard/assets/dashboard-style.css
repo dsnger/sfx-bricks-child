@@ -2265,7 +2265,9 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    /* Narrow widgets: badge + detail wrap below the label instead of squeezing it. */
+    flex-wrap: wrap;
+    gap: 4px 12px;
     padding: 6px 0;
     font-size: 12px;
 }
@@ -2274,7 +2276,7 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1 1 auto;
+    flex: 1 1 11em;
     min-width: 0;
 }
 
@@ -2308,7 +2310,9 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-inline-start: auto;
 }
 
 .sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__badge {
@@ -2339,5 +2343,5 @@ body:not(.sfx-sidebar-collapsed) .sfx-sidebar-icon-close {
 .sfx-dashboard-widget-content .sfx-theme-overview--widget .sfx-theme-overview__item-detail {
     color: hsl(var(--muted-foreground));
     font-size: 11px;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
