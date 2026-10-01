@@ -127,11 +127,15 @@ final class NotFoundTable extends \WP_List_Table
         <?php
     }
 
-    /** Public entry for AdminPage's GET form (core's pagination() is protected). */
-    public function print_pagination(): void
+    /**
+     * Public entry for AdminPage (core's pagination() is protected). 'top' sits in the GET
+     * form for its page-number input; 'bottom' is links only, so it needs no form.
+     */
+    public function print_pagination(string $which = 'top'): void
     {
-        echo '<div class="tablenav top">';
-        $this->pagination('top');
+        $which = $which === 'bottom' ? 'bottom' : 'top';
+        echo '<div class="tablenav ' . esc_attr($which) . '">';
+        $this->pagination($which);
         echo '<br class="clear" /></div>';
     }
 
