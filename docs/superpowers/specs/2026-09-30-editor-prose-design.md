@@ -248,7 +248,10 @@ One idempotent `sync()`:
   `.wp-block[data-align]:not([data-block])` frame whose first child has `data-block`,
   that block gets `alignwide`/`alignfull` when the frame says `wide`/`full` — the class
   the block carries live and that the prose class's rules (`figure.alignwide`) match —
-  and loses a mirrored wide/full class that no longer matches (WordPress keeps frame and
+  and loses a wide/full class that no longer matches — unless the block's own
+  `className` attribute (its "Additional CSS classes", read from the `core/block-editor`
+  store by the block's `data-block` client id) contains it, so an author's `alignwide`
+  is never removed, whenever it was added. Without the store nothing counts as authored (WordPress keeps frame and
   block across alignment changes, e.g. wide → full or wide → left). React can rewrite the
   block's class attribute and changes only `data-align` on a retained frame; the canvas
   observer watches both and `sync()` restores the state. Writes only when something

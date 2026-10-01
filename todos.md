@@ -9,6 +9,12 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Editor Prose: test which elements `EDITOR_FRAME_RESET` matches** (Greptile on
+      PR #46, 2026-10-01): the payload test pins the selector text only; nothing runs
+      the selectors against a frame-vs-block DOM, so a later edit that also catches a
+      real block (with `!important` widths) would pass once the pin is updated. Needs a
+      DOM engine the battery does not have (no dependency today); until then the browser
+      verification in the PR covers it.
 - [ ] **Database-backed tests in CI for the Redirects module** (Greptile on PR #41,
       2026-09-29; deferred by Daniel): schema install, database-backed matching, the
       slug monitor and the loop simulation are only exercised by the manual harness

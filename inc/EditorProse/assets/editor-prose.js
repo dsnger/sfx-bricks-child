@@ -30,7 +30,9 @@
   // div.wp-block[data-align] and leaves the align class off the block itself. Live, the block
   // carries alignwide/alignfull, so the prose class's rules for it only match once mirrored here.
   var ALIGNS = ['wide', 'full'];
-  function mirrorAlign(rootEl) {
+  // authoredClasses(clientId) returns the block's own className attribute (its "Additional CSS
+  // classes"), so a class the author set is never removed — whenever it was added.
+  function mirrorAlign(rootEl, authoredClasses) {
     var frames = rootEl.querySelectorAll('.wp-block[data-align]:not([data-block])');
     Array.prototype.forEach.call(frames, function (frame) {
       var align = frame.getAttribute('data-align');
@@ -38,11 +40,13 @@
       if (!block || !block.hasAttribute('data-block')) {
         return;
       }
+      var authored = authoredClasses ? String(authoredClasses(block.getAttribute('data-block')) || '').split(/\s+/) : [];
       // WordPress keeps the frame and the block across alignment changes (wide -> full, wide -> left),
-      // so a class mirrored earlier must go when it no longer matches.
+      // so a mirrored class must go when it no longer matches.
       ALIGNS.forEach(function (a) {
-        if (a !== align && block.classList.contains('align' + a)) {
-          block.classList.remove('align' + a);
+        var c = 'align' + a;
+        if (a !== align && block.classList.contains(c) && authored.indexOf(c) === -1) {
+          block.classList.remove(c);
         }
       });
       if (ALIGNS.indexOf(align) !== -1) {
@@ -98,7 +102,14 @@
       }
       ensureAssets(cdoc, config.css, config.links);
       ensureClasses(rootEl, config.classes);
-      mirrorAlign(rootEl);
+      mirrorAlign(rootEl, authoredClasses);
+    }
+
+    // Read from the block editor store at call time; without it nothing counts as authored.
+    function authoredClasses(clientId) {
+      var data = win.wp && win.wp.data;
+      var attrs = data && data.select('core/block-editor') && data.select('core/block-editor').getBlockAttributes(clientId);
+      return (attrs && attrs.className) || '';
     }
 
     var pending = false;

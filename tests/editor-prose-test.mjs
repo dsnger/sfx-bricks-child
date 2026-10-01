@@ -224,11 +224,31 @@ function load(extra = {}) {
   root.frames[0].attrs['data-align'] = 'left';
   api.mirrorAlign(root);
   assert.deepEqual(wide.classList.set, [], '8: full -> left removes the mirrored class');
+
+  // An author's own alignwide (Additional CSS classes, read from the block's attributes) is never
+  // removed — set before mirroring, or after the script already mirrored the same class.
+  const authored = block();
+  authored.classList.add('alignwide');
+  const f = frame('left', authored);
+  root.frames = [f];
+  const own = (id) => (id === 'x' ? 'is-style-foo alignwide' : '');
+  api.mirrorAlign(root, own);
+  assert.deepEqual(authored.classList.set, ['alignwide'], '8: authored class kept on a left frame');
+  const late = block();
+  const g = frame('wide', late);
+  root.frames = [g];
+  api.mirrorAlign(root, () => '');
+  assert.deepEqual(late.classList.set, ['alignwide'], '8: mirrored first');
+  g.attrs['data-align'] = 'left';
+  api.mirrorAlign(root, own); // the author has since typed alignwide into Additional CSS classes
+  assert.deepEqual(late.classList.set, ['alignwide'], '8: class authored after mirroring is kept');
 }
 
 // 9. Wiring: sync() mirrors alignment on start, and an alignment-only change reaches it through the canvas observer.
 {
-  const { win, doc, observers, api } = load();
+  const lookups = [];
+  const wp = { data: { select: (store) => ({ getBlockAttributes: (id) => { lookups.push([store, id]); return { className: id === 'x' ? 'alignfull' : '' }; } }) } };
+  const { win, doc, observers, api } = load({ wp });
   api.start(win, { classes: ['brxe-text'], css: '', links: [] });
   const frame = new El('iframe');
   const cdoc = new Doc();
@@ -247,6 +267,10 @@ function load(extra = {}) {
   wrap.attrs['data-align'] = 'full';
   observers[1].cb(); // canvas observer fires for the data-align attribute change
   assert.deepEqual(fig.classList.set, ['alignfull'], '9: data-align change re-mirrors via the observer');
+  wrap.attrs['data-align'] = 'left';
+  observers[1].cb();
+  assert.deepEqual(fig.classList.set, ['alignfull'], '9: alignfull authored in the block attributes survives full -> left');
+  assert.deepEqual(lookups[lookups.length - 1], ['core/block-editor', 'x'], '9: authored classes read from the block editor store by clientId');
 }
 
 console.log('editor-prose-test: PASS');
