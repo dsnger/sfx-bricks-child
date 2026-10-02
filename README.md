@@ -28,6 +28,7 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 
 - **Security Header** — HSTS, CSP, Permissions-Policy, X-Frame-Options, and related HTTP headers
 - **Password Protection** — gate the frontend behind one shared password (wp-login-style prompt), with a shareable `?access=` bypass link for clients, IP allowlist, role/feed/REST exemptions, and per-link session revocation
+- **REST API access for guests** — WP Optimizer setting with three modes: Open (WordPress default), Allowlist (guests may call only the ticked REST namespaces, optionally GET only) and Closed. Logged-in users and application passwords are never affected. Includes a "Test as guest" check and a notice when new namespaces appear.
 
 ### SEO
 
@@ -119,3 +120,11 @@ define('SFX_THEME_DASHBOARD', 'agency_user,agency_dev');
 | Defined            | Not defined           | By role/cap    | Locked             |
 | Not defined        | Defined               | Locked         | By username        |
 | Defined            | Defined               | By role/cap    | By username        |
+
+## REST API access for guests: notes
+
+- Import in **merge** mode: an empty imported allowlist or seen list does not clear the existing one; a non-empty one replaces it whole (rows are not combined); an existing mode wins over an imported legacy "REST for logged-in users only" flag. Use **replace** for an exact copy.
+- REST response caches that answer before WordPress dispatches the request must exclude REST — varying the cache by login is not enough, or guests can be served cached answers meant for others.
+- Guests can still tell 401 (blocked) from 404 (missing), and can read `OPTIONS` metadata of a route they know.
+- "Remove REST discovery links and oEmbed" never blocked REST requests; use the guest access setting for that.
+- Filters: `sfx/rest_guest_allowed_namespaces` (allow extra namespaces) and `sfx/rest_guest_is_allowed` (final per-request decision).
