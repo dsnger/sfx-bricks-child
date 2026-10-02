@@ -22,7 +22,7 @@ stack. Admins get a per-site middle ground.
   loopback request.
 - Migration is read-time, no database rewrite.
 
-**Open for Daniel (found in review):** the task asked to label `disable_rest_api` as
+**Decided with Daniel (found in review, confirmed 2026-10-02):** the task asked to label `disable_rest_api` as
 dangerous. It is not: WordPress ignores `rest_enabled` since 4.7
 (`apply_filters_deprecated`, `class-wp-rest-server.php:348`), so the switch only disables
 JSONP, removes the REST/oEmbed discovery links and unregisters the `oembed/1.0` route —
@@ -82,7 +82,7 @@ option while the module is off (no module sanitizer), so every read goes through
   `'1'`/`1`/`true`. Stored rows have no `allowed` key. `method` `get` or `all`, else
   `all`. Duplicates: last row wins. Any other value (scalar, object) → `[]` —
   restrictive, never the defaults. Idempotent on its own output.
-- `seen(array $option): array` — list of non-empty strings (max 200 chars), unique; else
+- `seen(array $option): array` — list of non-empty strings, unique; else
   `[]`. Seen is only an acknowledgment record, so unsupported names are kept too (an
   altered entry merely re-triggers the notice).
 - `hide_index(array $option): bool` — key absent or `null` → `true` (the default);
@@ -162,13 +162,13 @@ the normal path and for every `batch/v1` item, which also go through
 
 ### Classifying the matched route
 
-`RestGuestAccess::classify(string $route, array $handler, ?array $route_options): array{kind, namespace}`:
+`RestGuestAccess::classify(WP_REST_Request $request, string $route, array $handler, ?array $route_options): array{kind, namespace}`:
 
 - `$handler['callback']` is `[WP_REST_Server, 'get_index']` → `index`;
   `[WP_REST_Server, 'get_namespace_index']` → `discovery` with the namespace the
-  callback will actually list: the request's `namespace` parameter if set (core's
-  `get_namespace_index` reads it and it is overridable by query string), else
-  `$route_options['namespace']`. Only the generated callbacks count — a
+  callback will actually list: `$request['namespace']` if it is a non-empty string
+  (core's `get_namespace_index` reads it and it is overridable by query string), else
+  `$route_options['namespace']`; a non-string parameter → `unknown`. Only the generated callbacks count — a
   plugin handler registered on `/<ns>` itself is a normal `namespace` route and follows
   the method rule.
 - otherwise `namespace = $route_options['namespace'] ?? ''`; a non-empty string →
@@ -195,7 +195,9 @@ So guest batch requests are blocked in `allowlist` (unless the filter allows the
   by `kind`, independent of mode and filter: namespace/discovery → "The REST namespace
   %s is not available to guests."; index → "The REST API index is not available to
   guests."; unknown → "This REST route is not available to guests." (`sfxtheme`).
-- Ok → `null` (core runs the callback).
+- Ok → the incoming `$result`, unchanged (`null` → core runs the callback; an earlier
+  filter's result stays). The same for every pass-through path (logged in, not serving
+  REST, probe route).
 
 ### What guests can still observe (accepted, documented)
 
@@ -204,7 +206,9 @@ So guest batch requests are blocked in `allowlist` (unless the filter allows the
   from a missing one (404).
 - A response produced on `rest_pre_dispatch` (e.g. a REST response cache answering
   before dispatch) never reaches this hook. Such caches must not serve blocked routes to
-  guests — README note: exclude REST from them or let them vary by login.
+  guests — README note: exclude REST responses from such caches. Varying the cache by
+  login is not enough: a guest entry cached while the mode was `open` would still be
+  served after switching to `allowlist`/`closed`.
 - `OPTIONS` is answered by core's `rest_handle_options_request` on `rest_pre_dispatch`,
   before matching, so it never reaches this hook: CORS preflights keep working (also for
   authenticated cross-origin requests), and a guest who already knows a route can read
@@ -221,7 +225,7 @@ both. oEmbed discovery links are not touched.
 
 ### Independence
 
-`disable_rest_api` is independent (see "Open for Daniel"). `block_rest_users_anonymous`,
+`disable_rest_api` is independent (see the decision above). `block_rest_users_anonymous`,
 `block_author_query` and Password Protection's `rest_authentication_errors` filter are
 unchanged. `disable_wp_optimizer` turns all of this off, and then the notice and the
 Bricks warning are suppressed too.
@@ -268,28 +272,30 @@ they need bricks/v1 with all methods".
 
 ### Test as guest
 
-Button below the table; checks the **saved** state as a real guest request, without
-running any plugin callback:
+Button below the table; checks the **saved** policy through a real guest request,
+without running any plugin callback and without touching any other route:
 
-- `GET /` (via `rest_url()`) — the real index route. Expected from `decide()` for kind
-  `index` and the effective state: 401 when the module is on and the mode is `closed`, or
-  `allowlist` with hide-index; else 200.
-- `GET /sfx-guest/v1/probe?namespace=<ns>` for every live namespace (URL built with
-  `rest_url()` + `add_query_arg()`, so it is encoded and works with plain permalinks).
-  The theme registers this route itself on `rest_api_init` whenever the WP Optimizer
-  module is loaded, in every mode (`permission_callback` `__return_true`, `GET` only);
-  the hook always lets it through and it never appears in the namespace table.
-  Its callback runs the same decision as the hook would for a guest `GET` to a normal
-  route of `<ns>` — effective state (master switch, mode, map, both filters with a
-  synthetic `GET` request) — and returns `{"state": "open"|"allowed"|"blocked",
-  "method": "get"|"all"|"filtered"|null}` (`filtered` when the filter grants a namespace
-  that has no map entry). It answers only for live namespaces (else 404), so it reveals
+- One route of the theme's own, `GET /sfx-guest/v1/probe`, registered on `rest_api_init`
+  whenever the WP Optimizer module is loaded, in every mode (`permission_callback`
+  `__return_true`). Its namespace is the constant `INTERNAL_NAMESPACE` and is excluded
+  everywhere: `live_namespaces()` drops it, so it never appears in the table, the
+  defaults, the displayed/seen lists, the notice or the probe list; the hook always lets
+  it through.
+- Requests: `?target=index` once, and `?namespace=<ns>` for every live namespace. URLs
+  are built with `rest_url()` and `add_query_arg()` over a `rawurlencode()`d value (plain
+  and pretty permalinks).
+- The callback reports the **policy**: effective state first (module loaded and master
+  switch off and mode not `open`, else `open`), then `decide()` for kind `index`, or for
+  kind `namespace` with method `GET`, using the map after
+  `sfx/rest_guest_allowed_namespaces`. Response `{"state": "open"|"allowed"|"blocked",
+  "method": "get"|"all"|null}`. `sfx/rest_guest_is_allowed` is request-specific and is
+  **not** simulated — the UI says so. Unknown namespace → 404, so the probe reveals
   nothing a guest cannot learn by calling routes (401 vs 404 above).
-- What it proves: the request really arrives as a guest (no cookie, no nonce), through
-  page cache and Password Protection, and reaches the same decision code. Per namespace
-  the row shows configured vs reported state with verdict "as configured" / "differs" /
-  "inconclusive" (other status, network error, timeout). Writes are never sent; GET-only
-  vs all is shown from the report.
+- What it proves: the request arrives as a real guest (no cookie, no nonce), passes page
+  cache and Password Protection, and the saved policy reaches the decision code as
+  configured. Per row: configured vs reported state with verdict "as configured" /
+  "differs" / "inconclusive" (other status, network error, timeout). No write is ever
+  sent.
 - JS: `fetch(url, {credentials: 'omit', cache: 'no-store', redirect: 'manual', signal})`,
   10 s `AbortController` timeout per probe, button disabled during a run and restored in
   `finally`, a run id so a stale run cannot overwrite a newer one, output via
@@ -330,14 +336,14 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
 - `decide()`: allowed GET → true; disallowed → false; `get` with `POST` → false, `HEAD`
   → true; index/discovery with and without hide-index; `open` → always true; `closed` →
   always false.
-- Hook: logged-in → incoming result unchanged; not serving REST → unchanged; guest +
+- Hook: allowed guest with `null` → `null`; logged-in → incoming result unchanged; not serving REST → unchanged; guest +
   blocked + non-null incoming result → 401 (overridden); guest + allowed + non-null →
   unchanged; probe route always passes; discovery with a `namespace` query override is
-  judged by that namespace; blocked → `WP_Error` code `rest_forbidden_guest`, status 401, message by
+  judged by that namespace, a non-string override → unknown; blocked → `WP_Error` code `rest_forbidden_guest`, status 401, message by
   kind; `sfx/rest_guest_is_allowed` flips both ways; non-array
-  `sfx/rest_guest_allowed_namespaces` ignored; probe callback: open/allowed/blocked,
-  `filtered` method for a filter-only grant, master switch on → open, unknown namespace →
-  404.
+  `sfx/rest_guest_allowed_namespaces` ignored; probe callback: open/allowed/blocked for
+  namespaces and `target=index`, master switch on or mode `open` → open, unknown
+  namespace → 404; `live_namespaces()` never contains `sfx-guest/v1`.
 - Normalisers: non-array option → `[]`; `supported()` rejects `wp/v2\n`, `a/../b`,
   `.`; numeric live namespace handled as string; `hide_index()` absent/null → true,
   `'0'` → false; legacy 1 + no mode → `closed`; legacy 0 →
@@ -355,15 +361,17 @@ teardown via `register_shutdown_function` declared before the first fixture, res
 the WP Optimizer option and Password Protection settings and deleting the application
 password it creates; fails fatally outside the site root):
 
-- preconditions under the teardown: WP Optimizer master switch off, application
+- preconditions under the teardown: the WP Optimizer module enabled in General Theme
+  Options (`sfx_general_options`, restored too), its master switch off, application
   passwords enabled, `disable_rest_api` and `disable_embed` off (both unregister the
   oEmbed route), Password Protection off; one published post as the oEmbed target
   (existing or a fixture, removed in the teardown); the harness asserts the oEmbed route
   is registered before testing;
-- mode `allowlist`, `bricks/v1` and `oembed/1.0` allowed, `wp/v2` not: guest `GET
+- a complete fixture policy: mode `allowlist`, hide-index `1`, `bricks/v1` and
+  `oembed/1.0` allowed, `wp/v2` not: guest `GET
   /oembed/1.0/embed?url=<post permalink>` → 200; guest `GET /wp/v2/posts` → 401
   `rest_forbidden_guest`; guest `/` → 401; probe `namespace=bricks/v1` → `allowed`,
-  `namespace=wp/v2` → `blocked`; `GET /wp/v2/posts` with the application
+  `namespace=wp/v2` → `blocked`, `target=index` → `blocked`; `GET /wp/v2/posts` with the application
   password → 200;
 - mode `open`: guest `GET /wp/v2/posts` → 200.
 
