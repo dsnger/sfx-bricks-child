@@ -110,6 +110,14 @@ this, the existing checkbox rule would switch off every control after the cut, n
 the REST ones. Imports and programmatic writes carry no `option_page` and keep the
 absent-key rules below.
 
+**Repeat-safe.** WordPress can run the sanitize callback twice for one save
+(`update_option` → `add_option` when the stored option is missing or equals the
+registered default `[]`), the second time with the first call's output. So on a form
+save the sanitizer never works from `$input`: it reads
+`wp_unslash($_POST['sfx_wpoptimizer_options'])` (the raw form, non-array → `[]`) on
+every invocation, checks the markers there and normalises from there — the same raw form
+gives the same result however often it runs.
+
 ### Sanitizer (`Settings::sanitize_options`)
 
 - The incoming value is normalised like a read first: anything but an array → `[]`
@@ -369,7 +377,9 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
   `open`; explicit mode wins; `namespaces()` idempotent, absent/`null` → `null`, scalar
   → `[]`, unticked form row (`allowed = 0`) dropped, ticked kept, stored row without
   `allowed` kept, unsupported namespace dropped; `seen()`.
-- Sanitizer: a serialized form with some rows unticked; form saves cut before the mode
+- Sanitizer: a complete form save with ticked rows run twice (second call gets the
+  first output, as `add_option` does) persists the same allowlist, over a stored `[]` and
+  over a missing option; a serialized form with some rows unticked; form saves cut before the mode
   select, between select and rows, and after a row's `namespace` all return the complete
   stored option (other checkboxes such as `block_author_query` unchanged) and add the
   error;
