@@ -20,6 +20,7 @@ class Controller
     {
         AssetManager::register();
         PostType::init();
+        HelpTab::register();
         self::$shortcode_instance = new Shortcode\SC_SocialAccounts();
 
         add_action('sfx_init_advanced_features', [$this, 'register_bricks_dynamic_tag']);

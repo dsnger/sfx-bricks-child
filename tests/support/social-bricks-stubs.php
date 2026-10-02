@@ -38,9 +38,14 @@ function assert_contains(string $needle, string $haystack, string $message): voi
     assert_true(strpos($haystack, $needle) !== false, "{$message} (needle '{$needle}' not found)");
 }
 
+/**
+ * Identity, unless a test maps a msgid in $test_gettext (lets a test inject a hostile
+ * translation to prove escaping). Unset by default, so existing tests see no change.
+ */
 function __($text, $domain = 'default')
 {
-    return $text;
+    global $test_gettext;
+    return $test_gettext[$text] ?? $text;
 }
 
 function esc_html__($text, $domain = 'default')
