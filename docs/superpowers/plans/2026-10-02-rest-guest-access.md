@@ -789,6 +789,8 @@ In the field loop, skip the four new ids (`continue` for `rest_guest_*`), and af
         $output = classes\RestGuestAccess::sanitize_into($input, $output, $is_form, classes\RestGuestAccess::option());
 ```
 
+Also make `Settings::get()` and `Settings::get_all()` read the option through `classes\RestGuestAccess::option()` (require the class first, as above), keeping their field-default behaviour — the Controller constructor and the overview call `Settings::get()`, and a stored object would fatal there. Test: stored option `new stdClass()` → `Settings::get('disable_wp_optimizer')` returns the field default/null without error, `Settings::get_all()` → `[]`.
+
 The hide-login early `return $output;` paths come after this line, so all paths include the new keys. Also replace the existing `$current_options = get_option('sfx_wpoptimizer_options', []);` with `$current_options = classes\RestGuestAccess::option();` (a stored object/scalar would otherwise fatal in the HideLogin array accesses) — test: stored option `new stdClass()` + a complete form save → no error, mode saved. Add a generic `select` branch to the loop for future selects:
 
 ```php
@@ -935,11 +937,22 @@ Also add to the Task 3 tests:
 ```php
     public static function owner(string $ns): string
     {
-        foreach (rest_get_server()->get_routes($ns) as $handlers) {
+        $server = rest_get_server();
+        // get_routes('0') returns every route (core tests the argument for truthiness), so filter by the exact namespace.
+        foreach ($server->get_routes($ns) as $route => $handlers) {
+            $opts = $server->get_route_options($route);
+            if (!is_array($opts) || (string) ($opts['namespace'] ?? '') !== $ns || !is_array($handlers)) {
+                continue;
+            }
             foreach ($handlers as $handler) {
-                $cb = $handler['callback'] ?? null;
-                if (is_array($cb) && $cb[0] instanceof \WP_REST_Server && $cb[1] === 'get_namespace_index') {
-                    continue;
+                $cb = is_array($handler) ? ($handler['callback'] ?? null) : null;
+                if (is_array($cb)) {
+                    if (count($cb) !== 2 || !isset($cb[0], $cb[1]) || !is_string($cb[1]) || (!is_object($cb[0]) && !is_string($cb[0]))) {
+                        continue;
+                    }
+                    if ($cb[0] instanceof \WP_REST_Server && $cb[1] === 'get_namespace_index') {
+                        continue;
+                    }
                 }
                 try {
                     if ($cb instanceof \Closure || (is_string($cb) && !str_contains($cb, '::'))) {
@@ -954,7 +967,7 @@ Also add to the Task 3 tests:
                     } else {
                         continue;
                     }
-                } catch (\ReflectionException $e) {
+                } catch (\ReflectionException | \TypeError $e) {
                     continue;
                 }
                 $file = $ref->getFileName();
@@ -989,7 +1002,7 @@ Also add to the Task 3 tests:
             return $theme->exists() ? (string) $theme->get('Name') : $folder;
         }
         if (str_starts_with($file, trailingslashit(wp_normalize_path(ABSPATH . WPINC)))) {
-            return 'WordPress';
+            return __('WordPress', 'sfxtheme');
         }
         return '';
     }
@@ -1010,6 +1023,8 @@ Also add to the Task 3 tests:
         return in_array($ns, self::ADMIN_NAMESPACES, true) ? __('Admin only — guests do not need it.', 'sfxtheme') : '';
     }
 ```
+
+- [ ] **Step 5b: Owner tests** (append to `tests/wpoptimizer-rest-guest-test.php`, extending the server stub with `get_routes($ns)` returning all routes when `$ns` is falsy, like core, and fixture routes from two namespaces `other/v1` (closure defined in this test file) and `0` (a named function in a fixture file under a fake plugins dir)): `owner('0')` resolves the `0` namespace's callback, not `other/v1`'s; a malformed callback `[new stdClass(), 123]` and a missing method yield `''` without error.
 
 - [ ] **Step 6: Script.** In the page's inline script: (a) `initializeConditionalFields` — when the dependency element is a `<select>`, evaluate with `dep.value` and listen to `change`; checkboxes unchanged. (b) Test button: config printed as `const sfxRestGuest = <?php echo wp_json_encode([...], JSON_HEX_TAG | JSON_HEX_AMP); ?>;` with `probe` (`rest_url('sfx-guest/v1/probe')`), the configured state per live namespace (`allowed`/`blocked`/`open`, method), the configured index state, and the translated labels. Run: disable button, `runId++`, for `target=index` and each namespace build `url + (url.includes('?') ? '&' : '?') + 'namespace=' + encodeURIComponent(ns)` (or `target=index`), `fetch(url, {credentials:'omit', cache:'no-store', redirect:'manual', signal})` with a 10 s `AbortController`, parse JSON on 200, else record status/`code`; on throw → "no response"; validate the JSON shape (`state` in open/allowed/blocked, `method` in get/all/null) else "inconclusive"; compare reported `state` **and**, for allowed namespaces, `method` with the configured values (configured = the filtered `allowed_map`, printed into the config) → "as configured" / "differs"; write rows with `textContent` only if `runId` is still current; `finally` re-enables the button.
 
