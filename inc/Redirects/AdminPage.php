@@ -1156,7 +1156,8 @@ final class AdminPage
      * Two forms per list, never nested: a GET form for search and pagination
      * (read-only, no nonce), and the POST form carrying the table and exactly
      * one op select + one nonce. Pagination sits in the GET form so its
-     * page-number input can never submit the bulk form.
+     * page-number input can never submit the bulk form; the bottom pagination
+     * has no input (core prints links only) and sits after both forms.
      *
      * @param RedirectsTable|NotFoundTable $table
      */
@@ -1186,6 +1187,8 @@ final class AdminPage
             <?php wp_nonce_field($action); ?>
             <?php $table->display(); ?>
         </form>
+        <?php // Long lists: page links again below the table, outside both forms. ?>
+        <?php $table->print_pagination('bottom'); ?>
         <?php
     }
 

@@ -114,7 +114,8 @@ final class RedirectsTable extends \WP_List_Table
      * Replaces core's tablenav: core would print its own bulk-<plural> nonce and
      * a second bulk select, and its pagination input would submit this POST
      * form. Here: one op select + button on top, nothing at the bottom;
-     * pagination is printed by AdminPage in the separate GET form.
+     * pagination is printed by AdminPage: top in the separate GET form, bottom
+     * (links only) after both forms.
      */
     protected function display_tablenav($which): void
     {
@@ -144,11 +145,15 @@ final class RedirectsTable extends \WP_List_Table
         <?php
     }
 
-    /** Public entry for AdminPage's GET form (core's pagination() is protected). */
-    public function print_pagination(): void
+    /**
+     * Public entry for AdminPage (core's pagination() is protected). 'top' sits in the GET
+     * form for its page-number input; 'bottom' is links only, so it needs no form.
+     */
+    public function print_pagination(string $which = 'top'): void
     {
-        echo '<div class="tablenav top">';
-        $this->pagination('top');
+        $which = $which === 'bottom' ? 'bottom' : 'top';
+        echo '<div class="tablenav ' . esc_attr($which) . '">';
+        $this->pagination($which);
         echo '<br class="clear" /></div>';
     }
 
