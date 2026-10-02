@@ -76,10 +76,12 @@ option while the module is off (no module sanitizer), so every read goes through
 - `mode(array $option): string` — `rest_guest_mode` if one of the three; else, if the
   option has no `rest_guest_mode` key and `disable_rest_api_non_authenticated` is truthy
   → `closed`; else `open`.
-- `namespaces(array $option): ?array` — key absent or `null` → `null` (never saved). An
-  array is read as rows; a row is kept when `namespace` is a string passing
-  `supported()` and its `allowed` value — **if the row has that key** (form input) — is
-  `'1'`/`1`/`true`. Stored rows have no `allowed` key. `method` `get` or `all`, else
+- `namespaces(array $option, bool $from_form = false): ?array` — key absent or `null` →
+  `null` (never saved). An array is read as rows; a row is kept when `namespace` is a
+  string passing `supported()` and — **for form input** (`$from_form`) — its `allowed`
+  value is exactly `'1'`; a form row without `allowed` (e.g. cut off by
+  `max_input_vars`) is never a grant. Stored rows have no `allowed` key and are read as
+  grants only when `$from_form` is false. `method` `get` or `all`, else
   `all`. Duplicates: last row wins. Any other value (scalar, object) → `[]` —
   restrictive, never the defaults. Idempotent on its own output.
 - `seen(array $option): array` — list of non-empty strings, unique; else
@@ -94,15 +96,21 @@ Each displayed, supported namespace posts `rest_guest_namespaces[i][namespace]`
 (hidden), `rest_guest_namespaces[i][allowed]` as a hidden `0` **followed by** the
 checkbox `1` (an unchecked box still posts `0`, so an unticked row is never a grant), and
 `rest_guest_namespaces[i][method]`. The hide-index checkbox is also preceded by a hidden
-`0`. Plus `rest_guest_form = 1` and `rest_guest_displayed[]` (every namespace the form
-listed, supported or not).
+`0`. Plus `rest_guest_form = 1` **before** the rows, `rest_guest_displayed[]` (every
+namespace the form listed, supported or not), and `rest_guest_form_end = 1` as the last
+input of the form. A submission with the start marker but without the end marker was
+truncated (`max_input_vars`): the sanitizer keeps the four stored `rest_guest_*` values
+unchanged and adds a settings error ("The REST guest settings were not saved completely
+— raise max_input_vars").
 
 ### Sanitizer (`Settings::sanitize_options`)
 
+- The incoming value is normalised like a read first: anything but an array → `[]`
+  (Import/Export can pass a scalar), so the typed normalisers never see a non-array.
 - New field types: `select` (value must be in the field's `options`, else default),
   `rest_namespaces`, `hidden_list`. Unknown types keep today's behaviour.
 - `rest_guest_mode` → `mode($input)` (covers the legacy rule).
-- `rest_guest_namespaces` → `namespaces($input)`; absent → `null`, **except** on a form
+- `rest_guest_namespaces` → `namespaces($input, $is_form)`; absent → `null`, **except** on a form
   save (`rest_guest_form = 1`), where absent means "no rows were listed" → `[]` (an
   admin saved the form; the never-saved defaults must not come back).
 - `rest_guest_hide_index` → `hide_index($input)` as `0`/`1` — not the generic checkbox
@@ -240,9 +248,12 @@ saving any other setting posts `closed` back.
 
 ### Namespace table
 
-`RestGuestAccess::live_namespaces()`: `rest_get_server()->get_namespaces()`, sorted;
-called only on the WP Optimizer page, on a form save and on the notice pages (it builds
-every route). Rows: live namespaces ∪ stored ones. Per row: namespace (escaped), owner,
+`RestGuestAccess::live_namespaces()`: `rest_get_server()->get_namespaces()`, cast to
+strings, internal namespace removed, sorted. Building the REST server registers every
+route, so it is called only where needed: the WP Optimizer page, a form save, the notice
+pages, and inside REST requests — the hook and the probe, which run during dispatch when
+the server and all routes already exist. The never-saved defaults (live ∩ default set)
+are therefore resolved lazily at that point, never when the hook is installed on `init`. Rows: live namespaces ∪ stored ones. Per row: namespace (escaped), owner,
 hint, allowed checkbox, method select (`all` / `GET only`), badge "new" (saved list
 exists and namespace not in seen), "not present" (stored, not live — kept, e.g. plugin
 temporarily off) or "unsupported characters" (not selectable).
@@ -336,7 +347,8 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
 - `decide()`: allowed GET → true; disallowed → false; `get` with `POST` → false, `HEAD`
   → true; index/discovery with and without hide-index; `open` → always true; `closed` →
   always false.
-- Hook: allowed guest with `null` → `null`; logged-in → incoming result unchanged; not serving REST → unchanged; guest +
+- Hook: never-saved allowlist resolves the defaults from the live server during
+  dispatch; allowed guest with `null` → `null`; logged-in → incoming result unchanged; not serving REST → unchanged; guest +
   blocked + non-null incoming result → 401 (overridden); guest + allowed + non-null →
   unchanged; probe route always passes; discovery with a `namespace` query override is
   judged by that namespace, a non-string override → unknown; blocked → `WP_Error` code `rest_forbidden_guest`, status 401, message by
@@ -350,7 +362,9 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
   `open`; explicit mode wins; `namespaces()` idempotent, absent/`null` → `null`, scalar
   → `[]`, unticked form row (`allowed = 0`) dropped, ticked kept, stored row without
   `allowed` kept, unsupported namespace dropped; `seen()`.
-- Sanitizer: a serialized form with some rows unticked; a form save without rows → `[]`;
+- Sanitizer: a serialized form with some rows unticked; a form cut after a row's
+  `namespace` (no `allowed`, no end marker) keeps the stored values and adds the error;
+  a scalar import → treated as `[]`; a form save without rows → `[]`;
   hide-index absent in an import → 1; form save sets seen = previous ∪
   displayed; import keeps imported seen; absent keys → never-saved defaults; a stored
   row list passed through ImportExport's recursive sanitizer keeps `bricks/v1`,
