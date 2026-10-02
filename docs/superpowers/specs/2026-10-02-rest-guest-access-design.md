@@ -96,12 +96,19 @@ Each displayed, supported namespace posts `rest_guest_namespaces[i][namespace]`
 (hidden), `rest_guest_namespaces[i][allowed]` as a hidden `0` **followed by** the
 checkbox `1` (an unchecked box still posts `0`, so an unticked row is never a grant), and
 `rest_guest_namespaces[i][method]`. The hide-index checkbox is also preceded by a hidden
-`0`. Plus `rest_guest_form = 1` **before** the rows, `rest_guest_displayed[]` (every
-namespace the form listed, supported or not), and `rest_guest_form_end = 1` as the last
-input of the form. A submission with the start marker but without the end marker was
-truncated (`max_input_vars`): the sanitizer keeps the four stored `rest_guest_*` values
-unchanged and adds a settings error ("The REST guest settings were not saved completely
-— raise max_input_vars").
+`0`. Plus `rest_guest_displayed[]` (every namespace the form listed, supported or not).
+
+**Truncation guard (whole form).** The WP Optimizer form gets `sfx_wpo_form_start = 1` as
+its first input after `settings_fields()` and `sfx_wpo_form_end = 1` as its last. A save
+is a **form save** when `$_POST['option_page'] === 'sfx_wpoptimizer_options'`
+(`settings_fields()` prints it before everything else, and `options.php` needs it to
+verify the nonce). On a form save without both markers the submission was cut off
+(`max_input_vars`): the sanitizer returns the **complete previously stored option**
+unchanged (legacy keys included) before any field is processed, and adds a settings
+error ("Settings were not saved: the form was cut off — raise max_input_vars"). Without
+this, the existing checkbox rule would switch off every control after the cut, not only
+the REST ones. Imports and programmatic writes carry no `option_page` and keep the
+absent-key rules below.
 
 ### Sanitizer (`Settings::sanitize_options`)
 
@@ -110,12 +117,12 @@ unchanged and adds a settings error ("The REST guest settings were not saved com
 - New field types: `select` (value must be in the field's `options`, else default),
   `rest_namespaces`, `hidden_list`. Unknown types keep today's behaviour.
 - `rest_guest_mode` → `mode($input)` (covers the legacy rule).
-- `rest_guest_namespaces` → `namespaces($input, $is_form)`; absent → `null`, **except** on a form
-  save (`rest_guest_form = 1`), where absent means "no rows were listed" → `[]` (an
-  admin saved the form; the never-saved defaults must not come back).
+- `rest_guest_namespaces` → `namespaces($input, <form save>)`; absent → `null`, **except** on a
+  (complete) form save, where absent means "no rows were listed" → `[]` (an admin saved
+  the form; the never-saved defaults must not come back).
 - `rest_guest_hide_index` → `hide_index($input)` as `0`/`1` — not the generic checkbox
   rule, which would turn an absent key into `0`.
-- `rest_guest_seen`: form save (`rest_guest_form = 1`) → previous stored seen ∪
+- `rest_guest_seen`: form save → previous stored seen ∪
   `rest_guest_displayed`; a namespace that appeared between
   rendering and saving is not acknowledged. Otherwise (import, programmatic) →
   `seen($input)`.
@@ -362,8 +369,10 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
   `open`; explicit mode wins; `namespaces()` idempotent, absent/`null` → `null`, scalar
   → `[]`, unticked form row (`allowed = 0`) dropped, ticked kept, stored row without
   `allowed` kept, unsupported namespace dropped; `seen()`.
-- Sanitizer: a serialized form with some rows unticked; a form cut after a row's
-  `namespace` (no `allowed`, no end marker) keeps the stored values and adds the error;
+- Sanitizer: a serialized form with some rows unticked; form saves cut before the mode
+  select, between select and rows, and after a row's `namespace` all return the complete
+  stored option (other checkboxes such as `block_author_query` unchanged) and add the
+  error;
   a scalar import → treated as `[]`; a form save without rows → `[]`;
   hide-index absent in an import → 1; form save sets seen = previous ∪
   displayed; import keeps imported seen; absent keys → never-saved defaults; a stored
