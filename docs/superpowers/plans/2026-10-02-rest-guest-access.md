@@ -141,7 +141,8 @@ assert_same([['namespace' => 'bricks/v1', 'method' => 'all']], G::namespaces(['r
 assert_same([['namespace' => 'b/v1', 'method' => 'get']], G::namespaces(['rest_guest_namespaces' => [['namespace' => 'b/v1', 'method' => 'all'], ['namespace' => 'b/v1', 'method' => 'get']]]), '4: last duplicate wins');
 
 // 5. seen(), hide_index(), to_map().
-assert_same(['a/v1', 'odd name'], G::seen(['rest_guest_seen' => ['a/v1', 'a/v1', '', 'odd name', 5]]), '5: seen keeps non-empty strings, unique');
+assert_same(['a/v1', 'odd name'], G::seen(['rest_guest_seen' => ['a/v1', 'a/v1', '', 'odd name', 5, 'sfx-guest/v1']]), '5: seen keeps non-empty strings, unique, no internal namespace');
+assert_same([], G::namespaces(['rest_guest_namespaces' => [['namespace' => 'sfx-guest/v1', 'method' => 'all']]]), '5: internal namespace never stored');
 assert_same([], G::seen(['rest_guest_seen' => 'x']), '5: seen scalar -> []');
 assert_same(true, G::hide_index([]), '5: hide absent -> true');
 assert_same(true, G::hide_index(['rest_guest_hide_index' => null]), '5: hide null -> true');
@@ -234,7 +235,7 @@ final class RestGuestAccess
         }
         $out = [];
         foreach ($rows as $row) {
-            if (!is_array($row) || !self::supported($row['namespace'] ?? null)) {
+            if (!is_array($row) || !self::supported($row['namespace'] ?? null) || $row['namespace'] === self::INTERNAL_NAMESPACE) {
                 continue;
             }
             // A form row is a grant only with an explicit allowed=1 (a cut-off row has none).
@@ -254,7 +255,7 @@ final class RestGuestAccess
         if (!is_array($list)) {
             return [];
         }
-        return array_values(array_unique(array_filter($list, static fn($v) => is_string($v) && $v !== '')));
+        return array_values(array_unique(array_filter($list, static fn($v) => is_string($v) && $v !== '' && $v !== self::INTERNAL_NAMESPACE)));
     }
 
     public static function hide_index(array $o): bool
@@ -340,7 +341,8 @@ $h = ['callback' => 'some_callback'];
 assert_same(['kind' => 'index', 'namespace' => null], G::classify($get, '/', ['callback' => [$test_server, 'get_index']], null), '6: index');
 assert_same(['kind' => 'discovery', 'namespace' => 'wp/v2'], G::classify($get, '/wp/v2', ['callback' => [$test_server, 'get_namespace_index']], ['namespace' => 'wp/v2']), '6: discovery');
 assert_same(['kind' => 'discovery', 'namespace' => 'bricks/v1'], G::classify(new WP_REST_Request('GET', ['namespace' => 'bricks/v1']), '/wp/v2', ['callback' => [$test_server, 'get_namespace_index']], ['namespace' => 'wp/v2']), '6: discovery judged by ?namespace override');
-assert_same(['kind' => 'unknown', 'namespace' => null], G::classify(new WP_REST_Request('GET', ['namespace' => ['x']]), '/wp/v2', ['callback' => [$test_server, 'get_namespace_index']], ['namespace' => 'wp/v2']), '6: non-string override -> unknown');
+assert_same(['kind' => 'unknown', 'namespace' => null], G::classify(new WP_REST_Request('GET', ['namespace' => ['x']]), '/wp/v2', ['callback' => [$test_server, 'get_namespace_index']], ['namespace' => 'wp/v2']), '6: array override -> unknown');
+assert_same(['kind' => 'unknown', 'namespace' => null], G::classify(new WP_REST_Request('GET', ['namespace' => 123]), '/wp/v2', ['callback' => [$test_server, 'get_namespace_index']], ['namespace' => 'wp/v2']), '6: integer override -> unknown');
 assert_same(['kind' => 'namespace', 'namespace' => 'wp/v2'], G::classify($get, '/wp/v2', $h, ['namespace' => 'wp/v2']), '6: plugin handler on namespace root -> namespace');
 assert_same(['kind' => 'namespace', 'namespace' => 'wp/v2'], G::classify($get, '/wp/v2/posts', $h, ['namespace' => 'wp/v2']), '6: normal route');
 assert_same(['kind' => 'unknown', 'namespace' => null], G::classify($get, '/batch/v1', $h, null), '6: batch -> unknown');
@@ -418,6 +420,47 @@ $test_user_id = 5;
 G::remove_discovery_links();
 assert_same([], $test_removed_actions, '12: logged-in keeps links');
 $test_user_id = 0;
+
+// 13. Remaining gate/probe contracts.
+$marker = new stdClass();
+$test_user_id = 5;
+assert_same($marker, G::gate($marker, $get, '/wp/v2/posts', $posts), '13: logged in keeps a non-null result');
+$test_user_id = 0;
+$test_serving_rest = false;
+assert_same($marker, G::gate($marker, $get, '/wp/v2/posts', $posts), '13: not serving REST keeps a non-null result');
+$test_serving_rest = true;
+assert_same($marker, G::gate($marker, $get, '/sfx-guest/v1/probe', $posts), '13: probe route keeps a non-null result');
+add_filter('sfx/rest_guest_is_allowed', static fn($ok, $req) => false, 10, 2);
+assert_same(true, G::gate(null, new WP_REST_Request('POST'), '/bricks/v1/x', $posts) instanceof WP_Error, '13: is_allowed filter can deny');
+$test_filters['sfx/rest_guest_is_allowed'] = [];
+assert_same('The REST API index is not available to guests.', G::gate(null, $get, '/', ['callback' => [$test_server, 'get_index']])->get_error_message(), '13: index message');
+assert_same('This REST route is not available to guests.', G::gate(null, $get, '/batch/v1', $posts)->get_error_message(), '13: unknown message');
+$saved = $test_options['sfx_wpoptimizer_options'];
+$test_options['sfx_wpoptimizer_options'] = ['rest_guest_mode' => 'allowlist']; // never saved -> defaults ∩ live
+assert_same(null, G::gate(null, new WP_REST_Request('POST'), '/bricks/v1/load_query_page', $posts), '13: never-saved allowlist grants bricks/v1 during dispatch');
+assert_same(true, G::gate(null, $get, '/wp/v2/posts', $posts) instanceof WP_Error, '13: never-saved allowlist blocks wp/v2');
+$test_options['sfx_wpoptimizer_options'] = $saved + ['disable_wp_optimizer' => 1];
+assert_same(['state' => 'open', 'method' => null], G::probe(new WP_REST_Request('GET', ['target' => 'index'])), '13: probe with master switch on -> open');
+$test_options['sfx_wpoptimizer_options'] = $saved;
+$test_options['sfx_wpoptimizer_options']['rest_guest_hide_index'] = 0;
+assert_same(['state' => 'allowed', 'method' => null], G::probe(new WP_REST_Request('GET', ['target' => 'index'])), '13: probe index shown');
+$test_options['sfx_wpoptimizer_options'] = $saved;
+
+// 14. boot(): probe route always, gate only when enforcing.
+$test_actions = []; $test_filters = [];
+$test_options['sfx_wpoptimizer_options'] = ['rest_guest_mode' => 'open'];
+G::boot();
+assert_same(true, isset($test_actions['rest_api_init']), '14: probe registered in open mode');
+assert_same(false, isset($test_filters['rest_dispatch_request']), '14: no gate in open mode');
+$test_actions = []; $test_filters = [];
+$test_options['sfx_wpoptimizer_options'] = $saved;
+G::boot();
+assert_same(PHP_INT_MAX, $test_filters['rest_dispatch_request'][0]['priority'] ?? null, '14: gate last');
+assert_same(4, $test_filters['rest_dispatch_request'][0]['accepted_args'] ?? null, '14: gate gets route + handler');
+$test_filters = [];
+
+// 15. new_blocked(): live − seen − allowed (filtered map).
+assert_same(['new/v1'], G::new_blocked(['bricks/v1', 'new/v1', 'old/v1', 'granted/v1'], ['old/v1'], ['bricks/v1' => 'all', 'granted/v1' => 'get']), '15: new blocked namespaces');
 ```
 
 - [ ] **Step 2: Run** → FAIL (undefined method `classify`).
@@ -464,13 +507,16 @@ $test_user_id = 0;
             }
             if ($cb[1] === 'get_namespace_index') {
                 $param = $request['namespace'];
-                if ($param === null || $param === '') {
-                    $param = $route_options['namespace'] ?? '';
+                if ($param !== null && $param !== '') {
+                    // A request override must be a string (core reads it as the namespace to list).
+                    return is_string($param)
+                        ? ['kind' => 'discovery', 'namespace' => $param]
+                        : ['kind' => 'unknown', 'namespace' => null];
                 }
-                if (!is_string($param) && !is_int($param)) {
-                    return ['kind' => 'unknown', 'namespace' => null];
-                }
-                return ['kind' => 'discovery', 'namespace' => (string) $param];
+                $own = $route_options['namespace'] ?? '';
+                return (is_string($own) || is_int($own)) && (string) $own !== ''
+                    ? ['kind' => 'discovery', 'namespace' => (string) $own]
+                    : ['kind' => 'unknown', 'namespace' => null];
             }
         }
         $ns = $route_options['namespace'] ?? '';
@@ -530,7 +576,8 @@ $test_user_id = 0;
     }
 
     /** @return array<string,string> */
-    private static function allowed_map(array $o): array
+    /** The map enforcement uses (defaults resolved, filter applied) — also used by the probe and the notice. */
+    public static function allowed_map(array $o): array
     {
         $map = self::effective_map($o, self::namespaces($o) === null ? self::live_namespaces() : []);
         $filtered = apply_filters('sfx/rest_guest_allowed_namespaces', $map);
@@ -593,6 +640,12 @@ $test_user_id = 0;
             remove_action('wp_head', 'rest_output_link_wp_head', 10);
             remove_action('template_redirect', 'rest_output_link_header', 11);
         }
+    }
+
+    /** @param list<string> $live @param list<string> $seen @param array<string,string> $allowed @return list<string> */
+    public static function new_blocked(array $live, array $seen, array $allowed): array
+    {
+        return array_values(array_filter($live, static fn($ns) => !in_array($ns, $seen, true) && !isset($allowed[$ns])));
     }
 
     /** Called on init (priority 1) by the WP Optimizer controller. */
@@ -712,9 +765,12 @@ and change `disable_rest_api`'s label/description to:
     }
 ```
 
-In `Settings::sanitize_options($input)`, at the very top:
+In `Settings::sanitize_options($input)`, at the very top (the require must come first — `wpoptimizer-security-behavior-test.php` loads `Settings` without an autoloader):
 
 ```php
+        if (!class_exists(classes\RestGuestAccess::class)) {
+            require_once __DIR__ . '/classes/RestGuestAccess.php';
+        }
         $input = is_array($input) ? $input : [];
         $is_form = classes\RestGuestAccess::is_form_save();
         if ($is_form) {
@@ -727,7 +783,7 @@ In `Settings::sanitize_options($input)`, at the very top:
         }
 ```
 
-(`classes\RestGuestAccess` must be loadable: add `require_once __DIR__ . '/classes/RestGuestAccess.php';` guarded by `class_exists` next to the existing HideLogin require at the top of `sanitize_options`.) In the field loop, skip the four new ids (`continue` for `rest_guest_*`), and after the loop — before the hide-login block — add:
+In the field loop, skip the four new ids (`continue` for `rest_guest_*`), and after the loop — before the hide-login block — add:
 
 ```php
         $output = classes\RestGuestAccess::sanitize_into($input, $output, $is_form, classes\RestGuestAccess::option());
@@ -745,12 +801,10 @@ The hide-login early `return $output;` paths come after this line, so all paths 
 
 ```php
         require_once __DIR__ . '/classes/RestGuestAccess.php';
-        if (!$this->is_option_enabled('disable_wp_optimizer')) {
-            add_action('init', [classes\RestGuestAccess::class, 'boot'], 1);
-        }
+        // Unconditional: boot() always registers the probe route (it reports "open" while the
+        // master switch is on) and checks enforcing() itself before installing the gate.
+        add_action('init', [classes\RestGuestAccess::class, 'boot'], 1);
 ```
-
-(place it after `$optimizer_disabled` is computed and use that variable instead of re-reading.)
 
 - [ ] **Step 4: Tests (append).** Load `Settings.php` in the test with the stubs it needs (`register_setting`, `sanitize_text_field` as identity-trim, `sanitize_title`, `add_settings_error` already stubbed) and HideLogin (`require_once …/classes/HideLogin.php`; it is loaded by `sanitize_options`). Cases:
 
@@ -808,13 +862,23 @@ assert_same(false, array_key_exists('disable_rest_api_non_authenticated', $imp),
 assert_same('open', Settings::sanitize_options('scalar')['rest_guest_mode'], '16: scalar import -> open');
 assert_same(['x/v1'], Settings::sanitize_options(['rest_guest_seen' => ['x/v1']])['rest_guest_seen'], '16: imported seen kept');
 
-// 17. Rows survive ImportExport's recursive key sanitizer (sanitize_key on keys, sanitize_text_field on values).
-$rows = [['namespace' => 'bricks/v1', 'method' => 'all'], ['namespace' => 'oembed/1.0', 'method' => 'get'], ['namespace' => 'contact-form-7/v1', 'method' => 'all']];
-$after = array_map(static fn($r) => ['namespace' => trim(strip_tags($r['namespace'])), 'method' => $r['method']], $rows);
-assert_same($rows, $after, '17: values unchanged by text sanitizing');
+// 17. Rows survive the real ImportExport recursive sanitizer.
+function sanitize_key($key) { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $key)); }
+function sanitize_text_field($str) { $s = strip_tags((string) $str); $s = preg_replace('/%[a-f0-9]{2}/i', '', $s); return trim(preg_replace('/[\r\n\t ]+/', ' ', $s)); }
+require_once dirname(__DIR__) . '/inc/ImportExport/Controller.php';
+$ie = (new ReflectionClass(\SFX\ImportExport\Controller::class))->newInstanceWithoutConstructor();
+$recursive = new ReflectionMethod(\SFX\ImportExport\Controller::class, 'sanitize_array_recursive');
+$recursive->setAccessible(true); // required on PHP 8.0
+$rows = G::namespaces(['rest_guest_namespaces' => [['namespace' => 'bricks/v1', 'method' => 'all'], ['namespace' => 'oembed/1.0', 'method' => 'get'], ['namespace' => 'contact-form-7/v1', 'method' => 'all']]]);
+$imported = $recursive->invoke($ie, ['rest_guest_namespaces' => $rows, 'rest_guest_seen' => ['bricks/v1', 'oembed/1.0']]);
+assert_same($rows, $imported['rest_guest_namespaces'], '17: rows unchanged by ImportExport');
+assert_same($rows, G::namespaces($imported), '17: normalised after import');
+assert_same(['bricks/v1', 'oembed/1.0'], G::seen($imported), '17: seen unchanged by ImportExport');
 ```
 
-Note for test 17: the real `sanitize_key()` only touches the string keys `namespace`/`method`, which are already lowercase; the assertion pins that the stored shape uses no namespace as an array key.
+Note for test 17: the stubs mirror core's `sanitize_key()`/`sanitize_text_field()` for these inputs; a namespace used as an array key would come back as `bricksv1`, which the assertion would catch.
+
+Also add to the Task 3 tests: a form save over a **missing** option (`unset($test_options['sfx_wpoptimizer_options'])`) run twice persists the same allowlist; and seen union — stored seen `['old/v1']`, displayed `['bricks/v1']`, live also has `new/v1` → seen becomes `['old/v1', 'bricks/v1']` (`new/v1` stays unacknowledged).
 
 - [ ] **Step 5:** `./quality.sh` → PASS (the existing `wpoptimizer-security-behavior-test.php` iterates checkbox fields and requires a Controller method for each; the new fields are not `checkbox`, and the removed field takes its method with it).
 - [ ] **Step 6: Commit** `git commit -m "feat(wpoptimizer): REST guest settings, migration, truncation guard"`
@@ -849,14 +913,16 @@ Note for test 17: the real `sanitize_key()` only touches the string keys `namesp
   - `rest_hide_index`: hidden `0` then the checkbox (same markup as checkbox).
   - `hidden_list`: render nothing.
   - `rest_namespaces`: `echo self::render_rest_namespaces();` (Step 4).
-  In the card loop, a field with `'wide' => true` gets card style `flex: 1 1 100%; max-width: none;`, and a field with empty `label` (the `hidden_list`) is skipped entirely.
+  In the card loop: `$combine_with_next` additionally requires `empty($field['wide']) && empty($next_field['wide'])` (the hide-index and namespaces fields share a condition and would otherwise be merged into one 350px card); a field with `'wide' => true` gets card style `flex: 1 1 100%; max-width: none;` and, when conditional, its `_container` wrapper gets `flex: 1 1 100%` too; a field with empty `label` (the `hidden_list`) is skipped entirely. Browser check: the table spans the full content width.
 
 - [ ] **Step 4: Table.** `private static function render_rest_namespaces(): string`:
   - `$o = RestGuestAccess::option(); $live = RestGuestAccess::live_namespaces(); $rows = RestGuestAccess::namespaces($o); $map = RestGuestAccess::effective_map($o, $live); $seen = RestGuestAccess::seen($o);`
-  - Names: `array_unique(array_merge($live, array_keys($map)))`, sorted.
+  - Names: `array_map('strval', array_unique(array_merge($live, array_keys($map))))`, sorted with `SORT_STRING` — map keys like `"123"` come back as ints, and `owner()`/`hint()` take strings under strict types. Include a stored-only numeric namespace in the browser check (or in a rendering test) if one exists; otherwise rely on the cast.
   - Per name, row index `$i`: columns namespace (`<code>` escaped), owner `RestGuestAccess::owner()`, hint `RestGuestAccess::hint()`, badges ("new" when `$rows !== null && !in_array($ns, $seen, true)`, "not present" when not live, "unsupported characters — allow via the sfx/rest_guest_allowed_namespaces filter" when `!supported()`), allowed (`hidden 0` + checkbox `1`, checked when `isset($map[$ns])`), method `<select>` `all` / `GET only` (selected from `$map[$ns]`, default `get` for `wp/v2`, else `all`). Supported rows post `rest_guest_namespaces[$i][namespace|allowed|method]`; unsupported rows render text only, no inputs. Every listed name posts `rest_guest_displayed[]` (hidden).
-  - Bricks warning above the table when `get_template() === 'bricks'` and (`mode === 'closed'` or (`allowlist` and `($map['bricks/v1'] ?? null) !== 'all'`)) and the master switch is off: `<div class="notice notice-warning inline"><p>` + escaped text from the spec.
+  - (moved) The Bricks warning is **not** rendered here — see Step 4b. `get_template() === 'bricks'` and (`mode === 'closed'` or (`allowlist` and `($map['bricks/v1'] ?? null) !== 'all'`)) and the master switch is off: `<div class="notice notice-warning inline"><p>` + escaped text from the spec.
   - Test button below: `<button type="button" class="button" id="sfx-rest-guest-test">` + `<table id="sfx-rest-guest-results">` + a hint paragraph (saved state; `sfx/rest_guest_is_allowed` is not simulated; page cache / password protection / CORS can change results).
+
+- [ ] **Step 4b: Bricks warning in the mode card.** The table's card is hidden outside `allowlist`, so the warning is printed by the `select` control of `rest_guest_mode` (always visible), right below the select: when `get_template() === 'bricks'`, `RestGuestAccess::enforcing($o)`, and (`mode === 'closed'` or (`allowlist` and `(RestGuestAccess::allowed_map($o)['bricks/v1'] ?? null) !== 'all'`)) → `<div class="notice notice-warning inline"><p>` + `esc_html__('Bricks query loops, filters, pagination and popups will fail for visitors — they need bricks/v1 with all methods.', 'sfxtheme')`. Browser check: visible in `closed` and in `allowlist` without `bricks/v1`/with GET only, hidden in `open` and with the master switch on.
 
 - [ ] **Step 5: Owner and hints** in `RestGuestAccess`:
 
@@ -873,7 +939,8 @@ Note for test 17: the real `sanitize_key()` only touches the string keys `namesp
                     if ($cb instanceof \Closure || (is_string($cb) && !str_contains($cb, '::'))) {
                         $ref = new \ReflectionFunction($cb);
                     } elseif (is_string($cb)) {
-                        $ref = new \ReflectionMethod($cb);
+                        [$class, $method] = explode('::', $cb, 2); // one-argument form is deprecated in PHP 8.4+
+                        $ref = new \ReflectionMethod($class, $method);
                     } elseif (is_array($cb)) {
                         $ref = new \ReflectionMethod($cb[0], $cb[1]);
                     } elseif (is_object($cb) && method_exists($cb, '__invoke')) {
@@ -909,8 +976,11 @@ Note for test 17: the real `sanitize_key()` only touches the string keys `namesp
             }
             return (string) $folder;
         }
-        if (str_starts_with($file, trailingslashit(wp_normalize_path(get_theme_root())))) {
-            return (string) wp_get_theme()->get('Name');
+        $themes = trailingslashit(wp_normalize_path(get_theme_root()));
+        if (str_starts_with($file, $themes)) {
+            $folder = (string) strtok(substr($file, strlen($themes)), '/');
+            $theme = wp_get_theme($folder); // parent (bricks) and child are told apart by folder
+            return $theme->exists() ? (string) $theme->get('Name') : $folder;
         }
         if (str_starts_with($file, trailingslashit(wp_normalize_path(ABSPATH . WPINC)))) {
             return 'WordPress';
@@ -935,11 +1005,11 @@ Note for test 17: the real `sanitize_key()` only touches the string keys `namesp
     }
 ```
 
-- [ ] **Step 6: Script.** In the page's inline script: (a) `initializeConditionalFields` — when the dependency element is a `<select>`, evaluate with `dep.value` and listen to `change`; checkboxes unchanged. (b) Test button: config printed as `const sfxRestGuest = <?php echo wp_json_encode([...], JSON_HEX_TAG | JSON_HEX_AMP); ?>;` with `probe` (`rest_url('sfx-guest/v1/probe')`), the configured state per live namespace (`allowed`/`blocked`/`open`, method), the configured index state, and the translated labels. Run: disable button, `runId++`, for `target=index` and each namespace build `url + (url.includes('?') ? '&' : '?') + 'namespace=' + encodeURIComponent(ns)` (or `target=index`), `fetch(url, {credentials:'omit', cache:'no-store', redirect:'manual', signal})` with a 10 s `AbortController`, parse JSON on 200, else record status/`code`; on throw → "no response"; compare reported `state` with configured → "as configured" / "differs" / "inconclusive"; write rows with `textContent` only if `runId` is still current; `finally` re-enables the button.
+- [ ] **Step 6: Script.** In the page's inline script: (a) `initializeConditionalFields` — when the dependency element is a `<select>`, evaluate with `dep.value` and listen to `change`; checkboxes unchanged. (b) Test button: config printed as `const sfxRestGuest = <?php echo wp_json_encode([...], JSON_HEX_TAG | JSON_HEX_AMP); ?>;` with `probe` (`rest_url('sfx-guest/v1/probe')`), the configured state per live namespace (`allowed`/`blocked`/`open`, method), the configured index state, and the translated labels. Run: disable button, `runId++`, for `target=index` and each namespace build `url + (url.includes('?') ? '&' : '?') + 'namespace=' + encodeURIComponent(ns)` (or `target=index`), `fetch(url, {credentials:'omit', cache:'no-store', redirect:'manual', signal})` with a 10 s `AbortController`, parse JSON on 200, else record status/`code`; on throw → "no response"; validate the JSON shape (`state` in open/allowed/blocked, `method` in get/all/null) else "inconclusive"; compare reported `state` **and**, for allowed namespaces, `method` with the configured values (configured = the filtered `allowed_map`, printed into the config) → "as configured" / "differs"; write rows with `textContent` only if `runId` is still current; `finally` re-enables the button.
 
-- [ ] **Step 7: Notice.** Register in `AdminPage::register()`: `add_action('admin_notices', [self::class, 'render_rest_notice']);`. It returns early unless `current_user_can('manage_options')`, the screen id is `dashboard`, `plugins` or this page's hook, `RestGuestAccess::enforcing($o)` and `mode === 'allowlist'` and `namespaces($o) !== null`. New blocked = live minus seen minus `effective_map` keys. Prints `notice notice-warning` with the escaped list (unsupported names suffixed with the filter hint) and a link `admin_url('admin.php?page=' . self::$menu_slug)`.
+- [ ] **Step 7: Notice.** Register in `AdminPage::register()`: `add_action('admin_notices', [self::class, 'render_rest_notice']);`. It returns early unless `current_user_can('manage_options')`, the screen id is `dashboard`, `plugins` or this page's hook, `RestGuestAccess::enforcing($o)` and `mode === 'allowlist'` and `namespaces($o) !== null`. New blocked = `RestGuestAccess::new_blocked(live_namespaces(), seen($o), allowed_map($o))` — the filtered map enforcement uses, so a filter-granted namespace is not announced. Prints `notice notice-warning` with the escaped list (unsupported names suffixed with the filter hint) and a link `admin_url('admin.php?page=' . self::$menu_slug)`.
 
-- [ ] **Step 8: Verify in the browser** (local site): the page renders the mode select with the migrated value; switching to Allowlist shows table and hide-index; Open/Closed hide the table; saving keeps ticks; unticking `bricks/v1` shows the warning; the test button fills the results table; activating a plugin with a REST namespace (or temporarily registering one in a mu-plugin fixture removed afterwards) shows the notice until the page is saved. `./quality.sh` → PASS.
+- [ ] **Step 8: Verify in the browser** (local site): the page renders the mode select with the migrated value; switching to Allowlist shows table and hide-index; Open/Closed hide the table; saving keeps ticks; unticking `bricks/v1` shows the warning; the test button fills the results table; the notice is not exercised in the browser (it would need a new plugin or a fixture file outside a guaranteed teardown); its logic is `new_blocked()` (Task 2 test 15) and the Task 7 harness asserts it in-process. `./quality.sh` → PASS.
 - [ ] **Step 9: Commit** `git commit -m "feat(wpoptimizer): REST guest admin UI, notice and guest test"`
 
 ---
@@ -990,12 +1060,13 @@ Note for test 17: the real `sanitize_key()` only touches the string keys `namesp
 
 - [ ] **Step 1:** Script that boots WordPress from the site root (`require` of `wp-load.php` resolved from `__DIR__ . '/../../../../../wp-load.php'`, fatal if missing), as user 1 for writes. **Before any fixture**: `register_shutdown_function` restoring `sfx_general_options`, `sfx_wpoptimizer_options`, the Password Protection option, deleting the application password it created and any fixture post — every snapshot taken first, the shutdown function declared before the first change (AGENTS.md "verification harness" rule). Then: enable the module, master switch off, `disable_application_passwords` 0, `disable_rest_api` 0, `disable_embed` 0, Password Protection off; ensure a published post (create a fixture when none); set policy `allowlist`, hide-index 1, rows `bricks/v1` all, `oembed/1.0` get; create an application password for user 1.
 - [ ] **Step 2:** Fresh HTTP requests with `wp_remote_get` (`sslverify` false locally) and assertions (exit non-zero on the first mismatch, printing what it got):
-  - route check: `rest_get_server()->get_routes('oembed/1.0')` not empty;
+  - route check in a **fresh process** after the fixture options are saved (this process booted before `disable_embed`/`disable_rest_api` were switched off, and their hooks already removed the oEmbed route here): `shell_exec(PHP_BINARY . ' -r ' . escapeshellarg('require "<wp-load>"; echo count(rest_get_server()->get_routes("oembed/1.0"));'))` > 0;
   - guest `GET /wp-json/oembed/1.0/embed?url=<permalink>` → 200;
   - guest `GET /wp-json/wp/v2/posts` → 401, code `rest_forbidden_guest`;
   - guest `GET /wp-json/` → 401;
   - guest probe `bricks/v1` → `allowed`, `wp/v2` → `blocked`, `target=index` → `blocked`;
   - `GET /wp-json/wp/v2/posts` with `Authorization: Basic base64(user:apppass)` → 200;
+  - notice logic in-process: with the fixture policy saved and `rest_guest_seen` set to `['bricks/v1', 'oembed/1.0']` (restored by the teardown), `RestGuestAccess::new_blocked(live_namespaces(), seen($o), allowed_map($o))` contains `wp/v2`;
   - set mode `open`; guest `GET /wp-json/wp/v2/posts` → 200.
 - [ ] **Step 3:** Run it: `/Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/rest-guest-live-check.php` → all lines OK; afterwards verify the options equal their snapshots (`get_option` diff printed by the script) and no application password named `sfx-rest-guest-live-check` remains.
 - [ ] **Step 4: Commit** `git commit -m "test(wpoptimizer): REST guest live check harness"`
