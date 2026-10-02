@@ -34,6 +34,16 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit(1); }
  *   separate worker process (rest-guest-live-worker.php), launched with a random
  *   token it must receive both as argv[1] and in SFX_REST_GUEST_RUN.
  *
+ * Concurrent changes: every row the harness itself writes (write_option /
+ * delete_option_row) has its last-written state recorded. Before restoring such a
+ * row the teardown reads it raw; if it matches neither that state nor the snapshot,
+ * someone else changed it during the run, so it is NOT overwritten: the teardown
+ * prints CONCURRENT CHANGE <name> and the exit code becomes 1. Rows the harness never
+ * writes directly (usermeta, using_application_passwords) and rows WordPress itself
+ * changes during the HTTP requests (default_comment_status, default_ping_status, the
+ * migrated_disable_version_numbers_off marker) are always restored, unguarded.
+ * Do not edit these settings while the harness runs.
+ *
  * Single site only. On Multisite `using_application_passwords` is a sitemeta row
  * and is not snapshotted here; the harness exits with "unsupported" before
  * writing anything rather than half-restoring.
@@ -42,6 +52,9 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit(1); }
  */
 
 const SITE_HOST = 'sfx-bricks-child.local';
+
+/** Options WordPress changes itself during the HTTP requests: restored unguarded. */
+const WP_MUTATED_ROWS = ['default_comment_status', 'default_ping_status', 'sfx_wpoptimizer_migrated_disable_version_numbers_off'];
 
 function fatal(string $message): void
 {
@@ -65,8 +78,8 @@ if (file_exists(dirname($load) . '/wp-content/object-cache.php')) {
 
 // ---------------------------------------------------------------- teardown (armed before the load)
 
-/** @var array{rows: ?array<string, ?list<array<string,string>>>, tmp: list<string>} $state */
-$state = ['rows' => null, 'tmp' => []];
+/** @var array{rows: ?array<string, ?list<array<string,string>>>, tmp: list<string>, written: array<string, list<array<string,string>>>} $state */
+$state = ['rows' => null, 'tmp' => [], 'written' => []];
 
 register_shutdown_function(static function () use (&$state): void {
     foreach ($state['tmp'] as $file) {
@@ -81,6 +94,18 @@ register_shutdown_function(static function () use (&$state): void {
     $mismatch = false;
     foreach ($state['rows'] as $name => $rows) {
         [$table, $where] = row_target($name);
+        if (isset($state['written'][$name])) {
+            try {
+                $current = read_rows($name);
+            } catch (RuntimeException $e) {
+                $current = null;
+            }
+            if ($current !== null && $current !== $state['written'][$name] && $current !== $rows) {
+                echo "CONCURRENT CHANGE {$name} — left as is, restore by hand: snapshot value was taken before the run, the row now holds someone else's value\n";
+                $mismatch = true;
+                continue;
+            }
+        }
         if (!restore_rows($table, $where, $rows)) {
             fwrite(STDERR, "RESTORE FAILED {$name}\n");
         }
@@ -172,6 +197,16 @@ function write_option(string $name, $value): void
     if ($done === false) {
         fatal("writing {$name} failed: {$wpdb->last_error}");
     }
+    record_written($name);
+}
+
+/** Remember the exact state the harness left a row in, for the teardown's concurrent-change check. */
+function record_written(string $name): void
+{
+    global $state;
+    if (!in_array($name, WP_MUTATED_ROWS, true)) {
+        $state['written'][$name] = read_rows($name);
+    }
 }
 
 function delete_option_row(string $name): void
@@ -180,6 +215,7 @@ function delete_option_row(string $name): void
     if ($wpdb->delete($wpdb->options, ['option_name' => $name]) === false) {
         fatal("deleting {$name} failed: {$wpdb->last_error}");
     }
+    record_written($name);
 }
 
 /** The current stored value as an array ([] when absent or not an array). */

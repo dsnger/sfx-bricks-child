@@ -7933,6 +7933,9 @@ msgstr "Hinweise"
 msgid "Allowed / methods"
 msgstr "Erlaubt / Methoden"
 
+msgid "Owners are shown after saving in Allowlist mode."
+msgstr "Besitzer werden nach dem Speichern im Allowlist-Modus angezeigt."
+
 msgid "new"
 msgstr "neu"
 

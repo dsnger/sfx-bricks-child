@@ -156,6 +156,8 @@ class AdminPage
         $rows = RestGuestAccess::namespaces($o);
         $map = RestGuestAccess::effective_map($o, $live);
         $seen = RestGuestAccess::seen($o);
+        // Route reflection per namespace is only worth it when the saved mode is the allowlist.
+        $show_owners = RestGuestAccess::mode($o) === 'allowlist';
         // Map keys like "123" come back as ints; owner()/hint() take strings under strict types.
         $names = array_map('strval', array_unique(array_merge($live, array_keys($map))));
         sort($names, SORT_STRING);
@@ -183,7 +185,7 @@ class AdminPage
             $html .= '<tr>'
                 . '<td><code>' . esc_html($ns) . '</code>'
                 . '<input type="hidden" name="sfx_wpoptimizer_options[rest_guest_displayed][]" value="' . esc_attr($ns) . '" /></td>'
-                . '<td>' . esc_html(RestGuestAccess::owner($ns)) . '</td>'
+                . '<td>' . esc_html($show_owners ? RestGuestAccess::owner($ns) : '') . '</td>'
                 . '<td>' . esc_html(RestGuestAccess::hint($ns));
             foreach ($badges as $badge) {
                 $html .= ' <span class="sfx-rest-badge" style="display: inline-block; padding: 0 6px; border-radius: 3px; background: #f0f0f1; color: #50575e; font-size: 0.9em;">' . esc_html($badge) . '</span>';
@@ -193,6 +195,9 @@ class AdminPage
                 . '</tr>';
         }
         $html .= '</tbody></table>';
+        if (!$show_owners) {
+            $html .= '<p class="description">' . esc_html__('Owners are shown after saving in Allowlist mode.', 'sfxtheme') . '</p>';
+        }
 
         $html .= '<p style="margin-top: 16px;"><button type="button" class="button" id="sfx-rest-guest-test">' . esc_html__('Test as guest', 'sfxtheme') . '</button></p>';
         $html .= '<table id="sfx-rest-guest-results" class="widefat striped" hidden><thead><tr>'
@@ -609,8 +614,12 @@ class AdminPage
                             const join = probe.includes('?') ? '&' : '?';
                             const targets = [{label: L.index, url: probe + join + 'target=index', configured: sfxRestGuest.index, isNamespace: false}]
                                 .concat(sfxRestGuest.namespaces.map(n => ({label: n.namespace, url: probe + join + 'namespace=' + encodeURIComponent(n.namespace), configured: n, isNamespace: true})));
-                            try {
-                                for (const target of targets) {
+                            const rows = targets.map(() => tbody.insertRow());
+                            let next = 0;
+                            async function worker() {
+                                while (next < targets.length) {
+                                    const index = next++;
+                                    const target = targets[index];
                                     const reported = await probeGuest(target.url);
                                     if (run !== runId) {
                                         return;
@@ -623,16 +632,18 @@ class AdminPage
                                         const same = reported.state === target.configured.state && (!checkMethod || reported.method === target.configured.method);
                                         verdict = same ? L.asConfigured : L.differs;
                                     }
-                                    const row = tbody.insertRow();
                                     [
                                         target.label,
                                         describe(target.configured.state, target.configured.method),
                                         reported.ok ? describe(reported.state, reported.method) : '—',
                                         verdict
                                     ].forEach(text => {
-                                        row.insertCell().textContent = text;
+                                        rows[index].insertCell().textContent = text;
                                     });
                                 }
+                            }
+                            try {
+                                await Promise.all(Array.from({length: Math.min(4, targets.length)}, worker));
                             } finally {
                                 if (run === runId) {
                                     testButton.disabled = false;
