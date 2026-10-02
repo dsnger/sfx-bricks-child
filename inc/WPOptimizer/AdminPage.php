@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace SFX\WPOptimizer;
 
+use SFX\WPOptimizer\classes\RestGuestAccess;
+
 class AdminPage
 {
     public static $menu_slug = 'sfx-wp-optimizer';
+    /** Hook suffix (= screen id) of this page, set when the submenu is added. */
+    private static string $page_hook = '';
     public static $page_title = 'WP Optimizer';
     public static $description = 'Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.';
 
@@ -95,6 +99,182 @@ class AdminPage
 
             return;
         }
+
+        if ($type === 'select') {
+            echo '<select id="' . esc_attr($field['id']) . '" name="' . esc_attr('sfx_wpoptimizer_options[' . $field['id'] . ']') . '" style="' . esc_attr($input_style) . '">';
+            foreach ($field['options'] ?? [] as $option_value => $option_label) {
+                echo '<option value="' . esc_attr((string) $option_value) . '"' . selected((string) $value, (string) $option_value, false) . '>' . esc_html($option_label) . '</option>';
+            }
+            echo '</select>';
+            if ($field['id'] === 'rest_guest_mode') {
+                echo self::render_bricks_warning();
+            }
+
+            return;
+        }
+
+        if ($type === 'rest_hide_index') {
+            // The hidden 0 makes an unticked box post an explicit value (absent would read as the default, hidden).
+            $name = esc_attr('sfx_wpoptimizer_options[' . $field['id'] . ']');
+            echo '<input type="hidden" name="' . $name . '" value="0" />';
+            echo '<input type="checkbox" id="' . esc_attr($field['id']) . '" name="' . $name . '" value="1" ';
+            checked((int) $value, 1);
+            echo ' style="' . esc_attr('margin-top: 32px;') . '" />';
+
+            return;
+        }
+
+        if ($type === 'rest_namespaces') {
+            echo self::render_rest_namespaces();
+
+            return;
+        }
+
+        // 'hidden_list' (rest_guest_seen) renders nothing: the sanitizer derives it from rest_guest_displayed.
+    }
+
+    /** Inline warning below the mode select when the saved policy breaks Bricks for visitors. */
+    private static function render_bricks_warning(): string
+    {
+        $o = RestGuestAccess::option();
+        if (get_template() !== 'bricks' || !RestGuestAccess::enforcing($o)) {
+            return '';
+        }
+        if (RestGuestAccess::mode($o) === 'allowlist' && (RestGuestAccess::allowed_map($o)['bricks/v1'] ?? null) === 'all') {
+            return '';
+        }
+        return '<div class="notice notice-warning inline"><p>'
+            . esc_html__('Bricks query loops, filters, pagination and popups will fail for visitors — they need bricks/v1 with all methods.', 'sfxtheme')
+            . '</p></div>';
+    }
+
+    /** The namespace table (allowlist rows), the "Test as guest" button and its results table. */
+    private static function render_rest_namespaces(): string
+    {
+        $o = RestGuestAccess::option();
+        $live = RestGuestAccess::live_namespaces();
+        $rows = RestGuestAccess::namespaces($o);
+        $map = RestGuestAccess::effective_map($o, $live);
+        $seen = RestGuestAccess::seen($o);
+        // Map keys like "123" come back as ints; owner()/hint() take strings under strict types.
+        $names = array_map('strval', array_unique(array_merge($live, array_keys($map))));
+        sort($names, SORT_STRING);
+
+        $html = '<table class="widefat striped" style="margin-top: 16px;"><thead><tr>'
+            . '<th scope="col">' . esc_html__('Namespace', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Owner', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Notes', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Allowed / methods', 'sfxtheme') . '</th>'
+            . '</tr></thead><tbody>';
+        foreach ($names as $i => $ns) {
+            $badges = [];
+            if ($rows !== null && !in_array($ns, $seen, true)) {
+                $badges[] = __('new', 'sfxtheme');
+            }
+            if (!in_array($ns, $live, true)) {
+                $badges[] = __('not present', 'sfxtheme');
+            }
+            $supported = RestGuestAccess::supported($ns);
+            if (!$supported) {
+                $badges[] = __('unsupported characters — allow via the sfx/rest_guest_allowed_namespaces filter', 'sfxtheme');
+            }
+            $notes = esc_html(RestGuestAccess::hint($ns));
+            foreach ($badges as $badge) {
+                $notes .= ' <span class="sfx-rest-badge" style="display: inline-block; padding: 0 6px; border-radius: 3px; background: #f0f0f1; color: #50575e; font-size: 0.9em;">' . esc_html($badge) . '</span>';
+            }
+            $method = $map[$ns] ?? ($ns === 'wp/v2' ? 'get' : 'all');
+            $inputs = $supported ? RestGuestAccess::row_inputs((int) $i, $ns, isset($map[$ns]), $method) : '';
+            $html .= '<tr>'
+                . '<td><code>' . esc_html($ns) . '</code>'
+                . '<input type="hidden" name="sfx_wpoptimizer_options[rest_guest_displayed][]" value="' . esc_attr($ns) . '" /></td>'
+                . '<td>' . esc_html(RestGuestAccess::owner($ns)) . '</td>'
+                . '<td>' . $notes . '</td>'
+                . '<td>' . $inputs . '</td>'
+                . '</tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '<p style="margin-top: 16px;"><button type="button" class="button" id="sfx-rest-guest-test">' . esc_html__('Test as guest', 'sfxtheme') . '</button></p>';
+        $html .= '<table id="sfx-rest-guest-results" class="widefat striped" hidden><thead><tr>'
+            . '<th scope="col">' . esc_html__('Target', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Configured', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Reported', 'sfxtheme') . '</th>'
+            . '<th scope="col">' . esc_html__('Result', 'sfxtheme') . '</th>'
+            . '</tr></thead><tbody></tbody></table>';
+        $html .= '<p class="description">' . esc_html__('The test checks the saved settings with real guest requests (no cookies). The sfx/rest_guest_is_allowed filter is not simulated, and page caching, password protection or CORS rules can change the results.', 'sfxtheme') . '</p>';
+
+        return $html;
+    }
+
+    /** Configured (saved, filtered) state per target for the "Test as guest" script. */
+    private static function rest_guest_test_config(): array
+    {
+        $o = RestGuestAccess::option();
+        $enforcing = RestGuestAccess::enforcing($o);
+        $mode = RestGuestAccess::mode($o);
+        $allowed = RestGuestAccess::allowed_map($o);
+        $hide = RestGuestAccess::hide_index($o);
+        $state = static function (bool $ok) use ($enforcing): string {
+            return $enforcing ? ($ok ? 'allowed' : 'blocked') : 'open';
+        };
+        $namespaces = [];
+        foreach (RestGuestAccess::live_namespaces() as $ns) {
+            $s = $state(RestGuestAccess::decide('namespace', $ns, 'GET', $mode, $allowed, $hide));
+            $namespaces[] = ['namespace' => $ns, 'state' => $s, 'method' => $s === 'allowed' ? ($allowed[$ns] ?? null) : null];
+        }
+        return [
+            'probe'      => rest_url(RestGuestAccess::INTERNAL_NAMESPACE . '/probe'),
+            'index'      => ['state' => $state(RestGuestAccess::decide('index', null, 'GET', $mode, $allowed, $hide)), 'method' => null],
+            'namespaces' => $namespaces,
+            'labels'     => [
+                'index'        => __('REST index (/wp-json/)', 'sfxtheme'),
+                'open'         => __('open', 'sfxtheme'),
+                'allowed'      => __('allowed', 'sfxtheme'),
+                'blocked'      => __('blocked', 'sfxtheme'),
+                'all'          => __('All methods', 'sfxtheme'),
+                'get'          => __('GET only', 'sfxtheme'),
+                'asConfigured' => __('as configured', 'sfxtheme'),
+                'differs'      => __('differs', 'sfxtheme'),
+                'inconclusive' => __('inconclusive', 'sfxtheme'),
+                'noResponse'   => __('no response', 'sfxtheme'),
+                'invalid'      => __('unexpected response', 'sfxtheme'),
+            ],
+        ];
+    }
+
+    /** admin_notices: live namespaces that appeared since the last save and are blocked for guests. */
+    public static function render_rest_notice(): void
+    {
+        if (!current_user_can('manage_options') || !function_exists('get_current_screen')) {
+            return;
+        }
+        $screen = get_current_screen();
+        if (!$screen || !in_array($screen->id, array_filter(['dashboard', 'plugins', self::$page_hook]), true)) {
+            return;
+        }
+        $o = RestGuestAccess::option();
+        if (!RestGuestAccess::enforcing($o) || RestGuestAccess::mode($o) !== 'allowlist' || RestGuestAccess::namespaces($o) === null) {
+            return;
+        }
+        $new = RestGuestAccess::new_blocked(RestGuestAccess::live_namespaces(), RestGuestAccess::seen($o), RestGuestAccess::allowed_map($o));
+        if ($new === []) {
+            return;
+        }
+        $items = [];
+        foreach ($new as $ns) {
+            $items[] = RestGuestAccess::supported($ns)
+                ? $ns
+                : sprintf(
+                    /* translators: %s: REST namespace */
+                    __('%s (unsupported characters — allow via the sfx/rest_guest_allowed_namespaces filter)', 'sfxtheme'),
+                    $ns
+                );
+        }
+        echo '<div class="notice notice-warning"><p>'
+            . esc_html__('New REST namespaces are blocked for guests:', 'sfxtheme') . ' '
+            . esc_html(implode(', ', $items)) . ' '
+            . '<a href="' . esc_url(admin_url('admin.php?page=' . self::$menu_slug)) . '">' . esc_html__('Review the REST API settings', 'sfxtheme') . '</a>'
+            . '</p></div>';
     }
 
     /**
@@ -184,6 +364,7 @@ class AdminPage
     public static function register(): void
     {
         add_action('admin_menu', [self::class, 'add_submenu_page']);
+        add_action('admin_notices', [self::class, 'render_rest_notice']);
     }
 
     public static function add_submenu_page(): void
@@ -193,7 +374,7 @@ class AdminPage
             return;
         }
 
-        add_submenu_page(
+        $hook = add_submenu_page(
             \SFX\SFXBricksChildAdmin::$menu_slug,
             self::$page_title,
             self::$page_title,
@@ -201,6 +382,7 @@ class AdminPage
             self::$menu_slug,
             [self::class, 'render_page']
         );
+        self::$page_hook = is_string($hook) ? $hook : '';
     }
 
     public static function render_page(): void
@@ -222,6 +404,10 @@ class AdminPage
             ];
             $fields = \SFX\WPOptimizer\Settings::get_fields();
             $options = get_option('sfx_wpoptimizer_options', []);
+            $options = is_array($options) ? $options : [];
+            $guest = RestGuestAccess::option();
+            $options['rest_guest_mode'] = RestGuestAccess::mode($guest);
+            $options['rest_guest_hide_index'] = RestGuestAccess::hide_index($guest) ? 1 : 0;
             ?>
             <div id="sfx-wpoptimizer-tabs">
                 <div class="sfx-tabs-nav">
@@ -235,6 +421,7 @@ class AdminPage
                 </div>
                 <form method="post" action="options.php">
                     <?php settings_fields(\SFX\WPOptimizer\Settings::$OPTION_GROUP); ?>
+                    <input type="hidden" name="sfx_wpoptimizer_options[sfx_wpo_form_start]" value="1" />
                     <div class="sfx-tabs-content">
                         <?php $first = true;
                         foreach ($groups as $group_key => $group_label):
@@ -247,7 +434,12 @@ class AdminPage
                                     $i = 0;
                                     while ($i < count($group_fields)):
                                         $field = array_values($group_fields)[$i];
+                                        if (($field['label'] ?? '') === '') {
+                                            $i++; // label-less fields (rest_guest_seen) have no card
+                                            continue;
+                                        }
                                         $id = esc_attr($field['id']);
+                                        $is_wide = !empty($field['wide']);
                                         $type = $field['type'] ?? 'checkbox';
                                         $value = $options[$id] ?? $field['default'];
 
@@ -264,7 +456,7 @@ class AdminPage
                                             $should_show = self::evaluate_condition($dep_field_value, $operator, $dep_value);
                                             $display_style = $should_show ? 'flex' : 'none';
 
-                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';">';
+                                            echo '<div id="' . $id . '_container" style="display: ' . $display_style . ';' . ($is_wide ? ' flex: 1 1 100%;' : '') . '">';
                                         }
 
                                         // Check if next field is also conditional (for combining display)
@@ -280,9 +472,12 @@ class AdminPage
                                             && $next_is_conditional
                                             && $field['conditional']['field'] === $next_field['conditional']['field']
                                             && ($field['conditional']['operator'] ?? null) === ($next_field['conditional']['operator'] ?? null)
-                                            && (($field['conditional']['value'] ?? null) === ($next_field['conditional']['value'] ?? null));
+                                            && (($field['conditional']['value'] ?? null) === ($next_field['conditional']['value'] ?? null))
+                                            && empty($field['wide'])
+                                            && empty($next_field['wide']);
+                                        $card_size = $is_wide ? 'flex: 1 1 100%; max-width: none;' : 'flex: 1 1 33%; min-width: 220px; max-width: 350px;';
                                     ?>
-                                        <div style="flex: 1 1 33%; min-width: 220px; max-width: 350px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div style="<?php echo esc_attr($card_size); ?> background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
                                             <h2 style="margin-top:0; font-size: 1.1em;"><?php echo esc_html($field['label']); ?></h2>
                                             <p style="font-size: 0.97em; color: #555;margin-top: 0; margin-bottom: auto;"><?php echo esc_html($field['description']); ?></p>
                                             <?php self::render_field_control($field, $value, $options); ?>
@@ -311,6 +506,7 @@ class AdminPage
                         <?php $first = false;
                         endforeach; ?>
                     </div>
+                    <input type="hidden" name="sfx_wpoptimizer_options[sfx_wpo_form_end]" value="1" />
                     <?php submit_button(); ?>
                 </form>
             </div>
@@ -348,7 +544,8 @@ class AdminPage
 
                             if (depCheckbox && targetContainer) {
                                 const toggleFunction = () => {
-                                    const shouldShow = evaluateCondition(depCheckbox.checked, config.operator, config.value);
+                                    const depValue = depCheckbox.tagName === 'SELECT' ? depCheckbox.value : depCheckbox.checked;
+                                    const shouldShow = evaluateCondition(depValue, config.operator, config.value);
                                     targetContainer.style.display = shouldShow ? 'flex' : 'none';
                                 };
 
@@ -360,6 +557,89 @@ class AdminPage
 
                     // Initialize all conditional fields
                     initializeConditionalFields();
+
+                    // "Test as guest": asks the probe route, as a real guest, what the saved policy decides.
+                    const sfxRestGuest = <?php echo wp_json_encode(self::rest_guest_test_config(), JSON_HEX_TAG | JSON_HEX_AMP); ?>;
+                    const testButton = document.getElementById('sfx-rest-guest-test');
+                    const resultsTable = document.getElementById('sfx-rest-guest-results');
+                    let runId = 0;
+
+                    async function probeGuest(url) {
+                        const L = sfxRestGuest.labels;
+                        const controller = new AbortController();
+                        const timer = setTimeout(() => controller.abort(), 10000);
+                        try {
+                            const response = await fetch(url, {credentials: 'omit', cache: 'no-store', redirect: 'manual', signal: controller.signal});
+                            let body = null;
+                            try {
+                                body = await response.json();
+                            } catch (e) {
+                                body = null;
+                            }
+                            if (response.status !== 200) {
+                                const code = body && typeof body.code === 'string' ? ' ' + body.code : '';
+                                return {ok: false, detail: 'HTTP ' + response.status + code};
+                            }
+                            if (!body || !['open', 'allowed', 'blocked'].includes(body.state) || !(body.method === null || ['get', 'all'].includes(body.method))) {
+                                return {ok: false, detail: L.invalid};
+                            }
+                            return {ok: true, state: body.state, method: body.method};
+                        } catch (e) {
+                            return {ok: false, detail: L.noResponse};
+                        } finally {
+                            clearTimeout(timer);
+                        }
+                    }
+
+                    function describe(state, method) {
+                        const L = sfxRestGuest.labels;
+                        const text = L[state] || String(state);
+                        return state === 'allowed' && method ? text + ' (' + (L[method] || String(method)) + ')' : text;
+                    }
+
+                    if (testButton && resultsTable) {
+                        testButton.addEventListener('click', async function() {
+                            const L = sfxRestGuest.labels;
+                            const run = ++runId;
+                            testButton.disabled = true;
+                            const tbody = resultsTable.tBodies[0];
+                            tbody.textContent = '';
+                            resultsTable.hidden = false;
+                            const probe = sfxRestGuest.probe;
+                            const join = probe.includes('?') ? '&' : '?';
+                            const targets = [{label: L.index, url: probe + join + 'target=index', configured: sfxRestGuest.index, isNamespace: false}]
+                                .concat(sfxRestGuest.namespaces.map(n => ({label: n.namespace, url: probe + join + 'namespace=' + encodeURIComponent(n.namespace), configured: n, isNamespace: true})));
+                            try {
+                                for (const target of targets) {
+                                    const reported = await probeGuest(target.url);
+                                    if (run !== runId) {
+                                        return;
+                                    }
+                                    let verdict;
+                                    if (!reported.ok) {
+                                        verdict = L.inconclusive + ' — ' + reported.detail;
+                                    } else {
+                                        const checkMethod = target.isNamespace && target.configured.state === 'allowed';
+                                        const same = reported.state === target.configured.state && (!checkMethod || reported.method === target.configured.method);
+                                        verdict = same ? L.asConfigured : L.differs;
+                                    }
+                                    const row = tbody.insertRow();
+                                    [
+                                        target.label,
+                                        describe(target.configured.state, target.configured.method),
+                                        reported.ok ? describe(reported.state, reported.method) : '—',
+                                        verdict
+                                    ].forEach(text => {
+                                        row.insertCell().textContent = text;
+                                    });
+                                }
+                            } finally {
+                                if (run === runId) {
+                                    testButton.disabled = false;
+                                }
+                            }
+                        });
+                    }
                 });
             </script>
         </div>

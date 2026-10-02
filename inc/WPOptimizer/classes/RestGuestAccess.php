@@ -333,6 +333,95 @@ final class RestGuestAccess
         }
     }
 
+    /** Name of the plugin, theme or "WordPress" whose code handles the namespace; '' when unknown. */
+    public static function owner(string $ns): string
+    {
+        $server = rest_get_server();
+        // get_routes('0') returns every route (core tests the argument for truthiness), so filter by the exact namespace.
+        foreach ($server->get_routes($ns) as $route => $handlers) {
+            $opts = $server->get_route_options($route);
+            if (!is_array($opts) || (string) ($opts['namespace'] ?? '') !== $ns || !is_array($handlers)) {
+                continue;
+            }
+            foreach ($handlers as $handler) {
+                $cb = is_array($handler) ? ($handler['callback'] ?? null) : null;
+                if (is_array($cb)) {
+                    if (count($cb) !== 2 || !isset($cb[0], $cb[1]) || !is_string($cb[1]) || (!is_object($cb[0]) && !is_string($cb[0]))) {
+                        continue;
+                    }
+                    if ($cb[0] instanceof \WP_REST_Server && $cb[1] === 'get_namespace_index') {
+                        continue;
+                    }
+                }
+                try {
+                    if ($cb instanceof \Closure || (is_string($cb) && !str_contains($cb, '::'))) {
+                        $ref = new \ReflectionFunction($cb);
+                    } elseif (is_string($cb)) {
+                        [$class, $method] = explode('::', $cb, 2); // one-argument form is deprecated in PHP 8.4+
+                        $ref = new \ReflectionMethod($class, $method);
+                    } elseif (is_array($cb)) {
+                        $ref = new \ReflectionMethod($cb[0], $cb[1]);
+                    } elseif (is_object($cb) && method_exists($cb, '__invoke')) {
+                        $ref = new \ReflectionMethod($cb, '__invoke');
+                    } else {
+                        continue;
+                    }
+                } catch (\ReflectionException | \TypeError $e) {
+                    continue;
+                }
+                $file = $ref->getFileName();
+                if (!is_string($file)) {
+                    continue;
+                }
+                return self::owner_of_file(wp_normalize_path($file));
+            }
+        }
+        return '';
+    }
+
+    private static function owner_of_file(string $file): string
+    {
+        $plugins = trailingslashit(wp_normalize_path(WP_PLUGIN_DIR));
+        if (str_starts_with($file, $plugins)) {
+            $folder = strtok(substr($file, strlen($plugins)), '/');
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            foreach (get_plugins() as $path => $data) {
+                if (strtok($path, '/') === $folder) {
+                    return (string) $data['Name'];
+                }
+            }
+            return (string) $folder;
+        }
+        $themes = trailingslashit(wp_normalize_path(get_theme_root()));
+        if (str_starts_with($file, $themes)) {
+            $folder = (string) strtok(substr($file, strlen($themes)), '/');
+            $theme = wp_get_theme($folder); // parent (bricks) and child are told apart by folder
+            return $theme->exists() ? (string) $theme->get('Name') : $folder;
+        }
+        if (str_starts_with($file, trailingslashit(wp_normalize_path(ABSPATH . WPINC)))) {
+            return __('WordPress', 'sfxtheme');
+        }
+        return '';
+    }
+
+    public static function hint(string $ns): string
+    {
+        $hints = [
+            'bricks/v1'         => __('Bricks query loops, filters, pagination, popups, live search — needs all methods.', 'sfxtheme'),
+            'oembed/1.0'        => __('Lets other sites embed your content.', 'sfxtheme'),
+            'wp/v2'             => __('GET only stops guest writes in this namespace; endpoint permissions still apply as usual.', 'sfxtheme'),
+            'contact-form-7/v1' => __('Contact Form 7 submissions.', 'sfxtheme'),
+            'fluentform/v1'     => __('Fluent Forms submissions.', 'sfxtheme'),
+            'burst/v1'          => __('Burst statistics fallback (normally tracked via its beacon).', 'sfxtheme'),
+        ];
+        if (isset($hints[$ns])) {
+            return $hints[$ns];
+        }
+        return in_array($ns, self::ADMIN_NAMESPACES, true) ? __('Admin only — guests do not need it.', 'sfxtheme') : '';
+    }
+
     /** @param list<string> $live @param list<string> $seen @param array<string,string> $allowed @return list<string> */
     public static function new_blocked(array $live, array $seen, array $allowed): array
     {

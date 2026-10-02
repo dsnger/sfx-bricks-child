@@ -38,6 +38,20 @@ function esc_attr($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
 function esc_html($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
 function esc_html__($s, $d = 'default') { return esc_html($s); }
 function get_page_by_path($path) { return null; }
+function wp_normalize_path($path) { return preg_replace('#/+#', '/', str_replace('\\', '/', (string) $path)); }
+function trailingslashit($s) { return rtrim((string) $s, '/\\') . '/'; }
+// Owner fixtures (test 25) live in a fake plugins dir under the temp dir; realpath avoids the /var -> /private/var mismatch.
+define('WP_PLUGIN_DIR', realpath(sys_get_temp_dir()) . '/sfx-owner-' . getmypid() . '-' . bin2hex(random_bytes(4)));
+function get_plugins(): array { return ['fixture-plugin/fixture-plugin.php' => ['Name' => 'Fixture Plugin']]; }
+function get_theme_root(): string { return dirname(__DIR__, 2); }
+function wp_get_theme($folder)
+{
+    return new class ((string) $folder) {
+        public function __construct(private string $folder) {}
+        public function exists(): bool { return true; }
+        public function get(string $key): string { return 'Theme:' . $this->folder; }
+    };
+}
 
 class WP_Error
 {
@@ -125,9 +139,19 @@ class WP_REST_Request implements ArrayAccess
 class WP_REST_Server
 {
     public array $ns = ['wp/v2', 'bricks/v1', 'oembed/1.0', 'sfx-guest/v1'];
+    /** @var array<string, list<array>> route => handlers */
+    public array $routes = [];
     public function get_index() {}
     public function get_namespace_index() {}
     public function get_namespaces(): array { return $this->ns; }
+    /** Like core: a falsy namespace (including '0') returns every route. */
+    public function get_routes($route_namespace = ''): array
+    {
+        if (!$route_namespace) {
+            return $this->routes;
+        }
+        return array_filter($this->routes, static fn($r) => $r === '/' . $route_namespace || str_starts_with($r, '/' . $route_namespace . '/'), ARRAY_FILTER_USE_KEY);
+    }
     public function get_route_options($route) {
         foreach ($this->ns as $ns) {
             if ($route === '/' . $ns || str_starts_with($route, '/' . $ns . '/')) {
@@ -391,5 +415,36 @@ $_POST = [];
 assert_same(false, strpos(file_get_contents(dirname(__DIR__) . '/inc/WPOptimizer/Controller.php'), 'disable_rest_api_non_authenticated') !== false, '24: legacy name gone from Controller');
 $ids = array_column(Settings::get_fields(), 'id');
 assert_same(true, in_array('rest_guest_mode', $ids, true) && !in_array('disable_rest_api_non_authenticated', $ids, true), '24: fields');
+
+// 25. owner(): exact namespace match (get_routes('0') returns every route), malformed callbacks -> ''.
+$owner_plugin = WP_PLUGIN_DIR . '/fixture-plugin';
+register_shutdown_function(static function () use ($owner_plugin): void {
+    @unlink($owner_plugin . '/fixture-plugin.php');
+    @rmdir($owner_plugin);
+    @rmdir(WP_PLUGIN_DIR);
+});
+if (!mkdir($owner_plugin, 0700, true) || file_put_contents($owner_plugin . '/fixture-plugin.php', "<?php\nfunction sfx_owner_fixture_cb() {}\n") === false) {
+    fwrite(STDERR, "FAIL: 25: could not create owner fixture\n");
+    exit(1);
+}
+require $owner_plugin . '/fixture-plugin.php';
+$test_server->ns = ['other/v1', '0', 'bad/v1', 'missing/v1'];
+$test_server->routes = [
+    '/other/v1' => [['callback' => [$test_server, 'get_namespace_index']]],
+    '/other/v1/x' => [['callback' => static function () {}]],
+    '/0' => [['callback' => [$test_server, 'get_namespace_index']]],
+    '/0/y' => [['callback' => 'sfx_owner_fixture_cb']],
+    '/bad/v1/z' => [['callback' => [new stdClass(), 123]]],
+    '/missing/v1/z' => [['callback' => [new stdClass(), 'nope']], ['callback' => 'Nope_Class::nope']],
+];
+assert_same('Fixture Plugin', G::owner('0'), '25: owner of the 0 namespace, not of other/v1');
+assert_same('Theme:' . basename(dirname(__DIR__)), G::owner('other/v1'), '25: closure in the theme -> theme name');
+assert_same('', G::owner('bad/v1'), '25: malformed callback -> empty');
+assert_same('', G::owner('missing/v1'), '25: missing method/class -> empty');
+assert_same('', G::owner('nope/v1'), '25: no routes -> empty');
+assert_same('Admin only — guests do not need it.', G::hint('fluent-smtp'), '25: admin hint');
+assert_same('', G::hint('other/v1'), '25: no hint');
+$test_server->ns = ['wp/v2', 'bricks/v1', 'oembed/1.0', 'sfx-guest/v1'];
+$test_server->routes = [];
 
 echo "wpoptimizer-rest-guest-test: PASS\n";
