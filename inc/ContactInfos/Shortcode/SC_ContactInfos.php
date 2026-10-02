@@ -82,6 +82,7 @@ class SC_ContactInfos
                 'wrap'       => 'false',  // Whether to wrap the output in a tag (default: bare output)
                 'tag'        => null,     // Wrapper tag (default 'span'); setting this implicitly enables wrap
                 'debug'      => null,     // Debug mode to show raw value
+                'format'     => null,     // 'tel': phone/mobile/fax as a bare tel: number (no link, icon or wrapper)
             ],
             $atts,
             'contact_info'
@@ -101,7 +102,16 @@ class SC_ContactInfos
         $text = !empty($atts['text']) ? $atts['text'] : null;
 
         // Get field value
-        $value = $this->get_field_value($atts['field'], $atts['contact_id'], $atts['type']);
+        // Shortcode attributes arrive as strings; get_field_value() takes ?int under strict_types.
+        // Numeric values keep their meaning (0 = by type, negative = none), as for an int before.
+        $contact_id = is_numeric($atts['contact_id']) ? (int) $atts['contact_id'] : null;
+        $value = $this->get_field_value($atts['field'], $contact_id, $atts['type']);
+
+        // Bare number for a tel: link set elsewhere, e.g. a Bricks button "tel:{contact_info:phone@format:tel}".
+        // Before debug: the result goes into a link field and must never carry markup.
+        if ($atts['format'] === 'tel' && in_array($atts['field'], ['phone', 'mobile', 'fax'], true)) {
+            return esc_html(self::normalize_tel($value));
+        }
 
         // Debug mode - show raw value
         if (!empty($atts['debug'])) {
@@ -396,6 +406,51 @@ class SC_ContactInfos
     }
 
     /**
+     * A phone number as RFC 3966 wants it in a tel: URI: digits and one leading +, no spaces.
+     * A leading 00 becomes +, a leading single 0 becomes +<country code> (filter
+     * sfx_contact_info_default_country_code, default 49), and the "(0)" written after a country
+     * code is dropped. Numbers without 0/00/+ cannot be completed and keep their digits only.
+     * An extension in RFC 3966 form (";ext=123") is preserved; other notations are not parsed.
+     * Known limit: the "(0)" marker is recognised after 1–3 digits following + or 00, so a
+     * compact "+493(0)…" cannot be told apart from "+49 (0)…" without a country-code table.
+     * Output only — stored values stay as entered.
+     */
+    public static function normalize_tel(string $value): string
+    {
+        // An RFC 3966 extension (";ext=123") is kept apart, so its digits never join the number.
+        $ext = '';
+        if (preg_match('/;\s*ext\s*=\s*([0-9().\-\s]+)/iu', $value, $m)) {
+            $ext_digits = (string) preg_replace('/\D+/', '', $m[1]); // RFC 3966 allows visual separators
+            $ext = $ext_digits !== '' ? ';ext=' . $ext_digits : '';
+            $value = substr($value, 0, (int) strpos($value, ';'));
+        }
+
+        $value = (string) preg_replace('/^[\s\p{Z}]+/u', '', $value); // incl. non-breaking spaces
+        $international = str_starts_with($value, '+') || str_starts_with($value, '00');
+        if ($international) {
+            // "+49 (0)208": the trunk zero is only written, never dialled after a country code.
+            // Only the marker right after the country code — a "(0)" later is a subscriber digit.
+            $value = (string) preg_replace('/^(\+|00)([\s\p{Z}]*\d{1,3})[\s\p{Z}.\/-]*\([\s\p{Z}]*0[\s\p{Z}]*\)/u', '$1$2 ', $value);
+        }
+
+        $digits = (string) preg_replace('/\D+/', '', $value);
+        if ($digits === '') {
+            return '';
+        }
+        if (str_starts_with($value, '+')) {
+            return '+' . $digits . $ext;
+        }
+        if (str_starts_with($digits, '00')) {
+            return '+' . substr($digits, 2) . $ext;
+        }
+        if (str_starts_with($digits, '0')) {
+            $country = (string) preg_replace('/\D+/', '', (string) apply_filters('sfx_contact_info_default_country_code', '49'));
+            return '+' . ($country !== '' ? $country : '49') . substr($digits, 1) . $ext;
+        }
+        return $digits . $ext;
+    }
+
+    /**
      * Render phone field with link
      * 
      * @param string $value
@@ -408,7 +463,7 @@ class SC_ContactInfos
     {
         $inner = $icon;
         if ($has_link) {
-            $inner .= '<a href="tel:' . esc_attr($value) . '">' . esc_html($value) . '</a>';
+            $inner .= '<a href="tel:' . esc_attr(self::normalize_tel($value)) . '">' . esc_html($value) . '</a>';
         } else {
             $inner .= esc_html($value);
         }
