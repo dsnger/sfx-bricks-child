@@ -427,11 +427,11 @@ class SC_ContactInfos
         $semi = strpos($value, ';');
         if ($semi !== false) {
             // Digits, separators and spaces only — note text after it ("12 Büro 3") ends the extension.
-            if (preg_match('/;[\s\p{Z}]*ext[\s\p{Z}]*=([0-9().\-\s\p{Z}]*)/iu', substr($value, $semi), $m)) {
+            if (preg_match('/;[\s\p{Z}]*ext[\s\p{Z}]*=([0-9().\/\-\s\p{Z}]*)/iu', substr($value, $semi), $m)) {
                 $ext_raw = $m[1];
             }
             $value = substr($value, 0, $semi);
-        } elseif (preg_match('/(?<=[0-9\s\p{Z},)])(?:x|ext\.?|extension|durchwahl|dw\.?)[\s\p{Z}]*:?[\s\p{Z}]*([0-9(][0-9().\-\s\p{Z}]*)$/iu', $value, $m, PREG_OFFSET_CAPTURE)) {
+        } elseif (preg_match('/(?<=[0-9\s\p{Z},)])(?:x|ext\.?|extension|durchwahl|dw\.?)[\s\p{Z}]*:?[\s\p{Z}]*([0-9(][0-9().\/\-\s\p{Z}]*)$/iu', $value, $m, PREG_OFFSET_CAPTURE)) {
             // Written form at the end: "x 12", "x12", "ext. 12", "Durchwahl 12", "DW 12".
             $ext_raw = $m[1][0];
             $value = substr($value, 0, $m[0][1]);
