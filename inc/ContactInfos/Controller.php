@@ -116,6 +116,18 @@ class Controller
         'group' => 'Contact Info',
       ];
     }
+
+    // Bare cleaned numbers for link fields such as "tel:{contact_info:phone@format:tel}".
+    foreach (['phone', 'mobile', 'fax'] as $field) {
+      if (isset($contact_fields[$field])) {
+        $tags[] = [
+          'name'  => '{contact_info:' . $field . '@format:tel}',
+          /* translators: %s: field label, e.g. Phone */
+          'label' => sprintf(__('Contact Info: %s (tel: link)', 'sfxtheme'), $contact_fields[$field]),
+          'group' => 'Contact Info',
+        ];
+      }
+    }
     
     return $tags;
   }

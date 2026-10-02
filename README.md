@@ -14,7 +14,7 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 
 ### Content (custom post types)
 
-- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode and `{contact_info:field}` Bricks tags
+- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode and `{contact_info:field}` Bricks tags; phone links use a clean `tel:` number (`+49…`), and `format="tel"` / `{contact_info:phone@format:tel}` outputs just that number for your own `tel:` links (country code for numbers starting with 0: filter `sfx_contact_info_default_country_code`, default 49)
 - **Social Media Accounts** (`sfx_social_account`) — shortcodes, `{social_account:…}` Bricks tags, and a sortable Bricks query loop
 - **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location, priority, and category rules
 

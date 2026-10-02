@@ -8044,3 +8044,8 @@ msgstr "Nur für Admins – Gäste benötigen es nicht."
 #, php-format
 msgid "Methods allowed for %s"
 msgstr "Erlaubte Methoden für %s"
+
+#. translators: %s: field label, e.g. Phone
+#, php-format
+msgid "Contact Info: %s (tel: link)"
+msgstr "Kontaktinfo: %s (für tel:-Link)"
