@@ -426,7 +426,8 @@ class SC_ContactInfos
         $ext_raw = '';
         $semi = strpos($value, ';');
         if ($semi !== false) {
-            if (preg_match('/;[\s\p{Z}]*ext[\s\p{Z}]*=([^;]*)/iu', substr($value, $semi), $m)) {
+            // Digits, separators and spaces only — note text after it ("12 Büro 3") ends the extension.
+            if (preg_match('/;[\s\p{Z}]*ext[\s\p{Z}]*=([0-9().\-\s\p{Z}]*)/iu', substr($value, $semi), $m)) {
                 $ext_raw = $m[1];
             }
             $value = substr($value, 0, $semi);
