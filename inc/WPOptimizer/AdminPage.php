@@ -115,9 +115,9 @@ class AdminPage
 
         if ($type === 'rest_hide_index') {
             // The hidden 0 makes an unticked box post an explicit value (absent would read as the default, hidden).
-            $name = esc_attr('sfx_wpoptimizer_options[' . $field['id'] . ']');
-            echo '<input type="hidden" name="' . $name . '" value="0" />';
-            echo '<input type="checkbox" id="' . esc_attr($field['id']) . '" name="' . $name . '" value="1" ';
+            $name = 'sfx_wpoptimizer_options[' . $field['id'] . ']';
+            echo '<input type="hidden" name="' . esc_attr($name) . '" value="0" />';
+            echo '<input type="checkbox" id="' . esc_attr($field['id']) . '" name="' . esc_attr($name) . '" value="1" ';
             checked((int) $value, 1);
             echo ' style="' . esc_attr('margin-top: 32px;') . '" />';
 
@@ -178,17 +178,17 @@ class AdminPage
             if (!$supported) {
                 $badges[] = __('unsupported characters — allow via the sfx/rest_guest_allowed_namespaces filter', 'sfxtheme');
             }
-            $notes = esc_html(RestGuestAccess::hint($ns));
-            foreach ($badges as $badge) {
-                $notes .= ' <span class="sfx-rest-badge" style="display: inline-block; padding: 0 6px; border-radius: 3px; background: #f0f0f1; color: #50575e; font-size: 0.9em;">' . esc_html($badge) . '</span>';
-            }
             $method = $map[$ns] ?? ($ns === 'wp/v2' ? 'get' : 'all');
             $inputs = $supported ? RestGuestAccess::row_inputs((int) $i, $ns, isset($map[$ns]), $method) : '';
             $html .= '<tr>'
                 . '<td><code>' . esc_html($ns) . '</code>'
                 . '<input type="hidden" name="sfx_wpoptimizer_options[rest_guest_displayed][]" value="' . esc_attr($ns) . '" /></td>'
                 . '<td>' . esc_html(RestGuestAccess::owner($ns)) . '</td>'
-                . '<td>' . $notes . '</td>'
+                . '<td>' . esc_html(RestGuestAccess::hint($ns));
+            foreach ($badges as $badge) {
+                $html .= ' <span class="sfx-rest-badge" style="display: inline-block; padding: 0 6px; border-radius: 3px; background: #f0f0f1; color: #50575e; font-size: 0.9em;">' . esc_html($badge) . '</span>';
+            }
+            $html .= '</td>'
                 . '<td>' . $inputs . '</td>'
                 . '</tr>';
         }

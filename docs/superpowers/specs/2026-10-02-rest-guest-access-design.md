@@ -410,7 +410,8 @@ password it creates; fails fatally outside the site root):
 
 ## Changelog
 
-`CHANGELOG.md` under the next version: "WP Optimizer: REST API access for guests —
+`CHANGELOG.md` is not edited by hand on this branch. `release.sh` writes the entry from the
+release notes at release time; the release-notes text is: "WP Optimizer: REST API access for guests —
 open / allowlist / closed, per-namespace methods, hidden index, new-namespace notice,
 test button. The old guest switch maps to closed. 'Disable REST API' relabelled: it never
 blocked REST requests."

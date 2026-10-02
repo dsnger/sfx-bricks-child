@@ -82,13 +82,13 @@ final class RestGuestAccess
     /** One allowlist row as form inputs. The hidden 0 must precede the checkbox so an unticked row still posts allowed. */
     public static function row_inputs(int $i, string $ns, bool $allowed, string $method): string
     {
-        $base = esc_attr(self::OPTION . '[rest_guest_namespaces][' . $i . ']');
-        $label = esc_attr(sprintf(__('Allow %s for guests', 'sfxtheme'), $ns));
-        $html = '<input type="hidden" name="' . $base . '[namespace]" value="' . esc_attr($ns) . '">';
-        $html .= '<input type="hidden" name="' . $base . '[allowed]" value="0">';
-        $html .= '<input type="checkbox" name="' . $base . '[allowed]" value="1"' . ($allowed ? ' checked' : '') . ' aria-label="' . $label . '">';
-        $methods_label = esc_attr(sprintf(__('Methods allowed for %s', 'sfxtheme'), $ns));
-        $html .= '<select name="' . $base . '[method]" aria-label="' . $methods_label . '">';
+        $base = self::OPTION . '[rest_guest_namespaces][' . $i . ']';
+        $label = sprintf(__('Allow %s for guests', 'sfxtheme'), $ns);
+        $html = '<input type="hidden" name="' . esc_attr($base . '[namespace]') . '" value="' . esc_attr($ns) . '">';
+        $html .= '<input type="hidden" name="' . esc_attr($base . '[allowed]') . '" value="0">';
+        $html .= '<input type="checkbox" name="' . esc_attr($base . '[allowed]') . '" value="1"' . ($allowed ? ' checked' : '') . ' aria-label="' . esc_attr($label) . '">';
+        $methods_label = sprintf(__('Methods allowed for %s', 'sfxtheme'), $ns);
+        $html .= '<select name="' . esc_attr($base . '[method]') . '" aria-label="' . esc_attr($methods_label) . '">';
         $html .= '<option value="all"' . ($method === 'all' ? ' selected' : '') . '>' . esc_html__('All methods', 'sfxtheme') . '</option>';
         $html .= '<option value="get"' . ($method === 'get' ? ' selected' : '') . '>' . esc_html__('GET only', 'sfxtheme') . '</option>';
         return $html . '</select>';
