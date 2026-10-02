@@ -149,6 +149,23 @@ final class OverviewProvider
                 ];
             }
 
+            if ($group_key === 'security') {
+                if (!class_exists('SFX\WPOptimizer\classes\RestGuestAccess')) {
+                    require_once dirname(__DIR__) . '/WPOptimizer/classes/RestGuestAccess.php';
+                }
+                $o = \SFX\WPOptimizer\classes\RestGuestAccess::option();
+                $mode = \SFX\WPOptimizer\classes\RestGuestAccess::mode($o);
+                $active = \SFX\WPOptimizer\classes\RestGuestAccess::enforcing($o);
+                $labels = ['open' => __('Open', 'sfxtheme'), 'allowlist' => __('Allowlist', 'sfxtheme'), 'closed' => __('Closed', 'sfxtheme')];
+                $detail = $labels[$mode];
+                if (!empty($o['disable_wp_optimizer'])) {
+                    $detail .= ' — ' . __('inactive: WP Optimizer disabled', 'sfxtheme');
+                }
+                $children[] = ['id' => 'rest_guest_mode', 'label' => __('REST API for guests', 'sfxtheme'), 'status' => $active ? 'active' : 'inactive', 'detail' => $detail];
+                $total++;
+                if ($active) { $enabled++; }
+            }
+
             $active_count += $enabled;
             $total_count += $total;
 
