@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.26.0] - 2026-10-02
+
+WP Optimizer: REST API access for guests — open / allowlist / closed, per-namespace methods (GET only or all), hidden REST index and discovery links, new-namespace notice, Bricks warning and a 'Test as guest' button. The old 'REST only for logged-in users' switch maps to closed. 'Disable REST API' relabelled 'Remove REST discovery links and oEmbed': it never blocked REST requests. Contact Infos: phone and mobile links use a clean tel: number (+49…); format="tel" / {contact_info:phone@format:tel} outputs just the number for button links (country code via filter sfx_contact_info_default_country_code); [contact_info contact_id="…"] no longer fails. Redirects: page links below the lists as well.
+
 ## [0.25.1] - 2026-10-01
 
 Editor Prose: wide/full images and Bricks component blocks now take the same widths in the block editor as on the frontend. WordPress' classic-theme editor frames are width-neutral, the wide/full alignment class is mirrored onto the block, and an author's own alignment classes are kept.
