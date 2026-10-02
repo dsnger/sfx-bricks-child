@@ -281,6 +281,9 @@ plugin folder → name from `get_plugins()`; under the theme root → theme name
 `ABSPATH . WPINC` → "WordPress". Internal functions, reflection errors or anything else →
 empty.
 
+Owners are resolved only when the saved mode is `allowlist` (to avoid route reflection on every page
+load); otherwise the column stays empty with the note "Owners are shown after saving in Allowlist mode."
+
 ### Visibility
 
 Mode select; the namespace table and the hide-index checkbox show for `allowlist`
@@ -310,6 +313,7 @@ without running any plugin callback and without touching any other route:
 - Requests: `?target=index` once, and `?namespace=<ns>` for every live namespace. URLs
   are built with `rest_url()` and `add_query_arg()` over a `rawurlencode()`d value (plain
   and pretty permalinks).
+- Probes run with at most 4 in flight, order kept.
 - The callback reports the **policy**: effective state first (module loaded and master
   switch off and mode not `open`, else `open`), then `decide()` for kind `index`, or for
   kind `namespace` with method `GET`, using the map after

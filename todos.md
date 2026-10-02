@@ -9,6 +9,10 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Live harness `tests/support/rest-guest-live-check.php`: concurrent edits during
+      a run are overwritten by the restore** (Greptile on PR #48, 2026-10-02). A correct
+      guard needs an atomic compare-and-swap restore per row; documented in the harness
+      header for now.
 - [ ] **Editor Prose: test which elements `EDITOR_FRAME_RESET` matches** (Greptile on
       PR #46, 2026-10-01): the payload test pins the selector text only; nothing runs
       the selectors against a frame-vs-block DOM, so a later edit that also catches a
