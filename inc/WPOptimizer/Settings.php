@@ -173,8 +173,8 @@ class Settings
             ],
             [
                 'id'          => 'disable_rest_api',
-                'label'       => __('Disable REST API', 'sfxtheme'),
-                'description' => __('Disables the REST API. Not recommended unless you are certain no plugins or integrations require the REST API. May break some features.', 'sfxtheme'),
+                'label'       => __('Remove REST discovery links and oEmbed', 'sfxtheme'),
+                'description' => __('Removes the REST and oEmbed discovery links, the oEmbed route and JSONP. It does not block REST requests — WordPress ignores that since 4.7. To restrict guests, use “REST API access for guests”.', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 0,
                 'group'       => 'security',
@@ -415,11 +415,43 @@ class Settings
             ],
 
             [
-                'id'          => 'disable_rest_api_non_authenticated',
-                'label'       => __('Disable REST API for Non-Authenticated Users', 'sfxtheme'),
-                'description' => __('Restricts REST API access to logged-in users only, improving privacy and security by hiding REST endpoints from anonymous users.', 'sfxtheme'),
-                'type'        => 'checkbox',
-                'default'     => 0,
+                'id'          => 'rest_guest_mode',
+                'label'       => __('REST API access for guests', 'sfxtheme'),
+                'description' => __('Open: WordPress default. Allowlist: guests may only call the namespaces ticked below. Closed: guests get no REST API at all. Logged-in users and application passwords are never affected.', 'sfxtheme'),
+                'type'        => 'select',
+                'options'     => [
+                    'open'      => __('Open (WordPress default)', 'sfxtheme'),
+                    'allowlist' => __('Allowlist', 'sfxtheme'),
+                    'closed'    => __('Closed', 'sfxtheme'),
+                ],
+                'default'     => 'open',
+                'group'       => 'security',
+            ],
+            [
+                'id'          => 'rest_guest_hide_index',
+                'label'       => __('Hide REST index for guests', 'sfxtheme'),
+                'description' => __('Guests get 401 for /wp-json/ and the namespace index routes, and the REST discovery links are removed for them. In Closed mode this always applies.', 'sfxtheme'),
+                'type'        => 'rest_hide_index',
+                'default'     => 1,
+                'group'       => 'security',
+                'conditional' => ['field' => 'rest_guest_mode', 'operator' => 'in_array', 'value' => ['allowlist']],
+            ],
+            [
+                'id'          => 'rest_guest_namespaces',
+                'label'       => __('Namespaces guests may call', 'sfxtheme'),
+                'description' => __('Unticked namespaces return 401 rest_forbidden_guest for guests. Namespaces that appear later stay blocked until you tick them.', 'sfxtheme'),
+                'type'        => 'rest_namespaces',
+                'default'     => null,
+                'group'       => 'security',
+                'wide'        => true,
+                'conditional' => ['field' => 'rest_guest_mode', 'operator' => 'in_array', 'value' => ['allowlist']],
+            ],
+            [
+                'id'          => 'rest_guest_seen',
+                'label'       => '',
+                'description' => '',
+                'type'        => 'hidden_list',
+                'default'     => [],
                 'group'       => 'security',
             ],
 
@@ -497,11 +529,25 @@ class Settings
 
     public static function sanitize_options($input): array
     {
+        if (!class_exists(classes\RestGuestAccess::class)) {
+            require_once __DIR__ . '/classes/RestGuestAccess.php';
+        }
+        $input = is_array($input) ? $input : [];
+        $is_form = classes\RestGuestAccess::is_form_save();
+        if ($is_form) {
+            $raw = classes\RestGuestAccess::raw_form();
+            if (!classes\RestGuestAccess::form_complete($raw)) {
+                add_settings_error(self::$OPTION_GROUP, 'sfx_wpo_truncated', __('Settings were not saved: the form was cut off by the server. Raise max_input_vars and save again.', 'sfxtheme'), 'error');
+                return classes\RestGuestAccess::option();
+            }
+            $input = $raw; // never $input on a form save: repeat-safe
+        }
+
         if (!class_exists(classes\HideLogin::class) && file_exists(__DIR__ . '/classes/HideLogin.php')) {
             require_once __DIR__ . '/classes/HideLogin.php';
         }
 
-        $current_options = get_option('sfx_wpoptimizer_options', []);
+        $current_options = classes\RestGuestAccess::option();
         $hide_login_available = class_exists(classes\HideLogin::class);
         $was_hide_login_enabled = !empty($current_options['hide_login']);
         $hide_login_requested = !empty($input['hide_login']);
@@ -517,7 +563,7 @@ class Settings
         foreach (self::get_fields() as $field) {
             $id = $field['id'];
 
-            if ($id === 'hide_login' || $id === 'custom_login_slug') {
+            if ($id === 'hide_login' || $id === 'custom_login_slug' || strpos($id, 'rest_guest_') === 0) {
                 continue;
             }
 
@@ -536,12 +582,17 @@ class Settings
                 $output[$id] = $value;
             } elseif ($field['type'] === 'post_types') {
                 $output[$id] = isset($input[$id]) && is_array($input[$id]) ? array_map('sanitize_text_field', $input[$id]) : [];
+            } elseif ($field['type'] === 'select') {
+                $value = isset($input[$id]) ? (string) $input[$id] : (string) $field['default'];
+                $output[$id] = array_key_exists($value, $field['options'] ?? []) ? $value : (string) $field['default'];
             } elseif ($field['type'] === 'text') {
                 $output[$id] = isset($input[$id]) ? sanitize_text_field((string) $input[$id]) : (string) ($field['default'] ?? '');
             } else {
                 $output[$id] = isset($input[$id]) && $input[$id] ? 1 : 0;
             }
         }
+
+        $output = classes\RestGuestAccess::sanitize_into($input, $output, $is_form, classes\RestGuestAccess::option());
 
         if (!$hide_login_available) {
             $output['hide_login'] = (int) ($current_options['hide_login'] ?? 0);
@@ -607,7 +658,10 @@ class Settings
      */
     public static function get(string $key, $default = null)
     {
-        $options = get_option('sfx_wpoptimizer_options', []);
+        if (!class_exists(classes\RestGuestAccess::class)) {
+            require_once __DIR__ . '/classes/RestGuestAccess.php';
+        }
+        $options = classes\RestGuestAccess::option();
         
         // If value exists in saved options, return it
         if (isset($options[$key])) {
@@ -636,6 +690,9 @@ class Settings
      */
     public static function get_all(): array
     {
-        return get_option('sfx_wpoptimizer_options', []);
+        if (!class_exists(classes\RestGuestAccess::class)) {
+            require_once __DIR__ . '/classes/RestGuestAccess.php';
+        }
+        return classes\RestGuestAccess::option();
     }
 } 

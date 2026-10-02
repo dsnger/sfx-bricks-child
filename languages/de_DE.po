@@ -5047,10 +5047,6 @@ msgstr "Anfrage von WP Optimizer blockiert."
 msgid "Feed disabled by WP Optimize."
 msgstr "Feed von WP Optimizer deaktiviert."
 
-#: inc/WPOptimizer/Controller.php:953
-msgid "REST API restricted to authenticated users."
-msgstr "REST API auf authentifizierte Benutzer beschränkt."
-
 #: inc/WPOptimizer/Controller.php:998
 msgid "Invalid login."
 msgstr "Ungültige Anmeldung."
@@ -5278,19 +5274,6 @@ msgid ""
 msgstr ""
 "Deaktiviert alle RSS- und Atom-Feeds. Empfohlen für private oder Broschüren-"
 "Websites. Nicht empfohlen für Blogs oder Nachrichten-Websites."
-
-#: inc/WPOptimizer/Settings.php:176
-msgid "Disable REST API"
-msgstr "REST API deaktivieren"
-
-#: inc/WPOptimizer/Settings.php:177
-msgid ""
-"Disables the REST API. Not recommended unless you are certain no plugins or "
-"integrations require the REST API. May break some features."
-msgstr ""
-"Deaktiviert die REST API. Nicht empfohlen, es sei denn, du bist sicher, dass "
-"keine Plugins oder Integrationen die REST API benötigen. Kann einige "
-"Funktionen beeinträchtigen."
 
 #: inc/WPOptimizer/Settings.php:184
 msgid "Disable RSD Links"
@@ -5635,19 +5618,6 @@ msgid ""
 msgstr ""
 "Leitet Anhang-Seiten auf den übergeordneten Beitrag oder die Startseite um, "
 "um dünne Inhalte zu vermeiden und die SEO zu verbessern."
-
-#: inc/WPOptimizer/Settings.php:419
-msgid "Disable REST API for Non-Authenticated Users"
-msgstr "REST-API für nicht authentifizierte Benutzer deaktivieren"
-
-#: inc/WPOptimizer/Settings.php:420
-msgid ""
-"Restricts REST API access to logged-in users only, improving privacy and "
-"security by hiding REST endpoints from anonymous users."
-msgstr ""
-"Beschränkt den Zugriff auf die REST-API auf angemeldete Benutzer und "
-"verbessert Datenschutz und Sicherheit, indem REST-Endpunkte vor anonymen "
-"Benutzern verborgen werden."
 
 #: inc/WPOptimizer/Settings.php:429
 msgid "Remove Patterns Menu"
@@ -7848,3 +7818,229 @@ msgstr "Kopiert"
 
 msgid "Copy to clipboard"
 msgstr "In die Zwischenablage kopieren"
+
+msgid "Remove REST discovery links and oEmbed"
+msgstr "REST-Discovery-Links und oEmbed entfernen"
+
+msgid ""
+"Removes the REST and oEmbed discovery links, the oEmbed route and JSONP. "
+"It does not block REST requests — WordPress ignores that since 4.7. To "
+"restrict guests, use “REST API access for guests”."
+msgstr ""
+"Entfernt die REST- und oEmbed-Discovery-Links, die oEmbed-Route und JSONP. "
+"REST-Anfragen werden dadurch nicht blockiert – WordPress ignoriert das "
+"seit 4.7. Um Gäste einzuschränken, nutze „REST-API-Zugriff für Gäste“."
+
+msgid "REST API access for guests"
+msgstr "REST-API-Zugriff für Gäste"
+
+msgid ""
+"Open: WordPress default. Allowlist: guests may only call the namespaces "
+"ticked below. Closed: guests get no REST API at all. Logged-in users and "
+"application passwords are never affected."
+msgstr ""
+"Offen: WordPress-Standard. Allowlist: Gäste dürfen nur die unten "
+"angehakten Namespaces aufrufen. Geschlossen: Gäste erhalten gar keine "
+"REST-API. Angemeldete Benutzer und Anwendungspasswörter sind nie "
+"betroffen."
+
+msgid "Open (WordPress default)"
+msgstr "Offen (WordPress-Standard)"
+
+msgid "Open"
+msgstr "Offen"
+
+msgid "Allowlist"
+msgstr "Allowlist"
+
+msgid "Closed"
+msgstr "Geschlossen"
+
+msgid "Hide REST index for guests"
+msgstr "REST-Index für Gäste verbergen"
+
+msgid ""
+"Guests get 401 for /wp-json/ and the namespace index routes, and the REST "
+"discovery links are removed for them. In Closed mode this always applies."
+msgstr ""
+"Gäste erhalten 401 für /wp-json/ und die Namespace-Index-Routen, und die "
+"REST-Discovery-Links werden für sie entfernt. Im Modus „Geschlossen“ gilt "
+"das immer."
+
+msgid "Namespaces guests may call"
+msgstr "Namespaces, die Gäste aufrufen dürfen"
+
+msgid ""
+"Unticked namespaces return 401 rest_forbidden_guest for guests. Namespaces "
+"that appear later stay blocked until you tick them."
+msgstr ""
+"Nicht angehakte Namespaces liefern für Gäste 401 rest_forbidden_guest. "
+"Namespaces, die später hinzukommen, bleiben gesperrt, bis du sie anhakst."
+
+msgid ""
+"Settings were not saved: the form was cut off by the server. Raise "
+"max_input_vars and save again."
+msgstr ""
+"Einstellungen wurden nicht gespeichert: Das Formular wurde vom Server "
+"abgeschnitten. Erhöhe max_input_vars und speichere erneut."
+
+#, php-format
+msgid "Allow %s for guests"
+msgstr "%s für Gäste erlauben"
+
+msgid "The REST API index is not available to guests."
+msgstr "Der REST-API-Index ist für Gäste nicht verfügbar."
+
+msgid "This REST route is not available to guests."
+msgstr "Diese REST-Route ist für Gäste nicht verfügbar."
+
+#, php-format
+msgid "The REST namespace %s is not available to guests."
+msgstr "Der REST-Namespace %s ist für Gäste nicht verfügbar."
+
+msgid "No route was found matching the URL and request method."
+msgstr "Es wurde keine Route gefunden, die zur URL und Anfragemethode passt."
+
+msgid "REST API for guests"
+msgstr "REST-API für Gäste"
+
+msgid "inactive: WP Optimizer disabled"
+msgstr "inaktiv: WP Optimizer deaktiviert"
+
+msgid ""
+"Bricks query loops, filters, pagination and popups will fail for visitors "
+"— they need bricks/v1 with all methods."
+msgstr ""
+"Bricks-Query-Loops, Filter, Paginierung und Popups funktionieren für "
+"Besucher nicht mehr – sie benötigen bricks/v1 mit allen Methoden."
+
+msgid ""
+"Bricks query loops, filters, pagination, popups, live search — needs all "
+"methods."
+msgstr ""
+"Bricks-Query-Loops, Filter, Paginierung, Popups, Live-Suche – benötigt "
+"alle Methoden."
+
+msgid "Namespace"
+msgstr "Namespace"
+
+msgid "Owner"
+msgstr "Besitzer"
+
+msgid "Notes"
+msgstr "Hinweise"
+
+msgid "Allowed / methods"
+msgstr "Erlaubt / Methoden"
+
+msgid "Owners are shown after saving in Allowlist mode."
+msgstr "Besitzer werden nach dem Speichern im Allowlist-Modus angezeigt."
+
+msgid "new"
+msgstr "neu"
+
+msgid "not present"
+msgstr "nicht vorhanden"
+
+msgid ""
+"unsupported characters — allow via the sfx/rest_guest_allowed_namespaces "
+"filter"
+msgstr ""
+"nicht unterstützte Zeichen – über den Filter "
+"sfx/rest_guest_allowed_namespaces erlauben"
+
+#, php-format
+msgid ""
+"%s (unsupported characters — allow via the "
+"sfx/rest_guest_allowed_namespaces filter)"
+msgstr ""
+"%s (nicht unterstützte Zeichen – über den Filter "
+"sfx/rest_guest_allowed_namespaces erlauben)"
+
+msgid "Test as guest"
+msgstr "Als Gast testen"
+
+msgid "Configured"
+msgstr "Konfiguriert"
+
+msgid "Reported"
+msgstr "Gemeldet"
+
+msgid "Result"
+msgstr "Ergebnis"
+
+msgid ""
+"The test checks the saved settings with real guest requests (no cookies). "
+"The sfx/rest_guest_is_allowed filter is not simulated, and page caching, "
+"password protection or CORS rules can change the results."
+msgstr ""
+"Der Test prüft die gespeicherten Einstellungen mit echten Gast-Anfragen "
+"(ohne Cookies). Der Filter sfx/rest_guest_is_allowed wird nicht simuliert, "
+"und Seiten-Caching, Passwortschutz oder CORS-Regeln können die Ergebnisse "
+"verändern."
+
+msgid "REST index (/wp-json/)"
+msgstr "REST-Index (/wp-json/)"
+
+msgid "open"
+msgstr "offen"
+
+msgid "allowed"
+msgstr "erlaubt"
+
+msgid "blocked"
+msgstr "blockiert"
+
+msgid "All methods"
+msgstr "Alle Methoden"
+
+msgid "GET only"
+msgstr "Nur GET"
+
+msgid "as configured"
+msgstr "wie konfiguriert"
+
+msgid "differs"
+msgstr "weicht ab"
+
+msgid "inconclusive"
+msgstr "nicht eindeutig"
+
+msgid "no response"
+msgstr "keine Antwort"
+
+msgid "unexpected response"
+msgstr "unerwartete Antwort"
+
+msgid "New REST namespaces are blocked for guests:"
+msgstr "Neue REST-Namespaces sind für Gäste gesperrt:"
+
+msgid "Review the REST API settings"
+msgstr "REST-API-Einstellungen prüfen"
+
+msgid "Lets other sites embed your content."
+msgstr "Erlaubt anderen Websites, deine Inhalte einzubetten."
+
+msgid ""
+"GET only stops guest writes in this namespace; endpoint permissions still "
+"apply as usual."
+msgstr ""
+"„Nur GET“ verhindert Schreibzugriffe von Gästen in diesem Namespace; die "
+"Berechtigungen der Endpunkte gelten weiterhin wie gewohnt."
+
+msgid "Contact Form 7 submissions."
+msgstr "Contact-Form-7-Übermittlungen."
+
+msgid "Fluent Forms submissions."
+msgstr "Fluent-Forms-Übermittlungen."
+
+msgid "Burst statistics fallback (normally tracked via its beacon)."
+msgstr ""
+"Burst-Statistik-Fallback (wird normalerweise über den Beacon erfasst)."
+
+msgid "Admin only — guests do not need it."
+msgstr "Nur für Admins – Gäste benötigen es nicht."
+
+#, php-format
+msgid "Methods allowed for %s"
+msgstr "Erlaubte Methoden für %s"
