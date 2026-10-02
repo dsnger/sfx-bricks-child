@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.26.1] - 2026-10-02
+
+Contact Infos: a phone extension now stops at trailing note text ("…;ext=12 Büro 3" keeps extension 12) and accepts a slash as separator ("ext=12/34" -> 1234). The main number was never affected.
+
 ## [0.26.0] - 2026-10-02
 
 WP Optimizer: REST API access for guests — open / allowlist / closed, per-namespace methods (GET only or all), hidden REST index and discovery links, new-namespace notice, Bricks warning and a 'Test as guest' button. The old 'REST only for logged-in users' switch maps to closed. 'Disable REST API' relabelled 'Remove REST discovery links and oEmbed': it never blocked REST requests. Contact Infos: phone and mobile links use a clean tel: number (+49…); format="tel" / {contact_info:phone@format:tel} outputs just the number for button links (country code via filter sfx_contact_info_default_country_code); [contact_info contact_id="…"] no longer fails. Redirects: page links below the lists as well.
