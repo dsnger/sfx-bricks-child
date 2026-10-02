@@ -46,7 +46,7 @@ All in `sfx_wpoptimizer_options`, group `security`:
 |---|---|---|---|
 | `rest_guest_mode` | `'open'`\|`'allowlist'`\|`'closed'` | `open` | the mode |
 | `rest_guest_namespaces` | `null` (never saved) or a **list** of `['namespace' => string, 'method' => 'get'\|'all']` | `null` | allowed namespaces |
-| `rest_guest_hide_index` | `0`\|`1` | `1` | hide index + discovery for guests; effective only in `allowlist`/`closed` |
+| `rest_guest_hide_index` | `0`\|`1` | `1` | hide index + discovery for guests in `allowlist` (in `closed` they are always hidden) |
 | `rest_guest_seen` | list of strings | `[]` | namespaces an admin has seen on a saved form |
 
 A **list of rows**, not a map keyed by namespace: Import/Export sanitizes array keys
@@ -65,11 +65,14 @@ option while the module is off (no module sanitizer), so every read goes through
 
 - `option(): array` — `get_option('sfx_wpoptimizer_options')`; anything but an array
   (scalar, `null`, object) → `[]`. All getters below take this array.
-- `supported(string $ns): bool` — `^[A-Za-z0-9._~-]+(/[A-Za-z0-9._~-]+)*$`. Covers real
+- `supported(string $ns): bool` — `\A[A-Za-z0-9._~-]+(/[A-Za-z0-9._~-]+)*\z` (`\z`, not
+  `$`, so a trailing newline fails) and no segment equal to `.` or `..`. Covers real
   namespaces (`wp/v2`, `bricks/v1`, `oembed/1.0`, `contact-form-7/v1`); all of these
-  characters pass `sanitize_text_field()` and `wp_kses` untouched. A live namespace
-  outside it is listed but **not selectable** ("unsupported characters — allow it in
-  code via the filter").
+  characters pass `sanitize_text_field()` and `wp_kses` untouched, so a supported
+  identity cannot be changed into another by an import. A live namespace outside it is
+  listed but **not selectable** ("unsupported characters — allow it in code via the
+  filter"). Live namespaces are cast to `string` at the registry boundary (core keys
+  them in an array, so `123` comes back as an int).
 - `mode(array $option): string` — `rest_guest_mode` if one of the three; else, if the
   option has no `rest_guest_mode` key and `disable_rest_api_non_authenticated` is truthy
   → `closed`; else `open`.
@@ -79,24 +82,33 @@ option while the module is off (no module sanitizer), so every read goes through
   `'1'`/`1`/`true`. Stored rows have no `allowed` key. `method` `get` or `all`, else
   `all`. Duplicates: last row wins. Any other value (scalar, object) → `[]` —
   restrictive, never the defaults. Idempotent on its own output.
-- `seen(array $option): array` — list of strings passing `supported()`, unique; else `[]`.
+- `seen(array $option): array` — list of non-empty strings (max 200 chars), unique; else
+  `[]`. Seen is only an acknowledgment record, so unsupported names are kept too (an
+  altered entry merely re-triggers the notice).
+- `hide_index(array $option): bool` — key absent or `null` → `true` (the default);
+  `0`/`'0'`/`false` → `false`; anything else truthy → `true`.
 
 ### Form shape
 
 Each displayed, supported namespace posts `rest_guest_namespaces[i][namespace]`
 (hidden), `rest_guest_namespaces[i][allowed]` as a hidden `0` **followed by** the
 checkbox `1` (an unchecked box still posts `0`, so an unticked row is never a grant), and
-`rest_guest_namespaces[i][method]`. Plus `rest_guest_form = 1` and
-`rest_guest_displayed[]` (every namespace the form listed).
+`rest_guest_namespaces[i][method]`. The hide-index checkbox is also preceded by a hidden
+`0`. Plus `rest_guest_form = 1` and `rest_guest_displayed[]` (every namespace the form
+listed, supported or not).
 
 ### Sanitizer (`Settings::sanitize_options`)
 
 - New field types: `select` (value must be in the field's `options`, else default),
   `rest_namespaces`, `hidden_list`. Unknown types keep today's behaviour.
 - `rest_guest_mode` → `mode($input)` (covers the legacy rule).
-- `rest_guest_namespaces` → `namespaces($input)`; absent → `null`.
+- `rest_guest_namespaces` → `namespaces($input)`; absent → `null`, **except** on a form
+  save (`rest_guest_form = 1`), where absent means "no rows were listed" → `[]` (an
+  admin saved the form; the never-saved defaults must not come back).
+- `rest_guest_hide_index` → `hide_index($input)` as `0`/`1` — not the generic checkbox
+  rule, which would turn an absent key into `0`.
 - `rest_guest_seen`: form save (`rest_guest_form = 1`) → previous stored seen ∪
-  `rest_guest_displayed` (filtered by `supported()`); a namespace that appeared between
+  `rest_guest_displayed`; a namespace that appeared between
   rendering and saving is not acknowledged. Otherwise (import, programmatic) →
   `seen($input)`.
 - The legacy key is not written back (only known fields are), so it drops out on the
@@ -104,9 +116,11 @@ checkbox `1` (an unchecked box still posts `0`, so an unticked row is never a gr
 
 Absent keys never borrow the stored value, so a **replace** import gives the same result
 with the module on or off: exactly what the import carries, legacy rule included. With
-**merge**, Import/Export keeps existing keys the import lacks and skips empty values
-(`deep_merge_arrays`), so merging cannot clear the allowlist or seen list and keeps an
-existing mode over a legacy flag — use replace for an exact copy (README note).
+**merge**, Import/Export (`deep_merge_arrays`) keeps existing keys the import lacks,
+skips empty values, and replaces a non-empty list **whole**. So a merge cannot clear the
+allowlist or seen list, a non-empty imported allowlist or seen list replaces the
+existing one entirely (rows are not merged), and an existing mode wins over a legacy
+flag — use replace for an exact copy (README note).
 
 ### Defaults before the first save
 
@@ -124,7 +138,7 @@ endpoint permissions still apply as usual".
 ### Hook
 
 `rest_dispatch_request` (filter, args `$result, $request, $route, $handler`), priority
-10, registered on `init` priority 1 (`handle_context_sensitive_options`) when the master
+`PHP_INT_MAX` (last, so it sees and can override what other filters returned), registered on `init` priority 1 (`handle_context_sensitive_options`) when the master
 switch `disable_wp_optimizer` is off and the mode is not `open`.
 
 Core calls it in `respond_to_request()` (`class-wp-rest-server.php:1238`) for the route
@@ -136,8 +150,9 @@ the normal path and for every `batch/v1` item, which also go through
 
 - Act only when `wp_is_serving_rest_request()`: a guest page render that calls
   `rest_do_request()` internally is never affected.
-- Pass through when `$result !== null` (another filter already decided) or
-  `get_current_user_id() > 0`. Authentication ran in `check_authentication()` before
+- Pass through when `get_current_user_id() > 0`. For a guest the decision is made even
+  if an earlier filter returned a result: a blocked request gets the 401 instead of that
+  result (an allowed one keeps it). Authentication ran in `check_authentication()` before
   dispatch — application passwords (`rest_authentication_errors` 90) and cookie + nonce
   (100, which resets a nonce-less cookie user to 0) — so every auth method is resolved;
   a cookie without nonce is a guest, as for WordPress itself. (The old switch sat at
@@ -150,8 +165,10 @@ the normal path and for every `batch/v1` item, which also go through
 `RestGuestAccess::classify(string $route, array $handler, ?array $route_options): array{kind, namespace}`:
 
 - `$handler['callback']` is `[WP_REST_Server, 'get_index']` → `index`;
-  `[WP_REST_Server, 'get_namespace_index']` → `discovery` with
-  `namespace = $route_options['namespace']`. Only the generated callbacks count — a
+  `[WP_REST_Server, 'get_namespace_index']` → `discovery` with the namespace the
+  callback will actually list: the request's `namespace` parameter if set (core's
+  `get_namespace_index` reads it and it is overridable by query string), else
+  `$route_options['namespace']`. Only the generated callbacks count — a
   plugin handler registered on `/<ns>` itself is a normal `namespace` route and follows
   the method rule.
 - otherwise `namespace = $route_options['namespace'] ?? ''`; a non-empty string →
@@ -183,7 +200,11 @@ So guest batch requests are blocked in `allowlist` (unless the filter allows the
 ### What guests can still observe (accepted, documented)
 
 - Routes that do not exist answer 404 `rest_no_route` as before — no callback runs, so
-  there is nothing to gate.
+  there is nothing to gate. A guest can therefore tell an existing blocked route (401)
+  from a missing one (404).
+- A response produced on `rest_pre_dispatch` (e.g. a REST response cache answering
+  before dispatch) never reaches this hook. Such caches must not serve blocked routes to
+  guests — README note: exclude REST from them or let them vary by login.
 - `OPTIONS` is answered by core's `rest_handle_options_request` on `rest_pre_dispatch`,
   before matching, so it never reaches this hook: CORS preflights keep working (also for
   authenticated cross-origin requests), and a guest who already knows a route can read
@@ -193,7 +214,7 @@ So guest batch requests are blocked in `allowlist` (unless the filter allows the
 
 ### Discovery links
 
-Mode `allowlist`/`closed`, `hide_index` on, visitor a guest (checked on `wp`, priority
+Mode `closed`, or mode `allowlist` with `hide_index` on, visitor a guest (checked on `wp`, priority
 0): `remove_action('wp_head', 'rest_output_link_wp_head', 10)` and
 `remove_action('template_redirect', 'rest_output_link_header', 11)`. Logged-in users keep
 both. oEmbed discovery links are not touched.
@@ -232,8 +253,8 @@ empty.
 
 ### Visibility
 
-Mode select; the namespace table shows for `allowlist`, the hide-index checkbox for
-`allowlist` and `closed`, using the page's existing `in_array` condition operator. Its
+Mode select; the namespace table and the hide-index checkbox show for `allowlist`
+(in `closed` index and discovery links are always hidden, stated in the help text), using the page's existing `in_array` condition operator. Its
 PHP side (`AdminPage::evaluate_condition`) already supports `in_array`; the JS side today
 only reads `.checked` and is extended to read a select's `value` for `in_array` /
 `!in_array`, checkbox behaviour unchanged. Server rendering uses the normalised mode.
@@ -247,42 +268,49 @@ they need bricks/v1 with all methods".
 
 ### Test as guest
 
-Button below the table; checks the **saved** state, mode-aware, without running any
-plugin callback:
+Button below the table; checks the **saved** state as a real guest request, without
+running any plugin callback:
 
-- `GET /` — expected 401 when the index is hidden (allowlist/closed), else 200.
-- For every live supported namespace: `GET /<ns>?sfx_guest_probe=1`. The hook answers a
-  probe on a `discovery` route itself, before the hide-index rule: 200
-  `{"sfx_guest_probe":"allowed","method":"get|all"}` when `decide()` for kind
-  `namespace` with method `GET` (and the filters) allows it, else the normal 401
-  `rest_forbidden_guest`. `get_namespace_index` never runs for a probe, so nothing is
-  disclosed beyond what a guest learns by calling any route of that namespace. In
-  `open` the hook is not registered and the probe returns the normal namespace index
-  (200) — shown as "open".
-- Output per namespace: configured state, observed result, verdict "as configured" /
-  "differs" / "inconclusive" (any other status, network error, timeout). The `method`
-  shown comes from the probe answer (GET-only vs all is configuration, not tested with
-  writes).
-- JS: `fetch(url, {credentials: 'omit', cache: 'no-store', signal})`, 10 s
-  `AbortController` timeout per probe, button disabled during a run and restored in
+- `GET /` (via `rest_url()`) — the real index route. Expected from `decide()` for kind
+  `index` and the effective state: 401 when the module is on and the mode is `closed`, or
+  `allowlist` with hide-index; else 200.
+- `GET /sfx-guest/v1/probe?namespace=<ns>` for every live namespace (URL built with
+  `rest_url()` + `add_query_arg()`, so it is encoded and works with plain permalinks).
+  The theme registers this route itself on `rest_api_init` whenever the WP Optimizer
+  module is loaded, in every mode (`permission_callback` `__return_true`, `GET` only);
+  the hook always lets it through and it never appears in the namespace table.
+  Its callback runs the same decision as the hook would for a guest `GET` to a normal
+  route of `<ns>` — effective state (master switch, mode, map, both filters with a
+  synthetic `GET` request) — and returns `{"state": "open"|"allowed"|"blocked",
+  "method": "get"|"all"|"filtered"|null}` (`filtered` when the filter grants a namespace
+  that has no map entry). It answers only for live namespaces (else 404), so it reveals
+  nothing a guest cannot learn by calling routes (401 vs 404 above).
+- What it proves: the request really arrives as a guest (no cookie, no nonce), through
+  page cache and Password Protection, and reaches the same decision code. Per namespace
+  the row shows configured vs reported state with verdict "as configured" / "differs" /
+  "inconclusive" (other status, network error, timeout). Writes are never sent; GET-only
+  vs all is shown from the report.
+- JS: `fetch(url, {credentials: 'omit', cache: 'no-store', redirect: 'manual', signal})`,
+  10 s `AbortController` timeout per probe, button disabled during a run and restored in
   `finally`, a run id so a stale run cannot overwrite a newer one, output via
-  `textContent`, strings via `wp_localize_script` (`sfxtheme`). UI note: a page cache,
-  Password Protection or a CORS/TLS issue can change results.
+  `textContent`, strings via `wp_localize_script` (`sfxtheme`).
 
 ### New-namespace notice
 
 `admin_notices` on `index.php`, `plugins.php` and the WP Optimizer page, for
-`manage_options`, module on, mode `allowlist`, saved list exists: live supported
-namespaces that are not in seen **and not allowed** → "New REST namespaces are blocked
-for guests: …" with a link to the setting. Saving the page acknowledges every displayed
+`manage_options`, module on, mode `allowlist`, saved list exists: live namespaces that
+are not in seen **and not allowed** → "New REST namespaces are blocked for guests: …"
+(escaped) with a link to the setting; unsupported ones carry "(unsupported characters —
+allow via the `sfx/rest_guest_allowed_namespaces` filter)". Saving the page acknowledges every displayed
 namespace.
 
 ## Theme settings overview
 
 `OverviewProvider::build_wp_optimizer_group` counts checkbox fields only. Changes:
 `rest_guest_hide_index` is skipped there (it would read "active" in `open` mode), and
-the security section gets one item "REST API for guests" — active when the normalised
-mode is not `open`, detail = the mode label. Removing `disable_rest_api_non_authenticated`
+the security section gets one item "REST API for guests" — active when enforcement is
+effective (master switch off and normalised mode not `open`), detail = the mode label
+(plus "inactive: WP Optimizer disabled" when the master switch is on). Removing `disable_rest_api_non_authenticated`
 lowers the security count by one; the new item adds it back.
 
 ## Import/Export and purge
@@ -302,16 +330,22 @@ Automated (`tests/wpoptimizer-rest-guest-test.php`, stubs in the style of
 - `decide()`: allowed GET → true; disallowed → false; `get` with `POST` → false, `HEAD`
   → true; index/discovery with and without hide-index; `open` → always true; `closed` →
   always false.
-- Hook: logged-in → `null`; not serving REST → `null`; non-null incoming result →
-  unchanged; blocked → `WP_Error` code `rest_forbidden_guest`, status 401, message by
+- Hook: logged-in → incoming result unchanged; not serving REST → unchanged; guest +
+  blocked + non-null incoming result → 401 (overridden); guest + allowed + non-null →
+  unchanged; probe route always passes; discovery with a `namespace` query override is
+  judged by that namespace; blocked → `WP_Error` code `rest_forbidden_guest`, status 401, message by
   kind; `sfx/rest_guest_is_allowed` flips both ways; non-array
-  `sfx/rest_guest_allowed_namespaces` ignored; probe on discovery → 200 allowed / 401,
-  index callback never invoked.
-- Normalisers: non-array option → `[]`; legacy 1 + no mode → `closed`; legacy 0 →
+  `sfx/rest_guest_allowed_namespaces` ignored; probe callback: open/allowed/blocked,
+  `filtered` method for a filter-only grant, master switch on → open, unknown namespace →
+  404.
+- Normalisers: non-array option → `[]`; `supported()` rejects `wp/v2\n`, `a/../b`,
+  `.`; numeric live namespace handled as string; `hide_index()` absent/null → true,
+  `'0'` → false; legacy 1 + no mode → `closed`; legacy 0 →
   `open`; explicit mode wins; `namespaces()` idempotent, absent/`null` → `null`, scalar
   → `[]`, unticked form row (`allowed = 0`) dropped, ticked kept, stored row without
   `allowed` kept, unsupported namespace dropped; `seen()`.
-- Sanitizer: a serialized form with some rows unticked; form save sets seen = previous ∪
+- Sanitizer: a serialized form with some rows unticked; a form save without rows → `[]`;
+  hide-index absent in an import → 1; form save sets seen = previous ∪
   displayed; import keeps imported seen; absent keys → never-saved defaults; a stored
   row list passed through ImportExport's recursive sanitizer keeps `bricks/v1`,
   `oembed/1.0`, `contact-form-7/v1`.
@@ -321,12 +355,15 @@ teardown via `register_shutdown_function` declared before the first fixture, res
 the WP Optimizer option and Password Protection settings and deleting the application
 password it creates; fails fatally outside the site root):
 
-- preconditions under the teardown: application passwords enabled (WP Optimizer's
-  switch), Password Protection off;
+- preconditions under the teardown: WP Optimizer master switch off, application
+  passwords enabled, `disable_rest_api` and `disable_embed` off (both unregister the
+  oEmbed route), Password Protection off; one published post as the oEmbed target
+  (existing or a fixture, removed in the teardown); the harness asserts the oEmbed route
+  is registered before testing;
 - mode `allowlist`, `bricks/v1` and `oembed/1.0` allowed, `wp/v2` not: guest `GET
-  /oembed/1.0/embed?url=<home>` → 200; guest `GET /wp/v2/posts` → 401
-  `rest_forbidden_guest`; guest `/` → 401; guest probe `/bricks/v1?sfx_guest_probe=1` →
-  200, `/wp/v2?sfx_guest_probe=1` → 401; `GET /wp/v2/posts` with the application
+  /oembed/1.0/embed?url=<post permalink>` → 200; guest `GET /wp/v2/posts` → 401
+  `rest_forbidden_guest`; guest `/` → 401; probe `namespace=bricks/v1` → `allowed`,
+  `namespace=wp/v2` → `blocked`; `GET /wp/v2/posts` with the application
   password → 200;
 - mode `open`: guest `GET /wp/v2/posts` → 200.
 
