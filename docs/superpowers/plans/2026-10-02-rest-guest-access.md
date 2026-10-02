@@ -789,7 +789,7 @@ In the field loop, skip the four new ids (`continue` for `rest_guest_*`), and af
         $output = classes\RestGuestAccess::sanitize_into($input, $output, $is_form, classes\RestGuestAccess::option());
 ```
 
-The hide-login early `return $output;` paths come after this line, so all paths include the new keys. Add a generic `select` branch to the loop for future selects:
+The hide-login early `return $output;` paths come after this line, so all paths include the new keys. Also replace the existing `$current_options = get_option('sfx_wpoptimizer_options', []);` with `$current_options = classes\RestGuestAccess::option();` (a stored object/scalar would otherwise fatal in the HideLogin array accesses) — test: stored option `new stdClass()` + a complete form save → no error, mode saved. Add a generic `select` branch to the loop for future selects:
 
 ```php
             } elseif ($field['type'] === 'select') {
@@ -868,7 +868,9 @@ function sanitize_text_field($str) { $s = strip_tags((string) $str); $s = preg_r
 require_once dirname(__DIR__) . '/inc/ImportExport/Controller.php';
 $ie = (new ReflectionClass(\SFX\ImportExport\Controller::class))->newInstanceWithoutConstructor();
 $recursive = new ReflectionMethod(\SFX\ImportExport\Controller::class, 'sanitize_array_recursive');
-$recursive->setAccessible(true); // required on PHP 8.0
+if (PHP_VERSION_ID < 80100) {
+    $recursive->setAccessible(true); // needed on 8.0 only; deprecated in 8.5
+}
 $rows = G::namespaces(['rest_guest_namespaces' => [['namespace' => 'bricks/v1', 'method' => 'all'], ['namespace' => 'oembed/1.0', 'method' => 'get'], ['namespace' => 'contact-form-7/v1', 'method' => 'all']]]);
 $imported = $recursive->invoke($ie, ['rest_guest_namespaces' => $rows, 'rest_guest_seen' => ['bricks/v1', 'oembed/1.0']]);
 assert_same($rows, $imported['rest_guest_namespaces'], '17: rows unchanged by ImportExport');
@@ -878,7 +880,10 @@ assert_same(['bricks/v1', 'oembed/1.0'], G::seen($imported), '17: seen unchanged
 
 Note for test 17: the stubs mirror core's `sanitize_key()`/`sanitize_text_field()` for these inputs; a namespace used as an array key would come back as `bricksv1`, which the assertion would catch.
 
-Also add to the Task 3 tests: a form save over a **missing** option (`unset($test_options['sfx_wpoptimizer_options'])`) run twice persists the same allowlist; and seen union — stored seen `['old/v1']`, displayed `['bricks/v1']`, live also has `new/v1` → seen becomes `['old/v1', 'bricks/v1']` (`new/v1` stays unacknowledged).
+Also add to the Task 3 tests:
+
+- **Serialized form from the real markup** (move `row_inputs()` into Task 3 so the test can use it; it needs only `esc_attr`/`checked`/`selected` stubs): render `row_inputs(0, 'bricks/v1', true, 'all') . row_inputs(1, 'wp/v2', false, 'get')`, collect `name`/`value` pairs in document order with a regex over the `<input>`/`<select>` markup (a checkbox counts only when `checked`, a select contributes its `selected` option), join them as `urlencode(name)=urlencode(value)&…`, add the markers, `option_page` and `rest_guest_displayed[]`, `parse_str()` into `$_POST`, then run `Settings::sanitize_options()` twice → `[['namespace' => 'bricks/v1', 'method' => 'all']]` and hide-index as posted. Reversing the hidden/checkbox order in `row_inputs()` must make this fail.
+- a form save over a **missing** option (`unset($test_options['sfx_wpoptimizer_options'])`) run twice persists the same allowlist; and seen union — stored seen `['old/v1']`, displayed `['bricks/v1']`, live also has `new/v1` → seen becomes `['old/v1', 'bricks/v1']` (`new/v1` stays unacknowledged).
 
 - [ ] **Step 5:** `./quality.sh` → PASS (the existing `wpoptimizer-security-behavior-test.php` iterates checkbox fields and requires a Controller method for each; the new fields are not `checkbox`, and the removed field takes its method with it).
 - [ ] **Step 6: Commit** `git commit -m "feat(wpoptimizer): REST guest settings, migration, truncation guard"`
@@ -918,6 +923,7 @@ Also add to the Task 3 tests: a form save over a **missing** option (`unset($tes
 - [ ] **Step 4: Table.** `private static function render_rest_namespaces(): string`:
   - `$o = RestGuestAccess::option(); $live = RestGuestAccess::live_namespaces(); $rows = RestGuestAccess::namespaces($o); $map = RestGuestAccess::effective_map($o, $live); $seen = RestGuestAccess::seen($o);`
   - Names: `array_map('strval', array_unique(array_merge($live, array_keys($map))))`, sorted with `SORT_STRING` — map keys like `"123"` come back as ints, and `owner()`/`hint()` take strings under strict types. Include a stored-only numeric namespace in the browser check (or in a rendering test) if one exists; otherwise rely on the cast.
+  - The inputs of one row come from `RestGuestAccess::row_inputs(int $i, string $ns, bool $allowed, string $method): string` (pure; returns the hidden `namespace`, hidden `allowed=0`, checkbox `allowed=1` checked when `$allowed`, and the method `<select>`, in that order, all attributes `esc_attr`), so Task 3's serialized-form test exercises the real markup.
   - Per name, row index `$i`: columns namespace (`<code>` escaped), owner `RestGuestAccess::owner()`, hint `RestGuestAccess::hint()`, badges ("new" when `$rows !== null && !in_array($ns, $seen, true)`, "not present" when not live, "unsupported characters — allow via the sfx/rest_guest_allowed_namespaces filter" when `!supported()`), allowed (`hidden 0` + checkbox `1`, checked when `isset($map[$ns])`), method `<select>` `all` / `GET only` (selected from `$map[$ns]`, default `get` for `wp/v2`, else `all`). Supported rows post `rest_guest_namespaces[$i][namespace|allowed|method]`; unsupported rows render text only, no inputs. Every listed name posts `rest_guest_displayed[]` (hidden).
   - (moved) The Bricks warning is **not** rendered here — see Step 4b. `get_template() === 'bricks'` and (`mode === 'closed'` or (`allowlist` and `($map['bricks/v1'] ?? null) !== 'all'`)) and the master switch is off: `<div class="notice notice-warning inline"><p>` + escaped text from the spec.
   - Test button below: `<button type="button" class="button" id="sfx-rest-guest-test">` + `<table id="sfx-rest-guest-results">` + a hint paragraph (saved state; `sfx/rest_guest_is_allowed` is not simulated; page cache / password protection / CORS can change results).
@@ -1027,7 +1033,7 @@ Also add to the Task 3 tests: a form save over a **missing** option (`unset($tes
                 $active = \SFX\WPOptimizer\classes\RestGuestAccess::enforcing($o);
                 $labels = ['open' => __('Open', 'sfxtheme'), 'allowlist' => __('Allowlist', 'sfxtheme'), 'closed' => __('Closed', 'sfxtheme')];
                 $detail = $labels[$mode];
-                if ($mode !== 'open' && !$active) {
+                if (!empty($o['disable_wp_optimizer'])) {
                     $detail .= ' — ' . __('inactive: WP Optimizer disabled', 'sfxtheme');
                 }
                 $children[] = ['id' => 'rest_guest_mode', 'label' => __('REST API for guests', 'sfxtheme'), 'status' => $active ? 'active' : 'inactive', 'detail' => $detail];
@@ -1047,7 +1053,7 @@ Also add to the Task 3 tests: a form save over a **missing** option (`unset($tes
 
 **Files:** `README.md`, `CHANGELOG.md`, `languages/de_DE.po`, `languages/de_DE.mo`.
 
-- [ ] **Step 1: README** — under Security, a short "REST API access for guests" bullet, plus notes: merge import cannot clear the allowlist (use replace); REST response caches answering before dispatch must exclude REST (varying by login is not enough); guests can tell 401 (blocked) from 404 (missing) and read `OPTIONS` metadata of a known route; "Remove REST discovery links and oEmbed" never blocked REST.
+- [ ] **Step 1: README** — under Security, a short "REST API access for guests" bullet, plus notes on Import/Export: with **merge**, an empty imported allowlist or seen list does not clear the existing one, a non-empty one replaces it whole (rows are not combined), and an existing mode wins over an imported legacy "REST for logged-in users only" flag; use **replace** for an exact copy; REST response caches answering before dispatch must exclude REST (varying by login is not enough); guests can tell 401 (blocked) from 404 (missing) and read `OPTIONS` metadata of a known route; "Remove REST discovery links and oEmbed" never blocked REST.
 - [ ] **Step 2: CHANGELOG** — entry under the next version with the spec's text. (`release.sh` writes the version header; add under an "Unreleased" heading if that is the file's convention — check its first entries.)
 - [ ] **Step 3: Translations** — add every new `sfxtheme` string with German `msgstr` to `languages/de_DE.po` (update the two changed `disable_rest_api` strings; remove the obsolete "Disable REST API for Non-Authenticated Users" entry), then `msgfmt -o languages/de_DE.mo languages/de_DE.po`. Verify: `msgfmt --check languages/de_DE.po`.
 - [ ] **Step 4: Commit** `git commit -m "docs(wpoptimizer): REST guest access README, changelog, German strings"`
@@ -1058,9 +1064,11 @@ Also add to the Task 3 tests: a form save over a **missing** option (`unset($tes
 
 **Files:** Create `tests/support/rest-guest-live-check.php`.
 
-- [ ] **Step 1:** Script that boots WordPress from the site root (`require` of `wp-load.php` resolved from `__DIR__ . '/../../../../../wp-load.php'`, fatal if missing), as user 1 for writes. **Before any fixture**: `register_shutdown_function` restoring `sfx_general_options`, `sfx_wpoptimizer_options`, the Password Protection option, deleting the application password it created and any fixture post — every snapshot taken first, the shutdown function declared before the first change (AGENTS.md "verification harness" rule). Then: enable the module, master switch off, `disable_application_passwords` 0, `disable_rest_api` 0, `disable_embed` 0, Password Protection off; ensure a published post (create a fixture when none); set policy `allowlist`, hide-index 1, rows `bricks/v1` all, `oembed/1.0` get; create an application password for user 1.
+- [ ] **Step 1 (teardown contract):** restoration must not go through the WP Optimizer sanitizer — it is registered when the Controller is constructed (also in this CLI boot) and would rewrite a legacy snapshot into the new schema and drop non-field keys such as `disable_wp_optimizer`. The shutdown function therefore first calls `remove_all_filters('sanitize_option_' . $name)` for every option it restores, then for each option: originally absent → `delete_option`, else `update_option($name, $snapshot)`; then re-reads each with `get_option` and prints `RESTORE MISMATCH <name>` (exit code 1) if it differs from the snapshot. Snapshots taken before any change: `sfx_general_options`, `sfx_wpoptimizer_options`, the Password Protection option, `get_site_option('using_application_passwords', null)` (absent vs value) and `metadata_exists('user', 1, '_application_passwords')` plus its value. The application password is deleted by its UUID only (`WP_Application_Passwords::delete_application_password(1, $uuid)`); then the user meta is restored to its snapshot (deleted if it did not exist) and `using_application_passwords` to its snapshot (deleted if absent).
+
+- [ ] **Step 1b:** Script that boots WordPress from the site root (`require` of `wp-load.php` resolved from `__DIR__ . '/../../../../../wp-load.php'`, fatal if missing), as user 1 for writes. **Before any fixture**: `register_shutdown_function` restoring `sfx_general_options`, `sfx_wpoptimizer_options`, the Password Protection option, deleting the application password it created and any fixture post — every snapshot taken first, the shutdown function declared before the first change (AGENTS.md "verification harness" rule). Then: enable the module, master switch off, `disable_application_passwords` 0, `disable_rest_api` 0, `disable_embed` 0, Password Protection off; ensure a published post (create a fixture when none); set policy `allowlist`, hide-index 1, rows `bricks/v1` all, `oembed/1.0` get; create an application password for user 1.
 - [ ] **Step 2:** Fresh HTTP requests with `wp_remote_get` (`sslverify` false locally) and assertions (exit non-zero on the first mismatch, printing what it got):
-  - route check in a **fresh process** after the fixture options are saved (this process booted before `disable_embed`/`disable_rest_api` were switched off, and their hooks already removed the oEmbed route here): `shell_exec(PHP_BINARY . ' -r ' . escapeshellarg('require "<wp-load>"; echo count(rest_get_server()->get_routes("oembed/1.0"));'))` > 0;
+  - route check in a **fresh process** after the fixture options are saved (this process booted before `disable_embed`/`disable_rest_api` were switched off, and their hooks already removed the oEmbed route here): `exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg('require "<wp-load>"; echo "OEMBED_ROUTES:" . count(rest_get_server()->get_routes("oembed/1.0"));'), $out, $code)`; require `$code === 0` and a line matching `/^OEMBED_ROUTES:([1-9]\d*)$/` — anything else (a fatal's output included) fails the precondition;
   - guest `GET /wp-json/oembed/1.0/embed?url=<permalink>` → 200;
   - guest `GET /wp-json/wp/v2/posts` → 401, code `rest_forbidden_guest`;
   - guest `GET /wp-json/` → 401;
