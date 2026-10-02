@@ -268,7 +268,8 @@ class SC_ContactInfos
     private function get_field_value(string $field, ?int $contact_id = null, string $type = 'main'): string
     {
         // Create cache key
-        $cache_key = 'sfx_contact_info_' . ($contact_id ?? 'type_' . $type) . '_' . $field;
+        // 0 means "by type" (as below), so it must not share one key across types.
+        $cache_key = 'sfx_contact_info_' . ($contact_id ?: 'type_' . $type) . '_' . $field;
         $cached_value = get_transient($cache_key);
         
         if ($cached_value !== false) {
@@ -410,7 +411,8 @@ class SC_ContactInfos
      * A leading 00 becomes +, a leading single 0 becomes +<country code> (filter
      * sfx_contact_info_default_country_code, default 49), and the "(0)" written after a country
      * code is dropped. Numbers without 0/00/+ cannot be completed and keep their digits only.
-     * An extension in RFC 3966 form (";ext=123") is preserved; other notations are not parsed.
+     * An extension (";ext=123", "x 123", "ext. 123", "Durchwahl 123", "DW 123" at the end) becomes
+     * ";ext=123"; German "-0" style switchboard digits are part of the number and stay.
      * Known limit: the "(0)" marker is recognised after 1–3 digits following + or 00, so a
      * compact "+493(0)…" cannot be told apart from "+49 (0)…" without a country-code table.
      * Output only — stored values stay as entered.
@@ -419,11 +421,22 @@ class SC_ContactInfos
     {
         // An RFC 3966 extension (";ext=123") is kept apart, so its digits never join the number.
         $ext = '';
-        if (preg_match('/;\s*ext\s*=\s*([0-9().\-\s]+)/iu', $value, $m)) {
-            $ext_digits = (string) preg_replace('/\D+/', '', $m[1]); // RFC 3966 allows visual separators
-            $ext = $ext_digits !== '' ? ';ext=' . $ext_digits : '';
-            $value = substr($value, 0, (int) strpos($value, ';'));
+        // An extension is kept apart, so its digits never join the number. RFC 3966 form first:
+        // everything from the first ";" is parameters, only "ext=" among them is used.
+        $ext_raw = '';
+        $semi = strpos($value, ';');
+        if ($semi !== false) {
+            if (preg_match('/;[\s\p{Z}]*ext[\s\p{Z}]*=([^;]*)/iu', substr($value, $semi), $m)) {
+                $ext_raw = $m[1];
+            }
+            $value = substr($value, 0, $semi);
+        } elseif (preg_match('/(?<=[0-9\s\p{Z},)])(?:x|ext\.?|extension|durchwahl|dw\.?)[\s\p{Z}]*:?[\s\p{Z}]*([0-9(][0-9().\-\s\p{Z}]*)$/iu', $value, $m, PREG_OFFSET_CAPTURE)) {
+            // Written form at the end: "x 12", "x12", "ext. 12", "Durchwahl 12", "DW 12".
+            $ext_raw = $m[1][0];
+            $value = substr($value, 0, $m[0][1]);
         }
+        $ext_digits = (string) preg_replace('/\D+/', '', $ext_raw); // visual separators allowed
+        $ext = $ext_digits !== '' ? ';ext=' . $ext_digits : '';
 
         $value = (string) preg_replace('/^[\s\p{Z}]+/u', '', $value); // incl. non-breaking spaces
         $international = str_starts_with($value, '+') || str_starts_with($value, '00');
@@ -441,11 +454,16 @@ class SC_ContactInfos
             return '+' . $digits . $ext;
         }
         if (str_starts_with($digits, '00')) {
-            return '+' . substr($digits, 2) . $ext;
+            $rest = substr($digits, 2);
+            return $rest !== '' ? '+' . $rest . $ext : ''; // "00" alone is no number
         }
         if (str_starts_with($digits, '0')) {
+            $rest = substr($digits, 1);
+            if ($rest === '') {
+                return '';
+            }
             $country = (string) preg_replace('/\D+/', '', (string) apply_filters('sfx_contact_info_default_country_code', '49'));
-            return '+' . ($country !== '' ? $country : '49') . substr($digits, 1) . $ext;
+            return '+' . ($country !== '' ? $country : '49') . $rest . $ext;
         }
         return $digits . $ext;
     }
@@ -462,8 +480,9 @@ class SC_ContactInfos
     private function render_phone_field(string $value, array $atts, string $icon, bool $has_link): string
     {
         $inner = $icon;
-        if ($has_link) {
-            $inner .= '<a href="tel:' . esc_attr(self::normalize_tel($value)) . '">' . esc_html($value) . '</a>';
+        $tel = self::normalize_tel($value);
+        if ($has_link && $tel !== '') { // "on request" has no number to dial
+            $inner .= '<a href="tel:' . esc_attr($tel) . '">' . esc_html($value) . '</a>';
         } else {
             $inner .= esc_html($value);
         }

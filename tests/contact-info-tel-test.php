@@ -43,6 +43,20 @@ $cases = [
     '0208 2076580 ; EXT = 12'  => '+492082076580;ext=12',
     '+49 208 2076580;ext=12-34' => '+492082076580;ext=1234',
     '+49-208-207658(0)'        => '+492082076580',
+    '+49 208 2076580 x123'     => '+492082076580;ext=123',
+    '+49 208 2076580 ext. 12'  => '+492082076580;ext=12',
+    '0208 2076580, Durchwahl 45' => '+492082076580;ext=45',
+    '0208 2076580 DW 7'        => '+492082076580;ext=7',
+    'auf Anfrage'              => '',
+    '+49 208 2076580x123'      => '+492082076580;ext=123',
+    '+49 208 2076580ext.123'   => '+492082076580;ext=123',
+    '+49 208 2076580;ext=-123' => '+492082076580;ext=123',
+    '+49 208 2076580;ext=.123' => '+492082076580;ext=123',
+    '+49 208 2076580;ext=123;foo=9' => '+492082076580;ext=123',
+    '+49 208 2076580;foo=9'    => '+492082076580',
+    '00'                       => '',
+    '00;ext=12'                => '',
+    '0'                        => '',
     '0049 (0) 208 2076580'     => '+492082076580',
     '+1 (0)555 0100'           => '+15550100',
     '+49 208 2076580;ext=(123)' => '+492082076580;ext=123',
@@ -114,6 +128,21 @@ assert_same(
     $sc->render_contact_info(['field' => 'phone', 'contact_id' => '310', 'format' => 'tel', 'debug' => '1']),
     '4: format=tel wins over debug'
 );
+
+// 3b. A field without digits stays text, never an empty tel: link.
+$test_meta[311] = ['_phone' => ['auf Anfrage']];
+$test_posts[311] = sfx_make_post(311, 'sfx_contact_info', 'publish', 'No number');
+assert_same('auf Anfrage', $sc->render_contact_info(['field' => 'phone', 'contact_id' => '311']), '3b: no digits -> no link');
+
+// 4c. contact_id 0 = by type: the cache key carries the type, not 0.
+$test_transients = [];
+$test_transients['sfx_contact_info_type_main'] = 310;
+$test_transients['sfx_contact_info_type_branch'] = 301;
+$main = $sc->render_contact_info(['field' => 'phone', 'contact_id' => '0', 'type' => 'main', 'format' => 'tel']);
+$branch = $sc->render_contact_info(['field' => 'phone', 'contact_id' => '0', 'type' => 'branch', 'format' => 'tel']);
+assert_same('+492082076580', $main, '4c: id 0 main');
+assert_same('+4989222', $branch, '4c: id 0 branch does not reuse the main cache');
+assert_true(!isset($test_transients['sfx_contact_info_0_phone']), '4c: no type-less cache key');
 
 // 4b. contact_id from a shortcode arrives as a string; numeric values keep their meaning.
 assert_same('', $sc->render_contact_info(['field' => 'email', 'contact_id' => '-1']), '4b: negative id -> nothing');
