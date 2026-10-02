@@ -8037,3 +8037,7 @@ msgstr ""
 
 msgid "Admin only — guests do not need it."
 msgstr "Nur für Admins – Gäste benötigen es nicht."
+
+#, php-format
+msgid "Methods allowed for %s"
+msgstr "Erlaubte Methoden für %s"

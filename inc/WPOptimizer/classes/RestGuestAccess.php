@@ -87,7 +87,8 @@ final class RestGuestAccess
         $html = '<input type="hidden" name="' . $base . '[namespace]" value="' . esc_attr($ns) . '">';
         $html .= '<input type="hidden" name="' . $base . '[allowed]" value="0">';
         $html .= '<input type="checkbox" name="' . $base . '[allowed]" value="1"' . ($allowed ? ' checked' : '') . ' aria-label="' . $label . '">';
-        $html .= '<select name="' . $base . '[method]">';
+        $methods_label = esc_attr(sprintf(__('Methods allowed for %s', 'sfxtheme'), $ns));
+        $html .= '<select name="' . $base . '[method]" aria-label="' . $methods_label . '">';
         $html .= '<option value="all"' . ($method === 'all' ? ' selected' : '') . '>' . esc_html__('All methods', 'sfxtheme') . '</option>';
         $html .= '<option value="get"' . ($method === 'get' ? ' selected' : '') . '>' . esc_html__('GET only', 'sfxtheme') . '</option>';
         return $html . '</select>';

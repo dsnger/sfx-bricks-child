@@ -339,7 +339,7 @@ foreach ($patterns as $name => $pattern) {
     $m[$name] = $match;
 }
 
-check("oEmbed route registered ({$m['OEMBED_ROUTES'][1]} routes)", true);
+check("oEmbed route registered ({$m['OEMBED_ROUTES'][1]} routes)", (int) $m['OEMBED_ROUTES'][1] > 0);
 $new_blocked = json_decode($m['NEW_BLOCKED'][1], true);
 check('new_blocked() reports wp/v2', is_array($new_blocked) && in_array('wp/v2', $new_blocked, true), $m['NEW_BLOCKED'][1]);
 

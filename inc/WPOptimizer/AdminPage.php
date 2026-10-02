@@ -12,7 +12,7 @@ class AdminPage
     /** Hook suffix (= screen id) of this page, set when the submenu is added. */
     private static string $page_hook = '';
     public static $page_title = 'WP Optimizer';
-    public static $description = 'Toggle a wide range of WordPress optimizations (disable search, comments, REST API, feeds, version numbers, etc.) for performance and security.';
+    public static $description = 'Toggle a wide range of WordPress optimizations (disable search, comments, feeds, version numbers, restrict REST API access for guests, etc.) for performance and security.';
 
     /**
      * Evaluate conditional logic for field display
