@@ -31,6 +31,13 @@ function is_user_logged_in(): bool { return get_current_user_id() > 0; }
 function wp_is_serving_rest_request(): bool { global $test_serving_rest; return $test_serving_rest; }
 function wp_unslash($v) { return $v; }
 function add_settings_error($setting, $code, $message, $type = 'error'): void { global $test_settings_errors; $test_settings_errors[] = $code; }
+function sanitize_key($key) { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $key)); }
+function sanitize_text_field($str) { $s = strip_tags((string) $str); $s = preg_replace('/%[a-f0-9]{2}/i', '', $s); return trim(preg_replace('/[\r\n\t ]+/', ' ', $s)); }
+function sanitize_title($title) { return trim(preg_replace('/[^a-z0-9_\-]+/', '-', strtolower((string) $title)), '-'); }
+function esc_attr($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
+function esc_html($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
+function esc_html__($s, $d = 'default') { return esc_html($s); }
+function get_page_by_path($path) { return null; }
 
 class WP_Error
 {
@@ -42,7 +49,11 @@ class WP_Error
 
 require_once dirname(__DIR__) . '/inc/WPOptimizer/classes/RestGuestAccess.php';
 
+require_once dirname(__DIR__) . '/inc/WPOptimizer/classes/HideLogin.php';
+require_once dirname(__DIR__) . '/inc/WPOptimizer/Settings.php';
+
 use SFX\WPOptimizer\classes\RestGuestAccess as G;
+use SFX\WPOptimizer\Settings;
 
 function assert_same($expected, $actual, string $message): void
 {
@@ -257,5 +268,128 @@ $test_filters = [];
 
 // 15. new_blocked(): live − seen − allowed (filtered map).
 assert_same(['new/v1'], G::new_blocked(['bricks/v1', 'new/v1', 'old/v1', 'granted/v1'], ['old/v1'], ['bricks/v1' => 'all', 'granted/v1' => 'get']), '15: new blocked namespaces');
+
+// 16. Form save, complete, run twice (add_option path) -> same allowlist.
+$test_options['sfx_wpoptimizer_options'] = [];
+$_POST = ['option_page' => 'sfx_wpoptimizer_options', 'sfx_wpoptimizer_options' => [
+    'sfx_wpo_form_start' => '1',
+    'rest_guest_mode' => 'allowlist',
+    'rest_guest_hide_index' => '1',
+    'rest_guest_namespaces' => [
+        ['namespace' => 'bricks/v1', 'allowed' => '1', 'method' => 'all'],
+        ['namespace' => 'wp/v2', 'allowed' => '0', 'method' => 'get'],
+    ],
+    'rest_guest_displayed' => ['bricks/v1', 'wp/v2'],
+    'block_author_query' => '1',
+    'sfx_wpo_form_end' => '1',
+]];
+$first = Settings::sanitize_options($_POST['sfx_wpoptimizer_options']);
+$second = Settings::sanitize_options($first);
+assert_same([['namespace' => 'bricks/v1', 'method' => 'all']], $second['rest_guest_namespaces'], '16: repeat-safe allowlist');
+assert_same('allowlist', $second['rest_guest_mode'], '16: mode');
+assert_same(['bricks/v1', 'wp/v2'], $second['rest_guest_seen'], '16: seen = displayed');
+assert_same(1, $second['block_author_query'], '16: other checkbox kept');
+
+// 17. Truncated form saves return the complete stored option.
+$stored = ['rest_guest_mode' => 'allowlist', 'rest_guest_namespaces' => [], 'block_author_query' => 1, 'hide_login' => 0];
+foreach ([
+    'cut before mode' => ['sfx_wpo_form_start' => '1'],
+    'cut between mode and rows' => ['sfx_wpo_form_start' => '1', 'rest_guest_mode' => 'allowlist'],
+    'cut after a row namespace' => ['sfx_wpo_form_start' => '1', 'rest_guest_mode' => 'allowlist', 'rest_guest_namespaces' => [['namespace' => 'wp/v2']]],
+] as $label => $cut) {
+    $test_options['sfx_wpoptimizer_options'] = $stored;
+    $test_settings_errors = [];
+    $_POST = ['option_page' => 'sfx_wpoptimizer_options', 'sfx_wpoptimizer_options' => $cut];
+    assert_same($stored, Settings::sanitize_options($cut), "17: {$label} -> stored option");
+    assert_same(['sfx_wpo_truncated'], $test_settings_errors, "17: {$label} -> error");
+}
+
+// 18. Form save without rows -> [] (never back to defaults).
+$test_options['sfx_wpoptimizer_options'] = [];
+$_POST = ['option_page' => 'sfx_wpoptimizer_options', 'sfx_wpoptimizer_options' => ['sfx_wpo_form_start' => '1', 'rest_guest_mode' => 'allowlist', 'sfx_wpo_form_end' => '1']];
+assert_same([], Settings::sanitize_options([])['rest_guest_namespaces'], '18: empty form -> []');
+
+// 19. Import / programmatic (no option_page): legacy migration, absent keys, scalar input, imported seen kept.
+$_POST = [];
+$imp = Settings::sanitize_options(['disable_rest_api_non_authenticated' => 1]);
+assert_same('closed', $imp['rest_guest_mode'], '19: legacy import -> closed');
+assert_same(null, $imp['rest_guest_namespaces'], '19: absent namespaces -> null');
+assert_same(1, $imp['rest_guest_hide_index'], '19: absent hide -> 1');
+assert_same(false, array_key_exists('disable_rest_api_non_authenticated', $imp), '19: legacy key dropped');
+assert_same('open', Settings::sanitize_options('scalar')['rest_guest_mode'], '19: scalar import -> open');
+assert_same(['x/v1'], Settings::sanitize_options(['rest_guest_seen' => ['x/v1']])['rest_guest_seen'], '19: imported seen kept');
+
+// 20. Rows survive the real ImportExport recursive sanitizer.
+require_once dirname(__DIR__) . '/inc/ImportExport/Controller.php';
+$ie = (new ReflectionClass(\SFX\ImportExport\Controller::class))->newInstanceWithoutConstructor();
+$recursive = new ReflectionMethod(\SFX\ImportExport\Controller::class, 'sanitize_array_recursive');
+if (PHP_VERSION_ID < 80100) {
+    $recursive->setAccessible(true); // needed on 8.0 only; deprecated in 8.5
+}
+$rows = G::namespaces(['rest_guest_namespaces' => [['namespace' => 'bricks/v1', 'method' => 'all'], ['namespace' => 'oembed/1.0', 'method' => 'get'], ['namespace' => 'contact-form-7/v1', 'method' => 'all']]]);
+$imported = $recursive->invoke($ie, ['rest_guest_namespaces' => $rows, 'rest_guest_seen' => ['bricks/v1', 'oembed/1.0']]);
+assert_same($rows, $imported['rest_guest_namespaces'], '20: rows unchanged by ImportExport');
+assert_same($rows, G::namespaces($imported), '20: normalised after import');
+assert_same(['bricks/v1', 'oembed/1.0'], G::seen($imported), '20: seen unchanged by ImportExport');
+
+// 21. Serialized form from the real markup, run twice.
+$html = G::row_inputs(0, 'bricks/v1', true, 'all') . G::row_inputs(1, 'wp/v2', false, 'get');
+$pairs = [];
+preg_match_all('#<input\b[^>]*>|<select\b[^>]*>.*?</select>#s', $html, $tags);
+$attr = static function (string $tag, string $name): ?string {
+    return preg_match('/\s' . $name . '="([^"]*)"/', $tag, $m) ? html_entity_decode($m[1], ENT_QUOTES) : null;
+};
+foreach ($tags[0] as $tag) {
+    if (strpos($tag, '<select') === 0) {
+        preg_match('#<select\b[^>]*>#', $tag, $open);
+        preg_match_all('#<option\b[^>]*>#', $tag, $opts);
+        foreach ($opts[0] as $o) {
+            if (preg_match('/\sselected\b/', $o)) {
+                $pairs[] = [$attr($open[0], 'name'), $attr($o, 'value')];
+            }
+        }
+        continue;
+    }
+    if ($attr($tag, 'type') === 'checkbox' && !preg_match('/\schecked\b/', $tag)) {
+        continue;
+    }
+    $pairs[] = [$attr($tag, 'name'), $attr($tag, 'value')];
+}
+$query = implode('&', array_map(static fn($p) => urlencode($p[0]) . '=' . urlencode($p[1]), $pairs));
+$query = 'option_page=sfx_wpoptimizer_options&' . urlencode('sfx_wpoptimizer_options[sfx_wpo_form_start]') . '=1&'
+    . urlencode('sfx_wpoptimizer_options[rest_guest_mode]') . '=allowlist&'
+    . urlencode('sfx_wpoptimizer_options[rest_guest_hide_index]') . '=0&'
+    . $query . '&'
+    . urlencode('sfx_wpoptimizer_options[rest_guest_displayed][]') . '=bricks%2Fv1&'
+    . urlencode('sfx_wpoptimizer_options[rest_guest_displayed][]') . '=wp%2Fv2&'
+    . urlencode('sfx_wpoptimizer_options[sfx_wpo_form_end]') . '=1';
+parse_str($query, $_POST);
+$test_options['sfx_wpoptimizer_options'] = [];
+$one = Settings::sanitize_options($_POST['sfx_wpoptimizer_options']);
+$two = Settings::sanitize_options($one);
+assert_same([['namespace' => 'bricks/v1', 'method' => 'all']], $two['rest_guest_namespaces'], '21: serialized markup -> allowlist');
+assert_same(0, $two['rest_guest_hide_index'], '21: hide-index as posted');
+
+// 22. Form save over a missing option, twice; seen union leaves new namespaces unacknowledged.
+unset($test_options['sfx_wpoptimizer_options']);
+$a = Settings::sanitize_options($_POST['sfx_wpoptimizer_options']);
+$b = Settings::sanitize_options($a);
+assert_same([['namespace' => 'bricks/v1', 'method' => 'all']], $b['rest_guest_namespaces'], '22: missing option, repeat-safe');
+$test_options['sfx_wpoptimizer_options'] = ['rest_guest_seen' => ['old/v1']];
+$_POST = ['option_page' => 'sfx_wpoptimizer_options', 'sfx_wpoptimizer_options' => ['sfx_wpo_form_start' => '1', 'rest_guest_mode' => 'allowlist', 'rest_guest_displayed' => ['bricks/v1'], 'sfx_wpo_form_end' => '1']];
+assert_same(['old/v1', 'bricks/v1'], Settings::sanitize_options([])['rest_guest_seen'], '22: seen = stored + displayed');
+
+// 23. A stored object/scalar option never fatals Settings.
+$test_options['sfx_wpoptimizer_options'] = new stdClass();
+assert_same(null, Settings::get('no_such_option'), '23: get over object option');
+assert_same([], Settings::get_all(), '23: get_all over object option');
+$_POST = ['option_page' => 'sfx_wpoptimizer_options', 'sfx_wpoptimizer_options' => ['sfx_wpo_form_start' => '1', 'rest_guest_mode' => 'closed', 'sfx_wpo_form_end' => '1']];
+assert_same('closed', Settings::sanitize_options([])['rest_guest_mode'], '23: form save over object option');
+$_POST = [];
+
+// 24. Controller dropped the legacy method; the field is gone from Settings.
+assert_same(false, strpos(file_get_contents(dirname(__DIR__) . '/inc/WPOptimizer/Controller.php'), 'disable_rest_api_non_authenticated') !== false, '24: legacy name gone from Controller');
+$ids = array_column(Settings::get_fields(), 'id');
+assert_same(true, in_array('rest_guest_mode', $ids, true) && !in_array('disable_rest_api_non_authenticated', $ids, true), '24: fields');
 
 echo "wpoptimizer-rest-guest-test: PASS\n";

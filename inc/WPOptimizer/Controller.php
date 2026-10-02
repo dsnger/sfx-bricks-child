@@ -25,7 +25,6 @@ class Controller
         'defer_js',
         'defer_css',
         'disable_rest_api',
-        'disable_rest_api_non_authenticated',
         'block_rest_users_anonymous',
         'remove_users_sitemap',
         'enable_content_order',
@@ -70,6 +69,11 @@ class Controller
         if (file_exists(__DIR__ . '/classes/RevisionLimiter.php')) {
             require_once __DIR__ . '/classes/RevisionLimiter.php';
         }
+
+        require_once __DIR__ . '/classes/RestGuestAccess.php';
+        // Unconditional: boot() always registers the probe route (it reports "open" while the
+        // master switch is on) and checks enforcing() itself before installing the gate.
+        add_action('init', [classes\RestGuestAccess::class, 'boot'], 1);
 
         // Register hooks through consolidated system
         $this->init_fields();
@@ -947,16 +951,6 @@ class Controller
     }
 
 
-
-    private function disable_rest_api_non_authenticated()
-    {
-        add_filter('rest_authentication_errors', function ($result) {
-            if (!is_user_logged_in()) {
-                return new WP_Error('rest_cannot_access', __('REST API restricted to authenticated users.', 'sfxtheme'), array('status' => 401));
-            }
-            return $result;
-        });
-    }
 
     private function block_rest_users_anonymous()
     {

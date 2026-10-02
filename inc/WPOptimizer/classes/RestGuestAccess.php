@@ -46,6 +46,53 @@ final class RestGuestAccess
         return true;
     }
 
+    public static function is_form_save(): bool
+    {
+        return isset($_POST['option_page']) && $_POST['option_page'] === self::OPTION; // phpcs:ignore WordPress.Security.NonceVerification -- options.php verified the nonce
+    }
+
+    /** The raw posted form, read the same way on every sanitizer invocation (add_option can run it twice). */
+    public static function raw_form(): array
+    {
+        $raw = isset($_POST[self::OPTION]) ? wp_unslash($_POST[self::OPTION]) : []; // phpcs:ignore WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput -- sanitized below
+        return is_array($raw) ? $raw : [];
+    }
+
+    public static function form_complete(array $raw): bool
+    {
+        return ($raw['sfx_wpo_form_start'] ?? null) === '1' && ($raw['sfx_wpo_form_end'] ?? null) === '1';
+    }
+
+    /** Writes the four rest_guest_* keys into $output from $source. */
+    public static function sanitize_into(array $source, array $output, bool $form, array $stored): array
+    {
+        $output['rest_guest_mode'] = self::mode($source);
+        $rows = self::namespaces($source, $form);
+        $output['rest_guest_namespaces'] = ($rows === null && $form) ? [] : $rows;
+        $output['rest_guest_hide_index'] = self::hide_index($source) ? 1 : 0;
+        if ($form) {
+            $displayed = self::seen(['rest_guest_seen' => $source['rest_guest_displayed'] ?? []]);
+            $output['rest_guest_seen'] = array_values(array_unique(array_merge(self::seen($stored), $displayed)));
+        } else {
+            $output['rest_guest_seen'] = self::seen($source);
+        }
+        return $output;
+    }
+
+    /** One allowlist row as form inputs. The hidden 0 must precede the checkbox so an unticked row still posts allowed. */
+    public static function row_inputs(int $i, string $ns, bool $allowed, string $method): string
+    {
+        $base = esc_attr(self::OPTION . '[rest_guest_namespaces][' . $i . ']');
+        $label = esc_attr(sprintf(__('Allow %s for guests', 'sfxtheme'), $ns));
+        $html = '<input type="hidden" name="' . $base . '[namespace]" value="' . esc_attr($ns) . '">';
+        $html .= '<input type="hidden" name="' . $base . '[allowed]" value="0">';
+        $html .= '<input type="checkbox" name="' . $base . '[allowed]" value="1"' . ($allowed ? ' checked' : '') . ' aria-label="' . $label . '">';
+        $html .= '<select name="' . $base . '[method]">';
+        $html .= '<option value="all"' . ($method === 'all' ? ' selected' : '') . '>' . esc_html__('All methods', 'sfxtheme') . '</option>';
+        $html .= '<option value="get"' . ($method === 'get' ? ' selected' : '') . '>' . esc_html__('GET only', 'sfxtheme') . '</option>';
+        return $html . '</select>';
+    }
+
     public static function mode(array $o): string
     {
         $mode = $o['rest_guest_mode'] ?? null;
