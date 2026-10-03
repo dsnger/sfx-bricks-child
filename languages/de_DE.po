@@ -5816,8 +5816,8 @@ msgstr ""
 # ============================================
 # Custom Dashboard - Stats Provider
 # ============================================
-#~ msgid "Posts"
-#~ msgstr "Beiträge"
+msgid "Posts"
+msgstr "Beiträge"
 
 #~ msgid "Published blog posts"
 #~ msgstr "Veröffentlichte Blogbeiträge"
@@ -8049,3 +8049,270 @@ msgstr "Erlaubte Methoden für %s"
 #, php-format
 msgid "Contact Info: %s (tel: link)"
 msgstr "Kontaktinfo: %s (für tel:-Link)"
+
+# Help tabs: Contact Infos and Social Media Accounts
+msgid "Shortcode"
+msgstr "Shortcode"
+
+msgid "Attributes"
+msgstr "Attribute"
+
+msgid "Bricks tags"
+msgstr "Bricks-Tags"
+
+msgid "Examples"
+msgstr "Beispiele"
+
+msgid "Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes. Saving an entry refreshes its own values; the \"Clear Cache\" button on the list screen refreshes all published entries and the main/branch values at once."
+msgstr "Die Auswahl nach Typ und in Query-Loops nutzt nur veröffentlichte Einträge; ein per ID gewählter Eintrag wird unabhängig von seinem Status gezeigt. Feldwerte können bis zu 30 Minuten zwischengespeichert sein. Speichern eines Eintrags aktualisiert dessen Werte; die Schaltfläche „Cache leeren“ in der Übersicht aktualisiert sofort alle veröffentlichten Einträge und die Werte für main und branch."
+
+msgid "Email link (mailto:)"
+msgstr "E-Mail-Link (mailto:)"
+
+msgid "Phone link (tel:) with a cleaned number"
+msgstr "Telefon-Link (tel:) mit bereinigter Nummer"
+
+msgid "Full Address as entered (HTML allowed); if empty, built from street, ZIP code, city and country"
+msgstr "Vollständige Adresse wie eingegeben (HTML erlaubt); wenn leer, aus Straße, PLZ, Ort und Land zusammengesetzt"
+
+msgid "HTML from the editor, never wrapped"
+msgstr "HTML aus dem Editor, nie umschlossen"
+
+msgid "Link \"View on Map\", opens in a new tab"
+msgstr "Link „Auf Karte anzeigen“, öffnet in einem neuen Tab"
+
+msgid "Plain text"
+msgstr "Reiner Text"
+
+#. translators: %s: how the field is output, e.g. "Plain text"
+#, php-format
+msgid "%s; main contact only"
+msgstr "%s; nur beim Hauptkontakt"
+
+#, php-format
+msgid "%1$s shows one field of a contact entry. Without %2$s or %3$s it uses the main contact."
+msgstr "%1$s zeigt ein Feld eines Kontakteintrags. Ohne %2$s oder %3$s wird der Hauptkontakt verwendet."
+
+msgid "Field"
+msgstr "Feld"
+
+msgid "Label"
+msgstr "Bezeichnung"
+
+#, php-format
+msgid "Numbers in tel: links are cleaned: separators and spaces are removed, a leading %1$s becomes %2$s, a leading %3$s becomes %4$s, %5$s after the country code is dropped, and an extension becomes %6$s. Filter for the country code: %7$s."
+msgstr "Nummern in tel:-Links werden bereinigt: Trennzeichen und Leerzeichen entfallen, eine führende %1$s wird zu %2$s, eine führende %3$s wird zu %4$s, %5$s nach der Landesvorwahl entfällt, und eine Durchwahl wird zu %6$s. Filter für die Landesvorwahl: %7$s."
+
+#. translators: %s: name of the Shortcode help tab
+#, php-format
+msgid "Required. A field key from the %s tab; without it nothing is output."
+msgstr "Pflicht. Ein Feldschlüssel aus dem Tab %s; ohne ihn wird nichts ausgegeben."
+
+msgid "ID of one contact entry. Takes precedence over type."
+msgstr "ID eines Kontakteintrags. Hat Vorrang vor type."
+
+#. translators: 1: "main", 2: "branch"
+#, php-format
+msgid "%1$s or %2$s: uses the newest published entry of this type."
+msgstr "%1$s oder %2$s: verwendet den neuesten veröffentlichten Eintrag dieses Typs."
+
+#, php-format
+msgid "Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, its text is printed as is."
+msgstr "Symbolname, wird an einen %s-Shortcode vor dem Wert übergeben. Das Theme stellt diesen Shortcode nicht bereit; ohne ein Plugin, das ihn liefert, erscheint sein Text unverändert."
+
+msgid "Currently without effect."
+msgstr "Derzeit ohne Wirkung."
+
+msgid "Email only: link text instead of the address."
+msgstr "Nur E-Mail: Linktext statt der Adresse."
+
+msgid "CSS classes for the wrapper; turns the wrapper on."
+msgstr "CSS-Klassen für das umschließende Element; schaltet es ein."
+
+#. translators: 1: "false", 2: "0", 3: "no", 4: "off"
+#, php-format
+msgid "%1$s, %2$s, %3$s or %4$s: email, phone and mobile without a link."
+msgstr "%1$s, %2$s, %3$s oder %4$s: E-Mail, Telefon und Mobil ohne Link."
+
+#, php-format
+msgid "%1$s, %2$s, %3$s or %4$s: wraps the output in a tag with a field class such as %5$s. Opening hours and a filled-in Full Address are never wrapped."
+msgstr "%1$s, %2$s, %3$s oder %4$s: umschließt die Ausgabe mit einem Tag mit Feldklasse wie %5$s. Öffnungszeiten und eine ausgefüllte vollständige Adresse werden nie umschlossen."
+
+#, php-format
+msgid "Wrapper tag, e.g. %1$s (default and fallback for invalid names: %2$s); turns the wrapper on."
+msgstr "Tag des umschließenden Elements, z. B. %1$s (Standard und Ersatz bei ungültigen Namen: %2$s); schaltet es ein."
+
+msgid "Any non-empty value except 0: shows the field value before formatting in a preformatted block instead (ignored when format=tel applies)."
+msgstr "Jeder nicht leere Wert außer 0: zeigt stattdessen den Feldwert vor der Formatierung in einem vorformatierten Block (wird ignoriert, wenn format=tel greift)."
+
+#, php-format
+msgid "%1$s with phone, mobile or fax: only the cleaned number (e.g. %2$s), without link, icon or wrapper. Meant for tel: links."
+msgstr "%1$s bei Telefon, Mobil oder Fax: nur die bereinigte Nummer (z. B. %2$s), ohne Link, Symbol oder umschließendes Element. Gedacht für tel:-Links."
+
+#. translators: %s: shortcode name
+#, php-format
+msgid "Attributes of %s. The Bricks tags accept the same attributes."
+msgstr "Attribute von %s. Die Bricks-Tags akzeptieren dieselben Attribute."
+
+msgid "Attribute"
+msgstr "Attribut"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Effect"
+msgstr "Wirkung"
+
+msgid "Field of the main contact; inside a query loop over contact entries, of the current entry."
+msgstr "Feld des Hauptkontakts; in einem Query-Loop über Kontakteinträge das Feld des aktuellen Eintrags."
+
+msgid "Field of the entry with ID 123."
+msgstr "Feld des Eintrags mit der ID 123."
+
+msgid "Cleaned number only, for link fields."
+msgstr "Nur die bereinigte Nummer, für Link-Felder."
+
+msgid "Tag"
+msgstr "Tag"
+
+#, php-format
+msgid "Attributes are appended as %1$s or %2$s and can be chained, e.g. %3$s. Values must not contain @, |, = or }."
+msgstr "Attribute werden als %1$s oder %2$s angehängt und lassen sich verketten, z. B. %3$s. Werte dürfen kein @, |, = oder } enthalten."
+
+#, php-format
+msgid "Query loop: type %1$s, post type %2$s. Inside the loop, tags without an ID show the current entry (published entries only); an ID in the tag always wins, and type has no effect there."
+msgstr "Query-Loop: Typ %1$s, Inhaltstyp %2$s. Im Loop zeigen Tags ohne ID den aktuellen Eintrag (nur veröffentlichte Einträge); eine ID im Tag hat immer Vorrang, und type wirkt dort nicht."
+
+#. translators: %s: Bricks picker group name
+#, php-format
+msgid "The dynamic data picker lists every field in the group %s."
+msgstr "Die Auswahl für dynamische Daten listet jedes Feld in der Gruppe %s."
+
+msgid "Email link with your own link text."
+msgstr "E-Mail-Link mit eigenem Linktext."
+
+msgid "Branch phone as a link, wrapped in a span with the class footer-phone."
+msgstr "Telefon der Filiale als Link, umschlossen von einem span mit der Klasse footer-phone."
+
+msgid "Opening hours of entry 123."
+msgstr "Öffnungszeiten des Eintrags 123."
+
+msgid "Link field of a Bricks button: dials the main phone number."
+msgstr "Link-Feld eines Bricks-Buttons: wählt die Haupttelefonnummer."
+
+msgid "Link field of a Bricks button: writes to the main email address."
+msgstr "Link-Feld eines Bricks-Buttons: schreibt an die Haupt-E-Mail-Adresse."
+
+msgid "Inside a query loop over contact entries: the city of each entry."
+msgstr "In einem Query-Loop über Kontakteinträge: der Ort jedes Eintrags."
+
+msgid "Phone number of entry 123 as plain text."
+msgstr "Telefonnummer des Eintrags 123 als reiner Text."
+
+msgid "Example"
+msgstr "Beispiel"
+
+msgid "Shortcodes"
+msgstr "Shortcodes"
+
+msgid "Only published entries are used; the account list follows their Order. Saving an entry refreshes the cached output at once."
+msgstr "Nur veröffentlichte Einträge werden verwendet; die Kontenliste folgt ihrer Reihenfolge. Das Speichern eines Eintrags aktualisiert die zwischengespeicherte Ausgabe sofort."
+
+msgid "CSS class on the wrapper and on every account."
+msgstr "CSS-Klasse am umschließenden Element und an jedem Konto."
+
+#. translators: %s: CSS class pattern
+#, php-format
+msgid "Added as the class %s. Any value; the theme ships no styles for it."
+msgstr "Wird als Klasse %s ergänzt. Beliebiger Wert; das Theme liefert keine Styles dafür."
+
+#, php-format
+msgid "Added as the class %1$s on the wrapper and %2$s on every account. Any value."
+msgstr "Wird als Klasse %1$s am umschließenden Element und %2$s an jedem Konto ergänzt. Beliebiger Wert."
+
+#, php-format
+msgid "Link target for accounts without their own: %1$s or %2$s; anything else becomes %3$s."
+msgstr "Link-Ziel für Konten ohne eigenes: %1$s oder %2$s; alles andere wird zu %3$s."
+
+msgid "Icon image URL"
+msgstr "URL des Symbolbilds"
+
+msgid "Link title, or the account title if empty"
+msgstr "Linktitel, oder der Titel des Kontos, wenn leer"
+
+msgid "_blank or _self (default _blank)"
+msgstr "_blank oder _self (Standard _blank)"
+
+msgid "The account as a full link block, as in the list; class, size and target apply here"
+msgstr "Das Konto als vollständiger Link-Block wie in der Liste; class, size und target wirken hier"
+
+#, php-format
+msgid "%s lists all published accounts in their Order. Each links to its URL with its icon image, or its title if there is no icon. Accounts without a URL are skipped."
+msgstr "%s listet alle veröffentlichten Konten in ihrer Reihenfolge. Jedes verlinkt auf seine URL, mit Symbolbild oder, ohne Symbol, mit seinem Titel. Konten ohne URL werden übersprungen."
+
+#, php-format
+msgid "%1$s shows one field of one published account. %2$s is required; %3$s defaults to %4$s."
+msgstr "%1$s zeigt ein Feld eines veröffentlichten Kontos. %2$s ist Pflicht; %3$s ist standardmäßig %4$s."
+
+#. translators: %s: shortcode
+#, php-format
+msgid "Same as %s with its defaults; takes no attributes."
+msgstr "Wie %s mit Standardwerten; nimmt keine Attribute an."
+
+msgid "Field of the account with ID 123."
+msgstr "Feld des Kontos mit der ID 123."
+
+msgid "Inside a query loop over social accounts: field of the current account. Outside such a loop it outputs nothing."
+msgstr "In einem Query-Loop über Social-Media-Konten: Feld des aktuellen Kontos. Außerhalb eines solchen Loops gibt es nichts aus."
+
+#, php-format
+msgid "For the html field, class, size and target can be appended as %1$s or %2$s, e.g. %3$s."
+msgstr "Für das Feld html lassen sich class, size und target als %1$s oder %2$s anhängen, z. B. %3$s."
+
+#, php-format
+msgid "Query loop: type %1$s, post type %2$s. Only published accounts resolve; an ID in the tag always wins."
+msgstr "Query-Loop: Typ %1$s, Inhaltstyp %2$s. Nur veröffentlichte Konten werden aufgelöst; eine ID im Tag hat immer Vorrang."
+
+#, php-format
+msgid "The dynamic data picker lists every field of every published account in the group %s."
+msgstr "Die Auswahl für dynamische Daten listet jedes Feld jedes veröffentlichten Kontos in der Gruppe %s."
+
+msgid "All accounts as a list of links."
+msgstr "Alle Konten als Liste von Links."
+
+msgid "All accounts with your own class and size class."
+msgstr "Alle Konten mit eigener Klasse und Größenklasse."
+
+msgid "Only the URL of account 123."
+msgstr "Nur die URL des Kontos 123."
+
+msgid "Account 123 as a link block in a Bricks text element."
+msgstr "Konto 123 als Link-Block in einem Bricks-Textelement."
+
+msgid "Inside a query loop: image URL for a Bricks image element."
+msgstr "In einem Query-Loop: Bild-URL für ein Bricks-Bildelement."
+
+msgid "Inside a query loop: link URL for a Bricks button or link."
+msgstr "In einem Query-Loop: Link-URL für einen Bricks-Button oder -Link."
+
+msgid "html field only."
+msgstr "nur beim Feld html."
+
+msgid "Required. ID of the account."
+msgstr "Pflicht. ID des Kontos."
+
+msgid "A field key from the table below."
+msgstr "Ein Feldschlüssel aus der Tabelle unten."
+
+msgid "Extra CSS class on the account block;"
+msgstr "Zusätzliche CSS-Klasse am Konto-Block;"
+
+#. translators: 1: CSS class pattern, 2: "html field only."
+#, php-format
+msgid "Added as the class %1$s; %2$s"
+msgstr "Wird als Klasse %1$s ergänzt; %2$s"
+
+#. translators: 1: "_blank", 2: "_self", 3: "html field only."
+#, php-format
+msgid "Link target if the account has none of its own: %1$s or %2$s; %3$s"
+msgstr "Linkziel, wenn das Konto kein eigenes hat: %1$s oder %2$s; %3$s"

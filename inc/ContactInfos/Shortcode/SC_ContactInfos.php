@@ -20,6 +20,24 @@ defined('ABSPATH') || exit;
 class SC_ContactInfos
 {
     /**
+     * Shortcode attribute defaults. Public so the admin help tab lists exactly these keys.
+     */
+    public const DEFAULT_ATTS = [
+        'field'      => null,     // Field name to display
+        'contact_id' => null,     // Specific contact post ID
+        'type'       => 'main',   // Contact type: main or branch
+        'icon'       => null,     // Icon to display before the field
+        'icon_class' => null,     // CSS classes for the icon
+        'text'       => null,     // Custom text instead of the field value
+        'class'      => null,     // CSS classes for the wrapper (implicitly enables wrap)
+        'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
+        'wrap'       => 'false',  // Whether to wrap the output in a tag (default: bare output)
+        'tag'        => null,     // Wrapper tag (default 'span'); setting this implicitly enables wrap
+        'debug'      => null,     // Debug mode to show raw value
+        'format'     => null,     // 'tel': phone/mobile/fax as a bare tel: number (no link, icon or wrapper)
+    ];
+
+    /**
      * Class constructor
      * Register the shortcode and cache invalidation hooks
      */
@@ -69,24 +87,7 @@ class SC_ContactInfos
     public function render_contact_info($atts)
     {
         // Attributes
-        $atts = shortcode_atts(
-            [
-                'field'      => null,     // Field name to display
-                'contact_id' => null,     // Specific contact post ID
-                'type'       => 'main',   // Contact type: main or branch
-                'icon'       => null,     // Icon to display before the field
-                'icon_class' => null,     // CSS classes for the icon
-                'text'       => null,     // Custom text instead of the field value
-                'class'      => null,     // CSS classes for the wrapper (implicitly enables wrap)
-                'link'       => 'true',   // Whether to make the value a link (for email, phone, etc.)
-                'wrap'       => 'false',  // Whether to wrap the output in a tag (default: bare output)
-                'tag'        => null,     // Wrapper tag (default 'span'); setting this implicitly enables wrap
-                'debug'      => null,     // Debug mode to show raw value
-                'format'     => null,     // 'tel': phone/mobile/fax as a bare tel: number (no link, icon or wrapper)
-            ],
-            $atts,
-            'contact_info'
-        );
+        $atts = shortcode_atts(self::DEFAULT_ATTS, $atts, 'contact_info');
 
         // Go back if no field
         if (empty($atts['field'])) {

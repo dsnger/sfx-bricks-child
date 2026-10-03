@@ -9,6 +9,16 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Contact Infos / Social Accounts: pre-existing defects found while writing the help
+      tabs** (2026-10-02, not fixed there; the help text describes today's behaviour):
+      a bare `@link`/`@text` in a `{contact_info:…}` tag throws a TypeError (catch only
+      handles `\Exception`); `icon_class` is concatenated as an array (`class="Array"`)
+      and no `[icon]` shortcode exists; an explicit `contact_id` reads drafts; saving a
+      contact does not clear the main/branch type caches, "Clear Cache" skips non-published
+      IDs, and the cache ignores the language; type lookup ignores the Order field;
+      `{contact_info:field:branch}` is dead code; social tag attributes can override `id`
+      and `field`; social `class` lands on wrapper and every item, `style`/`size` have no CSS.
+      Also: the help-tab test does not check social shortcode attributes (Gate B minor).
 - [ ] **Live harness `tests/support/rest-guest-live-check.php`: concurrent edits during
       a run are overwritten by the restore** (Greptile on PR #48, 2026-10-02). A correct
       guard needs an atomic compare-and-swap restore per row; documented in the harness
