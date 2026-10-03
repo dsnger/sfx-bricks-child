@@ -161,6 +161,35 @@ assert_same(
     '5: Bricks tag @format:tel'
 );
 
+// 5b. Bare switches (link, wrap, debug) mean on; other bare attributes are ignored. Never a crash.
+assert_same(
+    '<a href="tel:+492082076580">0208 207658 0</a>',
+    ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310@link}', null),
+    '5b: bare @link keeps the link'
+);
+foreach (['class', 'tag', 'text', 'field', 'contact_id', 'format', 'unknown'] as $bare) {
+    assert_same(
+        '<a href="tel:+492082076580">0208 207658 0</a>',
+        ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310@' . $bare . '}', null),
+        "5b: bare @{$bare} is ignored"
+    );
+}
+assert_same(
+    '<a href="tel:+492082076580">0208 207658 0</a>',
+    ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310@link:false@link}', null),
+    '5b: bare @link switches the link back on'
+);
+assert_same(
+    '<pre>0208 207658 0</pre>',
+    ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310@debug}', null),
+    '5b: bare @debug'
+);
+assert_contains(
+    '<span',
+    ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310@wrap}', null),
+    '5b: bare @wrap wraps'
+);
+
 // 6. The Bricks picker lists the tel: variants for phone, mobile and fax.
 $names = array_column(ContactInfosController::add_bricks_dynamic_tag([]), 'name');
 foreach (['phone', 'mobile', 'fax'] as $field) {

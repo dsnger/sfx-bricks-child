@@ -212,9 +212,10 @@ class Controller
           // Handle colon-separated key:value pairs (e.g., link:false)
           list($key, $value) = explode(':', $pair, 2);
           $atts[trim($key)] = trim($value, '"\'');
-        } elseif (!empty($pair)) {
-          // Handle boolean attributes without values
-          $atts[trim($pair)] = true;
+        } elseif (in_array($pair, ['link', 'wrap', 'debug'], true)) {
+          // A bare switch means on. Strings only: a bool fatals in the shortcode's string handling.
+          // Bare value attributes (tag, class, text, …) are ignored rather than set to "true".
+          $atts[$pair] = 'true';
         }
       }
     }

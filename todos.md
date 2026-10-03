@@ -11,8 +11,7 @@ references an entry here must still be able to find it.
 ## Next
 - [ ] **Contact Infos / Social Accounts: pre-existing defects found while writing the help
       tabs** (2026-10-02, not fixed there; the help text describes today's behaviour):
-      a bare `@link`/`@text` in a `{contact_info:…}` tag throws a TypeError (catch only
-      handles `\Exception`); `icon_class` is concatenated as an array (`class="Array"`)
+      `icon_class` is concatenated as an array (`class="Array"`)
       and no `[icon]` shortcode exists; an explicit `contact_id` reads drafts; saving a
       contact does not clear the main/branch type caches, "Clear Cache" skips non-published
       IDs, and the cache ignores the language; type lookup ignores the Order field;
