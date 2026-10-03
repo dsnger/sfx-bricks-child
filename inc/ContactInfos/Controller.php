@@ -178,13 +178,8 @@ class Controller
 
     // Convert old location parameter to contact_id or type
     if ($location !== null) {
-      // If it's a numeric location, treat as contact_id
-      if (is_numeric($location)) {
-        $atts['contact_id'] = (int) $location;
-      } else {
-        // Otherwise treat as type (main/branch)
-        $atts['type'] = $location;
-      }
+      // The pattern only admits digits here; type goes through @type:branch.
+      $atts['contact_id'] = (int) $location;
     } else {
       // No explicit id/type: inside a Bricks query loop over contacts, resolve the loop post
       // so {contact_info:field} renders each iterated contact. Only kicks in when the context

@@ -170,6 +170,18 @@ class WP_Post_Type
     }
 }
 
+function get_post_type($post_id)
+{
+    $post = get_post($post_id);
+    return $post ? $post->post_type : false;
+}
+
+function get_post_status($post_id)
+{
+    $post = get_post($post_id);
+    return $post ? $post->post_status : false;
+}
+
 /**
  * Port of core get_post_types() -> wp_filter_object_list() -> WP_List_Util::filter()
  * with the default 'AND' operator.
@@ -269,7 +281,8 @@ class WP_Query
 
     public function __construct(array $args = [])
     {
-        global $test_post_lists;
+        global $test_post_lists, $test_last_query_args;
+        $test_last_query_args = $args;
         $post_type = $args['post_type'] ?? '';
         $this->posts = $test_post_lists[$post_type] ?? [];
         $this->post_count = count($this->posts);

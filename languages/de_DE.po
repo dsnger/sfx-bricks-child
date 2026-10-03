@@ -8063,8 +8063,8 @@ msgstr "Bricks-Tags"
 msgid "Examples"
 msgstr "Beispiele"
 
-msgid "Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes. Saving an entry refreshes its own values; the \"Clear Cache\" button on the list screen refreshes all published entries and the main/branch values at once."
-msgstr "Die Auswahl nach Typ und in Query-Loops nutzt nur veröffentlichte Einträge; ein per ID gewählter Eintrag wird unabhängig von seinem Status gezeigt. Feldwerte können bis zu 30 Minuten zwischengespeichert sein. Speichern eines Eintrags aktualisiert dessen Werte; die Schaltfläche „Cache leeren“ in der Übersicht aktualisiert sofort alle veröffentlichten Einträge und die Werte für main und branch."
+msgid "Only published entries are shown, also when chosen by ID. Field values are cached for up to 30 minutes; saving an entry or the \"Clear Cache\" button on the list screen refreshes them at once."
+msgstr "Es werden nur veröffentlichte Einträge gezeigt, auch bei Auswahl per ID. Feldwerte werden bis zu 30 Minuten zwischengespeichert; Speichern eines Eintrags oder die Schaltfläche „Cache leeren“ in der Übersicht aktualisiert sie sofort."
 
 msgid "Email link (mailto:)"
 msgstr "E-Mail-Link (mailto:)"
@@ -8113,15 +8113,15 @@ msgstr "ID eines Kontakteintrags. Hat Vorrang vor type."
 
 #. translators: 1: "main", 2: "branch"
 #, php-format
-msgid "%1$s or %2$s: uses the newest published entry of this type."
-msgstr "%1$s oder %2$s: verwendet den neuesten veröffentlichten Eintrag dieses Typs."
+msgid "%1$s or %2$s: uses the published entry of this type that comes first by Order (on a tie, the newest)."
+msgstr "%1$s oder %2$s: nutzt den veröffentlichten Eintrag dieses Typs, der nach Reihenfolge zuerst kommt (bei Gleichstand der neueste)."
 
 #, php-format
 msgid "Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, its text is printed as is."
 msgstr "Symbolname, wird an einen %s-Shortcode vor dem Wert übergeben. Das Theme stellt diesen Shortcode nicht bereit; ohne ein Plugin, das ihn liefert, erscheint sein Text unverändert."
 
-msgid "Currently without effect."
-msgstr "Derzeit ohne Wirkung."
+msgid "CSS classes for that icon."
+msgstr "CSS-Klassen für dieses Symbol."
 
 msgid "Email only: link text instead of the address."
 msgstr "Nur E-Mail: Linktext statt der Adresse."

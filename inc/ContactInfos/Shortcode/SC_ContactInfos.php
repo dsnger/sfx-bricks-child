@@ -99,14 +99,19 @@ class SC_ContactInfos
         $icon_classes = $this->process_classes($atts['icon_class']);
 
         // Set up icon and text
-        $icon = !empty($atts['icon']) ? do_shortcode('[icon class="branch-info" icon="' . $atts['icon'] . '" pos="before" class="' . $icon_classes . '"]') : '';
+        $icon = !empty($atts['icon'])
+            ? do_shortcode('[icon icon="' . esc_attr($atts['icon']) . '" pos="before" class="' . esc_attr(implode(' ', array_merge(['branch-info'], $icon_classes))) . '"]')
+            : '';
         $text = !empty($atts['text']) ? $atts['text'] : null;
 
         // Get field value
-        // Shortcode attributes arrive as strings; get_field_value() takes ?int under strict_types.
-        // Numeric values keep their meaning (0 = by type, negative = none), as for an int before.
-        $contact_id = is_numeric($atts['contact_id']) ? (int) $atts['contact_id'] : null;
-        $value = $this->get_field_value($atts['field'], $contact_id, $atts['type']);
+        // Shortcode attributes arrive as strings; resolve_contact_id() takes ?int under strict_types.
+        // Numeric values keep their meaning (0 = by type, negative = none); get_field_value() gets the resolved ID.
+        $contact_id = $this->resolve_contact_id(
+            is_numeric($atts['contact_id']) ? (int) $atts['contact_id'] : null,
+            (string) $atts['type']
+        );
+        $value = $this->get_field_value($atts['field'], $contact_id);
 
         // Bare number for a tel: link set elsewhere, e.g. a Bricks button "tel:{contact_info:phone@format:tel}".
         // Before debug: the result goes into a link field and must never carry markup.
@@ -138,45 +143,6 @@ class SC_ContactInfos
                 return $this->render_phone_field($value, $atts, $icon, $has_link);
 
             case 'address':
-                // For address field, we need to get the contact_id from the field value retrieval context
-                $contact_id = $atts['contact_id'] ?? null;
-                if (!$contact_id) {
-                    // Try to find contact by type if no specific ID provided
-                    $type = $atts['type'] ?? 'main';
-                    $type_cache_key = 'sfx_contact_info_type_' . $type;
-                    $contact_id = get_transient($type_cache_key);
-                    
-                    if ($contact_id === false) {
-                        $args = [
-                            'post_type' => 'sfx_contact_info',
-                            'post_status' => 'publish',
-                            'posts_per_page' => 1,
-                            'meta_query' => [
-                                [
-                                    'key' => '_contact_type',
-                                    'value' => $type,
-                                    'compare' => '='
-                                ]
-                            ]
-                        ];
-                        
-                        $query = new \WP_Query($args);
-                        
-                        if ($query->have_posts()) {
-                            $contact_id = $query->posts[0]->ID;
-                            set_transient($type_cache_key, $contact_id, HOUR_IN_SECONDS);
-                        }
-                    }
-                }
-                
-                // Ensure contact_id is properly cast to integer or null
-                if ($contact_id !== null) {
-                    $contact_id = (int) $contact_id;
-                    if ($contact_id <= 0) {
-                        $contact_id = null;
-                    }
-                }
-                
                 return $this->render_address_field($value, $atts, $icon, $contact_id);
 
             case 'opening':
@@ -259,104 +225,72 @@ class SC_ContactInfos
     }
 
     /**
-     * Get field value with optimized batch meta retrieval and caching
-     * 
-     * @param string $field
-     * @param int|null $contact_id
-     * @param string $type
-     * @return string
+     * The published contact entry to read: an explicit ID if it is one, otherwise the
+     * entry of the given type that comes first by Order (then newest). 0 = none.
      */
-    private function get_field_value(string $field, ?int $contact_id = null, string $type = 'main'): string
+    private function resolve_contact_id(?int $contact_id, string $type): int
     {
-        // Create cache key
-        // 0 means "by type" (as below), so it must not share one key across types.
-        $cache_key = 'sfx_contact_info_' . ($contact_id ?: 'type_' . $type) . '_' . $field;
-        $cached_value = get_transient($cache_key);
-        
-        if ($cached_value !== false) {
-            return $cached_value;
+        if ($contact_id !== null && $contact_id !== 0) {
+            // Drafts, private entries and other post types stay hidden.
+            return $contact_id > 0
+                && get_post_type($contact_id) === 'sfx_contact_info'
+                && get_post_status($contact_id) === 'publish'
+                ? $contact_id
+                : 0;
         }
-        
-        // If no specific contact ID, try to find by type
-        if (!$contact_id) {
-            $type_cache_key = 'sfx_contact_info_type_' . $type;
-            $contact_id = get_transient($type_cache_key);
-            
-            if ($contact_id === false) {
-                $args = [
-                    'post_type' => 'sfx_contact_info',
-                    'post_status' => 'publish',
-                    'posts_per_page' => 1,
-                    'meta_query' => [
-                        [
-                            'key' => '_contact_type',
-                            'value' => $type,
-                            'compare' => '='
-                        ]
-                    ]
-                ];
-                
-                $query = new \WP_Query($args);
-                
-                if ($query->have_posts()) {
-                    $contact_id = $query->posts[0]->ID;
-                    // Cache the contact ID for this type for 1 hour
-                    set_transient($type_cache_key, $contact_id, HOUR_IN_SECONDS);
-                } else {
-                    return '';
-                }
-            } else {
-                // Ensure contact_id from cache is properly cast to integer
-                $contact_id = (int) $contact_id;
-            }
-        }
-        
 
-        
-        // Ensure contact_id is always an integer
-        $contact_id = (int) $contact_id;
-        
-        // Validate contact_id
-        if ($contact_id <= 0) {
+        $type_cache_key = 'sfx_contact_info_type_' . $type;
+        $cached_id = get_transient($type_cache_key);
+        if ($cached_id !== false) {
+            return (int) $cached_id;
+        }
+
+        $query = new \WP_Query([
+            'post_type' => 'sfx_contact_info',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'orderby' => ['menu_order' => 'ASC', 'date' => 'DESC'],
+            'meta_query' => [
+                [
+                    'key' => '_contact_type',
+                    'value' => $type,
+                    'compare' => '='
+                ]
+            ]
+        ]);
+        if (!$query->have_posts()) {
+            return 0;
+        }
+
+        $found_id = (int) $query->posts[0]->ID;
+        // Cleared on every contact save, so a changed Order or type takes effect at once.
+        set_transient($type_cache_key, $found_id, HOUR_IN_SECONDS);
+        return $found_id;
+    }
+
+    /**
+     * Field value of a resolved contact. The raw value is cached per contact ID and
+     * translated per request, so languages never share a cached translation.
+     */
+    private function get_field_value(string $field, int $contact_id): string
+    {
+        // Only the contact fields: never an arbitrary meta key such as _edit_lock.
+        if ($contact_id <= 0 || !array_key_exists($field, \SFX\ContactInfos\FieldRegistry::get_fields())) {
             return '';
         }
-        
-        // Batch retrieve all meta values for this contact in one query
-        $meta_keys = [
-            '_company', '_director', '_street', '_zip', '_city', '_country',
-            '_address', '_phone', '_mobile', '_fax', '_email', '_tax_id', '_vat', '_hrb',
-            '_court', '_dsb', '_opening', '_maplink'
-        ];
-        
-        $all_meta = get_post_meta($contact_id, '', true);
-        $contact_data = array_intersect_key($all_meta, array_flip($meta_keys));
-        
-        // Get the specific field value with translation support
-        $meta_key = '_' . $field;
-        $value = $contact_data[$meta_key] ?? '';
-        
 
-        
+        $cache_key = 'sfx_contact_info_' . $contact_id . '_' . $field;
+        $value = get_transient($cache_key);
 
-        
-
-        
-        // Ensure value is always a string
-        if (is_array($value)) {
-            $value = implode(', ', $value);
-        } else {
-            $value = (string) $value;
+        if ($value === false) {
+            $all_meta = get_post_meta($contact_id, '', true);
+            $value = $all_meta['_' . $field] ?? '';
+            $value = is_array($value) ? implode(', ', $value) : (string) $value;
+            set_transient($cache_key, $value, 30 * MINUTE_IN_SECONDS);
         }
-        
-        // Apply translation if available
-        if (!empty($value)) {
-            $value = \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $value);
-        }
-        
-        // Cache the result for 30 minutes
-        set_transient($cache_key, $value, 30 * MINUTE_IN_SECONDS);
-        
-        return $value;
+
+        $value = (string) $value;
+        return $value === '' ? '' : \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $value);
     }
 
 
@@ -556,24 +490,6 @@ class SC_ContactInfos
                 if ($country) $address_parts[] = $country;
                 
 
-            } else {
-                // Fallback: try to get individual address fields directly
-                
-                // Get individual address fields using the same method as other fields
-                $street = $this->get_field_value('street', $contact_id, $atts['type'] ?? 'main');
-                $zip = $this->get_field_value('zip', $contact_id, $atts['type'] ?? 'main');
-                $city = $this->get_field_value('city', $contact_id, $atts['type'] ?? 'main');
-                $country = $this->get_field_value('country', $contact_id, $atts['type'] ?? 'main');
-                
-
-                
-                if ($street) $address_parts[] = $street;
-                if ($zip && $city) {
-                    $address_parts[] = $zip . ' ' . $city;
-                } elseif ($city) {
-                    $address_parts[] = $city;
-                }
-                if ($country) $address_parts[] = $country;
             }
             
             if (!empty($address_parts)) {

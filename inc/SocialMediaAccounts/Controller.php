@@ -162,11 +162,7 @@ class Controller
             return '';
         }
 
-        $atts = [
-            'id' => (string) $account_id,
-            'field' => $field,
-            'context' => (string) $context,
-        ];
+        $atts = [];
 
         if (!empty($m[3])) {
             $attr_pairs = preg_split('/[\|@]/', $m[3]);
@@ -182,11 +178,17 @@ class Controller
                 } elseif (strpos($pair, ':') !== false) {
                     [$key, $value] = explode(':', $pair, 2);
                     $atts[trim($key)] = trim($value, '"\'');
-                } else {
-                    $atts[trim($pair)] = true;
                 }
+                // A bare attribute (no value) is ignored: none of these is a switch.
             }
         }
+
+        // id, field and context come from the tag itself; attributes must not override them.
+        $atts = array_merge($atts, [
+            'id' => (string) $account_id,
+            'field' => $field,
+            'context' => (string) $context,
+        ]);
 
         try {
             return self::get_shortcode_instance()->render_account_field($atts);

@@ -150,6 +150,17 @@ assert_same('+492082076580', $main, '4c: id 0 main');
 assert_same('+4989222', $branch, '4c: id 0 branch does not reuse the main cache');
 assert_true(!isset($test_transients['sfx_contact_info_0_phone']), '4c: no type-less cache key');
 
+// 4d. A tag without an ID shows a saved change at once (the field cache is per contact ID).
+$test_transients = ['sfx_contact_info_type_main' => 310];
+$test_meta[310]['_fax'] = ['0201 1'];
+assert_same('0201 1', $sc->render_contact_info(['field' => 'fax', 'type' => 'main']), '4d: by-type value');
+$test_meta[310]['_fax'] = ['0201 2'];
+$sc->clear_contact_info_caches(310);
+$test_transients['sfx_contact_info_type_main'] = 310;
+assert_same('0201 2', $sc->render_contact_info(['field' => 'fax', 'type' => 'main']), '4d: change visible after save');
+$test_meta[310]['_fax'] = ['0049 208 2076580'];
+$test_transients = [];
+
 // 4b. contact_id from a shortcode arrives as a string; numeric values keep their meaning.
 assert_same('', $sc->render_contact_info(['field' => 'email', 'contact_id' => '-1']), '4b: negative id -> nothing');
 assert_same('', $sc->render_contact_info(['field' => 'email', 'contact_id' => -1]), '4b: negative int id -> nothing');
@@ -195,6 +206,72 @@ $names = array_column(ContactInfosController::add_bricks_dynamic_tag([]), 'name'
 foreach (['phone', 'mobile', 'fax'] as $field) {
     assert_true(in_array('{contact_info:' . $field . '@format:tel}', $names, true), "6: picker has {$field}@format:tel");
 }
+
+// 7. Explicit IDs: only published contact entries. Drafts and other post types stay hidden.
+$test_transients = [];
+$test_posts[320] = sfx_make_post(320, 'sfx_contact_info', 'draft', 'Draft contact');
+$test_meta[320] = ['_email' => ['draft@example.test']];
+$test_posts[321] = sfx_make_post(321, 'page', 'publish', 'A page');
+$test_meta[321] = ['_email' => ['page@example.test']];
+assert_same('', $sc->render_contact_info(['field' => 'email', 'contact_id' => '320']), '7: draft contact hidden');
+assert_same('', $sc->render_contact_info(['field' => 'email', 'contact_id' => '321']), '7: other post type hidden');
+assert_same('', ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:320}', null), '7: draft hidden in tag');
+
+// 7b. The address built from parts never reads a hidden entry either.
+$test_meta[320] += ['_street' => ['Secret Street'], '_city' => ['Secret City']];
+assert_same('', $sc->render_contact_info(['field' => 'address', 'contact_id' => '320']), '7b: draft address hidden');
+assert_same('', $sc->render_contact_info(['field' => 'address', 'contact_id' => '321']), '7b: other post type address hidden');
+assert_same('', $sc->render_contact_info(['field' => 'edit_lock', 'contact_id' => '310']), '7c: no arbitrary meta key');
+
+// 8. icon_class reaches the [icon] shortcode as one class attribute (was "Array").
+$test_shortcodes = [];
+function do_shortcode($content)
+{
+    global $test_shortcodes;
+    $test_shortcodes[] = $content;
+    return '';
+}
+$sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'icon' => 'mail', 'icon_class' => 'a b']);
+assert_same('[icon icon="mail" pos="before" class="branch-info a b"]', $test_shortcodes[0] ?? '', '8: icon shortcode');
+
+// 9. The cache holds the raw value; translation runs per request, so languages never mix.
+$test_pll = [];
+function pll__($value)
+{
+    global $test_pll;
+    return $test_pll[$value] ?? $value;
+}
+$test_transients = [];
+$test_meta[310]['_city'] = ['Essen'];
+$test_pll = ['Essen' => 'Essen (DE)'];
+assert_same('Essen (DE)', $sc->render_contact_info(['field' => 'city', 'contact_id' => '310']), '9: first language');
+assert_same('Essen', $test_transients['sfx_contact_info_310_city'] ?? null, '9: raw value cached');
+$test_pll = ['Essen' => 'Essen (EN)'];
+assert_same('Essen (EN)', $sc->render_contact_info(['field' => 'city', 'contact_id' => '310']), '9: second language from cache');
+$test_pll = [];
+
+// 9b. WPML keys strings by contact ID: a by-type value is translated with the real ID,
+// also when only the field cache survived.
+define('ICL_SITEPRESS_VERSION', 'test');
+$test_icl_names = [];
+function icl_t($context, $name, $value)
+{
+    global $test_icl_names;
+    $test_icl_names[] = $name;
+    return $value;
+}
+$test_transients = ['sfx_contact_info_type_main' => 310];
+$sc->render_contact_info(['field' => 'city', 'type' => 'main']);
+unset($test_transients['sfx_contact_info_type_main']);
+$test_post_lists['sfx_contact_info'] = [$test_posts[310]];
+$sc->render_contact_info(['field' => 'city', 'type' => 'main']);
+assert_same(['city_310', 'city_310'], $test_icl_names, '9b: WPML gets the contact ID');
+
+// 10. The by-type lookup honours the Order field, then the newest entry.
+$test_transients = [];
+$test_last_query_args = [];
+$sc->render_contact_info(['field' => 'phone', 'type' => 'main']);
+assert_same(['menu_order' => 'ASC', 'date' => 'DESC'], $test_last_query_args['orderby'] ?? null, '10: type lookup order');
 
 global $failures;
 if ($failures > 0) {

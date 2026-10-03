@@ -112,6 +112,17 @@ foreach (['{social_accounts}', '{social_account:url:123}', '{social_account:url}
     assert_contains($needle, implode('', $social), "Case 5: social example {$needle}");
 }
 
+// Case 5b — both social shortcodes list their accepted attributes, and every row is described.
+$social_tables = array_slice(explode('<table', $social['sfx-social-account-shortcodes']), 1);
+$described = static function (string $table): array {
+    // Body rows whose last cell is non-empty; one row never reaches into the next.
+    preg_match_all('#<tr><td><code>([a-z_]+)</code></td>(?:(?!</tr>).)*<td>(?:(?!</td>).)+</td></tr>#', $table, $m);
+    return $m[1];
+};
+assert_same(['class', 'style', 'size', 'target'], $described($social_tables[0] ?? ''), 'Case 5b: [social_accounts] attributes');
+assert_same(['id', 'field', 'class', 'size', 'target'], $described($social_tables[1] ?? ''), 'Case 5b: [social_account] attributes');
+assert_same(array_keys(SocialFieldRegistry::get_fields()), $described($social_tables[2] ?? ''), 'Case 5b: every social field described');
+
 // Case 6 — hostile translations come out escaped, in labels, prose and headers.
 $test_gettext = [
     'Phone'       => '<script>alert(1)</script>',
