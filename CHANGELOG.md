@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.28.0] - 2026-10-03
+
+- Contact Infos: changes show at once after saving a contact or reordering on the Order screen, also for tags without an ID.
+- Contact Infos: only published contact entries are shown; a fixed ID pointing at a draft, private entry or other post type outputs nothing (address included).
+- Contact Infos: main/branch follows the Order field (on a tie, the newest).
+- Contact Infos: on multilingual sites languages no longer share a cached translation. After updating, click "Clear Cache" once on multilingual sites.
+- Contact Infos: icon_class works; without a registered [icon] shortcode no raw shortcode text is printed.
+- Social Accounts: Bricks tag attributes can no longer override id or field.
+
 ## [0.27.0] - 2026-10-03
 
 - Admin help: a "Help" tab on the Contact Infos and Social Media screens documents all shortcode fields, attributes, Bricks tags and examples (German included).
