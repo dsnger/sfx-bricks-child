@@ -67,7 +67,7 @@ final class HelpTab
     public static function get_sidebar(): string
     {
         return '<p><strong>' . esc_html__('Contact Information', 'sfxtheme') . '</strong></p>'
-            . '<p>' . esc_html__('Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes. Saving an entry refreshes its own values; the "Clear Cache" button on the list screen refreshes all published entries and the main/branch values at once.', 'sfxtheme') . '</p>';
+            . '<p>' . esc_html__('Only published entries are shown, also when chosen by ID. Field values are cached for up to 30 minutes; saving an entry or the "Clear Cache" button on the list screen refreshes them at once.', 'sfxtheme') . '</p>';
     }
 
     private static function shortcode_tab(): string
@@ -124,16 +124,16 @@ final class HelpTab
             'contact_id' => esc_html__('ID of one contact entry. Takes precedence over type.', 'sfxtheme'),
             'type'       => sprintf(
                 /* translators: 1: "main", 2: "branch" */
-                esc_html__('%1$s or %2$s: uses the newest published entry of this type.', 'sfxtheme'),
+                esc_html__('%1$s or %2$s: uses the published entry of this type that comes first by Order (on a tie, the newest).', 'sfxtheme'),
                 self::code('main'),
                 self::code('branch')
             ),
             'icon'       => sprintf(
                 /* translators: %s: shortcode name "[icon]" */
-                esc_html__('Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, its text is printed as is.', 'sfxtheme'),
+                esc_html__('Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, no icon is shown.', 'sfxtheme'),
                 self::code('[icon]')
             ),
-            'icon_class' => esc_html__('Currently without effect.', 'sfxtheme'),
+            'icon_class' => esc_html__('CSS classes for that icon.', 'sfxtheme'),
             'text'       => esc_html__('Email only: link text instead of the address.', 'sfxtheme'),
             'class'      => esc_html__('CSS classes for the wrapper; turns the wrapper on.', 'sfxtheme'),
             'link'       => sprintf(

@@ -9,15 +9,14 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Contact Infos / Social Accounts: pre-existing defects found while writing the help
-      tabs** (2026-10-02, not fixed there; the help text describes today's behaviour):
-      `icon_class` is concatenated as an array (`class="Array"`)
-      and no `[icon]` shortcode exists; an explicit `contact_id` reads drafts; saving a
-      contact does not clear the main/branch type caches, "Clear Cache" skips non-published
-      IDs, and the cache ignores the language; type lookup ignores the Order field;
-      `{contact_info:field:branch}` is dead code; social tag attributes can override `id`
-      and `field`; social `class` lands on wrapper and every item, `style`/`size` have no CSS.
-      Also: the help-tab test does not check social shortcode attributes (Gate B minor).
+- [ ] **Social Accounts: `class` lands on the wrapper and on every account; `style`/`size`
+      only add classes and the theme ships no CSS for them** (found 2026-10-02). Left as is on
+      purpose: sites may already style against those classes, and the help documents it.
+      Change only with a decision on migrating existing CSS.
+- [ ] **Contact Infos: WPML translation never matched** (Gate B, 2026-10-03). Strings are
+      registered as `Contact Information` / `contact_info_<field>_<id>` but looked up as
+      `sfx_contact_info` / `<field>_<id>`, so WPML sites always see the original. Align both
+      and test with a registration-backed stub. Polylang is unaffected.
 - [ ] **Live harness `tests/support/rest-guest-live-check.php`: concurrent edits during
       a run are overwritten by the restore** (Greptile on PR #48, 2026-10-02). A correct
       guard needs an atomic compare-and-swap restore per row; documented in the harness

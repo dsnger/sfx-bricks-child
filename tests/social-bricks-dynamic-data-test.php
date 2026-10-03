@@ -76,6 +76,16 @@ run_social_bricks_case('Case 5: {social_account:url:123}', 'render_bricks_dynami
     assert_same('https://social.example/ig', $actual, 'Case 5: Bricks URL tag');
 });
 
+run_social_bricks_case('Case 5b: tag attributes cannot override id or field', 'render_bricks_dynamic_tag', function (): void {
+    $actual = SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:url:123@id:201@field:title}', null);
+    assert_same('https://social.example/ig', $actual, 'Case 5b: id and field from the tag win');
+    assert_same(
+        SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:html:123}', null),
+        SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:html:123@class}', null),
+        'Case 5b: bare attribute ignored'
+    );
+});
+
 run_social_bricks_case('Case 6: {social_account:url}', 'render_bricks_dynamic_tag', function (): void {
     $actual = SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:url}', null);
     assert_same('', $actual, 'Case 6: ID-less tag returns empty');
