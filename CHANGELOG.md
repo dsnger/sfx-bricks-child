@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.27.0] - 2026-10-03
+
+- Admin help: a "Help" tab on the Contact Infos and Social Media screens documents all shortcode fields, attributes, Bricks tags and examples (German included).
+- Fix: a Bricks contact tag with an attribute but no value (e.g. {contact_info:email@link}) no longer crashes the page; bare link/wrap/debug mean on, other bare attributes are ignored.
+
 ## [0.26.1] - 2026-10-02
 
 Contact Infos: a phone extension now stops at trailing note text ("…;ext=12 Büro 3" keeps extension 12) and accepts a slash as separator ("ext=12/34" -> 1234). The main number was never affected.
