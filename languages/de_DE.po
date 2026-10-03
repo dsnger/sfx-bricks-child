@@ -8063,8 +8063,8 @@ msgstr "Bricks-Tags"
 msgid "Examples"
 msgstr "Beispiele"
 
-msgid "Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes; the \"Clear Cache\" button on the list screen refreshes them at once."
-msgstr "Die Auswahl nach Typ und in Query-Loops nutzt nur veröffentlichte Einträge; ein per ID gewählter Eintrag wird unabhängig von seinem Status gezeigt. Feldwerte können bis zu 30 Minuten zwischengespeichert sein; die Schaltfläche „Cache leeren“ in der Übersicht aktualisiert sie sofort."
+msgid "Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes. Saving an entry refreshes its own values; the \"Clear Cache\" button on the list screen refreshes all published entries and the main/branch values at once."
+msgstr "Die Auswahl nach Typ und in Query-Loops nutzt nur veröffentlichte Einträge; ein per ID gewählter Eintrag wird unabhängig von seinem Status gezeigt. Feldwerte können bis zu 30 Minuten zwischengespeichert sein. Speichern eines Eintrags aktualisiert dessen Werte; die Schaltfläche „Cache leeren“ in der Übersicht aktualisiert sofort alle veröffentlichten Einträge und die Werte für main und branch."
 
 msgid "Email link (mailto:)"
 msgstr "E-Mail-Link (mailto:)"
@@ -8294,3 +8294,25 @@ msgstr "In einem Query-Loop: Bild-URL für ein Bricks-Bildelement."
 
 msgid "Inside a query loop: link URL for a Bricks button or link."
 msgstr "In einem Query-Loop: Link-URL für einen Bricks-Button oder -Link."
+
+msgid "html field only."
+msgstr "nur beim Feld html."
+
+msgid "Required. ID of the account."
+msgstr "Pflicht. ID des Kontos."
+
+msgid "A field key from the table below."
+msgstr "Ein Feldschlüssel aus der Tabelle unten."
+
+msgid "Extra CSS class on the account block;"
+msgstr "Zusätzliche CSS-Klasse am Konto-Block;"
+
+#. translators: 1: CSS class pattern, 2: "html field only."
+#, php-format
+msgid "Added as the class %1$s; %2$s"
+msgstr "Wird als Klasse %1$s ergänzt; %2$s"
+
+#. translators: 1: "_blank", 2: "_self", 3: "html field only."
+#, php-format
+msgid "Link target if the account has none of its own: %1$s or %2$s; %3$s"
+msgstr "Linkziel, wenn das Konto kein eigenes hat: %1$s oder %2$s; %3$s"

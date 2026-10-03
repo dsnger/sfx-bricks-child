@@ -67,7 +67,7 @@ final class HelpTab
     public static function get_sidebar(): string
     {
         return '<p><strong>' . esc_html__('Contact Information', 'sfxtheme') . '</strong></p>'
-            . '<p>' . esc_html__('Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes; the "Clear Cache" button on the list screen refreshes them at once.', 'sfxtheme') . '</p>';
+            . '<p>' . esc_html__('Selection by type and in query loops uses published entries only; an entry chosen by ID is shown whatever its status. Field values can be cached for up to 30 minutes. Saving an entry refreshes its own values; the "Clear Cache" button on the list screen refreshes all published entries and the main/branch values at once.', 'sfxtheme') . '</p>';
     }
 
     private static function shortcode_tab(): string

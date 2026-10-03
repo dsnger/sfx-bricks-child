@@ -110,6 +110,34 @@ final class HelpTab
             'target' => __('_blank or _self (default _blank)', 'sfxtheme'),
             'html'   => __('The account as a full link block, as in the list; class, size and target apply here', 'sfxtheme'),
         ];
+        $html_only = __('html field only.', 'sfxtheme');
+        $single_rows = [
+            [self::code('id'), '&mdash;', esc_html__('Required. ID of the account.', 'sfxtheme')],
+            [self::code('field'), self::code('html'), esc_html__('A field key from the table below.', 'sfxtheme')],
+            [self::code('class'), self::code('social-account'), esc_html(__('Extra CSS class on the account block;', 'sfxtheme') . ' ' . $html_only)],
+            [
+                self::code('size'),
+                self::code('medium'),
+                sprintf(
+                    /* translators: 1: CSS class pattern, 2: "html field only." */
+                    esc_html__('Added as the class %1$s; %2$s', 'sfxtheme'),
+                    self::code('social-account-{size}'),
+                    esc_html($html_only)
+                ),
+            ],
+            [
+                self::code('target'),
+                self::code('_blank'),
+                sprintf(
+                    /* translators: 1: "_blank", 2: "_self", 3: "html field only." */
+                    esc_html__('Link target if the account has none of its own: %1$s or %2$s; %3$s', 'sfxtheme'),
+                    self::code('_blank'),
+                    self::code('_self'),
+                    esc_html($html_only)
+                ),
+            ],
+        ];
+
         $field_rows = [];
         foreach (FieldRegistry::get_fields() as $key => $label) {
             $field_rows[] = [self::code($key), esc_html($label), esc_html($notes[$key] ?? '')];
@@ -129,6 +157,7 @@ final class HelpTab
                 self::code('field'),
                 self::code('html')
             ) . '</p>'
+            . self::table([__('Attribute', 'sfxtheme'), __('Default', 'sfxtheme'), __('Effect', 'sfxtheme')], $single_rows)
             . self::table([__('Field', 'sfxtheme'), __('Label', 'sfxtheme'), __('Output', 'sfxtheme')], $field_rows);
     }
 
