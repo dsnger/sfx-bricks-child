@@ -8117,8 +8117,8 @@ msgid "%1$s or %2$s: uses the published entry of this type that comes first by O
 msgstr "%1$s oder %2$s: nutzt den veröffentlichten Eintrag dieses Typs, der nach Reihenfolge zuerst kommt (bei Gleichstand der neueste)."
 
 #, php-format
-msgid "Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, its text is printed as is."
-msgstr "Symbolname, wird an einen %s-Shortcode vor dem Wert übergeben. Das Theme stellt diesen Shortcode nicht bereit; ohne ein Plugin, das ihn liefert, erscheint sein Text unverändert."
+msgid "Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, no icon is shown."
+msgstr "Symbolname, wird an einen %s-Shortcode vor dem Wert übergeben. Das Theme bringt diesen Shortcode nicht mit; ohne ein Plugin, das ihn bereitstellt, erscheint kein Symbol."
 
 msgid "CSS classes for that icon."
 msgstr "CSS-Klassen für dieses Symbol."

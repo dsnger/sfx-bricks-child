@@ -17,8 +17,6 @@ references an entry here must still be able to find it.
       registered as `Contact Information` / `contact_info_<field>_<id>` but looked up as
       `sfx_contact_info` / `<field>_<id>`, so WPML sites always see the original. Align both
       and test with a registration-backed stub. Polylang is unaffected.
-- [ ] **Contact Infos: `icon_class` with `[` or `]` breaks the `[icon]` shortcode call**
-      (Gate B, 2026-10-03; e.g. `w-[16px]`). Strip or avoid reparsing shortcode syntax.
 - [ ] **Live harness `tests/support/rest-guest-live-check.php`: concurrent edits during
       a run are overwritten by the restore** (Greptile on PR #48, 2026-10-02). A correct
       guard needs an atomic compare-and-swap restore per row; documented in the harness

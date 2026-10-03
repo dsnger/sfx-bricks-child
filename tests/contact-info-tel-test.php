@@ -223,16 +223,36 @@ assert_same('', $sc->render_contact_info(['field' => 'address', 'contact_id' => 
 assert_same('', $sc->render_contact_info(['field' => 'address', 'contact_id' => '321']), '7b: other post type address hidden');
 assert_same('', $sc->render_contact_info(['field' => 'edit_lock', 'contact_id' => '310']), '7c: no arbitrary meta key');
 
-// 8. icon_class reaches the [icon] shortcode as one class attribute (was "Array").
+// 8. icon_class reaches the [icon] handler intact (was "Array"; brackets must survive).
+$test_icon_registered = true;
 $test_shortcodes = [];
+function shortcode_exists($tag)
+{
+    global $test_icon_registered;
+    return $tag === 'icon' && $test_icon_registered;
+}
 function do_shortcode($content)
 {
     global $test_shortcodes;
     $test_shortcodes[] = $content;
-    return '';
+    return '<i></i>';
 }
-$sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'icon' => 'mail', 'icon_class' => 'a b']);
-assert_same('[icon icon="mail" pos="before" class="branch-info a b"]', $test_shortcodes[0] ?? '', '8: icon shortcode');
+$sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'icon' => 'mail', 'icon_class' => 'a w-[16px]']);
+assert_same('[icon icon="mail" pos="before" class="branch-info a w-&#91;16px&#93;"]', $test_shortcodes[0] ?? '', '8: icon shortcode, brackets as entities');
+$test_icon_registered = false;
+assert_same(
+    '<a href="mailto:info@example.test">info@example.test</a>',
+    $sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'icon' => 'mail']),
+    '8: no [icon] registered -> no icon text'
+);
+
+// 8b. A write that bypasses save_post (Order screen) still clears the contact caches.
+$test_transients = ['sfx_contact_info_type_main' => 310, 'sfx_contact_info_310_phone' => 'old'];
+$sc->clear_on_clean_post_cache(310, $test_posts[310]);
+assert_same([], $test_transients, '8b: clean_post_cache clears contact caches');
+$test_transients = ['sfx_contact_info_type_main' => 310];
+$sc->clear_on_clean_post_cache(321, $test_posts[321]);
+assert_same(['sfx_contact_info_type_main' => 310], $test_transients, '8b: other post types untouched');
 
 // 9. The cache holds the raw value; translation runs per request, so languages never mix.
 $test_pll = [];

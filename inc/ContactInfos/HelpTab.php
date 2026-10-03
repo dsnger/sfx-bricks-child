@@ -130,7 +130,7 @@ final class HelpTab
             ),
             'icon'       => sprintf(
                 /* translators: %s: shortcode name "[icon]" */
-                esc_html__('Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, its text is printed as is.', 'sfxtheme'),
+                esc_html__('Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, no icon is shown.', 'sfxtheme'),
                 self::code('[icon]')
             ),
             'icon_class' => esc_html__('CSS classes for that icon.', 'sfxtheme'),

@@ -48,10 +48,23 @@ class SC_ContactInfos
         // Clear caches when contact info posts are updated
         add_action('save_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
         add_action('delete_post_sfx_contact_info', [$this, 'clear_contact_info_caches']);
+        // Writes that bypass save_post (e.g. the Order screen's direct menu_order update) still clean the post cache.
+        add_action('clean_post_cache', [$this, 'clear_on_clean_post_cache'], 10, 2);
         
 
     }
     
+    /**
+     * @param int      $post_id
+     * @param \WP_Post $post
+     */
+    public function clear_on_clean_post_cache($post_id, $post): void
+    {
+        if ($post instanceof \WP_Post && $post->post_type === 'sfx_contact_info') {
+            $this->clear_contact_info_caches((int) $post_id);
+        }
+    }
+
     /**
      * Clear contact info caches when posts are updated
      * 
@@ -99,8 +112,14 @@ class SC_ContactInfos
         $icon_classes = $this->process_classes($atts['icon_class']);
 
         // Set up icon and text
-        $icon = !empty($atts['icon'])
-            ? do_shortcode('[icon icon="' . esc_attr($atts['icon']) . '" pos="before" class="' . esc_attr(implode(' ', array_merge(['branch-info'], $icon_classes))) . '"]')
+        // Through do_shortcode so the shortcode filters still apply. Brackets would end the
+        // shortcode early, so they go in as entities. ponytail: right for handlers using esc_attr();
+        // one that double-encodes (htmlspecialchars) shows &#091; literally - pass raw atts if that ever matters.
+        // Without a registered [icon] there is no icon rather than its raw text.
+        $shortcode_attr = static fn(string $v): string => str_replace(['[', ']'], ['&#91;', '&#93;'], esc_attr($v));
+        $icon = !empty($atts['icon']) && shortcode_exists('icon')
+            ? do_shortcode('[icon icon="' . $shortcode_attr((string) $atts['icon']) . '" pos="before" class="'
+                . $shortcode_attr(implode(' ', array_merge(['branch-info'], $icon_classes))) . '"]')
             : '';
         $text = !empty($atts['text']) ? $atts['text'] : null;
 
