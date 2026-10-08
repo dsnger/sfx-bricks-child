@@ -130,8 +130,10 @@ callbacks run at 10.
    - **Accepted limit (Daniel, 2026-10-08):** an annotated tag is resolved wherever it
      stands, also inside a quoted string (`{echo:strlen('{acf_phone @format:tel}')}`)
      or inside a `:raw` tag meant to print tag syntax literally
-     (`{post_title:raw @fallback:'{acf_phone @format:tel}'}`). Today both print the
-     annotated tag as text; afterwards the number. Only matters for someone showing
+     (`{post_title:raw @fallback:'{acf_phone @format:tel}'}`). The inner annotated tag is
+     replaced by the number before the outer expression runs, so the outer result
+     changes accordingly (`strlen` counts the number's characters; `:raw` shows the
+     number inside the escaped syntax). Only matters for someone showing
      this exact syntax as text; the help text says so. The alternative — skipping areas
      containing `:raw` — was tried in review and let `render_data` resolve the tag later
      against the page post (wrong number), so it was dropped.
@@ -182,10 +184,10 @@ controls, `elements/base.php:4389`), and builder previews that use `render_tag`
 resolver as a tag name. Builder previews are not tested; the help text says the canvas
 may show the raw tag.
 
-**Late resolution in loops:** content that Bricks resolves only in `render_data` after
-the loop has ended (e.g. a Code element without "parse dynamic data",
-`elements/code.php:203`; loop state cleared at `query.php:2096`) receives the **page**
-post. An annotated tag there resolves against the page — exactly as Bricks resolves a
+**Late resolution in loops:** Bricks reparses each loop item's finished output while
+the loop is still active (`query.php:2026-2121`), so element output inside a loop
+resolves against the item. Should any content reach `render_data` only after the loop
+has ended, it receives the **page** post. An annotated tag there resolves against the page — exactly as Bricks resolves a
 plain `{acf_phone}` in the same place. Same limit as Bricks' own tags, not a new one.
 
 **Same pipeline as Bricks:** `render_data` sees whole element output, including
@@ -223,7 +225,7 @@ is therefore treated like any other Bricks tag in it — no new exposure.
 | `{name @format:tel}`, field holds one number | raw tag shown as text | clean number |
 | `{name @format:tel}`, field empty, unknown tag, or markup that survives Bricks' sanitising | raw tag, or empty | empty |
 | `{name @format:tel}`, field markup that Bricks' sanitising strips (`providers/base.php:318`) | raw tag | clean number from the visible text |
-| annotated tag inside a quoted string or a `:raw` tag | annotated tag printed as text | number (accepted limit) |
+| annotated tag inside a quoted string or a `:raw` tag | outer expression works on the literal tag text | outer expression works on the number (accepted limit) |
 | `{cf_name @format:tel}` | Bricks reads a meta key literally named `name @format` (`provider-wp.php:1139`) — not a realistic existing setup | clean number from meta key `name` |
 | `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | whatever Bricks' parser makes of it today (`:plain @format:tel` even switches on Bricks' `:tel`, `providers/base.php:144`) | identical — not matched |
 | `{social_account:… @format:tel}` | resolves, attribute dropped by the theme parser | identical — not matched |
