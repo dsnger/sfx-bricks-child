@@ -112,11 +112,6 @@ callbacks run at 10.
 
 1. `$content` not a string, or no `@format:tel` in it (`strpos`, case-sensitive like
    ContactInfos' own `format === 'tel'`) → return unchanged.
-1a. `$content` contains `:raw` → return unchanged. Bricks' `:raw` filter exists to print
-   tag syntax literally, nested tags included (`providers.php:691-698`); resolving an
-   annotated tag inside it first would change that working output. Coarse on purpose —
-   a whole area containing `:raw` anywhere skips the module, which only ever leaves a
-   tag unresolved, never rewrites one. Known limit, documented in the help text.
 2. `preg_replace_callback` with
 
    ```
@@ -129,9 +124,16 @@ callbacks run at 10.
    - `@format:telefax` does not match (`}` must follow `tel`).
    - A simple annotated tag is resolved wherever it appears, also inside another tag's
      argument or fallback (`{echo:fn({acf_phone @format:tel})}`). Today Bricks prints it
-     there as broken literal text too, so nothing that works changes — except under
-     `:raw`, handled in 1a. No nesting detection — counting braces cannot tell nesting
-     apart from quoted or script braces.
+     there as broken literal text too. No nesting detection — counting braces cannot
+     tell nesting apart from quoted or script braces.
+   - **Accepted limit (Daniel, 2026-10-08):** an annotated tag is resolved wherever it
+     stands, also inside a quoted string (`{echo:strlen('{acf_phone @format:tel}')}`)
+     or inside a `:raw` tag meant to print tag syntax literally
+     (`{post_title:raw @fallback:'{acf_phone @format:tel}'}`). Today both print the
+     annotated tag as text; afterwards the number. Only matters for someone showing
+     this exact syntax as text; the help text says so. The alternative — skipping areas
+     containing `:raw` — was tried in review and let `render_data` resolve the tag later
+     against the page post (wrong number), so it was dropped.
 3. Per match, with `$name` from the capture:
    - `$value = bricks_render_dynamic_data('{' . $name . '}', $post->ID ?? 0, $context)`.
    - Not a string → `''`.
@@ -164,7 +166,10 @@ same loop logic. Checked live in the plan with distinguishable loop items.
 **Recursion:** the inner call carries `{name}` without `@format:tel`, so it cannot match
 again directly. A provider that itself asks for `{name @format:tel}` again would
 re-enter; a static in-flight set keyed by name + post ID + context, released in
-`finally`, returns `''` for a key already being resolved.
+`finally`, returns `''` for a key already being resolved. Narrow contract: two
+overlapping resolutions of the same name, post and context (e.g. different repeater
+rows of one post resolved from inside a provider) are treated as one; no known
+provider does this.
 
 **Coverage:** Bricks text and link output (element content, button/link fields
 composed as `tel:{… @format:tel}`), which pass through `render_content` or
@@ -217,7 +222,7 @@ is therefore treated like any other Bricks tag in it — no new exposure.
 | `{name @format:tel}`, field holds one number | raw tag shown as text | clean number |
 | `{name @format:tel}`, field empty, unknown tag, or markup that survives Bricks' sanitising | raw tag, or empty | empty |
 | `{name @format:tel}`, field markup that Bricks' sanitising strips (`providers/base.php:318`) | raw tag | clean number from the visible text |
-| any area containing `:raw` | Bricks output | identical — module skipped |
+| annotated tag inside a quoted string or a `:raw` tag | annotated tag printed as text | number (accepted limit) |
 | `{cf_name @format:tel}` | Bricks reads a meta key literally named `name @format` (`provider-wp.php:1139`) — not a realistic existing setup | clean number from meta key `name` |
 | `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | whatever Bricks' parser makes of it today (`:plain @format:tel` even switches on Bricks' `:tel`, `providers/base.php:144`) | identical — not matched |
 | `{social_account:… @format:tel}` | resolves, attribute dropped by the theme parser | identical — not matched |
@@ -253,8 +258,8 @@ A stubbed `bricks_render_dynamic_data()` records every call and returns fixture 
    empty afterwards (also after the stub throws). Overlapping resolutions of the same
    name with a different post ID, and with a different context, both resolve normally —
    a guard keyed by name alone fails this.
-5c. `:raw`: `{post_title:raw @fallback:'{acf_phone @format:tel}'}` and a string holding
-   `{x:raw}` next to `tel:{acf_phone @format:tel}` → byte-identical, stub not called.
+5c. Accepted limit pinned: `{post_title:raw @fallback:'{acf_phone @format:tel}'}` →
+   inner tag resolved, rest byte-identical.
 6. Two tags in one string with text around them → both replaced, text byte-identical.
 7. Non-string `$content` → returned as is.
 8. PCRE failure on `tel:{acf_phone @format:tel}`: control run at the normal limit
@@ -271,7 +276,8 @@ Also:
   existing no-space cases, and the picker assertion (`:207`) expects the space form.
 - `tests/social-bricks-dynamic-data-test.php` requires `inc/TelNormalizer.php` (it loads
   `SC_ContactInfos` directly), and adds `{social_account:html:123 @class:x @size:small
-  @target:_blank}`: each attribute takes effect, and the output equals the no-space
+  @target:_self}` on a fixture whose stored target is cleared: each attribute takes
+  effect (omitting each one changes the output), and the output equals the no-space
   spelling.
 - `tests/contact-social-help-tab-test.php` expects the space form.
 
@@ -294,8 +300,8 @@ resolution, fixtures removed in one teardown per AGENTS.md):
   `{contact_info:phone|link=false}`, `{acf_phone @fallback:'x' @format:tel}`,
   `{acf_phone:plain @format:tel}` and a `{social_account:…}` tag is identical with and
   without the module. Fixtures: a published contact (type main, phone set) and a
-  published social account created by the harness, so each baseline is asserted
-  **non-empty** before the comparison.
+  published social account created by the harness; each baseline is asserted to hold
+  the fixture's resolved value (phone, URL) and not the raw tag before the comparison.
 
 ## Docs
 
