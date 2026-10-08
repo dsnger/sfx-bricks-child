@@ -859,6 +859,11 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
 define('WP_USE_THEMES', false);
 require $root . '/wp-load.php';
 wp_set_current_user(1);
+// wp_die() (e.g. wpdb bailing on a lost connection) must not end the run inside teardown:
+// turn it into an exception the teardown's catches handle (→ unverifiable → exit 4).
+add_filter('wp_die_handler', static fn() => static function ($message): void {
+    throw new \RuntimeException('wp_die: ' . (is_string($message) ? $message : 'error'));
+}, PHP_INT_MAX);
 
 $check = static function (bool $ok, string $label) use (&$failures): void {
     echo ($ok ? 'ok   ' : 'FAIL ') . $label . "\n";
@@ -913,7 +918,7 @@ $expect = [
     ['tel:+491511111', '>0151 1111<'],
     ['tel:+492082220', '>0208 / 222 0<'],
     ['tel:', ''],                     // empty field: empty label
-    ['tel:', 'href="tel:9"'],         // markup field: its markup is the label
+    ['tel:', '<a href="tel:9">9</a>'], // markup field: its markup is the label, unchanged
 ];
 foreach ($expect as $i => [$href, $label]) {
     $chunk = $items[$i] ?? '';
