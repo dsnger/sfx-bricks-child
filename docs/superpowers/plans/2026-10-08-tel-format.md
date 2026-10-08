@@ -774,18 +774,27 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
     global $wpdb;
     // Recorded IDs plus any row with this run's title prefix: a save hook that throws after
     // the INSERT leaves a post whose ID was never returned to us.
-    $found = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%'));
-    $ids = array_values(array_unique(array_merge($fixtures, array_map('intval', $found))));
     $left = [];
+    $found = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%'));
+    if ($wpdb->last_error !== '') {
+        $left[] = 'discovery query failed: ' . $wpdb->last_error; // indeterminate counts as failure
+        $found = [];
+    }
+    $ids = array_values(array_unique(array_merge($fixtures, array_map('intval', $found))));
     foreach (array_reverse($ids) as $id) {
         try {
             wp_delete_post($id, true);
+            clean_post_cache($id);
         } catch (\Throwable $t) {
-            fwrite(STDERR, "teardown: delete {$id} threw: {$t->getMessage()}\n");
+            fwrite(STDERR, "teardown: cleanup of {$id} threw: {$t->getMessage()}\n");
         }
-        clean_post_cache($id);
-        if (get_post($id) !== null) {
-            $left[] = $id;
+        // Verify against the database, not the object cache; a failed read is not proof of absence.
+        $wpdb->last_error = '';
+        $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id));
+        if ($wpdb->last_error !== '' || $count === null) {
+            $left[] = "{$id} (unverifiable)";
+        } elseif ((int) $count !== 0) {
+            $left[] = (string) $id;
         }
     }
     if ($left !== []) {
