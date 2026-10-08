@@ -20,6 +20,7 @@ $required = [
     '/.conductor/',
     '/.remember/',
     '/.superpowers/',
+    '/.impeccable/',
     '/.cloud/',
     '/.context/',
     '/.mcp.json',
