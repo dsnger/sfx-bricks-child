@@ -11,8 +11,8 @@ published from `dsnger/sfx-bricks-child` and installed on client sites. It ships
 theme-level capability as admin modules under `inc/`: image optimization, WordPress
 optimization/cleanup, media credits, password-protected pages, security headers,
 nav-menu queries, social accounts, contact infos, custom scripts, a custom dashboard,
-import/export, general theme options, smooth scroll, redirects with a 404 log, editor prose mirroring, and a
-settings overview.
+import/export, general theme options, smooth scroll, redirects with a 404 log, editor prose mirroring, `@format:tel` for simple Bricks
+dynamic tags, and a settings overview.
 
 Users are site administrators working in wp-admin, plus editors building pages in Bricks.
 A change fits this project when it extends a module, adds one, or maintains the repo's
@@ -31,13 +31,13 @@ Bricks parent theme.
 - **Per-module file convention** — `Controller.php` is the only required file. Modules
   that own settings add `Settings.php` (option schema) and `AdminPage.php` (admin UI),
   plus module-specific classes (e.g. `Bricks.php`, `MediaLibrary.php`, `Credit.php`).
-  Modules with no settings UI (`NavMenuQuery`, `ThemeSettingsOverview`) legitimately have
+  Modules with no settings UI (`NavMenuQuery`, `ThemeSettingsOverview`, `TelFormat`) legitimately have
   neither; a few theme-wide classes (e.g. `inc/DataPurge.php`) sit outside a module dir.
 - **Bricks elements** — custom elements are registered from `elements/` on `init`
   priority 11 via `\Bricks\Elements::register_element()`.
 - **Dependency direction** — modules depend on the theme bootstrap and on WordPress.
   Root-level shared services (`inc/AccessControl.php`, `inc/SFXBricksChildAdmin.php`,
-  `inc/MetaFieldManager.php`, `inc/DataPurge.php`) are available to every module.
+  `inc/MetaFieldManager.php`, `inc/DataPurge.php`, `inc/TelNormalizer.php`) are available to every module.
   `ImportExport` is a catalogue: it names the explicit exportable contracts of twelve
   other modules by design — with deliberate omissions, see the Don'ts — so it sits outside the
   edge count below rather than being an exception to it.

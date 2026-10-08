@@ -197,18 +197,23 @@ final class HelpTab
                 esc_html__('Field of the entry with ID 123.', 'sfxtheme'),
             ],
             [
-                self::code('{contact_info:phone@format:tel}'),
+                self::code('{contact_info:phone @format:tel}'),
                 esc_html__('Cleaned number only, for link fields.', 'sfxtheme'),
             ],
         ];
 
         return self::table([__('Tag', 'sfxtheme'), __('Output', 'sfxtheme')], $rows)
             . '<p>' . sprintf(
-                /* translators: 1: "@key:value", 2: "|key=value", 3: example tag */
-                esc_html__('Attributes are appended as %1$s or %2$s and can be chained, e.g. %3$s. Values must not contain @, |, = or }.', 'sfxtheme'),
+                /* translators: 1: "@key:value", 2: example tag */
+                esc_html__('Attributes are appended as %1$s, separated by a space, and can be chained, e.g. %2$s. Values must not contain @, |, = or }.', 'sfxtheme'),
                 self::code('@key:value'),
-                self::code('|key=value'),
-                self::code('{contact_info:email@link:false@wrap:true}')
+                self::code('{contact_info:email @link:false @wrap:true}')
+            ) . '</p>'
+            . '<p>' . sprintf(
+                /* translators: 1: "@format:tel", 2: example tag */
+                esc_html__('%1$s also works on simple Bricks tags such as %2$s: the tag name and %1$s, nothing else; one phone number per field. Inside quotes or a :raw tag it is resolved as well. The builder canvas may show the raw tag; the page shows the number.', 'sfxtheme'),
+                self::code('@format:tel'),
+                self::code('tel:{acf_phone @format:tel}')
             ) . '</p>'
             . '<p>' . sprintf(
                 /* translators: 1: query type "Posts", 2: post type label "Contact Information" */
@@ -229,10 +234,11 @@ final class HelpTab
             ['[contact_info field="email" text="Write to us"]', __('Email link with your own link text.', 'sfxtheme')],
             ['[contact_info field="phone" type="branch" class="footer-phone"]', __('Branch phone as a link, wrapped in a span with the class footer-phone.', 'sfxtheme')],
             ['[contact_info field="opening" contact_id="123"]', __('Opening hours of entry 123.', 'sfxtheme')],
-            ['tel:{contact_info:phone@format:tel}', __('Link field of a Bricks button: dials the main phone number.', 'sfxtheme')],
-            ['mailto:{contact_info:email@link:false}', __('Link field of a Bricks button: writes to the main email address.', 'sfxtheme')],
+            ['tel:{contact_info:phone @format:tel}', __('Link field of a Bricks button: dials the main phone number.', 'sfxtheme')],
+            ['tel:{acf_phone @format:tel}', __('Link field of a Bricks button: dials the number from the ACF field phone.', 'sfxtheme')],
+            ['mailto:{contact_info:email @link:false}', __('Link field of a Bricks button: writes to the main email address.', 'sfxtheme')],
             ['{contact_info:city}', __('Inside a query loop over contact entries: the city of each entry.', 'sfxtheme')],
-            ['{contact_info:phone:123|link=false}', __('Phone number of entry 123 as plain text.', 'sfxtheme')],
+            ['{contact_info:phone:123 @link:false}', __('Phone number of entry 123 as plain text.', 'sfxtheme')],
         ];
 
         return self::table(
