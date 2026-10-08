@@ -305,18 +305,19 @@ $test_resolver = static function (string $tag, int $post_id, string $context) us
     if ($depth > 5) {
         return 'RUNAWAY';
     }
-    if ($post_id !== 135 || $context !== 'text') {
+    if ($tag !== '{acf_phone}' || $post_id !== 135 || $context !== 'text') {
         return '0151 1'; // the legitimate inner resolutions end here
     }
     // Outer resolution (135, text) asks for the same tag three ways while it is in flight.
     $inner['same']    = Controller::render_content('{acf_phone @format:tel}', $post, 'text');
     $inner['post']    = Controller::render_content('{acf_phone @format:tel}', (object) ['ID' => 200], 'text');
     $inner['context'] = Controller::render_content('{acf_phone @format:tel}', $post, 'link');
+    $inner['name']    = Controller::render_content('{acf_fax @format:tel}', $post, 'text');
     return '0151 1';
 };
 assert_same('+491511', Controller::render_content('{acf_phone @format:tel}', $post, 'text'), '5b: outer value');
-assert_same(3, $depth, '5b: outer + two legitimate inner resolutions; the same key is rejected without resolving');
-assert_same(['same' => '', 'post' => '+491511', 'context' => '+491511'], $inner, '5b: inner results');
+assert_same(4, $depth, '5b: outer + three legitimate inner resolutions; the same key is rejected without resolving');
+assert_same(['same' => '', 'post' => '+491511', 'context' => '+491511', 'name' => '+491511'], $inner, '5b: inner results');
 $test_resolver = static function () {
     throw new RuntimeException('boom');
 };
@@ -383,7 +384,7 @@ if ($failures > 0) {
 echo "tel-format-test: PASS\n";
 ```
 
-Note on 5b: the inner `post 200` and `link` resolutions are legitimate (different key) and resolve once each → `$depth` 2 and 3; the inner same-key call is rejected by the guard **without** calling the resolver. A guard keyed by name alone rejects all three → `$depth` 1 and `post`/`context` empty — the assertions fail. Without any guard the same-key call recurses until `RUNAWAY`.
+Note on 5b: the inner `post 200`, `link` and `acf_fax` resolutions are legitimate (different key) and resolve once each → `$depth` 4; the inner same-key call is rejected by the guard **without** calling the resolver. A key missing any of name, post or context wrongly rejects one of them — the assertions fail. Without any guard the same-key call recurses until `RUNAWAY`.
 
 Note on 6: `tel:+492082` — `0208 2` normalises to `+492082`.
 
@@ -510,6 +511,7 @@ mkdir -p "$M/inc/TelFormat" "$M/tests"
 cp inc/TelNormalizer.php "$M/inc/"; cp tests/tel-format-test.php "$M/tests/"
 mutate() { cp inc/TelFormat/Controller.php "$M/inc/TelFormat/Controller.php"; sed -i '' "$1" "$M/inc/TelFormat/Controller.php"; "$PHP" "$M/tests/tel-format-test.php" | grep -c '^FAIL' ; }
 mutate "s/\$key = \$name . '|' . \$post_id . '|' . \$context;/\$key = \$name;/"   # expect ≥1 (5b)
+mutate "s/\$key = \$name . '|' . \$post_id . '|' . \$context;/\$key = \$post_id . '|' . \$context;/" # expect ≥1 (5b name)
 mutate "s/esc_html(\$tel)/\$tel/"                                                     # expect ≥1 (5a)
 mutate "s/return ''; \/\/ unresolved-or-markup/return '{' . \$name . ' @format:tel}';/" # expect ≥1 (4)
 mutate "s/\[a-zA-Z0-9_-\]+/acf_[a-zA-Z0-9_-]+/"                                       # expect ≥1 (10)
@@ -628,7 +630,7 @@ run_social_bricks_case('Case 5c: several space-separated attributes take effect'
 });
 ```
 
-Run: `./quality.sh` → Expected: FAIL on `6: picker has phone @format:tel`, `Case 4: … @format:tel`, `Case 4: every @ attribute example …`. Case 5c and 5c (contact) are expected to PASS already (parsers unchanged) — that is the compatibility pin.
+Run: `./quality.sh` → Expected: FAIL on `6: picker has phone @format:tel (space form)`, `Case 4: contact example tel:{contact_info:phone @format:tel}` (and the other new needles), `Case U: space before every @ in tag examples`. Case 5c and 5c (contact) are expected to PASS already (parsers unchanged) — that is the compatibility pin.
 
 - [ ] **Step 2: Picker and comments in `inc/ContactInfos/Controller.php`**
 
@@ -699,10 +701,12 @@ In `languages/de_DE.po` replace the two changed entries (old msgid lines 8179 an
 
 ```po
 #. translators: 1: "@key:value", 2: example tag
+#, php-format
 msgid "Attributes are appended as %1$s, separated by a space, and can be chained, e.g. %2$s. Values must not contain @, |, = or }."
 msgstr "Attribute werden als %1$s mit einem Leerzeichen davor angehängt und lassen sich verketten, z. B. %2$s. Werte dürfen kein @, |, = oder } enthalten."
 
 #. translators: 1: "@format:tel", 2: example tag
+#, php-format
 msgid "%1$s also works on simple Bricks tags such as %2$s: the tag name and %1$s, nothing else; one phone number per field. Inside quotes or a :raw tag it is resolved as well. The builder canvas may show the raw tag; the page shows the number."
 msgstr "%1$s funktioniert auch an einfachen Bricks-Platzhaltern wie %2$s: Platzhaltername und %1$s, sonst nichts; eine Telefonnummer pro Feld. Auch in Anführungszeichen oder in einem :raw-Platzhalter wird er aufgelöst. Im Builder kann der rohe Platzhalter stehen; auf der Seite steht die Nummer."
 
@@ -710,11 +714,12 @@ msgid "Link field of a Bricks button: dials the number from the ACF field phone.
 msgstr "Link-Feld eines Bricks-Buttons: wählt die Nummer aus dem ACF-Feld phone."
 
 #. translators: 1: "@key:value", 2: example tag
+#, php-format
 msgid "For the html field, class, size and target can be appended as %1$s, separated by a space, e.g. %2$s."
 msgstr "Für das Feld html lassen sich class, size und target als %1$s mit einem Leerzeichen davor anhängen, z. B. %2$s."
 ```
 
-Then: `msgfmt --check -o languages/de_DE.mo languages/de_DE.po` → Expected: exit 0, no output.
+Then: `msgfmt --check -o languages/de_DE.mo languages/de_DE.po` → Expected: exit 0, no output. Counter-check that the flag is live: copy the `.po` to a temp file, change `%2$s` in the new `@format:tel` msgstr to `%3$s`, run `msgfmt --check -o /dev/null <temp>` → Expected: an error about the format specification; delete the temp file.
 
 - [ ] **Step 7: Run the battery**
 
@@ -762,12 +767,22 @@ wp_set_current_user(1);
 
 $fixtures = [];
 $failures = 0;
+$run = 'TelFormat-' . bin2hex(random_bytes(4)); // every fixture title starts with this
 $completed = false; // set on the last line; anything else is an abort
 $abort = 0;
-register_shutdown_function(static function () use (&$fixtures, &$failures, &$completed, &$abort): void {
+register_shutdown_function(static function () use (&$fixtures, &$failures, &$completed, &$abort, $run): void {
+    global $wpdb;
+    // Recorded IDs plus any row with this run's title prefix: a save hook that throws after
+    // the INSERT leaves a post whose ID was never returned to us.
+    $found = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%'));
+    $ids = array_values(array_unique(array_merge($fixtures, array_map('intval', $found))));
     $left = [];
-    foreach (array_reverse($fixtures) as $id) {
-        wp_delete_post($id, true);
+    foreach (array_reverse($ids) as $id) {
+        try {
+            wp_delete_post($id, true);
+        } catch (\Throwable $t) {
+            fwrite(STDERR, "teardown: delete {$id} threw: {$t->getMessage()}\n");
+        }
         clean_post_cache($id);
         if (get_post($id) !== null) {
             $left[] = $id;
@@ -777,7 +792,7 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
         fwrite(STDERR, 'TEARDOWN FAILED, still present: ' . implode(', ', $left) . "\n");
         exit(4); // cleanup failure wins over everything
     }
-    echo 'teardown: removed and verified ' . count($fixtures) . " fixtures\n";
+    echo 'teardown: removed and verified ' . count($ids) . " fixtures\n";
     if (!$completed) {
         $err = error_get_last();
         fwrite(STDERR, 'ABORTED before completion' . ($err ? ': ' . $err['message'] : '') . "\n");
@@ -793,8 +808,8 @@ $check = static function (bool $ok, string $label) use (&$failures): void {
     }
 };
 
-$make = static function (string $type, string $title, array $meta) use (&$fixtures, &$abort): int {
-    $id = wp_insert_post(['post_type' => $type, 'post_status' => 'publish', 'post_title' => $title], true);
+$make = static function (string $type, string $title, array $meta) use (&$fixtures, &$abort, $run): int {
+    $id = wp_insert_post(['post_type' => $type, 'post_status' => 'publish', 'post_title' => $run . ' ' . $title], true);
     if (is_wp_error($id) || $id <= 0) {
         fwrite(STDERR, "FATAL: could not create {$type} fixture\n");
         $abort = 3;
