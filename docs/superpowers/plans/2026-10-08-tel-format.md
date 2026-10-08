@@ -748,6 +748,8 @@ git commit -m "WIP: uniform tag attribute spelling (space before @), help for @f
 
 Rules (AGENTS.md Don'ts): one `register_shutdown_function` teardown is declared before the first fixture; it deletes every recorded fixture, **verifies each is gone by ID**, and turns a failed cleanup into a non-zero exit; the site-root guard is fatal. Element shapes below were checked against the local site (Bricks 2.4.2): a container with `hasLoop` renders one `<div class="brxe-<id> brxe-container …">` per item, a button renders `<a class="brxe-<id> brxe-button bricks-button" href="…">label</a>`.
 
+**Threat model (settled with Daniel, 2026-10-08):** the harness runs on the local development site. It must survive WordPress and database calls that fail or throw — cleanup continues, anything it cannot verify counts as a cleanup failure (exit 4). It does not defend against plugins that deliberately rewrite or sabotage SQL (e.g. a `query` filter returning a different statement); that is out of scope.
+
 Known side effect, accepted: creating/deleting a social account bumps the option `sfx_social_accounts_cache_gen` (a cache generation counter; a higher value only invalidates cached social output). Nothing else persists.
 
 ```php
@@ -775,12 +777,31 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
     // Recorded IDs plus any row with this run's title prefix: a save hook that throws after
     // the INSERT leaves a post whose ID was never returned to us.
     $left = [];
-    $found = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%'));
-    if ($wpdb->last_error !== '') {
-        $left[] = 'discovery query failed: ' . $wpdb->last_error; // indeterminate counts as failure
-        $found = [];
+    // Each query is checked through query()'s own return value (get_var/get_col ignore it) and
+    // wrapped, so a failing or throwing query marks that check unverifiable and cleanup goes on.
+    $count_rows = static function (string $sql) use ($wpdb): ?int {
+        try {
+            if ($wpdb->query($sql) === false || $wpdb->last_error !== '') {
+                return null;
+            }
+            $row = $wpdb->last_result[0] ?? null;
+            return $row === null ? null : (int) array_values((array) $row)[0];
+        } catch (\Throwable $t) {
+            return null;
+        }
+    };
+    $found = [];
+    try {
+        $q = $wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%');
+        if ($wpdb->query($q) === false || $wpdb->last_error !== '') {
+            $left[] = 'discovery query failed';
+        } else {
+            $found = array_map(static fn($r) => (int) $r->ID, $wpdb->last_result);
+        }
+    } catch (\Throwable $t) {
+        $left[] = 'discovery query threw: ' . $t->getMessage();
     }
-    $ids = array_values(array_unique(array_merge($fixtures, array_map('intval', $found))));
+    $ids = array_values(array_unique(array_merge($fixtures, $found)));
     foreach (array_reverse($ids) as $id) {
         try {
             wp_delete_post($id, true);
@@ -789,12 +810,11 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
             fwrite(STDERR, "teardown: cleanup of {$id} threw: {$t->getMessage()}\n");
         }
         // Verify against the database, not the object cache; a failed read is not proof of absence.
-        $wpdb->last_error = '';
-        $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id));
-        $meta = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id));
-        if ($wpdb->last_error !== '' || $count === null || $meta === null) {
+        $count = $count_rows($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id));
+        $meta = $count_rows($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id));
+        if ($count === null || $meta === null) {
             $left[] = "{$id} (unverifiable)";
-        } elseif ((int) $count !== 0 || (int) $meta !== 0) {
+        } elseif ($count !== 0 || $meta !== 0) {
             $left[] = "{$id} (post rows: {$count}, meta rows: {$meta})";
         }
     }
