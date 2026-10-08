@@ -119,21 +119,31 @@ callbacks run at 10.
 
    - The name allows no `:`, so `contact_info:…`, `social_account:…` and any tag with
      Bricks filters (`:plain`, `:raw`, `:tel`) never match; neither do quotes, other
-     `@` keys, nested braces or a repeated `@format:tel`.
+     `@` keys or a repeated `@format:tel`.
    - `@format:telefax` does not match (`}` must follow `tel`).
+   - Called with `PREG_OFFSET_CAPTURE`: a match that sits **inside another tag**
+     (more `{` than `}` in the content before it, e.g. `{echo:fn({acf_phone @format:tel})}`
+     or a quoted fallback) is returned unchanged and nothing is resolved. Unbalanced
+     braces elsewhere (inline CSS/JS) can only cause a skip, never a rewrite.
 3. Per match, with `$name` from the capture:
    - `$value = bricks_render_dynamic_data('{' . $name . '}', $post->ID ?? 0, $context)`.
-   - **Leave the tag unchanged** (return the full match) when:
-     - `$value` is not a string;
-     - `$value` still contains `{` — unresolved or unknown tag; normalising would dial
-       digits from the tag name (`{acf_phone2}` → `2`);
-     - `$value` contains `<` — the provider returned markup; digits from `href` and text
-       would be merged.
-   - Otherwise return
-     `TelNormalizer::normalize_tel(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'))`.
-     Decoding first, because `normalize_tel()` reads the first `;` as the start of URI
-     parameters and `&nbsp;` / `&#160;` would cut the number. An empty field gives `''`,
-     as `{contact_info:…@format:tel}` does.
+   - Not a string → `''`.
+   - `$value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8')` — **before**
+     the checks below, so `&#123;…&#125;` and `&lt;a …&gt;` are caught too, and because
+     `normalize_tel()` reads the first `;` as the start of URI parameters (`&nbsp;` /
+     `&#160;` would cut the number).
+   - A leading `tel:` (any case, surrounding whitespace) is removed: a field that already
+     holds `tel:+49 …` keeps its `+`.
+   - **Return `''`** (not the tag) when the decoded value contains `{` (unresolved or
+     unknown tag — digits from its name would be dialled, `{acf_phone2}` → `2`), `<`
+     (markup — digits from `href` and text would merge), or `,` (a multi-value field that
+     Bricks joined with its default separator, `providers/base.php:266-278` — two numbers
+     would merge). Empty, not the tag: a tag left in place would be resolved again later
+     by `render_data` under the **page** post instead of the loop item, and could print
+     the wrong number.
+   - Otherwise return `esc_html(TelNormalizer::normalize_tel($value))` — escaped at the
+     point where it enters the markup (invariant 3), as `SC_ContactInfos.php:138` does.
+     An empty field gives `''`, as `{contact_info:…@format:tel}` does.
 4. `preg_replace_callback` returns `null` (PCRE failure) → return the original `$content`.
 
 **Post context:** `render_content` receives the post Bricks resolved for the current
@@ -141,19 +151,24 @@ loop or page (`providers.php:930-957`), and `bricks_render_dynamic_data()` re-ap
 same loop logic. Checked live in the plan with distinguishable loop items.
 
 **Recursion:** the inner call carries `{name}` without `@format:tel`, so it cannot match
-again.
+again directly. A provider that itself asks for `{name @format:tel}` again would
+re-enter; a static in-flight set keyed by name, released in `finally`, returns `''` for
+a name already being resolved.
 
-**Output:** the value goes back into Bricks' pipeline. In link context Bricks escapes
-attributes; text elements such as Text Basic echo content as is
-(`bricks/includes/elements/text-basic.php:106`). Safety therefore rests on the output
-alphabet: `normalize_tel()` returns only `+`, digits and `;ext=`. A test pins that
-alphabet, so a later change to the normaliser cannot silently break the argument.
+**Coverage:** Bricks text and link output (element content, button/link fields
+composed as `tel:{… @format:tel}`), which pass through `render_content` or
+`render_data`. Not covered: controls that resolve a single tag through
+`Providers::render_tag()` and use the value before whole-output filtering (image
+controls, `elements/base.php:4389`), and builder previews that use `render_tag`
+(`builder.php:2953-2980`) — there the raw tag stays. ContactInfos has the same limits.
+`render_tag` is left alone because a return value at priority 9 would be fed to Bricks'
+resolver as a tag name.
 
-**Known limit — builder canvas:** the builder previews single-tag fields through
-`Providers::render_tag()` (`builder.php:2965`), which this module does not hook, so the
-canvas shows the raw tag there. Frontend output is unaffected. ContactInfos has the same
-limit; `render_tag` is left alone because a return value at priority 9 would be fed to
-Bricks' resolver as a tag name.
+**Same pipeline as Bricks:** `render_data` sees whole element output, including
+Gutenberg content shown by a Post Content element and Code elements. Bricks itself
+resolves `{acf_phone}` there at priority 10; this module does the same, one priority
+earlier, for `{name @format:tel}`. A literal `{acf_phone @format:tel}` in such content
+is therefore treated like any other Bricks tag in it — no new exposure.
 
 ### ContactInfos — spelling only, behaviour unchanged
 
@@ -181,9 +196,10 @@ Bricks' resolver as a tag name.
 | `SC_ContactInfos::normalize_tel()` | public | public, delegates |
 | filter `sfx_contact_info_default_country_code` | read | read, same name |
 | any tag without `@format:tel` | Bricks output | identical |
-| `{name @format:tel}` (simple tag) | raw tag shown as text | clean number |
-| `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | resolves, attribute ignored | identical |
-| `{social_account:… @format:tel}` | resolves, attribute ignored | identical |
+| `{name @format:tel}`, field holds one number | raw tag shown as text | clean number |
+| `{name @format:tel}`, field empty, unknown tag, markup or several values | raw tag, or empty (`cf_…`: Bricks reads a meta key named with the suffix, `provider-wp.php:1139`) | empty |
+| `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | whatever Bricks' parser makes of it today (`:plain @format:tel` even switches on Bricks' `:tel`, `providers/base.php:144`) | identical — not matched |
+| `{social_account:… @format:tel}` | resolves, attribute dropped by the theme parser | identical — not matched |
 | picker entries already inserted in pages | no-space form | still work |
 
 ## Testing
@@ -195,22 +211,29 @@ A stubbed `bricks_render_dynamic_data()` records every call and returns fixture 
    → `tel:+4915115921554`; `0208 / 207 658 0` → `+492082076580`.
 2. The stub receives `{acf_phone}`, the post ID and the context; `render_data()` passes
    `'text'`.
-3. Left untouched, stub **not** called: `{acf_phone @fallback:'x' @format:tel}`,
+3. Byte-identical, stub **not** called: `{acf_phone @fallback:'x' @format:tel}`,
+   `{acf_phone @fallback:'a {acf_phone @format:tel} b'}`,
    `{acf_phone:plain @format:tel}`, `{contact_info:phone @format:tel}`,
    `{social_account:url:1 @format:tel}`, `{acf_phone @format:telefax}`,
    `{acf_phone @FORMAT:TEL}`, `{acf_phone @format:tel @format:tel}`,
-   `{echo:fn({acf_phone @format:tel})}`'s outer tag (the inner simple tag is replaced —
-   asserted explicitly, so the expectation is pinned either way), and a string with no
-   `@format:tel` at all.
-4. Stub returns `''` → `''`; returns `{acf_phone}` (unresolved) → tag unchanged; returns
-   `<a href="tel:1">1</a>` → tag unchanged; returns an array → tag unchanged.
-5. Entities: stub returns `0151&nbsp;15921554` and `0151&#160;15921554` →
-   `+4915115921554`.
+   `{echo:fn({acf_phone @format:tel})}` (inner tag inside an outer one), and a string with
+   no `@format:tel` at all.
+4. Stub returns → result: `''` → `''`; `{acf_phone}` → `''`; `&#123;acf_phone2&#125;` →
+   `''`; `<a href="tel:1">1</a>` → `''`; `&lt;a href="tel:123"&gt;456&lt;/a&gt;` → `''`;
+   `0151 1, 0172 2` → `''`; an array → `''`.
+5. Entities: `0151&nbsp;15921554` and `0151&#160;15921554` → `+4915115921554`.
+   Prefixed: `tel:+49 (0) 208 2076580` and `TEL: 0208 2076580` → `+492082076580`.
+5a. Escaping: with an `esc_html` stub that wraps its input (`[e]…[/e]`), every
+   replacement arrives wrapped — the call is observed, not inferred from the alphabet.
+5b. Re-entry: a stub that calls `render_content('{acf_phone @format:tel}', …)` from inside
+   its own resolution terminates, the inner call yields `''`, and the in-flight set is
+   empty afterwards (also after the stub throws).
 6. Two tags in one string with text around them → both replaced, text byte-identical.
 7. Non-string `$content` → returned as is.
 8. PCRE failure: `ini_set('pcre.backtrack_limit', '1')` around one call (restored in a
    `finally`) → original content returned.
-9. Output alphabet: every replacement in tests 1–6 matches `/^\+?[0-9]*(;ext=[0-9]+)?$/`.
+9. Output alphabet: every replacement in tests 1–6 matches `/\A\+?[0-9]*(;ext=[0-9]+)?\z/`;
+   the pattern itself rejects `"+49123\n"`, a quote, `<` and `;ext=1a` (asserted).
 
 Also:
 - `tests/contact-info-tel-test.php` calls `TelNormalizer::normalize_tel()`, keeps one
@@ -227,11 +250,27 @@ resolution, fixtures removed in one teardown per AGENTS.md):
   a Bricks query loop: a button with link `tel:{acf_phone @format:tel}` and label
   `{acf_phone}`. Each item shows its own clean `href`, the label stays as entered, the
   empty item gives `tel:`.
-- The same tag rendered through `bricks/frontend/render_data` (a Basic Text element) and
-  through `render_content` in `link` context.
-- Counterfactual: the same page with the module's filters removed shows the raw tag.
+- A fixture whose tag first reaches `render_data` unresolved (applied directly through
+  `apply_filters('bricks/frontend/render_data', …)` with the page post), and a
+  `render_content` call in `link` context.
+- Counterfactuals: with only the `render_content` filter removed, the `render_data`
+  fixture still resolves and vice versa; with both removed, the raw tag shows.
+- A loop item whose phone holds markup next to a page whose phone holds a number: the
+  item shows `tel:` (empty), not the page's number.
+- Compatibility through the full pipeline (real dispatch, priorities 9/10/20): output of
+  `{contact_info:phone@format:tel}`, `{contact_info:phone @format:tel}`,
+  `{contact_info:phone|link=false}`, `{acf_phone @fallback:'x' @format:tel}`,
+  `{acf_phone:plain @format:tel}` and a `{social_account:…}` tag is identical with and
+  without the module.
 
 ## Docs
 
 `AGENTS.md`: "What this is" names the module (`@format:tel` for simple dynamic tags);
 the root-level shared services list gains `inc/TelNormalizer.php`.
+
+`README.md:17` shows `{contact_info:phone@format:tel}` — switched to the space form and
+joined by an ACF example.
+
+Not addressed, deliberately: a third-party plugin that might already implement
+`@format:tel` itself (via `bricks/dynamic_data/allowed_keys` and a later callback). None
+is known on this estate; the module would take precedence for simple tags.
