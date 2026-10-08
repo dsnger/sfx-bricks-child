@@ -763,25 +763,28 @@ if ($root === false || !is_file($root . '/wp-load.php')) {
     fwrite(STDERR, "FATAL: site root not found from " . __DIR__ . "\n");
     exit(2);
 }
-define('WP_USE_THEMES', false);
-require $root . '/wp-load.php';
-wp_set_current_user(1);
-
 $fixtures = [];
 $failures = 0;
 $run = 'TelFormat-' . bin2hex(random_bytes(4)); // every fixture title starts with this
 $completed = false; // set on the last line; anything else is an abort
 $abort = 0;
+// Registered BEFORE wp-load.php: PHP runs shutdown functions in registration order, so a
+// throwing WordPress/plugin shutdown action (registered by WordPress at bootstrap) cannot
+// prevent this teardown. Exiting here skips later shutdown callbacks — fine for a CLI harness.
 register_shutdown_function(static function () use (&$fixtures, &$failures, &$completed, &$abort, $run): void {
     global $wpdb;
+    if (!isset($wpdb) || !function_exists('wp_delete_post')) {
+        fwrite(STDERR, "ABORTED during WordPress bootstrap; no fixtures were created\n");
+        exit($fixtures === [] ? 5 : 4);
+    }
     // Recorded IDs plus any row with this run's title prefix: a save hook that throws after
     // the INSERT leaves a post whose ID was never returned to us.
     $left = [];
     // Each query is checked through query()'s own return value (get_var/get_col ignore it) and
     // wrapped, so a failing or throwing query marks that check unverifiable and cleanup goes on.
-    $count_rows = static function (string $sql) use ($wpdb): ?int {
+    $count_rows = static function (string $sql, int $id) use ($wpdb): ?int {
         try {
-            if ($wpdb->query($sql) === false || $wpdb->last_error !== '') {
+            if ($wpdb->query($wpdb->prepare($sql, $id)) === false || $wpdb->last_error !== '') {
                 return null;
             }
             $row = $wpdb->last_result[0] ?? null;
@@ -810,8 +813,8 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
             fwrite(STDERR, "teardown: cleanup of {$id} threw: {$t->getMessage()}\n");
         }
         // Verify against the database, not the object cache; a failed read is not proof of absence.
-        $count = $count_rows($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id));
-        $meta = $count_rows($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id));
+        $count = $count_rows("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id);
+        $meta = $count_rows("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id);
         if ($count === null || $meta === null) {
             $left[] = "{$id} (unverifiable)";
         } elseif ($count !== 0 || $meta !== 0) {
@@ -830,6 +833,10 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
     }
     exit($failures === 0 ? 0 : 1);
 });
+
+define('WP_USE_THEMES', false);
+require $root . '/wp-load.php';
+wp_set_current_user(1);
 
 $check = static function (bool $ok, string $label) use (&$failures): void {
     echo ($ok ? 'ok   ' : 'FAIL ') . $label . "\n";
