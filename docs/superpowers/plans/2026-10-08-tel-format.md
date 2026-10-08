@@ -791,10 +791,11 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
         // Verify against the database, not the object cache; a failed read is not proof of absence.
         $wpdb->last_error = '';
         $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id));
-        if ($wpdb->last_error !== '' || $count === null) {
+        $meta = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id));
+        if ($wpdb->last_error !== '' || $count === null || $meta === null) {
             $left[] = "{$id} (unverifiable)";
-        } elseif ((int) $count !== 0) {
-            $left[] = (string) $id;
+        } elseif ((int) $count !== 0 || (int) $meta !== 0) {
+            $left[] = "{$id} (post rows: {$count}, meta rows: {$meta})";
         }
     }
     if ($left !== []) {
@@ -827,6 +828,11 @@ $make = static function (string $type, string $title, array $meta) use (&$fixtur
     $fixtures[] = (int) $id;
     foreach ($meta as $k => $v) {
         update_post_meta((int) $id, $k, $v);
+        if (get_post_meta((int) $id, $k, true) !== $v) {
+            fwrite(STDERR, "FATAL: meta {$k} on fixture {$id} not stored\n");
+            $abort = 3;
+            exit(3);
+        }
     }
     return (int) $id;
 };
@@ -846,6 +852,8 @@ $elements = [
     ['id' => 'tfbtn1', 'name' => 'button', 'parent' => 'tfloop', 'children' => [],
      'settings' => ['text' => '{acf_phone}', 'link' => ['type' => 'external', 'url' => 'tel:{acf_phone @format:tel}']]],
 ];
+// Precondition: the markup fixture really reaches the module as markup (else item 3 proves nothing).
+$check(strpos((string) bricks_render_dynamic_data('{acf_phone}', $m, 'text'), '<a') !== false, '1: markup fixture resolves to markup');
 $GLOBALS['post'] = get_post($page);
 setup_postdata($GLOBALS['post']);
 $html = \Bricks\Frontend::render_data($elements);
@@ -855,14 +863,17 @@ $check(count($items) === 4, '1: four loop items rendered (got ' . count($items) 
 $expect = [
     ['tel:+491511111', '>0151 1111<'],
     ['tel:+492082220', '>0208 / 222 0<'],
-    ['tel:', null],
-    ['tel:', null],
+    ['tel:', ''],                     // empty field: empty label
+    ['tel:', 'href="tel:9"'],         // markup field: its markup is the label
 ];
 foreach ($expect as $i => [$href, $label]) {
     $chunk = $items[$i] ?? '';
     $got = preg_match('/class="brxe-tfbtn1[^"]*" href="([^"]*)"/', $chunk, $mm) === 1 ? $mm[1] : '(none)';
     $check($got === $href, "1: item {$i} href {$got}");
-    if ($label !== null) {
+    if ($label === '') {
+        $text = preg_match('/class="brxe-tfbtn1[^"]*" href="tel:">(.*?)<\/a>/s', $chunk, $tm) === 1 ? $tm[1] : '(no button)';
+        $check(trim($text) === '', "1: item {$i} label empty -> " . $text);
+    } else {
         $check(strpos($chunk, $label) !== false, "1: item {$i} label as entered");
     }
 }
