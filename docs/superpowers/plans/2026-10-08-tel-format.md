@@ -850,6 +850,7 @@ $cases = [
     '{acf_phone:plain @format:tel}'        => $phone_a,  // Bricks today, text context
     '{acf_phone}'                          => $phone_a,
     "{social_account:url:{$social}}"       => (string) get_post_meta($social, '_link_url', true),
+    "{social_account:url:{$social} @format:tel}" => (string) get_post_meta($social, '_link_url', true), // theme parser drops it
 ];
 $with = [];
 foreach ($cases as $tag => $expected) {
