@@ -115,6 +115,7 @@ EXCLUDE=(
   "/.conductor/"
   "/.remember/"
   "/.superpowers/"
+  "/.impeccable/"
   "/.cloud/"
   "/.codex/"
   "/.context/"
@@ -156,6 +157,7 @@ FORBIDDEN_PATHS=(
   .conductor
   .remember
   .superpowers
+  .impeccable
   .cloud
   .codex
   .context
