@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.29.0] - 2026-10-08
+
+- Bricks: `@format:tel` now works on simple Bricks tags, e.g. `tel:{acf_phone @format:tel}` gives a clean dialable link (`tel:+49…`) — only where the attribute is set; tags without it render as before.
+- Contact Infos / Social Accounts: help texts, the Bricks picker and the README show tag attributes with a space before `@` (`{contact_info:phone @format:tel}`), like Bricks' own attributes. The old spelling keeps working.
+
 ## [0.28.0] - 2026-10-03
 
 - Contact Infos: changes show at once after saving a contact or reordering on the Order screen, also for tags without an ID.
