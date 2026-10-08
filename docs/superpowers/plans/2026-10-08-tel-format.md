@@ -15,7 +15,7 @@
 - **Working directory:** every path and command is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first. Branch: `feature/tel-links` (exists).
 - **Local PHP:** run once per shell: `PHP="${PHP:-$(command -v php || echo /Applications/MAMP/bin/php/php8.5.2/bin/php)}"`; every command below calls `"$PHP"`. Quality battery: `./quality.sh`.
 - **Commits:** every task commits a `WIP: …` snapshot (CLAUDE.md §5 Mechanics). The real commit message is written once, after Gate B is clean (Task 5).
-- No new Composer dependency; no new option key; no database writes — the live harness is read-only.
+- No new Composer dependency; no new option key; the live harness creates no fixtures (incidental bootstrap cache writes accepted, WP-Cron disabled).
 - No module-to-module edge: `TelFormat` and `ContactInfos` both depend only on the root-level `SFX\TelNormalizer`.
 - `SC_ContactInfos::normalize_tel()` stays public and static (delegates). Filter name `sfx_contact_info_default_country_code` unchanged.
 - Hooks, verbatim: `add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 9, 3);` and `add_filter('bricks/frontend/render_data', [self::class, 'render_data'], 9, 2);` — nothing on `render_tag`, `format_value` or `allowed_keys`.
@@ -746,7 +746,7 @@ git commit -m "WIP: uniform tag attribute spelling (space before @), help for @f
 
 - [ ] **Step 1: Write the harness**
 
-**Read-only by decision (Daniel, 2026-10-08):** the harness creates no fixtures and writes nothing; it renders existing content. This removes the teardown problem class that Gate A passes 3–9 kept finding. Cases it cannot set up from existing content — empty field, markup in the field, contact-info tags — are covered by the unit tests (Tasks 2 and 3), not live.
+**No fixtures by decision (Daniel, 2026-10-08):** the harness creates nothing; it renders existing content. Incidental writes that any WordPress bootstrap makes (transient caches such as the custom-scripts cache) are accepted; WP-Cron is disabled for the run so no scheduled work starts. This removes the teardown problem class that Gate A passes 3–9 kept finding. Cases it cannot set up from existing content — empty field, markup in the field, contact-info tags — are covered by the unit tests (Tasks 2 and 3), not live.
 
 Existing content it relies on (checked 2026-10-08): published `coach` posts with an ACF `phone` (135, 147, 148 — same number on all three), and a published `sfx_social_account` (693). Because the phones are identical, per-item resolution is proven with Bricks' own `{post_id}` tag, which differs per item: `tel:{post_id @format:tel}` must give each item its own ID. Element shapes were checked on the local site: a container with `hasLoop` renders one `<div class="brxe-<id> brxe-container …">` per item; a button renders `<a class="brxe-<id> brxe-button bricks-button" href="…">label</a>`.
 
@@ -761,7 +761,16 @@ if ($root === false || !is_file($root . '/wp-load.php')) {
     fwrite(STDERR, "FATAL: site root not found from " . __DIR__ . "\n");
     exit(2);
 }
+// A run that ends anywhere but the last line (wp_die() during bootstrap exits 0 by default) is a failure.
+$completed = false;
+register_shutdown_function(static function () use (&$completed): void {
+    if (!$completed) {
+        fwrite(STDERR, "ABORTED before completion\n");
+        exit(5);
+    }
+});
 define('WP_USE_THEMES', false);
+define('DISABLE_WP_CRON', true);
 require $root . '/wp-load.php';
 
 $failures = 0;
@@ -778,6 +787,7 @@ $coaches = get_posts(['post_type' => 'coach', 'post_status' => 'publish', 'numbe
 $social = (int) (get_posts(['post_type' => 'sfx_social_account', 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids'])[0] ?? 0);
 if (count($coaches) < 2 || $social === 0 || (string) get_post_meta($social, '_link_url', true) === '') {
     fwrite(STDERR, "PRECONDITION: need two published coaches with a phone and a published social account with a URL\n");
+    $completed = true; // explicit status, not an abort
     exit(3);
 }
 $a = (int) $coaches[0];
@@ -853,6 +863,7 @@ foreach ($cases as $tag => $expected) {
 }
 
 echo $failures === 0 ? "tel-format-live-check: PASS\n" : "tel-format-live-check: {$failures} FAILED\n";
+$completed = true;
 exit($failures === 0 ? 0 : 1);
 ```
 

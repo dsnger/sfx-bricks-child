@@ -284,27 +284,23 @@ Also:
   spelling.
 - `tests/contact-social-help-tab-test.php` expects the space form.
 
-**Live check on the local site** (plan; uses real hook dispatch and real Bricks
-resolution, fixtures removed in one teardown per AGENTS.md):
-- Two coach posts with different phone values and one with an empty phone, rendered in
-  a Bricks query loop: a button with link `tel:{acf_phone @format:tel}` and label
-  `{acf_phone}`. Each item shows its own clean `href`, the label stays as entered, the
-  empty item gives `tel:`.
-- A fixture whose tag first reaches `render_data` unresolved (applied directly through
-  `apply_filters('bricks/frontend/render_data', …)` with the page post), and a
-  `render_content` call in `link` context.
-- Counterfactuals: with only the `render_content` filter removed, the `render_data`
-  fixture still resolves and vice versa; with both removed, the raw tag shows.
-- A loop item whose phone holds markup that survives sanitising (`<a href="tel:1">1</a>`)
-  next to a page whose phone holds a number: the item shows `tel:` (empty), not the
-  page's number.
-- Compatibility through the full pipeline (real dispatch, priorities 9/10/20): output of
-  `{contact_info:phone@format:tel}`, `{contact_info:phone @format:tel}`,
-  `{contact_info:phone|link=false}`, `{acf_phone @fallback:'x' @format:tel}`,
-  `{acf_phone:plain @format:tel}` and a `{social_account:…}` tag is identical with and
-  without the module. Fixtures: a published contact (type main, phone set) and a
-  published social account created by the harness; each baseline is asserted to hold
-  the fixture's resolved value (phone, URL) and not the raw tag before the comparison.
+**Live check on the local site** (plan; real hook dispatch and real Bricks resolution).
+**No fixtures (decided with Daniel, 2026-10-08):** it renders existing content only and
+creates nothing; incidental writes that any WordPress bootstrap makes (transient caches)
+are accepted, WP-Cron is disabled for the run. Cases existing content cannot supply —
+empty field, markup in the field, contact-info tags — are covered by the unit tests only.
+- Existing published coaches (they share one phone number) rendered in a Bricks query loop
+  with the page context set to another post: a button with link
+  `tel:{acf_phone @format:tel}` and label `{acf_phone}` (clean `href`, label as entered),
+  and a button with link `tel:{post_id @format:tel}` — each item gets its own ID, never the
+  page's, which proves per-item resolution.
+- The `render_data` path on its own, a `render_content` call in `link` context, and a
+  `cf_` tag.
+- Counterfactuals: with only the `render_content` filter removed, the `render_data` path
+  still resolves and vice versa; with both removed, the raw tag shows.
+- Compatibility through the full pipeline: `{acf_phone @fallback:'x' @format:tel}`,
+  `{acf_phone:plain @format:tel}`, `{acf_phone}` and an existing `{social_account:url:…}`
+  tag — baselines asserted from existing content, then identical without the module.
 
 ## Docs
 
