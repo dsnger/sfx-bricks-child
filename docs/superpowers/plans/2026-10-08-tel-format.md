@@ -812,13 +812,35 @@ register_shutdown_function(static function () use (&$fixtures, &$failures, &$com
         } catch (\Throwable $t) {
             fwrite(STDERR, "teardown: cleanup of {$id} threw: {$t->getMessage()}\n");
         }
+        // Per-fixture caches the theme writes while rendering (value and timeout rows):
+        // sfx_contact_info_<ID>_<field> (SC_ContactInfos.php:301) and sfx_social_account_<ID>_… .
+        $opt_like = "(option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s)";
+        $opt_args = [
+            $wpdb->esc_like("_transient_sfx_contact_info_{$id}_") . '%',
+            $wpdb->esc_like("_transient_timeout_sfx_contact_info_{$id}_") . '%',
+            $wpdb->esc_like("_transient_sfx_social_account_{$id}_") . '%',
+            $wpdb->esc_like("_transient_timeout_sfx_social_account_{$id}_") . '%',
+        ];
+        try {
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE {$opt_like}", ...$opt_args));
+        } catch (\Throwable $t) {
+            fwrite(STDERR, "teardown: cache cleanup of {$id} threw: {$t->getMessage()}\n");
+        }
         // Verify against the database, not the object cache; a failed read is not proof of absence.
         $count = $count_rows("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id);
         $meta = $count_rows("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id);
-        if ($count === null || $meta === null) {
+        $opts = null;
+        try {
+            if ($wpdb->query($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->options} WHERE {$opt_like}", ...$opt_args)) !== false && $wpdb->last_error === '') {
+                $opts = (int) array_values((array) ($wpdb->last_result[0] ?? [null]))[0];
+            }
+        } catch (\Throwable $t) {
+            $opts = null;
+        }
+        if ($count === null || $meta === null || $opts === null) {
             $left[] = "{$id} (unverifiable)";
-        } elseif ($count !== 0 || $meta !== 0) {
-            $left[] = "{$id} (post rows: {$count}, meta rows: {$meta})";
+        } elseif ($count !== 0 || $meta !== 0 || $opts !== 0) {
+            $left[] = "{$id} (post rows: {$count}, meta rows: {$meta}, cache rows: {$opts})";
         }
     }
     if ($left !== []) {
