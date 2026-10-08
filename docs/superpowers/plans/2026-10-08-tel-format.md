@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `tel:{acf_phone @format:tel}` renders `tel:+4915115921554` for every simple Bricks tag, with one shared normaliser and one uniform attribute spelling, without changing any output that works today.
+**Goal:** `tel:{acf_phone @format:tel}` renders `tel:+4915115921554` for every simple Bricks tag, with one shared normaliser and one uniform attribute spelling, without changing output that works today — within the spec's compatibility table and its owner-accepted limits (quoted/`:raw` syntax, `cf_` suffix keys).
 
 **Architecture:** `normalize_tel()` moves to a root-level `SFX\TelNormalizer` (ContactInfos keeps a delegating method). A new always-on module `SFX\TelFormat` hooks the two documented Bricks filters at priority 9, resolves `{name @format:tel}` through `bricks_render_dynamic_data('{name}')` and normalises the result. ContactInfos/SocialMediaAccounts help texts, picker entries and README switch to the space spelling `{tag @key:value}`.
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Working directory:** every path and command is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first. Branch: `feature/tel-links` (exists).
-- **Local PHP:** `PHP=/Applications/MAMP/bin/php/php8.5.2/bin/php` if `php` is not on PATH. Quality battery: `./quality.sh`.
+- **Local PHP:** run once per shell: `PHP="${PHP:-$(command -v php || echo /Applications/MAMP/bin/php/php8.5.2/bin/php)}"`; every command below calls `"$PHP"`. Quality battery: `./quality.sh`.
 - **Commits:** every task commits a `WIP: …` snapshot (CLAUDE.md §5 Mechanics). The real commit message is written once, after Gate B is clean (Task 5).
 - No new Composer dependency; no new option key; no database writes outside the live harness's own teardown.
 - No module-to-module edge: `TelFormat` and `ContactInfos` both depend only on the root-level `SFX\TelNormalizer`.
@@ -68,7 +68,7 @@ require dirname(__DIR__) . '/inc/TelNormalizer.php';
 
 - [ ] **Step 2: Run, expect failure**
 
-Run: `$PHP tests/contact-info-tel-test.php`
+Run: `"$PHP" tests/contact-info-tel-test.php`
 Expected: fatal `Failed opening required '.../inc/TelNormalizer.php'`.
 
 - [ ] **Step 3: Create `inc/TelNormalizer.php`**
@@ -116,8 +116,8 @@ and change the two internal calls `self::normalize_tel(` (in `render_contact_inf
 
 - [ ] **Step 5: Run the battery**
 
-Run: `./quality.sh`
-Expected: all PHP and JS tests PASS, 0 syntax errors (the new file is picked up by the autoloader; `tests/psr4-path-case-test.php` covers its path case).
+Run: `git add inc/TelNormalizer.php` first (`tests/psr4-path-case-test.php` reads the git index), then `./quality.sh`.
+Expected: all PHP and JS tests PASS, 0 syntax errors.
 
 - [ ] **Step 6: WIP commit**
 
@@ -281,6 +281,8 @@ foreach ([
     'tel:+49 (0) 208 2076580'    => '+492082076580',
     'TEL: 0208 2076580'          => '+492082076580',
     'tel:+49 171 1700557'        => '+491711700557',
+    '&nbsp;tel:+49 171 1700557'  => '+491711700557',
+    "\u{00A0}tel:\u{202F}+49 171 1700557" => '+491711700557',
 ] as $value => $expected) {
     reset_stub(['{acf_phone}' => $value]);
     assert_same($expected, Controller::render_content('{acf_phone @format:tel}', $post, 'text'), "5: {$value}");
@@ -378,7 +380,7 @@ Note on 6: `tel:+492082` — `0208 2` normalises to `+492082`.
 
 - [ ] **Step 2: Run, expect failure**
 
-Run: `$PHP tests/tel-format-test.php`
+Run: `"$PHP" tests/tel-format-test.php`
 Expected: fatal `Failed opening required '.../inc/TelFormat/Controller.php'`.
 
 - [ ] **Step 3: Create `inc/TelFormat/Controller.php`**
@@ -395,8 +397,8 @@ use SFX\TelNormalizer;
 /**
  * `@format:tel` for simple Bricks dynamic tags: `tel:{acf_phone @format:tel}` → `tel:+49…`.
  *
- * Always on. Only `{name @format:tel}` (a tag name, the attribute, nothing else) is touched,
- * so every tag that renders today renders the same. ContactInfos handles its own
+ * Always on. Only `{name @format:tel}` (a tag name, the attribute, nothing else) is touched;
+ * what that changes and what stays is the spec's compatibility table. ContactInfos handles its own
  * `{contact_info:… @format:tel}`. Spec: docs/superpowers/specs/2026-10-08-tel-format-design.md
  */
 class Controller
@@ -469,7 +471,7 @@ class Controller
         // Decode first: the checks below must see &#123; and &lt;, and normalize_tel()
         // reads the first ";" as URI parameters (&nbsp; would cut the number).
         $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $value = (string) preg_replace('/^\s*tel:\s*/i', '', $value); // keeps a leading "+"
+        $value = (string) preg_replace('/^[\s\p{Z}]*tel:[\s\p{Z}]*/iu', '', $value); // keeps a leading "+"; NBSP too
 
         // Unresolved tag or markup: digits from a tag name or from href and text would be dialled.
         // Empty, not the tag — render_data would resolve a left-over tag against the page post.
@@ -486,12 +488,12 @@ class Controller
 
 - [ ] **Step 4: Run the test, then the battery**
 
-Run: `$PHP tests/tel-format-test.php` → Expected: `tel-format-test: PASS`.
-Run: `./quality.sh` → Expected: all PASS.
+Run: `"$PHP" tests/tel-format-test.php` → Expected: `tel-format-test: PASS`.
+Run: `git add inc/TelFormat/Controller.php tests/tel-format-test.php && ./quality.sh` → Expected: all PASS.
 
 - [ ] **Step 5: Counterfactual check (not committed)**
 
-Temporarily change the guard key to `$key = $name;` and run `$PHP tests/tel-format-test.php` → Expected: FAIL on `5b: outer + two legitimate inner resolutions`. Temporarily drop `esc_html(` → Expected: FAIL on `5a: escaped`. Temporarily return `$m[0]` instead of `''` for rejections → Expected: FAIL on `4:`. Revert each (`git diff inc/TelFormat` must be empty against the Step 3 content before committing).
+Temporarily change the guard key to `$key = $name;` and run `"$PHP" tests/tel-format-test.php` → Expected: FAIL on `5b: outer + two legitimate inner resolutions`. Temporarily drop `esc_html(` → Expected: FAIL on `5a: escaped`. Temporarily return `'{' . $name . ' @format:tel}'` instead of `''` in the `{`/`<` rejection branch → Expected: FAIL on `4:` assertions (no PHP error). Before the first mutation `cp inc/TelFormat/Controller.php /private/tmp/claude-ctrl.bak`; after each, `cp` it back and confirm `cmp inc/TelFormat/Controller.php /private/tmp/claude-ctrl.bak` prints nothing; delete the backup at the end.
 
 - [ ] **Step 6: WIP commit**
 
@@ -541,6 +543,11 @@ foreach ([
     assert_same(ContactInfosController::render_bricks_dynamic_tag($legacy, null), $a, "5c: {$spaced} == {$legacy}");
 }
 assert_same('+492082076580', ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310 @format:tel}', null), '5c: space form value');
+$both = ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @link:false @wrap:true}', null);
+assert_contains('<span', $both, '5c: @wrap:true wraps');
+assert_true(strpos($both, '<a ') === false, '5c: @link:false drops the link');
+assert_true(strpos(ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @link:false}', null), '<span') === false, '5c: without @wrap no span');
+assert_contains('<a ', ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @wrap:true}', null), '5c: without @link:false the link stays');
 ```
 
 `tests/contact-social-help-tab-test.php`, Case 4 — replace the needle list with:
@@ -711,12 +718,14 @@ git commit -m "WIP: uniform tag attribute spelling (space before @), help for @f
 
 - [ ] **Step 1: Write the harness**
 
-Rules (AGENTS.md Don'ts): every fixture is created after a single `register_shutdown_function` teardown is declared; the site-root guard is fatal; fixtures are deleted only from that teardown.
+Rules (AGENTS.md Don'ts): one `register_shutdown_function` teardown is declared before the first fixture; it deletes every recorded fixture, **verifies each is gone by ID**, and turns a failed cleanup into a non-zero exit; the site-root guard is fatal. Element shapes below were checked against the local site (Bricks 2.4.2): a container with `hasLoop` renders one `<div class="brxe-<id> brxe-container …">` per item, a button renders `<a class="brxe-<id> brxe-button bricks-button" href="…">label</a>`.
+
+Known side effect, accepted: creating/deleting a social account bumps the option `sfx_social_accounts_cache_gen` (a cache generation counter; a higher value only invalidates cached social output). Nothing else persists.
 
 ```php
 <?php
 // Manual live check for TelFormat. Run from the theme root:
-//   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/tel-format-live-check.php
+//   "$PHP" tests/support/tel-format-live-check.php
 declare(strict_types=1);
 
 $root = realpath(__DIR__ . '/../../../../../');
@@ -729,14 +738,24 @@ require $root . '/wp-load.php';
 wp_set_current_user(1);
 
 $fixtures = [];
-register_shutdown_function(static function () use (&$fixtures): void {
+$failures = 0;
+register_shutdown_function(static function () use (&$fixtures, &$failures): void {
+    $left = [];
     foreach (array_reverse($fixtures) as $id) {
         wp_delete_post($id, true);
+        clean_post_cache($id);
+        if (get_post($id) !== null) {
+            $left[] = $id;
+        }
     }
-    echo 'teardown: removed ' . count($fixtures) . " fixtures\n";
+    if ($left !== []) {
+        fwrite(STDERR, 'TEARDOWN FAILED, still present: ' . implode(', ', $left) . "\n");
+        exit(4);
+    }
+    echo 'teardown: removed and verified ' . count($fixtures) . " fixtures\n";
+    exit($failures === 0 ? 0 : 1);
 });
 
-$failures = 0;
 $check = static function (bool $ok, string $label) use (&$failures): void {
     echo ($ok ? 'ok   ' : 'FAIL ') . $label . "\n";
     if (!$ok) {
@@ -748,7 +767,7 @@ $make = static function (string $type, string $title, array $meta) use (&$fixtur
     $id = wp_insert_post(['post_type' => $type, 'post_status' => 'publish', 'post_title' => $title], true);
     if (is_wp_error($id) || $id <= 0) {
         fwrite(STDERR, "FATAL: could not create {$type} fixture\n");
-        exit(3);
+        exit(3); // teardown still runs
     }
     $fixtures[] = (int) $id;
     foreach ($meta as $k => $v) {
@@ -775,14 +794,27 @@ $elements = [
 $GLOBALS['post'] = get_post($page);
 setup_postdata($GLOBALS['post']);
 $html = \Bricks\Frontend::render_data($elements);
-$check(strpos($html, 'href="tel:+491511111"') !== false, '1: item A own number');
-$check(strpos($html, 'href="tel:+492082220"') !== false, '1: item B own number');
-$check(strpos($html, '0208 / 222 0') !== false, '1: label as entered');
-$check(substr_count($html, 'href="tel:"') === 2, '1: empty and markup items give tel: (empty)');
+$items = preg_split('/(?=<div class="brxe-tfloop )/', $html, -1, PREG_SPLIT_NO_EMPTY);
+$items = array_values(array_filter($items, static fn(string $c): bool => strpos($c, 'brxe-tfbtn1') !== false));
+$check(count($items) === 4, '1: four loop items rendered (got ' . count($items) . ')');
+$expect = [
+    ['tel:+491511111', '>0151 1111<'],
+    ['tel:+492082220', '>0208 / 222 0<'],
+    ['tel:', null],
+    ['tel:', null],
+];
+foreach ($expect as $i => [$href, $label]) {
+    $chunk = $items[$i] ?? '';
+    $got = preg_match('/class="brxe-tfbtn1[^"]*" href="([^"]*)"/', $chunk, $mm) === 1 ? $mm[1] : '(none)';
+    $check($got === $href, "1: item {$i} href {$got}");
+    if ($label !== null) {
+        $check(strpos($chunk, $label) !== false, "1: item {$i} label as entered");
+    }
+}
 $check(strpos($html, '+49999') === false, '1: page number never used inside the loop');
 $check(strpos($html, '@format:tel') === false, '1: no raw tag left');
 
-// 2. render_data path on its own (page post), and render_content in link context.
+// 2. render_data path on its own, and render_content in link context.
 $rd = apply_filters('bricks/frontend/render_data', '<p>tel:{acf_phone @format:tel}</p>', get_post($a));
 $check($rd === '<p>tel:+491511111</p>', '2: render_data path -> ' . $rd);
 $rc = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $b, 'link');
@@ -791,48 +823,46 @@ $check($rc === 'tel:+492082220', '2: render_content link context -> ' . $rc);
 // 3. Counterfactuals: each hook contributes on its own; without both, the raw tag stays.
 remove_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9);
 $rd2 = apply_filters('bricks/frontend/render_data', '<p>tel:{acf_phone @format:tel}</p>', get_post($a));
-$check($rd2 === '<p>tel:+491511111</p>', '3: render_data alone still resolves');
+$check($rd2 === '<p>tel:+491511111</p>', '3: render_data alone resolves -> ' . $rd2);
 remove_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9);
 $raw = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $a, 'link');
 $check(strpos($raw, '@format:tel') !== false, '3: without the module the raw tag stays -> ' . $raw);
 add_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9, 3);
 $rc2 = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $a, 'link');
-$check($rc2 === 'tel:+491511111', '3: render_content alone resolves');
+$check($rc2 === 'tel:+491511111', '3: render_content alone resolves -> ' . $rc2);
 add_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9, 2);
 
-// 4. Compatibility through the full pipeline: identical with and without the module, baselines resolved.
+// 4. Compatibility through the full pipeline: baselines pinned, then identical without the module.
+//    Explicit IDs: the ID-less main-contact lookup is code this change does not touch (unit-tested).
 $contact = $make('sfx_contact_info', 'TelFormat Contact', ['_phone' => '0208 207658 0', '_email' => 'tf@example.test']);
 $social = $make('sfx_social_account', 'TelFormat Social', ['_link_url' => 'https://social.example/tf']);
 $cases = [
-    "{contact_info:phone:{$contact}@format:tel}"   => '+492082076580',
-    "{contact_info:phone:{$contact} @format:tel}"  => '+492082076580',
-    "{contact_info:phone:{$contact}|link=false}"   => '0208 207658 0',
-    "{social_account:url:{$social}}"               => 'https://social.example/tf',
-    "{acf_phone @fallback:'x' @format:tel}"        => null, // Bricks' own result; compared, not pinned
-    '{acf_phone:plain @format:tel}'                => null,
+    "{contact_info:phone:{$contact}@format:tel}"  => '+492082076580',
+    "{contact_info:phone:{$contact} @format:tel}" => '+492082076580',
+    "{contact_info:phone:{$contact}|link=false}"  => '0208 207658 0',
+    "{social_account:url:{$social}}"              => 'https://social.example/tf',
+    "{acf_phone @fallback:'x' @format:tel}"       => '0151 1111', // Bricks today: fallback swallows the rest
+    '{acf_phone:plain @format:tel}'               => '0151 1111', // Bricks today, text context
 ];
 $with = [];
 foreach ($cases as $tag => $expected) {
     $with[$tag] = bricks_render_dynamic_data($tag, $a, 'text');
-    if ($expected !== null) {
-        $check($with[$tag] === $expected, "4: baseline {$tag} -> {$with[$tag]}");
-    }
+    $check($with[$tag] === $expected, "4: baseline {$tag} -> {$with[$tag]}");
 }
 remove_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9);
 remove_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9);
 foreach ($cases as $tag => $expected) {
-    $without = bricks_render_dynamic_data($tag, $a, 'text');
-    $check($without === $with[$tag], "4: identical without module {$tag}");
+    $check(bricks_render_dynamic_data($tag, $a, 'text') === $with[$tag], "4: identical without module {$tag}");
 }
 
 echo $failures === 0 ? "tel-format-live-check: PASS\n" : "tel-format-live-check: {$failures} FAILED\n";
-exit($failures === 0 ? 0 : 1);
+// exit status is set by the teardown
 ```
 
 - [ ] **Step 2: Run it**
 
-Run (MAMP MySQL running): `/Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/tel-format-live-check.php`
-Expected: every line `ok`, `tel-format-live-check: PASS`, then `teardown: removed 7 fixtures`. If a check fails because a Bricks element setting shape differs from the above (e.g. the button link key), adjust **the harness's element array only** to what Bricks 2.4.2's `elements/button.php` expects, and record the change in the commit body. Afterwards confirm the fixtures are gone: `$PHP -r 'define("WP_USE_THEMES",false); require "../../../wp-load.php"; echo count(get_posts(["post_type"=>"any","s"=>"TelFormat","post_status"=>"any"])), "\n";'` → Expected: `0`.
+Run (MAMP MySQL running): `"$PHP" tests/support/tel-format-live-check.php; echo "exit=$?"`
+Expected: every line `ok`, `tel-format-live-check: PASS`, `teardown: removed and verified 7 fixtures`, `exit=0`. If a check fails because Bricks renders differently than the shapes stated above, adjust **the harness only** (never the module to suit the harness) and record the change in the commit body.
 
 - [ ] **Step 3: AGENTS.md**
 
