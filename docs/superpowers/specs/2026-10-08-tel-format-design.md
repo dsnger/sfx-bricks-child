@@ -21,8 +21,9 @@ tel:{contact_info:phone @format:tel}              → unchanged behaviour (own p
 ## Decisions settled with Daniel (2026-10-08)
 
 - **Opt-in by attribute only.** Nothing is cleaned automatically; a tag without
-  `@format:tel` renders exactly as today. Gutenberg and hand-written links are not
-  touched.
+  `@format:tel` renders exactly as today. Plain `tel:` links (Gutenberg, hand-written)
+  are not touched. Where Bricks resolves tags inside such content (Post Content, Code
+  elements), an annotated tag there behaves like every other Bricks tag there.
 - **One attribute, one normaliser** for our own tags and Bricks' tags. No new
   placeholder.
 - **Not tied to Bricks internals:** only the documented hooks for custom dynamic data
@@ -121,10 +122,10 @@ callbacks run at 10.
      Bricks filters (`:plain`, `:raw`, `:tel`) never match; neither do quotes, other
      `@` keys or a repeated `@format:tel`.
    - `@format:telefax` does not match (`}` must follow `tel`).
-   - Called with `PREG_OFFSET_CAPTURE`: a match that sits **inside another tag**
-     (more `{` than `}` in the content before it, e.g. `{echo:fn({acf_phone @format:tel})}`
-     or a quoted fallback) is returned unchanged and nothing is resolved. Unbalanced
-     braces elsewhere (inline CSS/JS) can only cause a skip, never a rewrite.
+   - A simple annotated tag is resolved wherever it appears, also inside another tag's
+     argument or fallback (`{echo:fn({acf_phone @format:tel})}`). Today Bricks prints it
+     there as broken literal text too, so nothing that works changes. No nesting
+     detection — counting braces cannot tell nesting apart from quoted or script braces.
 3. Per match, with `$name` from the capture:
    - `$value = bricks_render_dynamic_data('{' . $name . '}', $post->ID ?? 0, $context)`.
    - Not a string → `''`.
@@ -135,12 +136,16 @@ callbacks run at 10.
    - A leading `tel:` (any case, surrounding whitespace) is removed: a field that already
      holds `tel:+49 …` keeps its `+`.
    - **Return `''`** (not the tag) when the decoded value contains `{` (unresolved or
-     unknown tag — digits from its name would be dialled, `{acf_phone2}` → `2`), `<`
-     (markup — digits from `href` and text would merge), or `,` (a multi-value field that
-     Bricks joined with its default separator, `providers/base.php:266-278` — two numbers
-     would merge). Empty, not the tag: a tag left in place would be resolved again later
-     by `render_data` under the **page** post instead of the loop item, and could print
-     the wrong number.
+     unknown tag — digits from its name would be dialled, `{acf_phone2}` → `2`) or `<`
+     (markup — digits from `href` and text would merge). Empty, not the tag: a tag left
+     in place would be resolved again later by `render_data` under the **page** post
+     instead of the loop item, and could print the wrong number. (Markup that Bricks'
+     own sanitising already stripped leaves its visible text — the number the visitor
+     sees, which is the right one.)
+   - **Single-value fields only.** A multi-value field (checkbox, repeater) reaches the
+     module as Bricks formats it — first entry in link context, joined by a filterable
+     separator in text context (`providers/base.php:266-278,326`). The result is not
+     specified and not supported; the help text says "one phone number per field".
    - Otherwise return `esc_html(TelNormalizer::normalize_tel($value))` — escaped at the
      point where it enters the markup (invariant 3), as `SC_ContactInfos.php:138` does.
      An empty field gives `''`, as `{contact_info:…@format:tel}` does.
@@ -152,8 +157,8 @@ same loop logic. Checked live in the plan with distinguishable loop items.
 
 **Recursion:** the inner call carries `{name}` without `@format:tel`, so it cannot match
 again directly. A provider that itself asks for `{name @format:tel}` again would
-re-enter; a static in-flight set keyed by name, released in `finally`, returns `''` for
-a name already being resolved.
+re-enter; a static in-flight set keyed by name + post ID + context, released in
+`finally`, returns `''` for a key already being resolved.
 
 **Coverage:** Bricks text and link output (element content, button/link fields
 composed as `tel:{… @format:tel}`), which pass through `render_content` or
@@ -197,7 +202,8 @@ is therefore treated like any other Bricks tag in it — no new exposure.
 | filter `sfx_contact_info_default_country_code` | read | read, same name |
 | any tag without `@format:tel` | Bricks output | identical |
 | `{name @format:tel}`, field holds one number | raw tag shown as text | clean number |
-| `{name @format:tel}`, field empty, unknown tag, markup or several values | raw tag, or empty (`cf_…`: Bricks reads a meta key named with the suffix, `provider-wp.php:1139`) | empty |
+| `{name @format:tel}`, field empty, unknown tag or markup | raw tag, or empty | empty |
+| `{cf_name @format:tel}` | Bricks reads a meta key literally named `name @format` (`provider-wp.php:1139`) — not a realistic existing setup | clean number from meta key `name` |
 | `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | whatever Bricks' parser makes of it today (`:plain @format:tel` even switches on Bricks' `:tel`, `providers/base.php:144`) | identical — not matched |
 | `{social_account:… @format:tel}` | resolves, attribute dropped by the theme parser | identical — not matched |
 | picker entries already inserted in pages | no-space form | still work |
@@ -212,19 +218,21 @@ A stubbed `bricks_render_dynamic_data()` records every call and returns fixture 
 2. The stub receives `{acf_phone}`, the post ID and the context; `render_data()` passes
    `'text'`.
 3. Byte-identical, stub **not** called: `{acf_phone @fallback:'x' @format:tel}`,
-   `{acf_phone @fallback:'a {acf_phone @format:tel} b'}`,
    `{acf_phone:plain @format:tel}`, `{contact_info:phone @format:tel}`,
    `{social_account:url:1 @format:tel}`, `{acf_phone @format:telefax}`,
-   `{acf_phone @FORMAT:TEL}`, `{acf_phone @format:tel @format:tel}`,
-   `{echo:fn({acf_phone @format:tel})}` (inner tag inside an outer one), and a string with
+   `{acf_phone @FORMAT:TEL}`, `{acf_phone @format:tel @format:tel}`, and a string with
    no `@format:tel` at all.
+3a. Inner simple tag: `{echo:fn({acf_phone @format:tel})}` → `{echo:fn(+4915115921554)}`
+   (resolved, outer tag otherwise byte-identical) — pins the "no nesting detection"
+   decision.
 4. Stub returns → result: `''` → `''`; `{acf_phone}` → `''`; `&#123;acf_phone2&#125;` →
    `''`; `<a href="tel:1">1</a>` → `''`; `&lt;a href="tel:123"&gt;456&lt;/a&gt;` → `''`;
-   `0151 1, 0172 2` → `''`; an array → `''`.
+   an array → `''`.
 5. Entities: `0151&nbsp;15921554` and `0151&#160;15921554` → `+4915115921554`.
    Prefixed: `tel:+49 (0) 208 2076580` and `TEL: 0208 2076580` → `+492082076580`.
 5a. Escaping: with an `esc_html` stub that wraps its input (`[e]…[/e]`), every
-   replacement arrives wrapped — the call is observed, not inferred from the alphabet.
+   **successful** replacement arrives wrapped; rejection paths return a bare `''`
+   (asserted separately). Every other test runs with an identity `esc_html`.
 5b. Re-entry: a stub that calls `render_content('{acf_phone @format:tel}', …)` from inside
    its own resolution terminates, the inner call yields `''`, and the in-flight set is
    empty afterwards (also after the stub throws).
@@ -232,7 +240,7 @@ A stubbed `bricks_render_dynamic_data()` records every call and returns fixture 
 7. Non-string `$content` → returned as is.
 8. PCRE failure: `ini_set('pcre.backtrack_limit', '1')` around one call (restored in a
    `finally`) → original content returned.
-9. Output alphabet: every replacement in tests 1–6 matches `/\A\+?[0-9]*(;ext=[0-9]+)?\z/`;
+9. Output alphabet: every non-empty replacement in tests 1, 5 and 6 matches `/\A\+?[0-9]*(;ext=[0-9]+)?\z/`;
    the pattern itself rejects `"+49123\n"`, a quote, `<` and `;ext=1a` (asserted).
 
 Also:
