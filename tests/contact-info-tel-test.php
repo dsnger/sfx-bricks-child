@@ -16,12 +16,14 @@ function apply_filters(string $hook, $value, ...$args)
 require __DIR__ . '/support/social-bricks-stubs.php';
 
 require dirname(__DIR__) . '/inc/ContactInfos/FieldRegistry.php';
+require dirname(__DIR__) . '/inc/TelNormalizer.php';
 require dirname(__DIR__) . '/inc/ContactInfos/PostType.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Shortcode/SC_ContactInfos.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Controller.php';
 
 use SFX\ContactInfos\Controller as ContactInfosController;
 use SFX\ContactInfos\Shortcode\SC_ContactInfos;
+use SFX\TelNormalizer;
 
 // 1. normalize_tel: the task's examples, empty, already clean, other shapes.
 $cases = [
@@ -70,17 +72,20 @@ $cases = [
     "+49 (\u{202F}0\u{202F})208 2076580" => '+492082076580',
 ];
 foreach ($cases as $in => $out) {
-    assert_same($out, SC_ContactInfos::normalize_tel((string) $in), "1: normalize_tel('{$in}')");
+    assert_same($out, TelNormalizer::normalize_tel((string) $in), "1: normalize_tel('{$in}')");
 }
 
 // 2. Country code filter: digits only, any reasonable shape; empty falls back to 49.
 $test_filter_callbacks['sfx_contact_info_default_country_code'] = [static fn() => '+43'];
-assert_same('+43123456', SC_ContactInfos::normalize_tel('0123 456'), '2: filter "+43"');
+assert_same('+43123456', TelNormalizer::normalize_tel('0123 456'), '2: filter "+43"');
 $test_filter_callbacks['sfx_contact_info_default_country_code'] = [static fn() => 41];
-assert_same('+41123456', SC_ContactInfos::normalize_tel('0123 456'), '2: filter 41 (int)');
+assert_same('+41123456', TelNormalizer::normalize_tel('0123 456'), '2: filter 41 (int)');
 $test_filter_callbacks['sfx_contact_info_default_country_code'] = [static fn() => ''];
-assert_same('+49123456', SC_ContactInfos::normalize_tel('0123 456'), '2: empty filter -> 49');
+assert_same('+49123456', TelNormalizer::normalize_tel('0123 456'), '2: empty filter -> 49');
 $test_filter_callbacks = [];
+
+// 2b. The old public method still works for code outside the theme: it delegates.
+assert_same('+492082076580', SC_ContactInfos::normalize_tel('0208 207658 0'), '2b: SC_ContactInfos::normalize_tel delegates');
 
 // Fixture contact with the three shapes from the task.
 $test_posts[310] = sfx_make_post(310, 'sfx_contact_info', 'publish', 'Tel fixture');
@@ -201,10 +206,28 @@ assert_contains(
     '5b: bare @wrap wraps'
 );
 
+// 5c. Both spellings render identically: the space form (shown in help and picker) and the
+//     older no-space form already inserted in pages.
+foreach ([
+    ['{contact_info:phone:310 @format:tel}', '{contact_info:phone:310@format:tel}'],
+    ['{contact_info:email:310 @link:false @wrap:true}', '{contact_info:email:310@link:false@wrap:true}'],
+    ['{contact_info:phone:310 @link:false}', '{contact_info:phone:310|link=false}'],
+] as [$spaced, $legacy]) {
+    $a = ContactInfosController::render_bricks_dynamic_tag($spaced, null);
+    assert_true($a !== '' && strpos($a, '{') === false, "5c: {$spaced} resolves");
+    assert_same(ContactInfosController::render_bricks_dynamic_tag($legacy, null), $a, "5c: {$spaced} == {$legacy}");
+}
+assert_same('+492082076580', ContactInfosController::render_bricks_dynamic_tag('{contact_info:phone:310 @format:tel}', null), '5c: space form value');
+$both = ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @link:false @wrap:true}', null);
+assert_contains('<span', $both, '5c: @wrap:true wraps');
+assert_true(strpos($both, '<a ') === false, '5c: @link:false drops the link');
+assert_true(strpos(ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @link:false}', null), '<span') === false, '5c: without @wrap no span');
+assert_contains('<a ', ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @wrap:true}', null), '5c: without @link:false the link stays');
+
 // 6. The Bricks picker lists the tel: variants for phone, mobile and fax.
 $names = array_column(ContactInfosController::add_bricks_dynamic_tag([]), 'name');
 foreach (['phone', 'mobile', 'fax'] as $field) {
-    assert_true(in_array('{contact_info:' . $field . '@format:tel}', $names, true), "6: picker has {$field}@format:tel");
+    assert_true(in_array('{contact_info:' . $field . ' @format:tel}', $names, true), "6: picker has {$field} @format:tel (space form)");
 }
 
 // 7. Explicit IDs: only published contact entries. Drafts and other post types stay hidden.

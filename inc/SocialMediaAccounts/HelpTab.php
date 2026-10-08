@@ -184,11 +184,10 @@ final class HelpTab
 
         return self::table([__('Tag', 'sfxtheme'), __('Output', 'sfxtheme')], $rows)
             . '<p>' . sprintf(
-                /* translators: 1: "@key:value", 2: "|key=value", 3: example tag */
-                esc_html__('For the html field, class, size and target can be appended as %1$s or %2$s, e.g. %3$s.', 'sfxtheme'),
+                /* translators: 1: "@key:value", 2: example tag */
+                esc_html__('For the html field, class, size and target can be appended as %1$s, separated by a space, e.g. %2$s.', 'sfxtheme'),
                 self::code('@key:value'),
-                self::code('|key=value'),
-                self::code('{social_account:html:123@size:small}')
+                self::code('{social_account:html:123 @size:small}')
             ) . '</p>'
             . '<p>' . sprintf(
                 /* translators: 1: query type "Posts", 2: post type label "Social Media Accounts" */

@@ -8176,8 +8176,12 @@ msgid "Tag"
 msgstr "Tag"
 
 #, php-format
-msgid "Attributes are appended as %1$s or %2$s and can be chained, e.g. %3$s. Values must not contain @, |, = or }."
-msgstr "Attribute werden als %1$s oder %2$s angehängt und lassen sich verketten, z. B. %3$s. Werte dürfen kein @, |, = oder } enthalten."
+msgid "Attributes are appended as %1$s, separated by a space, and can be chained, e.g. %2$s. Values must not contain @, |, = or }."
+msgstr "Attribute werden als %1$s mit einem Leerzeichen davor angehängt und lassen sich verketten, z. B. %2$s. Werte dürfen kein @, |, = oder } enthalten."
+
+#, php-format
+msgid "%1$s also works on simple Bricks tags such as %2$s: the tag name and %1$s, nothing else; one phone number per field. Inside quotes or a :raw tag it is resolved as well. The builder canvas may show the raw tag; the page shows the number."
+msgstr "%1$s funktioniert auch an einfachen Bricks-Platzhaltern wie %2$s: Platzhaltername und %1$s, sonst nichts; eine Telefonnummer pro Feld. Auch in Anführungszeichen oder in einem :raw-Platzhalter wird er aufgelöst. Im Builder kann der rohe Platzhalter stehen; auf der Seite steht die Nummer."
 
 #, php-format
 msgid "Query loop: type %1$s, post type %2$s. Inside the loop, tags without an ID show the current entry (published entries only); an ID in the tag always wins, and type has no effect there."
@@ -8199,6 +8203,9 @@ msgstr "Öffnungszeiten des Eintrags 123."
 
 msgid "Link field of a Bricks button: dials the main phone number."
 msgstr "Link-Feld eines Bricks-Buttons: wählt die Haupttelefonnummer."
+
+msgid "Link field of a Bricks button: dials the number from the ACF field phone."
+msgstr "Link-Feld eines Bricks-Buttons: wählt die Nummer aus dem ACF-Feld phone."
 
 msgid "Link field of a Bricks button: writes to the main email address."
 msgstr "Link-Feld eines Bricks-Buttons: schreibt an die Haupt-E-Mail-Adresse."
@@ -8266,8 +8273,8 @@ msgid "Inside a query loop over social accounts: field of the current account. O
 msgstr "In einem Query-Loop über Social-Media-Konten: Feld des aktuellen Kontos. Außerhalb eines solchen Loops gibt es nichts aus."
 
 #, php-format
-msgid "For the html field, class, size and target can be appended as %1$s or %2$s, e.g. %3$s."
-msgstr "Für das Feld html lassen sich class, size und target als %1$s oder %2$s anhängen, z. B. %3$s."
+msgid "For the html field, class, size and target can be appended as %1$s, separated by a space, e.g. %2$s."
+msgstr "Für das Feld html lassen sich class, size und target als %1$s mit einem Leerzeichen davor anhängen, z. B. %2$s."
 
 #, php-format
 msgid "Query loop: type %1$s, post type %2$s. Only published accounts resolve; an ID in the tag always wins."

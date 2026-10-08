@@ -118,11 +118,11 @@ class Controller
       ];
     }
 
-    // Bare cleaned numbers for link fields such as "tel:{contact_info:phone@format:tel}".
+    // Bare cleaned numbers for link fields such as "tel:{contact_info:phone @format:tel}".
     foreach (['phone', 'mobile', 'fax'] as $field) {
       if (isset($contact_fields[$field])) {
         $tags[] = [
-          'name'  => '{contact_info:' . $field . '@format:tel}',
+          'name'  => '{contact_info:' . $field . ' @format:tel}',
           /* translators: %s: field label, e.g. Phone */
           'label' => sprintf(__('Contact Info: %s (tel: link)', 'sfxtheme'), $contact_fields[$field]),
           'group' => 'Contact Info',
@@ -164,7 +164,7 @@ class Controller
     }
 
     // More flexible regex pattern to handle various attribute formats
-    // Matches: {contact_info:field}, {contact_info:field:location}, {contact_info:field@attr:value}, etc.
+    // Matches: {contact_info:field}, {contact_info:field:location}, {contact_info:field @attr:value}, etc.
     if (!preg_match('/\{contact_info:([a-zA-Z0-9_\-]+)(?::(\d+))?(?:\s*[@\|]\s*([^}]+))?\}/', $tag, $m)) {
       return '';
     }

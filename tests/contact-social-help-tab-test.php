@@ -89,8 +89,10 @@ foreach (array_keys(SC_ContactInfos::DEFAULT_ATTS) as $key) {
 
 // Case 4 — key contact examples, copy-ready (only HTML-escaped, nothing else changed).
 foreach ([
-    'tel:{contact_info:phone@format:tel}',
-    'mailto:{contact_info:email@link:false}',
+    'tel:{contact_info:phone @format:tel}',
+    'mailto:{contact_info:email @link:false}',
+    '{contact_info:phone:123 @link:false}',
+    'tel:{acf_phone @format:tel}',
     '{contact_info:phone:123}',
     '[contact_info field=&quot;email&quot; text=&quot;Write to us&quot;]',
     'sfx_contact_info_default_country_code',
@@ -163,6 +165,11 @@ SocialHelpTab::add_to_screen(null);
 
 global $failures;
 
+
+// Case U — uniform spelling: every @ attribute example has a space before it; no pipe form shown.
+$all_help = implode('', $contact) . implode('', $social);
+assert_true(preg_match('/\{(contact_info|social_account):[^}]*[^\s]@/', $all_help) !== 1, 'Case U: space before every @ in tag examples');
+assert_true(strpos($all_help, '|key=value') === false && strpos($all_help, '|link=false') === false, 'Case U: no pipe form shown');
 if ($failures > 0) {
     echo "Tests failed: {$failures}\n";
     exit(1);

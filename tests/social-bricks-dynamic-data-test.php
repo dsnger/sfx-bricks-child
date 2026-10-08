@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/support/social-bricks-stubs.php';
 
+require dirname(__DIR__) . '/inc/TelNormalizer.php';
 require dirname(__DIR__) . '/inc/ContactInfos/FieldRegistry.php';
 require dirname(__DIR__) . '/inc/ContactInfos/PostType.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Shortcode/SC_ContactInfos.php';
@@ -84,6 +85,32 @@ run_social_bricks_case('Case 5b: tag attributes cannot override id or field', 'r
         SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:html:123@class}', null),
         'Case 5b: bare attribute ignored'
     );
+});
+
+run_social_bricks_case('Case 5c: several space-separated attributes take effect', 'render_bricks_dynamic_tag', function (): void {
+    global $test_meta;
+    $stored = $test_meta[123]['_link_target'];
+    $test_meta[123]['_link_target'] = ['']; // let @target decide
+    try {
+        $all = SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:html:123 @class:x @size:small @target:_self}', null);
+        assert_contains('social-account-small', $all, 'Case 5c: size');
+        assert_contains(' x', $all, 'Case 5c: class');
+        assert_contains('_self', $all, 'Case 5c: target');
+        foreach (['@class:x', '@size:small', '@target:_self'] as $attr) {
+            $without = SocialMediaAccountsController::render_bricks_dynamic_tag(
+                str_replace(' ' . $attr, '', '{social_account:html:123 @class:x @size:small @target:_self}'),
+                null
+            );
+            assert_true($without !== $all, "Case 5c: omitting {$attr} changes the output");
+        }
+        assert_same(
+            SocialMediaAccountsController::render_bricks_dynamic_tag('{social_account:html:123@class:x@size:small@target:_self}', null),
+            $all,
+            'Case 5c: equals the no-space spelling'
+        );
+    } finally {
+        $test_meta[123]['_link_target'] = $stored;
+    }
 });
 
 run_social_bricks_case('Case 6: {social_account:url}', 'render_bricks_dynamic_tag', function (): void {
