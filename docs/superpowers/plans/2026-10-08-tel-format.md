@@ -15,7 +15,7 @@
 - **Working directory:** every path and command is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first. Branch: `feature/tel-links` (exists).
 - **Local PHP:** run once per shell: `PHP="${PHP:-$(command -v php || echo /Applications/MAMP/bin/php/php8.5.2/bin/php)}"`; every command below calls `"$PHP"`. Quality battery: `./quality.sh`.
 - **Commits:** every task commits a `WIP: …` snapshot (CLAUDE.md §5 Mechanics). The real commit message is written once, after Gate B is clean (Task 5).
-- No new Composer dependency; no new option key. The only database writes are the live harness's fixtures, all removed and verified by its single teardown (plus the accepted `sfx_social_accounts_cache_gen` counter bump).
+- No new Composer dependency; no new option key; no database writes — the live harness is read-only.
 - No module-to-module edge: `TelFormat` and `ContactInfos` both depend only on the root-level `SFX\TelNormalizer`.
 - `SC_ContactInfos::normalize_tel()` stays public and static (delegates). Filter name `sfx_contact_info_default_country_code` unchanged.
 - Hooks, verbatim: `add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 9, 3);` and `add_filter('bricks/frontend/render_data', [self::class, 'render_data'], 9, 2);` — nothing on `render_tag`, `format_value` or `allowed_keys`.
@@ -27,9 +27,9 @@
 ## Review Focus
 
 1. **A field that already holds `tel:+49 171 1700557`** — the `+` must survive (`+491711700557`), not become `491711700557`. Pinned in Task 2 (test 5).
-2. **An empty ACF phone in a button link** — `tel:` with nothing after it, never digits from the tag name. Pinned in Task 2 (test 4) and the Task 4 live loop (empty item).
-3. **A query loop over several coaches** — each item dials its own number, never the page's. Pinned in Task 4 (live loop with distinct numbers and a page number).
-4. **Pages built before this change with `{contact_info:phone@format:tel}` (no space)** — output byte-identical after the picker switches to the space form. Pinned in Task 3 (both spellings asserted) and Task 4 (full-pipeline compatibility).
+2. **An empty ACF phone in a button link** — `tel:` with nothing after it, never digits from the tag name. Pinned in Task 2 (test 4); not live (read-only harness, no empty-phone content).
+3. **A query loop over several coaches** — each item dials its own number, never the page's. Pinned in Task 4 (live loop: each item's own `{post_id}`, page context set to another post).
+4. **Pages built before this change with `{contact_info:phone@format:tel}` (no space)** — output byte-identical after the picker switches to the space form. Pinned in Task 3 (both spellings asserted); live compatibility in Task 4 covers Bricks and social tags.
 5. **A phone field carrying `&nbsp;` or `&#160;`** (pasted from a document) — the full number, not a number cut at the `;`. Pinned in Task 2 (test 5).
 
 ---
@@ -746,15 +746,13 @@ git commit -m "WIP: uniform tag attribute spelling (space before @), help for @f
 
 - [ ] **Step 1: Write the harness**
 
-Rules (AGENTS.md Don'ts): one `register_shutdown_function` teardown is declared before the first fixture; it deletes every recorded fixture, **verifies each is gone by ID**, and turns a failed cleanup into a non-zero exit; the site-root guard is fatal. Element shapes below were checked against the local site (Bricks 2.4.2): a container with `hasLoop` renders one `<div class="brxe-<id> brxe-container …">` per item, a button renders `<a class="brxe-<id> brxe-button bricks-button" href="…">label</a>`.
+**Read-only by decision (Daniel, 2026-10-08):** the harness creates no fixtures and writes nothing; it renders existing content. This removes the teardown problem class that Gate A passes 3–9 kept finding. Cases it cannot set up from existing content — empty field, markup in the field, contact-info tags — are covered by the unit tests (Tasks 2 and 3), not live.
 
-**Threat model (settled with Daniel, 2026-10-08):** the harness runs on the local development site. It must survive WordPress and database calls that fail or throw — cleanup continues, anything it cannot verify counts as a cleanup failure (exit 4). It does not defend against plugins that deliberately rewrite or sabotage SQL (e.g. a `query` filter returning a different statement); that is out of scope.
-
-Known side effect, accepted: creating/deleting a social account bumps the option `sfx_social_accounts_cache_gen` (a cache generation counter; a higher value only invalidates cached social output). Nothing else persists.
+Existing content it relies on (checked 2026-10-08): published `coach` posts with an ACF `phone` (135, 147, 148 — same number on all three), and a published `sfx_social_account` (693). Because the phones are identical, per-item resolution is proven with Bricks' own `{post_id}` tag, which differs per item: `tel:{post_id @format:tel}` must give each item its own ID. Element shapes were checked on the local site: a container with `hasLoop` renders one `<div class="brxe-<id> brxe-container …">` per item; a button renders `<a class="brxe-<id> brxe-button bricks-button" href="…">label</a>`.
 
 ```php
 <?php
-// Manual live check for TelFormat. Run from the theme root:
+// Manual live check for TelFormat — read-only, creates nothing. Run from the theme root:
 //   "$PHP" tests/support/tel-format-live-check.php
 declare(strict_types=1);
 
@@ -763,108 +761,10 @@ if ($root === false || !is_file($root . '/wp-load.php')) {
     fwrite(STDERR, "FATAL: site root not found from " . __DIR__ . "\n");
     exit(2);
 }
-$fixtures = [];
-$failures = 0;
-$run = 'TelFormat-' . bin2hex(random_bytes(4)); // every fixture title starts with this
-$completed = false; // set on the last line; anything else is an abort
-$abort = 0;
-// Registered BEFORE wp-load.php: PHP runs shutdown functions in registration order, so a
-// throwing WordPress/plugin shutdown action (registered by WordPress at bootstrap) cannot
-// prevent this teardown. Exiting here skips later shutdown callbacks — fine for a CLI harness.
-register_shutdown_function(static function () use (&$fixtures, &$failures, &$completed, &$abort, $run): void {
-    global $wpdb;
-    if (!isset($wpdb) || !function_exists('wp_delete_post')) {
-        fwrite(STDERR, "ABORTED during WordPress bootstrap; no fixtures were created\n");
-        exit($fixtures === [] ? 5 : 4);
-    }
-    // Recorded IDs plus any row with this run's title prefix: a save hook that throws after
-    // the INSERT leaves a post whose ID was never returned to us.
-    $left = [];
-    // Each query is checked through query()'s own return value (get_var/get_col ignore it) and
-    // wrapped, so a failing or throwing query marks that check unverifiable and cleanup goes on.
-    $count_rows = static function (string $sql, int $id) use ($wpdb): ?int {
-        try {
-            if ($wpdb->query($wpdb->prepare($sql, $id)) === false || $wpdb->last_error !== '') {
-                return null;
-            }
-            $row = $wpdb->last_result[0] ?? null;
-            return $row === null ? null : (int) array_values((array) $row)[0];
-        } catch (\Throwable $t) {
-            return null;
-        }
-    };
-    $found = [];
-    try {
-        $q = $wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title LIKE %s", $wpdb->esc_like($run) . '%');
-        if ($wpdb->query($q) === false || $wpdb->last_error !== '') {
-            $left[] = 'discovery query failed';
-        } else {
-            $found = array_map(static fn($r) => (int) $r->ID, $wpdb->last_result);
-        }
-    } catch (\Throwable $t) {
-        $left[] = 'discovery query threw: ' . $t->getMessage();
-    }
-    $ids = array_values(array_unique(array_merge($fixtures, $found)));
-    foreach (array_reverse($ids) as $id) {
-        try {
-            wp_delete_post($id, true);
-            clean_post_cache($id);
-        } catch (\Throwable $t) {
-            fwrite(STDERR, "teardown: cleanup of {$id} threw: {$t->getMessage()}\n");
-        }
-        // Per-fixture caches the theme writes while rendering (value and timeout rows):
-        // sfx_contact_info_<ID>_<field> (SC_ContactInfos.php:301) and sfx_social_account_<ID>_… .
-        $opt_like = "(option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s)";
-        $opt_args = [
-            $wpdb->esc_like("_transient_sfx_contact_info_{$id}_") . '%',
-            $wpdb->esc_like("_transient_timeout_sfx_contact_info_{$id}_") . '%',
-            $wpdb->esc_like("_transient_sfx_social_account_{$id}_") . '%',
-            $wpdb->esc_like("_transient_timeout_sfx_social_account_{$id}_") . '%',
-        ];
-        try {
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE {$opt_like}", ...$opt_args));
-        } catch (\Throwable $t) {
-            fwrite(STDERR, "teardown: cache cleanup of {$id} threw: {$t->getMessage()}\n");
-        }
-        // Verify against the database, not the object cache; a failed read is not proof of absence.
-        $count = $count_rows("SELECT COUNT(*) FROM {$wpdb->posts} WHERE ID = %d", $id);
-        $meta = $count_rows("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id);
-        $opts = null;
-        try {
-            if ($wpdb->query($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->options} WHERE {$opt_like}", ...$opt_args)) !== false && $wpdb->last_error === '') {
-                $opts = (int) array_values((array) ($wpdb->last_result[0] ?? [null]))[0];
-            }
-        } catch (\Throwable $t) {
-            $opts = null;
-        }
-        if ($count === null || $meta === null || $opts === null) {
-            $left[] = "{$id} (unverifiable)";
-        } elseif ($count !== 0 || $meta !== 0 || $opts !== 0) {
-            $left[] = "{$id} (post rows: {$count}, meta rows: {$meta}, cache rows: {$opts})";
-        }
-    }
-    if ($left !== []) {
-        fwrite(STDERR, 'TEARDOWN FAILED, still present: ' . implode(', ', $left) . "\n");
-        exit(4); // cleanup failure wins over everything
-    }
-    echo 'teardown: removed and verified ' . count($ids) . " fixtures\n";
-    if (!$completed) {
-        $err = error_get_last();
-        fwrite(STDERR, 'ABORTED before completion' . ($err ? ': ' . $err['message'] : '') . "\n");
-        exit($abort !== 0 ? $abort : 5);
-    }
-    exit($failures === 0 ? 0 : 1);
-});
-
 define('WP_USE_THEMES', false);
 require $root . '/wp-load.php';
-wp_set_current_user(1);
-// wp_die() (e.g. wpdb bailing on a lost connection) must not end the run inside teardown:
-// turn it into an exception the teardown's catches handle (→ unverifiable → exit 4).
-add_filter('wp_die_handler', static fn() => static function ($message): void {
-    throw new \RuntimeException('wp_die: ' . (is_string($message) ? $message : 'error'));
-}, PHP_INT_MAX);
 
+$failures = 0;
 $check = static function (bool $ok, string $label) use (&$failures): void {
     echo ($ok ? 'ok   ' : 'FAIL ') . $label . "\n";
     if (!$ok) {
@@ -872,119 +772,94 @@ $check = static function (bool $ok, string $label) use (&$failures): void {
     }
 };
 
-$make = static function (string $type, string $title, array $meta) use (&$fixtures, &$abort, $run): int {
-    $id = wp_insert_post(['post_type' => $type, 'post_status' => 'publish', 'post_title' => $run . ' ' . $title], true);
-    if (is_wp_error($id) || $id <= 0) {
-        fwrite(STDERR, "FATAL: could not create {$type} fixture\n");
-        $abort = 3;
-        exit(3); // teardown still runs and keeps this status
-    }
-    $fixtures[] = (int) $id;
-    foreach ($meta as $k => $v) {
-        update_post_meta((int) $id, $k, $v);
-        if (get_post_meta((int) $id, $k, true) !== $v) {
-            fwrite(STDERR, "FATAL: meta {$k} on fixture {$id} not stored\n");
-            $abort = 3;
-            exit(3);
-        }
-    }
-    return (int) $id;
-};
+// Preconditions from existing content. (Not "$page": setup_postdata() overwrites that WordPress global.)
+$coaches = get_posts(['post_type' => 'coach', 'post_status' => 'publish', 'numberposts' => 3,
+    'meta_key' => 'phone', 'meta_compare' => '!=', 'meta_value' => '', 'orderby' => 'ID', 'order' => 'ASC', 'fields' => 'ids']);
+$social = (int) (get_posts(['post_type' => 'sfx_social_account', 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids'])[0] ?? 0);
+if (count($coaches) < 2 || $social === 0 || (string) get_post_meta($social, '_link_url', true) === '') {
+    fwrite(STDERR, "PRECONDITION: need two published coaches with a phone and a published social account with a URL\n");
+    exit(3);
+}
+$a = (int) $coaches[0];
+$context_post = (int) (get_posts(['post_type' => 'page', 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids', 'exclude' => $coaches])[0] ?? 0);
+$check($context_post > 0 && !in_array($context_post, $coaches, true), "0: page context {$context_post} is not a loop item");
+$tel = static fn(int $id): string => \SFX\TelNormalizer::normalize_tel((string) get_post_meta($id, 'phone', true));
 
-// Coaches: two numbers, one empty, one with markup that survives sanitising; a page with its own number.
-$a = $make('coach', 'TelFormat A', ['phone' => '0151 1111']);
-$b = $make('coach', 'TelFormat B', ['phone' => '0208 / 222 0']);
-$e = $make('coach', 'TelFormat Empty', ['phone' => '']);
-$m = $make('coach', 'TelFormat Markup', ['phone' => '<a href="tel:9">9</a>']);
-$page = $make('coach', 'TelFormat Page', ['phone' => '0999 9']);
-
-// 1. Real query loop rendered by Bricks: each item dials its own number; label stays as entered.
+// 1. Real query loop rendered by Bricks, page context set to another post.
 $elements = [
-    ['id' => 'tfloop', 'name' => 'container', 'parent' => 0, 'children' => ['tfbtn1'],
+    ['id' => 'tfloop', 'name' => 'container', 'parent' => 0, 'children' => ['tfbtn1', 'tfbtn2'],
      'settings' => ['hasLoop' => true, 'query' => ['objectType' => 'post', 'post_type' => ['coach'],
-        'post__in' => [$a, $b, $e, $m], 'orderby' => 'post__in', 'posts_per_page' => 4]]],
+        'post__in' => $coaches, 'orderby' => 'post__in', 'posts_per_page' => count($coaches)]]],
     ['id' => 'tfbtn1', 'name' => 'button', 'parent' => 'tfloop', 'children' => [],
      'settings' => ['text' => '{acf_phone}', 'link' => ['type' => 'external', 'url' => 'tel:{acf_phone @format:tel}']]],
+    ['id' => 'tfbtn2', 'name' => 'button', 'parent' => 'tfloop', 'children' => [],
+     'settings' => ['text' => 'id', 'link' => ['type' => 'external', 'url' => 'tel:{post_id @format:tel}']]],
 ];
-// Precondition: the markup fixture really reaches the module as markup (else item 3 proves nothing).
-$check(strpos((string) bricks_render_dynamic_data('{acf_phone}', $m, 'text'), '<a') !== false, '1: markup fixture resolves to markup');
-$GLOBALS['post'] = get_post($page);
+$GLOBALS['post'] = get_post($context_post);
 setup_postdata($GLOBALS['post']);
 $html = \Bricks\Frontend::render_data($elements);
 $items = preg_split('/(?=<div class="brxe-tfloop )/', $html, -1, PREG_SPLIT_NO_EMPTY);
 $items = array_values(array_filter($items, static fn(string $c): bool => strpos($c, 'brxe-tfbtn1') !== false));
-$check(count($items) === 4, '1: four loop items rendered (got ' . count($items) . ')');
-$expect = [
-    ['tel:+491511111', '>0151 1111<'],
-    ['tel:+492082220', '>0208 / 222 0<'],
-    ['tel:', ''],                     // empty field: empty label
-    ['tel:', '<a href="tel:9">9</a>'], // markup field: its markup is the label, unchanged
-];
-foreach ($expect as $i => [$href, $label]) {
+$check(count($items) === count($coaches), '1: one rendered item per coach (got ' . count($items) . ')');
+foreach ($coaches as $i => $id) {
     $chunk = $items[$i] ?? '';
-    $got = preg_match('/class="brxe-tfbtn1[^"]*" href="([^"]*)"/', $chunk, $mm) === 1 ? $mm[1] : '(none)';
-    $check($got === $href, "1: item {$i} href {$got}");
-    if ($label === '') {
-        $text = preg_match('/class="brxe-tfbtn1[^"]*" href="tel:">(.*?)<\/a>/s', $chunk, $tm) === 1 ? $tm[1] : '(no button)';
-        $check(trim($text) === '', "1: item {$i} label empty -> " . $text);
-    } else {
-        $check(strpos($chunk, $label) !== false, "1: item {$i} label as entered");
-    }
+    $h1 = preg_match('/class="brxe-tfbtn1[^"]*" href="([^"]*)">(.*?)<\/a>/s', $chunk, $m1) === 1 ? $m1 : ['', '(none)', '(none)'];
+    $h2 = preg_match('/class="brxe-tfbtn2[^"]*" href="([^"]*)"/', $chunk, $m2) === 1 ? $m2[1] : '(none)';
+    $check($h1[1] === 'tel:' . $tel($id), "1: item {$id} phone href {$h1[1]}");
+    $check($h1[2] === esc_html((string) get_post_meta($id, 'phone', true)), "1: item {$id} label as entered");
+    $check($h2 === 'tel:' . $id, "1: item {$id} own post_id href {$h2} (not the page {$context_post})");
 }
-$check(strpos($html, '+49999') === false, '1: page number never used inside the loop');
 $check(strpos($html, '@format:tel') === false, '1: no raw tag left');
 
-// 2. render_data path on its own, and render_content in link context.
+// 2. render_data path on its own, render_content in link context, and a non-ACF provider.
+$expect_a = 'tel:' . $tel($a);
 $rd = apply_filters('bricks/frontend/render_data', '<p>tel:{acf_phone @format:tel}</p>', get_post($a));
-$check($rd === '<p>tel:+491511111</p>', '2: render_data path -> ' . $rd);
-$rc = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $b, 'link');
-$check($rc === 'tel:+492082220', '2: render_content link context -> ' . $rc);
-$cf = bricks_render_dynamic_data('tel:{cf_phone @format:tel}', $a, 'link'); // non-ACF provider, same meta
-$check($cf === 'tel:+491511111', '2: cf_ tag -> ' . $cf);
+$check($rd === "<p>{$expect_a}</p>", '2: render_data path -> ' . $rd);
+$rc = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $a, 'link');
+$check($rc === $expect_a, '2: render_content link context -> ' . $rc);
+$cf = bricks_render_dynamic_data('tel:{cf_phone @format:tel}', $a, 'link');
+$check($cf === $expect_a, '2: cf_ tag -> ' . $cf);
 
 // 3. Counterfactuals: each hook contributes on its own; without both, the raw tag stays.
-remove_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9);
+$C = \SFX\TelFormat\Controller::class;
+remove_filter('bricks/dynamic_data/render_content', [$C, 'render_content'], 9);
 $rd2 = apply_filters('bricks/frontend/render_data', '<p>tel:{acf_phone @format:tel}</p>', get_post($a));
-$check($rd2 === '<p>tel:+491511111</p>', '3: render_data alone resolves -> ' . $rd2);
-remove_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9);
+$check($rd2 === "<p>{$expect_a}</p>", '3: render_data alone resolves -> ' . $rd2);
+remove_filter('bricks/frontend/render_data', [$C, 'render_data'], 9);
 $raw = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $a, 'link');
 $check(strpos($raw, '@format:tel') !== false, '3: without the module the raw tag stays -> ' . $raw);
-add_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9, 3);
+add_filter('bricks/dynamic_data/render_content', [$C, 'render_content'], 9, 3);
 $rc2 = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $a, 'link');
-$check($rc2 === 'tel:+491511111', '3: render_content alone resolves -> ' . $rc2);
-add_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9, 2);
+$check($rc2 === $expect_a, '3: render_content alone resolves -> ' . $rc2);
+add_filter('bricks/frontend/render_data', [$C, 'render_data'], 9, 2);
 
-// 4. Compatibility through the full pipeline: baselines pinned, then identical without the module.
-//    Explicit IDs: the ID-less main-contact lookup is code this change does not touch (unit-tested).
-$contact = $make('sfx_contact_info', 'TelFormat Contact', ['_phone' => '0208 207658 0', '_email' => 'tf@example.test']);
-$social = $make('sfx_social_account', 'TelFormat Social', ['_link_url' => 'https://social.example/tf']);
+// 4. Compatibility through the full pipeline: baselines from existing content, then identical without the module.
+$phone_a = (string) get_post_meta($a, 'phone', true);
 $cases = [
-    "{contact_info:phone:{$contact}@format:tel}"  => '+492082076580',
-    "{contact_info:phone:{$contact} @format:tel}" => '+492082076580',
-    "{contact_info:phone:{$contact}|link=false}"  => '0208 207658 0',
-    "{social_account:url:{$social}}"              => 'https://social.example/tf',
-    "{acf_phone @fallback:'x' @format:tel}"       => '0151 1111', // Bricks today: fallback swallows the rest
-    '{acf_phone:plain @format:tel}'               => '0151 1111', // Bricks today, text context
+    "{acf_phone @fallback:'x' @format:tel}" => $phone_a,  // Bricks today: fallback swallows the rest
+    '{acf_phone:plain @format:tel}'        => $phone_a,  // Bricks today, text context
+    '{acf_phone}'                          => $phone_a,
+    "{social_account:url:{$social}}"       => (string) get_post_meta($social, '_link_url', true),
 ];
 $with = [];
 foreach ($cases as $tag => $expected) {
     $with[$tag] = bricks_render_dynamic_data($tag, $a, 'text');
     $check($with[$tag] === $expected, "4: baseline {$tag} -> {$with[$tag]}");
 }
-remove_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9);
-remove_filter('bricks/frontend/render_data', [\SFX\TelFormat\Controller::class, 'render_data'], 9);
+remove_filter('bricks/dynamic_data/render_content', [$C, 'render_content'], 9);
+remove_filter('bricks/frontend/render_data', [$C, 'render_data'], 9);
 foreach ($cases as $tag => $expected) {
     $check(bricks_render_dynamic_data($tag, $a, 'text') === $with[$tag], "4: identical without module {$tag}");
 }
 
 echo $failures === 0 ? "tel-format-live-check: PASS\n" : "tel-format-live-check: {$failures} FAILED\n";
-$completed = true; // exit status is set by the teardown
+exit($failures === 0 ? 0 : 1);
 ```
 
 - [ ] **Step 2: Run it**
 
 Run (MAMP MySQL running): `"$PHP" tests/support/tel-format-live-check.php; echo "exit=$?"`
-Expected: every line `ok`, `tel-format-live-check: PASS`, `teardown: removed and verified 7 fixtures`, `exit=0`. If a check fails because Bricks renders differently than the shapes stated above, adjust **the harness only** (never the module to suit the harness) and record the change in the commit body.
+Expected: every line `ok`, `tel-format-live-check: PASS`, `exit=0`. If a check fails because Bricks renders differently than the shapes stated above, adjust **the harness only** (never the module to suit the harness) and record the change in the commit body.
 
 - [ ] **Step 3: AGENTS.md**
 
