@@ -32,10 +32,11 @@ tel:{contact_info:phone @format:tel}              → unchanged behaviour (own p
   `bricks_render_dynamic_data()` (`bricks/functions.php:325`). The undocumented
   `bricks/dynamic_data/format_value` and `bricks/dynamic_data/allowed_keys` are not used,
   and Bricks' tag parser is not re-implemented.
-- **Simple tags only:** a tag name followed by `@format:tel` and nothing else. Any tag
-  with other filters (`:plain`), other attributes (`@fallback:…`), quotes or nesting is
-  left exactly as it is today. This is what keeps every currently working tag unchanged
-  (see "Why simple tags only").
+- **Simple tags only:** a tag name followed by `@format:tel` and nothing else. A tag
+  that carries other filters (`:plain`) or other attributes (`@fallback:…`) alongside
+  `@format:tel` is not matched and stays exactly as it is today (see "Why simple tags
+  only"). A simple annotated tag standing *inside* another tag's argument is matched —
+  see the accepted limit under the Controller.
 - **Uniform spelling, Bricks' own:** a space before each `@` attribute, as in Bricks'
   `{tag @fallback:'…'}`. Every example, help text and picker entry uses it. The parsers
   keep accepting the old spelling without a space.
