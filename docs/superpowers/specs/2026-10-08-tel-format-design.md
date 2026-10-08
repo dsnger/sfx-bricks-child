@@ -112,6 +112,11 @@ callbacks run at 10.
 
 1. `$content` not a string, or no `@format:tel` in it (`strpos`, case-sensitive like
    ContactInfos' own `format === 'tel'`) → return unchanged.
+1a. `$content` contains `:raw` → return unchanged. Bricks' `:raw` filter exists to print
+   tag syntax literally, nested tags included (`providers.php:691-698`); resolving an
+   annotated tag inside it first would change that working output. Coarse on purpose —
+   a whole area containing `:raw` anywhere skips the module, which only ever leaves a
+   tag unresolved, never rewrites one. Known limit, documented in the help text.
 2. `preg_replace_callback` with
 
    ```
@@ -124,8 +129,9 @@ callbacks run at 10.
    - `@format:telefax` does not match (`}` must follow `tel`).
    - A simple annotated tag is resolved wherever it appears, also inside another tag's
      argument or fallback (`{echo:fn({acf_phone @format:tel})}`). Today Bricks prints it
-     there as broken literal text too, so nothing that works changes. No nesting
-     detection — counting braces cannot tell nesting apart from quoted or script braces.
+     there as broken literal text too, so nothing that works changes — except under
+     `:raw`, handled in 1a. No nesting detection — counting braces cannot tell nesting
+     apart from quoted or script braces.
 3. Per match, with `$name` from the capture:
    - `$value = bricks_render_dynamic_data('{' . $name . '}', $post->ID ?? 0, $context)`.
    - Not a string → `''`.
@@ -167,7 +173,14 @@ composed as `tel:{… @format:tel}`), which pass through `render_content` or
 controls, `elements/base.php:4389`), and builder previews that use `render_tag`
 (`builder.php:2953-2980`) — there the raw tag stays. ContactInfos has the same limits.
 `render_tag` is left alone because a return value at priority 9 would be fed to Bricks'
-resolver as a tag name.
+resolver as a tag name. Builder previews are not tested; the help text says the canvas
+may show the raw tag.
+
+**Late resolution in loops:** content that Bricks resolves only in `render_data` after
+the loop has ended (e.g. a Code element without "parse dynamic data",
+`elements/code.php:203`; loop state cleared at `query.php:2096`) receives the **page**
+post. An annotated tag there resolves against the page — exactly as Bricks resolves a
+plain `{acf_phone}` in the same place. Same limit as Bricks' own tags, not a new one.
 
 **Same pipeline as Bricks:** `render_data` sees whole element output, including
 Gutenberg content shown by a Post Content element and Code elements. Bricks itself
@@ -202,7 +215,9 @@ is therefore treated like any other Bricks tag in it — no new exposure.
 | filter `sfx_contact_info_default_country_code` | read | read, same name |
 | any tag without `@format:tel` | Bricks output | identical |
 | `{name @format:tel}`, field holds one number | raw tag shown as text | clean number |
-| `{name @format:tel}`, field empty, unknown tag or markup | raw tag, or empty | empty |
+| `{name @format:tel}`, field empty, unknown tag, or markup that survives Bricks' sanitising | raw tag, or empty | empty |
+| `{name @format:tel}`, field markup that Bricks' sanitising strips (`providers/base.php:318`) | raw tag | clean number from the visible text |
+| any area containing `:raw` | Bricks output | identical — module skipped |
 | `{cf_name @format:tel}` | Bricks reads a meta key literally named `name @format` (`provider-wp.php:1139`) — not a realistic existing setup | clean number from meta key `name` |
 | `{name @fallback:… @format:tel}`, `{name:filter @format:tel}` | whatever Bricks' parser makes of it today (`:plain @format:tel` even switches on Bricks' `:tel`, `providers/base.php:144`) | identical — not matched |
 | `{social_account:… @format:tel}` | resolves, attribute dropped by the theme parser | identical — not matched |
@@ -235,11 +250,17 @@ A stubbed `bricks_render_dynamic_data()` records every call and returns fixture 
    (asserted separately). Every other test runs with an identity `esc_html`.
 5b. Re-entry: a stub that calls `render_content('{acf_phone @format:tel}', …)` from inside
    its own resolution terminates, the inner call yields `''`, and the in-flight set is
-   empty afterwards (also after the stub throws).
+   empty afterwards (also after the stub throws). Overlapping resolutions of the same
+   name with a different post ID, and with a different context, both resolve normally —
+   a guard keyed by name alone fails this.
+5c. `:raw`: `{post_title:raw @fallback:'{acf_phone @format:tel}'}` and a string holding
+   `{x:raw}` next to `tel:{acf_phone @format:tel}` → byte-identical, stub not called.
 6. Two tags in one string with text around them → both replaced, text byte-identical.
 7. Non-string `$content` → returned as is.
-8. PCRE failure: `ini_set('pcre.backtrack_limit', '1')` around one call (restored in a
-   `finally`) → original content returned.
+8. PCRE failure on `tel:{acf_phone @format:tel}`: control run at the normal limit
+   replaces it; with `ini_set('pcre.backtrack_limit', '1')` (restored in a `finally`)
+   `preg_last_error()` is `PREG_BACKTRACK_LIMIT_ERROR` right after the call and the
+   original content is returned.
 9. Output alphabet: every non-empty replacement in tests 1, 5 and 6 matches `/\A\+?[0-9]*(;ext=[0-9]+)?\z/`;
    the pattern itself rejects `"+49123\n"`, a quote, `<` and `;ext=1a` (asserted).
 
@@ -249,7 +270,9 @@ Also:
   `{contact_info:phone:310 @format:tel}` and `@link:false @wrap:true` next to the
   existing no-space cases, and the picker assertion (`:207`) expects the space form.
 - `tests/social-bricks-dynamic-data-test.php` requires `inc/TelNormalizer.php` (it loads
-  `SC_ContactInfos` directly).
+  `SC_ContactInfos` directly), and adds `{social_account:html:123 @class:x @size:small
+  @target:_blank}`: each attribute takes effect, and the output equals the no-space
+  spelling.
 - `tests/contact-social-help-tab-test.php` expects the space form.
 
 **Live check on the local site** (plan; uses real hook dispatch and real Bricks
@@ -263,13 +286,16 @@ resolution, fixtures removed in one teardown per AGENTS.md):
   `render_content` call in `link` context.
 - Counterfactuals: with only the `render_content` filter removed, the `render_data`
   fixture still resolves and vice versa; with both removed, the raw tag shows.
-- A loop item whose phone holds markup next to a page whose phone holds a number: the
-  item shows `tel:` (empty), not the page's number.
+- A loop item whose phone holds markup that survives sanitising (`<a href="tel:1">1</a>`)
+  next to a page whose phone holds a number: the item shows `tel:` (empty), not the
+  page's number.
 - Compatibility through the full pipeline (real dispatch, priorities 9/10/20): output of
   `{contact_info:phone@format:tel}`, `{contact_info:phone @format:tel}`,
   `{contact_info:phone|link=false}`, `{acf_phone @fallback:'x' @format:tel}`,
   `{acf_phone:plain @format:tel}` and a `{social_account:…}` tag is identical with and
-  without the module.
+  without the module. Fixtures: a published contact (type main, phone set) and a
+  published social account created by the harness, so each baseline is asserted
+  **non-empty** before the comparison.
 
 ## Docs
 
