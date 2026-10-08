@@ -15,7 +15,7 @@
 - **Working directory:** every path and command is relative to the theme root `wp-content/themes/sfx-bricks-child`; `cd` there first. Branch: `feature/tel-links` (exists).
 - **Local PHP:** run once per shell: `PHP="${PHP:-$(command -v php || echo /Applications/MAMP/bin/php/php8.5.2/bin/php)}"`; every command below calls `"$PHP"`. Quality battery: `./quality.sh`.
 - **Commits:** every task commits a `WIP: …` snapshot (CLAUDE.md §5 Mechanics). The real commit message is written once, after Gate B is clean (Task 5).
-- No new Composer dependency; no new option key; no database writes outside the live harness's own teardown.
+- No new Composer dependency; no new option key. The only database writes are the live harness's fixtures, all removed and verified by its single teardown (plus the accepted `sfx_social_accounts_cache_gen` counter bump).
 - No module-to-module edge: `TelFormat` and `ContactInfos` both depend only on the root-level `SFX\TelNormalizer`.
 - `SC_ContactInfos::normalize_tel()` stays public and static (delegates). Filter name `sfx_contact_info_default_country_code` unchanged.
 - Hooks, verbatim: `add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 9, 3);` and `add_filter('bricks/frontend/render_data', [self::class, 'render_data'], 9, 2);` — nothing on `render_tag`, `format_value` or `allowed_keys`.
@@ -357,12 +357,21 @@ try {
 assert_same(PREG_BACKTRACK_LIMIT_ERROR, $err, '8: PCRE actually failed');
 assert_same('tel:{acf_phone @format:tel}', $out, '8: original returned');
 
-// 9. Output alphabet of the normaliser.
+// 9. Output alphabet of the controller's replacements (not of the normaliser alone).
 $alphabet = '/\A\+?[0-9]*(;ext=[0-9]+)?\z/';
 foreach (['0151 15921554', '0208 / 207 658 0', '0151&nbsp;15921554', 'tel:+49 171 1700557', '0208 2076580 x 12'] as $value) {
-    $normalised = \SFX\TelNormalizer::normalize_tel(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-    assert_true(preg_match($alphabet, $normalised) === 1, "9: alphabet {$value} -> {$normalised}");
+    reset_stub(['{acf_phone}' => $value]);
+    $replaced = Controller::render_content('{acf_phone @format:tel}', $post, 'text');
+    assert_true(preg_match($alphabet, $replaced) === 1, "9: alphabet {$value} -> {$replaced}");
 }
+reset_stub(['{acf_phone}' => '0208 2076580 x 12']);
+assert_same('+492082076580;ext=12', Controller::render_content('{acf_phone @format:tel}', $post, 'text'), '9: extension kept through the controller');
+
+// 10. Any simple tag name, not only ACF.
+reset_stub(['{cf_phone}' => '0151 1', '{woo_billing_phone}' => '0208 2', '{my-tag_2}' => '0201 3']);
+assert_same('+491511', Controller::render_content('{cf_phone @format:tel}', $post, 'text'), '10: cf_ tag');
+assert_same('+492082', Controller::render_content('{woo_billing_phone @format:tel}', $post, 'text'), '10: other provider');
+assert_same('+492013', Controller::render_content('{my-tag_2 @format:tel}', $post, 'text'), '10: hyphen and digit in name');
 foreach (["+49123\n", '+49"1', '+49<1', '+49;ext=1a'] as $bad) {
     assert_true(preg_match($alphabet, $bad) !== 1, '9: alphabet rejects ' . json_encode($bad));
 }
@@ -476,7 +485,7 @@ class Controller
         // Unresolved tag or markup: digits from a tag name or from href and text would be dialled.
         // Empty, not the tag — render_data would resolve a left-over tag against the page post.
         if (strpos($value, '{') !== false || strpos($value, '<') !== false) {
-            return '';
+            return ''; // unresolved-or-markup
         }
 
         $tel = TelNormalizer::normalize_tel($value);
@@ -493,7 +502,21 @@ Run: `git add inc/TelFormat/Controller.php tests/tel-format-test.php && ./qualit
 
 - [ ] **Step 5: Counterfactual check (not committed)**
 
-Temporarily change the guard key to `$key = $name;` and run `"$PHP" tests/tel-format-test.php` → Expected: FAIL on `5b: outer + two legitimate inner resolutions`. Temporarily drop `esc_html(` → Expected: FAIL on `5a: escaped`. Temporarily return `'{' . $name . ' @format:tel}'` instead of `''` in the `{`/`<` rejection branch → Expected: FAIL on `4:` assertions (no PHP error). Before the first mutation `cp inc/TelFormat/Controller.php /private/tmp/claude-ctrl.bak`; after each, `cp` it back and confirm `cmp inc/TelFormat/Controller.php /private/tmp/claude-ctrl.bak` prints nothing; delete the backup at the end.
+Mutations run on a **throwaway copy**, never on the real file, so an interrupted run cannot leave a weakened controller in the repo:
+
+```bash
+M="$(mktemp -d)"; trap 'rm -rf "$M"' EXIT
+mkdir -p "$M/inc/TelFormat" "$M/tests"
+cp inc/TelNormalizer.php "$M/inc/"; cp tests/tel-format-test.php "$M/tests/"
+mutate() { cp inc/TelFormat/Controller.php "$M/inc/TelFormat/Controller.php"; sed -i '' "$1" "$M/inc/TelFormat/Controller.php"; "$PHP" "$M/tests/tel-format-test.php" | grep -c '^FAIL' ; }
+mutate "s/\$key = \$name . '|' . \$post_id . '|' . \$context;/\$key = \$name;/"   # expect ≥1 (5b)
+mutate "s/esc_html(\$tel)/\$tel/"                                                     # expect ≥1 (5a)
+mutate "s/return ''; \/\/ unresolved-or-markup/return '{' . \$name . ' @format:tel}';/" # expect ≥1 (4)
+mutate "s/\[a-zA-Z0-9_-\]+/acf_[a-zA-Z0-9_-]+/"                                       # expect ≥1 (10)
+mutate "s/return \$tel === '' ? '' : esc_html(\$tel);/return \$tel === '' ? '' : esc_html(\$tel . 'x');/" # expect ≥1 (9)
+```
+
+Each `mutate` line must print a number ≥ 1. `git diff --exit-code inc/TelFormat/Controller.php` (after staging it in Step 4) confirms the real file was never touched.
 
 - [ ] **Step 6: WIP commit**
 
@@ -739,7 +762,9 @@ wp_set_current_user(1);
 
 $fixtures = [];
 $failures = 0;
-register_shutdown_function(static function () use (&$fixtures, &$failures): void {
+$completed = false; // set on the last line; anything else is an abort
+$abort = 0;
+register_shutdown_function(static function () use (&$fixtures, &$failures, &$completed, &$abort): void {
     $left = [];
     foreach (array_reverse($fixtures) as $id) {
         wp_delete_post($id, true);
@@ -750,9 +775,14 @@ register_shutdown_function(static function () use (&$fixtures, &$failures): void
     }
     if ($left !== []) {
         fwrite(STDERR, 'TEARDOWN FAILED, still present: ' . implode(', ', $left) . "\n");
-        exit(4);
+        exit(4); // cleanup failure wins over everything
     }
     echo 'teardown: removed and verified ' . count($fixtures) . " fixtures\n";
+    if (!$completed) {
+        $err = error_get_last();
+        fwrite(STDERR, 'ABORTED before completion' . ($err ? ': ' . $err['message'] : '') . "\n");
+        exit($abort !== 0 ? $abort : 5);
+    }
     exit($failures === 0 ? 0 : 1);
 });
 
@@ -763,11 +793,12 @@ $check = static function (bool $ok, string $label) use (&$failures): void {
     }
 };
 
-$make = static function (string $type, string $title, array $meta) use (&$fixtures): int {
+$make = static function (string $type, string $title, array $meta) use (&$fixtures, &$abort): int {
     $id = wp_insert_post(['post_type' => $type, 'post_status' => 'publish', 'post_title' => $title], true);
     if (is_wp_error($id) || $id <= 0) {
         fwrite(STDERR, "FATAL: could not create {$type} fixture\n");
-        exit(3); // teardown still runs
+        $abort = 3;
+        exit(3); // teardown still runs and keeps this status
     }
     $fixtures[] = (int) $id;
     foreach ($meta as $k => $v) {
@@ -819,6 +850,8 @@ $rd = apply_filters('bricks/frontend/render_data', '<p>tel:{acf_phone @format:te
 $check($rd === '<p>tel:+491511111</p>', '2: render_data path -> ' . $rd);
 $rc = bricks_render_dynamic_data('tel:{acf_phone @format:tel}', $b, 'link');
 $check($rc === 'tel:+492082220', '2: render_content link context -> ' . $rc);
+$cf = bricks_render_dynamic_data('tel:{cf_phone @format:tel}', $a, 'link'); // non-ACF provider, same meta
+$check($cf === 'tel:+491511111', '2: cf_ tag -> ' . $cf);
 
 // 3. Counterfactuals: each hook contributes on its own; without both, the raw tag stays.
 remove_filter('bricks/dynamic_data/render_content', [\SFX\TelFormat\Controller::class, 'render_content'], 9);
@@ -856,7 +889,7 @@ foreach ($cases as $tag => $expected) {
 }
 
 echo $failures === 0 ? "tel-format-live-check: PASS\n" : "tel-format-live-check: {$failures} FAILED\n";
-// exit status is set by the teardown
+$completed = true; // exit status is set by the teardown
 ```
 
 - [ ] **Step 2: Run it**
