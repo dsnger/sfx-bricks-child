@@ -152,12 +152,13 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was run and seen to exit cleanly (25 PHP tests, 1 JS test, 0 syntax errors),
-and seen to fail on a syntax error outside `inc/`, on an empty test glob for either
-battery, and on a failing JS test. Its Node resolution was seen to reject an unusable
-override with every fallback removed, and a control run with a real Node in the same
-stripped environment passed. `build-theme.sh` was not run in that session — it writes a
-release artifact — so treat its row as documented, not verified.
+`quality.sh` was last run on 2026-10-09 and seen to exit cleanly (39 PHP tests, 4 JS
+tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
+`inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
+resolution was seen to reject an unusable override with every fallback removed, and a
+control run with a real Node in the same stripped environment passed. `build-theme.sh`
+was run locally on 2026-10-08 and its zip inspected with `unzip -l` — verified there,
+still not run in CI.
 
 **Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
 in the gate prompt when the change touches one. Which files those are is defined once,

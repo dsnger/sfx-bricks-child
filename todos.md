@@ -89,10 +89,12 @@ references an entry here must still be able to find it.
       regenerated. Regenerate and add the step together.
 - [ ] No static analyser installed (PHPStan/Psalm). `AGENTS.md` § Commands
       lists the `typecheck` row as TODO and points here.
-- [ ] **The admin JavaScript is still untested** (follow-up to the Node test leg,
-      2026-08-28): the leg runs in CI, but `tests/smooth-scroll-lifecycle-test.mjs`
-      is the only JS test, and it pins wiring rather than real bfcache semantics —
-      its premise is set by its own stub. The other 12 own files hold ~4,130 lines;
+- [ ] **Most admin JavaScript is still untested** (follow-up to the Node test leg,
+      2026-08-28): the leg runs in CI. Since then the Editor Prose and Redirects
+      picker scripts got their own tests (4 JS tests in all, 2026-10-09);
+      `tests/smooth-scroll-lifecycle-test.mjs` pins wiring rather than real bfcache
+      semantics — its premise is set by its own stub. As counted on 2026-08-28, the
+      other 12 own files held ~4,130 lines;
       one of them, `inc/SecurityHeader/assets/admin-script.js`, is an empty
       placeholder. The remaining 11 (largest: `inc/CustomDashboard/assets/admin-script.js`
       at 1,318) are admin UI, and between them — not each of them — they touch real
