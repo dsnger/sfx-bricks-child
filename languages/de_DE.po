@@ -8139,8 +8139,8 @@ msgid "%1$s, %2$s, %3$s or %4$s: wraps the output in a tag with a field class su
 msgstr "%1$s, %2$s, %3$s oder %4$s: umschließt die Ausgabe mit einem Tag mit Feldklasse wie %5$s. Öffnungszeiten und eine ausgefüllte vollständige Adresse werden nie umschlossen."
 
 #, php-format
-msgid "Wrapper tag, e.g. %1$s (default and fallback for invalid names: %2$s); turns the wrapper on."
-msgstr "Tag des umschließenden Elements, z. B. %1$s (Standard und Ersatz bei ungültigen Namen: %2$s); schaltet es ein."
+msgid "Wrapper tag, one of %1$s (default and fallback for any other name: %2$s); turns the wrapper on."
+msgstr "Tag des umschließenden Elements, eines von %1$s (Standard und Ersatz für jeden anderen Namen: %2$s); schaltet es ein."
 
 msgid "Any non-empty value except 0: shows the field value before formatting in a preformatted block instead (ignored when format=tel applies)."
 msgstr "Jeder nicht leere Wert außer 0: zeigt stattdessen den Feldwert vor der Formatierung in einem vorformatierten Block (wird ignoriert, wenn format=tel greift)."

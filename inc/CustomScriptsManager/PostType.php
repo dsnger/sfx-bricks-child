@@ -46,6 +46,50 @@ class PostType
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'add_status_column']);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_status_column'], 10, 2);
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'remove_date_column']);
+
+        add_filter('map_meta_cap', [self::class, 'map_admin_level_meta_cap'], 10, 4);
+    }
+
+    /**
+     * Scripts are printed raw on every page, so every capability is admin-level —
+     * with post caps an Author could publish site-wide JavaScript.
+     *
+     * @return array<string, string>
+     */
+    private static function admin_level_capabilities(): array
+    {
+        return array_fill_keys([
+            'edit_posts',
+            'edit_others_posts',
+            'publish_posts',
+            'read_private_posts',
+            'create_posts',
+            'edit_private_posts',
+            'edit_published_posts',
+            'delete_posts',
+            'delete_private_posts',
+            'delete_published_posts',
+            'delete_others_posts',
+        ], 'manage_options');
+    }
+
+    /**
+     * @param array<int, string> $caps
+     * @param array<int, mixed>  $args
+     * @return array<int, string>
+     */
+    public static function map_admin_level_meta_cap(array $caps, string $cap, int $user_id, array $args): array
+    {
+        if (!in_array($cap, ['edit_post', 'read_post', 'delete_post', 'publish_post'], true) || empty($args[0])) {
+            return $caps;
+        }
+
+        $post = get_post((int) $args[0]);
+        if (!$post instanceof \WP_Post || $post->post_type !== self::$post_type) {
+            return $caps;
+        }
+
+        return ['manage_options'];
     }
 
     /**
@@ -78,6 +122,7 @@ class PostType
             'has_archive'        => false,
             'rewrite'            => false,
             'capability_type'    => 'post',
+            'capabilities'       => self::admin_level_capabilities(),
             'show_ui'            => true,
             // Additional privacy settings
             'publicly_queryable' => false,
