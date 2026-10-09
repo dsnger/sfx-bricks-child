@@ -30,7 +30,11 @@ namespace {
     $ref = new ReflectionClass(\SFX\GitHubThemeUpdater::class);
     $updater = $ref->newInstanceWithoutConstructor();
     foreach (['github_username' => 'dsnger', 'github_repo' => 'sfx-bricks-child', 'authorize_token' => 'ghp_secret', 'debug' => false] as $prop => $value) {
-        $ref->getProperty($prop)->setValue($updater, $value);
+        $property = $ref->getProperty($prop);
+        if (PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true); // required on 8.0, deprecated from 8.5
+        }
+        $property->setValue($updater, $value);
     }
 
     $cases = [

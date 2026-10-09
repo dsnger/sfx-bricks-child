@@ -9,6 +9,7 @@ namespace {
     $failures = 0;
     $posts = [];
     $editable = [];
+    $deletable = [];
     $calls = [];
 
     final class JsonExit extends \Exception
@@ -29,12 +30,15 @@ namespace {
     }
     function current_user_can(string $cap, ...$args): bool
     {
-        global $editable;
+        global $editable, $deletable;
         if ($cap === 'edit_posts') {
             return true; // an Author
         }
         if ($cap === 'edit_post') {
             return in_array((int) ($args[0] ?? 0), $editable, true);
+        }
+        if ($cap === 'delete_post') {
+            return in_array((int) ($args[0] ?? 0), $deletable, true);
         }
         return false;
     }
@@ -86,6 +90,7 @@ namespace {
     $posts[30] = ['ID' => 30, 'post_type' => 'post', 'post_mime_type' => ''];                 // not an attachment
     $posts[40] = ['ID' => 40, 'post_type' => 'attachment', 'post_mime_type' => 'image/jpeg']; // author's own
     $editable = [20, 30, 40];
+    $deletable = [20, 40];
 
     // 1. Overwriting someone else's file: refused before any file work.
     assert_same('error:Insufficient permissions', run_replace(['nonce' => 'good', 'old_attachment_id' => '10', 'new_attachment_id' => '20']), '1: old not editable');
@@ -94,6 +99,12 @@ namespace {
     // 2. Deleting someone else's attachment (passed as the "new" one): refused.
     assert_same('error:Insufficient permissions', run_replace(['nonce' => 'good', 'old_attachment_id' => '20', 'new_attachment_id' => '10']), '2: new not editable');
     assert_same(false, in_array('get_post_meta', $calls, true), '2: no file lookup happened');
+
+    // 2b. The new attachment is deleted afterwards: editing it without delete rights is not enough.
+    $deletable = [20];
+    assert_same('error:Insufficient permissions', run_replace(['nonce' => 'good', 'old_attachment_id' => '20', 'new_attachment_id' => '40']), '2b: new editable but not deletable');
+    assert_same(false, in_array('get_post_meta', $calls, true), '2b: no file lookup happened');
+    $deletable = [20, 40];
 
     // 3. A non-attachment ID is refused even when editable.
     assert_same('error:Invalid attachment IDs', run_replace(['nonce' => 'good', 'old_attachment_id' => '30', 'new_attachment_id' => '20']), '3: old is not an attachment');

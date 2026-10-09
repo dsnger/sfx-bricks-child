@@ -133,7 +133,10 @@ class MediaReplacement
 
     private static function can_replace(int $old_attachment_id, int $new_attachment_id): bool
     {
-        return current_user_can('edit_post', $old_attachment_id) && current_user_can('edit_post', $new_attachment_id);
+        // The new attachment is deleted after the copy, so it needs delete rights too.
+        return current_user_can('edit_post', $old_attachment_id)
+            && current_user_can('edit_post', $new_attachment_id)
+            && current_user_can('delete_post', $new_attachment_id);
     }
 
     /**
