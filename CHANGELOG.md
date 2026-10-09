@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.29.1] - 2026-10-09
+
+- Security: Custom Scripts can only be created and edited by administrators. Before, an Author could publish JavaScript that ran on every page. After updating, check the Custom Scripts list for entries not created by an admin.
+- Security: `[contact_info tag=…]` and the Bricks `@tag` attribute only accept span, div, p, strong, em, b, i, small, address, li and h1–h6; any other tag becomes span. Before, `tag="script"` let a Contributor insert a script.
+- Security: Media Replace (WP Optimizer) only swaps images the user may edit, and the replacement image must be one they may delete. Before, an Author could overwrite or delete other users' media.
+- Security: the GitHub updater only sends its token with this theme's own downloads, not with every URL containing "github.com".
+
 ## [0.29.0] - 2026-10-08
 
 - Bricks: `@format:tel` now works on simple Bricks tags, e.g. `tel:{acf_phone @format:tel}` gives a clean dialable link (`tel:+49…`) — only where the attribute is set; tags without it render as before.
