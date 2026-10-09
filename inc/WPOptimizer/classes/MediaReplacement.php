@@ -89,7 +89,7 @@ class MediaReplacement
     public static function handle_ajax_replace_media(): void
     {
         // Check nonce for security
-        if (!wp_verify_nonce($_POST['nonce'], 'sfx_media_replace_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'sfx_media_replace_nonce')) {
             wp_send_json_error('Invalid nonce');
             return;
         }
@@ -104,8 +104,14 @@ class MediaReplacement
         $old_attachment_id = (int) ($_POST['old_attachment_id'] ?? 0);
         $new_attachment_id = (int) ($_POST['new_attachment_id'] ?? 0);
 
-        if (!$old_attachment_id || !$new_attachment_id) {
+        if (!self::is_attachment($old_attachment_id) || !self::is_attachment($new_attachment_id)) {
             wp_send_json_error('Invalid attachment IDs');
+            return;
+        }
+
+        // The old file is overwritten and the new attachment deleted: both must be the user's to edit.
+        if (!self::can_replace($old_attachment_id, $new_attachment_id)) {
+            wp_send_json_error('Insufficient permissions');
             return;
         }
 
@@ -119,13 +125,27 @@ class MediaReplacement
         }
     }
 
+    private static function is_attachment(int $id): bool
+    {
+        $post = $id > 0 ? get_post($id) : null;
+        return $post !== null && ($post->post_type ?? '') === 'attachment';
+    }
+
+    private static function can_replace(int $old_attachment_id, int $new_attachment_id): bool
+    {
+        // The new attachment is deleted after the copy, so it needs delete rights too.
+        return current_user_can('edit_post', $old_attachment_id)
+            && current_user_can('edit_post', $new_attachment_id)
+            && current_user_can('delete_post', $new_attachment_id);
+    }
+
     /**
      * Perform the actual media replacement
      */
     public static function perform_media_replacement($old_attachment_id, $new_attachment_id): bool
     {
-        // Check if user has permission to edit attachments
-        if (!current_user_can('edit_posts')) {
+        if (!self::is_attachment((int) $old_attachment_id) || !self::is_attachment((int) $new_attachment_id)
+            || !self::can_replace((int) $old_attachment_id, (int) $new_attachment_id)) {
             return false;
         }
 

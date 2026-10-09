@@ -152,7 +152,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was last run on 2026-10-09 and seen to exit cleanly (39 PHP tests, 4 JS
+`quality.sh` was last run on 2026-10-09 and seen to exit cleanly (42 PHP tests, 4 JS
 tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a

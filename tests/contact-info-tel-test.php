@@ -316,6 +316,29 @@ $test_last_query_args = [];
 $sc->render_contact_info(['field' => 'phone', 'type' => 'main']);
 assert_same(['menu_order' => 'ASC', 'date' => 'DESC'], $test_last_query_args['orderby'] ?? null, '10: type lookup order');
 
+// 11. The wrapper tag comes from an allowlist: a contributor's tag="script" must never emit a script element.
+$test_transients = [];
+foreach (['script', 'SCRIPT', 'style', 'iframe', 'svg', 'object', 'a', 'unknowntag'] as $bad) {
+    assert_same(
+        '<span class="contact-info-email">x</span>',
+        $sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'link' => 'false', 'text' => 'x', 'tag' => $bad]),
+        "11: tag={$bad} falls back to span"
+    );
+}
+foreach (['div', 'P', 'strong', 'address', 'h2', 'li'] as $good) {
+    $lower = strtolower($good);
+    assert_same(
+        "<{$lower} class=\"contact-info-email\">x</{$lower}>",
+        $sc->render_contact_info(['field' => 'email', 'contact_id' => '310', 'link' => 'false', 'text' => 'x', 'tag' => $good]),
+        "11: tag={$good} kept"
+    );
+}
+assert_same(
+    '<span class="contact-info-email">x</span>',
+    ContactInfosController::render_bricks_dynamic_tag('{contact_info:email:310 @link:false @text:x @tag:script}', null),
+    '11: Bricks @tag:script falls back to span'
+);
+
 global $failures;
 if ($failures > 0) {
     echo "Tests failed: {$failures}\n";

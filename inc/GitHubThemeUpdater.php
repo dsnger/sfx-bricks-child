@@ -590,8 +590,8 @@ class GitHubThemeUpdater
    */
   public function download_package($reply, $package, $upgrader)
   {
-    // Only handle GitHub URLs for this theme
-    if (!str_contains($package, 'github.com') && !str_contains($package, 'api.github.com')) {
+    // Only this theme's repo: a substring match on "github.com" sent the token to other packages too.
+    if (!$this->is_own_package((string) $package)) {
       return $reply;
     }
 
@@ -612,6 +612,23 @@ class GitHubThemeUpdater
     }, 10, 2);
 
     return $reply;
+  }
+
+  private function is_own_package(string $package): bool
+  {
+    $repo = strtolower($this->github_username . '/' . $this->github_repo . '/');
+    $package = strtolower($package);
+    // A dot segment (in any encoding) would let the HTTP client normalise the path into another repository.
+    $path = (string) parse_url($package, PHP_URL_PATH);
+    do {
+      $previous = $path;
+      $path = rawurldecode($path);
+    } while ($path !== $previous);
+    if (array_intersect(preg_split('#[/\\\\]#', $path), ['.', '..'])) {
+      return false;
+    }
+    return str_starts_with($package, 'https://api.github.com/repos/' . $repo)
+      || str_starts_with($package, 'https://github.com/' . $repo);
   }
 
   public function theme_popup($result, $action, $args)

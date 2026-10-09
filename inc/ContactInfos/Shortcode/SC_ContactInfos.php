@@ -38,6 +38,14 @@ class SC_ContactInfos
     ];
 
     /**
+     * Tags the `tag` attribute may choose; anything else falls back to span.
+     */
+    public const WRAPPER_TAGS = [
+        'span', 'div', 'p', 'strong', 'em', 'b', 'i', 'small', 'address', 'li',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    ];
+
+    /**
      * Class constructor
      * Register the shortcode and cache invalidation hooks
      */
@@ -233,9 +241,11 @@ class SC_ContactInfos
             return $inner;
         }
 
-        $tag = $has_custom_tag && preg_match('/^[a-zA-Z][a-zA-Z0-9]{0,15}$/', $tag_raw)
-            ? strtolower($tag_raw)
-            : 'span';
+        // Allowlist, not a name pattern: contributors set this, and tag="script" would run their text as JS.
+        $tag = strtolower($tag_raw);
+        if (!in_array($tag, self::WRAPPER_TAGS, true)) {
+            $tag = 'span';
+        }
 
         $classes = $this->process_classes($atts['class'] ?? '');
         $classes[] = $field_class;

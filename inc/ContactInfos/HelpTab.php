@@ -154,9 +154,9 @@ final class HelpTab
                 self::code('contact-info-phone')
             ),
             'tag'        => sprintf(
-                /* translators: 1: example tag "div", 2: default tag "span" */
-                esc_html__('Wrapper tag, e.g. %1$s (default and fallback for invalid names: %2$s); turns the wrapper on.', 'sfxtheme'),
-                self::code('div'),
+                /* translators: 1: list of allowed tags, 2: default tag "span" */
+                esc_html__('Wrapper tag, one of %1$s (default and fallback for any other name: %2$s); turns the wrapper on.', 'sfxtheme'),
+                implode(', ', array_map([self::class, 'code'], SC_ContactInfos::WRAPPER_TAGS)),
                 self::code('span')
             ),
             'debug'      => esc_html__('Any non-empty value except 0: shows the field value before formatting in a preformatted block instead (ignored when format=tel applies).', 'sfxtheme'),
