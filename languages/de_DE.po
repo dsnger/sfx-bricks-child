@@ -8323,3 +8323,1749 @@ msgstr "Wird als Klasse %1$s ergänzt; %2$s"
 #, php-format
 msgid "Link target if the account has none of its own: %1$s or %2$s; %3$s"
 msgstr "Linkziel, wenn das Konto kein eigenes hat: %1$s oder %2$s; %3$s"
+
+# Sicherheits-Check (SiteCheck)
+
+msgid "?author=1 redirect"
+msgstr "Weiterleitung von ?author=1"
+
+msgid ".git and .env files"
+msgstr ".git- und .env-Dateien"
+
+msgid ".git folder: its own .htaccess inside .git"
+msgstr ".git-Ordner: eigene .htaccess im Ordner .git"
+
+msgid "\"Discourage search engines\" is on — the live site asks search engines to stay away."
+msgstr "„Suchmaschinen davon abhalten, diese Website zu indexieren“ ist aktiv – die Live-Seite bittet Suchmaschinen, fernzubleiben."
+
+msgid "\"Discourage search engines\" is on, as expected for this profile."
+msgstr "„Suchmaschinen davon abhalten, diese Website zu indexieren“ ist aktiv, wie für dieses Profil erwartet."
+
+msgid "(contains credentials)"
+msgstr "(enthält Zugangsdaten)"
+
+msgid "(could not be read)"
+msgstr "(konnte nicht gelesen werden)"
+
+msgid "%1$d of %2$d sitemaps checked."
+msgstr "%1$d von %2$d Sitemaps geprüft."
+
+msgid "%1$s (ID %2$d)"
+msgstr "%1$s (ID %2$d)"
+
+msgid "%1$s (ID %2$d): \"%3$s\", %4$s"
+msgstr "%1$s (ID %2$d): „%3$s“, %4$s"
+
+msgid "%1$s (ID %2$d): %3$s"
+msgstr "%1$s (ID %2$d): %3$s"
+
+msgid "%1$s reveals a version: %2$s"
+msgstr "%1$s verrät eine Version: %2$s"
+
+msgid "%1$s: %2$d entries in the sitemap"
+msgstr "%1$s: %2$d Einträge in der Sitemap"
+
+msgid "%d entries could not be assigned to a type"
+msgstr "%d Einträge konnten keinem Typ zugeordnet werden"
+
+msgid "%d Sicherheits-Check test file(s) in the uploads folder could not be deleted; their record was kept so the purge can be run again once they are deletable."
+msgstr "%d Testdatei(en) des Sicherheits-Checks im Uploads-Ordner konnten nicht gelöscht werden. Der Eintrag dazu bleibt erhalten, damit du das Löschen wiederholen kannst, sobald sie sich löschen lassen."
+
+msgid "%s — content differs from the test file or could not be deleted"
+msgstr "%s – Inhalt weicht von der Testdatei ab oder die Datei konnte nicht gelöscht werden"
+
+msgid "%s — is this the right address? Warning e-mails go to it."
+msgstr "%s – ist das die richtige Adresse? Warn-E-Mails gehen dorthin."
+
+msgid "%s — not created by a recorded test run"
+msgstr "%s – nicht von einem erfassten Testlauf angelegt"
+
+msgid "A backup exists outside the server, and a restore has been tested."
+msgstr "Es gibt ein Backup außerhalb des Servers und eine Wiederherstellung wurde getestet."
+
+msgid "A change to %s is waiting for confirmation."
+msgstr "Eine Änderung an %s wartet auf Bestätigung."
+
+msgid "A permalink structure is set."
+msgstr "Eine Permalink-Struktur ist eingestellt."
+
+msgid "a security service answered with a challenge page"
+msgstr "ein Sicherheitsdienst hat mit einer Prüfseite geantwortet"
+
+msgid "According to the configuration. The enable_wp_debug_mode_checks filter and changes plugins make at runtime are not seen; no error is triggered on purpose."
+msgstr "Laut Konfiguration. Der Filter enable_wp_debug_mode_checks und Änderungen, die Plugins zur Laufzeit vornehmen, sieht der Check nicht; es wird absichtlich kein Fehler ausgelöst."
+
+msgid "Accounts with manage_options or Bricks code execution."
+msgstr "Konten mit manage_options oder Code-Ausführung in Bricks."
+
+msgid "Accounts with manage_options. Bricks is not active, so code execution grants are not listed."
+msgstr "Konten mit manage_options. Bricks ist nicht aktiv, daher werden Rechte zur Code-Ausführung nicht aufgelistet."
+
+msgid "Add one block at a time. A host can forbid some directives (AllowOverride), which shows as a 500 error. Conflicts with other rules cannot be ruled out."
+msgstr "Füge die Blöcke einzeln hinzu. Ein Hoster kann manche Anweisungen verbieten (AllowOverride); das zeigt sich als 500-Fehler. Konflikte mit anderen Regeln lassen sich nicht ausschließen."
+
+msgid "Addresses: Server. TLS and the http:// redirect: Loopback, the server fetching its own address without login."
+msgstr "Adressen: Server. TLS und die Weiterleitung von http://: Loopback, der Server ruft seine eigene Adresse ohne Anmeldung ab."
+
+msgid "Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes."
+msgstr "Fügt Werkzeuge → Sicherheits-Check hinzu: prüft die Website auf offen liegende Dateien, riskante Einstellungen und Fehler vor dem Live-Gang."
+
+msgid "Administration e-mail address"
+msgstr "E-Mail-Adresse der Administration"
+
+msgid "All administrators use two-factor sign-in."
+msgstr "Alle Administratoren nutzen die Zwei-Faktor-Anmeldung."
+
+msgid "Allow automatic minor core updates, unless an external update process covers them."
+msgstr "Erlaube automatische kleine Core-Updates, es sei denn, ein externer Update-Prozess übernimmt das."
+
+msgid "allow_url_include"
+msgstr "allow_url_include"
+
+msgid "allow_url_include is off"
+msgstr "allow_url_include ist aus"
+
+msgid "allow_url_include is on — dangerous configuration"
+msgstr "allow_url_include ist an – gefährliche Konfiguration"
+
+msgid "Application passwords"
+msgstr "Anwendungspasswörter"
+
+msgid "Application passwords are not available on this site."
+msgstr "Anwendungspasswörter sind auf dieser Website nicht verfügbar."
+
+msgid "applies as soon as code execution is turned on"
+msgstr "gilt, sobald die Code-Ausführung eingeschaltet wird"
+
+msgid "Apps and Jetpack need XML-RPC. Remove the leading # only if nothing on this site uses it."
+msgstr "Apps und Jetpack brauchen XML-RPC. Entferne das führende # nur, wenn nichts auf dieser Website XML-RPC nutzt."
+
+msgid "Attachment pages"
+msgstr "Anhang-Seiten"
+
+msgid "author sitemap"
+msgstr "Autoren-Sitemap"
+
+msgid "Author sitemap"
+msgstr "Autoren-Sitemap"
+
+msgid "Automatic minor and security updates of WordPress are off — fine only if an external update process covers them."
+msgstr "Automatische kleine und Sicherheitsupdates von WordPress sind aus – das ist nur in Ordnung, wenn ein externer Update-Prozess sie abdeckt."
+
+msgid "Automatic minor and security updates of WordPress are on."
+msgstr "Automatische kleine und Sicherheitsupdates von WordPress sind an."
+
+msgid "Automatic security updates"
+msgstr "Automatische Sicherheitsupdates"
+
+msgid "Backups and archives in public folders"
+msgstr "Backups und Archive in öffentlichen Ordnern"
+
+msgid "Best remove .git from the web folder. Only if it must stay, use this as its own file inside .git."
+msgstr "Am besten entfernst du .git aus dem Web-Ordner. Muss es bleiben, nimm dies als eigene Datei im Ordner .git."
+
+msgid "Blocked (HTTP %d)."
+msgstr "Gesperrt (HTTP %d)."
+
+msgid "Bricks and the active theme are kept. No fallback theme is set."
+msgstr "Bricks und das aktive Theme bleiben erhalten. Es ist kein Ersatz-Theme festgelegt."
+
+msgid "Bricks is not active or its helper is missing."
+msgstr "Bricks ist nicht aktiv oder seine Hilfsfunktion fehlt."
+
+msgid "Bricks permissions"
+msgstr "Bricks-Berechtigungen"
+
+msgid "Bricks, the active theme and the fallback theme \"%s\" are kept."
+msgstr "Bricks, das aktive Theme und das Ersatz-Theme „%s“ bleiben erhalten."
+
+msgid "Browser"
+msgstr "Browser"
+
+msgid "Busy, please try again."
+msgstr "Gerade beschäftigt, bitte versuche es noch einmal."
+
+msgid "can be indexed"
+msgstr "kann indexiert werden"
+
+msgid "carries noindex"
+msgstr "trägt noindex"
+
+msgid "carries noindex (expected here)"
+msgstr "trägt noindex (hier erwartet)"
+
+msgid "Check now"
+msgstr "Jetzt prüfen"
+
+msgid "Checked by hand"
+msgstr "Von Hand geprüft"
+
+msgid "Checks the site for exposed files, risky settings and launch mistakes, and shows what to fix first."
+msgstr "Prüft die Website auf offen liegende Dateien, riskante Einstellungen und Fehler vor dem Live-Gang und zeigt, was zuerst zu beheben ist."
+
+msgid "Choose a permalink structure before launch; changing it later can break existing links."
+msgstr "Wähle vor dem Live-Gang eine Permalink-Struktur; eine spätere Änderung kann bestehende Links zerstören."
+
+msgid "Clean-up"
+msgstr "Aufräumen"
+
+msgid "Code execution in Bricks is off."
+msgstr "Die Code-Ausführung in Bricks ist aus."
+
+msgid "Code execution in Bricks is on."
+msgstr "Die Code-Ausführung in Bricks ist an."
+
+msgid "Contact form sent as a guest, and the e-mail arrived."
+msgstr "Kontaktformular als Gast abgeschickt und die E-Mail ist angekommen."
+
+msgid "Copies are read on the server only; whether one is publicly readable is not tested, because such files are never requested."
+msgstr "Kopien werden nur auf dem Server gelesen. Ob eine öffentlich abrufbar ist, wird nicht geprüft, weil solche Dateien nie angefragt werden."
+
+msgid "Copies of wp-config.php"
+msgstr "Kopien der wp-config.php"
+
+msgid "copy of the configuration, delete it at once"
+msgstr "Kopie der Konfiguration – sofort löschen"
+
+msgid "could not be read"
+msgstr "konnte nicht gelesen werden"
+
+msgid "Could not be read on the server."
+msgstr "Konnte auf dem Server nicht gelesen werden."
+
+msgid "Could not be saved. Nothing was changed."
+msgstr "Konnte nicht gespeichert werden. Es wurde nichts geändert."
+
+msgid "Covers .php files in the uploads folder only."
+msgstr "Gilt nur für .php-Dateien im Uploads-Ordner."
+
+msgid "crawling blocked by robots.txt"
+msgstr "Crawling durch robots.txt gesperrt"
+
+msgid "Database table prefix"
+msgstr "Präfix der Datenbanktabellen"
+
+msgid "Debug mode is on; errors are not shown to visitors."
+msgstr "Der Debug-Modus ist an; Fehler werden Besuchern nicht angezeigt."
+
+msgid "Delete plugins you do not use; inactive code can still be attacked."
+msgstr "Lösche Plugins, die du nicht nutzt; auch inaktiver Code kann angegriffen werden."
+
+msgid "Delete the sample post, the sample page and the sample comment."
+msgstr "Lösche den Beispielbeitrag, die Beispielseite und den Beispielkommentar."
+
+msgid "Directory listing"
+msgstr "Verzeichnislisting"
+
+msgid "directory listing is on; it shows: %s"
+msgstr "Verzeichnislisting ist an; es zeigt: %s"
+
+msgid "does not use https://"
+msgstr "nutzt kein https://"
+
+msgid "done by %1$s on %2$s"
+msgstr "erledigt von %1$s am %2$s"
+
+msgid "Done. The results are saved."
+msgstr "Fertig. Die Ergebnisse sind gespeichert."
+
+msgid "empty placeholder (\"Silence is golden\")"
+msgstr "leere Platzhalterdatei („Silence is golden“)"
+
+msgid "Enable Sicherheits-Check"
+msgstr "Sicherheits-Check aktivieren"
+
+msgid "Error display"
+msgstr "Fehleranzeige"
+
+msgid "Fallback theme"
+msgstr "Ersatz-Theme"
+
+msgid "feed"
+msgstr "Feed"
+
+msgid "Fetched by your browser without login."
+msgstr "Von deinem Browser ohne Anmeldung abgerufen."
+
+msgid "File editor in wp-admin"
+msgstr "Datei-Editor im Adminbereich"
+
+msgid "File:"
+msgstr "Datei:"
+
+msgid "File: the folder this file belongs in could not be determined on this site; ask the host where it is."
+msgstr "Datei: Der Ordner, in den diese Datei gehört, konnte auf dieser Website nicht ermittelt werden; frage den Hoster, wo er liegt."
+
+msgid "folder could not be read"
+msgstr "Ordner konnte nicht gelesen werden"
+
+msgid "For information only; changing the prefix of a running site is not worth the risk."
+msgstr "Nur zur Information; das Präfix einer laufenden Website zu ändern, ist das Risiko nicht wert."
+
+msgid "found"
+msgstr "gefunden"
+
+msgid "Found by ID and by the default title and text, in English, German and the site language."
+msgstr "Gefunden über die ID und über den Standardtitel und -text, auf Englisch, Deutsch und in der Sprache der Website."
+
+msgid "found, named in robots.txt"
+msgstr "gefunden, in der robots.txt genannt"
+
+msgid "Go-live"
+msgstr "Live-Gang"
+
+msgid "Grants resolved as Bricks %s does (user entry before role). Builder access is not checked. A later Bricks version may resolve them differently."
+msgstr "Rechte werden so aufgelöst wie in Bricks %s (Benutzereintrag vor Rolle). Der Zugang zum Builder wird nicht geprüft. Eine spätere Bricks-Version kann das anders auflösen."
+
+msgid "Green"
+msgstr "Grün"
+
+msgid "Groups per user agent; Allow exceptions are respected."
+msgstr "Gruppen je User-Agent; Allow-Ausnahmen werden berücksichtigt."
+
+msgid "guessable login name"
+msgstr "leicht zu erratender Login-Name"
+
+msgid "Home page"
+msgstr "Startseite"
+
+msgid "http:// does not redirect to https://"
+msgstr "http:// leitet nicht auf https:// weiter"
+
+msgid "http:// redirect: not measured from outside"
+msgstr "Weiterleitung von http://: von außen nicht gemessen"
+
+msgid "http:// redirects to https://"
+msgstr "http:// leitet auf https:// weiter"
+
+msgid "HTTPS"
+msgstr "HTTPS"
+
+msgid "Important pages should answer 200, carry no noindex and point their canonical to this site."
+msgstr "Wichtige Seiten sollten mit 200 antworten, kein noindex tragen und ihren Canonical auf diese Website setzen."
+
+msgid "Inactive plugins"
+msgstr "Inaktive Plugins"
+
+msgid "Inactive themes"
+msgstr "Inaktive Themes"
+
+msgid "Indexability of important pages"
+msgstr "Indexierbarkeit wichtiger Seiten"
+
+msgid "Install the updates offered, after a backup."
+msgstr "Installiere die angebotenen Updates, nach einem Backup."
+
+msgid "is there, currently blocked — delete it"
+msgstr "liegt da, aktuell gesperrt – löschen"
+
+msgid "Judged by content, on the home page as your browser received it."
+msgstr "Nach Inhalt beurteilt, auf der Startseite so, wie dein Browser sie erhalten hat."
+
+msgid "Keep Bricks, this theme and one fallback theme; delete the rest."
+msgstr "Behalte Bricks, dieses Theme und ein Ersatz-Theme; lösche den Rest."
+
+msgid "Last check: %1$s by %2$s, profile %3$s."
+msgstr "Letzte Prüfung: %1$s von %2$s, Profil %3$s."
+
+msgid "Last check: %1$s, profile %2$s"
+msgstr "Letzte Prüfung: %1$s, Profil %2$s"
+
+msgid "last used %s"
+msgstr "zuletzt benutzt %s"
+
+msgid "Lies outside the known web folders; a server alias would not be visible."
+msgstr "Liegt außerhalb der bekannten Web-Ordner; ein Server-Alias wäre nicht sichtbar."
+
+msgid "Live"
+msgstr "Live"
+
+msgid "Login names visible to guests"
+msgstr "Für Gäste sichtbare Login-Namen"
+
+msgid "Loopback"
+msgstr "Loopback"
+
+msgid "Loopback: one anonymous system.listMethods call to xmlrpc.php; no pingback."
+msgstr "Loopback: ein anonymer Aufruf von system.listMethods an xmlrpc.php; kein Pingback."
+
+msgid "Loopback: robots.txt, then /wp-sitemap.xml, /sitemap_index.xml and /sitemap.xml."
+msgstr "Loopback: robots.txt, danach /wp-sitemap.xml, /sitemap_index.xml und /sitemap.xml."
+
+msgid "Loopback: the server fetched its own pages without login; redirects were not followed. robots.txt was read in the same run."
+msgstr "Loopback: Der Server hat seine eigenen Seiten ohne Anmeldung abgerufen; Weiterleitungen wurden nicht verfolgt. Die robots.txt wurde im selben Lauf gelesen."
+
+msgid "may execute code"
+msgstr "kann Code ausführen"
+
+msgid "may upload SVG files"
+msgstr "darf SVG-Dateien hochladen"
+
+msgid "missing"
+msgstr "fehlt"
+
+msgid "missing (a Report-Only policy does not protect)"
+msgstr "fehlt (eine Report-Only-Richtlinie schützt nicht)"
+
+msgid "never used"
+msgstr "nie benutzt"
+
+msgid "nginx (server configuration, for the host)"
+msgstr "nginx (Serverkonfiguration, für den Hoster)"
+
+msgid "no answer from the site"
+msgstr "keine Antwort von der Website"
+
+msgid "no answer within 10 seconds"
+msgstr "keine Antwort innerhalb von 10 Sekunden"
+
+msgid "No application passwords exist."
+msgstr "Es gibt keine Anwendungspasswörter."
+
+msgid "no directory listing"
+msgstr "kein Verzeichnislisting"
+
+msgid "no recognisable answer"
+msgstr "keine erkennbare Antwort"
+
+msgid "no reliable answer"
+msgstr "keine verlässliche Antwort"
+
+msgid "No reliable answer (HTTP %d)."
+msgstr "Keine verlässliche Antwort (HTTP %d)."
+
+msgid "no reliable answer from outside"
+msgstr "keine verlässliche Antwort von außen"
+
+msgid "No result was sent for this check."
+msgstr "Für diese Prüfung wurde kein Ergebnis gesendet."
+
+msgid "No result."
+msgstr "Kein Ergebnis."
+
+msgid "no robots.txt (everything may be crawled)"
+msgstr "keine robots.txt (alles darf gecrawlt werden)"
+
+msgid "no sitemap found"
+msgstr "keine Sitemap gefunden"
+
+msgid "no sub-sitemap could be read"
+msgstr "keine Unter-Sitemap konnte gelesen werden"
+
+msgid "No updates offered (as of %s)."
+msgstr "Keine Updates angeboten (Stand %s)."
+
+msgid "None"
+msgstr "Keine"
+
+msgid "not a plain path (dot segments); never requested"
+msgstr "kein einfacher Pfad (Punkt-Segmente); wird nie angefragt"
+
+msgid "Not checkable"
+msgstr "Nicht prüfbar"
+
+msgid "not checked from outside"
+msgstr "von außen nicht geprüft"
+
+msgid "not checked from outside: a run fetches at most %d addresses per check"
+msgstr "von außen nicht geprüft: Ein Lauf ruft pro Prüfung höchstens %d Adressen ab"
+
+msgid "Not checked yet"
+msgstr "Noch nicht geprüft"
+
+msgid "Not checked yet."
+msgstr "Noch nicht geprüft."
+
+msgid "not checked: time limit of this run reached"
+msgstr "nicht geprüft: Zeitlimit dieses Laufs erreicht"
+
+msgid "not every sitemap checked: time limit of this run reached"
+msgstr "nicht jede Sitemap geprüft: Zeitlimit dieses Laufs erreicht"
+
+msgid "not fetched"
+msgstr "nicht abgerufen"
+
+msgid "not on this site's address (other host, port or scheme); skipped, not fetched"
+msgstr "nicht auf der Adresse dieser Website (anderer Host, Port oder anderes Schema); übersprungen, nicht abgerufen"
+
+msgid "not publicly reachable"
+msgstr "nicht öffentlich erreichbar"
+
+msgid "not publicly reachable (expected here)"
+msgstr "nicht öffentlich erreichbar (hier erwartet)"
+
+msgid "not reachable"
+msgstr "nicht erreichbar"
+
+msgid "Not requested: the active test was not ticked for this run."
+msgstr "Nicht angefragt: Der aktive Test wurde für diesen Lauf nicht angehakt."
+
+msgid "not there and not reachable"
+msgstr "nicht vorhanden und nicht erreichbar"
+
+msgid "nothing to report in the part that was checked"
+msgstr "nichts zu melden im geprüften Teil"
+
+msgid "Nothing was deleted: the Sicherheits-Check was busy at that moment. Run the purge again."
+msgstr "Es wurde nichts gelöscht: Der Sicherheits-Check war in diesem Moment beschäftigt. Starte das Löschen noch einmal."
+
+msgid "oEmbed"
+msgstr "oEmbed"
+
+msgid "Off according to PHP's base setting — a folder setting (.user.ini, .htaccess) is not visible to the check."
+msgstr "Laut PHP-Grundeinstellung aus – eine Ordner-Einstellung (.user.ini, .htaccess) sieht der Check nicht."
+
+msgid "Open registration"
+msgstr "Offene Registrierung"
+
+msgid "page missing (404/410)"
+msgstr "Seite fehlt (404/410)"
+
+msgid "Pages checked for indexing and the sitemap entries that are intended (not the site profile)"
+msgstr "Auf Indexierung geprüfte Seiten und die gewollten Sitemap-Einträge (nicht das Website-Profil)"
+
+msgid "Pages to check for indexing"
+msgstr "Seiten, die auf Indexierung geprüft werden"
+
+msgid "PHP %1$s receives security support until %2$s."
+msgstr "PHP %1$s erhält Sicherheitsunterstützung bis %2$s."
+
+msgid "PHP %1$s: security support ends on %2$s."
+msgstr "PHP %1$s: Die Sicherheitsunterstützung endet am %2$s."
+
+msgid "PHP %1$s: upstream security support ended on %2$s (clarify host backports separately)."
+msgstr "PHP %1$s: Der Upstream-Support für Sicherheit endete am %2$s (Backports des Hosters separat klären)."
+
+msgid "PHP %s is not in the support table."
+msgstr "PHP %s steht nicht in der Support-Tabelle."
+
+msgid "PHP execution in the uploads folder"
+msgstr "PHP-Ausführung im Uploads-Ordner"
+
+msgid "PHP file in the uploads folder, check it"
+msgstr "PHP-Datei im Uploads-Ordner – prüfen"
+
+msgid "PHP files in the uploads folder"
+msgstr "PHP-Dateien im Uploads-Ordner"
+
+msgid "PHP runs in the uploads folder."
+msgstr "PHP wird im Uploads-Ordner ausgeführt."
+
+msgid "PHP version"
+msgstr "PHP-Version"
+
+msgid "PHP's display_errors is on: errors are shown to visitors."
+msgstr "display_errors von PHP ist an: Fehler werden Besuchern angezeigt."
+
+msgid "PHP's display_errors setting could not be read."
+msgstr "Die Einstellung display_errors von PHP konnte nicht gelesen werden."
+
+msgid "phpinfo and test scripts"
+msgstr "phpinfo und Test-Skripte"
+
+msgid "Place these blocks before the location block that hands PHP files to PHP (usually location ~ \\.php$): nginx uses the first matching regular-expression location."
+msgstr "Setze diese Blöcke vor den location-Block, der PHP-Dateien an PHP übergibt (meist location ~ \\.php$): nginx nimmt die erste passende Regex-location."
+
+msgid "Plain permalinks (?p=123). Choose a structure before launch; changing it later can break existing links."
+msgstr "Einfache Permalinks (?p=123). Wähle vor dem Live-Gang eine Struktur; eine spätere Änderung kann bestehende Links zerstören."
+
+msgid "Post type: %s"
+msgstr "Beitragstyp: %s"
+
+msgid "present, but without a positive max-age"
+msgstr "vorhanden, aber ohne positives max-age"
+
+msgid "present, protects little (only upgrade-insecure-requests)"
+msgstr "vorhanden, schützt kaum (nur upgrade-insecure-requests)"
+
+msgid "Privileged accounts"
+msgstr "Konten mit erweiterten Rechten"
+
+msgid "public archive — check it"
+msgstr "öffentliches Archiv – prüfen"
+
+msgid "Public default files"
+msgstr "Öffentliche Standarddateien"
+
+msgid "Public log files"
+msgstr "Öffentliche Log-Dateien"
+
+msgid "publicly readable — remove it or block access at once"
+msgstr "öffentlich lesbar – sofort entfernen oder den Zugriff sperren"
+
+msgid "Publish a sitemap and name it in robots.txt."
+msgstr "Veröffentliche eine Sitemap und nenne sie in der robots.txt."
+
+msgid "reachable, content not recognised — check and delete"
+msgstr "erreichbar, Inhalt nicht erkannt – prüfen und löschen"
+
+msgid "reachable, reports \"already installed\""
+msgstr "erreichbar, meldet „bereits installiert“"
+
+msgid "Read on the server only; these scripts are never requested."
+msgstr "Nur auf dem Server gelesen; diese Skripte werden nie angefragt."
+
+msgid "Reads the first 4 KB of each PHP-like file in the uploads folder on the server."
+msgstr "Liest auf dem Server die ersten 4 KB jeder PHP-ähnlichen Datei im Uploads-Ordner."
+
+msgid "Red"
+msgstr "Rot"
+
+msgid "redirects to %s"
+msgstr "leitet weiter auf %s"
+
+msgid "Redirects to %s; not followed."
+msgstr "Leitet weiter auf %s; nicht verfolgt."
+
+msgid "Registration is closed."
+msgstr "Die Registrierung ist geschlossen."
+
+msgid "Registration is open and new users get the role \"%1$s\" with: %2$s"
+msgstr "Die Registrierung ist offen und neue Benutzer erhalten die Rolle „%1$s“ mit: %2$s"
+
+msgid "Registration is open with the read-only role \"%s\" — intended?"
+msgstr "Die Registrierung ist offen mit der Nur-Lese-Rolle „%s“ – beabsichtigt?"
+
+msgid "Registration is open, but the default role \"%s\" does not exist."
+msgstr "Die Registrierung ist offen, aber die Standardrolle „%s“ existiert nicht."
+
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+msgid "rejected: not a valid site path; skipped"
+msgstr "abgelehnt: kein gültiger Pfad dieser Website; übersprungen"
+
+msgid "Request failed."
+msgstr "Die Anfrage ist fehlgeschlagen."
+
+msgid "Reset these items"
+msgstr "Diese Punkte zurücksetzen"
+
+msgid "REST API user list"
+msgstr "Benutzerliste der REST-API"
+
+msgid "reveals server details, delete it"
+msgstr "verrät Serverdetails – löschen"
+
+msgid "Revoke application passwords that are no longer used."
+msgstr "Widerrufe Anwendungspasswörter, die nicht mehr benutzt werden."
+
+msgid "robots.txt"
+msgstr "robots.txt"
+
+msgid "robots.txt answered with status %d"
+msgstr "robots.txt antwortete mit Status %d"
+
+msgid "robots.txt blocks the whole site for all search engines"
+msgstr "robots.txt sperrt die ganze Website für alle Suchmaschinen"
+
+msgid "robots.txt could not be fetched"
+msgstr "robots.txt konnte nicht abgerufen werden"
+
+msgid "robots.txt could not be read"
+msgstr "robots.txt konnte nicht gelesen werden"
+
+msgid "robots.txt does not block the whole site"
+msgstr "robots.txt sperrt nicht die ganze Website"
+
+msgid "robots.txt is too large to read"
+msgstr "robots.txt ist zu groß zum Lesen"
+
+msgid "robots.txt redirects; redirects are not followed"
+msgstr "robots.txt leitet weiter; Weiterleitungen werden nicht verfolgt"
+
+msgid "Root folder: directory listing"
+msgstr "Hauptordner: Verzeichnislisting"
+
+msgid "Root folder: sensitive files"
+msgstr "Hauptordner: sensible Dateien"
+
+msgid "Root folder: XML-RPC (optional)"
+msgstr "Hauptordner: XML-RPC (optional)"
+
+msgid "Run the check again."
+msgstr "Starte die Prüfung noch einmal."
+
+msgid "Sample content"
+msgstr "Beispielinhalte"
+
+msgid "Sample page \"%s\" is published."
+msgstr "Die Beispielseite „%s“ ist veröffentlicht."
+
+msgid "Sample post \"%s\" is published."
+msgstr "Der Beispielbeitrag „%s“ ist veröffentlicht."
+
+msgid "Save again"
+msgstr "Erneut speichern"
+
+msgid "Save settings"
+msgstr "Einstellungen speichern"
+
+msgid "Scan limit reached after %1$d entries (limit %2$d entries or %3$s seconds); %4$d folders not checked completely: %5$s"
+msgstr "Suchlimit nach %1$d Einträgen erreicht (Limit: %2$d Einträge oder %3$s Sekunden); %4$d Ordner nicht vollständig geprüft: %5$s"
+
+msgid "Search engine visibility"
+msgstr "Sichtbarkeit für Suchmaschinen"
+
+msgid "Search engines are not discouraged."
+msgstr "Suchmaschinen werden nicht abgehalten."
+
+msgid "Security"
+msgstr "Sicherheit"
+
+msgid "Security check: %1$d entries imported, %2$d rejected as invalid."
+msgstr "Sicherheits-Check: %1$d Einträge importiert, %2$d als ungültig abgelehnt."
+
+msgid "Security check: %d entries imported."
+msgstr "Sicherheits-Check: %d Einträge importiert."
+
+msgid "Security check: busy, please try the import again."
+msgstr "Sicherheits-Check: gerade beschäftigt, bitte versuche den Import noch einmal."
+
+msgid "Security check: nothing to import (the fields are missing or malformed)."
+msgstr "Sicherheits-Check: nichts zu importieren (die Felder fehlen oder sind fehlerhaft)."
+
+msgid "Security check: the settings could not be written."
+msgstr "Sicherheits-Check: Die Einstellungen konnten nicht geschrieben werden."
+
+msgid "Security headers"
+msgstr "Sicherheits-Header"
+
+msgid "Seen: the updater switches, WP_AUTO_UPDATE_CORE, the auto-update option and the allow_minor_auto_core_updates filter. Per-update filters are not evaluated."
+msgstr "Gesehen: die Updater-Schalter, WP_AUTO_UPDATE_CORE, die Option für automatische Updates und der Filter allow_minor_auto_core_updates. Filter für einzelne Updates werden nicht ausgewertet."
+
+msgid "Server"
+msgstr "Server"
+
+msgid "Server: what is on disk. Browser: whether it can be read from outside."
+msgstr "Server: was auf der Festplatte liegt. Browser: ob es von außen gelesen werden kann."
+
+msgid "set"
+msgstr "gesetzt"
+
+msgid "set (X-Frame-Options or CSP frame-ancestors)"
+msgstr "gesetzt (X-Frame-Options oder CSP frame-ancestors)"
+
+msgid "Sicherheits-Check"
+msgstr "Sicherheits-Check"
+
+msgid "Sicherheits-Check Settings"
+msgstr "Einstellungen des Sicherheits-Checks"
+
+msgid "Site address (home)"
+msgstr "Website-Adresse (home)"
+
+msgid "Site profile"
+msgstr "Website-Profil"
+
+msgid "Sitemap"
+msgstr "Sitemap"
+
+msgid "Sitemap entries"
+msgstr "Sitemap-Einträge"
+
+msgid "Sitemap entries that are intended"
+msgstr "Gewollte Sitemap-Einträge"
+
+msgid "Skipped:"
+msgstr "Übersprungen:"
+
+msgid "Some sitemaps were longer than 64 KB and were read only in part."
+msgstr "Einige Sitemaps waren länger als 64 KB und wurden nur teilweise gelesen."
+
+msgid "Source: %1$s, checked %2$s. Host backports are not visible here."
+msgstr "Quelle: %1$s, geprüft am %2$s. Backports des Hosters sind hier nicht sichtbar."
+
+msgid "Staging"
+msgstr "Staging"
+
+msgid "suspicious code (%s), check it at once"
+msgstr "verdächtiger Code (%s) – sofort prüfen"
+
+msgid "Taxonomy: %s"
+msgstr "Taxonomie: %s"
+
+msgid "Template for .htaccess"
+msgstr "Vorlage für .htaccess"
+
+msgid "Test and old accounts removed; access handed over to the client."
+msgstr "Test- und Alt-Konten entfernt; Zugang an den Kunden übergeben."
+
+msgid "Test file could not be deleted: %s"
+msgstr "Testdatei konnte nicht gelöscht werden: %s"
+
+msgid "Test files of the uploads probe need a look. They were not deleted:"
+msgstr "Testdateien des Uploads-Tests brauchen einen Blick. Sie wurden nicht gelöscht:"
+
+msgid "the canonical link points to another host"
+msgstr "der Canonical-Link zeigt auf einen anderen Host"
+
+msgid "The configuration folder could not be listed."
+msgstr "Der Konfigurationsordner konnte nicht aufgelistet werden."
+
+msgid "The database uses a custom table prefix."
+msgstr "Die Datenbank nutzt ein eigenes Tabellenpräfix."
+
+msgid "The database uses the default table prefix wp_."
+msgstr "Die Datenbank nutzt das Standard-Tabellenpräfix wp_."
+
+msgid "The file editor in wp-admin is available to administrators."
+msgstr "Der Datei-Editor im Adminbereich steht Administratoren zur Verfügung."
+
+msgid "The file editor in wp-admin is blocked."
+msgstr "Der Datei-Editor im Adminbereich ist gesperrt."
+
+msgid "The folder could not be listed."
+msgstr "Der Ordner konnte nicht aufgelistet werden."
+
+msgid "the home page answered with status %d"
+msgstr "die Startseite antwortete mit Status %d"
+
+msgid "The home page is always checked. Add up to 5 more paths, e.g. /kontakt/."
+msgstr "Die Startseite wird immer geprüft. Füge bis zu 5 weitere Pfade hinzu, z. B. /kontakt/."
+
+msgid "the home page redirects; redirects are not followed"
+msgstr "die Startseite leitet weiter; Weiterleitungen werden nicht verfolgt"
+
+msgid "The name contains a PHP extension, so the file is never requested from outside."
+msgstr "Der Name enthält eine PHP-Endung, deshalb wird die Datei von außen nie angefragt."
+
+msgid "the name contains a PHP extension; never requested"
+msgstr "der Name enthält eine PHP-Endung; wird nie angefragt"
+
+msgid "The observations could not be read."
+msgstr "Die Beobachtungen konnten nicht gelesen werden."
+
+msgid "the request failed"
+msgstr "die Anfrage ist fehlgeschlagen"
+
+msgid "The result could not be verified and was not used."
+msgstr "Das Ergebnis konnte nicht überprüft werden und wurde nicht verwendet."
+
+msgid "The results are too large to be saved. The previous results stay."
+msgstr "Die Ergebnisse sind zu groß zum Speichern. Die bisherigen Ergebnisse bleiben erhalten."
+
+msgid "The results could not be read. The previous results stay."
+msgstr "Die Ergebnisse konnten nicht gelesen werden. Die bisherigen Ergebnisse bleiben erhalten."
+
+msgid "The sample comment by \"%s\" is approved."
+msgstr "Der Beispielkommentar von „%s“ ist freigegeben."
+
+msgid "The settings could not be saved. Nothing was changed."
+msgstr "Die Einstellungen konnten nicht gespeichert werden. Es wurde nichts geändert."
+
+msgid "The site can end up in search engines."
+msgstr "Die Website kann in Suchmaschinen landen."
+
+msgid "The source code is delivered, but not executed."
+msgstr "Der Quellcode wird ausgeliefert, aber nicht ausgeführt."
+
+msgid "The test file could not be created."
+msgstr "Die Testdatei konnte nicht angelegt werden."
+
+msgid "The test file could not be fetched (%s)."
+msgstr "Die Testdatei konnte nicht abgerufen werden (%s)."
+
+msgid "The test file could not be recorded, so it was not fetched."
+msgstr "Die Testdatei konnte nicht erfasst werden und wurde deshalb nicht abgerufen."
+
+msgid "The test file could not be written completely, so it was not fetched."
+msgstr "Die Testdatei konnte nicht vollständig geschrieben werden und wurde deshalb nicht abgerufen."
+
+msgid "The test file's record was gone before the fetch had finished (the theme data was probably deleted meanwhile)."
+msgstr "Der Eintrag zur Testdatei war weg, bevor der Abruf beendet war (vermutlich wurden die Theme-Daten zwischenzeitlich gelöscht)."
+
+msgid "The security check never writes these files. To use a block:"
+msgstr "Der Sicherheits-Check schreibt diese Dateien nie. So nutzt du einen Block:"
+
+msgid "The uploads folder cannot be tested from here."
+msgstr "Der Uploads-Ordner kann von hier aus nicht getestet werden."
+
+msgid "The uploads folder could not be determined."
+msgstr "Der Uploads-Ordner konnte nicht ermittelt werden."
+
+msgid "the WordPress installer shows its setup form — anyone could set up the site; close it at once"
+msgstr "das WordPress-Installationsprogramm zeigt sein Formular – jeder könnte die Website einrichten; sofort schließen"
+
+msgid "This check has not been graded."
+msgstr "Diese Prüfung wurde nicht bewertet."
+
+msgid "This location is served from a different address than the site (for example a CDN or offloaded media), so it cannot be checked from outside."
+msgstr "Dieser Ort wird von einer anderen Adresse als die Website ausgeliefert (zum Beispiel ein CDN oder ausgelagerte Medien) und kann deshalb nicht von außen geprüft werden."
+
+msgid "This location is served from a different address than the site, so it cannot be checked from outside."
+msgstr "Dieser Ort wird von einer anderen Adresse als die Website ausgeliefert und kann deshalb nicht von außen geprüft werden."
+
+msgid "This rule also applies in every subfolder: a plugin's readme.html or any .log file below this folder is blocked too."
+msgstr "Diese Regel gilt auch in jedem Unterordner: Die readme.html eines Plugins oder jede .log-Datei unterhalb dieses Ordners wird ebenfalls gesperrt."
+
+msgid "This run is no longer current (a newer check or a data purge); nothing was created."
+msgstr "Dieser Lauf ist nicht mehr aktuell (eine neuere Prüfung oder ein Löschen der Daten); es wurde nichts angelegt."
+
+msgid "This run is no longer current. Start the check again."
+msgstr "Dieser Lauf ist nicht mehr aktuell. Starte die Prüfung noch einmal."
+
+msgid "This server looks like nginx. An Apache rule does nothing for files nginx serves itself; give the nginx text to the host."
+msgstr "Dieser Server sieht nach nginx aus. Eine Apache-Regel wirkt nicht bei Dateien, die nginx selbst ausliefert; gib den nginx-Text an den Hoster weiter."
+
+msgid "TLS: not measured from outside"
+msgstr "TLS: von außen nicht gemessen"
+
+msgid "TLS: not measured, the site address does not use https://"
+msgstr "TLS: nicht gemessen, die Website-Adresse nutzt kein https://"
+
+msgid "TLS: the https:// connection fails (certificate or handshake)"
+msgstr "TLS: Die https://-Verbindung schlägt fehl (Zertifikat oder Handshake)"
+
+msgid "TLS: the site answers over https:// with a valid certificate"
+msgstr "TLS: Die Website antwortet über https:// mit gültigem Zertifikat"
+
+msgid "Unknown check."
+msgstr "Unbekannte Prüfung."
+
+msgid "Unknown item."
+msgstr "Unbekannter Punkt."
+
+msgid "unknown script, check and delete it"
+msgstr "unbekanntes Skript – prüfen und löschen"
+
+msgid "Untick all four items?"
+msgstr "Alle vier Punkte abwählen?"
+
+msgid "Updates"
+msgstr "Updates"
+
+msgid "Uploads folder: no PHP"
+msgstr "Uploads-Ordner: kein PHP"
+
+msgid "Uploads probe (active test: briefly creates a test file)"
+msgstr "Uploads-Test (aktiver Test: legt kurz eine Testdatei an)"
+
+msgid "User #%1$d: the login name is visible to guests (%2$s)"
+msgstr "Benutzer #%1$d: Der Login-Name ist für Gäste sichtbar (%2$s)"
+
+msgid "User #%d: the display name equals the login name; not found publicly"
+msgstr "Benutzer #%d: Der angezeigte Name entspricht dem Login-Namen; öffentlich nicht gefunden"
+
+msgid "uses https://"
+msgstr "nutzt https://"
+
+msgid "without being an administrator"
+msgstr "ohne Administrator zu sein"
+
+msgid "WordPress %s"
+msgstr "WordPress %s"
+
+msgid "WordPress address (siteurl)"
+msgstr "WordPress-Adresse (siteurl)"
+
+msgid "WordPress has never checked for updates here, so no offers are known."
+msgstr "WordPress hat hier noch nie nach Updates gesucht, daher sind keine Angebote bekannt."
+
+msgid "WordPress keeps old data when an update check fails, and premium updaters without a licence show no offer."
+msgstr "WordPress behält alte Daten, wenn eine Update-Suche fehlschlägt, und Premium-Updater ohne Lizenz zeigen kein Angebot an."
+
+msgid "WP_DEBUG and WP_DEBUG_DISPLAY are on: errors are shown to visitors."
+msgstr "WP_DEBUG und WP_DEBUG_DISPLAY sind an: Fehler werden Besuchern angezeigt."
+
+msgid "wp-config.php was not found where WordPress looks for it."
+msgstr "Die wp-config.php wurde dort, wo WordPress sie sucht, nicht gefunden."
+
+msgid "XML-RPC"
+msgstr "XML-RPC"
+
+msgid "XML-RPC answered with an error; whether it is usable is unclear"
+msgstr "XML-RPC antwortete mit einem Fehler; ob es nutzbar ist, ist unklar"
+
+msgid "XML-RPC answers anonymous requests"
+msgstr "XML-RPC beantwortet anonyme Anfragen"
+
+msgid "XML-RPC is blocked (status %d)"
+msgstr "XML-RPC ist gesperrt (Status %d)"
+
+msgid "Yellow"
+msgstr "Gelb"
+
+msgid "Your browser fetched the public sources without login; the server compared what they show with the real login names, which never leave the server. ?author=1 is fetched by Loopback."
+msgstr "Dein Browser hat die öffentlichen Quellen ohne Anmeldung abgerufen; der Server hat verglichen, was sie zeigen, mit den echten Login-Namen, die den Server nie verlassen. ?author=1 ruft Loopback ab."
+
+msgid "test-file folder in use right now"
+msgstr "Testdatei-Ordner gerade in Benutzung"
+
+msgid "folder not readable; never requested"
+msgstr "Ordner nicht lesbar; wird nie abgerufen"
+
+msgid "contains a PHP index file; never requested"
+msgstr "enthält eine PHP-Indexdatei; wird nie abgerufen"
+
+#. translators: %d: number of findings not listed
+msgid "… and %d more"
+msgstr "… und %d weitere"
+
+msgid "publicly readable — remove it or block it; it comes back with every WordPress update"
+msgstr "öffentlich lesbar — entfernen oder sperren; die Datei kommt mit jedem WordPress-Update zurück"
+
+msgid "is there, but blocked"
+msgstr "liegt da, ist aber gesperrt"
+
+msgid "not reachable, but whether the file is there could not be read on the server"
+msgstr "nicht erreichbar, aber ob die Datei da ist, ließ sich auf dem Server nicht lesen"
+
+msgid "Server: whether readme.html and license.txt are on disk. Browser: what can be read without login; nothing is submitted."
+msgstr "Server: ob readme.html und license.txt auf dem Server liegen. Browser: was ohne Anmeldung lesbar ist; es wird nichts abgeschickt."
+
+msgid "the feed redirects; redirects are not followed"
+msgstr "der Feed leitet weiter; Weiterleitungen werden nicht verfolgt"
+
+#, php-format
+msgid "the feed answered with status %d"
+msgstr "der Feed antwortete mit Status %d"
+
+msgid "the two fetches did not agree"
+msgstr "die beiden Abrufe ergaben kein eindeutiges Bild"
+
+msgid "empty answer"
+msgstr "leere Antwort"
+
+msgid "the comparison address also answered normally, so this answer proves nothing"
+msgstr "die Vergleichsadresse antwortete ebenfalls normal, daher beweist diese Antwort nichts"
+
+msgid "too large to read completely, no version in the part read"
+msgstr "zu groß zum vollständigen Lesen, im gelesenen Teil keine Version"
+
+msgid "the answer is not a feed"
+msgstr "die Antwort ist kein Feed"
+
+msgid "the answer is not an HTML page"
+msgstr "die Antwort ist keine HTML-Seite"
+
+msgid "The home page and the main feed as your browser received them. Only WordPress' own generator tags count; asset ?ver= parameters are not checked."
+msgstr "Startseite und Haupt-Feed, wie dein Browser sie erhalten hat. Es zählen nur die Generator-Angaben von WordPress selbst; ?ver= an Skripten und Stylesheets wird nicht geprüft."
+
+msgid "generator element of the feed"
+msgstr "Generator-Element des Feeds"
+
+msgid "generator meta tag of the home page"
+msgstr "Generator-Meta-Tag der Startseite"
+
+#, php-format
+msgid "shows the installed WordPress version (%s)"
+msgstr "zeigt die installierte WordPress-Version (%s)"
+
+msgid "WordPress version not found in the sources checked"
+msgstr "WordPress-Version in den geprüften Quellen nicht gefunden"
+
+msgid "feed not present"
+msgstr "Feed nicht vorhanden"
+
+msgid "Log files often contain server paths, database errors and sometimes personal data. Anyone who can read them learns where the site is vulnerable."
+msgstr "Log-Dateien enthalten oft Serverpfade, Datenbankfehler und manchmal personenbezogene Daten. Wer sie lesen kann, erfährt, wo die Seite angreifbar ist."
+
+msgid "Delete log files in public folders and keep the debug log outside the web folder."
+msgstr "Lösche Log-Dateien in öffentlichen Ordnern und schreib das Debug-Log außerhalb des Web-Ordners."
+
+msgid "Download the log file if you still need it, then delete it with the host's file manager or by SFTP."
+msgstr "Lade die Log-Datei herunter, falls du sie noch brauchst, und lösche sie dann über den Dateimanager des Hosters oder per SFTP."
+
+msgid "On a live site set define( 'WP_DEBUG_LOG', false ); in wp-config.php, or a path outside the web folder."
+msgstr "Setze auf einer Live-Seite in der wp-config.php define( 'WP_DEBUG_LOG', false ); oder einen Pfad außerhalb des Web-Ordners."
+
+msgid "Add the block \"Root folder: sensitive files\" from the .htaccess template, so a new log cannot be read."
+msgstr "Füge den Block „Hauptordner: sensible Dateien“ aus der .htaccess-Vorlage ein, damit ein neues Log nicht lesbar ist."
+
+msgid "Not every server runs a copy such as wp-config.php.bak as PHP; then it can be downloaded as text, database password included."
+msgstr "Nicht jeder Server führt eine Kopie wie wp-config.php.bak als PHP aus; dann lässt sie sich als Text herunterladen – samt Datenbank-Passwort."
+
+msgid "Delete every copy now; if a copy held the password, change the database password too."
+msgstr "Lösche jede Kopie sofort; enthielt eine Kopie das Passwort, ändere auch das Datenbank-Passwort."
+
+msgid "Delete the files listed above with the host's file manager or by SFTP."
+msgstr "Lösche die oben gelisteten Dateien über den Dateimanager des Hosters oder per SFTP."
+
+msgid "If a copy contained the database password: set a new one in the host's panel and enter it in wp-config.php as DB_PASSWORD."
+msgstr "Enthielt eine Kopie das Datenbank-Passwort: Vergib im Panel des Hosters ein neues und trag es in der wp-config.php als DB_PASSWORD ein."
+
+msgid "Add the block \"Root folder: sensitive files\" from the .htaccess template as a safety net."
+msgstr "Füge als Sicherheitsnetz den Block „Hauptordner: sensible Dateien“ aus der .htaccess-Vorlage ein."
+
+msgid "A database dump or site archive in a public folder contains everything: content, user accounts and password hashes. Whoever guesses the name can download it."
+msgstr "Ein Datenbank-Dump oder Seitenarchiv in einem öffentlichen Ordner enthält alles: Inhalte, Benutzerkonten und Passwort-Hashes. Wer den Namen errät, kann es herunterladen."
+
+msgid "Keep backups off the server or in a folder the web server does not serve."
+msgstr "Bewahre Backups außerhalb des Servers auf oder in einem Ordner, den der Webserver nicht ausliefert."
+
+msgid "Download the backups you still need and delete them from the folders listed."
+msgstr "Lade die Backups, die du noch brauchst, herunter und lösche sie aus den gelisteten Ordnern."
+
+msgid "Set the backup plugin to store backups remotely (cloud storage, SFTP) instead of on this server."
+msgstr "Stell das Backup-Plugin so ein, dass es Backups extern speichert (Cloud-Speicher, SFTP) statt auf diesem Server."
+
+msgid "Add the block \"Root folder: sensitive files\" from the .htaccess template; it blocks .sql files."
+msgstr "Füge den Block „Hauptordner: sensible Dateien“ aus der .htaccess-Vorlage ein; er sperrt .sql-Dateien."
+
+msgid "A readable .git folder can give away the whole source code; a .env file usually holds passwords and API keys."
+msgstr "Ein lesbarer .git-Ordner kann den gesamten Quellcode preisgeben; eine .env-Datei enthält meist Passwörter und API-Schlüssel."
+
+msgid "Remove .git and .env from the web folder, or block access to them."
+msgstr "Entferne .git und .env aus dem Web-Ordner oder sperre den Zugriff darauf."
+
+msgid "Deploy without the .git folder, or delete it on the server."
+msgstr "Lade die Seite ohne .git-Ordner hoch oder lösche ihn auf dem Server."
+
+msgid "Move .env one level above the web folder if the setup allows it."
+msgstr "Verschieb die .env eine Ebene über den Web-Ordner, wenn das Setup es erlaubt."
+
+msgid "If they must stay: add \"Root folder: sensitive files\" and \".git folder: its own .htaccess inside .git\" from the .htaccess template."
+msgstr "Wenn sie bleiben müssen: Füge „Hauptordner: sensible Dateien“ und „.git-Ordner: eigene .htaccess im Ordner .git“ aus der .htaccess-Vorlage ein."
+
+msgid "If a .env was readable, change the passwords and keys it contains."
+msgstr "War eine .env lesbar, ändere die Passwörter und Schlüssel darin."
+
+msgid "phpinfo() and test scripts show server paths, PHP modules and settings, a map for attackers. An unknown script in the root folder can also be left over from an attack."
+msgstr "phpinfo() und Testskripte zeigen Serverpfade, PHP-Module und Einstellungen – eine Landkarte für Angreifer. Ein unbekanntes Skript im Hauptordner kann auch ein Rest eines Angriffs sein."
+
+msgid "Delete the scripts listed after checking what they are."
+msgstr "Lösche die gelisteten Skripte, nachdem du geprüft hast, was sie sind."
+
+msgid "Open each file listed in the host's file manager and look at what it does."
+msgstr "Öffne jede gelistete Datei im Dateimanager des Hosters und schau, was sie tut."
+
+msgid "Delete test scripts you no longer need."
+msgstr "Lösche Testskripte, die du nicht mehr brauchst."
+
+msgid "If you do not recognise a script, treat it as suspicious: keep a copy for analysis, delete it and change the passwords."
+msgstr "Erkennst du ein Skript nicht, behandle es als verdächtig: Kopie zur Analyse sichern, löschen und Passwörter ändern."
+
+msgid "With directory listing on, anyone can see every file in a folder, including files nobody was meant to find."
+msgstr "Ist das Verzeichnislisting an, sieht jeder alle Dateien eines Ordners – auch solche, die niemand finden sollte."
+
+msgid "Turn directory listing off for the whole site."
+msgstr "Schalte das Verzeichnislisting für die ganze Seite aus."
+
+msgid "Add the block \"Root folder: directory listing\" (Options -Indexes) from the .htaccess template."
+msgstr "Füge den Block „Hauptordner: Verzeichnislisting“ (Options -Indexes) aus der .htaccess-Vorlage ein."
+
+msgid "If the host forbids that directive (error 500): remove it again and ask the host to switch listing off."
+msgstr "Verbietet der Hoster die Anweisung (Fehler 500): Entferne sie wieder und bitte den Hoster, das Listing abzuschalten."
+
+msgid "If PHP runs in the uploads folder, one uploaded file is enough to take over the site. It is the most common way an attack escalates."
+msgstr "Läuft PHP im Uploads-Ordner, reicht eine hochgeladene Datei, um die Seite zu übernehmen. So eskalieren Angriffe am häufigsten."
+
+msgid "Block PHP execution in the uploads folder."
+msgstr "Sperre die PHP-Ausführung im Uploads-Ordner."
+
+msgid "Open the .htaccess template tab and copy the block \"Uploads folder: no PHP\"."
+msgstr "Öffne den Reiter .htaccess-Vorlage und kopiere den Block „Uploads-Ordner: kein PHP“."
+
+msgid "Put it into the .htaccess file in the uploads folder (the path is shown with the block); create the file if it does not exist."
+msgstr "Leg ihn in die .htaccess im Uploads-Ordner (der Pfad steht beim Block); gibt es die Datei nicht, leg sie an."
+
+msgid "On nginx, give the nginx text from the template to the host."
+msgstr "Bei nginx gib den nginx-Text aus der Vorlage an den Hoster."
+
+msgid "Run the check again with the uploads probe ticked."
+msgstr "Prüfe erneut mit angehaktem Uploads-Test."
+
+msgid "The uploads folder should hold media only. A PHP file there is either a plugin's placeholder or something that does not belong, often a backdoor."
+msgstr "In den Uploads-Ordner gehören nur Medien. Eine PHP-Datei dort ist entweder ein Platzhalter eines Plugins oder etwas, das nicht hingehört – oft eine Hintertür."
+
+msgid "Check every PHP file listed and delete what does not belong there."
+msgstr "Prüfe jede gelistete PHP-Datei und lösche, was nicht hingehört."
+
+msgid "Start with the files marked as suspicious code: they need a look today."
+msgstr "Fang mit den Dateien an, die als verdächtiger Code markiert sind: Die brauchen heute einen Blick."
+
+msgid "Open each file in the host's file manager; the plugin folder it sits in usually tells where it comes from."
+msgstr "Öffne jede Datei im Dateimanager des Hosters; der Plugin-Ordner, in dem sie liegt, verrät meist, woher sie stammt."
+
+msgid "Delete files no plugin needs. If code looks malicious, treat the site as compromised: back it up, clean it and change all passwords."
+msgstr "Lösche Dateien, die kein Plugin braucht. Sieht Code bösartig aus, behandle die Seite als kompromittiert: sichern, bereinigen, alle Passwörter ändern."
+
+msgid "Block PHP in the uploads folder with the .htaccess template, so new files cannot run."
+msgstr "Sperre PHP im Uploads-Ordner mit der .htaccess-Vorlage, damit neue Dateien nicht laufen."
+
+msgid "Error messages on the page show visitors server paths and code details, and can break the layout."
+msgstr "Fehlermeldungen auf der Seite zeigen Besuchern Serverpfade und Code-Details und können das Layout zerstören."
+
+msgid "On a live site keep errors out of the page: WP_DEBUG_DISPLAY false and display_errors off."
+msgstr "Halte auf einer Live-Seite Fehler aus der Seite heraus: WP_DEBUG_DISPLAY auf false und display_errors aus."
+
+msgid "In wp-config.php set define( 'WP_DEBUG', false ); or, if you need debugging, define( 'WP_DEBUG_DISPLAY', false );."
+msgstr "Setze in der wp-config.php define( 'WP_DEBUG', false ); oder, wenn du debuggen musst, define( 'WP_DEBUG_DISPLAY', false );."
+
+msgid "Switch display_errors off in the host's PHP settings."
+msgstr "Schalte in den PHP-Einstellungen des Hosters display_errors aus."
+
+msgid "With allow_url_include on, a single bug in any plugin can load and run code from another server."
+msgstr "Ist allow_url_include an, kann ein einziger Fehler in irgendeinem Plugin Code von einem fremden Server laden und ausführen."
+
+msgid "Switch allow_url_include off."
+msgstr "Schalte allow_url_include aus."
+
+msgid "Look for allow_url_include in the host's PHP settings (php.ini, .user.ini) and set it to Off."
+msgstr "Such allow_url_include in den PHP-Einstellungen des Hosters (php.ini, .user.ini) und setze es auf Off."
+
+msgid "If you cannot change it, ask the host."
+msgstr "Kannst du es nicht ändern, frag den Hoster."
+
+msgid "Without HTTPS, logins and form data travel readable over the network, and browsers mark the site as not secure."
+msgstr "Ohne HTTPS gehen Anmeldungen und Formulardaten lesbar über das Netz, und Browser markieren die Seite als nicht sicher."
+
+msgid "Serve the site only over https:// with a valid certificate, and redirect http:// to https://."
+msgstr "Liefere die Seite nur über https:// mit gültigem Zertifikat aus und leite http:// auf https:// um."
+
+msgid "Activate a certificate in the host's panel (Let's Encrypt is usually free)."
+msgstr "Aktiviere im Panel des Hosters ein Zertifikat (Let's Encrypt ist meist kostenlos)."
+
+msgid "Under Settings → General set both the WordPress address and the site address to https://."
+msgstr "Stell unter Einstellungen → Allgemein die WordPress-Adresse und die Website-Adresse auf https://."
+
+msgid "Switch on the redirect from http:// to https:// in the host's panel."
+msgstr "Schalte im Panel des Hosters die Weiterleitung von http:// auf https:// ein."
+
+msgid "A PHP version without security support no longer gets fixes for known holes."
+msgstr "Eine PHP-Version ohne Sicherheits-Support bekommt keine Korrekturen für bekannte Lücken mehr."
+
+msgid "Switch to a PHP version that still receives security updates."
+msgstr "Wechsle auf eine PHP-Version, die noch Sicherheitsupdates bekommt."
+
+msgid "Check that the plugins and the theme support the newer version, on a staging site first if you have one."
+msgstr "Prüf, ob Plugins und Theme die neuere Version unterstützen – zuerst auf einer Staging-Seite, wenn es eine gibt."
+
+msgid "Change the PHP version in the host's panel."
+msgstr "Stell die PHP-Version im Panel des Hosters um."
+
+msgid "Some hosts patch old versions themselves; if yours does, get it confirmed in writing."
+msgstr "Manche Hoster pflegen alte Versionen selbst weiter; wenn deiner das tut, lass es dir schriftlich bestätigen."
+
+msgid "Security headers tell the browser to block common attacks such as clickjacking and content sniffing. Once set, they cost nothing."
+msgstr "Security-Header weisen den Browser an, gängige Angriffe wie Clickjacking und Content-Sniffing zu blockieren. Einmal gesetzt, kosten sie nichts."
+
+msgid "Send the missing headers, and take care with the Content-Security-Policy."
+msgstr "Sende die fehlenden Header – bei der Content-Security-Policy mit Bedacht."
+
+msgid "Open the Security Header module of this theme and switch on the headers listed as missing."
+msgstr "Öffne das Modul Security Header dieses Themes und schalte die als fehlend gelisteten Header ein."
+
+msgid "Test a Content-Security-Policy on a staging site first: a strict policy can block scripts, fonts and embeds."
+msgstr "Teste eine Content-Security-Policy zuerst auf einer Staging-Seite: Eine strenge Richtlinie kann Skripte, Schriften und Einbettungen blockieren."
+
+msgid "With the file editor on, anyone who gets into an admin account can change PHP code directly. One stolen password becomes full control."
+msgstr "Ist der Datei-Editor an, kann jeder, der in ein Admin-Konto kommt, PHP-Code direkt ändern. Aus einem gestohlenen Passwort wird volle Kontrolle."
+
+msgid "Switch the file editor off."
+msgstr "Schalte den Datei-Editor aus."
+
+msgid "Switch on \"Disable Theme Editor\" in WP Optimizer, or add define( 'DISALLOW_FILE_EDIT', true ); to wp-config.php."
+msgstr "Schalte in WP Optimizer „Theme-Editor deaktivieren“ ein oder trag define( 'DISALLOW_FILE_EDIT', true ); in die wp-config.php ein."
+
+msgid "XML-RPC lets anyone try many passwords in one request and is a common target. Few sites still need it."
+msgstr "Über XML-RPC lassen sich viele Passwörter in einer Anfrage durchprobieren; es ist ein beliebtes Ziel. Nur noch wenige Seiten brauchen es."
+
+msgid "Switch XML-RPC off unless an app or Jetpack uses it."
+msgstr "Schalte XML-RPC aus, wenn keine App und kein Jetpack es nutzt."
+
+msgid "Switch on \"Disable XMLRPC\" in WP Optimizer."
+msgstr "Schalte in WP Optimizer „XMLRPC deaktivieren“ ein."
+
+msgid "Optionally block the file as well with the block \"Root folder: XML-RPC (optional)\" from the .htaccess template."
+msgstr "Optional sperrst du die Datei zusätzlich mit dem Block „Hauptordner: XML-RPC (optional)“ aus der .htaccess-Vorlage."
+
+msgid "With open registration anyone can create an account. If the default role can write or upload, strangers get that power too."
+msgstr "Bei offener Registrierung kann jeder ein Konto anlegen. Darf die Standardrolle schreiben oder hochladen, bekommen Fremde diese Rechte gleich mit."
+
+msgid "Turn registration off, or set the default role to Subscriber."
+msgstr "Schalte die Registrierung aus oder setze die Standardrolle auf Abonnent."
+
+msgid "Under Settings → General untick \"Anyone can register\"."
+msgstr "Nimm unter Einstellungen → Allgemein den Haken bei „Jeder kann sich registrieren“ heraus."
+
+msgid "Under Users look for accounts that registered without your knowledge."
+msgstr "Prüf unter Benutzer, ob sich Konten ohne dein Wissen registriert haben."
+
+msgid "Minor WordPress releases mostly fix security holes. Without automatic updates a known hole stays open until someone updates by hand."
+msgstr "Kleine WordPress-Versionen schließen meist Sicherheitslücken. Ohne automatische Updates bleibt eine bekannte Lücke offen, bis jemand von Hand aktualisiert."
+
+msgid "Look in wp-config.php for WP_AUTO_UPDATE_CORE or AUTOMATIC_UPDATER_DISABLED and remove the setting that switches updates off."
+msgstr "Such in der wp-config.php nach WP_AUTO_UPDATE_CORE oder AUTOMATIC_UPDATER_DISABLED und entferne die Einstellung, die Updates abschaltet."
+
+msgid "Check whether a plugin switches updates off, for example an update manager."
+msgstr "Prüf, ob ein Plugin Updates abschaltet, zum Beispiel ein Update-Manager."
+
+msgid "If updates run elsewhere on purpose (WP Umbrella, MainWP, the host), that is fine: note it for the client."
+msgstr "Laufen Updates bewusst woanders (WP Umbrella, MainWP, der Hoster), ist das in Ordnung: Halte es für den Kunden fest."
+
+msgid "Every administrator can do everything, including installing code. Each extra account is one more password that can leak, and \"admin\" is the first login attackers try."
+msgstr "Jeder Administrator darf alles, auch Code installieren. Jedes zusätzliche Konto ist ein weiteres Passwort, das durchsickern kann, und „admin“ ist der erste Login, den Angreifer probieren."
+
+msgid "Keep this list short and replace accounts with a guessable login."
+msgstr "Halte die Liste kurz und ersetze Konten mit erratbarem Login."
+
+msgid "Under Users remove administrators who no longer need the role, or give them a lower role."
+msgstr "Entferne unter Benutzer Administratoren, die die Rolle nicht mehr brauchen, oder gib ihnen eine niedrigere Rolle."
+
+msgid "For a login such as admin: create a new administrator with another login, sign in with it and delete the old account, assigning its content to the new one."
+msgstr "Bei einem Login wie admin: Leg einen neuen Administrator mit anderem Login an, melde dich damit an und lösche das alte Konto; seine Inhalte ordnest du dem neuen zu."
+
+msgid "Make sure every administrator uses two-factor sign-in."
+msgstr "Sorg dafür, dass jeder Administrator die Zwei-Faktor-Anmeldung nutzt."
+
+msgid "A known login name is half of the login. Attackers collect them from author links, the REST API and feeds."
+msgstr "Ein bekannter Login-Name ist die halbe Anmeldung. Angreifer sammeln sie über Autoren-Links, die REST-API und Feeds."
+
+msgid "Show display names instead of logins and close the public user sources."
+msgstr "Zeig Anzeigenamen statt Logins und schließ die öffentlichen Benutzerquellen."
+
+msgid "In WP Optimizer switch on \"Block ?author= Enumeration\", \"Block REST API Users for Guests\" and \"Remove Users Sitemap\"."
+msgstr "Schalte in WP Optimizer „?author=-Enumeration blockieren“, „REST-API-Benutzer für Gäste blockieren“ und „Benutzer-Sitemap entfernen“ ein."
+
+msgid "Code execution in Bricks runs PHP from the builder: whoever holds it can do anything on the server. SVG files can carry scripts."
+msgstr "Code-Ausführung in Bricks führt PHP aus dem Builder aus: Wer sie hat, kann auf dem Server alles. SVG-Dateien können Skripte enthalten."
+
+msgid "Grant code execution and SVG upload only to administrators who need them."
+msgstr "Gib Code-Ausführung und SVG-Upload nur Administratoren, die sie brauchen."
+
+msgid "Under Bricks → Settings → Custom code switch code execution off if no one needs it, or limit it to administrators."
+msgstr "Schalte unter Bricks → Einstellungen → Benutzerdefinierter Code die Code-Ausführung aus, wenn niemand sie braucht, oder beschränke sie auf Administratoren."
+
+msgid "Check the users listed above: a grant on a single user overrides the role."
+msgstr "Prüf die oben gelisteten Benutzer: Eine Freigabe direkt am Benutzer geht der Rolle vor."
+
+msgid "\"Discourage search engines\" asks search engines to stay away. On a live site that keeps the site out of Google; on a staging site it should stay on."
+msgstr "„Suchmaschinen davon abhalten“ bittet Suchmaschinen fernzubleiben. Auf einer Live-Seite hält das die Seite aus Google heraus; auf einer Staging-Seite soll es an bleiben."
+
+msgid "Live: untick it at launch. Staging or private: keep it ticked."
+msgstr "Live: Beim Start den Haken entfernen. Staging oder privat: Haken drin lassen."
+
+msgid "Open Settings → Reading."
+msgstr "Öffne Einstellungen → Lesen."
+
+msgid "Set \"Search engine visibility\" to match the profile and save."
+msgstr "Stell „Sichtbarkeit für Suchmaschinen“ passend zum Profil ein und speichere."
+
+msgid "If the profile itself is wrong, change it in the Settings tab of this page."
+msgstr "Stimmt das Profil selbst nicht, ändere es im Reiter Einstellungen dieser Seite."
+
+msgid "robots.txt tells crawlers what they may read. \"Disallow: /\" for all crawlers keeps the whole site out of search results."
+msgstr "Die robots.txt sagt Crawlern, was sie lesen dürfen. „Disallow: /“ für alle Crawler hält die ganze Seite aus den Suchergebnissen."
+
+msgid "On a live site let crawlers read the public pages."
+msgstr "Lass auf einer Live-Seite Crawler die öffentlichen Seiten lesen."
+
+msgid "Find out who writes robots.txt: a real file in the root folder, an SEO plugin, or WordPress itself, which follows Settings → Reading."
+msgstr "Finde heraus, wer die robots.txt schreibt: eine echte Datei im Hauptordner, ein SEO-Plugin oder WordPress selbst, das Einstellungen → Lesen folgt."
+
+msgid "Remove the line \"Disallow: /\" under \"User-agent: *\" there."
+msgstr "Entferne dort die Zeile „Disallow: /“ unter „User-agent: *“."
+
+msgid "A page with noindex, a foreign canonical or an error status does not appear in search results, however good its content is."
+msgstr "Eine Seite mit noindex, fremdem Canonical oder Fehlerstatus erscheint nicht in den Suchergebnissen, egal wie gut ihr Inhalt ist."
+
+msgid "Open the page listed and check its robots setting in the SEO plugin: noindex must be off."
+msgstr "Öffne die gelistete Seite und prüf ihre Robots-Einstellung im SEO-Plugin: noindex muss aus sein."
+
+msgid "Check the canonical URL in the SEO plugin: it must point to this site."
+msgstr "Prüf die Canonical-URL im SEO-Plugin: Sie muss auf diese Seite zeigen."
+
+msgid "For a 404 or a redirect: restore the page, or correct the path in the Settings tab."
+msgstr "Bei 404 oder einer Weiterleitung: Stell die Seite wieder her oder korrigier den Pfad im Reiter Einstellungen."
+
+msgid "A sitemap helps search engines find every page, especially new and deeply linked ones."
+msgstr "Eine Sitemap hilft Suchmaschinen, jede Seite zu finden – vor allem neue und tief verlinkte."
+
+msgid "WordPress publishes /wp-sitemap.xml itself, and an SEO plugin may replace it. Make sure one of them is on."
+msgstr "WordPress veröffentlicht selbst /wp-sitemap.xml, ein SEO-Plugin kann sie ersetzen. Stell sicher, dass eine davon an ist."
+
+msgid "Add the line \"Sitemap: <address of the sitemap>\" to robots.txt; most SEO plugins do this themselves."
+msgstr "Ergänze in der robots.txt die Zeile „Sitemap: <Adresse der Sitemap>“; die meisten SEO-Plugins tun das selbst."
+
+msgid "Submit the sitemap in Google Search Console."
+msgstr "Reiche die Sitemap in der Google Search Console ein."
+
+msgid "Entries such as Bricks templates, attachment pages or the author list lead visitors from search results to pages that were never meant to be found."
+msgstr "Einträge wie Bricks-Templates, Anhang-Seiten oder die Autorenliste führen Besucher aus der Suche auf Seiten, die nie gefunden werden sollten."
+
+msgid "Remove unwanted types from the sitemap, or mark them as intended."
+msgstr "Entferne ungewollte Typen aus der Sitemap oder markiere sie als gewollt."
+
+msgid "Exclude the types listed in the sitemap settings of the SEO plugin."
+msgstr "Schließ die gelisteten Typen in den Sitemap-Einstellungen des SEO-Plugins aus."
+
+msgid "For the author list: switch on \"Remove Users Sitemap\" in WP Optimizer."
+msgstr "Für die Autorenliste: Schalte in WP Optimizer „Benutzer-Sitemap entfernen“ ein."
+
+msgid "If a type is intended, tick it in the Settings tab under the sitemap entries; the check then stays quiet about it."
+msgstr "Ist ein Typ gewollt, hak ihn im Reiter Einstellungen bei den Sitemap-Einträgen an; der Check schweigt dann dazu."
+
+msgid "WordPress sends security notices and password links to this address, and this check's warnings go there too."
+msgstr "WordPress schickt Sicherheitshinweise und Passwort-Links an diese Adresse, und auch die Warnungen dieses Checks gehen dorthin."
+
+msgid "Make sure the address is current and someone reads it."
+msgstr "Stell sicher, dass die Adresse aktuell ist und jemand sie liest."
+
+msgid "A change takes effect only after the confirmation link sent to the new address is clicked."
+msgstr "Eine Änderung gilt erst, wenn der Bestätigungslink an die neue Adresse geklickt wurde."
+
+msgid "Plain permalinks (?p=123) say nothing about the page and look untrustworthy. Changing them later breaks links that already exist."
+msgstr "Einfache Permalinks (?p=123) sagen nichts über die Seite und wirken wenig vertrauenswürdig. Ein späterer Wechsel bricht bestehende Links."
+
+msgid "Under Settings → Permalinks choose \"Post name\" and save."
+msgstr "Wähle unter Einstellungen → Permalinks „Beitragsname“ und speichere."
+
+msgid "On a site that is already live, set up redirects from the old addresses first."
+msgstr "Richte auf einer schon laufenden Seite zuerst Weiterleitungen von den alten Adressen ein."
+
+msgid "\"Hello world!\", the sample page and the sample comment look unfinished and show up in search results and feeds."
+msgstr "„Hallo Welt!“, die Beispiel-Seite und der Beispiel-Kommentar wirken unfertig und tauchen in Suchergebnissen und Feeds auf."
+
+msgid "Under Posts, Pages and Comments move the items listed to the trash."
+msgstr "Verschieb unter Beiträge, Seiten und Kommentare die gelisteten Einträge in den Papierkorb."
+
+msgid "Empty the trash."
+msgstr "Leere den Papierkorb."
+
+msgid "An inactive plugin's files stay on the server and can still be attacked, and they are easily forgotten at updates."
+msgstr "Die Dateien eines inaktiven Plugins bleiben auf dem Server und lassen sich weiter angreifen; bei Updates werden sie leicht vergessen."
+
+msgid "Under Plugins → Installed Plugins, show the inactive ones."
+msgstr "Lass dir unter Plugins → Installierte Plugins die inaktiven anzeigen."
+
+msgid "Delete what you no longer need; keep only what you will switch on soon."
+msgstr "Lösche, was du nicht mehr brauchst; behalte nur, was du bald einschaltest."
+
+msgid "Like plugins, inactive themes stay on the server and can contain holes."
+msgstr "Wie Plugins bleiben inaktive Themes auf dem Server und können Lücken enthalten."
+
+msgid "Under Appearance → Themes open each theme listed and delete it."
+msgstr "Öffne unter Design → Themes jedes gelistete Theme und lösche es."
+
+msgid "Name the fallback theme you keep in the Settings tab, so it is not listed."
+msgstr "Nenn das Ersatz-Theme, das du behältst, im Reiter Einstellungen, damit es nicht gelistet wird."
+
+msgid "Most attacks use holes that an update has already fixed."
+msgstr "Die meisten Angriffe nutzen Lücken, die ein Update längst geschlossen hat."
+
+msgid "Make a backup, or make sure the nightly one is fresh."
+msgstr "Mach ein Backup oder stell sicher, dass das nächtliche frisch ist."
+
+msgid "Install the updates under Dashboard → Updates, ideally on a staging site first."
+msgstr "Spiel die Updates unter Dashboard → Aktualisierungen ein, am besten zuerst auf einer Staging-Seite."
+
+msgid "Look at the site afterwards: the home page, a form, the shop if there is one."
+msgstr "Schau dir die Seite danach an: Startseite, ein Formular, den Shop, wenn es einen gibt."
+
+msgid "\"No updates offered\" can also mean a premium plugin has no licence: check its licence."
+msgstr "„Keine Updates angeboten“ kann auch heißen, dass ein Premium-Plugin keine Lizenz hat: Prüf die Lizenz."
+
+msgid "readme.html and license.txt confirm that WordPress runs here, which is what scanners look for. An installer that still shows its setup form lets anyone take over the site."
+msgstr "readme.html und license.txt bestätigen, dass hier WordPress läuft – genau das suchen Scanner. Ein Installer, der noch sein Einrichtungsformular zeigt, lässt jeden die Seite übernehmen."
+
+msgid "Block readme.html and license.txt with the .htaccess template, and close an open installer at once."
+msgstr "Sperre readme.html und license.txt mit der .htaccess-Vorlage und schließ einen offenen Installer sofort."
+
+msgid "Add the block \"Root folder: sensitive files\" from the .htaccess template; it blocks readme.html and license.txt. Deleting them does not last: they come back with every WordPress update."
+msgstr "Füge den Block „Hauptordner: sensible Dateien“ aus der .htaccess-Vorlage ein; er sperrt readme.html und license.txt. Löschen hält nicht: Sie kommen mit jedem WordPress-Update zurück."
+
+msgid "A visible version number tells attackers which known holes to try. Hiding it fixes no hole, but it makes automated scans less precise."
+msgstr "Eine sichtbare Versionsnummer verrät Angreifern, welche bekannten Lücken sie probieren können. Verstecken schließt keine Lücke, macht automatische Scans aber ungenauer."
+
+msgid "Remove the WordPress version from the generator tags, and ask the host to hide server and PHP versions."
+msgstr "Entferne die WordPress-Version aus den Generator-Angaben und bitte den Hoster, Server- und PHP-Version zu verbergen."
+
+msgid "In WP Optimizer switch on \"Disable WP Version\"."
+msgstr "Schalte in WP Optimizer „WP-Version deaktivieren“ ein."
+
+msgid "Ask the host to remove version details from the Server and X-Powered-By headers (ServerTokens Prod, expose_php off)."
+msgstr "Bitte den Hoster, Versionsangaben aus den Headern Server und X-Powered-By zu entfernen (ServerTokens Prod, expose_php off)."
+
+msgid "The default prefix wp_ makes some automated SQL attacks a little easier. On its own it is no hole."
+msgstr "Das Standard-Präfix wp_ macht manche automatischen SQL-Angriffe etwas leichter. Für sich ist es keine Lücke."
+
+msgid "Application passwords let programs sign in without two-factor sign-in. A forgotten one stays valid until it is revoked."
+msgstr "Anwendungspasswörter lassen Programme ohne Zwei-Faktor-Anmeldung herein. Ein vergessenes bleibt gültig, bis es widerrufen wird."
+
+msgid "Settings → General"
+msgstr "Einstellungen → Allgemein"
+
+msgid "Settings → Reading"
+msgstr "Einstellungen → Lesen"
+
+msgid "Settings → Permalinks"
+msgstr "Einstellungen → Permalinks"
+
+msgid "Installed plugins"
+msgstr "Installierte Plugins"
+
+msgid "Appearance → Themes"
+msgstr "Design → Themes"
+
+msgid "Dashboard → Updates"
+msgstr "Dashboard → Aktualisierungen"
+
+msgid "Bricks settings"
+msgstr "Bricks-Einstellungen"
+
+msgid "Open Security Header"
+msgstr "Security Header öffnen"
+
+msgid "Open WP Optimizer"
+msgstr "WP Optimizer öffnen"
+
+msgid ".htaccess template"
+msgstr ".htaccess-Vorlage"
+
+msgid "Settings of this check"
+msgstr "Einstellungen dieses Checks"
+
+#, php-format
+msgid "Switch on %s in the theme settings"
+msgstr "%s in den Theme-Einstellungen einschalten"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "Being checked"
+msgstr "wird geprüft"
+
+msgid "in progress"
+msgstr "vorläufig"
+
+msgid "not saved"
+msgstr "nicht gespeichert"
+
+msgid "save status unknown"
+msgstr "Speicherstatus unbekannt"
+
+msgid "Why"
+msgstr "Warum"
+
+msgid "Recommendation"
+msgstr "Empfehlung"
+
+msgid "How to"
+msgstr "So geht's"
+
+msgid "Nothing to do: this is the good state."
+msgstr "Nichts zu tun: So soll es sein."
+
+msgid "Only what needs action"
+msgstr "Nur Handlungsbedarf"
+
+msgid "The check looks for exposed files, risky settings and launch mistakes, and shows what to fix first."
+msgstr "Der Check sucht offen liegende Dateien, riskante Einstellungen und Fehler beim Live-Gang und zeigt, was zuerst zu beheben ist."
+
+msgid "No action needed in this area."
+msgstr "Kein Handlungsbedarf in diesem Bereich."
+
+#, php-format
+msgid "The next check uses the profile %1$s."
+msgstr "Die nächste Prüfung nutzt das Profil %1$s."
+
+msgid "Change"
+msgstr "ändern"
+
+msgid "Areas"
+msgstr "Bereiche"
+
+msgid "Most urgent"
+msgstr "Am dringendsten"
+
+msgid "Nothing urgent: no red or yellow checks."
+msgstr "Nichts Dringendes: keine roten oder gelben Checks."
+
+msgid "Saving the results …"
+msgstr "Speichere die Ergebnisse …"
+
+#, php-format
+msgid "The check could not start: %1$s"
+msgstr "Die Prüfung konnte nicht starten: %1$s"
+
+#, php-format
+msgid "Not saved: %1$s The last saved check still counts; the results below are not saved."
+msgstr "Nicht gespeichert: %1$s Es zählt weiter die zuletzt gespeicherte Prüfung; die Ergebnisse unten sind nicht gespeichert."
+
+msgid "Save status unknown: no answer arrived. Reload the page to see what was stored."
+msgstr "Speicherstatus unbekannt: Es kam keine Antwort. Lade die Seite neu, um zu sehen, was gespeichert wurde."
+
+msgid "Check again"
+msgstr "Neu prüfen"
+
+msgid "Reload page"
+msgstr "Seite neu laden"
+
+msgid "Areas of the security check"
+msgstr "Bereiche des Sicherheits-Checks"
+
+msgid "A check always uses the saved settings."
+msgstr "Eine Prüfung nutzt immer die gespeicherten Einstellungen."
+
+msgid "Stored, currently not offered"
+msgstr "Gespeichert, derzeit nicht angeboten"
+
+msgid "These entries still silence their type. Untick and save to remove them."
+msgstr "Diese Einträge schalten ihren Typ weiter stumm. Nimm den Haken heraus und speichere, um sie zu entfernen."
+
+msgctxt "site check status"
+msgid "Note"
+msgstr "Hinweis"
+
+#. translators: %1$s: number of findings
+#, php-format
+msgid "%1$s finding"
+msgid_plural "%1$s findings"
+msgstr[0] "%1$s Fund"
+msgstr[1] "%1$s Funde"
+
+msgid "Under Bricks → Settings → General → SVG uploads check which roles may upload SVG files."
+msgstr "Prüf unter Bricks → Einstellungen → Allgemein → SVG-Uploads, welche Rollen SVG-Dateien hochladen dürfen."
+
+msgid "Under Users → All Users → Edit give each user listed a nickname and choose it under \"Display name publicly as\"."
+msgstr "Gib unter Benutzer → Alle Benutzer → Bearbeiten jedem gelisteten Benutzer einen Spitznamen und wähle ihn bei „Öffentlicher Name“."
+
+msgid "Under Users → All Users → Edit open each owner listed, scroll to \"Application Passwords\" and revoke the ones nobody uses."
+msgstr "Öffne unter Benutzer → Alle Benutzer → Bearbeiten jeden gelisteten Besitzer, scroll zu „Anwendungspasswörter“ und widerrufe die, die niemand nutzt."
+
+msgid "If install.php shows its setup form, WordPress finds no tables under the configured table prefix: the tables are missing or $table_prefix in wp-config.php is wrong. Restore the tables or correct the prefix right away."
+msgstr "Zeigt install.php sein Einrichtungsformular, findet WordPress unter dem eingestellten Tabellenpräfix keine Tabellen: Die Tabellen fehlen oder $table_prefix in der wp-config.php stimmt nicht. Stell die Tabellen sofort wieder her oder korrigier das Präfix."
+
+msgid "Version numbers publicly visible"
+msgstr "Versionsnummern öffentlich sichtbar"
+
+msgid "If registration is wanted (shop, members), set \"New User Default Role\" to Subscriber or Customer."
+msgstr "Ist die Registrierung gewollt (Shop, Mitglieder), setze „Standardrolle eines neuen Benutzers“ auf Abonnent oder Kunde."
+
+msgid "Under Settings → General check \"Administration Email Address\"."
+msgstr "Prüf unter Einstellungen → Allgemein die „Administrative E-Mail-Adresse“."
+
+msgid "Checking … keep this tab open until the results are saved."
+msgstr "Prüfung läuft … lass diesen Tab offen, bis die Ergebnisse gespeichert sind."
+
+#, php-format
+msgid "%1$s of %2$s checks done"
+msgstr "%1$s von %2$s Checks erledigt"
+
+msgid "The check could not start."
+msgstr "Die Prüfung konnte nicht starten."
+
+msgid "Not saved."
+msgstr "Nicht gespeichert."
+
+msgid "Save status unknown."
+msgstr "Speicherstatus unbekannt."
+
+msgid "%d file(s) in the Sicherheits-Check test folder were not created by a recorded test run; they were kept. Check them and delete them by hand."
+msgstr "%d Datei(en) im Testordner des Sicherheits-Checks stammen nicht aus einem erfassten Testlauf; sie wurden behalten. Bitte prüfen und von Hand löschen."
+
+msgid "%d Sicherheits-Check setting(s) could not be deleted (the check was in use or the database refused). Run the purge again."
+msgstr "%d Einstellung(en) des Sicherheits-Checks konnten nicht gelöscht werden (der Check war gerade in Benutzung oder die Datenbank hat abgelehnt). Bitte das Löschen erneut ausführen."
+
+msgid "No answer within 60 seconds."
+msgstr "Keine Antwort innerhalb von 60 Sekunden."
+
+msgid "The record of the uploads probe's test files could not be updated; the cleanup tries again on the next page load."
+msgstr "Die Liste der Testdateien des Upload-Tests konnte nicht aktualisiert werden; die Bereinigung versucht es beim nächsten Seitenaufruf erneut."
+
+msgid "Download the current .htaccess of that folder (file manager or SFTP) and keep it as a backup, or note that none exists."
+msgstr "Die aktuelle .htaccess dieses Ordners herunterladen (Dateimanager oder SFTP) und als Sicherung aufbewahren – oder notieren, dass es keine gibt."
+
+msgid "Root folder blocks: insert them above # BEGIN WordPress, or at the top of the file when that line is missing. Uploads and .git blocks: insert them at the top of the .htaccess in their own folder; create that file if it does not exist."
+msgstr "Blöcke für den Hauptordner: oberhalb von # BEGIN WordPress einfügen, oder ganz oben in der Datei, wenn diese Zeile fehlt. Blöcke für Uploads und .git: ganz oben in die .htaccess im jeweiligen Ordner einfügen; die Datei anlegen, falls es sie nicht gibt."
+
+msgid "If the site shows a 500 error, put the backup back, or delete the file if you created it."
+msgstr "Zeigt die Seite einen 500-Fehler: die Sicherung zurückspielen, oder die Datei löschen, wenn du sie neu angelegt hast."
+
+msgid "Where: at the top of this folder's own .htaccess; create the file if it does not exist."
+msgstr "Wohin: ganz oben in die eigene .htaccess dieses Ordners; die Datei anlegen, falls es sie nicht gibt."
+
+msgid "Where: above # BEGIN WordPress, or at the top of the file when that line is missing."
+msgstr "Wohin: oberhalb von # BEGIN WordPress, oder ganz oben in der Datei, wenn diese Zeile fehlt."
+
+msgid "robots.txt is empty, and the comparison address did not answer 404, so the answer proves nothing"
+msgstr "robots.txt ist leer, und die Vergleichsadresse hat nicht mit 404 geantwortet – die Antwort beweist daher nichts"
+
+msgid "the answer is not readable as robots.txt"
+msgstr "die Antwort ist nicht als robots.txt lesbar"
+
+msgid "redirects to an address that cannot be compared"
+msgstr "leitet auf eine Adresse weiter, die sich nicht vergleichen lässt"
+
+msgid "not every address gave a reliable answer (challenge, error or a malformed sitemap)"
+msgstr "nicht jede Adresse hat verlässlich geantwortet (Challenge, Fehler oder fehlerhafte Sitemap)"
+
+msgid "present, protects little (%s)"
+msgstr "vorhanden, schützt kaum (%s)"
+
+msgid "present, but not recognised: %s"
+msgstr "vorhanden, aber nicht erkannt: %s"
+
+msgid "outside the known web folders, so it cannot be checked whether it runs a script; never requested"
+msgstr "außerhalb der bekannten Webverzeichnisse, daher nicht prüfbar, ob dort ein Skript läuft; nie angefragt"
+
+msgid "Files in the test folder that no test run recorded were kept, not deleted; check them: %s"
+msgstr "Dateien im Testordner, die kein Testlauf erfasst hat, wurden behalten, nicht gelöscht; bitte prüfen: %s"
+
+msgid "%d scheduled task(s) of the Sicherheits-Check could not be removed. Run the purge again."
+msgstr "%d geplante Aufgabe(n) des Sicherheits-Checks konnten nicht entfernt werden. Bitte das Löschen erneut ausführen."
+
+msgid "too long to read completely; not judged"
+msgstr "zu lang, um vollständig gelesen zu werden; nicht bewertet"
+
+msgid "the address is encoded more than once, so it is unclear what the server would open; never requested"
+msgstr "die Adresse ist mehrfach kodiert, daher ist unklar, was der Server öffnen würde; nie angefragt"
+
+msgid "The check only says whether a Content-Security-Policy and a Permissions-Policy are present; what they allow is not judged in detail. Review them with a dedicated tool if they matter for this site."
+msgstr "Der Check sagt nur, ob eine Content-Security-Policy und eine Permissions-Policy vorhanden sind; was sie erlauben, wird nicht im Detail bewertet. Prüf sie mit einem eigenen Werkzeug, wenn sie für diese Seite wichtig sind."
+
+msgid "Automatic updates of WordPress are off: this installation is a version control checkout, which WordPress never updates itself — fine only if an external update process covers them."
+msgstr "Automatische Updates von WordPress sind aus: Diese Installation ist ein Checkout aus einer Versionsverwaltung, den WordPress nie selbst aktualisiert — nur in Ordnung, wenn ein externer Update-Prozess das abdeckt."
+
+msgid "could not be examined on the server (its stat failed)"
+msgstr "konnte auf dem Server nicht untersucht werden (Dateiinformationen nicht lesbar)"
+
+msgid "linked folder, not followed; check what it points to"
+msgstr "verlinkter Ordner, nicht verfolgt; prüfen, worauf er zeigt"
+
+msgid "present — its effect is not judged in detail"
+msgstr "vorhanden — Wirkung wird nicht im Detail bewertet"
+
+msgid "The uploads folder could not be determined on this site, so no uploads rule is given; ask the host."
+msgstr "Der Upload-Ordner konnte auf dieser Seite nicht bestimmt werden, daher fehlt die Upload-Regel; frag den Hoster."
+
+msgid "The test files of the uploads probe could not be checked: the security check is busy right now. Reload the page to try again."
+msgstr "Die Testdateien des Upload-Tests konnten nicht geprüft werden: Der Sicherheits-Check ist gerade beschäftigt. Lade die Seite neu, um es erneut zu versuchen."
+
+msgid "The folder could not be searched for backup folders."
+msgstr "Der Ordner konnte nicht nach Backup-Ordnern durchsucht werden."
+
+msgid "The folder could not be inspected."
+msgstr "Der Ordner konnte nicht untersucht werden."
+
+#, php-format
+msgid "%1$d not stored: the list holds at most %2$d paths."
+msgstr "%1$d nicht gespeichert: Die Liste fasst höchstens %2$d Pfade."
+
+#, php-format
+msgid "Page %d for the indexing check"
+msgstr "Seite %d für die Indexierungsprüfung"
+
+msgid "robots.txt answered with an empty or incomplete error page, so its absence is not established"
+msgstr "robots.txt antwortete mit einer leeren oder unvollständigen Fehlerseite, daher ist nicht belegt, dass sie fehlt"
+
+msgid "The uploads are served from another host (CDN or offload): set the uploads rule there."
+msgstr "Uploads liegen auf einem anderen Host (CDN oder Auslagerung) — Regel dort setzen."
+
+msgid "The uploads are served from the site root, so an uploads rule would deny PHP on the whole site; none is given — ask the host."
+msgstr "Die Uploads liegen im Hauptverzeichnis der Seite; eine Upload-Regel würde PHP auf der ganzen Seite sperren. Daher keine Regel — frag den Hoster."
+
+#, php-format
+msgid "%1$s — not fetched: %2$s"
+msgstr "%1$s — nicht abgerufen: %2$s"
+
+msgid "The site address and the WordPress address differ, so the web folder is not established."
+msgstr "Website-Adresse und WordPress-Adresse unterscheiden sich, daher ist das Webverzeichnis nicht festgestellt."
+
+msgid "The web folder of this site is not established (site and WordPress address differ), so no uploads rule is given; ask the host."
+msgstr "Das Webverzeichnis dieser Seite ist nicht festgestellt (Website- und WordPress-Adresse unterscheiden sich), daher keine Upload-Regel; frag den Hoster."
+
+msgid "Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C."
+msgstr "Kopieren nicht möglich – Text ist markiert, bitte mit Strg/Cmd+C kopieren."

@@ -78,6 +78,9 @@ function test_reset(): void
     $test_lock_checks_left = null;
     $test_drop_fails       = false;
     $test_cleared_hooks    = [];
+
+    \SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'busy' => false];
+    \SFX\SiteCheck\Purge::$calls  = 0;
 }
 
 // ------------------------------------------------------ WordPress doubles
@@ -203,3 +206,6 @@ class Test_WPDB
 }
 
 $GLOBALS['wpdb'] = new Test_WPDB();
+
+// PHP forbids a bracketed namespace block alongside non-namespaced code.
+require_once __DIR__ . '/site-check-purge-stub.php';

@@ -277,6 +277,73 @@ assert_same(true, $report['tables_locked'], 'Case 7s: the lost lock is reported'
 assert_same(['wp_sfx_redirects_404'], $GLOBALS['test_tables'], 'Case 7t: the table after the loss is not dropped');
 assert_true(strpos($sql, "SELECT RELEASE_LOCK('{$lock}')") !== false, 'Case 7u: the lock is released on the early exit too');
 
+// ---------------------- Case 8: SiteCheck's eight options are on the purge list
+//
+// DataPurge is a root service and keeps literal lists, so the literals are
+// compared against the module's own Options namespace here.
+
+require_once dirname(__DIR__) . '/inc/SiteCheck/Options.php';
+
+$site_check = [];
+foreach (\SFX\SiteCheck\Options::KEYS as $key) {
+    $site_check[] = \SFX\SiteCheck\Options::name($key);
+}
+
+assert_same(8, count($site_check), 'Case 8a: the module owns eight options');
+assert_same($site_check, DataPurge::SITE_CHECK_OPTION_NAMES, 'Case 8b: the purge constant carries exactly the module\'s option names, in order');
+foreach ($site_check as $name) {
+    assert_true(in_array($name, DataPurge::option_names(), true), "Case 8c: {$name} is in option_names()");
+}
+assert_same(count(DataPurge::option_names()), count(array_unique(DataPurge::option_names())), 'Case 8d: no option is listed twice');
+
+// SiteCheck's options are SiteCheck\Purge::run()'s to delete (in the spec's
+// order, inside the module's critical section): the generic loop skips them,
+// and the report adds what that segment says it did.
+test_reset();
+$GLOBALS['test_options'] = array_fill_keys($site_check, 'x');
+$GLOBALS['test_options']['sfx_general_options'] = ['a' => 1];
+$GLOBALS['test_options']['sfx_animation_options'] = 'plugin';
+\SFX\SiteCheck\Purge::$report = ['options' => 7, 'probes_failed' => ['/up/sfx-site-check/a.php'], 'busy' => false];
+$report = DataPurge::run();
+assert_same(1, \SFX\SiteCheck\Purge::$calls, 'Case 8e: run() calls SiteCheck\\Purge::run() once');
+$left = array_keys($GLOBALS['test_options']);
+sort($left);
+$want = array_merge($site_check, ['sfx_animation_options']);
+sort($want);
+assert_same($want, $left, 'Case 8f: the generic loop leaves the SiteCheck options to SiteCheck\\Purge and still deletes the theme\'s others');
+assert_same(8, $report['options'], 'Case 8g: the report adds the segment\'s count to its own');
+assert_same(['/up/sfx-site-check/a.php'], $report['probes_failed'], 'Case 8h: probes that could not be deleted are reported');
+assert_same(false, $report['busy'], 'Case 8i: not busy');
+assert_same('sfx_site_check_probe_cleanup', \SFX\SiteCheck\Options::hook('probe_cleanup'), 'Case 8j: the cleanup hook keeps the name the module schedules');
+
+// Busy: the module's critical section was held. Nothing is deleted, so a
+// retry finds everything where it was.
+test_reset();
+$GLOBALS['test_options'] = ['sfx_general_options' => ['a' => 1], 'sfx_site_check_settings' => 'x'];
+$GLOBALS['test_tables'] = ['wp_sfx_redirects'];
+\SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'busy' => true];
+$report = DataPurge::run(true);
+assert_same(true, $report['busy'], 'Case 8k: busy is reported');
+assert_same(['sfx_general_options', 'sfx_site_check_settings'], array_keys($GLOBALS['test_options']), 'Case 8l: busy → no option deleted');
+assert_same([], $GLOBALS['test_meta_deleted'], 'Case 8m: busy → no meta deleted');
+assert_same(['wp_sfx_redirects'], $GLOBALS['test_tables'], 'Case 8n: busy → no table dropped');
+assert_same(0, $report['options'] + $report['tables'] + $report['transients'] + $report['meta_keys'], 'Case 8o: busy → nothing counted');
+
+// Gate B pass 1 (spec-9, quality-2): SiteCheck options whose delete was refused
+// and kept unregistered test files travel in the report; the other modules'
+// data is still deleted (they do not depend on SiteCheck's run).
+test_reset();
+$GLOBALS['test_options'] = ['sfx_general_options' => ['a' => 1], 'sfx_site_check_manual' => 'x'];
+\SFX\SiteCheck\Purge::$report = ['options' => 1, 'probes_failed' => [], 'probes_unregistered' => ['/up/sfx-site-check/u.php'], 'refused' => ['sfx_site_check_manual'], 'busy' => false];
+$report = DataPurge::run();
+assert_same(['sfx_site_check_manual'], $report['site_check_refused'], 'Case 8p: refused SiteCheck deletes are reported');
+assert_same(['/up/sfx-site-check/u.php'], $report['probes_unregistered'], 'Case 8q: unregistered test files are reported');
+assert_same(false, $report['busy'], 'Case 8r: a refused delete is no busy purge');
+assert_true(!isset($GLOBALS['test_options']['sfx_general_options']), 'Case 8s: the other theme data is still deleted');
+\SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'refused' => [], 'hooks_failed' => ['sfx_site_check_probe_cleanup'], 'busy' => false];
+$report = DataPurge::run();
+assert_same(['sfx_site_check_probe_cleanup'], $report['site_check_hooks_failed'], 'Case 8t: a cron hook that could not be unscheduled is reported');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

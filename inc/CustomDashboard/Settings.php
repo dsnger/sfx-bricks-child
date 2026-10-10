@@ -2839,6 +2839,11 @@ $stats['orders'] = [
             'dashboard_primary' => __('WordPress Events and News', 'sfxtheme'),
         ];
 
+        // Widgets other modules supply through the extension filter.
+        foreach (self::get_external_widgets() as $widget_id => $widget) {
+            $available_widgets[$widget_id] = $widget['title'];
+        }
+
         // Try to get additional registered widgets from global
         global $wp_meta_boxes;
         
@@ -2861,6 +2866,45 @@ $stats['orders'] = [
         }
 
         return $available_widgets;
+    }
+
+    /**
+     * Widgets supplied by other modules through `sfx/custom_dashboard/widgets`.
+     * This is CustomDashboard's public extension contract: entries are
+     * `id => ['title' => string, 'render' => callable, 'can_render' => callable]`.
+     * A malformed entry, or an ID of a built-in widget, is ignored.
+     *
+     * @return array<string, array{title:string, render:callable, can_render:callable}>
+     */
+    public static function get_external_widgets(): array
+    {
+        $built_in = [
+            'sfx_theme_settings_overview',
+            'dashboard_site_health',
+            'dashboard_right_now',
+            'dashboard_activity',
+            'dashboard_quick_press',
+            'dashboard_primary',
+        ];
+
+        $supplied = apply_filters('sfx/custom_dashboard/widgets', []);
+        if (!is_array($supplied)) {
+            return [];
+        }
+
+        $widgets = [];
+        foreach ($supplied as $id => $entry) {
+            if (!is_string($id) || $id === '' || in_array($id, $built_in, true) || !is_array($entry)) {
+                continue;
+            }
+            $title = $entry['title'] ?? null;
+            if (!is_string($title) || $title === '' || !is_callable($entry['render'] ?? null) || !is_callable($entry['can_render'] ?? null)) {
+                continue;
+            }
+            $widgets[$id] = ['title' => $title, 'render' => $entry['render'], 'can_render' => $entry['can_render']];
+        }
+
+        return $widgets;
     }
 
     /**
