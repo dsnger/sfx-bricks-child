@@ -63,7 +63,7 @@ default off, page under Tools like Redirects.
 
 ## Site profile
 
-The first thing on the screen, stored per site, never exported:
+Set in the *Einstellungen* tab and shown beside "Prüfen" in *Übersicht* as the profile the next run uses; stored per site, never exported:
 
 | Profile | Meaning |
 |---|---|
@@ -79,12 +79,10 @@ section. Every other check grades the same under every profile.
 All file and URL checks resolve their places from WordPress, never from fixed paths:
 
 - **WordPress root** = `ABSPATH`, public at `site_url('/')`.
-- **Web root** = `home_url('/')`'s folder. It equals `ABSPATH` when `home` and `siteurl`
-  are the same URL. When they differ only by a path on the same host and port (WordPress
-  in a subdirectory), it is `get_home_path()`, accepted only if that folder contains the
-  `index.php` that loads this WordPress; both roots are scanned. In every other case
-  (different hosts, or the check fails) the web root is **not established**: its file
-  checks are Nicht prüfbar with that reason, and only the other mappings are used.
+- **Web root** = `ABSPATH`, established only when `home` and `siteurl` are the same URL
+  (ruling, Gate B pass 8: the front-controller recognition was removed). In every other
+  case (WordPress in a subdirectory, different hosts) the web root is **not established**:
+  its file checks are Nicht prüfbar with that reason, and only the other mappings are used.
 - **Config** = `ABSPATH . 'wp-config.php'`, or one level above `ABSPATH` when WordPress
   loads it from there.
 - **Content** = `WP_CONTENT_DIR`, public at `content_url()`; **plugins** =
@@ -120,8 +118,10 @@ All file and URL checks resolve their places from WordPress, never from fixed pa
 1. **Green needs positive evidence.** Absence of a bad signal is not a good signal.
 2. **Outside fetches judge content, not status codes.** A leak needs a content signature
    of the resource (e.g. a PHP log line pattern, `[core]` in `.git/config`, an SQL dump
-   header). Every outside batch also fetches one random non-existent URL under the
-   prefix `/sfx-site-check-missing-<random>`.
+   header). Every outside batch — Browser or Loopback — also fetches one random
+   non-existent URL under the prefix `/sfx-site-check-missing-<random>`. That URL passes
+   the same request guard (rule 6) as every target; a refused comparison is not requested,
+   and the batch then has no soft-404 evidence (its `200` answers are Nicht prüfbar).
 3. **"Not reachable from here now"** = `403`, `404`, `410`, a redirect, or — **only
    when the comparison URL itself answered `404`/`410`** — a response with the same
    status as the comparison. It never means "the file does not exist". Only together
@@ -129,15 +129,38 @@ All file and URL checks resolve their places from WordPress, never from fixed pa
 4. **Nicht prüfbar** = challenge pages, timeouts, `401`/`429`/`5xx`, empty bodies,
    truncated bodies without signature, unparseable answers, and any `200` when the
    comparison URL also answered `200` (soft-404 site) — except where a check row
-   defines a status as its own finding (`indexability`). Rule 4 wins over rule 3.
-5. **A confirmed leak is Rot regardless of anything else.**
+   defines a status as its own finding (`indexability`). Rule 4 wins over rule 3. An
+   empty complete `200` counts as "nothing there" only where a row says so
+   (`dir_listing`, `robots_txt`), and only when the comparison URL answered `404`/`410`.
+   One further deliberate exception: a non-empty `robots.txt` that reads as robots.txt
+   (robots fields, or comments only) counts whatever the comparison answered — its
+   content is its own signature (rule 2); an empty, HTML or unparseable one does not.
+   `security_headers` judges the response headers of the home page, which arrive whole
+   (up to 8 KB per value) even when its body is cut at 64 KB; it still needs a non-empty
+   home page and a comparison that did not answer `200`.
+5. **A confirmed leak of sensitive content is Rot regardless of anything else.** Disclosure
+   of non-sensitive information (version numbers, readme/license, archive presence) takes the
+   grade its catalogue row names.
 6. **No unknown PHP is ever requested.** Allowed requests to PHP: the module's own
    endpoints, `xmlrpc.php`, `wp-admin/install.php` (GET), the module's own probe,
    WordPress' front end (`/`, `?author=…`, feeds, REST). A file counts as PHP when a
    PHP-like extension (`.php .phtml .php5 .php7 .phar .pht`) appears **anywhere** in its
    name — Apache can run `wp-config.php.bak` as PHP. Such files are read server-side
-   only (name, size, first 4 KB), never fetched. Redirects are never followed by
+   only (name, size, first 4 KB — and only from a regular file, never a FIFO, socket or
+   device), never fetched. Redirects are never followed by
    the browser (`redirect: 'manual'`), so no request can land on an unknown script.
+   A path is decoded exactly once, as the web server does — and so are the location URLs
+   it is matched against; a `%` escape left after that
+   one decode (e.g. `%2561`) is ambiguous and never requested.
+   A URL whose path is a folder on disk (mapped by "Locations") runs that folder's
+   index file, so every request — whatever check found the URL — goes to a folder only
+   when the server listed it and found no PHP-like `index.*` other than the exact silence
+   placeholder; an unreadable folder, a path whose stat fails or whose nearest existing
+   ancestor cannot be searched, or a path no known location maps, is not requested and
+   is named. Only a path proven absent or proven not to be a folder passes. A link whose
+   target cannot be inspected (dangling, or below an unsearchable folder) is unknown,
+   never absent — on disk as well as at the request boundary. The home page is the front end; paths that are no folder on
+   disk (permalinks, feeds, REST) stay allowed.
 7. **Contents found are never stored or mailed** — only the fact, the URL and the
    signature name.
 8. **Every result names its perspective:** *Server* (PHP inside WordPress), *Browser*
@@ -185,6 +208,88 @@ Hinweis → Grün:
 - **Live-Gang** — what makes a site work and be found.
 - **Aufräumen** — leftovers and housekeeping.
 
+### Page layout and guidance
+
+Added 2026-10-10 after the first implementation was seen in a browser (Daniel: the page
+must be better structured, in tabs, and every check needs a recommendation and/or a
+solution, comfortable to use). Same day, Daniel: the hints other scanners give — like
+removing readme.html and license.txt from the root — belong in too; hence `public_files`
+and the WordPress-version part of `version_leaks` grade Gelb.
+
+**Tabs**, in wp-admin's own tab look, switching in place without a reload:
+
+| Tab | Content |
+|---|---|
+| **Übersicht** (default) | Last saved run (date and time in the site's time zone and date/time format, user, profile) or "Noch nicht geprüft" with one sentence on what the check does; the profile the next run uses with a link to change it; "Prüfen" with the probe checkbox; one summary per section (counts Rot / Gelb / Nicht prüfbar) that opens that tab; the most urgent Rot and Gelb checks across all sections (at most 5), each opening its check; the manual items. Plan 2 adds a "Überwachung" panel here (last monitor run, overdue state, open red findings with "aus der Überwachung" and their time, last mail hand-over); a mail link opens this tab. |
+| **Sicherheit**, **Live-Gang**, **Aufräumen** | That section's checks, sorted as in "Sections". Each tab label shows its Rot and Gelb counts. A switch "Nur Handlungsbedarf" hides Grün and Hinweis rows; it changes no count. Plan 2 puts the account-baseline approval on the `admin_accounts` row. |
+| **.htaccess-Vorlage** | The template section, unchanged in content. Each block's copy button writes to the clipboard; where that is unavailable or refused, the block's text is selected and a message says to copy it by hand (Strg/Cmd+C). |
+| **Einstellungen** | Profile, indexability paths, sitemap allow list, fallback theme. Plan 2 adds the "Überwachung" group here (interval, monitored checks, probe selection, e-mail switch). |
+
+**Counting.** A check's status is the worst of its findings in the order Rot, Gelb,
+Nicht prüfbar, Hinweis, Grün (a check with no findings takes the status its row grades).
+Tab badges, the section summaries and the dashboard box count **checks** by status; a
+row shows how many findings it has. Checks without a result are "Noch nicht geprüft" and
+are counted nowhere.
+
+**One run at a time on the page.** A run status line sits above the tabs and stays
+visible on every tab (also announced to screen readers). While a run is in progress all
+tabs show the incoming results, marked as in progress, and badges and summaries count
+them. On a successful save the stored run replaces them. If the server refuses the save, a
+notice above the tabs says the results are **not saved** and the last saved run still
+counts; it offers "Erneut speichern" when the server was busy and "Neu prüfen" otherwise;
+the unsaved results stay visible, marked as unsaved, until the page is reloaded. If no
+answer arrives (lost connection, timeout), the notice says the save status is **unknown**
+and offers reloading the page to see what was stored — it makes no claim either way.
+
+**Settings.** The five indexability path fields each carry their own label ("Seite 1 für die
+Indexierungsprüfung" …) and share the instruction as their description.
+
+**Settings and runs.** A run uses the saved settings. Unsaved edits in *Einstellungen*
+are marked "nicht gespeichert"; saving settings is disabled while a run is in progress.
+
+**Rows.** Every check row is a native disclosure (`details`/`summary`): closed it shows
+status, title and finding count ("0 Funde" included once graded); open it shows, in this order, the findings, the check's
+own note (reason, coverage, perspective — also when there are no findings), and the
+guidance. A row opens by default when it first receives a Rot or Gelb result; after that
+the admin's open/closed choice is kept while further results arrive and across tab
+switches, and rows are updated in place so focus is not lost.
+
+**Links.** `#<tab>` opens a tab (`uebersicht`, `sicherheit`, `live-gang`, `aufraeumen`,
+`htaccess`, `einstellungen`); `#check-<check-id>` opens the check's tab, opens and
+focuses its row, and shows it even when "Nur Handlungsbedarf" would hide it. An unknown
+fragment — including names an object inherits, such as `#constructor` — opens *Übersicht*. The fragment follows tab changes, so back and forward work.
+
+**Accessibility.** The tab bar follows the WAI-ARIA tabs pattern (tablist, tabs with
+selected state and controls, one tab stop with arrow-key movement, inactive panels
+hidden from focus). Disclosures use the native element. Status is never shown by colour
+alone.
+
+**Empty states.** Before the first run: "Noch nicht geprüft" on every tab with the
+"Prüfen" control — the *.htaccess-Vorlage* and *Einstellungen* tabs included; a check link (`#check-<id>`) still shows its own row. When "Nur Handlungsbedarf" leaves a tab empty after a run: "Kein
+Handlungsbedarf in diesem Bereich."
+
+**Guidance per check**, fixed text in the catalogue, the same for every site:
+
+- **Warum** — one or two sentences on the risk or the go-live effect.
+- **Empfehlung** — what to do, in one sentence.
+- **So geht's** — numbered steps where the fix has steps; may link to the WordPress
+  screen, the theme module (see "Coupling") or the *.htaccess-Vorlage* tab, or name the
+  hoster's panel. A check that needs no action when green says so.
+
+Guidance never contains data from the site; only findings and the check's note do. It
+replaces the single tip line; it never changes a grade.
+
+**Sitemap allow list** (*Einstellungen*): offers attachments, the author sitemap, every
+post type and taxonomy that is public or publicly queryable, and every type the last
+saved `sitemap_entries` result reported — never WordPress' internal types (revisions,
+menu items, custom CSS, changesets, oEmbed cache, user requests, reusable blocks,
+templates and template parts, global styles, navigation, font families and faces).
+Entries already stored but no longer offered stay stored and keep silencing their type;
+they are listed separately as "gespeichert, derzeit nicht angeboten" with a way to
+remove them. Import keeps validating as before.
+
+The status word for information is **Hinweis** everywhere (not "Notiz").
+
 ## Check catalogue
 
 Columns: **ID** (stable, used in storage, mail and endpoints), **How** (S = Server,
@@ -195,24 +300,24 @@ B = Browser or Loopback), **★** = available to the monitor, grading.
 | ID | Check | How | ★ | Grading |
 |---|---|---|---|---|
 | `logs_public` | `debug.log` (default and custom `WP_DEBUG_LOG` path), `error_log` in the web root and the WordPress root, PHP `error_log` path | S+B | ★ | File exposure table. Signature: PHP log line pattern. |
-| `config_copies` | `wp-config` copies in the config location (`.bak .old .save .orig .txt ~ .swp`, `wp-config-sample.php` excluded) | S | ★ | Server only — every copy carries `.php` in its name (rule 6). Copy present → Gelb "Kopie der Konfiguration — sofort löschen", marked *mit Zugangsdaten* when it contains `DB_PASSWORD`, and listed first. Whether it is publicly readable is not tested (so never Rot); the row says so. Revisits copies found in earlier monitor runs: a complete listing without them means resolved. |
-| `backups_public` | `.sql`, `.sql.gz` and archives (`.zip .tar .tar.gz .tgz`) in the web root and the WordPress root and in the folders of common backup plugins | S+B | ★ | File exposure table. Signature: SQL dump header (`-- MySQL dump`, `CREATE TABLE`); for archives the archive magic bytes count only as Gelb ("öffentliches Archiv — prüfen"), never Rot. |
+| `config_copies` | `wp-config` copies in the config location (`.bak .old .save .orig .txt ~ .swp`, `wp-config-sample.php` excluded) | S | ★ | Server only — every copy carries `.php` in its name (rule 6). Copy present → Gelb "Kopie der Konfiguration — sofort löschen", marked *mit Zugangsdaten* when it contains `DB_PASSWORD`, and listed first. Whether it is publicly readable is not tested (so never Rot); the row says so. Revisits copies found in earlier monitor runs: a complete listing without them means resolved. A copy whose stat fails is Nicht prüfbar, named, never dropped. |
+| `backups_public` | `.sql`, `.sql.gz` and archives (`.zip .tar .tar.gz .tgz`) in the web root and the WordPress root and in the folders of common backup plugins | S+B | ★ | File exposure table. Signature: SQL dump header (`-- MySQL dump`, `CREATE TABLE`); for archives the archive magic bytes count only as Gelb ("öffentliches Archiv — prüfen"), never Rot. A candidate whose stat fails (unsearchable folder, broken link) stays a target with disk state unknown → Nicht prüfbar, never dropped; so does a backup-plugin folder that cannot be inspected (a broken link, a failed search, a folder that can be listed but not searched — empty or not) — a folder is left out only when its absence is established. A wildcard backup folder search counts as "nothing there" only when its parent folder could be listed and searched; otherwise the parent is named Nicht prüfbar. |
 | `vcs_env` | `.git/HEAD`, `.git/config`, `.env` in the web root and the WordPress root | S+B | ★ | File exposure table. Signature: `ref:` / `[core]` / `KEY=value` lines. |
-| `phpinfo` | `phpinfo.php`, `info.php`, `test.php`, `php.php` and similar in the web root and the WordPress root | S | ★ | Read on disk only (rule 6). Calls `phpinfo(` → Gelb "verrät Serverdetails — löschen". Unknown script → Gelb "prüfen und löschen". |
-| `dir_listing` | Directory listing of the uploads root, one dated uploads subfolder, `wp-content/plugins/`, `wp-includes/` | B | ★ | Listing detected by several markers (title "Index of", parent link, file rows). Gelb with the listed names. |
+| `phpinfo` | `phpinfo.php`, `info.php`, `test.php`, `php.php` and similar in the web root and the WordPress root | S | ★ | Read on disk only (rule 6). Calls `phpinfo(` → Gelb "verrät Serverdetails — löschen". Unknown script → Gelb "prüfen und löschen". Only a regular file (or a link to one) is opened; anything else (FIFO, socket, device) is Nicht prüfbar, never read. |
+| `dir_listing` | Directory listing of the uploads root, one dated uploads subfolder, `wp-content/plugins/`, `wp-includes/` | B | ★ | Listing detected by several markers (title "Index of", parent link, file rows) in a `200` answer that is no challenge, while the comparison URL did not serve a page (on a catch-all site the markers prove nothing → Nicht prüfbar). Gelb with the listed names. An empty complete `200` (the silence placeholder) counts as no listing only when the comparison URL answered `404`/`410`; otherwise Nicht prüfbar. |
 | `php_in_uploads` | Uploads probe (active test, below) | S (Loopback, one request) | ★ | Outcome table in the probe section. |
-| `php_files_uploads` | PHP-like files in uploads (`.php .phtml .php5 .php7 .phar .pht`) | S | ★ | Known silence placeholder (`<?php // Silence is golden`, ≤ 64 bytes) → Hinweis. Other content → Gelb with list. Known shell patterns (`eval(base64_decode`, `assert($_`, `system($_` …) → Gelb "verdächtiger Code — sofort prüfen", first in the list. The module's own registered probes are skipped only while their content is the expected one; a modified probe is scanned like any file. Scan limit per run (count and time, set in the plan); hitting it → Nicht prüfbar for the rest, named. |
+| `php_files_uploads` | PHP-like files in uploads (`.php .phtml .php5 .php7 .phar .pht`) | S | ★ | Known silence placeholder (`<?php // Silence is golden`, ≤ 64 bytes) → Hinweis. Other content → Gelb with list. Known shell patterns (`eval(base64_decode`, `assert($_`, `system($_` …) → Gelb "verdächtiger Code — sofort prüfen", first in the list. The module's own registered probes are skipped only while their content is the expected one; a modified probe is scanned like any file. Scan limit per run (count and time, set in the plan); hitting it → Nicht prüfbar for the rest, named. A listed folder that cannot be searched, or an entry whose stat fails, is Nicht prüfbar, named — never skipped. A linked folder is not followed and is named Nicht prüfbar; folders are read entry by entry, so the scan limit also bounds the listing itself. A folder is checked for searchability right after it is opened, so an empty unsearchable folder is named too. |
 | `debug_display` | `WP_DEBUG`, `WP_DEBUG_DISPLAY`, `WP_DEBUG_LOG`, PHP `display_errors` master value (`ini_get_all()` `global_value`) | S | ★ | Configuration evidence only, labelled *laut Konfiguration*, following `wp_debug_mode()` (`wp-includes/load.php:613-640`). **WordPress decides** when `WP_DEBUG` is truthy and `WP_DEBUG_DISPLAY` is not null: truthy → display on → Rot; falsy → off → Gelb ("Debug-Modus an"). **PHP decides** in every other case (`WP_DEBUG` falsy, or `WP_DEBUG_DISPLAY` null): PHP master value (`ini_get_all()` `global_value`) on → Rot; off → Hinweis "laut PHP-Grundeinstellung aus — eine Ordner-Einstellung (`.user.ini`, `.htaccess`) sieht der Check nicht". Never Grün. The `enable_wp_debug_mode_checks` filter and runtime changes by plugins are not seen; the row says so. No error is triggered on purpose. |
 | `allow_url_include` | PHP setting | S | | On → Rot ("gefährliche Konfiguration"). |
 | `https` | `home` and `siteurl` on `https`; TLS answers; `http://` redirects to `https://` | S+B | ★ | Each part its own line. TLS and redirect measured by Loopback. Any part failing → Rot. |
 | `php_version` | PHP version vs. upstream support | S | | Static table in code with source URL and check date. Upstream security support ended → Rot "Upstream-Support beendet (Hoster-Backports separat klären)". Ends within 6 months → Gelb. Version not in table → Nicht prüfbar. |
-| `security_headers` | HSTS, CSP, `X-Content-Type-Options`, `X-Frame-Options` or CSP `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy` on the home page | B | | Content judged, not presence: `Report-Only` doesn't count; a CSP of only `upgrade-insecure-requests` is "vorhanden, schützt kaum". Each Gelb when missing; never Rot. Tip names the SecurityHeader module. |
+| `security_headers` | HSTS, CSP, `X-Content-Type-Options`, `X-Frame-Options` or CSP `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy` on the home page | B | Gate B pass 3 ruling — exact grammar only where it is small: HSTS (RFC 6797 directives, exactly one `max-age` with a positive digits value, `includeSubDomains` and `preload` without a value; malformed → Gelb, `max-age=0` → Gelb), `X-Content-Type-Options` exactly `nosniff`, framing (an enforcing CSP `frame-ancestors` wins over `X-Frame-Options`; a CSP header may hold several comma-separated policies, and every one with `frame-ancestors` must be `'none'`/`'self'`; only `frame-ancestors 'none'`/`'self'` or `X-Frame-Options` `DENY`/`SAMEORIGIN` → Grün, anything else → Gelb), `Referrer-Policy` (the last recognised token; Grün only for `no-referrer`, `same-origin`, `strict-origin`, `strict-origin-when-cross-origin`). CSP and `Permissions-Policy` are not judged in detail: an enforcing CSP or a Permissions-Policy present → Hinweis "vorhanden — Wirkung wird nicht im Detail bewertet"; CSP missing, only `Report-Only`, or only `upgrade-insecure-requests` ("vorhanden, schützt kaum") → Gelb; Permissions-Policy missing → Gelb. A header value longer than 8 KB is not judged → Nicht prüfbar for that line. Never Rot. Tip names the SecurityHeader module. |
 | `file_editor` | Effective block via `DISALLOW_FILE_EDIT` or `DISALLOW_FILE_MODS` | S | | Not blocked → Gelb. |
-| `xmlrpc` | XML-RPC reachable and answering | B | | Gelb if it answers `system.listMethods` to an anonymous POST; no pingback calls. Tip names WPOptimizer's switch. |
-| `registration` | Open registration and the default role's capabilities | S | ★ | Off → Grün. On with a default role holding `edit_posts`, `upload_files`, `unfiltered_html`, `manage_options`, `bricks_execute_code` or `bricks_upload_svg` → Rot. On with a read-only role (only `read`/`level_0`) → Hinweis "beabsichtigt?". On with any other role → Gelb, listing its capabilities beyond `read`. |
-| `auto_updates` | Core minor/security auto-updates effective | S | | Off → Gelb; the tip names "externer Update-Prozess" as a valid reason. |
+| `xmlrpc` | XML-RPC reachable and answering | B | | Gelb if it answers `system.listMethods` to an anonymous POST; no pingback calls. Tip names WPOptimizer's switch. A blocking status counts only with a non-empty, complete body (rule 4); otherwise Nicht prüfbar. A `200` answer counts only when the comparison URL clearly did not serve a page (rule 4). |
+| `registration` | Open registration and the default role's capabilities | S | ★ | Off → Grün. On with a default role holding `edit_posts`, `upload_files`, `unfiltered_html`, `manage_options`, `bricks_execute_code` or `bricks_upload_svg` → Rot. On with a read-only role (only `read`/`level_0`) → Hinweis "beabsichtigt?". On with any other role → Gelb, listing its capabilities beyond `read`. The two Bricks grants count by key presence on the role, as Bricks resolves them (a `false`-valued `bricks_execute_code` still grants). |
+| `auto_updates` | Core minor/security auto-updates effective | S | | Off → Gelb; the tip names "externer Update-Prozess" as a valid reason. A version-control checkout (WordPress' own `is_vcs_checkout()`, which blocks its automatic updates) → Gelb "Updates deaktiviert (Versionsverwaltung)". |
 | `admin_accounts` | Users with a privileged grant: `manage_options` or Bricks code execution | S | ★ | List shown (Hinweis). Login `admin`/`administrator` → Gelb. Monitoring: see "Account baseline". |
-| `usernames_public` | Login names visible to guests: `?author=1` redirect (Loopback), REST `/wp/v2/users`, author sitemap, feed, oEmbed | B | ★ | The browser returns the names it found; the server compares them **exactly** with real `user_login` values (logins never go to the browser). Match → Gelb. Display name equal to login but not found publicly → Hinweis. |
+| `usernames_public` | Login names visible to guests: `?author=1` redirect (Loopback), REST `/wp/v2/users`, author sitemap, feed, oEmbed | B | ★ | The browser returns the names it found; the server compares them **exactly** with real `user_login` values (logins never go to the browser). Match → Gelb. Display name equal to login but not found publicly → Hinweis. A source counts as read only when its answer is complete, has its own format (a JSON list — not an object — of users, each a JSON object with an integer `id` and a string `slug` or `name`; sitemap; feed; an oEmbed JSON object with `type` and `version` or string author fields) and the comparison URL did not answer `200`; otherwise it is Nicht prüfbar. A login found in any served answer still counts. `401` is no evidence (Nicht prüfbar); a `403`/`404`/`410` closes a source only with a non-empty, complete body (rule 4). A source not fetched (rule 6, Locations) is Nicht prüfbar with its reason. Author archive URLs are read under the site's own author base; JSON answers are decoded first (REST `slug`/`name`/`link`, oEmbed `author_name`/`author_url`); every name read is compared (no cap beyond the 64 KB per source) and every confirmed match is graded (the saved run's compaction handles display); feeds give Dublin Core `creator` and Atom `author/name`, read by the XML parser with namespaces (any prefix, attributes allowed, entities and CDATA decoded, comments not read). `?author=1` is judged against a comparison fetched by Loopback, from the same perspective. |
 | `bricks_permissions` | Bricks code execution on (`\Bricks\Helpers::code_execution_enabled()`); who holds code execution and SVG upload | S | ★ | Grants resolved per user as Bricks 2.4.2 does (below). Code execution on and granted to anyone without `manage_options` → Rot. On, admins only → Hinweis. SVG upload for non-admins → Gelb. Bricks inactive or helper missing → Nicht prüfbar. No signature audit (Bricks has its own tool). |
 
 **Bricks grants**, verified in `../bricks/includes/capabilities.php:229-264`
@@ -229,16 +334,17 @@ verified version.
 | ID | Check | How | ★ | Grading |
 |---|---|---|---|---|
 | `search_visibility` *P* | "Suchmaschinen davon abhalten" | S | ★ | *Live*: on → Rot, off → Grün. *Staging/Privat*: on → Grün, off → Gelb ("Seite kann in Suchmaschinen landen"). |
-| `robots_txt` *P* | `robots.txt` parsed per user-agent group, `Allow` exceptions respected | B | ★ | Everything disallowed for `*` → Rot under *Live*, Grün under *Staging/Privat*. Anything else → Grün under *Live*, Hinweis under *Staging/Privat*. Fetch fails → Nicht prüfbar. |
-| `indexability` *P* | Home page plus up to 5 admin-chosen paths, fetched by Loopback: status, `noindex` in meta or `X-Robots-Tag`, canonical host, redirect target | B | ★ | By status, under *Live*: `200` HTML → Rot on `noindex` or canonical to another host; Gelb when `robots.txt` disallows this path for `*` ("Crawling gesperrt"); Grün only when neither applies **and** `robots.txt` was read — the check fetches it itself in the same run (`404`/`410` = everything allowed); if it cannot be read, Nicht prüfbar; `404`/`410` → Rot ("Seite fehlt"); `401`, `503` or redirect to `wp-login.php` → Rot ("nicht öffentlich erreichbar"); redirect to another path → Gelb; challenge page and anything else → Nicht prüfbar. Under *Staging/Privat*: `noindex`, `401`, `503` and login redirects are Grün; `404`/`410` → Gelb; the rest as under *Live*. |
-| `sitemap` *P* | Sitemap via `robots.txt`, `/wp-sitemap.xml`, `/sitemap_index.xml`, `/sitemap.xml` | B | | Found → Grün. None found → Gelb under *Live*, Hinweis under *Staging/Privat* ("nicht gefunden", not "existiert nicht"). |
-| `sitemap_entries` *P* | Sitemap index followed one level, max 20 sub-sitemaps, same host only; entries matched against the site's post types, taxonomies and the author sitemap | B | | Bricks templates (`bricks_template`), attachments, non-public post types and taxonomies → Gelb with list. Author sitemap → Gelb. Coverage always shown ("12 von 30 Sitemaps geprüft"); entries that match nothing → Hinweis "nicht zuordenbar". A per-site allow list ("gewollt") silences an entry type. |
+| `robots_txt` *P* | `robots.txt` parsed per user-agent group, `Allow` exceptions respected | B | ★ | Everything disallowed for `*` (a `Disallow` covering every path — `/`, `/*`; `/$` covers only the home page — and no `Allow` that actually wins for the literal path prefix it names; WordPress' `/wp-admin/` Allow — recognised on the normalised rule — does not count) → Rot under *Live*, Grün under *Staging/Privat*. Anything else → Grün under *Live*, Hinweis under *Staging/Privat*. Fetch fails → Nicht prüfbar. An HTML page or text that does not read as robots.txt → Nicht prüfbar; an empty file counts as "everything allowed" only when the comparison URL answered `404`/`410`. Rule and path are compared in one octet form (RFC 9309 §2.2.2): escapes of unreserved characters decoded, other escapes kept, non-ASCII bytes encoded; a rule's specificity (the longest match wins) is measured in that form too. A `404`/`410` for robots.txt means "no robots.txt" only with a complete, non-empty body (an error page); empty or truncated → Nicht prüfbar (rule 4). |
+| `indexability` *P* | Home page plus up to 5 admin-chosen paths, fetched by Loopback: status, `noindex` in meta or `X-Robots-Tag`, canonical host, redirect target | B | ★ | By status, under *Live*: `200` HTML → Rot on `noindex` or canonical to another host; Gelb when `robots.txt` disallows this path for `*` ("Crawling gesperrt"); Grün only when neither applies **and** `robots.txt` was read — the check fetches it itself in the same run (`404`/`410` = everything allowed); if it cannot be read, Nicht prüfbar; `404`/`410` → Rot ("Seite fehlt"); `401`, `503` or redirect to `wp-login.php` → Rot ("nicht öffentlich erreichbar"); redirect to another path → Gelb; challenge page and anything else → Nicht prüfbar. Under *Staging/Privat*: `noindex`, `401`, `503` and login redirects are Grün; `404`/`410` → Gelb; the rest as under *Live*. `noindex` and the canonical link are read by an HTML parser (DOM, no network, only the bytes read): comments and script text are no markup, attribute values may be quoted or not, entities are decoded; no parser or a failed parse → Nicht prüfbar. A `200` counts as HTML only when the comparison URL did not also answer `200` (rule 4), the body is not empty and reads as HTML; a page longer than the bytes read is always Nicht prüfbar for its metadata (ruling, Gate B pass 4: what lies beyond the cut could carry noindex or a canonical link); the status verdicts (`404`/`410`, `401`, `503`, redirects) stay. A `Location` without a path means `/`; one that is no absolute URL or absolute path → Nicht prüfbar. robots.txt counts as read under the same conditions as in `robots_txt`. |
+| `sitemap` *P* | Sitemap via `robots.txt`, `/wp-sitemap.xml`, `/sitemap_index.xml`, `/sitemap.xml` | B | | Found (a well-formed `urlset` or `sitemapindex` document; a truncated one by its root element, read in part; in a `200` only when the comparison URL did not also answer `200` or fail) → Grün. None found → Gelb under *Live*, Hinweis under *Staging/Privat* ("nicht gefunden", not "existiert nicht"); when an address gave no reliable answer (no answer, challenge, `401`/`429`/`5xx`, empty or a malformed sitemap, an empty or truncated `403`/`404`/`410`) → Nicht prüfbar. `sitemap_entries` counts only sub-sitemaps read this way. Every `Sitemap:` line of robots.txt is a candidate (bounded by its 64 KB); every candidate is guarded, also after a sitemap was found, and discovery goes on past refused ones. Every refused address is a finding of its own with its reason (Hinweis when a sitemap was found, Nicht prüfbar otherwise; in `sitemap_entries` Hinweis), so the saved run's compaction applies — never only a note. |
+| `sitemap_entries` *P* | Sitemap index followed one level, max 20 sub-sitemaps, same host only; entries matched against the site's post types, taxonomies and the author sitemap | B | | Bricks templates (`bricks_template`), attachments, non-public post types and taxonomies → Gelb with list. Author sitemap → Gelb. Every type graded here can be marked gewollt in Einstellungen, except WordPress' internal types listed in "Page layout and guidance". Coverage always shown ("12 von 30 Sitemaps geprüft"); entries that match nothing → Hinweis "nicht zuordenbar". A per-site allow list ("gewollt") silences an entry type. `loc` elements are read by the XML parser with namespaces, so prefixed sitemaps (`sm:loc`) count. Every entry type read is graded — no cap on the number of types (reading is bounded by 64 KB per sitemap and 20 sub-sitemaps). |
 | `admin_email` | Current `admin_email`, pending change | S | | Hinweis: "Ist das die richtige Adresse? An sie gehen die Warn-Mails." |
 | `permalinks` | Plain permalinks | S | | Gelb, tip only; changing them can break existing URLs. |
 
 Admin-chosen paths: stored site-relative (start with `/`, no scheme, host, query, `..`
 or `.php`), validated on save, on import and before each fetch; an invalid stored path is
-shown as rejected and skipped.
+shown as rejected and skipped (Hinweis). A valid path the request guard refuses (an unsafe
+or unreadable folder, an unmapped path) is Nicht prüfbar with the refusal reason.
 
 ### Aufräumen
 
@@ -248,14 +354,15 @@ shown as rejected and skipped.
 | `inactive_plugins` | Inactive plugins | S | | Gelb with list. |
 | `inactive_themes` | Inactive themes except Bricks and one named fallback | S | | Gelb with list. |
 | `updates` | Updates offered for core, plugins, themes (incl. Bricks and this theme's updater) | S | ★ | Offered → Gelb with list. No offers → Hinweis "keine Updates angeboten (Stand: <Datum>)" — never Grün: WordPress keeps old data when a check fails, and premium updaters without a licence show no offer. |
-| `public_files` | `readme.html`, `license.txt`, `wp-admin/install.php` | B | | readme/license → Hinweis. `install.php` showing a setup form (not "bereits installiert") → Rot; nothing is submitted. |
-| `version_leaks` | PHP/server version in response headers | B | | Hinweis. |
+| `public_files` | `readme.html`, `license.txt` in the WordPress root (disk + outside); `wp-admin/install.php` (outside) | S+B | | readme/license: content readable from outside (the file's own signature) → Gelb "entfernen oder sperren" — they return with every WordPress update, so the guidance points to the .htaccess block; present on disk and not reachable (rule 3) → Grün "liegt da, ist aber gesperrt"; absent and not reachable → Grün; Nicht prüfbar per rule 4 otherwise. `install.php`: setup form (not "bereits installiert") → Rot, nothing is submitted; "bereits installiert" → Hinweis; not reachable → Grün. A target not fetched (rule 6, Locations) is Nicht prüfbar with its refusal reason; the installer stays listed. |
+| `version_leaks` | WordPress version in two sources: the home page's `generator` meta tag and the main feed's `generator` element; PHP/server version in the home page's response headers | B | | Per source, worst wins: the installed WordPress version found → Gelb (guidance names WP Optimizer's "WordPress-Version entfernen" switch); source read completely (rule 4 not hit) without it → Grün for that source, labelled "in den geprüften Quellen nicht gefunden" — never a site-wide claim; a version found within the bytes read counts even if the body was truncated (rule 4 covers truncation only without a match); feed answering `404`/`410` → Grün "Feed nicht vorhanden"; a redirect, challenge, `5xx`, truncation without a match, unparseable → Nicht prüfbar for that source (redirects are not followed). Server/PHP version in headers → Hinweis (host-controlled). `?ver=` on assets is not checked: it serves cache busting and the switch that strips it has a documented trade-off. The home page's generator is read by the same HTML parser as in `indexability` (exact `name="generator"`; no parser → Nicht prüfbar). The feed's generator is read by the XML parser with namespaces (CDATA and entities decoded, comments not read): only the feed's own generator — RSS `channel/generator` or Atom `feed/generator`, text and its `version`/`uri` attributes. The feed counts as read completely only as a well-formed feed document (`rss`, `feed`, `rdf:RDF`); a source not fetched (rule 6, Locations) is Nicht prüfbar with its reason. A feed answering `404`/`410` counts as "not present" only with a complete, non-empty error page (rule 4). |
 | `table_prefix`, `app_passwords` | Prefix `wp_`; application passwords with owner and last use | S | | Hinweis only. |
 
 ### Manual items
 
 Ticked by the admin, stored with user and date in their own option, reset by a button.
-Shown in *Live-Gang*. Never touched by the monitor.
+One write at a time: while a tick or the reset is pending, every item control is disabled.
+Shown in the *Übersicht* tab only. Never touched by the monitor.
 
 - Kontaktformular als Gast abgeschickt **und** die Mail ist angekommen.
 - Backup außerhalb des Servers vorhanden **und** eine Wiederherstellung wurde getestet.
@@ -283,13 +390,16 @@ removing.
    If the open succeeded but writing the content failed, the entry is still written and
    the file is handled by the removal rule (content differs → kept and reported). A
    crash after the open but before the entry is written leaves an unregistered file,
-   which is reported, never deleted.
-2. **Fetch** it once by Loopback (bounded, rule 9).
+   which is reported, never deleted. If the entry cannot be written and the just-opened
+   empty file cannot be removed either, that file is reported as a cleanup line too.
+2. **Fetch** it once by Loopback (bounded, rule 9), right after this batch's comparison
+   URL (rule 2), which the outcome table's "like the comparison" refers to.
 3. **Remove** it in the same request.
 4. **Background cleanup** — on loading the check page, on every monitor run, and daily
    by its own cron hook regardless of monitoring — handles **expired** entries, which
    only a crashed request leaves behind. Unregistered files in the folder are reported,
-   never deleted.
+   never deleted. When the page-load cleanup cannot enter the critical section, the page
+   says so (busy, reload to try again).
 5. **Teardown** (purge only) handles every entry, expired or not.
 
 **Removing an entry** (steps 3, 4, 5 alike): file has the expected content → delete it,
@@ -298,7 +408,8 @@ keep the file and the entry, report it. The expected content follows from `expir
 
 **File content:** no includes, no request parameters. It prints one line, the marker,
 built at runtime from two parts so the source never contains the printed line; after
-`expires` it prints nothing. An expired leftover is therefore inert.
+`expires` it prints nothing. A leftover is therefore inert once its `expires` has passed —
+at most five minutes after it was created; until then it can still answer.
 
 **Outcome** (execution and cleanup are reported separately; rule 4 wins over rule 3):
 
@@ -339,7 +450,8 @@ one; an empty selection cannot be saved with monitoring on), the e-mail switch.
 ### Run
 
 - WP-Cron. One run at a time via its own lock option `sfx_site_check_lock`, taken with
-  `add_option` (fails if present) and holding a run token; lease 15 min, total run
+  an atomic insert that fails if the row exists (not `add_option()`, which overwrites under
+  a race) and holding a run token; lease 15 min, total run
   deadline 10 min, after which remaining checks are Nicht prüfbar. Every write and the
   mail send first check that the lock still holds this run's token; if not, the run
   stops without writing.
@@ -405,18 +517,22 @@ Monitoring off → never overdue.
 ### Turning things off
 
 - **Module disabled** (`enable_site_check` off): the controller is not loaded, so its
-  cron callbacks do nothing; settings and state are kept. Leftover probes are inert and
+  cron callbacks do nothing; settings and state are kept. Leftover probes turn inert at their
+  expiry (at most five minutes) and
   are cleaned on the next page load after re-enabling, which resumes the stored settings.
 - **Theme switch:** nothing runs. The cron events have no callback without this theme's
-  code and do nothing; leftover probes are inert. Switching back resumes; purge removes
+  code and do nothing; leftover probes turn inert at their expiry (at most five minutes). Switching back resumes; purge removes
   everything.
 - **Monitoring off:** unschedules the monitor hook; state is kept.
 
 ## `.htaccess` template
 
-Shown as copy text with steps: 1. download the current `.htaccess` (file manager or
-SFTP), 2. insert the block **above** `# BEGIN WordPress`, 3. run the check again, 4. on a
-500 error put the backup back. Paths come from "Locations". Separate blocks, each with
+Shown as copy text; the page states that Sicherheits-Check never writes these files (it does
+not speak for the whole theme). Steps per destination: 1. download the current `.htaccess` of that
+folder (file manager or SFTP) as a backup, or note that none exists; 2. root blocks go
+**above** `# BEGIN WordPress`, or at the top when that marker is absent; the uploads and
+`.git` blocks go at the top of their own folder's `.htaccess`, created if missing; 3. run
+the check again; 4. on a 500 error put the backup back (or delete the newly created file). Paths come from "Locations". Separate blocks, each with
 `# BEGIN sfx-…` / `# END sfx-…` markers, so they can be added one at a time:
 
 - **Root, sensitive files:** deny `wp-config` copies, `*.sql`, `*.log`, `error_log`,
@@ -429,7 +545,13 @@ SFTP), 2. insert the block **above** `# BEGIN WordPress`, 3. run the check again
 - **Root, directory listing:** `Options -Indexes` as its own block (a host can forbid it
   via `AllowOverride`, which gives a 500).
 - **Uploads folder** (`<uploads>/.htaccess`): deny the PHP-like extensions listed
-  above via `FilesMatch`. No `php_flag`, no handler changes.
+  above via `FilesMatch`, matched anywhere in the name as in rule 6 (`x.php~`, `x.phtml.bak`).
+  The nginx text scopes the same rule to the resolved uploads URL path — decoded once (nginx
+  matches the decoded URI), regex characters escaped, quoted — and leaves it out, with a note,
+  when the web root is not established, when that path is unknown, is the site root, or lies
+  on another host than the site's home host (CDN,
+  offload: "Uploads liegen auf einem anderen Host — Regel dort setzen") — never a site-wide
+  PHP deny. No `php_flag`, no handler changes.
 - **XML-RPC:** commented out, with the note that apps and Jetpack need it.
 
 Only access-control and `Options` directives: no `RewriteRule`, `Redirect` or `Header`,
@@ -440,7 +562,7 @@ nginx, with the note that an Apache rule does nothing for files nginx serves its
 
 ## Storage
 
-All options prefixed, `autoload = no`, listed in `DataPurge::OPTION_NAMES`:
+All options prefixed, `autoload = no`, listed in DataPurge's ownership list (`DataPurge::option_names()`):
 
 | Option | Written by | Content | Exported |
 |---|---|---|---|
@@ -453,6 +575,9 @@ All options prefixed, `autoload = no`, listed in `DataPurge::OPTION_NAMES`:
 | `sfx_site_check_probes` | both | probe entries | no |
 | `sfx_site_check_mutex` | both | critical-section token, taken at | no |
 
+**Import** reports what was actually stored after merging and the 5-path cap: entries
+rejected as invalid and entries that did not fit are counted separately, on the full
+incoming list (validation does not cap).
 **Import** writes only the two exported keys and leaves everything else on the
 destination as it is. `enable_site_check` travels with `sfx_general_options` like every
 other module switch. Importing it can turn the module back on, which resumes whatever
@@ -462,7 +587,7 @@ re-enabling by hand would. Nothing from the source site starts monitoring or the
 **Writes.** Every read-check-write on the module's options — creating and removing
 probe entries, issuing a run, accepting a save, every monitor write, purge — happens
 inside one short critical section: a mutex option `sfx_site_check_mutex` taken with
-`add_option` (fails if present), held only for that read-check-write, treated as stale
+an atomic insert that fails if the row exists (not `add_option()`), held only for that read-check-write, treated as stale
 after 30 s. Taking over a stale mutex must not let its old owner write afterwards: every protected
 write succeeds only if the mutex still holds the writer's own token at that moment
 (a conditional write), otherwise it is dropped and reported; the mechanism is the
@@ -475,7 +600,13 @@ nothing written after purge or after a newer run was issued can land.
 delete the lock (a running monitor stops at its next fenced write); delete the issued
 run (no manual save lands afterwards); tear down probes (lifecycle step 5, Teardown); delete the
 remaining options — except `sfx_site_check_probes` when a probe could not be deleted,
-which stays and is reported in the purge result.
+which stays and is reported in the purge result. A delete that does not go through
+(section taken over, database error) is reported in the purge result as such, never
+counted as an absent option; if deleting the lock or the issued run fails, the purge
+stops there and tears nothing else down. Files in the probe folder that no entry records
+are kept and reported. A cron hook whose events could not be unscheduled, and a mutex row
+the section could not release (database error), are reported too.
+The theme's purge notice says so (a partial purge, to be run again).
 
 Stored text is size-limited and escaped at output.
 
@@ -522,7 +653,9 @@ No new module-to-module edges (AGENTS.md "Dependency direction"); the dashboard 
 the `sfx/custom_dashboard/widgets` hook contract, not a class. AGENTS.md gets one line
 naming that filter as CustomDashboard's extension point. Checks observe real
 behaviour; where another module explains a result (SecurityHeader, WPOptimizer's XML-RPC
-and author switches) the tip names it in text only. `DataPurge` gains the module's
+and author switches) the guidance names it and may link to its admin page by URL (an
+admin URL string — never a class of that module); when that module is off, the link
+goes to the theme settings page where it is switched on. `DataPurge` gains the module's
 options, cron hook names and probe teardown, as it already does for Redirects. The
 module's own outside fetches can land in the Redirects 404 log; the comparison URL's
 fixed prefix `/sfx-site-check-missing-` makes them recognisable.
@@ -573,6 +706,24 @@ fixed prefix `/sfx-site-check-missing-` makes them recognisable.
     without `manage_options` in both places; shows "Noch nicht geprüft" on a fresh
     site; never writes an option or runs a check; with SiteCheck disabled it is absent
     from the picker and a saved selection renders nothing.
+
+15. Page: six tabs and behaviour as in "Page layout and guidance"; the fragment reopens a tab on
+    reload; every catalogue check has Warum and Empfehlung text (and So geht's steps where
+    the fix has steps) in German; Rot/Gelb rows open by default when they first get their result, others closed, later
+    admin choices and check links win; "Nur
+    Handlungsbedarf" hides Grün and Hinweis rows; tabs and disclosures work by keyboard;
+    dates on the page and in the box use the site's time zone and date format.
+
+16. `public_files`: readable readme.html → Gelb; after the template block (403) with the
+    file still on disk → Grün "gesperrt"; absent on disk and not reachable → Grün; absent
+    on disk but its content still served (cache) → Gelb; a challenge → Nicht prüfbar. `version_leaks`: generator
+    meta with the installed version → Gelb; the same version in the feed only → Gelb; a
+    plugin's version in another meta tag → not counted; feed disabled (404) and no
+    generator meta → Grün ("Feed nicht vorhanden", "in den geprüften Quellen nicht gefunden"); challenged or
+    truncated feed without a match → Nicht prüfbar for the feed while the home source
+    still grades; a truncated feed whose generator appears in the bytes read → Gelb; a
+    redirected feed → Nicht prüfbar; server/PHP header → Hinweis. No extra request beyond
+    the home page, the feed and the batch's comparison URL (rule 2).
 
 ## Open for the plan
 

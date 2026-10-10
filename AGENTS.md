@@ -11,7 +11,7 @@ published from `dsnger/sfx-bricks-child` and installed on client sites. It ships
 theme-level capability as admin modules under `inc/`: image optimization, WordPress
 optimization/cleanup, media credits, password-protected pages, security headers,
 nav-menu queries, social accounts, contact infos, custom scripts, a custom dashboard,
-import/export, general theme options, smooth scroll, redirects with a 404 log, editor prose mirroring, `@format:tel` for simple Bricks
+import/export, general theme options, smooth scroll, redirects with a 404 log, a security check (Sicherheits-Check), editor prose mirroring, `@format:tel` for simple Bricks
 dynamic tags, and a settings overview.
 
 Users are site administrators working in wp-admin, plus editors building pages in Bricks.
@@ -38,9 +38,13 @@ Bricks parent theme.
 - **Dependency direction** — modules depend on the theme bootstrap and on WordPress.
   Root-level shared services (`inc/AccessControl.php`, `inc/SFXBricksChildAdmin.php`,
   `inc/MetaFieldManager.php`, `inc/DataPurge.php`, `inc/TelNormalizer.php`) are available to every module.
-  `ImportExport` is a catalogue: it names the explicit exportable contracts of twelve
+  `ImportExport` is a catalogue: it names the explicit exportable contracts of thirteen
   other modules by design — with deliberate omissions, see the Don'ts — so it sits outside the
   edge count below rather than being an exception to it.
+  `DataPurge` calls `\SFX\SiteCheck\Purge::run()` directly, because purge must remove the
+  uploads probes even while the module is disabled. `CustomDashboard` takes widgets from other
+  modules through the filter `sfx/custom_dashboard/widgets` — its extension point; the
+  Sicherheits-Check supplies its box that way, so neither module names the other's classes.
   Beyond those, three groups of feature-module coupling exist and are deliberate — the
   bootstrap dependency plus seven module-to-module edges: the bootstrap reads
   `GeneralThemeOptions\Settings::get_all_fields()`, and the aggregator modules reach into
@@ -152,7 +156,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was last run on 2026-10-09 and seen to exit cleanly (42 PHP tests, 4 JS
+`quality.sh` was last run on 2026-10-11 and seen to exit cleanly (55 PHP tests, 6 JS
 tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a

@@ -2,7 +2,7 @@
 
 WordPress child theme for [Bricks Builder](https://bricksbuilder.io/) with agency-focused content tools, performance toggles, and security helpers.
 
-Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, Password Protection, Redirects, Editor Prose, and the Menu Items query type can be enabled or disabled in **General Theme Options**.
+Most features are managed under **Global Theme Settings** in wp-admin. WP Optimizer, Image Optimizer, Security Header, Smooth Scroll, Password Protection, Redirects, Sicherheits-Check, Editor Prose, and the Menu Items query type can be enabled or disabled in **General Theme Options**.
 
 ## Features
 
@@ -33,6 +33,7 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 ### SEO
 
 - **Redirects** — Tools → Redirects (editors included): exact and regex rules with 301/302/307/308 and 410, hit counter, a privacy-minded 404 log with "create redirect", automatic redirects when a published slug changes, and CSV import/export
+- **Sicherheits-Check** — Tools → Sicherheits-Check (administrators only): checks the site for exposed files, risky settings and launch mistakes, graded Rot / Gelb / Grün with what to fix first; the page is split into tabs (Übersicht, Sicherheit, Live-Gang, Aufräumen, .htaccess template, settings), and every check says why it matters and how to fix it. Server checks plus checks from your browser and a loopback request; an optional active test briefly writes a test file in the uploads folder. Shows a box on the WordPress dashboard and can be added to the Custom Dashboard. Enable it in General Theme Options.
 
 ### Admin
 

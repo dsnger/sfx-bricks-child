@@ -177,6 +177,80 @@ $screen = (string) ob_get_clean();
 
 assert_true(strpos($screen, 'every redirect rule and the 404 log') !== false, 'Case 11: the warning names the redirect rules and the 404 log');
 
+// ------------- SiteCheck's purge segment: partial and busy reach the screen
+//
+// The segment itself (probe kept, option kept, busy deletes nothing, a retry
+// deletes and counts the probes option) is tested against real files in
+// site-check-probe-test.php; here its report travels to the notice.
+
+// A probe the purge could not delete: a partial purge, said so.
+test_gates_reset();
+\SFX\SiteCheck\Purge::$report = ['options' => 6, 'probes_failed' => ['/up/sfx-site-check/a.php'], 'busy' => false];
+run_handler();
+
+assert_same(1, $GLOBALS['test_redirect_args']['sfx-probes-failed'] ?? null, 'Case 12a: the undeletable probe travels in the redirect');
+assert_same(0, $GLOBALS['test_redirect_args']['sfx-purge-busy'] ?? null, 'Case 12b: not busy');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(strpos($notice['message'], '1 Sicherheits-Check test file(s) in the uploads folder could not be deleted') !== false, 'Case 12c: the notice says a test file was left');
+assert_same('warning', $notice['type'], 'Case 12d: a purge that left a probe is partial, styled as one');
+
+// Busy: nothing was deleted, and the notice must not claim otherwise.
+test_gates_reset();
+\SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'busy' => true];
+$result = run_handler();
+
+assert_same('redirect', $result['stopped'], 'Case 13a: a busy purge still returns to the screen');
+assert_same(0, $result['deleted'], 'Case 13b: busy → no option deleted');
+assert_same(['wp_sfx_redirects', 'wp_sfx_redirects_404'], $GLOBALS['test_tables'], 'Case 13c: busy → no table dropped');
+assert_same(1, $GLOBALS['test_redirect_args']['sfx-purge-busy'] ?? null, 'Case 13d: busy travels in the redirect');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(strpos($notice['message'], 'Nothing was deleted') !== false, 'Case 13e: the notice says nothing was deleted');
+assert_true(strpos($notice['message'], 'Theme data deleted') === false, 'Case 13f: and does not report a purge');
+assert_same('warning', $notice['type'], 'Case 13g: busy is a warning');
+
+// The retry: the probe is gone now and the segment counts the probes option.
+test_gates_reset();
+\SFX\SiteCheck\Purge::$report = ['options' => 1, 'probes_failed' => [], 'busy' => false];
+$GLOBALS['test_tables'] = [];
+run_handler();
+
+$counted = $GLOBALS['test_deleted_options'];
+assert_same($counted + 1, $GLOBALS['test_redirect_args']['sfx-options'] ?? null, 'Case 14a: the segment\'s deleted option is added to the count');
+assert_same(0, $GLOBALS['test_redirect_args']['sfx-probes-failed'] ?? null, 'Case 14b: nothing left behind');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(strpos($notice['message'], 'Theme data deleted: ' . ($counted + 1) . ' settings') !== false, 'Case 14c: the notice counts the probes option');
+assert_true(strpos($notice['message'], 'could not be deleted') === false, 'Case 14d: and reports no leftover');
+assert_same('success', $notice['type'], 'Case 14e: a complete retry is a success');
+
+// Gate B pass 1 (spec-9, quality-2): a refused SiteCheck delete and kept
+// unregistered test files are a partial purge, said so.
+test_gates_reset();
+\SFX\SiteCheck\Purge::$report = ['options' => 1, 'probes_failed' => [], 'probes_unregistered' => ['/up/sfx-site-check/u.php'], 'refused' => ['sfx_site_check_manual', 'sfx_site_check_settings'], 'busy' => false];
+run_handler();
+
+assert_same(2, $GLOBALS['test_redirect_args']['sfx-sc-refused'] ?? null, 'Case 15a: the refused deletes travel in the redirect');
+assert_same(1, $GLOBALS['test_redirect_args']['sfx-probes-unregistered'] ?? null, 'Case 15b: the unregistered files travel in the redirect');
+
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+
+assert_true(strpos($notice['message'], '2 Sicherheits-Check setting(s) could not be deleted') !== false, 'Case 15c: the notice names the refused deletes');
+assert_true(strpos($notice['message'], '1 file(s) in the Sicherheits-Check test folder') !== false, 'Case 15d: the notice names the unregistered files');
+assert_same('warning', $notice['type'], 'Case 15e: partial → warning');
+
+test_gates_reset();
+\SFX\SiteCheck\Purge::$report = ['options' => 1, 'probes_failed' => [], 'refused' => [], 'hooks_failed' => ['sfx_site_check_probe_cleanup'], 'busy' => false];
+run_handler();
+assert_same(1, $GLOBALS['test_redirect_args']['sfx-sc-hooks-failed'] ?? null, 'Case 16a: the failed cron hook travels in the redirect');
+$notice = render_notice(array_map('strval', $GLOBALS['test_redirect_args']));
+assert_true(strpos($notice['message'], 'scheduled task') !== false, 'Case 16b: the notice names the scheduled task left behind');
+assert_same('warning', $notice['type'], 'Case 16c: partial → warning');
+
 // ------------------------------------------------------------- epilogue
 
 global $failures;

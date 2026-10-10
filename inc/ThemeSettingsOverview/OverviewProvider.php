@@ -78,6 +78,9 @@ final class OverviewProvider
             'enable_editor_prose' => [
                 'label' => __('Editor Prose', 'sfxtheme'),
             ],
+            'enable_site_check' => [
+                'label' => __('Sicherheits-Check', 'sfxtheme'),
+            ],
         ];
 
         $items = [];

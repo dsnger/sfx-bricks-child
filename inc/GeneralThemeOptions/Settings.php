@@ -95,6 +95,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_site_check',
+                'label'       => __('Enable Sicherheits-Check', 'sfxtheme'),
+                'description' => __('Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'disable_bricks_js',
                 'label'       => __('Disable Bricks JS', 'sfxtheme'),
                 'description' => __('Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions.', 'sfxtheme'),

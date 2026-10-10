@@ -161,6 +161,28 @@ assert_true(
     'Editor Prose toggle declared in the real GeneralThemeOptions schema with default 0'
 );
 
+// Sicherheits-Check: listed, opt-in, switched on, counted
+reset_test_state();
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_site_check', 'inactive', 'Site Check module listed and inactive by default');
+$builtin_before = array_values(array_filter($data['groups'], static fn ($g) => $g['id'] === 'builtin_modules'))[0];
+$test_options['sfx_general_options'] = ['enable_site_check' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_site_check', 'active', 'Site Check module active when enabled');
+$builtin_after = array_values(array_filter($data['groups'], static fn ($g) => $g['id'] === 'builtin_modules'))[0];
+assert_true($builtin_after['active_count'] === $builtin_before['active_count'] + 1, 'Site Check counts as one more active built-in module');
+assert_true($builtin_after['total_count'] === $builtin_before['total_count'], 'Site Check is already part of the total');
+$site_check_label = array_values(array_filter($builtin_after['items'], static fn ($i) => $i['id'] === 'enable_site_check'))[0]['label'];
+assert_true($site_check_label === 'Sicherheits-Check', 'Site Check label');
+assert_true(
+    preg_match("/'id'\s*=>\s*'enable_site_check',[^\]]*'default'\s*=>\s*0,[^\]]*'group'\s*=>\s*'general'/s", $real_schema) === 1,
+    'Site Check toggle declared in the real GeneralThemeOptions schema with default 0, group general'
+);
+assert_true(
+    strpos($real_schema, "'id'          => 'enable_site_check'") > strpos($real_schema, "'id'          => 'enable_editor_prose'"),
+    'Site Check toggle sits after enable_editor_prose'
+);
+
 // WP Optimizer partial
 reset_test_state();
 $test_options['sfx_wpoptimizer_options'] = [

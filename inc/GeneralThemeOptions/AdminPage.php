@@ -70,6 +70,11 @@ class AdminPage
           'sfx-tables'        => (int) $report['tables'],
           'sfx-tables-locked' => $report['tables_locked'] ? 1 : 0,
           'sfx-tables-failed' => $report['tables_failed'] ? 1 : 0,
+          'sfx-probes-failed' => count($report['probes_failed']),
+          'sfx-probes-unregistered' => count($report['probes_unregistered']),
+          'sfx-sc-refused'    => count($report['site_check_refused']),
+          'sfx-sc-hooks-failed' => count($report['site_check_hooks_failed']),
+          'sfx-purge-busy'    => $report['busy'] ? 1 : 0,
         ],
         admin_url('admin.php?page=' . self::$menu_slug)
       )
@@ -382,7 +387,19 @@ class AdminPage
       $removed_tables     = isset($_GET['sfx-tables']) ? absint($_GET['sfx-tables']) : 0;
       $tables_locked      = !empty($_GET['sfx-tables-locked']);
       $tables_failed      = !empty($_GET['sfx-tables-failed']);
+      $probes_failed      = isset($_GET['sfx-probes-failed']) ? absint($_GET['sfx-probes-failed']) : 0;
+      $probes_unregistered = isset($_GET['sfx-probes-unregistered']) ? absint($_GET['sfx-probes-unregistered']) : 0;
+      $site_check_refused = isset($_GET['sfx-sc-refused']) ? absint($_GET['sfx-sc-refused']) : 0;
+      $site_check_hooks_failed = isset($_GET['sfx-sc-hooks-failed']) ? absint($_GET['sfx-sc-hooks-failed']) : 0;
+      $purge_busy         = !empty($_GET['sfx-purge-busy']);
+    }
 
+    if (isset($_GET['sfx-purged']) && $purge_busy) {
+      wp_admin_notice(
+        esc_html__('Nothing was deleted: the Sicherheits-Check was busy at that moment. Run the purge again.', 'sfxtheme'),
+        ['type' => 'warning', 'dismissible' => true]
+      );
+    } elseif (isset($_GET['sfx-purged'])) {
       wp_admin_notice(
         sprintf(
           /* translators: 1: settings removed, 2: cached rows removed */
@@ -401,6 +418,34 @@ class AdminPage
           : '')
         . ($tables_failed
           ? ' ' . esc_html__('Some redirect tables could not be deleted because of a database error. Run the purge again.', 'sfxtheme')
+          : '')
+        . ($probes_failed > 0
+          ? ' ' . sprintf(
+            /* translators: %d: number of test files left in the uploads folder */
+            esc_html__('%d Sicherheits-Check test file(s) in the uploads folder could not be deleted; their record was kept so the purge can be run again once they are deletable.', 'sfxtheme'),
+            $probes_failed
+          )
+          : '')
+        . ($probes_unregistered > 0
+          ? ' ' . sprintf(
+            /* translators: %d: number of files */
+            esc_html__('%d file(s) in the Sicherheits-Check test folder were not created by a recorded test run; they were kept. Check them and delete them by hand.', 'sfxtheme'),
+            $probes_unregistered
+          )
+          : '')
+        . ($site_check_refused > 0
+          ? ' ' . sprintf(
+            /* translators: %d: number of settings */
+            esc_html__('%d Sicherheits-Check setting(s) could not be deleted (the check was in use or the database refused). Run the purge again.', 'sfxtheme'),
+            $site_check_refused
+          )
+          : '')
+        . ($site_check_hooks_failed > 0
+          ? ' ' . sprintf(
+            /* translators: %d: number of scheduled tasks */
+            esc_html__('%d scheduled task(s) of the Sicherheits-Check could not be removed. Run the purge again.', 'sfxtheme'),
+            $site_check_hooks_failed
+          )
           : ''),
         // Every count, not just the options. A second purge with the media
         // box ticked removes attachment meta while the options are already
@@ -408,7 +453,7 @@ class AdminPage
         // purges that would otherwise be styled as failures. Tables left
         // behind under the lock are a partial result, so they warn.
         [
-          'type'        => !$tables_locked && !$tables_failed && ($removed_options + $removed_meta + $removed_transients + $removed_tables) > 0 ? 'success' : 'warning',
+          'type'        => !$tables_locked && !$tables_failed && $probes_failed === 0 && $probes_unregistered === 0 && $site_check_refused === 0 && $site_check_hooks_failed === 0 && ($removed_options + $removed_meta + $removed_transients + $removed_tables) > 0 ? 'success' : 'warning',
           'dismissible' => true,
         ]
       );
