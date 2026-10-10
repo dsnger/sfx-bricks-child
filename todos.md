@@ -107,6 +107,14 @@ references an entry here must still be able to find it.
 - [ ] Re-check `docs/prompt-standards.md` against the current model-specific
       prompting pages on every model-generation change (new Claude model in Claude
       Code, new Codex model for the gates).
+- [ ] **codebase-memory MCP identity** (recorded 2026-10-10, confirmed by Daniel 2026-10-10, this installation only).
+      Name(s) codebase-memory-mcp, user scope, command `/Users/daniel/.local/bin/codebase-memory-mcp`; version 0.9.0; sha256 `04ee3048810c19099502adc8bb83039423f02f2553d17677892a7f03b924e01f`; platform darwin x86_64.
+      Source: unknown (no release evidence checked).
+      Install route: unknown (binary in ~/.local/bin). Updates: unknown. Network reach: unknown.
+      Launch env: none. Store: ~/.cache/codebase-memory-mcp.
+      Human refresh: `'/Users/daniel/.local/bin/codebase-memory-mcp' cli index_repository --repo-path '/Users/daniel/DEVELOPMENT/LOCALHOST/sfx-bricks-child.local/wp-content/themes/sfx-bricks-child'` — run by a human only.
+      Protects against: accidental or instructed agent misuse, on the client paths the canary showed. Not against: deliberate bypass, a manipulated binary, the server's own store changes, other clients.
+      A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
 - [x] **A Node test leg now covers the theme's own JavaScript** (raised by Codex
