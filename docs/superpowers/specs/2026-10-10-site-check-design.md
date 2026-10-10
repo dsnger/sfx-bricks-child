@@ -25,6 +25,10 @@ explicitly confirmed active test (the uploads probe, below) and its own records.
   off / daily / weekly. The admin picks which checks the monitor runs.
 - **E-mail is a separate opt-in**, sent to the site's admin e-mail address
   (`admin_email`). Monitoring can run without mail.
+- **Dashboard box** (added 2026-10-10, after the first Gate A): a summary box on the
+  WordPress dashboard and in the Custom Dashboard, like the Theme Settings Overview box.
+  It reaches the Custom Dashboard through a new registration hook, not a hard-wired
+  entry, so no module-to-module edge is added.
 - **Copy template for `.htaccess`.** Shown, never written by the module. It must work
   across Apache hosters and must not touch redirects, caching-plugin blocks or
   WordPress' own block.
@@ -159,8 +163,8 @@ Used by `logs_public`, `backups_public`, `vcs_env`:
 | unknown (unreadable folder, failed listing, denied `stat`) | anything but a signature | **Nicht prüfbar** |
 
 Rows are read top to bottom; the first match wins. **In monitor runs only**, the server
-also revisits every target recorded in earlier monitor runs of `logs_public` and `backups_public` (an old
-custom log path, a backup found once): checked on disk at its recorded place, a
+also revisits every target recorded in earlier monitor runs of `logs_public`, `backups_public` and `vcs_env` (an
+old custom log path, a backup found once, a `.env` in a root that has since moved): checked on disk at its recorded place, a
 missing file there means "absent".
 
 ### Finding identity
@@ -475,9 +479,48 @@ which stays and is reported in the purge result.
 
 Stored text is size-limited and escaped at output.
 
+## Dashboard box
+
+A read-only summary, ID `sfx_site_check`, title "Sicherheits-Check". It shows:
+
+- date and profile of the last saved manual run, or "Noch nicht geprüft";
+- counts of Rot, Gelb and Nicht prüfbar from that run;
+- up to three Rot findings by check name, Sicherheit section first;
+- monitoring on/off, last finished run, and the overdue notice as computed on the
+  check page;
+- a link "Jetzt prüfen" to the check page.
+
+It reads stored results only; it never runs a check, takes the mutex or writes. It is
+shown only to users who pass the page's access test (theme access **and**
+`manage_options`); everyone else gets nothing, not an empty box. All output is escaped
+in the box's own renderer. Nothing about findings beyond check names and counts is
+shown; no paths, no file contents.
+
+**Where it appears:**
+
+- **WordPress dashboard:** the module registers it with `wp_add_dashboard_widget()` on
+  `wp_dashboard_setup`, for allowed users only. When the Custom Dashboard is on, it
+  clears all native widgets (`inc/CustomDashboard/Controller.php:162-187`), so the
+  native box disappears there without the module having to know.
+- **Custom Dashboard:** through a new filter `sfx/custom_dashboard/widgets`, which the
+  CustomDashboard module adds. A module returns entries
+  `id => {title, render (callable), can_render (callable)}`. CustomDashboard uses them in
+  three places: the widget picker (`Settings::get_available_widgets()`), the renderer's
+  widget map (`DashboardRenderer::render_single_widget()`), and the visibility check
+  (`can_render_dashboard_widget()`), where an entry's `can_render` decides. Entries are
+  off by default in the picker, like every other widget. An entry whose module is
+  disabled is simply absent: a saved selection naming it renders nothing, as an unknown
+  ID does today. The existing hard-wired Theme Settings Overview entry stays as it is;
+  moving it onto the filter is not part of this change.
+
+The filter is CustomDashboard's public contract; SiteCheck depends on the hook name
+only, never on a CustomDashboard class.
+
 ## Coupling
 
-No new module-to-module edges (AGENTS.md "Dependency direction"). Checks observe real
+No new module-to-module edges (AGENTS.md "Dependency direction"); the dashboard box uses
+the `sfx/custom_dashboard/widgets` hook contract, not a class. AGENTS.md gets one line
+naming that filter as CustomDashboard's extension point. Checks observe real
 behaviour; where another module explains a result (SecurityHeader, WPOptimizer's XML-RPC
 and author switches) the tip names it in text only. `DataPurge` gains the module's
 options, cron hook names and probe teardown, as it already does for Redirects. The
@@ -525,11 +568,17 @@ fixed prefix `/sfx-site-check-missing-` makes them recognisable.
     export contains only the listed keys. Purge removes all options, cron hooks and
     deletable probes, and reports probes it could not delete.
 13. All new strings use `sfxtheme` and have German translations.
+14. Dashboard box: shown on the WordPress dashboard and, once enabled in the picker, in
+    the Custom Dashboard to allowed users; absent for a user without theme access or
+    without `manage_options` in both places; shows "Noch nicht geprüft" on a fresh
+    site; never writes an option or runs a check; with SiteCheck disabled it is absent
+    from the picker and a saved selection renders nothing.
 
 ## Open for the plan
 
 - Two plans: (1) module, locations, catalogue, manual run, probe, template, storage,
-  purge/export; (2) monitoring and mail. Plan 2 builds on the finding identity, probe
+  purge/export, dashboard box and the CustomDashboard filter (the box's monitoring line
+  stays hidden until plan 2); (2) monitoring and mail. Plan 2 builds on the finding identity, probe
   lifecycle and option shapes defined here.
 - Signature lists, the PHP support table with sources, backup-plugin folder list, scan
   limits.
