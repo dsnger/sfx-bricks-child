@@ -104,6 +104,13 @@ references an entry here must still be able to find it.
       whether that trade is worth it before writing tests one file at a time.
 
 ## Tooling revalidation
+- [ ] **Report two dev-workflow 0.21.0 template defects upstream** (PR #58, kept
+      unpatched here by owner decision 2026-10-10, files stay byte-identical to the
+      templates): `.claude/review-gates.md` says findings follow "the format above"
+      but never defines the six-field line; CLAUDE.md §5 treats a missing
+      `.claude/review-gates.md` as "no gate rules" without first checking the agent
+      is in the right checkout, so `/workflow-init` could write it in the wrong one
+      (CodeRabbit on PR #58).
 - [ ] Re-check `docs/prompt-standards.md` against the current model-specific
       prompting pages on every model-generation change (new Claude model in Claude
       Code, new Codex model for the gates).

@@ -87,20 +87,20 @@ Living references (consult, don't copy — copies go stale):
     CLAUDE.md §5 gate language) is a deliberate exception for discipline
     gates — new prompts need a stated reason to use it.
 
-## Model-specific notes — last verified: 2026-10-10 (Claude Opus 5.5 · Codex `gpt-6-astra` from secondary sources only)
+## Model-specific notes — last verified: 2026-10-10 (Claude Opus 5.5 · Codex `gpt-6-astra`)
 
 Distilled from the model-specific pages; the linked pages are authoritative. Read on
 2026-10-10: the best-practices page, "Prompting Claude Opus 5.5" and "Prompting Claude
 Opus 5" (Opus 5.5 says Opus 5 patterns remain the starting point). The Codex model in
 `~/.codex/config.toml` is `gpt-6-astra`; OpenAI's Codex prompting page names no model, and
-the Astra guidance below comes only from reposts of an OpenAI blog post — **not verified
-against the original**.
+the Astra guidance below is from OpenAI's "Rethinking skills and prompts for GPT-6 Astra"
+(developers.openai.com/blog), read 2026-10-10.
 
 - **Less scaffolding on stronger models.** Skills/prompts written for prior
   models are often too prescriptive and degrade output quality on newer ones.
   On a model upgrade, test with instructions *removed* before adding more.
   (Opus 5 page: drop explicit verification and "double-check" instructions — they cause
-  over-verification. Astra, unverified: trim AGENTS.md and skills, drop "run the tests"
+  over-verification. Astra post: trim AGENTS.md and skills, drop "run the tests"
   nudges.)
 - **Review prompts: coverage first, filter later.** "Only report high-severity"
   makes current models silently drop real findings. The finding stage must ask for
