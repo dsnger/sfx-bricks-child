@@ -18,7 +18,7 @@ final class Catalogue
     public const CLEANUP  = 'cleanup';
 
     /** Checks whose result is measured by Loopback (Task 4's perspective table, and the probe). */
-    private const LOOPBACK = ['php_in_uploads', 'https', 'xmlrpc', 'indexability', 'sitemap', 'sitemap_entries'];
+    private const LOOPBACK = ['php_in_uploads', 'https', 'xmlrpc', 'sitemap', 'sitemap_entries'];
 
     /**
      * In spec order. `how`: S = Server, B = Browser or Loopback, S+B = both
@@ -185,7 +185,7 @@ final class Catalogue
                     __('Switch on "Disable Theme Editor" in WP Optimizer, or add define( \'DISALLOW_FILE_EDIT\', true ); to wp-config.php.', 'sfxtheme'),
                     __('Run the check again.', 'sfxtheme'),
                 ],
-                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer')],
+                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer', 'security')],
             ]),
             'xmlrpc' => self::row($s, 'B', false, __('XML-RPC', 'sfxtheme'), [
                 'why' => __('XML-RPC lets anyone try many passwords in one request and is a common target. Few sites still need it.', 'sfxtheme'),
@@ -194,7 +194,7 @@ final class Catalogue
                     __('Switch on "Disable XMLRPC" in WP Optimizer.', 'sfxtheme'),
                     __('Optionally block the file as well with the block "Root folder: XML-RPC (optional)" from the .htaccess template.', 'sfxtheme'),
                 ],
-                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer'), self::template_link()],
+                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer', 'security'), self::template_link()],
             ]),
             'registration' => self::row($s, 'S', true, __('Open registration', 'sfxtheme'), [
                 'why' => __('With open registration anyone can create an account. If the default role can write or upload, strangers get that power too.', 'sfxtheme'),
@@ -234,7 +234,7 @@ final class Catalogue
                     __('In WP Optimizer switch on "Block ?author= Enumeration", "Block REST API Users for Guests" and "Remove Users Sitemap".', 'sfxtheme'),
                     __('Run the check again.', 'sfxtheme'),
                 ],
-                'links' => [self::link(__('Users', 'sfxtheme'), 'users.php'), self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer')],
+                'links' => [self::link(__('Users', 'sfxtheme'), 'users.php'), self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer', 'users')],
             ]),
             'bricks_permissions' => self::row($s, 'S', true, __('Bricks permissions', 'sfxtheme'), [
                 'why' => __('Code execution in Bricks runs PHP from the builder: whoever holds it can do anything on the server. SVG files can carry scripts.', 'sfxtheme'),
@@ -267,16 +267,6 @@ final class Catalogue
                 ],
                 'links' => [self::link(__('Settings → Reading', 'sfxtheme'), 'options-reading.php')],
             ]),
-            'indexability' => self::row($g, 'B', true, __('Indexability of important pages', 'sfxtheme'), [
-                'why' => __('A page with noindex, a foreign canonical or an error status does not appear in search results, however good its content is.', 'sfxtheme'),
-                'recommendation' => __('Important pages should answer 200, carry no noindex and point their canonical to this site.', 'sfxtheme'),
-                'steps' => [
-                    __('Open the page listed and check its robots setting in the SEO plugin: noindex must be off.', 'sfxtheme'),
-                    __('Check the canonical URL in the SEO plugin: it must point to this site.', 'sfxtheme'),
-                    __('For a 404 or a redirect: restore the page, or correct the path in the Settings tab.', 'sfxtheme'),
-                ],
-                'links' => [self::settings_link()],
-            ]),
             'sitemap' => self::row($g, 'B', false, __('Sitemap', 'sfxtheme'), [
                 'why' => __('A sitemap helps search engines find every page, especially new and deeply linked ones.', 'sfxtheme'),
                 'recommendation' => __('Publish a sitemap and name it in robots.txt.', 'sfxtheme'),
@@ -295,7 +285,7 @@ final class Catalogue
                     __('For the author list: switch on "Remove Users Sitemap" in WP Optimizer.', 'sfxtheme'),
                     __('If a type is intended, tick it in the Settings tab under the sitemap entries; the check then stays quiet about it.', 'sfxtheme'),
                 ],
-                'links' => [self::settings_link(), self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer')],
+                'links' => [self::settings_link(), self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer', 'users')],
             ]),
             'admin_email' => self::row($g, 'S', false, __('Administration e-mail address', 'sfxtheme'), [
                 'why' => __('WordPress sends security notices and password links to this address, and this check\'s warnings go there too.', 'sfxtheme'),
@@ -372,7 +362,7 @@ final class Catalogue
                     __('Ask the host to remove version details from the Server and X-Powered-By headers (ServerTokens Prod, expose_php off).', 'sfxtheme'),
                     __('Run the check again.', 'sfxtheme'),
                 ],
-                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer')],
+                'links' => [self::module_link(__('Open WP Optimizer', 'sfxtheme'), 'WP Optimizer', 'enable_wp_optimizer', 'sfx-wp-optimizer', 'frontend')],
             ]),
             'table_prefix' => self::row($c, 'S', false, __('Database table prefix', 'sfxtheme'), [
                 'why' => __('The default prefix wp_ makes some automated SQL attacks a little easier. On its own it is no hole.', 'sfxtheme'),
@@ -452,9 +442,10 @@ final class Catalogue
     }
 
     /** A theme module's admin page, by slug; `module` names its switch for AdminPage's fallback. */
-    private static function module_link(string $label, string $name, string $switch, string $slug): array
+    /** @param string $tab the module page's tab that holds the setting (its fragment), or '' */
+    private static function module_link(string $label, string $name, string $switch, string $slug, string $tab = ''): array
     {
-        return self::link($label, 'admin.php?page=' . $slug) + [
+        return self::link($label, 'admin.php?page=' . $slug . ($tab !== '' ? '#' . $tab : '')) + [
             'module' => $switch,
             /* translators: %s: name of a module of this theme */
             'fallback_label' => sprintf(__('Switch on %s in the theme settings', 'sfxtheme'), $name),

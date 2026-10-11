@@ -43,6 +43,11 @@ function __($text, $domain = 'default')
     return $text;
 }
 
+function esc_html__($text, $domain = 'default')
+{
+    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+}
+
 function get_option($name, $default = false)
 {
     global $test_options;
@@ -708,7 +713,7 @@ assert_true(
 );
 
 assert_true(
-    is_string($child_output) && str_contains($child_output, "status:403\n") && !str_contains($child_output, "continued\n"),
+    is_string($child_output) && str_contains($child_output, "status:403\n") && str_contains($child_output, 'XML-RPC is disabled on this site.') && !str_contains($child_output, "continued\n"),
     'disable_xmlrpc should hard-block XML-RPC requests before WordPress exposes xmlrpc.php. Child output: ' . $child_output
 );
 

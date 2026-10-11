@@ -9,11 +9,10 @@ use SFX\SiteCheck\Fetch;
 use SFX\SiteCheck\Observations;
 use SFX\SiteCheck\Robots;
 use SFX\SiteCheck\RunContext;
-use SFX\SiteCheck\Settings;
 use SFX\SiteCheck\Status;
 
 /**
- * robots_txt (Browser), indexability, sitemap and sitemap_entries (Loopback):
+ * robots_txt (Browser), sitemap and sitemap_entries (Loopback):
  * what search engines are allowed and able to find.
  */
 final class CrawlChecks
@@ -30,8 +29,6 @@ final class CrawlChecks
             case 'robots_txt':
                 $obs = Observations::preferred($seen[$plan['issued'][0]['url'] ?? ''] ?? []);
                 return self::robots_state($obs === null ? null : Observations::response($obs), $comparison);
-            case 'indexability':
-                return self::indexability_facts($ctx, $comparison);
             case 'sitemap':
                 return self::sitemap_facts($comparison);
         }
@@ -45,8 +42,6 @@ final class CrawlChecks
         switch ($id) {
             case 'robots_txt':
                 return self::grade_robots($facts, $live);
-            case 'indexability':
-                return self::grade_indexability($facts, $live);
             case 'sitemap':
                 return self::grade_sitemap($facts, $live);
         }
@@ -127,214 +122,6 @@ final class CrawlChecks
         }
 
         return Observations::result([$f], Status::UNKNOWN, 'browser', __('Groups per user agent; Allow exceptions are respected.', 'sfxtheme'));
-    }
-
-    /**
-     * The home page plus the run's valid paths. Invalid stored paths are
-     * skipped and named (RunContext does not filter them).
-     *
-     * @return array{0:list<string>, 1:list<array{target:string, reason:string}>}
-     */
-    public static function index_paths(RunContext $ctx): array
-    {
-        $paths = ['/'];
-        $rejected = [];
-        foreach ($ctx->indexability_paths() as $path) {
-            $path = (string) $path;
-            $refusal = Settings::valid_path($path) ? Fetch::refusal(home_url($path)) : 'invalid';
-            if ($refusal !== '') {
-                // A valid path the request guard refuses cannot be inspected (Nicht prüfbar); an invalid one is a setting to fix (Hinweis).
-                $guarded = $refusal !== 'invalid' && Settings::valid_path($path);
-                $reason = $guarded ? Fetch::reason_text($refusal) : __('rejected: not a valid site path; skipped', 'sfxtheme');
-                $rejected[] = ['target' => Observations::short($path, Observations::TEXT), 'reason' => $reason, 'refused' => $guarded];
-            } elseif (!in_array($path, $paths, true)) {
-                $paths[] = $path;
-            }
-        }
-
-        return [$paths, $rejected];
-    }
-
-    private static function indexability_facts(RunContext $ctx, array $comparison): array
-    {
-        [$paths, $rejected] = self::index_paths($ctx);
-        $robots = null;
-        $robots_state = self::robots_state(Fetch::loopback('GET', self::robots_url()), $comparison, $robots)['state'];
-        $home_host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
-
-        $targets = [];
-        foreach ($paths as $path) {
-            $url = home_url($path);
-            $r = Fetch::loopback('GET', $url);
-            $t = ['target' => $path, 'kind' => 'other', 'status' => $r['status'], 'location' => '', 'noindex' => false, 'foreign_canonical' => false, 'robots_disallowed' => false];
-
-            if ($r['error'] !== '') {
-                $t['kind'] = $r['error'] === 'time_limit' ? 'time_limit' : 'error';
-            } elseif ($r['challenge']) {
-                $t['kind'] = 'challenge';
-            } elseif ($r['redirect']) {
-                [$t['kind'], $t['location']] = self::redirect_kind(trim($r['location']), (string) wp_parse_url($url, PHP_URL_PATH), $home_host);
-            } elseif (in_array($r['status'], [404, 410], true)) {
-                $t['kind'] = 'missing';
-            } elseif (in_array($r['status'], [401, 503], true)) {
-                $t['kind'] = 'closed';
-            } elseif ($r['status'] === 200) {
-                $html = stripos($r['headers']['content-type'] ?? '', 'html') !== false;
-                if (!$html) {
-                    $t['kind'] = 'other';
-                } elseif (trim($r['body']) === '') {
-                    $t['kind'] = 'empty';
-                } elseif (!Evidence::comparison_refused($comparison)) {
-                    // Rule 4: on a soft-404 site a 200 page proves nothing.
-                    $t['kind'] = Observations::comparison_served($comparison) ? 'soft404' : 'no_comparison';
-                } elseif (!self::readable_html($r['body'], $r['truncated'])) {
-                    $t['kind'] = $r['truncated'] ? 'partial' : 'other';
-                } elseif (($tags = Observations::html_tags($r['body'])) === null) {
-                    // No HTML parser, or the page could not be parsed: no evidence.
-                    $t['kind'] = 'other';
-                } else {
-                    $t['kind'] = 'html';
-                    $t['noindex'] = self::noindex($r['headers']['x-robots-tag'] ?? '', $tags);
-                    $canonical = self::canonical($tags);
-                    $t['foreign_canonical'] = $canonical !== null && $canonical !== '' && $canonical !== $home_host;
-                    $t['robots_disallowed'] = $robots !== null && !$robots->allows((string) wp_parse_url($url, PHP_URL_PATH));
-                }
-            }
-            $targets[] = $t;
-        }
-
-        return ['robots' => $robots_state, 'targets' => $targets, 'rejected' => $rejected];
-    }
-
-    /**
-     * Readable as an HTML page: a complete answer with an html or head
-     * element. A truncated one never is (ruling, Gate B pass 4): what lies
-     * beyond the bytes read could carry noindex or a canonical link.
-     */
-    private static function readable_html(string $body, bool $truncated): bool
-    {
-        if ($truncated) {
-            // Ruling (Gate B pass 4): metadata of a page read only in part is never evidence.
-            return false;
-        }
-
-        return preg_match('#<(?:html|head)\b#i', $body) === 1;
-    }
-
-    /**
-     * Kind of a redirect and its destination as shown. A Location with only
-     * scheme and host means the root path. A Location that cannot be read as
-     * an absolute URL or an absolute path is no evidence (`bad_redirect`).
-     *
-     * @return array{0:string, 1:string} kind, destination
-     */
-    private static function redirect_kind(string $location, string $own_path, string $home_host): array
-    {
-        $parts = $location === '' ? false : wp_parse_url($location);
-        if (!is_array($parts) || (isset($parts['scheme']) && empty($parts['host'])) || (!isset($parts['host']) && $location[0] !== '/')) {
-            return ['bad_redirect', ''];
-        }
-        $path = (string) ($parts['path'] ?? '');
-        $path = $path === '' ? '/' : $path;
-        $host = strtolower((string) ($parts['host'] ?? $home_host));
-        $shown = $host === $home_host ? $path : strtolower((string) ($parts['scheme'] ?? 'https')) . '://' . $host . $path;
-        $shown = Observations::short($shown, Observations::TEXT);
-        if ($path === $own_path) {
-            // Same path on another scheme or host is not "another path": no verdict.
-            return ['other', $shown];
-        }
-
-        return [strpos($path, 'wp-login.php') !== false ? 'login' : 'redirect', $shown];
-    }
-
-    /** @param array{meta:list<array<string,string>>, link:list<array<string,string>>} $tags Observations::html_tags() */
-    private static function noindex(string $header, array $tags): bool
-    {
-        if (preg_match('/\b(?:noindex|none)\b/i', $header) === 1) {
-            return true;
-        }
-        foreach ($tags['meta'] as $a) {
-            if (in_array(strtolower(trim($a['name'] ?? '')), ['robots', 'googlebot'], true)
-                && preg_match('/\b(?:noindex|none)\b/i', $a['content'] ?? '') === 1) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** Lower-case host of the canonical link; '' for a relative one; null when there is none. */
-    private static function canonical(array $tags): ?string
-    {
-        foreach ($tags['link'] as $a) {
-            $rel = preg_split('/\s+/', strtolower(trim($a['rel'] ?? ''))) ?: [];
-            if (in_array('canonical', $rel, true) && isset($a['href'])) {
-                return strtolower((string) wp_parse_url(trim($a['href']), PHP_URL_HOST));
-            }
-        }
-
-        return null;
-    }
-
-    private static function grade_indexability(array $facts, bool $live): array
-    {
-        $robots_read = in_array($facts['robots'] ?? '', ['parsed', 'missing'], true);
-        $findings = [];
-        foreach ($facts['targets'] ?? [] as $t) {
-            [$status, $text] = self::index_status($t, $live, $robots_read);
-            $findings[] = Observations::finding('indexability', (string) $t['target'], $status, $t['target'] . ' — ' . $text);
-        }
-        foreach ($facts['rejected'] ?? [] as $r) {
-            $findings[] = Observations::finding('indexability', (string) $r['target'], empty($r['refused']) ? Status::HINT : Status::UNKNOWN, $r['target'] . ' — ' . $r['reason']);
-        }
-
-        return Observations::result($findings, Status::UNKNOWN, 'loopback', __('Loopback: the server fetched its own pages without login; redirects were not followed. robots.txt was read in the same run.', 'sfxtheme'));
-    }
-
-    /** @return array{0:string, 1:string} */
-    private static function index_status(array $t, bool $live, bool $robots_read): array
-    {
-        switch ($t['kind']) {
-            case 'html':
-                if (!empty($t['noindex'])) {
-                    return $live
-                        ? [Status::RED, __('carries noindex', 'sfxtheme')]
-                        : [Status::GREEN, __('carries noindex (expected here)', 'sfxtheme')];
-                }
-                if (!empty($t['foreign_canonical'])) {
-                    return [Status::RED, __('the canonical link points to another host', 'sfxtheme')];
-                }
-                if (!$robots_read) {
-                    return [Status::UNKNOWN, __('robots.txt could not be read', 'sfxtheme')];
-                }
-                if (!empty($t['robots_disallowed'])) {
-                    return [Status::YELLOW, __('crawling blocked by robots.txt', 'sfxtheme')];
-                }
-                return [Status::GREEN, __('can be indexed', 'sfxtheme')];
-            case 'missing':
-                return [$live ? Status::RED : Status::YELLOW, __('page missing (404/410)', 'sfxtheme')];
-            case 'closed':
-            case 'login':
-                return $live
-                    ? [Status::RED, __('not publicly reachable', 'sfxtheme')]
-                    : [Status::GREEN, __('not publicly reachable (expected here)', 'sfxtheme')];
-            case 'redirect':
-                /* translators: %s: redirect target path */
-                return [Status::YELLOW, sprintf(__('redirects to %s', 'sfxtheme'), (string) ($t['location'] ?? ''))];
-            case 'challenge':
-                return [Status::UNKNOWN, __('a security service answered with a challenge page', 'sfxtheme')];
-            case 'empty':
-                return [Status::UNKNOWN, __('empty answer', 'sfxtheme')];
-            case 'soft404':
-            case 'no_comparison':
-                return [Status::UNKNOWN, Observations::soft404_text($t['kind'] === 'soft404' ? ['status' => 200] : [])];
-            case 'bad_redirect':
-                return [Status::UNKNOWN, __('redirects to an address that cannot be compared', 'sfxtheme')];
-            case 'time_limit':
-                return [Status::UNKNOWN, __('not checked: time limit of this run reached', 'sfxtheme')];
-        }
-
-        return [Status::UNKNOWN, __('no recognisable answer', 'sfxtheme')];
     }
 
     /**

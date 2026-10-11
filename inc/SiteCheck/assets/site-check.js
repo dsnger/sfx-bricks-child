@@ -386,8 +386,8 @@
 
   /** Tab fragment of each section (spec "Links"). */
   var SECTION_TABS = { security: 'sicherheit', golive: 'live-gang', cleanup: 'aufraeumen' };
-  /** Rows "Nur Handlungsbedarf" hides. */
-  var NO_ACTION = ['green', 'hint'];
+  /** Section tab groups (owner ruling 2026-10-11): act, check yourself, fine (folded). */
+  var GROUPS = { red: 'act', yellow: 'act', unknown: 'self', hint: 'fine', green: 'fine' };
   var URGENT_MAX = 5;
 
   /** Guidance block of one check: Warum, Empfehlung, So geht's (catalogue text only, never site data). */
@@ -469,8 +469,9 @@
     var op = 0;
     var retrySave = null;
     var progress = { done: 0, total: 0 };
-    var filters = {};
     var override = null;
+    /** A check link's request to unfold "In Ordnung" for its row: used once, so a later fold by the admin stands. */
+    var unfold = null;
     var current = null;
     var rows = {};
     var startButtons = [];
@@ -594,26 +595,41 @@
         return;
       }
       panel.appendChild(el(doc, 'h2', 'screen-reader-text', section.title));
-      var head = panel.appendChild(el(doc, 'p', 'sfx-sc-panelhead'));
-      var label = head.appendChild(el(doc, 'label'));
-      var box = label.appendChild(el(doc, 'input'));
-      box.type = 'checkbox';
-      label.appendChild(doc.createTextNode(' ' + (strings.onlyAction || '')));
-      box.addEventListener('change', function () {
-        filters[section.id] = !!box.checked;
-        // The admin's own filter choice ends a check link's exception.
-        override = null;
-        render();
-      });
       var empty = panel.appendChild(el(doc, 'div', 'sfx-sc-empty'));
       var emptyText = empty.appendChild(el(doc, 'p'));
       empties[section.id] = { box: empty, text: emptyText };
-      lists[section.id] = panel.appendChild(el(doc, 'div', 'sfx-sc-list'));
+      lists[section.id] = {
+        act: group(panel, 'act', strings.groupAct, null),
+        self: group(panel, 'self', strings.groupSelf, strings.groupSelfIntro),
+        fine: group(panel, 'fine', strings.groupFine, null)
+      };
       catalogue.filter(function (c) { return c.section === section.id; }).forEach(function (check) {
         rows[check.id] = createRow(check);
-        lists[section.id].appendChild(rows[check.id].details);
+        lists[section.id].act.list.appendChild(rows[check.id].details);
       });
     });
+
+    /** One group of a section tab; "fine" is a closed disclosure, the others are headed lists. */
+    function group(panel, kind, title, intro) {
+      var wrap = panel.appendChild(el(doc, kind === 'fine' ? 'details' : 'div', 'sfx-sc-group sfx-sc-group-' + kind));
+      var head = wrap.appendChild(el(doc, kind === 'fine' ? 'summary' : 'h3', 'sfx-sc-grouphead'));
+      var titleEl = head.appendChild(el(doc, 'span', null, title || ''));
+      var count = head.appendChild(el(doc, 'span', 'sfx-sc-groupcount'));
+      if (intro) {
+        wrap.appendChild(el(doc, 'p', 'sfx-sc-groupintro', intro));
+      }
+      var none = wrap.appendChild(el(doc, 'p', 'sfx-sc-muted sfx-sc-groupnone', kind === 'act' ? strings.noActionTab : ''));
+      var list = wrap.appendChild(el(doc, 'div', 'sfx-sc-list'));
+      if (kind === 'fine') {
+        // The admin folding the group ends a check link's pending request to unfold it.
+        wrap.addEventListener('toggle', function () {
+          if (!wrap.open) {
+            unfold = null;
+          }
+        });
+      }
+      return { wrap: wrap, title: titleEl, count: count, none: none, list: list };
+    }
 
     function createRow(check) {
       var details = el(doc, 'details', 'sfx-sc-check');
@@ -627,7 +643,7 @@
       var result = body.appendChild(el(doc, 'div', 'sfx-sc-result'));
       var guide = renderGuidance(doc, check, strings);
       body.appendChild(guide.box);
-      var row = { details: details, summary: summary, badge: badge, count: count, tag: tag, result: result, guide: guide, decided: false, silent: false, key: null };
+      var row = { id: check.id, details: details, summary: summary, badge: badge, count: count, tag: tag, result: result, guide: guide, decided: false, silent: false, key: null };
       details.addEventListener('toggle', function () {
         // The reset's own close fires one toggle (asynchronously); that one is not the admin's choice.
         if (row.silent) {
@@ -649,12 +665,16 @@
         return;
       }
       var findings = Array.isArray(graded.findings) ? graded.findings : [];
+      var rowStatus = statusOf(graded);
       if (findings.length) {
         var list = box.appendChild(el(doc, 'ul', 'sfx-sc-findings'));
         findings.forEach(function (finding) {
           var fs = statusOf(finding) || 'unknown';
           var li = list.appendChild(el(doc, 'li', 'sfx-sc-finding'));
-          li.appendChild(el(doc, 'span', 'sfx-sc-dot sfx-sc-badge-' + fs, labels[fs] || fs));
+          // A finding repeats the row's status only where it differs from it (owner ruling 2026-10-11).
+          if (fs !== rowStatus) {
+            li.appendChild(el(doc, 'span', 'sfx-sc-dot sfx-sc-badge-' + fs, labels[fs] || fs));
+          }
           li.appendChild(el(doc, 'span', 'sfx-sc-label', finding.label));
         });
       }
@@ -662,6 +682,12 @@
       note.appendChild(el(doc, 'span', 'sfx-sc-perspective', (strings.perspective || {})[graded.perspective] || graded.perspective || ''));
       if (graded.note) {
         note.appendChild(doc.createTextNode(' ' + graded.note));
+      }
+      // Order: findings, the note, then (for a row to check yourself) how to check it by hand.
+      if (rowStatus === 'unknown') {
+        var steps = strings.selfStep || {};
+        var step = box.appendChild(el(doc, 'p', 'sfx-sc-selfcheck', (own(steps, row.id) && steps[row.id]) || steps[graded.perspective] || ''));
+        step.appendChild(doc.createTextNode(' ' + (strings.selfCaveat || '')));
       }
     }
 
@@ -762,33 +788,55 @@
     }
 
     function renderSection(section, results, tagText) {
-      var list = lists[section];
-      if (!list) {
+      var groups = lists[section];
+      if (!groups) {
         return;
       }
       var own = catalogue.filter(function (c) { return c.section === section; });
       var any = own.some(function (c) { return results[c.id]; });
       var noRun = !any && phase === 'idle';
-      var shown = 0;
-      own.forEach(function (check) {
+      var members = { act: [], self: [], fine: [] };
+      // Rows can change group; focus is put back once every move is done and the target shown.
+      var active = doc.activeElement;
+      sortChecks(own, results).forEach(function (check) {
         var row = rows[check.id];
         var graded = results[check.id];
         updateRow(row, graded, graded ? tagText : '');
-        var status = statusOf(graded);
+        // Rows still waiting for a result stay with the ones to act on.
+        members[GROUPS[statusOf(graded)] || 'act'].push(check);
         // A check link (#check-<id>) shows its row even before the first run.
-        var hide = override !== check.id && (noRun || (filters[section] && NO_ACTION.indexOf(status) !== -1));
-        row.details.hidden = hide;
-        shown += hide ? 0 : 1;
+        row.details.hidden = noRun && override !== check.id;
       });
-      reorder(list, sortChecks(own, results));
+      Object.keys(members).forEach(function (kind) {
+        var g = groups[kind];
+        reorder(g.list, members[kind]);
+        var shown = members[kind].filter(function (c) { return !rows[c.id].details.hidden; }).length;
+        // The act group keeps its count after a run, "(0)" included.
+        g.count.textContent = shown || (kind === 'act' && !noRun) ? ' (' + shown + ')' : '';
+        // The act group stays visible after a run to say there is nothing to do.
+        g.wrap.hidden = shown === 0 && !(kind === 'act' && !noRun);
+        g.none.hidden = shown > 0;
+        if (kind === 'fine' && unfold !== null && members.fine.indexOf(byId[unfold]) !== -1) {
+          g.wrap.open = true;
+          unfold = null;
+        }
+      });
+      // Only a focused row inside the list unfolds it; the group's own summary is the admin's fold control.
+      var fineList = groups.fine.list;
+      if (active && active !== doc.body && fineList.contains && fineList.contains(active) && !groups.fine.wrap.open) {
+        groups.fine.wrap.open = true;
+      }
+      if (active && doc.activeElement !== active && typeof active.focus === 'function') {
+        active.focus();
+      }
       var empty = empties[section];
-      empty.box.hidden = !noRun && shown > 0;
-      empty.text.textContent = noRun ? strings.notChecked : strings.noActionTab;
+      empty.box.hidden = !noRun;
+      empty.text.textContent = strings.notChecked;
     }
 
     /** Moves rows into order only when it changed; focus inside a moved row is restored. */
     function reorder(list, ordered) {
-      var same = ordered.every(function (check, i) { return list.children[i] === rows[check.id].details; });
+      var same = list.children.length === ordered.length && ordered.every(function (check, i) { return list.children[i] === rows[check.id].details; });
       if (same) {
         return;
       }
@@ -855,6 +903,7 @@
 
     function go(id) {
       override = null;
+      unfold = null;
       select(id);
       render();
       setHash(id);
@@ -873,6 +922,7 @@
       var check = id.indexOf('check-') === 0 && own(byId, id.slice(6)) ? byId[id.slice(6)] : null;
       if (check && rows[check.id]) {
         override = check.id;
+        unfold = check.id;
         select(SECTION_TABS[check.section]);
         render();
         var row = rows[check.id];
@@ -882,6 +932,7 @@
         return;
       }
       override = null;
+      unfold = null;
       select(own(tabEls, id) ? id : 'uebersicht');
       render();
       if (focus) {

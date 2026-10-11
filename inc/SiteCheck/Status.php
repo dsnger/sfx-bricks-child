@@ -19,14 +19,14 @@ final class Status
     /** Section order (spec "Sections"): the first is the most urgent. */
     public const ORDER = [self::RED, self::YELLOW, self::UNKNOWN, self::HINT, self::GREEN];
 
-    /** The status words, the same on the page and in the dashboard box ("Hinweis", never "Notiz"). */
+    /** The status words, the same on the page and in the dashboard box (Hinweis is shown as "Info", never "Notiz"). */
     public static function labels(): array
     {
         return [
             self::RED     => __('Red', 'sfxtheme'),
             self::YELLOW  => __('Yellow', 'sfxtheme'),
-            self::UNKNOWN => __('Not checkable', 'sfxtheme'),
-            self::HINT    => _x('Note', 'site check status', 'sfxtheme'),
+            self::UNKNOWN => __('Check yourself', 'sfxtheme'),
+            self::HINT    => _x('Info', 'site check status', 'sfxtheme'),
             self::GREEN   => __('Green', 'sfxtheme'),
         ];
     }

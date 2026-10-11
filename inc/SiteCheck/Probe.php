@@ -490,7 +490,8 @@ final class Probe
         ];
         $comparison = is_array($obs['comparison'] ?? null) ? $obs['comparison'] : [];
         $comparison = ['status' => (int) ($comparison['status'] ?? 0), 'redirect' => !empty($comparison['redirect'])];
-        if (Evidence::classify($response, $comparison) === Evidence::UNREACHABLE) {
+        // The probe is outside the cut-error exception (spec rule 4): a truncated answer is no evidence here.
+        if (!$response['truncated'] && Evidence::classify($response, $comparison) === Evidence::UNREACHABLE) {
             return $f(Status::GREEN, sprintf(
                 /* translators: %d: HTTP status */
                 __('Blocked (HTTP %d).', 'sfxtheme'),

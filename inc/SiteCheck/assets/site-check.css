@@ -46,8 +46,14 @@
 .sfx-sc-items { max-width: 720px; }
 .sfx-sc-item-meta { color: #646970; font-size: 12px; }
 
-/* Section tabs */
-.sfx-sc-panelhead { margin: 0 0 12px; }
+/* Section tabs: three groups — act, check yourself, fine (folded). */
+.sfx-sc-group { max-width: 960px; margin: 0 0 20px; }
+.sfx-sc-grouphead { margin: 8px 0; font-size: 14px; font-weight: 600; }
+.sfx-sc-group-fine > .sfx-sc-grouphead { cursor: pointer; padding: 6px 0; }
+.sfx-sc-groupcount { color: #646970; font-weight: 400; }
+.sfx-sc-groupintro { margin: 0 0 8px; color: #50575e; max-width: 75ch; }
+.sfx-sc-groupnone { margin: 0 0 8px; }
+.sfx-sc-selfcheck { margin: 0 0 12px; padding: 8px 12px; background: #f6f7f7; border-left: 4px solid #8c8f94; max-width: 75ch; }
 .sfx-sc-empty { margin: 0 0 12px; }
 .sfx-sc-empty p { margin: 0 0 8px; }
 
@@ -64,8 +70,9 @@
 .sfx-sc-tag { color: #8a2424; font-size: 12px; font-style: italic; }
 .sfx-sc-tag:empty, .sfx-sc-count:empty { display: none; }
 .sfx-sc-body { padding: 0 12px 12px 27px; }
-.sfx-sc-findings { margin: 0 0 8px; }
-.sfx-sc-finding { display: flex; gap: 6px; align-items: baseline; margin: 0 0 4px; }
+.sfx-sc-findings { margin: 0 0 8px 18px; list-style: disc; }
+.sfx-sc-finding { margin: 0 0 4px; }
+.sfx-sc-finding .sfx-sc-dot { margin-right: 6px; }
 .sfx-sc-label { overflow-wrap: anywhere; }
 .sfx-sc-note { margin: 0 0 12px; color: #50575e; }
 .sfx-sc-perspective { display: inline-block; margin-right: 4px; padding: 0 6px; border: 1px solid #c3c4c7; border-radius: 3px; font-size: 12px; line-height: 18px; color: #50575e; }

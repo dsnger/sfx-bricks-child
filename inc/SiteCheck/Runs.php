@@ -11,10 +11,10 @@ use SFX\SiteCheck\Checks\ServerChecks;
  *
  * Option `manual` = ['issued' => issued run, 'saved' => last saved run]:
  *
- * - issued: {run, started, user, profile, indexability_paths (valid ones
- *   only), sitemap_allow, fallback_theme, probe (consent, this run only),
- *   checks (the catalogue IDs this run covers)} — written by start(),
- *   dropped by the save that consumes it, by reset() and by purge.
+ * - issued: {run, started, user, profile, sitemap_allow, fallback_theme,
+ *   probe (consent, this run only), checks (the catalogue IDs this run
+ *   covers)} — written by start(), dropped by the save that consumes it, by
+ *   reset() and by purge.
  * - saved: {run, date, user, profile, results: [check => graded]} — the
  *   only thing a run leaves behind (spec rule 7); read by last().
  *
@@ -79,8 +79,6 @@ final class Runs
             'started' => time(),
             'user' => get_current_user_id(),
             'profile' => $settings['profile'],
-            // RunContext does not filter: an invalid stored path never reaches a run.
-            'indexability_paths' => array_values(array_filter($settings['indexability_paths'], [Settings::class, 'valid_path'])),
             'sitemap_allow' => $settings['sitemap_allow'],
             'fallback_theme' => $settings['fallback_theme'],
             'probe' => $probe,
@@ -118,7 +116,6 @@ final class Runs
         return new RunContext(
             $issued['run'],
             isset($issued['profile']) && in_array($issued['profile'], Settings::PROFILES, true) ? $issued['profile'] : 'live',
-            $list($issued['indexability_paths'] ?? []),
             $list($issued['sitemap_allow'] ?? []),
             isset($issued['fallback_theme']) && is_string($issued['fallback_theme']) ? $issued['fallback_theme'] : '',
             ($issued['probe'] ?? false) === true

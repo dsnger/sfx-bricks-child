@@ -253,9 +253,9 @@ if ($missing !== []) {
     t_fail(count($missing) . " of {$total} strings lack a German msgstr:\n  " . implode("\n  ", $missing));
 }
 
-// Spec: the status word for information is "Hinweis" everywhere; CustomDashboard's own "Note" keeps its translation.
-if (($po["site check status\x04Note"][0] ?? '') !== 'Hinweis') {
-    t_fail('_x(\'Note\', \'site check status\') must translate to "Hinweis"');
+// Spec "Sections": status Hinweis is displayed as "Info" (owner ruling 2026-10-11); CustomDashboard's own "Note" keeps its translation.
+if (($po["site check status\x04Info"][0] ?? '') !== 'Info') {
+    t_fail('_x(\'Info\', \'site check status\') must translate to "Info"');
 }
 if (($po['Note'][0] ?? '') !== 'Notiz') {
     t_fail('the plain "Note" (CustomDashboard) must keep "Notiz"');

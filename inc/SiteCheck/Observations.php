@@ -93,7 +93,7 @@ final class Observations
             'status'    => isset($raw['status']) && is_numeric($raw['status']) ? (int) $raw['status'] : 0,
             'headers'   => $headers,
             'headers_cut' => $cut,
-            'body'      => isset($raw['body']) && is_string($raw['body']) ? substr($raw['body'], 0, Fetch::LIMIT) : '',
+            'body'      => isset($raw['body']) && is_string($raw['body']) ? self::cut($raw['body']) : '',
             'head_hex'  => preg_match('/^[0-9a-f]*$/', $hex) === 1 ? $hex : '',
             'truncated' => !empty($raw['truncated']),
             'redirect'  => !empty($raw['redirect']) || (isset($raw['type']) && $raw['type'] === 'opaqueredirect'),
@@ -224,14 +224,14 @@ final class Observations
     }
 
     /**
-     * Attributes of every `meta` and `link` element of an HTML text, read by
+     * Attributes of every `meta` element of an HTML text, read by
      * libxml's HTML parser (DOMDocument): comments and script text are not
      * markup, attribute values may be quoted or not, entities are decoded,
      * names are lower-case. Input is only the bytes read (≤ 64 KB); no
      * network (LIBXML_NONET). Null when DOM is unavailable or parsing fails —
      * the caller then has no evidence.
      *
-     * @return array{meta:list<array<string,string>>, link:list<array<string,string>>}|null
+     * @return array{meta:list<array<string,string>>}|null
      */
     public static function html_tags(string $body): ?array
     {
@@ -247,16 +247,14 @@ final class Observations
         if ($loaded === false) {
             return null;
         }
-        $out = ['meta' => [], 'link' => []];
-        foreach (['meta', 'link'] as $tag) {
-            foreach ($doc->getElementsByTagName($tag) as $element) {
-                $attrs = [];
-                foreach ($element->attributes ?? [] as $attr) {
-                    $name = strtolower($attr->name);
-                    $attrs[$name] = $attrs[$name] ?? (string) $attr->value;
-                }
-                $out[$tag][] = $attrs;
+        $out = ['meta' => []];
+        foreach ($doc->getElementsByTagName('meta') as $element) {
+            $attrs = [];
+            foreach ($element->attributes ?? [] as $attr) {
+                $name = strtolower($attr->name);
+                $attrs[$name] = $attrs[$name] ?? (string) $attr->value;
             }
+            $out['meta'][] = $attrs;
         }
 
         return $out;
@@ -506,5 +504,36 @@ final class Observations
     public static function result(array $findings, string $empty, string $perspective, string $note): array
     {
         return ServerChecks::result($findings, $empty, $note, $perspective);
+    }
+
+    /**
+     * The body bounded to Fetch::LIMIT bytes on a UTF-8 character boundary, so
+     * a cut inside a multibyte character cannot make a /u signature fail on
+     * the bytes before it (Gate B, 2026-10-11).
+     */
+    public static function cut(string $body): string
+    {
+        if (strlen($body) <= Fetch::LIMIT) {
+            return $body;
+        }
+        if (function_exists('mb_strcut')) {
+            return mb_strcut($body, 0, Fetch::LIMIT, 'UTF-8');
+        }
+        // Without mbstring: drop the incomplete character at the end (at most 3 bytes).
+        $cut = substr($body, 0, Fetch::LIMIT);
+        for ($i = 0; $i < 3 && $cut !== '' && preg_match('//u', $cut) !== 1; $i++) {
+            $cut = substr($cut, 0, -1);
+        }
+        return preg_match('//u', $cut) === 1 ? $cut : substr($body, 0, Fetch::LIMIT);
+    }
+
+    /** Invalid UTF-8 replaced, so a /u pattern still matches the valid text around it. */
+    public static function scrub(string $text): string
+    {
+        if (function_exists('mb_scrub')) {
+            return mb_scrub($text, 'UTF-8');
+        }
+        // Without mbstring, as short() does: ENT_SUBSTITUTE replaces invalid sequences.
+        return htmlspecialchars_decode(htmlspecialchars($text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8'), ENT_NOQUOTES);
     }
 }

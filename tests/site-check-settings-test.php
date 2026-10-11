@@ -297,16 +297,6 @@ namespace {
         assert_same($expected, Access::allowed(), "access row {$i}");
     }
 
-    // ------------------------------------------------------------ valid_path
-
-    foreach (['/kontakt/', '/', '/a/b-c_d', '/über-uns/'] as $ok) {
-        assert_same(true, Settings::valid_path($ok), "valid path {$ok}");
-    }
-    foreach (['https://x/a', '//evil.test/a', '/a?b=1', '/a#f', '/../x', '/a/../x', '/%2e%2e/x', '/x.php', '/x.PHP', '/x.php/y', '/x.phtml', '/x.PHAR', '/x.pht', '/x.php7', '/x.pht/y', '/x%2Ephtml', 'x', '', '/a b', "/a\n", '/a\\b'] as $bad) {
-        assert_same(false, Settings::valid_path($bad), 'invalid path ' . json_encode($bad));
-    }
-    assert_same(false, Settings::valid_path('/' . str_repeat('a', 300)), 'overlong path');
-
     // ------------------------------------------------------------ sanitize
 
     $s = Settings::sanitize(['profile' => 'nonsense']);
@@ -314,11 +304,6 @@ namespace {
     assert_same('private', Settings::sanitize(['profile' => 'private'])['profile'], 'private profile kept');
     assert_same('live', Settings::sanitize(['profile' => ['x']])['profile'], 'array profile -> live');
 
-    $s = Settings::sanitize(['indexability_paths' => ['/kontakt/', 'https://x/a', '/a?b=1', '/../x', '/x.php', 'x', ' /ok/ ', 5, null, '/kontakt/']]);
-    assert_same(['/kontakt/', '/ok/'], $s['indexability_paths'], 'invalid and duplicate paths dropped, trimmed');
-    $s = Settings::sanitize(['indexability_paths' => ['/1', '/2', '/3', '/4', '/5', '/6', '/7']]);
-    assert_same(['/1', '/2', '/3', '/4', '/5'], $s['indexability_paths'], 'first 5 kept');
-    assert_same([], Settings::sanitize(['indexability_paths' => 'oops'])['indexability_paths'], 'non-array paths -> empty');
     assert_same([], Settings::sanitize(['sitemap_allow' => 'oops'])['sitemap_allow'], 'non-array allow -> empty');
     $s = Settings::sanitize(['sitemap_allow' => ['attachments', 'authors', 'post_type:bricks_template', 'taxonomy:post_tag', 'bogus', 'post_type:', 'post_type:A B', 7, 'attachments']]);
     assert_same(['attachments', 'authors', 'post_type:bricks_template', 'taxonomy:post_tag'], $s['sitemap_allow'], 'only well-formed entry types, unique');
@@ -328,23 +313,22 @@ namespace {
 
     // ------------------------------------------------------------ get
 
-    $defaults = ['profile' => 'live', 'indexability_paths' => [], 'sitemap_allow' => [], 'fallback_theme' => ''];
+    $defaults = ['profile' => 'live', 'sitemap_allow' => [], 'fallback_theme' => ''];
     assert_same($defaults, Settings::get(), 'defaults without an option');
     $db->rows[$opt] = 'garbage';
     assert_same($defaults, Settings::get(), 'non-array option -> defaults');
-    $db->rows[$opt] = serialize(['profile' => 'bogus', 'indexability_paths' => ['/ok/', '/x.php', 3], 'monitor_interval' => 'daily']);
+    $db->rows[$opt] = serialize(['profile' => 'bogus', 'sitemap_allow' => ['authors'], 'monitor_interval' => 'daily']);
     $got = Settings::get();
     assert_same('live', $got['profile'], 'stored bad profile reads as live');
-    assert_same(['/ok/', '/x.php'], $got['indexability_paths'], 'stored invalid path stays visible (shown as rejected), non-strings go');
+    assert_same(['authors'], $got['sitemap_allow'], 'the stored allow list reads');
     assert_true(!array_key_exists('monitor_interval', $got), 'monitor keys are not part of get() in plan 1');
     unset($db->rows[$opt]);
 
     // ------------------------------------------------------------ save
 
-    assert_same(true, Settings::save(['profile' => 'staging', 'indexability_paths' => ['/kontakt/', '/x.php']]), 'save succeeds');
+    assert_same(true, Settings::save(['profile' => 'staging']), 'save succeeds');
     assert_same('no', $db->autoload[$opt], 'option created with autoload = no');
     assert_same('staging', Settings::get()['profile'], 'profile saved');
-    assert_same(['/kontakt/'], Settings::get()['indexability_paths'], 'invalid path dropped on save');
     assert_true(!isset($db->rows[$mutex]), 'mutex released after save');
 
     // Unknown stored keys (plan 2's monitor keys) survive a save.
@@ -370,41 +354,33 @@ namespace {
         unset($db->rows[$opt], $db->autoload[$opt], $db->rows[$mutex]);
     };
 
-    // first import creates the option, autoload no, touches only the two keys
+    // first import creates the option, autoload no, touches only the exported key
     $reset();
-    $r = Settings::import_fields(['indexability_paths' => ['/kontakt/', 'https://x', '/x.php'], 'sitemap_allow' => ['attachments', 'bogus']], 'merge');
+    $r = Settings::import_fields(['sitemap_allow' => ['attachments', 'bogus']], 'merge');
     assert_same('success', $r['status'], 'first import ok');
     assert_true($r['message'] !== '', 'import has a message');
     assert_same('no', $db->autoload[$opt], 'import creates the option with autoload = no');
     $stored = unserialize($db->rows[$opt]);
-    assert_same(['indexability_paths' => ['/kontakt/'], 'sitemap_allow' => ['attachments']], $stored, 'first import stores only the two exported keys, cleaned');
+    assert_same(['sitemap_allow' => ['attachments']], $stored, 'first import stores only the exported key, cleaned');
 
     // profile, fallback and foreign keys unchanged; merge unions, replace replaces
-    $db->rows[$opt] = serialize(['profile' => 'private', 'fallback_theme' => 'mytheme', 'monitor_interval' => 'weekly', 'indexability_paths' => ['/a/', '/b/'], 'sitemap_allow' => ['authors']]);
-    Settings::import_fields(['profile' => 'staging', 'fallback_theme' => 'evil', 'monitor_interval' => 'x', 'indexability_paths' => ['/c/', '/a/'], 'sitemap_allow' => ['attachments']], 'merge');
+    $db->rows[$opt] = serialize(['profile' => 'private', 'fallback_theme' => 'mytheme', 'monitor_interval' => 'weekly', 'sitemap_allow' => ['authors']]);
+    Settings::import_fields(['profile' => 'staging', 'fallback_theme' => 'evil', 'monitor_interval' => 'x', 'sitemap_allow' => ['attachments']], 'merge');
     $stored = unserialize($db->rows[$opt]);
     assert_same('private', $stored['profile'], 'import never changes profile');
     assert_same('mytheme', $stored['fallback_theme'], 'import never changes fallback theme');
     assert_same('weekly', $stored['monitor_interval'], 'import never changes other keys');
-    assert_same(['/a/', '/b/', '/c/'], $stored['indexability_paths'], 'merge: union, existing first');
     assert_same(['authors', 'attachments'], $stored['sitemap_allow'], 'merge: allow list union');
 
-    Settings::import_fields(['indexability_paths' => ['/z/'], 'sitemap_allow' => []], 'replace');
+    Settings::import_fields(['sitemap_allow' => []], 'replace');
     $stored = unserialize($db->rows[$opt]);
-    assert_same(['/z/'], $stored['indexability_paths'], 'replace: paths replaced');
     assert_same([], $stored['sitemap_allow'], 'replace: allow list replaced');
     assert_same('private', $stored['profile'], 'replace keeps profile');
 
-    // excess paths in merge capped at 5
-    $db->rows[$opt] = serialize(['indexability_paths' => ['/1', '/2', '/3', '/4']]);
-    Settings::import_fields(['indexability_paths' => ['/5', '/6', '/7']], 'merge');
-    assert_same(['/1', '/2', '/3', '/4', '/5'], unserialize($db->rows[$opt])['indexability_paths'], 'merge capped at 5');
-
     // malformed types are rejected: field untouched
-    $db->rows[$opt] = serialize(['indexability_paths' => ['/keep/'], 'sitemap_allow' => ['authors']]);
-    $r = Settings::import_fields(['indexability_paths' => 'oops', 'sitemap_allow' => 5], 'replace');
+    $db->rows[$opt] = serialize(['sitemap_allow' => ['authors']]);
+    $r = Settings::import_fields(['sitemap_allow' => 5], 'replace');
     $stored = unserialize($db->rows[$opt]);
-    assert_same(['/keep/'], $stored['indexability_paths'], 'malformed paths leave the field alone');
     assert_same(['authors'], $stored['sitemap_allow'], 'malformed allow list leaves the field alone');
     assert_true($r['status'] !== 'success', 'all fields malformed -> not reported as success');
 
@@ -412,7 +388,7 @@ namespace {
     $before = $db->rows[$opt];
     $db->rows[$mutex] = 'otherprocess:' . (int) FakeClock::$now;
     $start = FakeClock::$now;
-    $r = Settings::import_fields(['indexability_paths' => ['/new/']], 'replace');
+    $r = Settings::import_fields(['sitemap_allow' => ['authors']], 'replace');
     assert_same('error', $r['status'], 'import while busy -> error');
     assert_true(FakeClock::$now - $start >= 5.0, 'import waited for the mutex');
     assert_same($before, $db->rows[$opt], 'busy import wrote nothing');
@@ -424,13 +400,12 @@ namespace {
 
     $changes = AdminPage::collect([
         'profile' => 'staging',
-        'indexability_paths' => ['/a/', '', '/x.php'],
         'sitemap_allow' => ['attachments', 'post_type:bricks_template'],
         'fallback_theme' => 'mytheme',
     ]);
-    assert_same(['profile' => 'staging', 'indexability_paths' => ['/a/', '', '/x.php'], 'sitemap_allow' => ['attachments', 'post_type:bricks_template'], 'fallback_theme' => 'mytheme'], $changes, 'collect passes the four controls');
+    assert_same(['profile' => 'staging', 'sitemap_allow' => ['attachments', 'post_type:bricks_template'], 'fallback_theme' => 'mytheme'], $changes, 'collect passes the three controls, nothing else');
     $changes = AdminPage::collect([]);
-    assert_same(['indexability_paths' => [], 'sitemap_allow' => []], $changes, 'unchecked boxes and empty path list are real values; absent scalars are omitted');
+    assert_same(['sitemap_allow' => []], $changes, 'unchecked boxes are real values; absent scalars are omitted');
 
     // round trip: each control saves and reloads
     $reset();
@@ -438,13 +413,11 @@ namespace {
     $themes = ['twentytwentyfive' => 'Twenty Twenty-Five', 'mytheme' => 'My Theme'];
     Settings::save(AdminPage::collect([
         'profile' => 'private',
-        'indexability_paths' => ['/kontakt/', '/x.php'],
         'sitemap_allow' => ['authors', 'post_type:bricks_template'],
         'fallback_theme' => 'mytheme',
     ]));
     $got = Settings::get();
     assert_same('private', $got['profile'], 'round trip profile');
-    assert_same(['/kontakt/'], $got['indexability_paths'], 'round trip paths');
     assert_same(['authors', 'post_type:bricks_template'], $got['sitemap_allow'], 'round trip allow list');
     assert_same('mytheme', $got['fallback_theme'], 'round trip fallback theme');
 
@@ -452,16 +425,11 @@ namespace {
     AdminPage::render_form($got, $entry_types, $themes);
     $html = (string) ob_get_clean();
     assert_true(str_contains($html, 'name="_wpnonce" value="nonce-sfx_site_check"'), 'form carries the nonce');
-    for ($i = 1; $i <= 5; $i++) {
-        assert_true(str_contains($html, '<label for="sfx-sc-path-' . $i . '"') && str_contains($html, 'id="sfx-sc-path-' . $i . '"') && str_contains($html, 'Page ' . $i . ' for the indexing check'), "Gate B pass 6: path input {$i} has its own label");
-    }
     assert_true(str_contains($html, 'value="sfx_site_check_save"'), 'form posts to the admin-post action');
     assert_true(preg_match('/<option value="private"[^>]*selected/', $html) === 1, 'profile selected on reload');
-    assert_true(str_contains($html, 'value="/kontakt/"'), 'path shown on reload');
     assert_true(preg_match('/value="authors"[^>]*checked/', $html) === 1, 'allow-list box checked on reload');
     assert_true(preg_match('/value="attachments"[^>]*checked/', $html) === 0, 'unchecked box not checked');
     assert_true(preg_match('/<option value="mytheme"[^>]*selected/', $html) === 1, 'fallback theme selected on reload');
-    assert_true(!str_contains($html, 'Rejected'), 'no rejected marker when every path is valid');
 
     assert_true(str_contains($html, 'id="sfx-sc-settings"') && str_contains($html, 'id="sfx-sc-settings-save"') && str_contains($html, 'id="sfx-sc-settings-dirty"'), 'the form, its save button and its unsaved marker carry the IDs the script wires');
 
@@ -515,15 +483,6 @@ namespace {
     }
     assert_true(str_contains($html, 'Where: at the top of this folder'), 'the uploads block says where it goes');
 
-    // a stored invalid path is shown as rejected, with its text escaped
-    $bad = $got;
-    $bad['indexability_paths'] = ['/kontakt/', '/x.php<b>'];
-    ob_start();
-    AdminPage::render_form($bad, $entry_types, $themes);
-    $html = (string) ob_get_clean();
-    assert_true(str_contains($html, 'Rejected'), 'invalid stored path marked rejected');
-    assert_true(str_contains($html, '/x.php&lt;b&gt;') && !str_contains($html, '<b>'), 'path escaped at output');
-
     // a stored allow entry that is not offered any more is listed separately, still checked: unticking removes it
     $odd = $got;
     $odd['sitemap_allow'] = ['post_type:gone', 'authors'];
@@ -575,7 +534,7 @@ namespace {
     // ------------------------------------------------------------ Task 11: guidance in the catalogue
 
     $catalogue = Catalogue::all();
-    assert_same(35, count($catalogue), 'all catalogue checks');
+    assert_same(34, count($catalogue), 'all catalogue checks');
     $tab_fragments = ['#uebersicht', '#sicherheit', '#live-gang', '#aufraeumen', '#htaccess', '#einstellungen'];
     foreach ($catalogue as $id => $row) {
         assert_true(!isset($row['tip']), "{$id}: the old tip is gone");
@@ -585,7 +544,10 @@ namespace {
         foreach ($row['links'] as $link) {
             assert_true(trim($link['label']) !== '', "{$id}: link label");
             $url = $link['url'];
-            assert_true(in_array($url, $tab_fragments, true) || preg_match('/^[a-z-]+\.php(\?[A-Za-z0-9_=&.-]+)?$/', $url) === 1, "{$id}: link is a tab fragment or a wp-admin path, not a site URL: {$url}");
+            if ($id === 'xmlrpc' && strpos($url, 'sfx-wp-optimizer') !== false) {
+                assert_same('admin.php?page=sfx-wp-optimizer#security', $url, 'xmlrpc links to WP Optimizer\'s security tab');
+            }
+            assert_true(in_array($url, $tab_fragments, true) || preg_match('/^[a-z-]+\.php(\?[A-Za-z0-9_=&.-]+)?(#[a-z-]+)?$/', $url) === 1, "{$id}: link is a tab fragment or a wp-admin path (with an optional tab), not a site URL: {$url}");
         }
     }
     $in = $catalogue['php_in_uploads'];
@@ -631,7 +593,7 @@ namespace {
     $g = $groups['site_check'];
     assert_same('subset', $g['type'], 'site_check is a subset group');
     assert_same('sfx_site_check_settings', $g['option_key'], 'site_check option key');
-    assert_same(['indexability_paths', 'sitemap_allow'], $g['fields'], 'site_check exports exactly the two fields');
+    assert_same(['sitemap_allow'], $g['fields'], 'site_check exports exactly sitemap_allow');
     assert_same([Settings::class, 'import_fields'], $g['import'], 'site_check owns its import');
     assert_true(is_callable($g['import']), 'import callable resolves');
     $exported = [];
@@ -660,13 +622,13 @@ namespace {
     }
     $reset();
     $db->rows[$opt] = serialize(['profile' => 'private']);
-    $results = $method->invoke($importer, ['site_check' => ['profile' => 'staging', 'indexability_paths' => ['/ok/', '/x.php']]], ['site_check'], 'replace');
+    $results = $method->invoke($importer, ['site_check' => ['profile' => 'staging', 'sitemap_allow' => ['authors', 'bogus']]], ['site_check'], 'replace');
     assert_same('success', $results['site_check']['status'] ?? null, 'importer reports the callback result');
     $stored = unserialize($db->rows[$opt]);
-    assert_same(['/ok/'], $stored['indexability_paths'], 'importer path went through the callback');
+    assert_same(['authors'], $stored['sitemap_allow'], 'importer entries went through the callback');
     assert_same('private', $stored['profile'], 'importer left the profile alone');
     $db->rows[$mutex] = 'otherprocess:' . (int) FakeClock::$now;
-    $results = $method->invoke($importer, ['site_check' => ['indexability_paths' => ['/new/']]], ['site_check'], 'replace');
+    $results = $method->invoke($importer, ['site_check' => ['sitemap_allow' => ['attachments']]], ['site_check'], 'replace');
     assert_same('error', $results['site_check']['status'] ?? null, 'importer reports busy as error');
     unset($db->rows[$mutex]);
 
@@ -693,31 +655,14 @@ namespace {
 
     // Import message reports what survived sanitising.
     $reset();
-    $r = Settings::import_fields(['indexability_paths' => ['/ok/', '/x.php', 'https://x'], 'sitemap_allow' => ['attachments', 'bogus']], 'replace');
+    $r = Settings::import_fields(['sitemap_allow' => ['attachments', 'authors', 'bogus', 'post_type:', 7]], 'replace');
     assert_same('success', $r['status'], 'partial import still success');
     assert_true(str_contains($r['message'], '2 entries imported') && str_contains($r['message'], '3 rejected'), 'message counts surviving and rejected: ' . $r['message']);
-    $r = Settings::import_fields(['indexability_paths' => ['/a/', '/b/']], 'replace');
+    $r = Settings::import_fields(['sitemap_allow' => ['attachments', 'authors']], 'replace');
     assert_true(str_contains($r['message'], '2 entries imported') && !str_contains($r['message'], 'rejected'), 'clean import message: ' . $r['message']);
-    $r = Settings::import_fields(['indexability_paths' => ['/x.php']], 'replace');
+    $r = Settings::import_fields(['sitemap_allow' => ['bogus']], 'replace');
     assert_true(str_contains($r['message'], '0 entries imported') && str_contains($r['message'], '1 rejected'), 'emptied field says so: ' . $r['message']);
-    assert_same([], Settings::get()['indexability_paths'], 'replace with only invalid paths empties the list');
-
-    // Gate B pass 4: the message counts what was stored after merge and the 5-path cap.
-    $reset();
-    Settings::import_fields(['indexability_paths' => ['/1/', '/2/', '/3/', '/4/', '/5/']], 'replace');
-    $r = Settings::import_fields(['indexability_paths' => ['/six/']], 'merge');
-    assert_same(['/1/', '/2/', '/3/', '/4/', '/5/'], Settings::get()['indexability_paths'], 'fixture: the full list stays');
-    assert_true(str_contains($r['message'], '0 entries imported') && str_contains($r['message'], '1 not stored'), 'capacity omission reported separately: ' . $r['message']);
-
-    // Gate B pass 5: capacity is counted on the full incoming list, never as "invalid".
-    $reset();
-    $r = Settings::import_fields(['indexability_paths' => ['/1/', '/2/', '/3/', '/4/', '/5/', '/6/']], 'replace');
-    assert_same(5, count(Settings::get()['indexability_paths']), 'fixture: five stored');
-    assert_true(str_contains($r['message'], '5 entries imported') && str_contains($r['message'], '1 not stored') && !str_contains($r['message'], 'rejected'), 'replace with six valid paths: ' . $r['message']);
-    $reset();
-    Settings::import_fields(['indexability_paths' => ['/1/', '/2/']], 'replace');
-    $r = Settings::import_fields(['indexability_paths' => ['/3/', '/4/', '/5/', '/6/', '/7/', 'bad']], 'merge');
-    assert_true(str_contains($r['message'], '3 entries imported') && str_contains($r['message'], '1 rejected') && str_contains($r['message'], '2 not stored'), 'merge over the cap: ' . $r['message']);
+    assert_same([], Settings::get()['sitemap_allow'], 'replace with only invalid entries empties the list');
 
     // Gate B pass 4: a busy page-load cleanup says so.
     ob_start();
@@ -738,7 +683,7 @@ namespace {
         }
         return 'returned';
     };
-    $post = ['profile' => 'staging', 'indexability_paths' => ['/h/'], 'sitemap_allow' => ['authors'], 'fallback_theme' => 'mytheme'];
+    $post = ['profile' => 'staging', 'sitemap_allow' => ['authors'], 'fallback_theme' => 'mytheme'];
 
     $reset();
     assert_same('nonce-failed', $run_save(false, true, true, 'POST', $post), 'failed nonce stops the request');
@@ -750,7 +695,7 @@ namespace {
     assert_true(!isset($db->rows[$opt]), '405 wrote nothing');
     assert_same('redirect:https://example.test/wp-admin/tools.php?page=sfx-site-check&sfx_sc=saved#einstellungen', $run_save(true, true, true, 'POST', $post), 'valid POST redirects with saved, back to the Einstellungen tab');
     $got = Settings::get();
-    assert_same(['staging', ['/h/'], ['authors'], 'mytheme'], [$got['profile'], $got['indexability_paths'], $got['sitemap_allow'], $got['fallback_theme']], 'valid POST stored all four controls');
+    assert_same(['staging', ['authors'], 'mytheme'], [$got['profile'], $got['sitemap_allow'], $got['fallback_theme']], 'valid POST stored all three controls');
     $before = $db->rows[$opt];
     $db->rows[$mutex] = 'otherprocess:' . (int) FakeClock::$now;
     assert_true(str_ends_with($run_save(true, true, true, 'POST', ['profile' => 'private'] + $post), 'sfx_sc=busy#einstellungen'), 'held mutex redirects with busy');

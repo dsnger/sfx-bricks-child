@@ -340,6 +340,11 @@ final class HeaderChecks
     private static function version_facts(RunContext $ctx, array $plan, array $seen, array $comparison): array
     {
         $version = (string) ($GLOBALS['wp_version'] ?? '');
+        // Server fact: does WordPress itself print a generator tag on the front end?
+        // As wp_generator() does: its type filter, then the_generator; has_action() may answer priority 0.
+        $type = (string) apply_filters('wp_generator_type', 'xhtml');
+        $generator_off = has_action('wp_head', 'wp_generator') === false
+            || trim((string) apply_filters('the_generator', get_the_generator($type), $type)) === '';
         $facts = ['sources' => [], 'leaks' => []];
         // A source the plan did not fetch (rule 6, Locations) stays Nicht prüfbar, with its reason.
         foreach ($plan['skipped'] as $skip) {
@@ -351,7 +356,7 @@ final class HeaderChecks
         }
         foreach ($plan['issued'] as $c) {
             $variants = $seen[$c['url']] ?? [];
-            $facts['sources'][] = ['target' => $c['target'], 'kind' => $c['kind']] + self::source_state($c['kind'], $variants, $comparison, $version);
+            $facts['sources'][] = ['target' => $c['target'], 'kind' => $c['kind']] + self::source_state($c['kind'], $variants, $comparison, $version, $generator_off);
             if ($c['kind'] !== 'home') {
                 continue;
             }
@@ -371,12 +376,12 @@ final class HeaderChecks
     }
 
     /** @return array{state:string, reason:string} */
-    private static function source_state(string $kind, array $variants, array $comparison, string $version): array
+    private static function source_state(string $kind, array $variants, array $comparison, string $version, bool $generator_off = false): array
     {
         $states = [];
         $reason = '';
         foreach (['busted', 'plain'] as $v) {
-            [$state, $why] = self::variant_state($kind, $variants[$v] ?? null, $comparison, $version);
+            [$state, $why] = self::variant_state($kind, $variants[$v] ?? null, $comparison, $version, $generator_off);
             $states[] = $state;
             if ($reason === '' && $why !== '') {
                 $reason = $why;
@@ -388,6 +393,9 @@ final class HeaderChecks
         if ($states === ['clean', 'clean']) {
             return ['state' => 'clean', 'reason' => ''];
         }
+        if (array_diff($states, ['clean', 'off']) === [] && in_array('off', $states, true)) {
+            return ['state' => 'off', 'reason' => ''];
+        }
         if ($kind === 'feed' && $states === ['gone', 'gone']) {
             return ['state' => 'absent', 'reason' => ''];
         }
@@ -395,8 +403,8 @@ final class HeaderChecks
         return ['state' => 'unknown', 'reason' => $reason !== '' ? $reason : __('the two fetches did not agree', 'sfxtheme')];
     }
 
-    /** @return array{0:string, 1:string} found | clean | gone | failed, and the reason for failed */
-    private static function variant_state(string $kind, ?array $obs, array $comparison, string $version): array
+    /** @return array{0:string, 1:string} found | clean | off | gone | failed, and the reason for failed */
+    private static function variant_state(string $kind, ?array $obs, array $comparison, string $version, bool $generator_off = false): array
     {
         $state = self::page_state($obs, $kind === 'feed');
         if ($state['state'] !== 'ok') {
@@ -418,7 +426,11 @@ final class HeaderChecks
             return ['found', ''];
         }
         if ($r['truncated']) {
-            return ['failed', __('too large to read completely, no version in the part read', 'sfxtheme')];
+            // Owner ruling 2026-10-11: Bricks home pages often exceed what is read. When WordPress
+            // itself prints no generator (WP Optimizer's switch, or removed), the cut page is judged.
+            // Only a part read that parses as an HTML page counts as "no version in the part read".
+            $parsed = preg_match('/<(?:html|head)\b/i', $r['body']) === 1 && Observations::html_tags($r['body']) !== null;
+            return $kind === 'home' && $generator_off && $parsed ? ['off', ''] : ['failed', __('too large to read completely, no version in the part read', 'sfxtheme')];
         }
         // A feed is clean only as a complete, well-formed feed document (rule 4: unparseable).
         $parsed = $kind === 'feed'
@@ -427,6 +439,7 @@ final class HeaderChecks
 
         return $parsed ? ['clean', ''] : ['failed', $kind === 'feed' ? __('the answer is not a feed', 'sfxtheme') : __('the answer is not an HTML page', 'sfxtheme')];
     }
+
 
     /**
      * The installed version in WordPress' own generator: a `<meta name="generator">`
@@ -469,6 +482,10 @@ final class HeaderChecks
                     break;
                 case 'clean':
                     $findings[] = Observations::finding('version_leaks', $target, Status::GREEN, $target . ' — ' . __('WordPress version not found in the sources checked', 'sfxtheme'));
+                    break;
+                case 'off':
+                    // Hinweis, not Grün: the server sees its own (admin) context, not the public page itself.
+                    $findings[] = Observations::finding('version_leaks', $target, Status::HINT, $target . ' — ' . __('According to the WordPress setting no version tag is printed; the page is too large to read completely, and no version was in the part read', 'sfxtheme'));
                     break;
                 case 'absent':
                     $findings[] = Observations::finding('version_leaks', $target, Status::GREEN, $target . ' — ' . __('feed not present', 'sfxtheme'));

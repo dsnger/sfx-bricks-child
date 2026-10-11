@@ -307,14 +307,19 @@ final class AccountOutside
         // A challenge says nothing about XML-RPC, whatever its status (rule 4).
         if ($r['challenge']) {
             $state = 'other';
-        } elseif (in_array($r['status'], [403, 404, 405, 410], true) && $r['body'] !== '' && !$r['truncated']) {
+        } elseif (preg_match('#<methodResponse>\s*<params>.*<string>[a-z]+\.[A-Za-z.]+</string>#s', $r['body']) === 1 && ($r['status'] !== 200 || Evidence::comparison_refused($comparison))) {
+            // The methods answer is the signature (rule 5): it counts whatever the status.
+            $state = 'answers';
+        } elseif (in_array($r['status'], [403, 404, 405, 410], true) && $r['body'] !== '') {
+            // A cut, non-empty blocking answer counts as well (rule 4's exception, owner ruling 2026-10-11).
             $state = 'blocked';
+        } elseif ($r['status'] === 503) {
+            // Owner ruling 2026-10-11: hosts block xmlrpc.php in front of WordPress with a 503.
+            $state = 'host_503';
         } elseif ($r['status'] === 200 && !Evidence::comparison_refused($comparison)) {
             $state = 'other';
         } elseif ($r['status'] === 200 && strpos($r['body'], '<methodResponse') !== false && strpos($r['body'], '<fault>') !== false) {
             $state = 'fault';
-        } elseif ($r['status'] === 200 && preg_match('#<methodResponse>\s*<params>.*<string>[a-z]+\.[A-Za-z.]+</string>#s', $r['body']) === 1) {
-            $state = 'answers';
         } else {
             $state = 'other';
         }
@@ -332,6 +337,13 @@ final class AccountOutside
             case 'blocked':
                 /* translators: %d: HTTP status code */
                 $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::GREEN, sprintf(__('XML-RPC is blocked (status %d)', 'sfxtheme'), (int) $facts['status']));
+                break;
+            case 'host_503':
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::HINT, sprintf(
+                    /* translators: %s: the XML-RPC address the check called */
+                    __('The server answers 503 (unavailable): usually the host blocks XML-RPC. Open %s in a browser; an error page instead of "XML-RPC server accepts POST requests only" means it is blocked.', 'sfxtheme'),
+                    site_url('/xmlrpc.php')
+                ));
                 break;
             case 'fault':
                 $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, __('XML-RPC answered with an error; whether it is usable is unclear', 'sfxtheme'));

@@ -118,7 +118,6 @@ const checks = [
     { id: 'php_in_uploads', how: 'S', perspective: 'loopback' },
     { id: 'https', how: 'S+B', perspective: 'loopback' },
     { id: 'xmlrpc', how: 'B', perspective: 'loopback' },
-    { id: 'indexability', how: 'B', perspective: 'loopback' },
     { id: 'sitemap', how: 'B', perspective: 'loopback' },
     { id: 'sitemap_entries', how: 'B', perspective: 'loopback' },
     { id: 'robots_txt', how: 'B', perspective: 'browser' },
@@ -328,7 +327,12 @@ class El {
     if (c.parentNode) c.parentNode.removeChild(c);
     c.parentNode = this; this.children.splice(this.children.indexOf(ref), 0, c); return c;
   }
-  removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; return c; }
+  removeChild(c) {
+    // As in a browser: moving or removing the focused element (or its ancestor) drops focus to the body.
+    if (doc && doc.activeElement && (doc.activeElement === c || (c.all && c.all().includes(doc.activeElement)))) doc.activeElement = doc.body;
+    this.children = this.children.filter((x) => x !== c); c.parentNode = null; return c;
+  }
+  contains(n) { return n === this || this.all().includes(n); }
   get firstChild() { return this.children[0] || null; }
   setAttribute(k, v) { this.attrs[k] = String(v); }
   getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }
@@ -374,7 +378,8 @@ const STRINGS = {
   tag: { running: 'vorläufig', unsaved: 'nicht gespeichert', unknown: 'Speicherstatus unbekannt' },
   findingOne: '%1$s Fund', findingMany: '%1$s Funde',
   why: 'Warum', recommendation: 'Empfehlung', steps: "So geht's", noAction: 'Nichts zu tun.',
-  onlyAction: 'Nur Handlungsbedarf', notChecked: 'Noch nicht geprüft.', intro: 'INTRO', noActionTab: 'Kein Handlungsbedarf in diesem Bereich.',
+  groupAct: 'Handeln', groupSelf: 'Selbst prüfen', groupSelfIntro: 'SELF-INTRO', groupFine: 'In Ordnung',
+  selfStep: { server: 'SELBST-SERVER', browser: 'SELBST-BROWSER', loopback: 'SELBST-LOOPBACK', robots_txt: 'SELBST-ROBOTS' }, notChecked: 'Noch nicht geprüft.', intro: 'INTRO', noActionTab: 'Kein Handlungsbedarf in diesem Bereich.',
   meta: 'Zuletzt: %1$s von %2$s, Profil %3$s.', nextProfile: 'Nächste Prüfung: Profil %1$s.', change: 'ändern',
   check: 'Prüfen', probe: 'Uploads-Test', sectionsTitle: 'Bereiche', urgentTitle: 'Am dringendsten', urgentNone: 'Nichts Dringendes.',
   running: 'PRÜFUNG LÄUFT', progress: '%1$s von %2$s', saving: 'Speichere', saved: 'GESPEICHERT', startFailed: 'START-FEHLER %1$s',
@@ -509,21 +514,16 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   assert.ok(!visible(p.row('https')), 'back on the tab before any run: rows hidden again');
 
   p = page({ last: savedRun({ https: g('green', [['green', 'ok']]), logs_public: g('red', [['red', 'leak']]) }) });
-  const filter = find(p.panel('sicherheit'), (e) => e.tagName === 'input' && e.type === 'checkbox');
   p.win.go('#sicherheit');
-  filter.checked = true; filter.dispatch('change');
-  assert.ok(!visible(p.row('https')), 'fixture: the filter hides the green https row');
+  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  assert.ok(fine.all().includes(p.row('https')) && !fine.open, 'fixture: the green https row sits in the folded "In Ordnung" group');
   p.win.go('#check-https');
-  assert.ok(visible(p.row('https')) && p.row('https').open && doc.activeElement === p.summary('https'), 'a later #check-https shows, opens and focuses the row despite the filter');
+  assert.ok(fine.open && p.row('https').open && doc.activeElement === p.summary('https'), 'a later #check-https unfolds its group, opens and focuses the row');
   p.row('https').open = false; p.row('https').dispatch('toggle');
   p.win.go('#sicherheit');
-  assert.ok(!visible(p.row('https')) && filter.checked, 'Back to the tab: the filter applies again');
   assert.equal(doc.activeElement, p.tab('sicherheit'), 'Back to the tab: focus on the tab');
   p.win.go('#check-https');
   assert.ok(visible(p.row('https')) && p.row('https').open && doc.activeElement === p.summary('https'), 'Forward to the check link: shown, opened and focused again');
-  filter.checked = false; filter.dispatch('change');
-  filter.checked = true; filter.dispatch('change');
-  assert.ok(!visible(p.row('https')), 'toggling "Nur Handlungsbedarf" clears the check link\'s override');
   p.win.go('#live-gang');
   assert.equal(p.tab('live-gang').getAttribute('aria-selected'), 'true', 'a later tab fragment selects that tab');
   // Gate B pass 5: inherited Object names are no tabs.
@@ -552,11 +552,18 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   const p = page({ last, hash: '#sicherheit' });
   const badge = (id) => find(p.tab(id), (e) => e.className.includes('sfx-sc-tabcount'));
   assert.equal(badge('sicherheit').textContent, '1 Rot2 Gelb', 'tab badge counts checks: Rot+Nicht prüfbar findings count once as Rot');
-  const filter = find(p.panel('sicherheit'), (e) => e.tagName === 'input' && e.type === 'checkbox');
-  filter.checked = true; filter.dispatch('change');
-  assert.equal(badge('sicherheit').textContent, '1 Rot2 Gelb', 'the filter changes no badge');
-  assert.ok(!visible(p.row('https')) && visible(p.row('logs_public')), '"Nur Handlungsbedarf" hides Grün, keeps Rot');
-  filter.checked = false; filter.dispatch('change');
+  // Owner ruling 2026-10-11: three groups instead of a filter.
+  const grp = (kind) => find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-' + kind));
+  // Rendered order: the rows as they sit in the group's list.
+  const ids = (kind) => find(grp(kind), (e) => e.className === 'sfx-sc-list').children.map((d) => d.id.replace('sfx-sc-check-', ''));
+  assert.deepEqual(ids('act'), ['logs_public', 'config_copies', 'php_in_uploads', 'admin_accounts'], 'Rot first, then Gelb, a check without a result last — in rendered order');
+  assert.deepEqual(ids('fine').sort(), ['https', 'security_headers'], 'Grün rows are in the folded "In Ordnung"');
+  assert.ok(grp('self').hidden, 'an empty "Selbst prüfen" group is not shown');
+  assert.ok(grp('act').textContent.includes('Handeln (4)') && !grp('fine').open, 'group heads count their rows; "In Ordnung" starts folded');
+  // A finding repeats the row's status only where it differs.
+  const dots = findAll(p.row('logs_public'), (e) => e.className.includes('sfx-sc-dot'));
+  assert.deepEqual(dots.map((d) => d.textContent), ['Nicht prüfbar'], 'the red row tags only its differing finding');
+  assert.ok(p.row('logs_public').textContent.includes('R1'), 'the same-status finding is still listed');
 
   assert.ok(p.row('logs_public').open && p.row('php_in_uploads').open, 'Rot and Gelb rows open when they first get their result');
   assert.ok(!p.row('https').open && !p.row('table_prefix').open, 'other rows start closed');
@@ -751,9 +758,18 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   assert.equal(p.pending('sfx_site_check_start').length, 1, 'the run bar control starts a run');
 
   const q = page({ last: savedRun({ updates: g('hint'), table_prefix: g('green'), inactive_plugins: g('green') }) });
-  const filter = find(q.panel('aufraeumen'), (e) => e.tagName === 'input' && e.type === 'checkbox');
-  filter.checked = true; filter.dispatch('change');
-  assert.ok(q.panel('aufraeumen').textContent.includes('Kein Handlungsbedarf in diesem Bereich.'), 'the filter leaving a tab empty says so');
+  const act = find(q.panel('aufraeumen'), (e) => e.className.includes('sfx-sc-group-act'));
+  assert.ok(!act.hidden && act.textContent.includes('Kein Handlungsbedarf in diesem Bereich.') && act.textContent.includes('Handeln (0)'), 'a tab with nothing to act on says so, with its zero count');
+  const table = find(q.panel('aufraeumen'), (e) => e.className.includes('sfx-sc-group-fine'));
+  assert.ok(table.all().includes(q.row('updates')), 'Info rows sit in "In Ordnung"');
+
+  const r = page({ last: savedRun({ robots_txt: g('unknown', [['unknown', 'keine Antwort']], '', 'browser'), logs_public: g('unknown', [['unknown', 'x']], '', 'browser') }) });
+  const self = find(r.panel('live-gang'), (e) => e.className.includes('sfx-sc-group-self'));
+  assert.ok(!self.hidden && self.all().includes(r.row('robots_txt')) && self.textContent.includes('SELF-INTRO'), '"Selbst prüfen" rows have their own group with an intro');
+  assert.ok(r.row('robots_txt').textContent.includes('SELBST-ROBOTS') && !r.row('robots_txt').textContent.includes('SELBST-BROWSER'), 'a check with its own manual step gets that one');
+  assert.ok(r.row('logs_public').textContent.includes('SELBST-BROWSER'), 'other rows to check yourself get the step for their perspective');
+  const rt = r.row('robots_txt').textContent;
+  assert.ok(rt.indexOf('keine Antwort') < rt.indexOf('Browser') && rt.indexOf('Browser') < rt.indexOf('SELBST-ROBOTS') && rt.indexOf('SELBST-ROBOTS') < rt.indexOf('WHY-robots_txt'), 'order: findings, note, manual step, guidance');
 }
 
 // ---- dates: the script never formats a date itself
@@ -766,6 +782,49 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   p.reply('sfx_site_check_items', { items: { two_factor: { user: 7, date: 1, date_display: '10.10.2026, 23:59' } } });
   await settle();
   assert.ok(box.parentNode.parentNode.textContent.includes('erledigt von Dev am 10.10.2026, 23:59'), 'an item shows the server-formatted date');
+}
+
+// ---- Gate B pass 2: a focused row moving into the folded group keeps focus
+
+{
+  const p = page({ last: null, hash: '#sicherheit' });
+  p.startButton().click();
+  p.reply('sfx_site_check_start', { run: 'r1', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }, { id: 'admin_accounts', how: 'S', perspective: 'server' }] });
+  await settle();
+  p.summary('config_copies').focus();
+  p.reply('sfx_site_check_server', { graded: g('green', [['green', 'none']]), token: 't' });
+  await settle();
+  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  assert.ok(fine.contains(p.row('config_copies')), 'fixture: the green row moved into "In Ordnung"');
+  assert.equal(doc.activeElement, p.summary('config_copies'), 'focus stays on the moved row');
+  assert.ok(fine.open, 'and its folded group opens so the focused row is visible');
+}
+
+{
+  // Gate B pass 3: a check link unfolds "In Ordnung" once; the admin's later fold stands.
+  const p = page({ last: savedRun({ https: g('green', [['green', 'ok']]) }), hash: '#check-https' });
+  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  assert.ok(fine.open, 'fixture: the check link unfolded the group');
+  fine.open = false;
+  fine.children[0].focus();
+  p.startButton().click();
+  p.reply('sfx_site_check_start', { run: 'r9', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
+  await settle();
+  p.reply('sfx_site_check_server', { graded: g('green', [['green', 'x']]), token: 't' });
+  await settle();
+  assert.ok(!fine.open, 'an unrelated result does not reopen the group the admin folded');
+
+  // A link to an action row: the admin opens and folds "In Ordnung"; the row turning green later does not reopen it.
+  const q = page({ last: savedRun({ config_copies: g('yellow', [['yellow', 'y']]) }), hash: '#check-config_copies' });
+  const qf = find(q.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  qf.children[0].focus(); // the admin clicks the group's summary to open and fold it
+  qf.open = true; qf.dispatch('toggle'); qf.open = false; qf.dispatch('toggle');
+  q.startButton().click();
+  q.reply('sfx_site_check_start', { run: 'r10', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
+  await settle();
+  q.reply('sfx_site_check_server', { graded: g('green', [['green', 'ok']]), token: 't' });
+  await settle();
+  assert.ok(!qf.open, 'the admin\'s fold stands after the linked row turns green');
 }
 
 // ---- reset (owner ruling 2026-10-11): results and ticks go, one write at a time

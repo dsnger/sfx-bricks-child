@@ -8761,8 +8761,8 @@ msgstr "Keine"
 msgid "not a plain path (dot segments); never requested"
 msgstr "kein einfacher Pfad (Punkt-Segmente); wird nie angefragt"
 
-msgid "Not checkable"
-msgstr "Nicht prüfbar"
+msgid "Check yourself"
+msgstr "Selbst prüfen"
 
 msgid "not checked from outside"
 msgstr "von außen nicht geprüft"
@@ -9903,8 +9903,8 @@ msgid "These entries still silence their type. Untick and save to remove them."
 msgstr "Diese Einträge schalten ihren Typ weiter stumm. Nimm den Haken heraus und speichere, um sie zu entfernen."
 
 msgctxt "site check status"
-msgid "Note"
-msgstr "Hinweis"
+msgid "Info"
+msgstr "Info"
 
 #. translators: %1$s: number of findings
 #, php-format
@@ -10091,3 +10091,70 @@ msgstr "Nicht vollständig zurückgesetzt: Ein Teil der Ergebnisse ist eventuell
 
 msgid "No answer to the reset: the results may already be deleted. Reload the page to see what is stored."
 msgstr "Keine Antwort auf das Zurücksetzen: Die Ergebnisse sind eventuell schon gelöscht. Lade die Seite neu, um den gespeicherten Stand zu sehen."
+
+msgid "The sitemap entries that are intended (not the site profile)"
+msgstr "Die gewollten Sitemap-Einträge (nicht das Seitenprofil)"
+
+msgid "To act on"
+msgstr "Handeln"
+
+msgid "The check got no reliable answer here, for example because the host or a firewall answered instead of the site. A quick look by hand settles it."
+msgstr "Hier bekam der Check keine verlässliche Antwort, zum Beispiel weil der Hoster oder eine Firewall statt der Seite geantwortet hat. Ein kurzer Blick von Hand klärt es."
+
+msgid "In order"
+msgstr "In Ordnung"
+
+msgid "By hand: look at the setting named above in wp-admin, or ask the host."
+msgstr "Von Hand: Sieh dir die oben genannte Einstellung im WordPress-Admin an oder frag den Hoster."
+
+
+
+
+#. translators: %s: theme slug
+msgid "Bricks, the active theme and the WordPress default theme \"%s\" are kept: WordPress recommends one as a fallback."
+msgstr "Bricks, das aktive Theme und das WordPress-Standard-Theme „%s“ bleiben: WordPress empfiehlt eines als Reserve."
+
+msgid "Bricks and the active theme are kept. No fallback theme is set and no WordPress default theme is installed."
+msgstr "Bricks und das aktive Theme bleiben. Es ist kein Reserve-Theme gewählt und kein WordPress-Standard-Theme installiert."
+
+
+
+
+
+msgid "By hand: open the home page, view its source (Ctrl+U or Cmd+Option+U) and search for \"generator\"; then do the same for /feed/."
+msgstr "Von Hand: Öffne die Startseite, zeig den Quelltext an (Strg+U oder Cmd+Option+U) und suche nach „generator“; danach dasselbe für /feed/."
+
+msgid "By hand: open /wp-sitemap.xml, or the sitemap address your SEO plugin names, in a browser."
+msgstr "Von Hand: Öffne /wp-sitemap.xml oder die Sitemap-Adresse, die dein SEO-Plugin nennt, im Browser."
+
+msgid "By hand: open the sitemap in a browser and look through its sub-sitemaps for types that should not be found (templates, attachments, author pages)."
+msgstr "Von Hand: Öffne die Sitemap im Browser und sieh die Unter-Sitemaps nach Typen durch, die nicht gefunden werden sollen (Templates, Anhänge, Autorenseiten)."
+
+
+#. translators: %s: the XML-RPC address the check called
+msgid "The server answers 503 (unavailable): usually the host blocks XML-RPC. Open %s in a browser; an error page instead of \"XML-RPC server accepts POST requests only\" means it is blocked."
+msgstr "Der Server antwortet mit 503 (nicht verfügbar): Meist sperrt der Hoster XML-RPC. Öffne %s im Browser; eine Fehlerseite statt „XML-RPC server accepts POST requests only“ heißt gesperrt."
+
+msgid "XML-RPC is disabled on this site."
+msgstr "XML-RPC ist auf dieser Website deaktiviert."
+
+msgid "By hand: open the address named above in a private browser window. \"Not found\" or \"forbidden\" means it is closed; if you see the file's content, it is open."
+msgstr "Von Hand: Öffne die oben genannte Adresse in einem privaten Browserfenster. „Nicht gefunden“ oder „verboten“ heißt gesperrt; siehst du den Inhalt der Datei, ist sie offen."
+
+msgid "By hand: open the address named above in a private browser window and compare it with what the check expects (see \"Why\" below)."
+msgstr "Von Hand: Öffne die oben genannte Adresse in einem privaten Browserfenster und vergleiche mit dem, was der Check erwartet (siehe „Warum“ unten)."
+
+msgid "By hand: open /robots.txt in a browser. \"Disallow: /\" under \"User-agent: *\" blocks the site, except where an \"Allow:\" line in the same group opens a part again; \"not found\" means there is none."
+msgstr "Von Hand: Öffne /robots.txt im Browser. „Disallow: /“ unter „User-agent: *“ sperrt die Seite, außer wo eine „Allow:“-Zeile derselben Gruppe einen Teil wieder freigibt; „nicht gefunden“ heißt, es gibt keine."
+
+msgid "By hand: in a private window open /wp-json/wp/v2/users and /?author=1, then compare the names and slugs shown with the login names under Users. Only an exact match is a visible login name."
+msgstr "Von Hand: Öffne in einem privaten Fenster /wp-json/wp/v2/users und /?author=1 und vergleiche die angezeigten Namen und Slugs mit den Benutzernamen unter „Benutzer“. Nur eine genaue Übereinstimmung ist ein sichtbarer Login-Name."
+
+msgid "A \"checking your browser\" page or an error page from the host settles nothing: try again later or ask the host."
+msgstr "Eine „Browser wird überprüft“-Seite oder eine Fehlerseite des Hosters klärt nichts: später erneut versuchen oder den Hoster fragen."
+
+msgid "By hand: open the home page, press F12, choose Network, reload, click the first request and read its Response Headers: Strict-Transport-Security with a max-age above 0; X-Content-Type-Options: nosniff; X-Frame-Options: DENY or SAMEORIGIN, or a Content-Security-Policy with frame-ancestors 'none' or 'self'; Referrer-Policy: no-referrer, same-origin, strict-origin or strict-origin-when-cross-origin; and whether Content-Security-Policy and Permissions-Policy are present."
+msgstr "Von Hand: Öffne die Startseite, drücke F12, wähle „Netzwerk“, lade neu, klicke die erste Anfrage an und lies die Antwort-Header: Strict-Transport-Security mit einem max-age über 0; X-Content-Type-Options: nosniff; X-Frame-Options: DENY oder SAMEORIGIN, oder eine Content-Security-Policy mit frame-ancestors 'none' oder 'self'; Referrer-Policy: no-referrer, same-origin, strict-origin oder strict-origin-when-cross-origin; sowie ob Content-Security-Policy und Permissions-Policy vorhanden sind."
+
+msgid "According to the WordPress setting no version tag is printed; the page is too large to read completely, and no version was in the part read"
+msgstr "Laut WordPress-Einstellung wird keine Versionsangabe ausgegeben; die Seite ist zu groß, um sie ganz zu lesen, und im gelesenen Teil stand keine Version"

@@ -19,8 +19,9 @@ final class Evidence
      * Classifies one bounded outside fetch against the batch's comparison URL.
      *
      * Order: a signature beats everything (rule 5); a challenge page is
-     * Nicht prüfbar (rule 4); a redirect is "not reachable" (rule 3); then
-     * the rest of rule 4, which wins over the rest of rule 3.
+     * Nicht prüfbar (rule 4); a redirect is "not reachable" (rule 3); an
+     * empty body is Nicht prüfbar; a 403/404/410 is "not reachable", cut or
+     * not; then the rest of rule 4.
      *
      * @param array{status:int, body:string, truncated:bool, redirect:bool, challenge?:bool} $response status 0 = no answer
      * @param array{status:int, redirect?:bool}                             $comparison the random missing URL
@@ -42,12 +43,17 @@ final class Evidence
         if (!empty($response['redirect']) || ($status >= 300 && $status < 400)) {
             return self::UNREACHABLE;
         }
-        if ($body === '' || !empty($response['truncated'])) {
+        if ($body === '') {
             return self::INDETERMINATE;
         }
         // Rule 3's "same status as a 404/410 comparison" is covered here too.
+        // A cut 403/404/410 counts as well (owner ruling 2026-10-11): a leak's
+        // signature sits at the start of the file, and the start was read.
         if (in_array($status, [403, 404, 410], true)) {
             return self::UNREACHABLE;
+        }
+        if (!empty($response['truncated'])) {
+            return self::INDETERMINATE;
         }
 
         if ($status === 200) {

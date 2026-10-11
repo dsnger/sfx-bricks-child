@@ -482,7 +482,7 @@ namespace {
 
     function ctx(bool $probe = true, string $run = 'run-1'): RunContext
     {
-        return new RunContext($run, 'live', [], [], '', $probe);
+        return new RunContext($run, 'live', [], '', $probe);
     }
 
     function entries(): array
@@ -670,6 +670,8 @@ namespace {
         'empty 200'   => [static fn(string $url): array => [200, ''], Status::UNKNOWN],
         'other 200'   => [static fn(string $url): array => [200, '<html>a page</html>'], Status::UNKNOWN],
         '500'         => [static fn(string $url): array => [500, 'error'], Status::UNKNOWN],
+        // The probe is outside rule 4's cut-error exception (Gate B, 2026-10-11): a cut 403 proves nothing.
+        'cut 403'     => [static fn(string $url): array => [403, str_repeat('x', 70000)], Status::UNKNOWN],
         'challenge'   => [static fn(string $url): array => [403, 'blocked', ['cf-mitigated' => 'challenge']], Status::UNKNOWN],
         'timeout'     => [static fn(string $url) => new WP_Error('http', 'cURL error 28: Operation timed out'), Status::UNKNOWN],
     ];

@@ -456,19 +456,17 @@ namespace {
 
     // =========================================================== start
 
-    set_row('settings', ['profile' => 'live', 'indexability_paths' => ['/ok/', '/bad.php', 'nope'], 'sitemap_allow' => ['authors'], 'fallback_theme' => 'twentytwentyfive']);
+    set_row('settings', ['profile' => 'live', 'sitemap_allow' => ['authors'], 'fallback_theme' => 'twentytwentyfive']);
     $run1 = start();
     $issued = manual()['issued'];
     assert_same($run1, $issued['run'], 'start writes the issued run');
     assert_true(preg_match('/^[0-9a-f]{32}$/', $run1) === 1, 'run ID is 32 random hex');
-    assert_same(['/ok/'], $issued['indexability_paths'], 'invalid stored paths never reach the issued run');
     assert_same(false, $issued['probe'], 'probe consent off by default');
     assert_same(array_keys(Catalogue::all()), $issued['checks'], 'the issued run covers the catalogue');
     assert_same(7, $issued['user'], 'issued run records the user');
     assert_true(!array_key_exists('saved', manual()), 'nothing saved yet');
     $ctx = Runs::context($run1);
-    assert_same(['/ok/'], $ctx->indexability_paths(), 'RunContext built from the issued run');
-    assert_same(['authors'], $ctx->sitemap_allow(), 'sitemap allow list in the snapshot');
+    assert_same(['authors'], $ctx->sitemap_allow(), 'RunContext built from the issued run: sitemap allow list in the snapshot');
     assert_same('twentytwentyfive', $ctx->fallback_theme(), 'fallback theme in the snapshot');
     assert_same(null, Runs::context('other'), 'a run that is not issued has no context');
     assert_same($ctx->profile(), OutsideEndpoints::context($run1)->profile(), 'OutsideEndpoints reads the same issued run');
@@ -623,7 +621,7 @@ namespace {
     assert_same(array_keys(Catalogue::all()), array_keys($r), 'every issued check is stored, nothing else');
     assert_same('server', $r['permalinks']['perspective'], 'Nicht prüfbar keeps the perspective (server)');
     assert_same('browser', $r['logs_public']['perspective'], 'Nicht prüfbar keeps the perspective (browser)');
-    foreach (['https', 'xmlrpc', 'indexability', 'sitemap', 'sitemap_entries', 'php_in_uploads'] as $id) {
+    foreach (['https', 'xmlrpc', 'sitemap', 'sitemap_entries', 'php_in_uploads'] as $id) {
         assert_same('loopback', $r[$id]['perspective'], "Nicht prüfbar keeps the perspective (loopback: {$id})");
         assert_same('loopback', Catalogue::perspective($id), "catalogue names {$id} as Loopback");
     }

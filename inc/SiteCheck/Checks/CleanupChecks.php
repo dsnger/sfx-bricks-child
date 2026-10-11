@@ -74,10 +74,15 @@ final class CleanupChecks
                 foreach ($obs['inactive'] ?? [] as $t) {
                     $findings[] = ServerChecks::finding($id, $t['slug'], Status::YELLOW, $t['name']);
                 }
-                $note = ($obs['fallback'] ?? '') === ''
-                    ? __('Bricks and the active theme are kept. No fallback theme is set.', 'sfxtheme')
+                if (($obs['fallback'] ?? '') !== '') {
                     /* translators: %s: theme slug */
-                    : sprintf(__('Bricks, the active theme and the fallback theme "%s" are kept.', 'sfxtheme'), $obs['fallback']);
+                    $note = sprintf(__('Bricks, the active theme and the fallback theme "%s" are kept.', 'sfxtheme'), $obs['fallback']);
+                } elseif (($obs['auto_fallback'] ?? '') !== '') {
+                    /* translators: %s: theme slug */
+                    $note = sprintf(__('Bricks, the active theme and the WordPress default theme "%s" are kept: WordPress recommends one as a fallback.', 'sfxtheme'), $obs['auto_fallback']);
+                } else {
+                    $note = __('Bricks and the active theme are kept. No fallback theme is set and no WordPress default theme is installed.', 'sfxtheme');
+                }
                 return ServerChecks::result($findings, Status::GREEN, $note);
 
             case 'updates':
@@ -139,17 +144,30 @@ final class CleanupChecks
         return $inactive;
     }
 
-    /** The fallback comes from the run snapshot, never from the live setting. */
+    /**
+     * The fallback comes from the run snapshot, never from the live setting.
+     * Without one, a WordPress default theme is kept as the fallback (owner
+     * ruling 2026-10-11: Site Health recommends keeping one): WP_DEFAULT_THEME
+     * when installed, else the first installed twenty* theme.
+     */
     private static function inactive_themes(string $fallback): array
     {
-        $keep = array_filter([get_stylesheet(), get_template(), 'bricks', $fallback]);
+        $themes = wp_get_themes();
+        $auto = '';
+        if ($fallback === '') {
+            $default = defined('WP_DEFAULT_THEME') ? (string) WP_DEFAULT_THEME : '';
+            $twenty = array_values(array_filter(array_map('strval', array_keys($themes)), static fn(string $s): bool => strpos($s, 'twenty') === 0));
+            sort($twenty);
+            $auto = $default !== '' && isset($themes[$default]) ? $default : ($twenty[0] ?? '');
+        }
+        $keep = array_filter([get_stylesheet(), get_template(), 'bricks', $fallback, $auto]);
         $inactive = [];
-        foreach (wp_get_themes() as $slug => $theme) {
+        foreach ($themes as $slug => $theme) {
             if (!in_array((string) $slug, $keep, true)) {
                 $inactive[] = ['slug' => (string) $slug, 'name' => (string) $theme->get('Name')];
             }
         }
-        return ['inactive' => $inactive, 'fallback' => $fallback];
+        return ['inactive' => $inactive, 'fallback' => $fallback, 'auto_fallback' => $auto];
     }
 
     private static function updates(): array
