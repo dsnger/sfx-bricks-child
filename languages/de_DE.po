@@ -8569,8 +8569,8 @@ msgstr "erledigt von %1$s am %2$s"
 msgid "Done. The results are saved."
 msgstr "Fertig. Die Ergebnisse sind gespeichert."
 
-msgid "empty placeholder (\"Silence is golden\")"
-msgstr "leere Platzhalterdatei („Silence is golden“)"
+msgid "harmless placeholder (\"Silence is golden\")"
+msgstr "harmlose Platzhalterdatei („Silence is golden“)"
 
 msgid "Enable Sicherheits-Check"
 msgstr "Sicherheits-Check aktivieren"
@@ -9330,6 +9330,9 @@ msgstr "leere Antwort"
 msgid "the comparison address also answered normally, so this answer proves nothing"
 msgstr "die Vergleichsadresse antwortete ebenfalls normal, daher beweist diese Antwort nichts"
 
+msgid "the comparison address gave no usable answer, so this answer proves nothing"
+msgstr "die Vergleichsadresse lieferte keine verwertbare Antwort, daher beweist diese Antwort nichts"
+
 msgid "too large to read completely, no version in the part read"
 msgstr "zu groß zum vollständigen Lesen, im gelesenen Teil keine Version"
 
@@ -10039,6 +10042,9 @@ msgstr "Der Ordner konnte nicht nach Backup-Ordnern durchsucht werden."
 
 msgid "The folder could not be inspected."
 msgstr "Der Ordner konnte nicht untersucht werden."
+
+msgid "More backup files than one check covers; the rest was not checked."
+msgstr "Mehr Backup-Dateien, als eine Prüfung abdeckt; der Rest wurde nicht geprüft."
 
 #, php-format
 msgid "%1$d not stored: the list holds at most %2$d paths."

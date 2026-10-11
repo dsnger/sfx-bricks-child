@@ -91,7 +91,8 @@ final class OutsideChecks
     {
         $c = Fetch::loopback('GET', self::comparison_url($id, $ctx));
 
-        return $c['error'] !== '' ? ['status' => 0, 'redirect' => false] : ['status' => (int) $c['status'], 'redirect' => (bool) $c['redirect']];
+        // A challenged comparison is no answer (rule 4), as in Observations::comparison_response().
+        return $c['error'] !== '' || !empty($c['challenge']) ? ['status' => 0, 'redirect' => false] : ['status' => (int) $c['status'], 'redirect' => (bool) $c['redirect']];
     }
 
     /** The random-looking but issued comparison URL of a check in a run (rule 2). */

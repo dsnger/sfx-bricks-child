@@ -138,7 +138,8 @@ final class Observations
     public static function comparison_response(array $seen, ?string $url): array
     {
         $obs = $url === null ? null : ($seen[$url]['plain'] ?? null);
-        if ($obs === null || $obs['error'] !== '') {
+        // A challenged comparison says nothing about catch-all answers (rule 4): no answer.
+        if ($obs === null || $obs['error'] !== '' || self::challenge($obs['headers'], $obs['body'])) {
             return ['status' => 0];
         }
 
@@ -472,6 +473,22 @@ final class Observations
     public static function cap_list(array $list): array
     {
         return array_slice($list, 0, self::LIST);
+    }
+
+    /** The comparison served a normal page: a catch-all site, not merely no usable answer. */
+    public static function comparison_served(array $comparison): bool
+    {
+        $c = (int) ($comparison['status'] ?? 0);
+
+        return empty($comparison['redirect']) && $c >= 200 && $c < 300;
+    }
+
+    /** Why a served page proves nothing: a catch-all comparison, or none that answered usably. */
+    public static function soft404_text(array $comparison): string
+    {
+        return self::comparison_served($comparison)
+            ? __('the comparison address also answered normally, so this answer proves nothing', 'sfxtheme')
+            : __('the comparison address gave no usable answer, so this answer proves nothing', 'sfxtheme');
     }
 
     public static function limit_text(): string

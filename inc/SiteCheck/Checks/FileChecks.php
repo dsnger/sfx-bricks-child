@@ -41,6 +41,9 @@ final class FileChecks
     public const MAX_ENTRIES = 2000;
     public const MAX_SECONDS = 5.0;
 
+    /** backups_public: candidate files kept per run, so the sealed facts stay postable. */
+    public const MAX_BACKUP_FILES = 200;
+
     public const READ_BYTES = 4096;
     private const SILENCE_MAX_BYTES = 64;
 
@@ -351,6 +354,7 @@ final class FileChecks
             }
         }
 
+        $kept = 0;
         foreach (array_unique($folders) as $folder) {
             $names = self::list_dir(untrailingslashit($folder));
             if ($names === null) {
@@ -373,10 +377,19 @@ final class FileChecks
                     continue;
                 }
                 $type = self::entry_type($folder . $name);
-                if ($type === 'file' || $type === 'unknown') {
-                    // A failed stat keeps the candidate, disk unknown: Nicht prüfbar, never dropped.
-                    $targets[] = self::target($folder . $name, $loc, $type === 'unknown' ? 'unknown' : null) + ['kind' => preg_match(self::SQL_FILE, $name) === 1 ? 'sql' : 'archive'];
+                if ($type !== 'file' && $type !== 'unknown') {
+                    continue;
                 }
+                if (++$kept > self::MAX_BACKUP_FILES) {
+                    // Past the limit the folder is coverage: what else is there stays unchecked.
+                    $target = self::target(untrailingslashit($folder), $loc, 'unknown');
+                    $target['url'] = null;
+                    $target['reason'] = __('More backup files than one check covers; the rest was not checked.', 'sfxtheme');
+                    $targets[] = $target + ['kind' => 'folder'];
+                    break;
+                }
+                // A failed stat keeps the candidate, disk unknown: Nicht prüfbar, never dropped.
+                $targets[] = self::target($folder . $name, $loc, $type === 'unknown' ? 'unknown' : null) + ['kind' => preg_match(self::SQL_FILE, $name) === 1 ? 'sql' : 'archive'];
             }
         }
 
@@ -713,7 +726,7 @@ final class FileChecks
                     $buckets['other'][] = ServerChecks::finding('php_files_uploads', $t, Status::YELLOW, $t . ' — ' . __('PHP file in the uploads folder, check it', 'sfxtheme'));
                     break;
                 case 'silence':
-                    $buckets['silence'][] = ServerChecks::finding('php_files_uploads', $t, Status::HINT, $t . ' — ' . __('empty placeholder ("Silence is golden")', 'sfxtheme'));
+                    $buckets['silence'][] = ServerChecks::finding('php_files_uploads', $t, Status::GREEN, $t . ' — ' . __('harmless placeholder ("Silence is golden")', 'sfxtheme'));
                     break;
                 case 'busy':
                     $buckets['unknown'][] = ServerChecks::finding('php_files_uploads', $t, Status::UNKNOWN, $t . ' — ' . __('test-file folder in use right now', 'sfxtheme'));

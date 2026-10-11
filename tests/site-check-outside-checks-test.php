@@ -345,7 +345,7 @@ function browse(array $plan, callable $answer, array $comparison = [404, 'Not fo
         $list[] = obs($t['url'], $status, $body, $extra);
     }
     if ($plan['comparison'] !== null) {
-        $list[] = obs($plan['comparison'], $comparison[0], $comparison[1]);
+        $list[] = obs($plan['comparison'], $comparison[0], $comparison[1], $comparison[2] ?? []);
     }
     return $list;
 }
@@ -471,6 +471,36 @@ unlink(ABSPATH . 'error_log');
 // Soft-404 site: an absent log answering 200 like the comparison → Nicht prüfbar, never Rot or Grün.
 [, $r] = run_browser('logs_public', ctx(), static fn($u) => [200, '<html>Home</html>'], [200, '<html>Home</html>']);
 assert_same(Status::UNKNOWN, statuses($r)['logs_public:/error_log'], 'soft-404: absent + 200 → Nicht prüfbar');
+
+// PR #59 review: a challenged comparison is no answer, never proof against a catch-all site (rule 4).
+put(ABSPATH . 'error_log', 'x');
+$catch_all = static fn($u) => [200, '<html>Home</html>'];
+[, $r] = run_browser('logs_public', ctx(), $catch_all, [403, 'Forbidden']);
+assert_same(Status::YELLOW, statuses($r)['logs_public:/error_log'], 'control: present + 200 with a refusing comparison → Gelb');
+[, $r] = run_browser('logs_public', ctx(), $catch_all, [403, 'Forbidden', ['headers' => ['cf-mitigated' => 'challenge']]]);
+assert_same(Status::UNKNOWN, statuses($r)['logs_public:/error_log'], 'challenged comparison → Nicht prüfbar, not Gelb');
+unlink(ABSPATH . 'error_log');
+[, $r] = run_browser('security_headers', ctx(), $catch_all, [403, 'Forbidden', ['headers' => ['cf-mitigated' => 'challenge']]]);
+assert_true(strpos(json_encode($r, JSON_UNESCAPED_UNICODE), 'gave no usable answer') !== false, 'no usable comparison is named as such, not as a catch-all site');
+[, $r] = run_browser('security_headers', ctx(), $catch_all, [200, '<html>Home</html>']);
+assert_true(strpos(json_encode($r, JSON_UNESCAPED_UNICODE), 'also answered normally') !== false, 'a catch-all comparison keeps its own text');
+[, $r] = run_browser('security_headers', ctx(), $catch_all, [503, 'Service Unavailable']);
+assert_true(strpos(json_encode($r, JSON_UNESCAPED_UNICODE), 'gave no usable answer') !== false, 'a 503 comparison is no usable answer, not a catch-all site');
+
+// PR #59 review: backup discovery is bounded, the rest is Nicht prüfbar coverage, not dropped.
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    put(ABSPATH . sprintf('many-%03d.sql', $i), 'x');
+}
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    mkdir(ABSPATH . sprintf('a-%03d.zip', $i));
+}
+$targets = \SFX\SiteCheck\Checks\ServerChecks::observe('backups_public', ctx())['targets'];
+assert_same(FileChecks::MAX_BACKUP_FILES, count(array_filter($targets, static fn($t) => ($t['kind'] ?? '') === 'sql')), 'at most MAX_BACKUP_FILES backup files kept; backup-named folders do not use the budget');
+assert_true(count(array_filter($targets, static fn($t) => ($t['kind'] ?? '') === 'folder' && $t['disk'] === 'unknown')) === 1, 'the overflow is one Nicht prüfbar folder target');
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    unlink(ABSPATH . sprintf('many-%03d.sql', $i));
+    rmdir(ABSPATH . sprintf('a-%03d.zip', $i));
+}
 
 // Cache-buster vs plain: a cached copy served only without the buster still counts.
 [, $r] = run_browser('logs_public', ctx(), static function (string $url) use ($log_line): array {

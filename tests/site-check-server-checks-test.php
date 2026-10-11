@@ -476,7 +476,7 @@ assert_true(strpos(json_encode($obs), 'base64_decode') === false, 'observation h
 $r = Catalogue::grade('php_files_uploads', $obs, ctx());
 $s = statuses($r);
 assert_same(Status::YELLOW, $r['status'], 'php_files_uploads overall Gelb');
-assert_same(Status::HINT, $s['php_files_uploads:/wp-content/uploads/index.php'] ?? null, 'silence placeholder → Hinweis');
+assert_same(Status::GREEN, $s['php_files_uploads:/wp-content/uploads/index.php'] ?? null, 'harmless silence placeholder → Grün, not Hinweis');
 assert_same('php_files_uploads:/wp-content/uploads/2026/10/shell.php.jpg', $r['findings'][0]['id'], 'shell pattern listed first');
 assert_true(strpos($r['findings'][0]['label'], 'suspicious') !== false, 'shell finding says suspicious code');
 assert_same(Status::YELLOW, $s['php_files_uploads:/wp-content/uploads/2026/10/tool.phtml'] ?? null, 'other PHP content → Gelb');

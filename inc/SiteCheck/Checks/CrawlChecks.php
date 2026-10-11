@@ -186,7 +186,7 @@ final class CrawlChecks
                     $t['kind'] = 'empty';
                 } elseif (!Evidence::comparison_refused($comparison)) {
                     // Rule 4: on a soft-404 site a 200 page proves nothing.
-                    $t['kind'] = 'soft404';
+                    $t['kind'] = Observations::comparison_served($comparison) ? 'soft404' : 'no_comparison';
                 } elseif (!self::readable_html($r['body'], $r['truncated'])) {
                     $t['kind'] = $r['truncated'] ? 'partial' : 'other';
                 } elseif (($tags = Observations::html_tags($r['body'])) === null) {
@@ -326,7 +326,8 @@ final class CrawlChecks
             case 'empty':
                 return [Status::UNKNOWN, __('empty answer', 'sfxtheme')];
             case 'soft404':
-                return [Status::UNKNOWN, __('the comparison address also answered normally, so this answer proves nothing', 'sfxtheme')];
+            case 'no_comparison':
+                return [Status::UNKNOWN, Observations::soft404_text($t['kind'] === 'soft404' ? ['status' => 200] : [])];
             case 'bad_redirect':
                 return [Status::UNKNOWN, __('redirects to an address that cannot be compared', 'sfxtheme')];
             case 'time_limit':

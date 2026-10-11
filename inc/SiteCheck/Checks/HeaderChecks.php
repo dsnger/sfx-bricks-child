@@ -80,7 +80,7 @@ final class HeaderChecks
         if ($facts['state'] === 'ok' && trim((string) $obs['body']) === '') {
             $facts = ['state' => 'unknown', 'reason' => __('empty answer', 'sfxtheme'), 'lines' => []];
         } elseif ($facts['state'] === 'ok' && !Evidence::comparison_refused($comparison)) {
-            $facts = ['state' => 'unknown', 'reason' => __('the comparison address also answered normally, so this answer proves nothing', 'sfxtheme'), 'lines' => []];
+            $facts = ['state' => 'unknown', 'reason' => Observations::soft404_text($comparison), 'lines' => []];
         }
         if ($facts['state'] === 'ok') {
             $h = $obs['headers'];
@@ -412,7 +412,7 @@ final class HeaderChecks
         }
         // Soft-404 (rule 4): judged as if complete, so a truncated answer still counts its match.
         if (Evidence::classify(['truncated' => false] + $r, $comparison) !== Evidence::OK200) {
-            return ['failed', __('the comparison address also answered normally, so this answer proves nothing', 'sfxtheme')];
+            return ['failed', Observations::soft404_text($comparison)];
         }
         if ($version !== '' && self::shows_version($kind, $r['body'], $version, $r['truncated'])) {
             return ['found', ''];
