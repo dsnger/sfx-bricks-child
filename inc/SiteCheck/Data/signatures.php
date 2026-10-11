@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Content signatures (spec "Evidence rules"). Each group is name => PCRE
  * pattern, the shape Evidence::signature() takes; only the matched NAME is

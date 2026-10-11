@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * PHP branches and the end of their upstream security support (php_version).
  *
