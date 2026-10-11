@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.30.0] - 2026-10-11
+
+- New: Sicherheits-Check (Tools → Sicherheits-Check), off by default — enable it under Theme Settings. Checks a site for exposed files (backups, logs, .git, .env), risky settings and launch mistakes (indexing, sitemap, debug, headers), in three sections: Sicherheit, Live-Gang, Aufräumen. Each check explains why it matters and how to fix it; uncertain answers show as "Nicht prüfbar" instead of green.
+- New: an optional active test whether PHP runs in the uploads folder (asks first, removes its test file afterwards), and a copy-only .htaccess template. The module itself never writes .htaccess.
+- New: a summary box on the WordPress dashboard and in the Custom Dashboard for administrators.
+- Custom Dashboard: other modules can add boxes through the filter `sfx/custom_dashboard/widgets`.
+- Data purge also removes the Sicherheits-Check data and test files, even while the module is off. Export carries the Sicherheits-Check page lists.
+
 ## [0.29.1] - 2026-10-09
 
 - Security: Custom Scripts can only be created and edited by administrators. Before, an Author could publish JavaScript that ran on every page. After updating, check the Custom Scripts list for entries not created by an admin.
