@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.31.0] - 2026-10-11
+
+- Sicherheits-Check: new page layout. One verdict for the site at the top, "Jetzt prüfen" on every tab and a reset. Results grouped by what to do (Zu erledigen, Selbst prüfen, In Ordnung), filterable by area. Each check shows one traffic light; its findings are a plain list below it. Checks stay closed until opened.
+- Sicherheits-Check: reads this theme's own WP Optimizer switches and no longer suggests a switch that is already on. The switch never replaces the real check: XML-RPC is graded from what the site actually answers.
+- Sicherheits-Check: fewer false "Selbst prüfen". A site whose certificate the server cannot verify (local stacks, some hosts) still gets real answers; the HTTPS check still reports an invalid certificate. Large theme 404 pages count as "not reachable". The indexability check is removed.
+- Sicherheits-Check: the security header guidance gives concrete starting values for Permissions-Policy and Content-Security-Policy.
+
 ## [0.30.0] - 2026-10-11
 
 - New: Sicherheits-Check (Tools → Sicherheits-Check), off by default — enable it under Theme Settings. Checks a site for exposed files (backups, logs, .git, .env), risky settings and launch mistakes (indexing, sitemap, debug, headers), in three sections: Sicherheit, Live-Gang, Aufräumen. Each check explains why it matters and how to fix it; uncertain answers show as "Nicht prüfbar" instead of green.
