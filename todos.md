@@ -9,6 +9,11 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Sicherheits-Check: a backup removed between the targets and observe requests loses
+      the leak it showed** (Greptile on PR #59, 2026-10-11). `OutsideChecks::observe()`
+      re-derives the issued URLs from disk and drops observations for URLs it did not issue,
+      so a SQL dump rotated away mid-run grades Grün although its contents were served. Fix
+      needs the issued list sealed into the targets answer and accepted back in observe.
 - [ ] **Social Accounts: `class` lands on the wrapper and on every account; `style`/`size`
       only add classes and the theme ships no CSS for them** (found 2026-10-02). Left as is on
       purpose: sites may already style against those classes, and the help documents it.

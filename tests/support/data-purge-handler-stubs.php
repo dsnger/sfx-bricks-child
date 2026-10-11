@@ -75,6 +75,9 @@ function test_gates_reset(): void
     $test_redirect_args      = [];
     $test_notices            = [];
 
+    \SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'busy' => false];
+    \SFX\SiteCheck\Purge::$calls  = 0;
+
     $_POST = ['sfx_purge_confirmation' => \SFX\DataPurge::CONFIRMATION_PHRASE];
     $_GET  = [];
 }
@@ -273,3 +276,4 @@ $GLOBALS['wpdb'] = new Test_Handler_WPDB();
 // The theme's own access gate lives in a sibling file: PHP forbids a bracketed
 // namespace block alongside non-namespaced code.
 require_once __DIR__ . '/data-purge-accesscontrol-stub.php';
+require_once __DIR__ . '/site-check-purge-stub.php';

@@ -1,0 +1,99 @@
+/*
+ * Sicherheits-Check page (Tools → Sicherheits-Check). wp-admin's own
+ * vocabulary: nav-tab bar, notices, buttons, form-table, core status colours.
+ * Status is always also written as a word; colour only supports it.
+ */
+
+/* Run status line, above the tabs on every tab. */
+.sfx-sc-runline { min-height: 1.5em; margin: 8px 0; font-weight: 600; }
+.sfx-sc-runline:empty { margin: 0; min-height: 0; }
+.sfx-sc-progress { margin: 0 0 8px; color: #50575e; }
+.sfx-sc-progress:empty { margin: 0; }
+.sfx-sc-notices .notice { margin: 8px 0 12px; }
+.sfx-sc-notices .notice .button { margin-left: 4px; vertical-align: baseline; }
+
+/* Tab bar: core .nav-tab-wrapper / .nav-tab; counts as small word pills. */
+.sfx-sc-tabs { margin-bottom: 0; }
+.sfx-sc-tabs .nav-tab { display: inline-flex; align-items: center; gap: 6px; }
+.sfx-sc-tabs .nav-tab:focus { box-shadow: 0 0 0 2px #2271b1; outline: 2px solid transparent; }
+.sfx-sc-tabcount { display: inline-flex; gap: 4px; }
+.sfx-sc-tabcount:empty { display: none; }
+.sfx-sc-panel { padding-top: 16px; }
+.sfx-sc-panel > h2:first-child { margin-top: 0; }
+
+/* Übersicht */
+.sfx-sc-meta { font-weight: 600; margin: 0 0 4px; }
+.sfx-sc-next { margin: 0 0 16px; color: #50575e; }
+.sfx-sc-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 24px; }
+.sfx-sc-summaries,
+.sfx-sc-urgent-list { margin: 0 0 24px; padding: 0; list-style: none; max-width: 720px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px; }
+.sfx-sc-summaries li,
+.sfx-sc-urgent-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0; padding: 8px 12px; border-top: 1px solid #f0f0f1; }
+.sfx-sc-summaries li:first-child,
+.sfx-sc-urgent-list li:first-child { border-top: 0; }
+.sfx-sc-summaries a { font-weight: 600; min-width: 8em; }
+.sfx-sc-summary-counts { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.sfx-sc-urgent-list a { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.sfx-sc-muted { color: #646970; }
+.sfx-sc-items { max-width: 720px; }
+.sfx-sc-item-meta { color: #646970; font-size: 12px; }
+
+/* Section tabs */
+.sfx-sc-panelhead { margin: 0 0 12px; }
+.sfx-sc-empty { margin: 0 0 12px; }
+.sfx-sc-empty p { margin: 0 0 8px; }
+
+/* One row per check: a native disclosure; the status edge follows core's .notice (square, 4px left). */
+.sfx-sc-check { background: #fff; border: 1px solid #dcdcde; border-left-width: 4px; margin: 0 0 8px; max-width: 960px; }
+.sfx-sc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; cursor: pointer; list-style: none; }
+.sfx-sc-head::-webkit-details-marker { display: none; }
+.sfx-sc-head::before { content: "\f139"; font: normal 16px/1 dashicons; color: #646970; flex-shrink: 0; transition: transform 0.15s ease-out; }
+.sfx-sc-check[open] > .sfx-sc-head::before { transform: rotate(90deg); }
+.sfx-sc-head:focus { outline: 2px solid transparent; }
+.sfx-sc-head:focus-visible { box-shadow: 0 0 0 2px #2271b1; border-radius: 2px; }
+.sfx-sc-title { font-weight: 600; }
+.sfx-sc-count { color: #646970; font-size: 12px; }
+.sfx-sc-tag { color: #8a2424; font-size: 12px; font-style: italic; }
+.sfx-sc-tag:empty, .sfx-sc-count:empty { display: none; }
+.sfx-sc-body { padding: 0 12px 12px 27px; }
+.sfx-sc-findings { margin: 0 0 8px; }
+.sfx-sc-finding { display: flex; gap: 6px; align-items: baseline; margin: 0 0 4px; }
+.sfx-sc-label { overflow-wrap: anywhere; }
+.sfx-sc-note { margin: 0 0 12px; color: #50575e; }
+.sfx-sc-perspective { display: inline-block; margin-right: 4px; padding: 0 6px; border: 1px solid #c3c4c7; border-radius: 3px; font-size: 12px; line-height: 18px; color: #50575e; }
+.sfx-sc-guidance { border-top: 1px solid #f0f0f1; padding-top: 8px; max-width: 75ch; }
+.sfx-sc-guidance h3 { margin: 8px 0 2px; font-size: 13px; }
+.sfx-sc-guidance p { margin: 0 0 4px; }
+.sfx-sc-steps { margin: 4px 0 4px 20px; }
+.sfx-sc-steps li { margin: 0 0 4px; }
+.sfx-sc-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; }
+.sfx-sc-links li { margin: 0; }
+.sfx-sc-noaction { margin: 8px 0 0; font-weight: 600; color: #00701a; }
+
+/* Settings and template */
+.sfx-sc-dirty { margin-left: 8px; color: #8a2424; font-style: italic; }
+.sfx-sc-template { background: #f6f7f7; border: 1px solid #dcdcde; padding: 8px 12px; overflow-x: auto; white-space: pre; }
+
+/* Status words (core status colours, text always present). */
+.sfx-sc-badge, .sfx-sc-dot, .sfx-sc-pill { display: inline-block; border-radius: 3px; padding: 0 6px; font-size: 12px; font-weight: 400; line-height: 20px; white-space: nowrap; }
+.sfx-sc-badge-red { background: #d63638; color: #fff; }
+.sfx-sc-badge-yellow { background: #dba617; color: #1d2327; }
+.sfx-sc-badge-unknown { background: #646970; color: #fff; }
+.sfx-sc-badge-hint { background: #72aee6; color: #1d2327; }
+.sfx-sc-badge-green { background: #008a20; color: #fff; }
+.sfx-sc-badge-pending { background: #f0f0f1; color: #50575e; }
+
+.sfx-sc-red { border-left-color: #d63638; }
+.sfx-sc-yellow { border-left-color: #dba617; }
+.sfx-sc-unknown { border-left-color: #8c8f94; }
+.sfx-sc-hint { border-left-color: #72aee6; }
+.sfx-sc-green { border-left-color: #00a32a; }
+
+@media (max-width: 782px) {
+    .sfx-sc-tabs .nav-tab { margin-bottom: 4px; }
+    .sfx-sc-body { padding-left: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sfx-sc-head::before { transition: none; }
+}

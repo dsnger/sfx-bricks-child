@@ -312,6 +312,17 @@ class Controller
                 'option_key' => 'sfx_editor_prose_options',
                 'type' => 'single',
             ],
+            // Only the two lists travel; profile, fallback theme and monitoring stay on the site.
+            // The optional `import` callable replaces the generic subset merge: it validates
+            // the paths and writes under the module's mutex (SiteCheck\Settings::import_fields()).
+            'site_check' => [
+                'label' => __('Sicherheits-Check Settings', 'sfxtheme'),
+                'description' => __('Pages checked for indexing and the sitemap entries that are intended (not the site profile)', 'sfxtheme'),
+                'option_key' => 'sfx_site_check_settings',
+                'type' => 'subset',
+                'fields' => ['indexability_paths', 'sitemap_allow'],
+                'import' => [\SFX\SiteCheck\Settings::class, 'import_fields'],
+            ],
             // NOTE: the seal_* attachment ids are deliberately NOT exported.
             // They are meaningful only on the site that stored them; on the
             // target site the same id resolves to whatever image happens to
@@ -827,6 +838,13 @@ class Controller
                         'message' => sprintf(__('%s imported successfully.', 'sfxtheme'), $group['label']),
                     ];
                 } elseif (in_array($group['type'], ['subset', 'dashboard_subset'], true)) {
+                    // A group may own its import (validation, locking): its result stands.
+                    if (isset($group['import']) && is_callable($group['import'])) {
+                        $slice = is_array($import_value) ? array_intersect_key($import_value, array_flip($group['fields'])) : [];
+                        $results[$group_key] = call_user_func($group['import'], $slice, $mode);
+                        continue;
+                    }
+
                     // Dashboard subset - only import specific fields, preserve others
                     $existing = get_option($group['option_key'], []);
                     

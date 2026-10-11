@@ -1112,6 +1112,15 @@ class DashboardRenderer
             ],
         ];
 
+        // Widgets supplied by other modules through the extension filter.
+        $external = Settings::get_external_widgets();
+        if (!isset($widget_map[$widget_id]) && isset($external[$widget_id])) {
+            $widget_map[$widget_id] = [
+                'title' => $external[$widget_id]['title'],
+                'callback' => $external[$widget_id]['render'],
+            ];
+        }
+
         // Check if it's a known widget
         if (!isset($widget_map[$widget_id])) {
             // Try to find in global meta boxes (for plugin widgets)
@@ -1184,6 +1193,11 @@ class DashboardRenderer
 
         if ($widget_id === 'sfx_theme_settings_overview') {
             return \SFX\AccessControl::can_access_theme_settings();
+        }
+
+        $external = Settings::get_external_widgets();
+        if (isset($external[$widget_id])) {
+            return (bool) call_user_func($external[$widget_id]['can_render']);
         }
 
         $required_cap = $required_capabilities[$widget_id] ?? 'read';

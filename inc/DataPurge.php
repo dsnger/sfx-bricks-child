@@ -172,6 +172,28 @@ class DataPurge
     ];
 
     /**
+     * The SiteCheck module's options (inc/SiteCheck/Options.php, default
+     * prefix). Literal here because this is a root service that must work with
+     * the module disabled; tests/data-purge-test.php Case 8 compares the list
+     * with the module's own names. option_names() returns them so the
+     * ownership rule holds, but run() leaves them to SiteCheck\Purge::run(),
+     * which deletes them in the spec's order inside the module's critical
+     * section (and keeps the probes option while a probe could not be deleted).
+     *
+     * @var list<string>
+     */
+    public const SITE_CHECK_OPTION_NAMES = [
+        'sfx_site_check_settings',
+        'sfx_site_check_baseline',
+        'sfx_site_check_manual',
+        'sfx_site_check_items',
+        'sfx_site_check_monitor',
+        'sfx_site_check_lock',
+        'sfx_site_check_probes',
+        'sfx_site_check_mutex',
+    ];
+
+    /**
      * Tables this theme created, without the site's table prefix.
      *
      * The Redirects module's rules and its 404 log. Unlike everything else
@@ -219,7 +241,7 @@ class DataPurge
      */
     public static function option_names(): array
     {
-        return self::OPTION_NAMES;
+        return array_merge(self::OPTION_NAMES, self::SITE_CHECK_OPTION_NAMES);
     }
 
     /**
@@ -278,16 +300,44 @@ class DataPurge
      *                                    that is editor-authored content and
      *                                    needs its own confirmation.
      *
-     * @return array{options:int, meta_keys:int, transients:int, tables:int, tables_locked:bool, tables_failed:bool}
+     * SiteCheck's part runs first (SiteCheck\Purge::run(): its cron hooks,
+     * options and uploads probes). The class is called directly, not through
+     * a hook: the probes must go even while that module is disabled and its
+     * listeners are not loaded. When its critical section is busy, nothing at
+     * all is deleted and `busy` says so — a retry then finds everything in place.
+     *
+     * @return array{options:int, meta_keys:int, transients:int, tables:int, tables_locked:bool, tables_failed:bool, probes_failed:list<string>, probes_unregistered:list<string>, site_check_refused:list<string>, site_check_hooks_failed:list<string>, busy:bool}
      *         what was actually removed, so the screen can report the real
      *         outcome instead of assuming one. An irreversible operation that
      *         always claims success is worse than one that admits a partial
      *         result. `tables_locked` is true when the redirect tables were
      *         left (all or some) because another redirect change held the lock.
+     *         `probes_failed` lists SiteCheck test files that could not be deleted;
+     *         `probes_unregistered` files in its test folder no test run
+     *         recorded (kept); `site_check_refused` SiteCheck options whose
+     *         delete did not go through — a partial purge, to be run again;
+     *         `site_check_hooks_failed` SiteCheck cron hooks that could not be unscheduled.
      */
     public static function run(bool $include_media_credits = false): array
     {
-        $options = 0;
+        $site_check = \SFX\SiteCheck\Purge::run();
+        if ($site_check['busy']) {
+            return [
+                'options'       => 0,
+                'meta_keys'     => 0,
+                'transients'    => 0,
+                'tables'        => 0,
+                'tables_locked' => false,
+                'tables_failed' => false,
+                'probes_failed' => [],
+                'probes_unregistered' => [],
+                'site_check_refused'  => [],
+                'site_check_hooks_failed' => [],
+                'busy'          => true,
+            ];
+        }
+
+        $options = $site_check['options'];
 
         foreach (self::OPTION_NAMES as $option) {
             if (delete_option($option)) {
@@ -322,6 +372,11 @@ class DataPurge
             'tables'        => $tables['dropped'],
             'tables_locked' => $tables['locked'],
             'tables_failed' => $tables['failed'],
+            'probes_failed' => $site_check['probes_failed'],
+            'probes_unregistered' => $site_check['probes_unregistered'] ?? [],
+            'site_check_refused'  => $site_check['refused'] ?? [],
+            'site_check_hooks_failed' => $site_check['hooks_failed'] ?? [],
+            'busy'          => false,
         ];
     }
 
