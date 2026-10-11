@@ -28,6 +28,8 @@ $required = [
     '/AGENTS.md',
     '/CLAUDE.md',
     '/todos.md',
+    '/PRODUCT.md',
+    '/DESIGN.md',
     '/docs/',
     '/tests/',
     '/test-github-updater.php',

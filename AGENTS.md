@@ -46,13 +46,16 @@ Bricks parent theme.
   modules through the filter `sfx/custom_dashboard/widgets` — its extension point; the
   Sicherheits-Check supplies its box that way, so neither module names the other's classes.
   Beyond those, three groups of feature-module coupling exist and are deliberate — the
-  bootstrap dependency plus seven module-to-module edges: the bootstrap reads
+  bootstrap dependency plus eight module-to-module edges: the bootstrap reads
   `GeneralThemeOptions\Settings::get_all_fields()`, and the aggregator modules reach into
   the modules they aggregate (`GeneralThemeOptions` → ImageOptimizer / SecurityHeader /
   SmoothScroll / WPOptimizer, `ThemeSettingsOverview` → WPOptimizer and SecurityHeader
   — the latter by mirroring its option names and defaults in
   `SecurityHeaderStatusResolver`, so a SecurityHeader contract change silently makes the
-  overview lie — and `CustomDashboard` → ThemeSettingsOverview). Anything beyond those is
+  overview lie — and `CustomDashboard` → ThemeSettingsOverview), and `SiteCheck` → WPOptimizer:
+  the Sicherheits-Check reads WP Optimizer's own switches through its public `Settings::get()`
+  (`SiteCheck\ThemeSwitches`, owner ruling 2026-10-11 — the check must know what the theme
+  already does instead of suggesting it again). Anything beyond those is
   new coupling — don't add it.
 
 ## Key invariants
@@ -156,7 +159,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
 
-`quality.sh` was last run on 2026-10-11 and seen to exit cleanly (55 PHP tests, 6 JS
+`quality.sh` was last run on 2026-10-11 and seen to exit cleanly (56 PHP tests, 6 JS
 tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a

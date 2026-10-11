@@ -16,7 +16,7 @@
  * at most 4 at a time → one save carrying each check's sealed `token` (or
  * the failure kind), never facts or observations.
  *
- * The page (mount): six tabs (spec "Page layout and guidance"), one
+ * The page (mount): a verdict panel and three tabs (spec "Page layout and guidance"), one
  * operation at a time, rows updated in place. Everything a check reports,
  * and the catalogue's guidance, reaches the page through textContent and
  * createElement only; dates arrive formatted by the server.
@@ -384,26 +384,27 @@
     });
   }
 
-  /** Tab fragment of each section (spec "Links"). */
-  var SECTION_TABS = { security: 'sicherheit', golive: 'live-gang', cleanup: 'aufraeumen' };
-  /** Rows "Nur Handlungsbedarf" hides. */
-  var NO_ACTION = ['green', 'hint'];
-  var URGENT_MAX = 5;
+  /** Area of each check by section; the old section fragments open Ergebnis filtered to that area. */
+  var AREA_FRAGMENTS = { sicherheit: 'security', 'live-gang': 'golive', aufraeumen: 'cleanup' };
+  /** Result groups (Site-Health pattern, owner ruling 2026-10-11): to do, check yourself, in order. */
+  var GROUPS = { red: 'act', yellow: 'act', unknown: 'self', hint: 'fine', green: 'fine' };
+  /** Finding glyphs: neutral dashicons, never the check's traffic light (owner ruling 2026-10-11). */
+  var FINDING_ICON = { red: 'warning', yellow: 'warning', unknown: 'editor-help', hint: 'info-outline', green: 'yes' };
 
-  /** Guidance block of one check: Warum, Empfehlung, So geht's (catalogue text only, never site data). */
+  /** Guidance block of one check: Warum, Empfehlung, So geht's (catalogue text only; no site data beyond WP Optimizer switch states). */
   function renderGuidance(doc, check, strings) {
     var box = el(doc, 'div', 'sfx-sc-guidance');
     var why = el(doc, 'div', 'sfx-sc-why');
-    why.appendChild(el(doc, 'h3', null, strings.why));
+    why.appendChild(el(doc, 'h4', null, strings.why));
     why.appendChild(el(doc, 'p', null, check.why));
     box.appendChild(why);
     var fix = el(doc, 'div', 'sfx-sc-fix');
-    fix.appendChild(el(doc, 'h3', null, strings.recommendation));
+    fix.appendChild(el(doc, 'h4', null, strings.recommendation));
     fix.appendChild(el(doc, 'p', null, check.recommendation));
     var steps = Array.isArray(check.steps) ? check.steps : [];
     var links = Array.isArray(check.links) ? check.links : [];
     if (steps.length || links.length) {
-      fix.appendChild(el(doc, 'h3', null, strings.steps));
+      fix.appendChild(el(doc, 'h4', null, strings.steps));
       if (steps.length) {
         var ol = el(doc, 'ol', 'sfx-sc-steps');
         steps.forEach(function (step) { ol.appendChild(el(doc, 'li', null, step)); });
@@ -428,16 +429,15 @@
     return { box: box, fix: fix, none: none };
   }
 
-  /** A pill "2 Rot" — the number with its word, never colour alone. */
-  function pill(doc, status, count, labels) {
-    return el(doc, 'span', 'sfx-sc-pill sfx-sc-badge-' + status, count + ' ' + (labels[status] || status));
-  }
-
   /**
-   * Wires the check page (Tools → Sicherheits-Check): tab bar, Übersicht,
-   * the three section tabs with one row per check, the run and its notices.
-   * The .htaccess template and the settings form come from PHP and are
-   * adopted as panels. Every write to the DOM is text or createElement.
+   * Wires the check page (Tools → Sicherheits-Check) in WordPress' own
+   * "Website-Zustand" grammar: one verdict for the site with the run controls,
+   * then the tabs Ergebnis | .htaccess-Vorlage | Einstellungen. Ergebnis lists
+   * every check by what to do — Zu erledigen, Selbst prüfen, In Ordnung
+   * (folded) — each a closed disclosure whose one traffic light is the check's
+   * summary; its findings inside are a neutral detail list. The .htaccess
+   * template and the settings form come from PHP and are adopted as panels.
+   * Every write to the DOM is text or createElement.
    *
    * @param {object} [win] window (location, hashchange, confirm); tests pass a fake
    */
@@ -469,13 +469,51 @@
     var op = 0;
     var retrySave = null;
     var progress = { done: 0, total: 0 };
-    var filters = {};
+    /** The area filter on Ergebnis: '' (all) or a section id. */
+    var area = '';
+    /** A check link's row: shown even before a run, and "In Ordnung" unfolds once for it. */
     var override = null;
+    var unfold = null;
+    /** The fragment an area-filter click just set; its hashchange keeps focus in the filter. */
+    var quietHash = null;
     var current = null;
     var rows = {};
     var startButtons = [];
+    var clearItems = null;
+    /** An item write is pending: the reset waits for it (one write at a time). */
+    var itemsBusy = false;
+    var lockItems = null;
 
-    // ---------------------------------------------------------- frame
+    // ---------------------------------------------------------- verdict and run controls
+
+    var head = el(doc, 'section', 'sfx-sc-head-panel');
+    head.setAttribute('aria-labelledby', 'sfx-sc-verdict');
+    var verdictBox = head.appendChild(el(doc, 'div', 'sfx-sc-verdict-box'));
+    var mark = verdictBox.appendChild(el(doc, 'span', 'sfx-sc-mark'));
+    mark.setAttribute('aria-hidden', 'true');
+    var verdictText = verdictBox.appendChild(el(doc, 'div', 'sfx-sc-verdict-text'));
+    var verdict = verdictText.appendChild(el(doc, 'h2', 'sfx-sc-verdict'));
+    verdict.id = 'sfx-sc-verdict';
+    var verdictSub = verdictText.appendChild(el(doc, 'p', 'sfx-sc-verdict-sub'));
+    var meta = verdictText.appendChild(el(doc, 'p', 'sfx-sc-meta'));
+    var next = verdictText.appendChild(el(doc, 'p', 'sfx-sc-next'));
+    var nextText = next.appendChild(el(doc, 'span'));
+    next.appendChild(doc.createTextNode(' '));
+    var change = next.appendChild(el(doc, 'a', null, strings.change));
+    change.setAttribute('href', '#einstellungen');
+
+    var actions = head.appendChild(el(doc, 'div', 'sfx-sc-actions'));
+    var start = actions.appendChild(startButton());
+    start.id = 'sfx-sc-start';
+    var probeLabel = actions.appendChild(el(doc, 'label', 'sfx-sc-probe'));
+    var probe = probeLabel.appendChild(el(doc, 'input'));
+    probe.type = 'checkbox';
+    probe.id = 'sfx-sc-probe';
+    probeLabel.appendChild(doc.createTextNode(' ' + (strings.probe || '')));
+    var resetButton = actions.appendChild(el(doc, 'button', 'button-link sfx-sc-reset', strings.reset));
+    resetButton.type = 'button';
+    resetButton.id = 'sfx-sc-reset';
+    resetButton.addEventListener('click', resetAll);
 
     var statusLine = el(doc, 'p', 'sfx-sc-runline');
     statusLine.id = 'sfx-sc-status';
@@ -486,15 +524,24 @@
     progressLine.id = 'sfx-sc-progress';
     var noticeArea = el(doc, 'div', 'sfx-sc-notices');
     noticeArea.id = 'sfx-sc-notice';
+
+    function startButton() {
+      var b = el(doc, 'button', 'button button-primary button-hero', strings.check);
+      b.type = 'button';
+      b.addEventListener('click', startRun);
+      startButtons.push(b);
+      return b;
+    }
+
+    // ---------------------------------------------------------- tabs
+
     var tablist = el(doc, 'nav', 'nav-tab-wrapper sfx-sc-tabs');
     tablist.setAttribute('role', 'tablist');
     tablist.setAttribute('aria-label', strings.tablist || '');
-
     var tabEls = {};
     var panels = {};
-    var counts = {};
     var adopted = { htaccess: doc.getElementById('sfx-sc-panel-htaccess'), einstellungen: doc.getElementById('sfx-sc-panel-einstellungen') };
-    var built = [statusLine, progressLine, noticeArea, tablist];
+    var built = [head, statusLine, progressLine, noticeArea, tablist];
     tabs.forEach(function (tab) {
       var a = el(doc, 'a', 'nav-tab');
       a.id = 'sfx-sc-tab-' + tab.id;
@@ -502,9 +549,6 @@
       a.setAttribute('role', 'tab');
       a.setAttribute('aria-controls', 'sfx-sc-panel-' + tab.id);
       a.appendChild(el(doc, 'span', 'sfx-sc-tablabel', tab.title));
-      if (tab.section) {
-        counts[tab.section] = a.appendChild(el(doc, 'span', 'sfx-sc-tabcount'));
-      }
       a.addEventListener('click', function (e) {
         e.preventDefault();
         go(tab.id);
@@ -523,142 +567,131 @@
     tablist.addEventListener('keydown', function (e) {
       var ids = tabs.map(function (t) { return t.id; });
       var i = ids.indexOf(current);
-      var next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: ids.length - 1 }[e.key];
-      if (next === undefined) {
+      var step = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: ids.length - 1 }[e.key];
+      if (step === undefined) {
         return;
       }
       e.preventDefault();
-      var id = ids[(next + ids.length) % ids.length];
+      var id = ids[(step + ids.length) % ids.length];
       go(id);
       tabEls[id].focus();
     });
 
-    // ---------------------------------------------------------- Übersicht
+    // ---------------------------------------------------------- Ergebnis
 
-    var overview = panels.uebersicht;
-    var meta = overview.appendChild(el(doc, 'p', 'sfx-sc-meta'));
-    var next = overview.appendChild(el(doc, 'p', 'sfx-sc-next'));
-    var nextText = next.appendChild(el(doc, 'span'));
-    next.appendChild(doc.createTextNode(' '));
-    var change = next.appendChild(el(doc, 'a', null, strings.change));
-    change.setAttribute('href', '#einstellungen');
-    var controls = overview.appendChild(el(doc, 'p', 'sfx-sc-controls'));
-    var probeLabel = controls.appendChild(el(doc, 'label', 'sfx-sc-probe'));
-    var probe = probeLabel.appendChild(el(doc, 'input'));
-    probe.type = 'checkbox';
-    probe.id = 'sfx-sc-probe';
-    probeLabel.appendChild(doc.createTextNode(' ' + (strings.probe || '')));
-    var start = controls.appendChild(startButton(true));
-    start.id = 'sfx-sc-start';
-
-    overview.appendChild(el(doc, 'h2', null, strings.sectionsTitle));
-    var summaries = overview.appendChild(el(doc, 'ul', 'sfx-sc-summaries'));
-    var summaryRows = {};
-    (config.sections || []).forEach(function (section) {
-      var li = summaries.appendChild(el(doc, 'li', 'sfx-sc-summary-item'));
-      var a = li.appendChild(el(doc, 'a', null, section.title));
-      a.setAttribute('href', '#' + SECTION_TABS[section.id]);
-      summaryRows[section.id] = li.appendChild(el(doc, 'span', 'sfx-sc-summary-counts'));
+    var result = panels.ergebnis;
+    result.appendChild(el(doc, 'h2', 'screen-reader-text', (tabs[0] || {}).title || ''));
+    var filterBar = result.appendChild(el(doc, 'ul', 'subsubsub sfx-sc-filter'));
+    filterBar.setAttribute('aria-label', strings.filterLabel || '');
+    var filterLinks = {};
+    [{ id: '', title: strings.filterAll }].concat(config.sections || []).forEach(function (section, i) {
+      var li = filterBar.appendChild(el(doc, 'li'));
+      if (i > 0) {
+        li.appendChild(doc.createTextNode(' | '));
+      }
+      var a = li.appendChild(el(doc, 'a', null, section.title || ''));
+      var fragment = section.id === '' ? 'ergebnis' : Object.keys(AREA_FRAGMENTS).filter(function (f) { return AREA_FRAGMENTS[f] === section.id; })[0];
+      a.setAttribute('href', '#' + fragment);
+      var count = a.appendChild(el(doc, 'span', 'count'));
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        area = section.id;
+        override = null;
+        unfold = null;
+        render();
+        // The hashchange this causes must not pull focus to the tab: the admin is in the filter.
+        quietHash = '#' + fragment;
+        setHash(fragment);
+      });
+      filterLinks[section.id] = { a: a, count: count };
     });
-    var urgentBox = overview.appendChild(el(doc, 'div', 'sfx-sc-urgent'));
-    urgentBox.appendChild(el(doc, 'h2', null, strings.urgentTitle));
-    var urgentList = urgentBox.appendChild(el(doc, 'ol', 'sfx-sc-urgent-list'));
-    overview.appendChild(renderItems());
+    var empty = result.appendChild(el(doc, 'div', 'sfx-sc-empty'));
+    empty.appendChild(el(doc, 'p', null, strings.emptyResult));
+    var groups = {
+      act: group('act', strings.groupAct, strings.groupActIntro),
+      self: group('self', strings.groupSelf, strings.groupSelfIntro),
+      fine: group('fine', strings.groupFine, null)
+    };
+    catalogue.forEach(function (check) {
+      rows[check.id] = createRow(check);
+      groups.act.list.appendChild(rows[check.id].details);
+    });
+    result.appendChild(renderItems());
 
-    function startButton(primary) {
-      var b = el(doc, 'button', primary ? 'button button-primary' : 'button', strings.check);
-      b.type = 'button';
-      b.addEventListener('click', startRun);
-      startButtons.push(b);
-      return b;
+    /** One result group; "fine" folds behind its own toggle (closed by default), the others are headed lists. */
+    function group(kind, title, intro) {
+      var wrap = result.appendChild(el(doc, kind === 'fine' ? 'details' : 'section', 'sfx-sc-group sfx-sc-group-' + kind));
+      var headEl = wrap.appendChild(el(doc, kind === 'fine' ? 'summary' : 'h3', 'sfx-sc-grouphead'));
+      var titleEl = headEl.appendChild(el(doc, 'span', null, title || ''));
+      var count = headEl.appendChild(el(doc, 'span', 'sfx-sc-groupcount'));
+      if (intro) {
+        wrap.appendChild(el(doc, 'p', 'sfx-sc-groupintro', intro));
+      }
+      var none = wrap.appendChild(el(doc, 'p', 'sfx-sc-groupnone', kind === 'act' ? strings.noActionTab : ''));
+      var list = wrap.appendChild(el(doc, 'div', 'sfx-sc-list'));
+      return { wrap: wrap, summary: headEl, title: titleEl, count: count, none: none, list: list };
     }
 
-    // Fresh site: the adopted panels (.htaccess, settings) say "not checked yet" with a working control too.
-    var freshBoxes = [];
-    Object.keys(adopted).forEach(function (id) {
-      var panel = adopted[id];
-      if (!panel) {
-        return;
-      }
-      var box = el(doc, 'div', 'sfx-sc-empty');
-      box.appendChild(el(doc, 'p', null, strings.notChecked));
-      box.appendChild(startButton(false));
-      panel.insertBefore(box, panel.firstChild || null);
-      freshBoxes.push(box);
-    });
-
-    // ---------------------------------------------------------- section tabs
-
-    var lists = {};
-    var empties = {};
-    (config.sections || []).forEach(function (section) {
-      var panel = panels[SECTION_TABS[section.id]];
-      if (!panel) {
-        return;
-      }
-      panel.appendChild(el(doc, 'h2', 'screen-reader-text', section.title));
-      var head = panel.appendChild(el(doc, 'p', 'sfx-sc-panelhead'));
-      var label = head.appendChild(el(doc, 'label'));
-      var box = label.appendChild(el(doc, 'input'));
-      box.type = 'checkbox';
-      label.appendChild(doc.createTextNode(' ' + (strings.onlyAction || '')));
-      box.addEventListener('change', function () {
-        filters[section.id] = !!box.checked;
-        // The admin's own filter choice ends a check link's exception.
-        override = null;
-        render();
-      });
-      var empty = panel.appendChild(el(doc, 'div', 'sfx-sc-empty'));
-      var emptyText = empty.appendChild(el(doc, 'p'));
-      var emptyButton = empty.appendChild(startButton(false));
-      empties[section.id] = { box: empty, text: emptyText, button: emptyButton };
-      lists[section.id] = panel.appendChild(el(doc, 'div', 'sfx-sc-list'));
-      catalogue.filter(function (c) { return c.section === section.id; }).forEach(function (check) {
-        rows[check.id] = createRow(check);
-        lists[section.id].appendChild(rows[check.id].details);
-      });
-    });
-
+    /** One check: a closed disclosure. Its summary carries the one traffic light, title, area and next step. */
     function createRow(check) {
       var details = el(doc, 'details', 'sfx-sc-check');
       details.id = 'sfx-sc-check-' + check.id;
       var summary = details.appendChild(el(doc, 'summary', 'sfx-sc-head'));
       var badge = summary.appendChild(el(doc, 'span', 'sfx-sc-badge'));
-      summary.appendChild(el(doc, 'span', 'sfx-sc-title', check.title));
-      var count = summary.appendChild(el(doc, 'span', 'sfx-sc-count'));
-      var tag = summary.appendChild(el(doc, 'span', 'sfx-sc-tag'));
+      var main = summary.appendChild(el(doc, 'span', 'sfx-sc-headmain'));
+      var line = main.appendChild(el(doc, 'span', 'sfx-sc-headline'));
+      line.appendChild(el(doc, 'span', 'sfx-sc-title', check.title));
+      // Area and count wrap as one unit, so "· 1 Fund" never starts a line.
+      var metaInline = line.appendChild(el(doc, 'span', 'sfx-sc-meta-inline'));
+      metaInline.appendChild(el(doc, 'span', 'sfx-sc-area', sectionTitle[check.section] || ''));
+      var count = metaInline.appendChild(el(doc, 'span', 'sfx-sc-count'));
+      var tag = line.appendChild(el(doc, 'span', 'sfx-sc-tag'));
+      var hint = main.appendChild(el(doc, 'span', 'sfx-sc-nextstep', check.recommendation));
       var body = details.appendChild(el(doc, 'div', 'sfx-sc-body'));
-      var result = body.appendChild(el(doc, 'div', 'sfx-sc-result'));
+      var resultBox = body.appendChild(el(doc, 'div', 'sfx-sc-result'));
       var guide = renderGuidance(doc, check, strings);
       body.appendChild(guide.box);
-      var row = { details: details, summary: summary, badge: badge, count: count, tag: tag, result: result, guide: guide, decided: false, key: null };
-      details.addEventListener('toggle', function () { row.decided = true; });
-      return row;
+      var note = body.appendChild(el(doc, 'p', 'sfx-sc-note'));
+      return { id: check.id, details: details, summary: summary, badge: badge, count: count, tag: tag, hint: hint, result: resultBox, note: note, guide: guide, key: null };
     }
 
-    /** Findings, then the note with its perspective; rebuilt inside the kept row. */
+    /** Inside a check: the findings as a neutral detail list, then (to check yourself) how by hand. */
     function fillResult(row, graded) {
       var box = row.result;
       while (box.firstChild) {
         box.removeChild(box.firstChild);
       }
+      while (row.note.firstChild) {
+        row.note.removeChild(row.note.firstChild);
+      }
+      row.note.textContent = '';
       if (!graded) {
         return;
       }
-      var findings = Array.isArray(graded.findings) ? graded.findings : [];
+      var findings = (Array.isArray(graded.findings) ? graded.findings : []).slice().sort(function (a, b) {
+        return ORDER.indexOf(statusOf(a) || 'unknown') - ORDER.indexOf(statusOf(b) || 'unknown');
+      });
       if (findings.length) {
+        box.appendChild(el(doc, 'h4', 'sfx-sc-findings-title', strings.findingsTitle));
         var list = box.appendChild(el(doc, 'ul', 'sfx-sc-findings'));
         findings.forEach(function (finding) {
           var fs = statusOf(finding) || 'unknown';
-          var li = list.appendChild(el(doc, 'li', 'sfx-sc-finding'));
-          li.appendChild(el(doc, 'span', 'sfx-sc-dot sfx-sc-badge-' + fs, labels[fs] || fs));
+          var li = list.appendChild(el(doc, 'li', 'sfx-sc-finding sfx-sc-finding-' + (GROUPS[fs] || 'self')));
+          var icon = li.appendChild(el(doc, 'span', 'dashicons dashicons-' + FINDING_ICON[fs]));
+          icon.setAttribute('aria-hidden', 'true');
+          li.appendChild(el(doc, 'span', 'screen-reader-text', (strings.findingKind || {})[fs] || ''));
           li.appendChild(el(doc, 'span', 'sfx-sc-label', finding.label));
         });
       }
-      var note = box.appendChild(el(doc, 'p', 'sfx-sc-note'));
-      note.appendChild(el(doc, 'span', 'sfx-sc-perspective', (strings.perspective || {})[graded.perspective] || graded.perspective || ''));
+      if (statusOf(graded) === 'unknown') {
+        var steps = strings.selfStep || {};
+        var step = box.appendChild(el(doc, 'p', 'sfx-sc-selfcheck', (own(steps, row.id) && steps[row.id]) || steps[graded.perspective] || ''));
+        step.appendChild(doc.createTextNode(' ' + (strings.selfCaveat || '')));
+      }
+      // The technical note (perspective, coverage) closes the check, below the guidance.
+      row.note.appendChild(el(doc, 'span', 'sfx-sc-perspective', (strings.perspective || {})[graded.perspective] || graded.perspective || ''));
       if (graded.note) {
-        note.appendChild(doc.createTextNode(' ' + graded.note));
+        row.note.appendChild(doc.createTextNode(' ' + graded.note));
       }
     }
 
@@ -673,6 +706,8 @@
       // A graded row always shows its count, "0 findings" included; an ungraded one shows none.
       row.count.textContent = graded && status !== 'checking' ? format(findings === 1 ? strings.findingOne : strings.findingMany, [findings]) : '';
       row.tag.textContent = tagText;
+      // The next step shows on rows to act on; elsewhere the title says enough.
+      row.hint.hidden = !(status === 'red' || status === 'yellow');
       if (row.key !== key) {
         row.key = key;
         fillResult(row, graded);
@@ -680,10 +715,6 @@
       var green = status === 'green';
       row.guide.fix.hidden = green;
       row.guide.none.hidden = !green;
-      if (!row.decided && (status === 'red' || status === 'yellow')) {
-        row.decided = true;
-        row.details.open = true;
-      }
     }
 
     // ---------------------------------------------------------- state → page
@@ -701,55 +732,15 @@
       return saved ? saved.results || {} : null;
     }
 
-    function tally(results, section) {
-      var n = { red: 0, yellow: 0, unknown: 0, hint: 0, green: 0, any: 0 };
-      catalogue.forEach(function (check) {
-        var status = results ? statusOf(results[check.id]) : null;
-        if (check.section === section && status) {
-          n[status]++;
-          n.any++;
-        }
-      });
-      return n;
-    }
-
     function render() {
       var rowResults = rowSource();
-      var countResults = countSource();
       var tagText = { running: (strings.tag || {}).running, saving: (strings.tag || {}).running, refused: (strings.tag || {}).unsaved, unknown: (strings.tag || {}).unknown }[phase] || '';
-
-      (config.sections || []).forEach(function (section) {
-        var n = tally(countResults, section.id);
-        var badge = counts[section.id];
-        if (badge) {
-          while (badge.firstChild) {
-            badge.removeChild(badge.firstChild);
-          }
-          ['red', 'yellow'].forEach(function (s) {
-            if (n[s]) {
-              badge.appendChild(pill(doc, s, n[s], labels));
-            }
-          });
-        }
-        var sum = summaryRows[section.id];
-        if (sum) {
-          while (sum.firstChild) {
-            sum.removeChild(sum.firstChild);
-          }
-          if (n.any) {
-            ['red', 'yellow', 'unknown'].forEach(function (s) { sum.appendChild(pill(doc, s, n[s], labels)); });
-          } else {
-            sum.appendChild(el(doc, 'span', 'sfx-sc-muted', strings.notChecked));
-          }
-        }
-        renderSection(section.id, rowResults, tagText);
-      });
-
-      renderUrgent(countResults);
+      renderGroups(rowResults, tagText);
+      renderVerdict(countSource());
       renderMeta();
-      freshBoxes.forEach(function (box) { box.hidden = !(saved === null && incoming === null && phase === 'idle'); });
       startButtons.forEach(function (b) { b.disabled = busy; });
       probe.disabled = busy;
+      resetButton.disabled = busy || itemsBusy;
       if (formSave) {
         formSave.disabled = busy;
       }
@@ -758,35 +749,70 @@
       }
     }
 
-    function renderSection(section, results, tagText) {
-      var list = lists[section];
-      if (!list) {
-        return;
-      }
-      var own = catalogue.filter(function (c) { return c.section === section; });
-      var any = own.some(function (c) { return results[c.id]; });
+    function renderGroups(results, tagText) {
+      var any = catalogue.some(function (c) { return results[c.id]; });
       var noRun = !any && phase === 'idle';
-      var shown = 0;
-      own.forEach(function (check) {
+      var members = { act: [], self: [], fine: [] };
+      var actCount = { '': 0 };
+      // Rows can change group; focus is put back once every move is done and the target shown.
+      var active = doc.activeElement;
+      sortChecks(catalogue, results).forEach(function (check) {
         var row = rows[check.id];
         var graded = results[check.id];
         updateRow(row, graded, graded ? tagText : '');
-        var status = statusOf(graded);
-        // A check link (#check-<id>) shows its row even before the first run.
-        var hide = override !== check.id && (noRun || (filters[section] && NO_ACTION.indexOf(status) !== -1));
-        row.details.hidden = hide;
-        shown += hide ? 0 : 1;
+        var kind = GROUPS[statusOf(graded)] || 'act';
+        // The filter counts what is to fix in that area (spec: Rot and Gelb), as the verdict does.
+        if (kind === 'act' && graded) {
+          actCount[''] += 1;
+          actCount[check.section] = (actCount[check.section] || 0) + 1;
+        }
+        // Rows still waiting for a result stay with the ones to act on.
+        members[kind].push(check);
+        // A check link (#check-<id>) shows its row even before the first run and outside the filter.
+        var inArea = area === '' || check.section === area || override === check.id;
+        row.details.hidden = (noRun || !inArea) && override !== check.id;
       });
-      reorder(list, sortChecks(own, results));
-      var empty = empties[section];
-      empty.box.hidden = !noRun && shown > 0;
-      empty.text.textContent = noRun ? strings.notChecked : strings.noActionTab;
-      empty.button.hidden = !noRun;
+      Object.keys(members).forEach(function (kind) {
+        var g = groups[kind];
+        reorder(g.list, members[kind]);
+        var shown = members[kind].filter(function (c) { return !rows[c.id].details.hidden; }).length;
+        // The count is of graded checks, as the verdict counts; the act group keeps "(0)" after a run.
+        var graded = members[kind].filter(function (c) { return !rows[c.id].details.hidden && results[c.id]; }).length;
+        g.count.textContent = graded || (kind === 'act' && !noRun) ? ' (' + graded + ')' : '';
+        // The act group stays visible after a run to say there is nothing to do.
+        g.wrap.hidden = shown === 0 && !(kind === 'act' && !noRun);
+        g.none.hidden = shown > 0;
+        if (kind === 'fine' && unfold !== null && members.fine.indexOf(byId[unfold]) !== -1) {
+          g.wrap.open = true;
+          unfold = null;
+        }
+      });
+      // A focused row that moved into the folded group does not unfold it (accordions stay closed):
+      // focus goes to the group's own toggle instead, so the keyboard position is not lost.
+      var fineList = groups.fine.list;
+      if (active && active !== doc.body && fineList.contains && fineList.contains(active) && !groups.fine.wrap.open) {
+        active = groups.fine.summary;
+      }
+      if (active && doc.activeElement !== active && typeof active.focus === 'function') {
+        active.focus();
+      }
+      empty.hidden = !noRun || override !== null;
+      filterBar.hidden = noRun;
+      Object.keys(filterLinks).forEach(function (id) {
+        var link = filterLinks[id];
+        link.count.textContent = ' (' + (actCount[id] || 0) + ')';
+        link.a.className = id === area ? 'current' : '';
+        if (id === area) {
+          link.a.setAttribute('aria-current', 'true');
+        } else {
+          link.a.removeAttribute('aria-current');
+        }
+      });
     }
 
     /** Moves rows into order only when it changed; focus inside a moved row is restored. */
     function reorder(list, ordered) {
-      var same = ordered.every(function (check, i) { return list.children[i] === rows[check.id].details; });
+      var same = list.children.length === ordered.length && ordered.every(function (check, i) { return list.children[i] === rows[check.id].details; });
       if (same) {
         return;
       }
@@ -797,28 +823,51 @@
       }
     }
 
-    function renderUrgent(results) {
-      while (urgentList.firstChild) {
-        urgentList.removeChild(urgentList.firstChild);
-      }
-      var urgent = catalogue
-        .map(function (check, index) { return { check: check, index: index, status: results ? statusOf(results[check.id]) : null }; })
-        .filter(function (e) { return e.status === 'red' || e.status === 'yellow'; })
-        .sort(function (a, b) { return ORDER.indexOf(a.status) - ORDER.indexOf(b.status) || a.index - b.index; })
-        .slice(0, URGENT_MAX);
-      urgentBox.hidden = results === null;
-      if (!urgent.length) {
-        urgentList.appendChild(el(doc, 'li', 'sfx-sc-muted', strings.urgentNone));
-        return;
-      }
-      urgent.forEach(function (e) {
-        var li = urgentList.appendChild(el(doc, 'li'));
-        var a = li.appendChild(el(doc, 'a'));
-        a.setAttribute('href', '#check-' + e.check.id);
-        a.appendChild(el(doc, 'span', 'sfx-sc-badge sfx-sc-badge-' + e.status, labels[e.status]));
-        a.appendChild(doc.createTextNode(' ' + e.check.title));
-        li.appendChild(el(doc, 'span', 'sfx-sc-muted', ' · ' + (sectionTitle[e.check.section] || '')));
+    /** The site's one verdict: how many checks to act on, else to check yourself, else all in order. */
+    function renderVerdict(results) {
+      var n = { red: 0, yellow: 0, unknown: 0, hint: 0, green: 0 };
+      catalogue.forEach(function (check) {
+        var s = results ? statusOf(results[check.id]) : null;
+        if (s) {
+          n[s]++;
+        }
       });
+      var act = n.red + n.yellow;
+      var state;
+      var text;
+      if (phase === 'running' || phase === 'saving') {
+        state = 'running';
+        text = strings.verdictRunning;
+      } else if (results === null) {
+        state = 'pending';
+        text = strings.notChecked;
+      } else if (act > 0) {
+        state = n.red > 0 ? 'red' : 'yellow';
+        text = format(act === 1 ? strings.verdictActOne : strings.verdictActMany, [act]);
+      } else if (n.unknown > 0) {
+        state = 'unknown';
+        text = format(n.unknown === 1 ? strings.verdictSelfOne : strings.verdictSelfMany, [n.unknown]);
+      } else {
+        state = 'green';
+        text = strings.verdictOk;
+      }
+      head.className = 'sfx-sc-head-panel sfx-sc-state-' + state;
+      mark.className = 'sfx-sc-mark dashicons dashicons-' + { red: 'warning', yellow: 'warning', unknown: 'editor-help', green: 'yes-alt', pending: 'shield', running: 'update' }[state];
+      verdict.textContent = text;
+      var parts = [];
+      if (results !== null && state !== 'running') {
+        if (n.red) {
+          parts.push(n.red + ' ' + (labels.red || ''));
+        }
+        if (n.yellow) {
+          parts.push(n.yellow + ' ' + (labels.yellow || ''));
+        }
+        if (n.unknown && act > 0) {
+          parts.push(n.unknown + ' ' + (labels.unknown || ''));
+        }
+        parts.push(n.hint + n.green + ' ' + (strings.verdictFine || ''));
+      }
+      verdictSub.textContent = state === 'pending' ? (strings.intro || '') : parts.join(' · ');
     }
 
     function profileName(profile) {
@@ -826,9 +875,8 @@
     }
 
     function renderMeta() {
-      meta.textContent = saved
-        ? format(strings.meta, [saved.date_display, saved.user, profileName(saved.profile)])
-        : (strings.notChecked || '') + ' ' + (strings.intro || '');
+      meta.textContent = saved ? format(strings.meta, [saved.date_display, saved.user, profileName(saved.profile)]) : '';
+      meta.hidden = !saved;
       nextText.textContent = format(strings.nextProfile, [profileName(config.settingsProfile)]);
     }
 
@@ -853,12 +901,13 @@
 
     function go(id) {
       override = null;
+      unfold = null;
       select(id);
       render();
       setHash(id);
     }
 
-    /** Reads the fragment: a tab, a check (`check-<id>`), or anything else → Übersicht. */
+    /** Reads the fragment: a tab, an area (`sicherheit` …), a check (`check-<id>`), or anything else → Ergebnis. */
     function route(focus) {
       var raw = String((win.location && win.location.hash) || '').replace(/^#/, '');
       var id;
@@ -871,16 +920,25 @@
       var check = id.indexOf('check-') === 0 && own(byId, id.slice(6)) ? byId[id.slice(6)] : null;
       if (check && rows[check.id]) {
         override = check.id;
-        select(SECTION_TABS[check.section]);
+        unfold = check.id;
+        select('ergebnis');
         render();
+        // The link unfolds "In Ordnung" only for where the row is now; a later result never does.
+        unfold = null;
         var row = rows[check.id];
-        row.decided = true;
         row.details.open = true;
         row.summary.focus();
         return;
       }
       override = null;
-      select(own(tabEls, id) ? id : 'uebersicht');
+      unfold = null;
+      if (own(AREA_FRAGMENTS, id)) {
+        area = AREA_FRAGMENTS[id];
+        id = 'ergebnis';
+      } else if (id === 'ergebnis' || !own(tabEls, id)) {
+        area = '';
+      }
+      select(own(tabEls, id) ? id : 'ergebnis');
       render();
       if (focus) {
         tabEls[current].focus();
@@ -888,7 +946,11 @@
     }
 
     if (win.addEventListener) {
-      win.addEventListener('hashchange', function () { route(true); });
+      win.addEventListener('hashchange', function () {
+        var quiet = quietHash !== null && win.location.hash === quietHash;
+        quietHash = null;
+        route(!quiet);
+      });
     }
 
     // ---------------------------------------------------------- run, save, notices
@@ -1043,6 +1105,48 @@
       });
     }
 
+    /** Back to "not checked yet": results and ticked items are deleted; settings stay. */
+    function resetAll() {
+      if (busy || itemsBusy || !win.confirm(strings.resetConfirm)) {
+        return;
+      }
+      busy = true;
+      var mine = ++op;
+      lockItems(true);
+      render();
+      fetcher.post('sfx_site_check_reset', {}).then(function () {
+        if (mine !== op) {
+          return;
+        }
+        saved = null;
+        incoming = null;
+        phase = 'idle';
+        retrySave = null;
+        progressLine.textContent = '';
+        Object.keys(rows).forEach(function (id) { rows[id].details.open = false; });
+        clearItems();
+        notice(null);
+        setStatus(strings.resetDone);
+      }, function (e) {
+        if (mine !== op) {
+          return;
+        }
+        var text = e.lost ? strings.resetUnknown : format(strings.resetFailed, [e.message]);
+        setStatus(text);
+        if (!e.busy) {
+          // Lost answer or partial delete: what is stored is unknown, so the page stops claiming it.
+          notice('warning', text, { label: strings.reload, run: function () { win.location.reload(); } });
+        }
+        // Busy: nothing was deleted; any notice from a run (and its retry) stays as it was.
+      }).then(function () {
+        if (mine === op) {
+          busy = false;
+          lockItems(false);
+          render();
+        }
+      });
+    }
+
     // ---------------------------------------------------------- settings form (rendered by PHP)
 
     var form = doc.getElementById('sfx-sc-settings');
@@ -1063,7 +1167,7 @@
       });
     }
 
-    // ---------------------------------------------------------- manual items (Übersicht only)
+    // ---------------------------------------------------------- manual items (Ergebnis only)
 
     function renderItems() {
       var wrap = el(doc, 'div', 'sfx-sc-items');
@@ -1071,13 +1175,13 @@
       var itemRows = [];
       /** One item write at a time: every control is disabled until it settles; older answers are ignored. */
       var itemOp = 0;
-      var reset = null;
-      function lockItems(on) {
+      lockItems = function (on) {
         itemRows.forEach(function (r) { r.box.disabled = on; });
-        if (reset) {
-          reset.disabled = on;
-        }
-      }
+      };
+      clearItems = function () {
+        itemOp++;
+        itemRows.forEach(function (r) { r.box.checked = false; r.note.textContent = ''; });
+      };
       (config.items || []).forEach(function (item) {
         var row = wrap.appendChild(el(doc, 'p', 'sfx-sc-item'));
         var label = row.appendChild(el(doc, 'label'));
@@ -1091,6 +1195,8 @@
           var done = !!box.checked;
           var mine = ++itemOp;
           lockItems(true);
+          itemsBusy = true;
+          resetButton.disabled = true;
           fetcher.post('sfx_site_check_items', { item: item.id, done: done ? '1' : '0' }).then(function (data) {
             if (mine !== itemOp) {
               return;
@@ -1106,31 +1212,11 @@
             note.textContent = e.message;
           }).then(function () {
             if (mine === itemOp) {
+              itemsBusy = false;
               lockItems(false);
+              resetButton.disabled = busy;
             }
           });
-        });
-      });
-      reset = wrap.appendChild(el(doc, 'button', 'button', strings.itemsReset));
-      reset.type = 'button';
-      reset.addEventListener('click', function () {
-        if (!win.confirm(strings.itemsResetConfirm)) {
-          return;
-        }
-        var mine = ++itemOp;
-        lockItems(true);
-        fetcher.post('sfx_site_check_items', { reset: '1' }).then(function () {
-          if (mine === itemOp) {
-            itemRows.forEach(function (r) { r.box.checked = false; r.note.textContent = ''; });
-          }
-        }, function (e) {
-          if (mine === itemOp) {
-            setStatus(e.message);
-          }
-        }).then(function () {
-          if (mine === itemOp) {
-            lockItems(false);
-          }
         });
       });
       return wrap;

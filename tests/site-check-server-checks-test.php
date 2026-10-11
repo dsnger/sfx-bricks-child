@@ -296,7 +296,7 @@ function get_site_transient($name)
     return $GLOBALS['stub']['transients'][$name] ?? false;
 }
 
-foreach (['Status', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Mutex', 'Probe'] as $class) {
+foreach (['Status', 'ThemeSwitches', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Mutex', 'Probe'] as $class) {
     require_once __DIR__ . '/../inc/SiteCheck/' . $class . '.php';
 }
 foreach (['ServerChecks', 'FileChecks', 'ConfigChecks', 'AccountChecks', 'CleanupChecks', 'OutsideChecks'] as $class) {
@@ -328,7 +328,7 @@ function assert_same($expected, $actual, string $message): void
 
 function ctx(string $profile = 'live', string $fallback = ''): RunContext
 {
-    return new RunContext('run1', $profile, [], [], $fallback, false);
+    return new RunContext('run1', $profile, [], $fallback, false);
 }
 
 function grade(string $id, array $obs, string $profile = 'live'): array
@@ -377,7 +377,7 @@ $spec_ids = [
     'security' => ['logs_public', 'config_copies', 'backups_public', 'vcs_env', 'phpinfo', 'dir_listing', 'php_in_uploads',
         'php_files_uploads', 'debug_display', 'allow_url_include', 'https', 'php_version', 'security_headers', 'file_editor',
         'xmlrpc', 'registration', 'auto_updates', 'admin_accounts', 'usernames_public', 'bricks_permissions'],
-    'golive' => ['search_visibility', 'robots_txt', 'indexability', 'sitemap', 'sitemap_entries', 'admin_email', 'permalinks'],
+    'golive' => ['search_visibility', 'robots_txt', 'sitemap', 'sitemap_entries', 'admin_email', 'permalinks'],
     'cleanup' => ['test_content', 'inactive_plugins', 'inactive_themes', 'updates', 'public_files', 'version_leaks', 'table_prefix', 'app_passwords'],
 ];
 $all = Catalogue::all();
@@ -394,7 +394,7 @@ foreach ($spec_ids as $section => $ids) {
 $monitor = array_keys(array_filter($all, static fn($row) => $row['monitor']));
 assert_same(['logs_public', 'config_copies', 'backups_public', 'vcs_env', 'phpinfo', 'dir_listing', 'php_in_uploads', 'php_files_uploads',
     'debug_display', 'https', 'registration', 'admin_accounts', 'usernames_public', 'bricks_permissions', 'search_visibility',
-    'robots_txt', 'indexability', 'updates'], $monitor, '★ flags as in the spec');
+    'robots_txt', 'updates'], $monitor, '★ flags as in the spec');
 $server = ['logs_public', 'config_copies', 'backups_public', 'vcs_env', 'phpinfo', 'php_files_uploads', 'debug_display', 'allow_url_include',
     'https', 'php_version', 'file_editor', 'registration', 'auto_updates', 'admin_accounts', 'bricks_permissions', 'search_visibility',
     'admin_email', 'permalinks', 'test_content', 'inactive_plugins', 'inactive_themes', 'updates', 'public_files', 'table_prefix', 'app_passwords'];
@@ -730,6 +730,20 @@ $c = ctx('live', 'twentytwentyfive');
 $obs = ServerChecks::observe('inactive_themes', $c);
 $r = Catalogue::grade('inactive_themes', $obs, $c);
 assert_same(['inactive_themes:twentytwentyfour'], array_column($r['findings'], 'id'), 'Bricks, active and the run\'s fallback theme are excluded; the live setting is not read');
+
+// Owner ruling 2026-10-11: without a fallback, one WordPress default theme is kept.
+$GLOBALS['stub']['themes']['astra'] = new StubTheme('Astra');
+$c = ctx('live', '');
+$r = Catalogue::grade('inactive_themes', ServerChecks::observe('inactive_themes', $c), $c);
+assert_same(['inactive_themes:twentytwentyfour', 'inactive_themes:astra'], array_column($r['findings'], 'id'), 'no fallback set: the first twenty* theme is kept, the rest listed');
+assert_true(strpos($r['note'], 'twentytwentyfive') !== false, 'the note names the kept default theme');
+define('WP_DEFAULT_THEME', 'twentytwentyfour');
+$r = Catalogue::grade('inactive_themes', ServerChecks::observe('inactive_themes', $c), $c);
+assert_same(['inactive_themes:twentytwentyfive', 'inactive_themes:astra'], array_column($r['findings'], 'id'), 'WP_DEFAULT_THEME wins when installed');
+unset($GLOBALS['stub']['themes']['twentytwentyfour'], $GLOBALS['stub']['themes']['twentytwentyfive']);
+$r = Catalogue::grade('inactive_themes', ServerChecks::observe('inactive_themes', $c), $c);
+assert_same(['inactive_themes:astra'], array_column($r['findings'], 'id'), 'no default theme installed: only the others are listed');
+assert_true(strpos($r['note'], 'no WordPress default theme') !== false, 'and the note says none is installed');
 
 // ---------------------------------------------------------------- https (server half)
 

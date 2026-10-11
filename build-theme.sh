@@ -124,6 +124,8 @@ EXCLUDE=(
   "/AGENTS.md"
   "/CLAUDE.md"
   "/todos.md"
+  "/PRODUCT.md"
+  "/DESIGN.md"
   "/.agents/"
   "/docs/"
   "/tests/"
@@ -167,6 +169,8 @@ FORBIDDEN_PATHS=(
   AGENTS.md
   CLAUDE.md
   todos.md
+  PRODUCT.md
+  DESIGN.md
   .agents
   docs
   tests

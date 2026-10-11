@@ -84,7 +84,9 @@ final class Probe
         if ($created === '') {
             $present = Mutex::with(static fn(): bool => self::find($path) !== null);
             if ($present === true) {
-                // Rule 2: this batch's comparison URL, by Loopback, right before the probe.
+                // Rule 2: this batch's comparison URL, by Loopback, right before the probe;
+                // both share one time budget (rule 9), the TLS retry included.
+                Fetch::start_budget();
                 $comparison = Checks\OutsideChecks::loopback_comparison('php_in_uploads', $ctx);
                 self::$fetching = $url;
                 try {
@@ -490,7 +492,8 @@ final class Probe
         ];
         $comparison = is_array($obs['comparison'] ?? null) ? $obs['comparison'] : [];
         $comparison = ['status' => (int) ($comparison['status'] ?? 0), 'redirect' => !empty($comparison['redirect'])];
-        if (Evidence::classify($response, $comparison) === Evidence::UNREACHABLE) {
+        // The probe is outside the cut-error exception (spec rule 4): a truncated answer is no evidence here.
+        if (!$response['truncated'] && Evidence::classify($response, $comparison) === Evidence::UNREACHABLE) {
             return $f(Status::GREEN, sprintf(
                 /* translators: %d: HTTP status */
                 __('Blocked (HTTP %d).', 'sfxtheme'),

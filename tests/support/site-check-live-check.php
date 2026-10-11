@@ -337,16 +337,11 @@ add_filter('upload_dir', static function (array $dirs) use ($harness_name): arra
     $dirs['subdir']  = '';
     return $dirs;
 });
-// The local site's certificate is not in PHP's CA bundle, so Fetch's verified loopback fails with `tls`
-// and the probe could never give a definite answer. Accept it for the harness folder's URLs only; every
-// other request keeps verification, so the https check still reports what a real run sees here.
-// It also records every probe-folder URL requested, so the check below can see where the probe ran
-// (an empty probe folder is removed after the run, so the folder itself is no evidence).
+// Records every probe-folder URL requested, so the check below can see where the probe ran
+// (an empty probe folder is removed after the run, so the folder itself is no evidence). The local
+// self-signed certificate needs no override: Fetch's Loopback retries it unverified itself.
 $GLOBALS['probe_urls'] = [];
-add_filter('http_request_args', static function (array $args, string $url) use ($harness_name): array {
-    if (strpos($url, '/' . $harness_name . '/') !== false) {
-        $args['sslverify'] = false;
-    }
+add_filter('http_request_args', static function (array $args, string $url): array {
     if (strpos($url, '/sfx-site-check/') !== false) {
         $GLOBALS['probe_urls'][] = $url;
     }
@@ -494,13 +489,14 @@ echo '     saved result counts: ' . json_encode($counts) . "\n";
 post(['item' => 'contact_form', 'done' => '1']);
 [$code, $body] = Runs::items_request();
 check($code === 200 && isset(Runs::items()['contact_form']), 'items: ticking an item is stored');
-post(['reset' => '1']);
-[$code, $body] = Runs::items_request();
-check($code === 200 && Runs::items() === [], 'items: reset clears them');
 
 $box = render_box();
 check(native_widget_registered() === true, 'the native dashboard widget is registered for the administrator (control for the editor check)');
 check(strpos($box, 'sfx-site-check-box') !== false && strpos($box, 'data-count') !== false, 'the dashboard box shows the saved run to the administrator');
+
+post([]);
+[$code, $body] = Runs::reset_request();
+check($code === 200 && Runs::items() === [] && Runs::last() === null, 'reset clears the saved run and the items');
 
 // ---- as editor
 $manual_before = rows_with_prefix($prefix)[Options::name('manual')] ?? null;
@@ -514,6 +510,7 @@ $refusals = [
     'server' => [static fn() => Runs::server_request(), ['run' => $run, 'check' => 'php_in_uploads']],
     'save' => [static fn() => Runs::save_request(), ['run' => $run, 'results' => '{}']],
     'items' => [static fn() => Runs::items_request(), ['item' => 'contact_form', 'done' => '1']],
+    'reset' => [static fn() => Runs::reset_request(), []],
     'targets' => [static fn() => OutsideEndpoints::targets_request(), ['run' => $run, 'check' => 'robots_txt']],
     'observe' => [static fn() => OutsideEndpoints::observe_request(), ['run' => $run, 'check' => 'robots_txt', 'observations' => '[]']],
 ];

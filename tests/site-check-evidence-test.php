@@ -93,7 +93,9 @@ assert_same('indeterminate', Evidence::classify(response(429, 'Slow down'), $cmp
 assert_same('indeterminate', Evidence::classify(response(503, 'Busy'), $cmp404, SIGNATURES), '503');
 assert_same('indeterminate', Evidence::classify(response(500, 'Error'), $cmp404, SIGNATURES), '500');
 assert_same('indeterminate', Evidence::classify(response(200, 'aaaa', true), $cmp404, SIGNATURES), 'truncated 200 without signature');
-assert_same('indeterminate', Evidence::classify(response(404, 'aaaa', true), $cmp404, SIGNATURES), 'truncated 404 without signature: rule 4 wins');
+assert_same('unreachable', Evidence::classify(response(404, 'aaaa', true), $cmp404, SIGNATURES), 'truncated 404 without signature: not reachable (owner ruling 2026-10-11, the start was read)');
+assert_same('unreachable', Evidence::classify(response(403, 'aaaa', true), $cmp404, SIGNATURES), 'truncated 403 without signature: not reachable');
+assert_same('indeterminate', Evidence::classify(response(200, 'aaaa', true), $cmp404, SIGNATURES), 'truncated 200 without signature stays indeterminate');
 assert_same('indeterminate', Evidence::classify(response(0, ''), $cmp404, SIGNATURES), 'timeout / no answer');
 assert_same('indeterminate', Evidence::classify(response(200, 'Home page'), response(0, ''), SIGNATURES), '200 while the comparison gave no answer: soft-404 not excluded');
 assert_same('indeterminate', Evidence::classify(response(204, 'x'), $cmp404, SIGNATURES), 'an unexpected status is not evidence');
@@ -124,10 +126,9 @@ assert_same('php_in_uploads:probe', Finding::id('php_in_uploads', 'probe'), 'pro
 
 // ---------------------------------------------------------------- run context
 
-$ctx = new RunContext('run-1', 'live', ['/impressum/'], ['/sitemap.xml'], 'twentytwentyfive', true);
+$ctx = new RunContext('run-1', 'live', ['/sitemap.xml'], 'twentytwentyfive', true);
 assert_same('run-1', $ctx->run(), 'run');
 assert_same('live', $ctx->profile(), 'profile');
-assert_same(['/impressum/'], $ctx->indexability_paths(), 'indexability paths');
 assert_same(['/sitemap.xml'], $ctx->sitemap_allow(), 'sitemap allow list');
 assert_same('twentytwentyfive', $ctx->fallback_theme(), 'fallback theme');
 assert_same(true, $ctx->probe(), 'probe consent');

@@ -24,7 +24,7 @@ function __($text, $domain = null)
 function _x($text, $context, $domain = null)
 {
     $GLOBALS['stub']['contexts'][] = $context;
-    return $context === 'site check status' && $text === 'Note' ? 'Hinweis' : $text;
+    return $context === 'site check status' && $text === 'Info' ? 'Info (de)' : $text;
 }
 function _n($single, $plural, $number, $domain = null)
 {
@@ -98,7 +98,7 @@ function add_action(...$a): bool
 }
 
 $src = dirname(__DIR__) . '/inc/SiteCheck/';
-foreach (['Options', 'Status', 'Access', 'Catalogue', 'Runs', 'AdminPage', 'DashboardBox'] as $file) {
+foreach (['Options', 'Status', 'Access', 'ThemeSwitches', 'Catalogue', 'Runs', 'AdminPage', 'DashboardBox'] as $file) {
     if (!is_file($src . $file . '.php')) {
         echo "FAIL: {$file}.php missing\n";
         exit(1);
@@ -184,9 +184,9 @@ $out = box();
 assert_true(preg_match('/data-count="red">1</', $out) === 1 && preg_match('/data-count="unknown">0</', $out) === 1, 'a check with Rot and Nicht prüfbar findings counts once, as Rot');
 assert_true(substr_count($out, 'Copies of wp-config.php') === 1, 'each Rot check title once');
 
-// The status words come from one place; "Hinweis" is the site-check context of "Note".
+// The status words come from one place; status Hinweis is displayed as the site-check context of "Info".
 $stub['contexts'] = [];
-assert_true(\SFX\SiteCheck\Status::labels()['hint'] === 'Hinweis' && in_array('site check status', $stub['contexts'], true), 'Hinweis via _x(\'Note\', \'site check status\')');
+assert_true(\SFX\SiteCheck\Status::labels()['hint'] === 'Info (de)' && in_array('site check status', $stub['contexts'], true), 'Hinweis is shown as "Info" via _x(\'Info\', \'site check status\')');
 
 // Go-live red appears once security reds are fewer than three.
 $stub['options'][Options::name('manual')] = run(['config_copies' => 'red', 'search_visibility' => 'red']);

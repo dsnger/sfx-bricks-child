@@ -23,4 +23,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // A link with the tab's key as fragment (e.g. from the Sicherheits-Check) opens that tab.
+    const wanted = window.location.hash.slice(1);
+    tabBtns.forEach(btn => {
+        if (wanted !== '' && btn.getAttribute('data-tab') === wanted) {
+            btn.click();
+        }
+    });
 });

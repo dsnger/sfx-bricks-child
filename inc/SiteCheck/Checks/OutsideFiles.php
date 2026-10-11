@@ -163,20 +163,26 @@ final class OutsideFiles
         foreach ($plan['issued'] as $c) {
             $variants = $seen[$c['url']] ?? [];
             $names = null;
+            // Markers seen where they prove nothing (catch-all site): never "no listing" then.
+            $markers = false;
             foreach ($variants as $obs) {
-                // A listing is a 200 page with its markers, no challenge, and the comparison
-                // clearly did not serve a page — on a catch-all site the markers prove nothing (rule 4).
+                // A listing is a page with its markers (200, or a 403/404/410 carrying them: signatures
+                // first, rule 5), no challenge, and the comparison clearly did not serve a page — on a
+                // catch-all site the markers prove nothing (rule 4).
                 $r = Observations::response($obs);
-                if ($names === null && $obs['error'] === '' && $r['status'] === 200 && !$r['challenge'] && !$r['redirect']
+                if ($names === null && $obs['error'] === '' && in_array($r['status'], [200, 403, 404, 410], true) && !$r['challenge'] && !$r['redirect']
                     && Evidence::comparison_refused($comparison) && self::is_listing($r['body'])) {
                     $names = self::listed_names($r['body']);
+                }
+                if ($obs['error'] === '' && !$r['challenge'] && self::is_listing($r['body'])) {
+                    $markers = true;
                 }
             }
             $targets[] = [
                 'target'     => $c['target'],
                 'listing'    => $names !== null,
                 'names'      => $names ?? [],
-                'no_listing' => $names === null && self::no_listing($variants, $comparison),
+                'no_listing' => $names === null && !$markers && self::no_listing($variants, $comparison),
             ];
         }
 
@@ -267,9 +273,11 @@ final class OutsideFiles
      * The outside half of public_files, joined by target into the server
      * half (FileChecks). States: readme/license readable | blocked | unknown;
      * installer form | installed | blocked | unknown. The readme/license and
-     * "already installed" markers are not sensitive, so rule 4 wins over them:
-     * a marker counts only in a complete 2xx answer that is no challenge and
-     * no soft-404. The setup form counts in any 2xx answer without a challenge.
+     * "already installed" markers: "already installed" counts only in a complete
+     * 2xx answer that is no challenge and no soft-404; the readme/license
+     * signatures count in a 2xx answer that is no soft-404 and in a 403/404/410
+     * answer, cut or not (signatures first, rule 5). The setup form counts in
+     * any 2xx or 403/404/410 answer without a challenge.
      */
     private static function public_files_facts(RunContext $ctx, array $plan, array $seen, array $comparison): array
     {
@@ -298,14 +306,27 @@ final class OutsideFiles
 
     private static function public_file_state(string $kind, array $variants, array $comparison): string
     {
+        // Signatures first (rule 5), in every variant before any weaker verdict: a cut error page
+        // counts as blocked (owner ruling 2026-10-11) only when it carries none.
         foreach ($variants as $obs) {
             $r = Observations::response($obs);
-            $answered = $obs['error'] === '' && $r['status'] >= 200 && $r['status'] < 300 && !$r['challenge'] && !$r['redirect'];
+            $served = $obs['error'] === '' && !$r['challenge'] && !$r['redirect'];
+            if ($served && ($r['status'] < 300 || in_array($r['status'], [403, 404, 410], true)) && $kind === 'install' && preg_match('/<form[^>]*\bid=["\']setup["\']|name=["\']weblog_title["\']/i', $r['body']) === 1) {
+                return 'form';
+            }
+        }
+        foreach ($variants as $obs) {
+            $r = Observations::response($obs);
+            $served = $obs['error'] === '' && !$r['challenge'] && !$r['redirect'];
+            // The readme/license signature counts in a cut answer too (a 2xx only when no soft-404).
+            $eligible = in_array($r['status'], [403, 404, 410], true)
+                || ($r['status'] >= 200 && $r['status'] < 300 && Evidence::comparison_refused($comparison));
+            if ($served && $eligible && isset(self::PUBLIC_FILE_SIGNATURES[$kind]) && preg_match(self::PUBLIC_FILE_SIGNATURES[$kind], Observations::scrub($r['body'])) === 1) {
+                return 'readable';
+            }
+            $answered = $served && $r['status'] >= 200 && $r['status'] < 300;
             if (!$answered) {
                 continue;
-            }
-            if ($kind === 'install' && preg_match('/<form[^>]*\bid=["\']setup["\']|name=["\']weblog_title["\']/i', $r['body']) === 1) {
-                return 'form';
             }
             // Complete, not a soft-404 (Evidence::classify() answers OK200 only then).
             if (Evidence::classify($r, $comparison) !== Evidence::OK200) {
@@ -313,9 +334,6 @@ final class OutsideFiles
             }
             if ($kind === 'install' && self::already_installed($r['body'])) {
                 return 'installed';
-            }
-            if (isset(self::PUBLIC_FILE_SIGNATURES[$kind]) && preg_match(self::PUBLIC_FILE_SIGNATURES[$kind], $r['body']) === 1) {
-                return 'readable';
             }
         }
 

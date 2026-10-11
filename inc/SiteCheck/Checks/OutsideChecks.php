@@ -19,9 +19,9 @@ use SFX\SiteCheck\RunContext;
  *   `?author=1`), robots_txt, public_files, version_leaks. targets() names the
  *   URLs; the browser fetches them (assets/site-check.js) and observe() turns
  *   what it saw into facts.
- * - Loopback: https (TLS, http → https), xmlrpc, indexability, sitemap,
- *   sitemap_entries. These need a redirect target or follow discovered URLs.
- *   Each Loopback batch fetches its own comparison URL first (rule 2).
+ * - Loopback: https (TLS, http → https), xmlrpc, sitemap, sitemap_entries.
+ *   These need a redirect target or follow discovered URLs. Each Loopback
+ *   batch fetches its own comparison URL first (rule 2).
  *
  * observe() returns FACTS — never body text; grade() reads facts and the run
  * snapshot only. The S+B rows keep their server shape (FileChecks,
@@ -41,7 +41,6 @@ final class OutsideChecks
         'security_headers' => HeaderChecks::class,
         'version_leaks'    => HeaderChecks::class,
         'robots_txt'       => CrawlChecks::class,
-        'indexability'     => CrawlChecks::class,
         'sitemap'          => CrawlChecks::class,
         'sitemap_entries'  => CrawlChecks::class,
         'usernames_public' => AccountOutside::class,
@@ -149,9 +148,6 @@ final class OutsideChecks
     private static function plan(string $id, RunContext $ctx): array
     {
         $plan = ['issued' => [], 'comparison' => null, 'skipped' => []];
-        if ($id === 'indexability') {
-            $plan['skipped'] = CrawlChecks::index_paths($ctx)[1];
-        }
         if (!in_array($id, self::BROWSER, true)) {
             return $plan;
         }

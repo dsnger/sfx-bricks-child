@@ -176,14 +176,25 @@ final class Fetch
     /**
      * A bounded Loopback request to an allowed URL; anything else is refused
      * without a request.
+     *
+     * The site calls its own address, so a certificate it cannot verify (a
+     * self-signed one on a local stack, a missing CA bundle) is retried once
+     * unverified: what the page answers is the evidence here, and whether
+     * TLS is valid is the https check's question, which passes $strict_tls
+     * (owner ruling 2026-10-11). Only an allowed URL of this site is retried.
      */
-    public static function loopback(string $method, string $url, ?string $body = null): array
+    public static function loopback(string $method, string $url, ?string $body = null, bool $strict_tls = false): array
     {
         if (!self::allowed_url($url)) {
             return self::no_answer('refused');
         }
+        $r = self::remote($method, $url, $body);
+        // Only a certificate that cannot be verified is retried; other TLS failures stay failures.
+        if ($r['error'] === 'tls' && !empty($r['cert']) && !$strict_tls) {
+            $r = self::remote($method, $url, $body, false);
+        }
 
-        return self::remote($method, $url, $body);
+        return $r;
     }
 
     /**
@@ -196,7 +207,7 @@ final class Fetch
      * check's fixed `http://` request, which allowed_url() refuses (not the
      * scheme and port of home_url). Every other request goes through loopback().
      */
-    public static function remote(string $method, string $url, ?string $body = null): array
+    public static function remote(string $method, string $url, ?string $body = null, bool $verify_tls = true): array
     {
         $timeout = self::TIMEOUT;
         if (self::$deadline !== null) {
@@ -213,7 +224,7 @@ final class Fetch
             'limit_response_size' => self::LIMIT,
             'cookies'             => [],
             'headers'             => [],
-            'sslverify'           => true,
+            'sslverify'           => $verify_tls,
         ];
         if ($method === 'POST') {
             $args['headers']['Content-Type'] = 'text/xml';
@@ -226,12 +237,20 @@ final class Fetch
         if (is_wp_error($response)) {
             $message = $response->get_error_message();
             // Timeout first: "cURL error 28: SSL connection timeout" is no TLS verdict.
+            // cURL 60/51/77, OpenSSL's wording, the streams transport's name check or its CA bundle:
+            // the certificate, not the connection, failed.
+            $cert = preg_match('/cURL error (60|51|77)\b|certificate (problem|verify failed|did not match)|self[- ]signed certificate|unable to get local issuer|failed loading cafile/i', $message) === 1;
             if (preg_match('/timed? ?out|cURL error 28\b/i', $message) === 1) {
                 $kind = 'timeout';
+                $cert = false;
             } else {
-                $kind = preg_match('/ssl|tls|certificate/i', $message) === 1 ? 'tls' : 'network';
+                $kind = $cert || preg_match('/ssl|tls|certificate/i', $message) === 1 ? 'tls' : 'network';
             }
-            return self::no_answer($kind);
+            $answer = self::no_answer($kind);
+            if ($cert) {
+                $answer['cert'] = true;
+            }
+            return $answer;
         }
 
         $status = (int) wp_remote_retrieve_response_code($response);

@@ -312,15 +312,15 @@ class Controller
                 'option_key' => 'sfx_editor_prose_options',
                 'type' => 'single',
             ],
-            // Only the two lists travel; profile, fallback theme and monitoring stay on the site.
+            // Only the sitemap list travels; profile, fallback theme and monitoring stay on the site.
             // The optional `import` callable replaces the generic subset merge: it validates
-            // the paths and writes under the module's mutex (SiteCheck\Settings::import_fields()).
+            // the entries and writes under the module's mutex (SiteCheck\Settings::import_fields()).
             'site_check' => [
                 'label' => __('Sicherheits-Check Settings', 'sfxtheme'),
-                'description' => __('Pages checked for indexing and the sitemap entries that are intended (not the site profile)', 'sfxtheme'),
+                'description' => __('The sitemap entries that are intended (not the site profile)', 'sfxtheme'),
                 'option_key' => 'sfx_site_check_settings',
                 'type' => 'subset',
-                'fields' => ['indexability_paths', 'sitemap_allow'],
+                'fields' => ['sitemap_allow'],
                 'import' => [\SFX\SiteCheck\Settings::class, 'import_fields'],
             ],
             // NOTE: the seal_* attachment ids are deliberately NOT exported.

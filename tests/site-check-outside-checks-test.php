@@ -201,6 +201,10 @@ function http_answer(string $method, string $url, array $args)
     if (isset($GLOBALS['stub']['on_request'])) {
         ($GLOBALS['stub']['on_request'])();
     }
+    // A certificate the site cannot verify (a local self-signed one) fails only verified requests.
+    if (!empty($GLOBALS['stub']['untrusted_cert']) && ($args['sslverify'] ?? true) !== false && str_starts_with($url, 'https://')) {
+        return new WP_Error('http_request_failed', 'cURL error 60: SSL certificate problem: self-signed certificate');
+    }
     $route = $GLOBALS['stub']['routes'][$method . ' ' . $url] ?? $GLOBALS['stub']['routes'][$url] ?? null;
     if ($route instanceof WP_Error) {
         return $route;
@@ -272,7 +276,7 @@ function get_taxonomies($args = [], $output = 'names')
     return ['category' => (object) ['name' => 'category', 'public' => true, 'rewrite' => ['slug' => 'category']]];
 }
 
-foreach (['Status', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Robots', 'Settings', 'Access', 'OutsideEndpoints', 'Fetch', 'Observations', 'Probe', 'Runs'] as $class) {
+foreach (['Status', 'ThemeSwitches', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Robots', 'Settings', 'Access', 'OutsideEndpoints', 'Fetch', 'Observations', 'Probe', 'Runs'] as $class) {
     require_once __DIR__ . '/../inc/SiteCheck/' . $class . '.php';
 }
 foreach (['ServerChecks', 'FileChecks', 'ConfigChecks', 'AccountChecks', 'CleanupChecks', 'OutsideChecks', 'OutsideFiles', 'HeaderChecks', 'CrawlChecks', 'AccountOutside'] as $class) {
@@ -288,6 +292,30 @@ use SFX\SiteCheck\Fetch;
 use SFX\SiteCheck\OutsideEndpoints;
 use SFX\SiteCheck\RunContext;
 use SFX\SiteCheck\Status;
+
+/** As core: the priority (0 included) when hooked, else false. */
+function has_action($hook, $callback = false)
+{
+    if ($hook !== 'wp_head' || $callback !== 'wp_generator') {
+        return false;
+    }
+    return ($GLOBALS['stub']['wp_generator_hooked'] ?? true) ? ($GLOBALS['stub']['wp_generator_priority'] ?? 1) : false;
+}
+
+/** As core: the type selects the markup; a per-type value can be emptied. */
+function get_the_generator($type = '')
+{
+    $GLOBALS['stub']['generator_types'][] = $type;
+    return $GLOBALS['stub']['generator_by_type'][$type] ?? '<meta name="generator" content="WordPress 6.8.1" />';
+}
+
+function apply_filters($hook, $value, ...$args)
+{
+    if ($hook === 'wp_generator_type') {
+        return $GLOBALS['stub']['wp_generator_type'] ?? $value;
+    }
+    return $hook === 'the_generator' && array_key_exists('the_generator', $GLOBALS['stub']) ? $GLOBALS['stub']['the_generator'] : $value;
+}
 
 function assert_true($condition, string $message): void
 {
@@ -305,9 +333,9 @@ function assert_same($expected, $actual, string $message): void
     }
 }
 
-function ctx(string $profile = 'live', array $paths = [], array $allow = []): RunContext
+function ctx(string $profile = 'live', array $allow = []): RunContext
 {
-    return new RunContext('run1', $profile, $paths, $allow, '', false);
+    return new RunContext('run1', $profile, $allow, '', false);
 }
 
 function statuses(array $result): array
@@ -384,7 +412,7 @@ function requested_urls(): array
 function issue_run(string $run, array $fields = []): void
 {
     $GLOBALS['stub']['options']['sfx_site_check_manual'] = ['issued' => array_replace([
-        'run' => $run, 'profile' => 'live', 'indexability_paths' => [], 'sitemap_allow' => [], 'fallback_theme' => '', 'probe' => false,
+        'run' => $run, 'profile' => 'live', 'sitemap_allow' => [], 'fallback_theme' => '', 'probe' => false,
     ], $fields)];
 }
 
@@ -402,7 +430,7 @@ $log_line = "[10-Oct-2026 10:00:00 UTC] PHP Warning: Undefined variable \$x in /
 
 // ---------------------------------------------------------------- catalogue routing
 
-foreach (['dir_listing', 'security_headers', 'xmlrpc', 'usernames_public', 'robots_txt', 'indexability', 'sitemap', 'sitemap_entries', 'version_leaks'] as $id) {
+foreach (['dir_listing', 'security_headers', 'xmlrpc', 'usernames_public', 'robots_txt', 'sitemap', 'sitemap_entries', 'version_leaks'] as $id) {
     assert_true(OutsideChecks::grades($id), "{$id}: graded by the outside checks");
 }
 assert_same('S+B', Catalogue::all()['public_files']['how'], 'public_files is S+B (Task 11)');
@@ -437,8 +465,8 @@ if ($as_root) {
 }
 assert_true(in_array('https://ex.test/error_log', $urls, true), 'error_log in the root is a target');
 assert_true(strpos((string) $plan['comparison'], 'https://ex.test/sfx-site-check-missing-') === 0, 'comparison URL under the fixed prefix (rule 2)');
-assert_same($plan['comparison'], OutsideChecks::comparison_url('logs_public', new RunContext('runA', 'live', [], [], '', false)), 'comparison URL is the one issued for this run and check');
-assert_true($plan['comparison'] !== OutsideChecks::comparison_url('logs_public', new RunContext('runB', 'live', [], [], '', false)), 'another run gets another comparison URL');
+assert_same($plan['comparison'], OutsideChecks::comparison_url('logs_public', new RunContext('runA', 'live', [], '', false)), 'comparison URL is the one issued for this run and check');
+assert_true($plan['comparison'] !== OutsideChecks::comparison_url('logs_public', new RunContext('runB', 'live', [], '', false)), 'another run gets another comparison URL');
 
 $answer404 = static fn(string $url): array => [404, '<html>Not found</html>'];
 post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse($plan, $answer404)))]);
@@ -573,19 +601,6 @@ $forms = static function (string $ext): array {
 };
 $all_forms = array_merge(...array_map($forms, $exts));
 
-// (a) configured paths
-$GLOBALS['stub']['requests'] = [];
-$GLOBALS['stub']['routes'] = [];
-$c = ctx('live', $all_forms);
-$plan = OutsideChecks::targets('indexability', $c);
-assert_same([], $plan['targets'], 'indexability has no browser targets');
-assert_same(count($all_forms), count($plan['skipped']), 'every PHP-like configured path is listed as rejected');
-OutsideChecks::observe('indexability', $c, []);
-foreach (requested_urls() as $url) {
-    assert_true(!php_request($url), "configured path never requested: {$url}");
-}
-assert_same([OutsideChecks::comparison_url('indexability', $c), 'https://ex.test/robots.txt', 'https://ex.test/'], requested_urls(), 'only the comparison URL, robots.txt and the home page were fetched');
-
 // (b) discovered files
 foreach ($exts as $ext) {
     put(ABSPATH . 'x.' . $ext . '.sql', 'x');
@@ -614,7 +629,6 @@ $GLOBALS['stub']['routes'] = [
 ];
 [$facts, $r] = run_loopback('sitemap_entries', ctx());
 OutsideChecks::observe('sitemap', ctx(), []);
-OutsideChecks::observe('indexability', ctx('live', $all_forms), []);
 foreach (requested_urls() as $url) {
     assert_true(!php_request($url), "sitemap/robots URL never requested: {$url}");
 }
@@ -640,8 +654,8 @@ assert_true(!Fetch::allowed_url('https://user:pw@ex.test/'), 'user info is refus
 put(ABSPATH . 'wp-config.php.bak', "<?php define('DB_PASSWORD','x');");
 $GLOBALS['stub']['requests'] = [];
 $every = [];
-foreach (['logs_public', 'backups_public', 'vcs_env', 'dir_listing', 'security_headers', 'usernames_public', 'robots_txt', 'public_files', 'version_leaks', 'https', 'xmlrpc', 'indexability', 'sitemap', 'sitemap_entries'] as $id) {
-    $c = ctx('live', ['/x.php', '/ok/']);
+foreach (['logs_public', 'backups_public', 'vcs_env', 'dir_listing', 'security_headers', 'usernames_public', 'robots_txt', 'public_files', 'version_leaks', 'https', 'xmlrpc', 'sitemap', 'sitemap_entries'] as $id) {
+    $c = ctx();
     $plan = OutsideChecks::targets($id, $c);
     foreach ($plan['targets'] as $t) {
         $every[] = $t['url'];
@@ -650,12 +664,10 @@ foreach (['logs_public', 'backups_public', 'vcs_env', 'dir_listing', 'security_h
 }
 $all_urls = array_merge($every, requested_urls());
 assert_true(strpos(implode(' ', $all_urls), 'wp-config') === false, 'wp-config.php.bak never appears in targets or requests');
-assert_true(strpos(implode(' ', $all_urls), 'x.php') === false, 'configured /x.php never appears in targets or requests');
 foreach ($all_urls as $url) {
     assert_true(!php_request($url), "no PHP outside rule 6: {$url}");
     assert_true(Fetch::allowed_url($url) || $url === 'http://ex.test/', "fetchable, or the one http:// exception: {$url}");
 }
-assert_true(in_array('https://ex.test/ok/', requested_urls(), true), 'a valid configured path is fetched');
 unlink(ABSPATH . 'wp-config.php.bak');
 
 // ---------------------------------------------------------------- https (Loopback)
@@ -699,20 +711,8 @@ foreach (['live', 'staging', 'private'] as $profile) {
 
 // ---------------------------------------------------------------- snapshot: targets and grading come from the run
 
-$GLOBALS['stub']['options']['sfx_site_check_settings'] = ['indexability_paths' => ['/live-setting/'], 'sitemap_allow' => []];
-issue_run('runS', ['indexability_paths' => ['/snap/', '/bad?x'], 'sitemap_allow' => ['post_type:bricks_template'], 'profile' => 'staging']);
-post(['run' => 'runS', 'check' => 'indexability', '_ajax_nonce' => 'n']);
-$plan = OutsideEndpoints::targets_request()[1]['data'];
-assert_same(['/bad?x'], array_column($plan['skipped'], 'target'), 'an invalid stored path is listed as rejected');
-$GLOBALS['stub']['requests'] = [];
-$GLOBALS['stub']['routes'] = ['https://ex.test/snap/' => ['status' => 404]];
-post(['run' => 'runS', 'check' => 'indexability', '_ajax_nonce' => 'n', 'observations' => '[]']);
-[, $body] = OutsideEndpoints::observe_request();
-assert_true(in_array('https://ex.test/snap/', requested_urls(), true), 'the run\'s path is fetched');
-assert_true(!in_array('https://ex.test/live-setting/', requested_urls(), true), 'the live setting is not read');
-assert_same(Status::YELLOW, statuses($body['data']['graded'])['indexability:/snap/'], 'graded with the run\'s profile (Staging: 404 → Gelb)');
-assert_same(Status::HINT, statuses($body['data']['graded'])['indexability:/bad?x'], 'rejected path shown, skipped');
-
+$GLOBALS['stub']['options']['sfx_site_check_settings'] = ['sitemap_allow' => []];
+issue_run('runS', ['sitemap_allow' => ['post_type:bricks_template'], 'profile' => 'staging']);
 $GLOBALS['stub']['routes'] = [
     'https://ex.test/wp-sitemap.xml' => ['status' => 200, 'body' => $index(['https://ex.test/wp-sitemap-posts-bricks_template-1.xml'])],
     'https://ex.test/wp-sitemap-posts-bricks_template-1.xml' => ['status' => 200, 'body' => $urlset(['https://ex.test/template/a/'])],
@@ -721,7 +721,7 @@ post(['run' => 'runS', 'check' => 'sitemap_entries', '_ajax_nonce' => 'n', 'obse
 [, $body] = OutsideEndpoints::observe_request();
 assert_same(Status::GREEN, $body['data']['graded']['status'], 'the run\'s allow list silences bricks_template although the live setting does not');
 $GLOBALS['stub']['options']['sfx_site_check_settings'] = ['sitemap_allow' => ['post_type:bricks_template']];
-assert_same(Status::YELLOW, Catalogue::grade('sitemap_entries', $body['data']['facts'], ctx('live', [], []))['status'], 'a run without the allow entry flags it, whatever the live setting says');
+assert_same(Status::YELLOW, Catalogue::grade('sitemap_entries', $body['data']['facts'], ctx('live', []))['status'], 'a run without the allow entry flags it, whatever the live setting says');
 unset($GLOBALS['stub']['options']['sfx_site_check_settings']);
 
 // ---------------------------------------------------------------- endpoints: access, nonce, run, check, issued URLs only
@@ -802,61 +802,6 @@ $feed = '<rss xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><item><dc:cre
 assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'], 'feed creator equal to a login → Gelb');
 $GLOBALS['stub']['users'] = [];
 
-// ---------------------------------------------------------------- indexability matrix, Live and Staging
-
-$page = static fn(string $head = '') => ['status' => 200, 'headers' => ['content-type' => 'text/html; charset=UTF-8'], 'body' => "<html><head>{$head}</head><body>x</body></html>"];
-$routes = [
-    'https://ex.test/robots.txt' => ['status' => 200, 'body' => "User-agent: *\nDisallow: /h/\n\nUser-agent: Googlebot\nDisallow: /\n"],
-    'https://ex.test/' => $page('<link rel="canonical" href="https://ex.test/">'),
-    'https://ex.test/a/' => $page('<meta name="robots" content="noindex, follow">'),
-    'https://ex.test/b/' => $page('<link rel="canonical" href="https://other.test/b/">'),
-    'https://ex.test/c/' => ['status' => 404],
-    'https://ex.test/d/' => ['status' => 401],
-    'https://ex.test/e/' => ['status' => 503],
-    'https://ex.test/f/' => ['status' => 302, 'headers' => ['location' => 'https://ex.test/wp-login.php?redirect_to=%2Ff%2F']],
-    'https://ex.test/g/' => ['status' => 301, 'headers' => ['location' => 'https://ex.test/other/']],
-    'https://ex.test/h/' => $page(),
-    'https://ex.test/i/' => ['status' => 200, 'headers' => ['content-type' => 'text/html', 'x-robots-tag' => 'googlebot: noindex'], 'body' => '<html><head></head></html>'],
-    'https://ex.test/j/' => ['status' => 403, 'headers' => ['cf-mitigated' => 'challenge'], 'body' => 'x'],
-];
-$expect = [
-    // path => [live, staging]
-    '/'   => [Status::GREEN, Status::GREEN],
-    '/a/' => [Status::RED, Status::GREEN],
-    '/b/' => [Status::RED, Status::RED],
-    '/c/' => [Status::RED, Status::YELLOW],
-    '/d/' => [Status::RED, Status::GREEN],
-    '/e/' => [Status::RED, Status::GREEN],
-    '/f/' => [Status::RED, Status::GREEN],
-    '/g/' => [Status::YELLOW, Status::YELLOW],
-    '/h/' => [Status::YELLOW, Status::YELLOW],
-    '/i/' => [Status::RED, Status::GREEN],
-    '/j/' => [Status::UNKNOWN, Status::UNKNOWN],
-];
-$GLOBALS['stub']['routes'] = $routes;
-$paths = array_values(array_diff(array_keys($expect), ['/']));
-$facts = OutsideChecks::observe('indexability', ctx('live', $paths), []);
-foreach (['live' => 0, 'staging' => 1, 'private' => 1] as $profile => $col) {
-    $s = statuses(Catalogue::grade('indexability', $facts, ctx($profile, $paths)));
-    foreach ($expect as $path => $want) {
-        assert_same($want[$col], $s['indexability:' . $path] ?? null, "indexability {$profile} {$path}");
-    }
-}
-assert_true(strpos(json_encode($facts), 'wp-login.php') !== false, 'the login redirect target is a fact');
-
-// robots.txt unreadable → a clean 200 page is Nicht prüfbar.
-$GLOBALS['stub']['routes'] = array_replace($routes, ['https://ex.test/robots.txt' => ['status' => 500, 'body' => 'err']]);
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/a/', '/h/']), []);
-foreach (['live', 'staging'] as $profile) {
-    $s = statuses(Catalogue::grade('indexability', $facts, ctx($profile, ['/a/', '/h/'])));
-    assert_same(Status::UNKNOWN, $s['indexability:/'], "{$profile}: robots unreadable → Nicht prüfbar");
-    assert_same(Status::UNKNOWN, $s['indexability:/h/'], "{$profile}: robots unreadable → Nicht prüfbar, not Gelb");
-}
-// robots.txt missing (404) = everything allowed.
-$GLOBALS['stub']['routes'] = array_replace($routes, ['https://ex.test/robots.txt' => ['status' => 404]]);
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/h/']), []);
-assert_same(Status::GREEN, statuses(Catalogue::grade('indexability', $facts, ctx()))['indexability:/h/'], 'robots.txt 404 → everything allowed → Grün');
-
 // ---------------------------------------------------------------- robots_txt (browser)
 
 $robots_answer = static fn(string $txt, int $status = 200) => static fn($u) => [$status, $txt];
@@ -927,6 +872,10 @@ $s = statuses($r);
 assert_same(Status::YELLOW, $s['dir_listing:/wp-content/uploads/'], 'listing → Gelb');
 assert_true(strpos(implode(' ', array_column($r['findings'], 'label')), 'secret-backup.zip') !== false, 'Gelb with the listed names');
 assert_same(Status::GREEN, $s['dir_listing:/wp-includes/'], '403 → no listing → Grün');
+[, $r] = run_browser('dir_listing', ctx(), static fn($u) => [403, $listing . str_repeat('x', 100), ['truncated' => true]]);
+assert_same(Status::YELLOW, statuses($r)['dir_listing:/wp-includes/'] ?? null, 'a cut 403 showing a listing → Gelb (signatures first, Gate B pass 3)');
+[, $r] = run_browser('dir_listing', ctx(), static fn($u) => [403, $listing . str_repeat('x', 100), ['truncated' => true]], [200, '<html>Home</html>']);
+assert_same(Status::UNKNOWN, statuses($r)['dir_listing:/wp-includes/'] ?? null, 'listing markers on a catch-all site → Nicht prüfbar, never "no listing"');
 $odd = str_replace('secret-backup.zip', '%FF%FEbroken.zip', $listing) . '<a href="' . str_repeat('%C3%A4', 80) . '.zip">x</a>';
 [$facts] = run_browser('dir_listing', ctx(), static fn($u) => [200, $odd]);
 assert_true(json_encode($facts) !== false, 'listed names with broken or cut UTF-8 still encode as JSON');
@@ -962,7 +911,7 @@ function observe_joined(string $id, callable $answer, array $comparison = [404, 
     post(['run' => 'runPF', 'check' => $id, '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse_variants($body['data'], $answer, $comparison)))]);
     [$code, $body] = OutsideEndpoints::observe_request();
     assert_same(200, $code, "{$id}: observe 200");
-    $c = new RunContext('runPF', 'live', [], [], '', false);
+    $c = new RunContext('runPF', 'live', [], '', false);
     $saved = Catalogue::grade($id, json_decode(json_encode($body['data']['facts']), true), $c);
     assert_same($body['data']['graded'], $saved, "{$id}: the saved facts re-grade to the same result");
     return [$body['data']['facts'], $body['data']['graded']];
@@ -1028,7 +977,7 @@ assert_same([Status::UNKNOWN, Status::UNKNOWN, Status::UNKNOWN], $fs($r), 'readm
 [, $r] = observe_joined('public_files', $pf(['readme.html' => [200, $readme]]), [200, '<html>Home</html>']);
 assert_same(Status::UNKNOWN, $fs($r)[0], 'readme marker on a soft-404 site → Nicht prüfbar');
 [, $r] = observe_joined('public_files', $pf(['readme.html' => [200, $readme, ['truncated' => true]]]));
-assert_same(Status::UNKNOWN, $fs($r)[0], 'a truncated readme → Nicht prüfbar');
+assert_same(Status::YELLOW, $fs($r)[0], 'a truncated readme still shows its signature → Gelb (signatures first, Gate B 2026-10-11)');
 // A variant with the readable file wins over a failed one.
 [, $r] = observe_joined('public_files', static fn($u, $v) => strpos($u, 'readme.html') !== false ? ($v === 'plain' ? [200, $readme] : [0, '', ['error' => 'timeout']]) : [404, 'nf']);
 assert_same(Status::YELLOW, $fs($r)[0], 'readable in one variant → Gelb');
@@ -1081,6 +1030,65 @@ assert_same([Status::GREEN, Status::UNKNOWN], $vs($r), 'challenged feed → Nich
 assert_same(Status::UNKNOWN, $vs($r)[1], 'truncated feed without a match → Nicht prüfbar');
 [, $r] = observe_joined('version_leaks', $vl([200, $other_meta], [200, $rss, ['truncated' => true]]));
 assert_same(Status::YELLOW, $vs($r)[1], 'truncated feed whose generator is in the bytes read → Gelb');
+// Owner ruling 2026-10-11: a cut home page is judged when WordPress itself prints no generator (server fact).
+$big_home = '<html><head><title>H</title><style>' . str_repeat('x', 100) . '</style></head><body></body></html>';
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'cut home page, generator printed by WordPress → Nicht prüfbar');
+$GLOBALS['stub']['wp_generator_hooked'] = false;
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::HINT, $vs($r)[0], 'cut home page, wp_generator removed from wp_head → Hinweis (server context, not the public page)');
+// The same server fact plus this theme's own WP Optimizer switch → Grün (owner ruling 2026-10-11).
+\SFX\SiteCheck\ThemeSwitches::$probe = static fn(string $key): bool => $key === 'disable_wp_version';
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::GREEN, $vs($r)[0], 'cut home page, generator removed by the WP Optimizer switch → Grün');
+$GLOBALS['stub']['wp_generator_hooked'] = true;
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'switch on but WordPress still prints a generator → Nicht prüfbar, the switch alone settles nothing');
+\SFX\SiteCheck\ThemeSwitches::$probe = null;
+$GLOBALS['stub']['the_generator'] = '';
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::HINT, $vs($r)[0], 'cut home page, the_generator filtered empty (WP Optimizer) → Hinweis');
+[, $r] = observe_joined('version_leaks', $vl([200, $gen . str_repeat('x', 100), ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::YELLOW, $vs($r)[0], 'a version in the part read still counts, whatever the setting');
+unset($GLOBALS['stub']['the_generator']);
+// Gate B pass 14: priority 0 is hooked; the type wp_generator() uses is the one checked; an unparseable part read is no evidence.
+$GLOBALS['stub']['wp_generator_priority'] = 0;
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'wp_generator hooked at priority 0 still prints → Nicht prüfbar');
+unset($GLOBALS['stub']['wp_generator_priority']);
+$GLOBALS['stub']['generator_by_type'] = ['html' => ''];
+$GLOBALS['stub']['generator_types'] = [];
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'only the html type emptied while wp_generator prints xhtml → Nicht prüfbar');
+assert_true(in_array('xhtml', $GLOBALS['stub']['generator_types'], true), 'the default wp_generator type (xhtml) is the one checked');
+$GLOBALS['stub']['generator_by_type'] = ['xhtml' => ''];
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::HINT, $vs($r)[0], 'the xhtml generator emptied → Hinweis');
+[, $r] = observe_joined('version_leaks', $vl([200, "\0\0\0" . str_repeat('x', 100), ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'a cut part read that is no HTML page → Nicht prüfbar, whatever the setting');
+unset($GLOBALS['stub']['generator_by_type'], $GLOBALS['stub']['generator_types']);
+// WP Optimizer's "Disable Feeds" answers 410 with its message: the feed counts as not present.
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home], [410, '<p>Feed disabled by WP Optimize.</p>']));
+assert_same(Status::GREEN, $vs($r)[1], 'a 410 feed page (WP Optimizer switch) → feed not present → Grün');
+// Gate B pass 2: signatures before the cut-error rule (owner ruling 2026-10-11).
+[, $r] = observe_joined('public_files', $pf(['readme.html' => [403, $readme, ['truncated' => true]], 'install.php' => [404, $setup_form, ['truncated' => true]]]));
+assert_same(Status::YELLOW, $fs($r)[0], 'a cut 403 carrying the readme signature → readable, not blocked');
+assert_same(Status::RED, $fs($r)[2], 'a cut 404 carrying the setup form → Rot, not blocked');
+// Gate B pass 14: the setup form in either variant beats "already installed" in the other.
+foreach ([['busted', 'plain'], ['plain', 'busted']] as [$installed_variant, $form_variant]) {
+    [, $r] = observe_joined('public_files', static fn($u, $v) => strpos($u, 'install.php') !== false
+        ? ($v === $installed_variant ? [200, $installed] : [404, $setup_form, ['truncated' => true]])
+        : [404, 'nf']);
+    assert_same(Status::RED, $fs($r)[2], "setup form in the {$form_variant} variant → Rot, whatever the other shows");
+}
+// Gate B pass 5: a multibyte character cut at the byte limit must not void the signature before it.
+$mb = 'Semantic Personal Publishing Platform ' . str_repeat('a', Fetch::LIMIT - 39) . "\u{20AC}" . str_repeat('b', 50);
+[, $r] = observe_joined('public_files', $pf(['readme.html' => [404, $mb, ['truncated' => true]]]));
+assert_same(Status::YELLOW, $fs($r)[0], 'readme signature before a cut multibyte character → readable');
+// The same without mbstring: the fallbacks keep the text before the cut valid.
+$bad = substr($mb, 0, Fetch::LIMIT);
+assert_true(preg_match('//u', $bad) !== 1, 'fixture: a byte cut leaves invalid UTF-8');
+assert_true(preg_match('//u', htmlspecialchars_decode(htmlspecialchars($bad, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8'), ENT_NOQUOTES)) === 1, 'the scrub fallback (ENT_SUBSTITUTE) yields valid UTF-8');
 [, $r] = observe_joined('version_leaks', $vl([200, $other_meta], [0, '', ['type' => 'opaqueredirect', 'redirect' => true]]));
 assert_same(Status::UNKNOWN, $vs($r)[1], 'redirected feed → Nicht prüfbar');
 [, $r] = observe_joined('version_leaks', $vl([200, $other_meta, ['headers' => ['x-powered-by' => 'PHP/8.2.1']]], [404, 'nf']));
@@ -1140,6 +1148,8 @@ $cases = [
     [['status' => 200, 'body' => $fault(12345)], Status::UNKNOWN, 'unknown fault code → Nicht prüfbar'],
     [['status' => 200, 'body' => '<html>hello</html>'], Status::UNKNOWN, 'other answer → Nicht prüfbar'],
     [['status' => 500, 'body' => 'err'], Status::UNKNOWN, '500 → Nicht prüfbar'],
+    [['status' => 403, 'body' => $methods], Status::YELLOW, 'a methods answer under 403 still answers (signatures first)'],
+    [['status' => 503, 'body' => 'The page is temporarily unavailable'], Status::HINT, '503 → Hinweis, usually the host blocks it (owner ruling 2026-10-11)'],
     [new WP_Error('x', 'cURL error 7'), Status::UNKNOWN, 'no answer → Nicht prüfbar'],
 ];
 foreach ($cases as [$route, $want, $label]) {
@@ -1161,6 +1171,47 @@ foreach ($cases as [$route, $want, $label]) {
     assert_true(!in_array('cookie', $names, true) && !in_array('authorization', $names, true), 'xmlrpc: no Cookie or Authorization header');
     assert_same([0, 10, 65536], [$req['args']['redirection'], $req['args']['timeout'], $req['args']['limit_response_size']], 'xmlrpc: rule-9 bounds, no redirects');
 }
+
+// Owner ruling 2026-10-11: a self-signed certificate (local stack) does not hide the answer; the https check still sees it.
+$GLOBALS['stub']['untrusted_cert'] = true;
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 403, 'body' => 'x'], 'http://ex.test/' => ['status' => 301, 'headers' => ['location' => 'https://ex.test/']]];
+$GLOBALS['stub']['requests'] = [];
+$r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(Status::GREEN, $r['status'], 'xmlrpc: untrusted certificate → retried unverified, the blocking answer counts');
+assert_same([true, false], array_map(static fn($q) => $q['args']['sslverify'], array_values(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php')))), 'xmlrpc: verified first, unverified only after a TLS failure');
+[, $r] = run_loopback('https', ctx());
+assert_same(Status::RED, statuses($r)['https:tls'], 'https: the untrusted certificate is still reported (strict TLS)');
+unset($GLOBALS['stub']['untrusted_cert']);
+// Gate B pass 3: the streams transport's certificate name check is a certificate failure, retried once.
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'SSL certificate did not match the requested domain name')];
+$GLOBALS['stub']['requests'] = [];
+Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(2, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: a name-mismatch certificate failure is retried once');
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'stream_socket_client(): failed loading cafile stream')];
+$GLOBALS['stub']['requests'] = [];
+Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(2, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: an unreadable CA bundle is a certificate failure, retried once');
+// Gate B pass 2: a TLS failure that is not about the certificate is not retried unverified.
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'cURL error 35: OpenSSL SSL_connect: SSL_ERROR_SYSCALL')];
+$GLOBALS['stub']['requests'] = [];
+$r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(Status::UNKNOWN, $r['status'], 'xmlrpc: handshake failure → Nicht prüfbar');
+assert_same(1, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: a non-certificate TLS failure is not retried');
+
+// WP Optimizer's "Disable XMLRPC" never replaces the call (owner ruling 2026-10-11): the answer grades, the switch only words it.
+\SFX\SiteCheck\ThemeSwitches::$probe = static fn(string $key): bool => $key === 'disable_xmlrpc';
+foreach ([
+    [['status' => 200, 'body' => $methods], Status::YELLOW, 'Disable XMLRPC', 'switch on, methods answer → still Gelb, named'],
+    [['status' => 200, 'body' => '<html>hello</html>'], Status::UNKNOWN, 'Disable XMLRPC', 'switch on, other answer → still Nicht prüfbar'],
+    [new WP_Error('x', 'cURL error 7'), Status::UNKNOWN, 'Disable XMLRPC', 'switch on, no answer → still Nicht prüfbar'],
+    [['status' => 403, 'body' => 'x'], Status::GREEN, 'blocked', 'switch on, blocking answer → Grün from the answer'],
+] as [$route, $want, $needle, $label]) {
+    $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => $route];
+    $r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+    assert_same($want, $r['status'], "xmlrpc: {$label}");
+    assert_true(strpos($r['findings'][0]['label'], $needle) !== false, "xmlrpc: {$label} (label)");
+}
+\SFX\SiteCheck\ThemeSwitches::$probe = null;
 
 // ---------------------------------------------------------------- sitemap (Loopback)
 
@@ -1215,7 +1266,7 @@ assert_same(Status::YELLOW, statuses($r)['sitemap_entries:post_type:bricks_templ
 assert_true(!isset(statuses($r)['sitemap_entries:post_type:post']), 'public post type → nothing');
 assert_true(!in_array('https://cdn.test/wp-sitemap-posts-post-99.xml', requested_urls(), true), 'foreign-host child not fetched');
 assert_true(strpos(implode(' ', array_column($r['findings'], 'label')), 'https://cdn.test/wp-sitemap-posts-post-99.xml') !== false, 'foreign-host child listed as skipped');
-$r = Catalogue::grade('sitemap_entries', $facts, ctx('live', [], ['post_type:bricks_template']));
+$r = Catalogue::grade('sitemap_entries', $facts, ctx('live', ['post_type:bricks_template']));
 assert_true(!isset(statuses($r)['sitemap_entries:post_type:bricks_template']), 'allow-listed type silenced');
 assert_same(Status::HINT, $r['status'], 'nothing found in a partial check → Hinweis, not Grün');
 
@@ -1239,7 +1290,7 @@ $GLOBALS['stub']['routes']['https://ex.test/wp-sitemap-users-1.xml'] = ['status'
 $GLOBALS['stub']['routes']['https://ex.test/wp-sitemap-posts-post-1.xml'] = ['status' => 200, 'body' => $urlset(['https://ex.test/hello/'])];
 [, $r] = run_loopback('sitemap_entries', ctx());
 assert_same(Status::YELLOW, statuses($r)['sitemap_entries:authors'] ?? null, 'author sitemap → Gelb');
-$r2 = Catalogue::grade('sitemap_entries', OutsideChecks::observe('sitemap_entries', ctx(), []), ctx('live', [], ['authors']));
+$r2 = Catalogue::grade('sitemap_entries', OutsideChecks::observe('sitemap_entries', ctx(), []), ctx('live', ['authors']));
 assert_same(Status::GREEN, $r2['status'], 'author sitemap allow-listed, full coverage → Grün');
 
 // ================================================================ fix round 1
@@ -1253,10 +1304,6 @@ assert_same(Status::UNKNOWN, $r['status'], 'dir_listing: empty 200 challenge →
 assert_same(Status::UNKNOWN, $r['status'], 'dir_listing: truncated → Nicht prüfbar');
 [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [200, '']);
 assert_same(Status::GREEN, $r['status'], 'robots_txt: empty 200 → everything allowed → Grün (Live)');
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 200, 'body' => ''], 'https://ex.test/h/' => $page()];
-$GLOBALS['stub']['routes']['https://ex.test/'] = $page();
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/h/']), []);
-assert_same(Status::GREEN, statuses(Catalogue::grade('indexability', $facts, ctx()))['indexability:/h/'], 'indexability: empty robots.txt → read, everything allowed → Grün');
 
 // 2. Challenges and 5xx never give a false Grün.
 $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 403, 'headers' => ['cf-mitigated' => 'challenge'], 'body' => 'x']];
@@ -1288,18 +1335,6 @@ assert_same(Status::UNKNOWN, $r['status'], 'version_leaks: 503 → Nicht prüfba
 $GLOBALS['fake_now'] = 1000.0;
 Fetch::use_clock(static fn(): float => $GLOBALS['fake_now']);
 $GLOBALS['stub']['on_request'] = static function (): void { $GLOBALS['fake_now'] += 8.0; };
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(), 'https://ex.test/a/' => $page(), 'https://ex.test/b/' => $page(), 'https://ex.test/c/' => $page()];
-$GLOBALS['stub']['requests'] = [];
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/a/', '/b/', '/c/']), []);
-assert_same(3, count($GLOBALS['stub']['requests']), 'the budget stops requests: comparison (8 s), robots (16 s), / (24 s), then nothing');
-assert_true($GLOBALS['stub']['requests'][2]['args']['timeout'] <= 4, 'the last request may only use what is left of the budget');
-$s = statuses(Catalogue::grade('indexability', $facts, ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/b/'], 'target after the budget → Nicht prüfbar');
-assert_true(strpos(json_encode(Catalogue::grade('indexability', $facts, ctx())), 'time limit') !== false, 'named: not checked, time limit');
-assert_same(Status::GREEN, $s['indexability:/'], 'targets before the budget are graded');
-assert_same(Status::UNKNOWN, $s['indexability:/a/'], 'the first target after the budget → Nicht prüfbar');
-assert_same(1, count(array_filter(requested_urls(), static fn($u) => substr($u, -11) === '/robots.txt')), 'robots.txt fetched once (indexability)');
-
 $routes = ['https://ex.test/wp-sitemap.xml' => ['status' => 200, 'body' => $index(array_map(static fn($i) => 'https://ex.test/wp-sitemap-posts-post-' . $i . '.xml', range(1, 5)))]];
 foreach (range(1, 5) as $i) {
     $routes['https://ex.test/wp-sitemap-posts-post-' . $i . '.xml'] = ['status' => 200, 'body' => $urlset(['https://ex.test/x/'])];
@@ -1310,19 +1345,11 @@ $GLOBALS['fake_now'] = 2000.0;
 [$facts, $r] = run_loopback('sitemap_entries', ctx());
 assert_true($facts['checked'] < 5 && !empty($facts['time_limit']), 'sitemap_entries: the budget leaves children unchecked, flagged');
 assert_same(Status::UNKNOWN, statuses($r)['sitemap_entries:time-limit'] ?? null, 'sitemap_entries: time limit → Nicht prüfbar line');
+$last = end($GLOBALS['stub']['requests']);
+assert_true($last['args']['timeout'] <= 4, 'the last request may only use what is left of the budget');
 assert_same(1, count(array_filter(requested_urls(), static fn($u) => substr($u, -11) === '/robots.txt')), 'robots.txt fetched once (sitemap_entries)');
 unset($GLOBALS['stub']['on_request']);
 Fetch::use_clock(null);
-
-// 5. A redirect to the same path on another scheme or host is not "another path".
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(),
-    'https://ex.test/k/' => ['status' => 301, 'headers' => ['location' => 'http://ex.test/k/']],
-    'https://ex.test/m/' => ['status' => 301, 'headers' => ['location' => 'https://www.ex.test/m/']],
-    'https://ex.test/n/' => ['status' => 301, 'headers' => ['location' => 'https://ex.test/n-new/']]];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/k/', '/m/', '/n/']), []), ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/k/'], 'same path, other scheme → Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/m/'], 'same path, other host → Nicht prüfbar');
-assert_same(Status::YELLOW, $s['indexability:/n/'], 'another path → Gelb');
 
 // 6. An SSL timeout is a timeout, not a TLS failure.
 $GLOBALS['stub']['routes'] = ['https://ex.test/' => new WP_Error('x', 'cURL error 28: SSL connection timeout'), 'http://ex.test/' => ['status' => 301, 'headers' => ['location' => 'https://ex.test/']]];
@@ -1451,7 +1478,6 @@ $GLOBALS['stub']['routes'] = [
     'https://ex.test/robots.txt' => ['status' => 200, 'body' => "User-agent: *\nDisallow:\nSitemap: {$map_url}\n"],
     'https://ex.test/wp-sitemap.xml' => ['status' => 200, 'body' => $index([$map_url, rtrim($map_url, '/'), 'https://ex.test/wp-sitemap-posts-post-1.xml'])],
     'https://ex.test/wp-sitemap-posts-post-1.xml' => ['status' => 200, 'body' => $urlset(['https://ex.test/hello/'])],
-    'https://ex.test/' => $page(),
 ];
 $GLOBALS['stub']['requests'] = [];
 [$facts, $r] = run_loopback('sitemap', ctx());
@@ -1459,9 +1485,6 @@ assert_same('/wp-sitemap.xml', $facts['found'], 'sitemap discovery skips the fol
 assert_true(strpos(implode(' ', array_column($r['findings'], 'label')), 'custom-map') !== false, 'the skipped folder is named');
 [$facts] = run_loopback('sitemap_entries', ctx());
 assert_same(1, $facts['checked'], 'sitemap children: only the real sub-sitemap is followed');
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/wp-content/uploads/custom-map/', '/wp-content/uploads/custom-map']), []);
-assert_same(['/wp-content/uploads/custom-map/', '/wp-content/uploads/custom-map'], array_column($facts['rejected'], 'target'), 'indexability: folder paths are rejected and named');
-assert_true(strpos($facts['rejected'][0]['reason'], 'PHP index file') !== false, 'indexability: the rejection gives the folder reason');
 foreach (requested_urls() as $url) {
     assert_true(strpos($url, 'custom-map') === false, "the folder is never requested: {$url}");
 }
@@ -1481,51 +1504,11 @@ assert_same('', Fetch::refusal('https://ex.test/'), 'the home page stays allowed
 stub_reset();
 
 // spec-7: every Loopback batch fetches its own comparison URL (rule 2).
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(), 'https://ex.test/h/' => $page()];
-$GLOBALS['stub']['requests'] = [];
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/h/']), []);
-assert_true(in_array($cmp('indexability'), requested_urls(), true), 'indexability fetched its comparison URL');
-assert_same(Status::GREEN, statuses(Catalogue::grade('indexability', $facts, ctx()))['indexability:/h/'], 'comparison 404 → a 200 page is graded');
-$GLOBALS['stub']['routes'][$cmp('indexability')] = $page();
-$facts = OutsideChecks::observe('indexability', ctx('live', ['/h/']), []);
-$s = statuses(Catalogue::grade('indexability', $facts, ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/h/'], 'soft-404 site (comparison 200) → a 200 page is Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/'], 'soft-404 site → the home page too');
-$GLOBALS['stub']['routes'][$cmp('indexability')] = ['status' => 200, 'headers' => ['content-type' => 'text/html'], 'body' => '<html><head><meta name="robots" content="noindex"></head></html>'];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/c/']), []), ctx()));
-assert_same(Status::RED, $s['indexability:/c/'], 'status findings stay their own (catalogue exception): 404 → Rot');
 foreach (['sitemap', 'sitemap_entries', 'xmlrpc', 'https'] as $id) {
     $GLOBALS['stub']['requests'] = [];
     OutsideChecks::observe($id, ctx(), []);
     assert_true(in_array($cmp($id), requested_urls(), true), "{$id} fetched its comparison URL");
 }
-
-// spec-1: empty, malformed or incompletely read HTML is no evidence for indexing.
-$html = static fn(string $body, array $extra = []) => array_replace(['status' => 200, 'headers' => ['content-type' => 'text/html'], 'body' => $body], $extra);
-$GLOBALS['stub']['routes'] = [
-    'https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(),
-    'https://ex.test/e1/' => $html(''),
-    'https://ex.test/e2/' => $html('garbage without markup'),
-    'https://ex.test/e3/' => $html(str_repeat('x', 65536) . '</head>'),
-    'https://ex.test/e4/' => $html('<html><head><title>t</title></head><body>' . str_repeat('x', 70000)),
-];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/e1/', '/e2/', '/e3/', '/e4/']), []), ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/e1/'], 'empty 200 HTML → Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/e2/'], 'unparseable 200 → Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/e3/'], 'truncated with a stray </head> but no head → Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/e4/'], 'Gate B pass 4 ruling: a truncated page is Nicht prüfbar for metadata, even after a complete head');
-
-// quality-8: a host-only Location is the root path; unusable targets prove nothing.
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(),
-    'https://ex.test/r1/' => ['status' => 301, 'headers' => ['location' => 'https://other.test']],
-    'https://ex.test/r2/' => ['status' => 301, 'headers' => ['location' => 'http://']],
-    'https://ex.test/r3/' => ['status' => 301, 'headers' => ['location' => 'relative-target']]];
-$r = Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/r1/', '/r2/', '/r3/']), []), ctx());
-$s = statuses($r);
-assert_same(Status::YELLOW, $s['indexability:/r1/'], 'host-only Location → redirect to / → Gelb');
-assert_true(strpos($label_of($r, 'indexability:/r1/'), 'https://other.test/') !== false, 'the destination is named, with its host and /');
-assert_same(Status::UNKNOWN, $s['indexability:/r2/'], 'unusable Location → Nicht prüfbar');
-assert_same(Status::UNKNOWN, $s['indexability:/r3/'], 'relative Location without a path root → Nicht prüfbar');
 
 // spec-2 / quality-4: robots.txt must read as robots.txt; empty only with a real 404 comparison.
 [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [200, ''], [200, '<html>soft</html>']);
@@ -1540,12 +1523,6 @@ assert_same(Status::UNKNOWN, $r['status'], 'robots_txt: unparseable text → Nic
 assert_same(Status::GREEN, $r['status'], 'robots_txt: Disallow: /$ is not a whole-site block (Live → Grün)');
 [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [200, "User-agent: *\nDisallow: /wp-admin/\n"], [200, 'soft']);
 assert_same(Status::GREEN, $r['status'], 'robots_txt: a recognisable robots.txt counts on a soft-404 site (content, rule 2)');
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 200, 'headers' => ['content-type' => 'text/html'], 'body' => '<html><body>Home</body></html>'], 'https://ex.test/' => $page()];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx(), []), ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/'], 'indexability: an HTML robots.txt is not "read"');
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 200, 'body' => ''], 'https://ex.test/' => $page(), $cmp('indexability') => $page()];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx(), []), ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/'], 'indexability: an empty robots.txt on a soft-404 site is not "read"');
 
 // Security headers (Gate B pass 3 ruling): CSP and Permissions-Policy present → Hinweis; exact grammar for the rest.
 $hdr = static fn(array $h) => statuses(run_browser('security_headers', ctx(), static fn($u) => [200, '<html></html>', ['headers' => $h]])[1]);
@@ -1587,6 +1564,30 @@ assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'tru
 assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login found in a truncated answer is still reported');
 [, $r] = run_browser('usernames_public', ctx(), $rest_only('[]'));
 assert_same(Status::GREEN, $r['status'], 'an empty, valid user list with a 404 comparison → read → Grün');
+// Owner ruling 2026-10-11: a theme's 404 page exceeds 64 KB; a cut 404 that is an HTML page still closes a source.
+$html_404 = '<!DOCTYPE html><html lang="de"><head><title>Seite nicht gefunden</title></head><body>' . str_repeat('x', 200);
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, $html_404, ['truncated' => true]]);
+assert_same(Status::GREEN, statuses($r)['usernames_public:sitemap'] ?? Status::GREEN, 'cut HTML 404 author sitemap → closed, not Nicht prüfbar');
+assert_same(Status::GREEN, $r['status'], 'cut HTML 404 pages everywhere else → Grün');
+// Gate B pass 8: BOM and a leading comment are still an HTML page; an XML root named html… is not.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, "\xEF\xBB\xBF<!-- cache -->\n" . $html_404, ['truncated' => true]]);
+assert_same(Status::GREEN, $r['status'], 'cut HTML 404 with BOM and a comment → closed');
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '<htmlError><message>Forbidden</message>' . str_repeat('x', 200), ['truncated' => true]]);
+assert_true($r['status'] !== Status::GREEN, 'cut XML <htmlError> body → not closed, never Grün');
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '']);
+assert_same(Status::UNKNOWN, $r['status'], 'an empty 404 is still no evidence');
+// Gate B (cycle prv9jv3vrc): a login on a cut error page is found before the source counts as closed.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [404, '[{"id":2,"slug":"maxm"}]', ['truncated' => true]] : [404, 'nf']);
+assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login in a cut 404 REST body → Gelb, not closed-and-Grün');
+// Owner ruling after Gate B pass 7: only a cut HTML page closes a source; a cut JSON error body is no
+// evidence either way, so an escaped login in it can no longer hide behind a "closed" source.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'oembed') !== false ? [404, '{"author_url":"https:\\/\\/ex.test\\/author\\/maxm\\/?q=' . str_repeat('a', 64000), ['truncated' => true]] : [404, '<!DOCTYPE html><html><body>nf</body></html>']);
+assert_same(Status::UNKNOWN, statuses($r)['usernames_public:oembed'] ?? null, 'a cut JSON 404 body → oEmbed source Nicht prüfbar, never closed');
+assert_true($r['status'] !== Status::GREEN, 'a cut JSON 404 body → never Grün');
+$GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404, 'body' => '<a href="https://ex.test/author/maxm/">x</a>']];
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => [404, 'nf']);
+assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login on the ?author=1 error page → Gelb');
+$GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404]];
 [, $r] = run_browser('usernames_public', ctx(), $rest_only('[]'), [200, 'soft']);
 assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'soft-404 site (comparison 200) → source unknown');
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [200, '<html><body>Welcome</body></html>'], [200, 'soft']);
@@ -1688,15 +1689,6 @@ foreach (['<html><body>Documentation mentions <rss></body></html>' => 'HTML ment
 [, $r] = run_browser('version_leaks', ctx(), $feed_answer('<?xml version="1.0"?><rss version="2.0"><channel><generator>https://wordpress.org/?v=6.8.1</generator>'));
 assert_same(Status::YELLOW, statuses($r)['version_leaks:/feed/'] ?? null, 'a version match in an incomplete feed still counts');
 
-// spec-8 / quality-6: unquoted attributes count.
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(),
-    'https://ex.test/u1/' => $html('<html><head><meta name=robots content=noindex></head></html>'),
-    'https://ex.test/u2/' => $html('<html><head><link rel=canonical href=https://other.test/u2/></head></html>'),
-    'https://ex.test/u3/' => $html("<html><head><META CONTENT='noindex,follow' NAME='robots'></head></html>")];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/u1/', '/u2/', '/u3/']), []), ctx()));
-assert_same(Status::RED, $s['indexability:/u1/'], 'unquoted noindex → Rot');
-assert_same(Status::RED, $s['indexability:/u2/'], 'unquoted foreign canonical → Rot');
-assert_same(Status::RED, $s['indexability:/u3/'], 'upper-case attributes in any order → Rot');
 
 // spec-9 / spec-10 / spec-11 / quality-7 / quality-9: usernames_public evidence.
 $GLOBALS['stub']['users'] = [user(2, 'maxm', 'Max M.')];
@@ -1734,21 +1726,6 @@ assert_same(Status::UNKNOWN, statuses($r)['dir_listing:/wp-content/uploads/'] ??
 
 // ================================================================ Gate B pass 3
 
-// HTML metadata through DOM: comments and script text are no markup; no tag-count limit; entities decoded.
-$many = str_repeat('<meta name="x" content="y">', 250);
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page(),
-    'https://ex.test/c1/' => $html('<html><head><!-- <meta name=robots content=noindex> --><title>t</title></head></html>'),
-    'https://ex.test/c2/' => $html('<html><head>' . $many . '<meta name="robots" content="noindex"></head></html>'),
-    'https://ex.test/c3/' => $html('<html><head><script>var s = "<meta name=robots content=noindex>";</script></head></html>'),
-    'https://ex.test/c4/' => $html('<html><head><meta name="robots" content="no&#105;ndex"></head></html>'),
-    'https://ex.test/c5/' => $html('<html><head><!-- <link rel=canonical href=https://other.test/> --></head></html>')];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/c1/', '/c2/', '/c3/', '/c4/', '/c5/']), []), ctx()));
-assert_same(Status::GREEN, $s['indexability:/c1/'], 'a commented-out noindex is no noindex');
-assert_same(Status::RED, $s['indexability:/c2/'], 'noindex after 250 other meta tags is still seen');
-assert_same(Status::GREEN, $s['indexability:/c3/'], 'a noindex inside script text is no markup');
-assert_same(Status::RED, $s['indexability:/c4/'], 'an entity-encoded noindex is decoded');
-assert_same(Status::GREEN, $s['indexability:/c5/'], 'a commented-out canonical is no canonical');
-
 $GLOBALS['wp_version'] = '6.8.3';
 $home_only = static fn(string $head) => static fn($u) => strpos($u, '/feed/') !== false ? [404, 'nf'] : [200, '<html><head>' . $head . '</head></html>'];
 foreach ([
@@ -1762,7 +1739,8 @@ foreach ([
     assert_same($want, statuses($r)['version_leaks:/'] ?? null, "generator: {$head}");
 }
 
-// Rule 4 before status-only verdicts: an empty or truncated "closed"/"blocked" answer proves nothing.
+// Rule 4 before status-only verdicts: an empty "closed"/"blocked" answer proves nothing; a cut one closes a
+// login-name source only when it is an HTML page (owner ruling 2026-10-11); a login on it still counts.
 $GLOBALS['stub']['users'] = [user(2, 'maxm', 'Max M.')];
 $GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404, 'body' => '']];
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [404, '']);
@@ -1770,7 +1748,7 @@ assert_true($r['status'] !== Status::GREEN, 'usernames: empty 404 answers → ne
 assert_same(Status::UNKNOWN, statuses($r)['usernames_public:author_redirect'] ?? null, '?author=1 empty 404 → unknown');
 $GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404]];
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [403, 'Forbidden', ['truncated' => true]]);
-assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'usernames: truncated 403 → unknown');
+assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'usernames: a cut non-HTML 403 → unknown (only a cut HTML page closes)');
 $GLOBALS['stub']['users'] = [];
 $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 403, 'body' => '']];
 assert_same(Status::UNKNOWN, Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx())['status'], 'xmlrpc: empty 403 → Nicht prüfbar');
@@ -1874,14 +1852,6 @@ remove_tree($cmp_dir);
 $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 200, 'body' => $methods], $cmp('xmlrpc') => ['status' => 200, 'body' => 'soft']];
 assert_same(Status::UNKNOWN, Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx())['status'], 'xmlrpc 200 with a 200 comparison → Nicht prüfbar');
 
-// Indexability: a valid configured path the request guard refuses is Nicht prüfbar, not Hinweis.
-put(WP_CONTENT_DIR . '/uploads/unsafe-path/index.php', "<?php echo 'ran';");
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404], 'https://ex.test/' => $page()];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx('live', ['/wp-content/uploads/unsafe-path/', '/bad?x']), []), ctx('live', ['/wp-content/uploads/unsafe-path/', '/bad?x'])));
-assert_same(Status::UNKNOWN, $s['indexability:/wp-content/uploads/unsafe-path/'] ?? null, 'refused valid path → Nicht prüfbar');
-assert_same(Status::HINT, $s['indexability:/bad?x'] ?? null, 'invalid configured path stays Hinweis');
-remove_tree(WP_CONTENT_DIR . '/uploads/unsafe-path');
-
 // Sitemap: an empty or truncated blocking answer is no evidence of absence.
 foreach ([['status' => 404, 'body' => ''], ['status' => 403, 'body' => 'x', 'truncated' => true]] as $answer) {
     $routes = [];
@@ -1931,7 +1901,7 @@ $entries = array_map(static fn($i) => 'https://ex.test/?post_type=t' . $i, range
 $entries[] = 'https://ex.test/template/header/';
 $GLOBALS['stub']['routes'] = ['https://ex.test/sitemap.xml' => ['status' => 200, 'body' => $urlset($entries)]];
 $facts = OutsideChecks::observe('sitemap_entries', ctx(), []);
-$r = Catalogue::grade('sitemap_entries', $facts, ctx('live', [], $types));
+$r = Catalogue::grade('sitemap_entries', $facts, ctx('live', $types));
 assert_same(Status::YELLOW, statuses($r)['sitemap_entries:post_type:bricks_template'] ?? null, 'a problematic type after 30 others is still graded');
 
 // ================================================================ Gate B pass 7
@@ -1941,9 +1911,6 @@ foreach ([[404, ''], [410, ''], [404, str_repeat('x', 65537)]] as [$code, $body]
     [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [$code, $body, ['truncated' => strlen($body) > 65536]]);
     assert_same(Status::UNKNOWN, $r['status'], "robots_txt: {$code} " . ($body === '' ? 'empty' : 'truncated') . ' → Nicht prüfbar');
 }
-$GLOBALS['stub']['routes'] = ['https://ex.test/robots.txt' => ['status' => 404, 'body' => ''], 'https://ex.test/' => $page()];
-$s = statuses(Catalogue::grade('indexability', OutsideChecks::observe('indexability', ctx(), []), ctx()));
-assert_same(Status::UNKNOWN, $s['indexability:/'], 'indexability: an empty 404 robots.txt is not "read"');
 [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [404, '<html>Not found</html>']);
 assert_same(Status::GREEN, $r['status'], 'a complete 404 error page → no robots.txt → Grün (Live)');
 

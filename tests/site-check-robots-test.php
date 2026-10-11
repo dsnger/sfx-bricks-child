@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * SiteCheck robots.txt parser: groups per user-agent, longest-match
- * Allow/Disallow (RFC 9309). Spec: "Check catalogue" → robots_txt, indexability.
+ * Allow/Disallow (RFC 9309). Spec: "Check catalogue" → robots_txt.
  */
 
 require_once __DIR__ . '/../inc/SiteCheck/Robots.php';

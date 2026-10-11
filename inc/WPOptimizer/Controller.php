@@ -628,7 +628,8 @@ class Controller
 
     public function disable_feeds_hook()
     {
-        wp_die('<p>' . __('Feed disabled by WP Optimize.', 'sfxtheme') . '</p>');
+        // 410 Gone: the feed is off on purpose (the default 500 reads as a server fault, also to the Sicherheits-Check).
+        wp_die('<p>' . esc_html__('Feed disabled by WP Optimize.', 'sfxtheme') . '</p>', '', ['response' => 410]);
     }
 
     private function disable_heartbeat()
@@ -796,6 +797,8 @@ class Controller
         if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
             status_header(403);
             nocache_headers();
+            // A short body: the Sicherheits-Check counts an empty 403 as no evidence (rule 4).
+            echo esc_html__('XML-RPC is disabled on this site.', 'sfxtheme');
             exit;
         }
 

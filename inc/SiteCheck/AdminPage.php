@@ -9,10 +9,11 @@ namespace SFX\SiteCheck;
  * lets in; the page and the save handler check it again, and the handler
  * checks the nonce Access::NONCE.
  *
- * The page (spec "Page layout and guidance") is six tabs. PHP renders the
- * two panels that need the server — the .htaccess template and the settings
- * form — inside `#sfx-sc-app`; assets/site-check.js builds the tab bar, the
- * Übersicht and the three section tabs around them from script_data().
+ * The page (spec "Page layout and guidance") is a verdict panel and three
+ * tabs. PHP renders the two panels that need the server — the .htaccess
+ * template and the settings form — inside `#sfx-sc-app`; assets/site-check.js
+ * builds the verdict panel, the tab bar and the Ergebnis tab around them
+ * from script_data().
  */
 final class AdminPage
 {
@@ -93,10 +94,7 @@ final class AdminPage
             'nonce' => wp_create_nonce(Access::NONCE),
             'catalogue' => self::catalogue_data(),
             'tabs' => [
-                ['id' => 'uebersicht', 'title' => __('Overview', 'sfxtheme')],
-                ['id' => 'sicherheit', 'title' => __('Security', 'sfxtheme'), 'section' => Catalogue::SECURITY],
-                ['id' => 'live-gang', 'title' => __('Go-live', 'sfxtheme'), 'section' => Catalogue::GOLIVE],
-                ['id' => 'aufraeumen', 'title' => __('Clean-up', 'sfxtheme'), 'section' => Catalogue::CLEANUP],
+                ['id' => 'ergebnis', 'title' => __('Result', 'sfxtheme')],
                 ['id' => 'htaccess', 'title' => __('.htaccess template', 'sfxtheme')],
                 ['id' => 'einstellungen', 'title' => __('Settings', 'sfxtheme')],
             ],
@@ -133,20 +131,56 @@ final class AdminPage
                 'recommendation' => __('Recommendation', 'sfxtheme'),
                 'steps' => __('How to', 'sfxtheme'),
                 'noAction' => __('Nothing to do: this is the good state.', 'sfxtheme'),
-                'onlyAction' => __('Only what needs action', 'sfxtheme'),
+                'groupAct' => __('To act on', 'sfxtheme'),
+                'groupActIntro' => __('Open a point to see what was found, why it matters and how to fix it.', 'sfxtheme'),
+                'filterLabel' => __('Show area', 'sfxtheme'),
+                'filterAll' => __('All', 'sfxtheme'),
+                'emptyResult' => __('No results yet. Start the check with "Check now".', 'sfxtheme'),
+                'findingsTitle' => __('Findings', 'sfxtheme'),
+                'findingKind' => [
+                    'red' => __('Problem:', 'sfxtheme'),
+                    'yellow' => __('Problem:', 'sfxtheme'),
+                    'unknown' => __('Unclear:', 'sfxtheme'),
+                    'hint' => __('Info:', 'sfxtheme'),
+                    'green' => __('In order:', 'sfxtheme'),
+                ],
+                'verdictRunning' => __('Checking …', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictActOne' => __('%1$s point to fix', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictActMany' => __('%1$s points to fix', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictSelfOne' => __('Nothing to fix — %1$s point to check yourself', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictSelfMany' => __('Nothing to fix — %1$s points to check yourself', 'sfxtheme'),
+                'verdictOk' => __('All in order', 'sfxtheme'),
+                'verdictFine' => __('in order', 'sfxtheme'),
+                'groupSelf' => __('Check yourself', 'sfxtheme'),
+                'groupSelfIntro' => __('The check got no reliable answer here, for example because the host or a firewall answered instead of the site. A quick look by hand settles it.', 'sfxtheme'),
+                'groupFine' => __('In order', 'sfxtheme'),
+                'selfCaveat' => __('A "checking your browser" page or an error page from the host settles nothing: try again later or ask the host.', 'sfxtheme'),
+                // By check where the general text would not settle it, else by perspective.
+                'selfStep' => [
+                    'server' => __('By hand: look at the setting named above in wp-admin, or ask the host.', 'sfxtheme'),
+                    'browser' => __('By hand: open the address named above in a private browser window. "Not found" or "forbidden" means it is closed; if you see the file\'s content, it is open.', 'sfxtheme'),
+                    'loopback' => __('By hand: open the address named above in a private browser window and compare it with what the check expects (see "Why" below).', 'sfxtheme'),
+                    'security_headers' => __('By hand: open the home page, press F12, choose Network, reload, click the first request and read its Response Headers: Strict-Transport-Security with a max-age above 0; X-Content-Type-Options: nosniff; X-Frame-Options: DENY or SAMEORIGIN, or a Content-Security-Policy with frame-ancestors \'none\' or \'self\'; Referrer-Policy: no-referrer, same-origin, strict-origin or strict-origin-when-cross-origin; and whether Content-Security-Policy and Permissions-Policy are present.', 'sfxtheme'),
+                    'robots_txt' => __('By hand: open /robots.txt in a browser. "Disallow: /" under "User-agent: *" blocks the site, except where an "Allow:" line in the same group opens a part again; "not found" means there is none.', 'sfxtheme'),
+                    'version_leaks' => __('By hand: open the home page, view its source (Ctrl+U or Cmd+Option+U) and search for "generator"; then do the same for /feed/.', 'sfxtheme'),
+                    'sitemap' => __('By hand: open /wp-sitemap.xml, or the sitemap address your SEO plugin names, in a browser.', 'sfxtheme'),
+                    'sitemap_entries' => __('By hand: open the sitemap in a browser and look through its sub-sitemaps for types that should not be found (templates, attachments, author pages).', 'sfxtheme'),
+                    'usernames_public' => __('By hand: in a private window open /wp-json/wp/v2/users and /?author=1, then compare the names and slugs shown with the login names under Users. Only an exact match is a visible login name.', 'sfxtheme'),
+                ],
                 'notChecked' => __('Not checked yet.', 'sfxtheme'),
                 'intro' => __('The check looks for exposed files, risky settings and launch mistakes, and shows what to fix first.', 'sfxtheme'),
-                'noActionTab' => __('No action needed in this area.', 'sfxtheme'),
+                'noActionTab' => __('Nothing to fix.', 'sfxtheme'),
                 /* translators: 1: date, 2: user, 3: site profile */
                 'meta' => __('Last check: %1$s by %2$s, profile %3$s.', 'sfxtheme'),
                 /* translators: %1$s: site profile */
                 'nextProfile' => __('The next check uses the profile %1$s.', 'sfxtheme'),
                 'change' => __('Change', 'sfxtheme'),
                 'check' => __('Check now', 'sfxtheme'),
-                'probe' => __('Uploads probe (active test: briefly creates a test file)', 'sfxtheme'),
-                'sectionsTitle' => __('Areas', 'sfxtheme'),
-                'urgentTitle' => __('Most urgent', 'sfxtheme'),
-                'urgentNone' => __('Nothing urgent: no red or yellow checks.', 'sfxtheme'),
+                'probe' => __('Include the uploads test (briefly creates a test file)', 'sfxtheme'),
                 'running' => __('Checking … keep this tab open until the results are saved.', 'sfxtheme'),
                 /* translators: 1: checks done, 2: checks in this run */
                 'progress' => __('%1$s of %2$s checks done', 'sfxtheme'),
@@ -168,8 +202,12 @@ final class AdminPage
                 'itemsTitle' => __('Checked by hand', 'sfxtheme'),
                 /* translators: 1: user, 2: date */
                 'itemDone' => __('done by %1$s on %2$s', 'sfxtheme'),
-                'itemsReset' => __('Reset these items', 'sfxtheme'),
-                'itemsResetConfirm' => __('Untick all four items?', 'sfxtheme'),
+                'reset' => __('Reset results', 'sfxtheme'),
+                'resetConfirm' => __('Delete all check results and the ticks under "Checked by hand"? The settings stay.', 'sfxtheme'),
+                'resetDone' => __('Results reset. The site counts as not checked.', 'sfxtheme'),
+                /* translators: %1$s: error message */
+                'resetFailed' => __('Could not reset: %1$s', 'sfxtheme'),
+                'resetUnknown' => __('No answer to the reset: the results may already be deleted. Reload the page to see what is stored.', 'sfxtheme'),
                 'copied' => __('Copied', 'sfxtheme'),
                 'copyFailed' => __('Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C.', 'sfxtheme'),
                 'settingsDirty' => __('not saved', 'sfxtheme'),
@@ -246,8 +284,7 @@ final class AdminPage
         if (isset($post['profile']) && is_string($post['profile'])) {
             $changes['profile'] = $post['profile'];
         }
-        // An unchecked box or an emptied list is a value, not an absent field.
-        $changes['indexability_paths'] = isset($post['indexability_paths']) && is_array($post['indexability_paths']) ? $post['indexability_paths'] : [];
+        // An unchecked box is a value, not an absent field.
         $changes['sitemap_allow'] = isset($post['sitemap_allow']) && is_array($post['sitemap_allow']) ? $post['sitemap_allow'] : [];
         if (isset($post['fallback_theme']) && is_string($post['fallback_theme'])) {
             $changes['fallback_theme'] = $post['fallback_theme'];
@@ -308,7 +345,7 @@ final class AdminPage
 
     /**
      * The app container with the two server-rendered panels; the script
-     * adds the tab bar, the Übersicht and the section tabs around them.
+     * adds the verdict panel, the tab bar and the Ergebnis tab around them.
      *
      * @param array<string,string> $offered stylesheet => name
      * @param array<string,string> $themes  stylesheet => name
@@ -428,25 +465,6 @@ final class AdminPage
             echo '<option value="' . esc_attr($value) . '"' . ($settings['profile'] === $value ? ' selected' : '') . '>' . esc_html($label) . '</option>';
         }
         echo '</select></td></tr>';
-
-        echo '<tr><th scope="row">' . esc_html__('Pages to check for indexing', 'sfxtheme') . '</th><td>';
-        echo '<p class="description" id="sfx-sc-paths-help">' . esc_html__('The home page is always checked. Add up to 5 more paths, e.g. /kontakt/.', 'sfxtheme') . '</p>';
-        $paths = $settings['indexability_paths'];
-        for ($i = 0; $i < Settings::MAX_PATHS; $i++) {
-            $path = $paths[$i] ?? '';
-            $input_id = 'sfx-sc-path-' . ($i + 1);
-            echo '<p><label for="' . esc_attr($input_id) . '" class="screen-reader-text">' . esc_html(sprintf(
-                /* translators: %d: number of the path field, 1 to 5 */
-                __('Page %d for the indexing check', 'sfxtheme'),
-                $i + 1
-            )) . '</label>';
-            echo '<input type="text" class="regular-text" id="' . esc_attr($input_id) . '" aria-describedby="sfx-sc-paths-help" name="indexability_paths[]" value="' . esc_attr($path) . '">';
-            if ($path !== '' && !Settings::valid_path($path)) {
-                echo ' <strong>' . esc_html__('Rejected', 'sfxtheme') . '</strong>';
-            }
-            echo '</p>';
-        }
-        echo '</td></tr>';
 
         echo '<tr><th scope="row">' . esc_html__('Sitemap entries that are intended', 'sfxtheme') . '</th><td><fieldset>';
         foreach ($offered as $id => $label) {

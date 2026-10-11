@@ -9,6 +9,7 @@ use SFX\SiteCheck\Fetch;
 use SFX\SiteCheck\Observations;
 use SFX\SiteCheck\RunContext;
 use SFX\SiteCheck\Status;
+use SFX\SiteCheck\ThemeSwitches;
 
 /**
  * usernames_public (Browser plus Loopback for ?author=1), xmlrpc and the
@@ -82,9 +83,21 @@ final class AccountOutside
                     continue;
                 }
                 // 401 is no evidence (rule 4): neither closed nor read.
-                // Rule 4 before rule 3: an empty or truncated status answer is no evidence.
-                if ($obs['redirect'] || (in_array($obs['status'], [403, 404, 410], true) && $obs['body'] !== '' && !$obs['truncated'])) {
+                // Rule 4 before rule 3: an empty status answer is no evidence; a cut one only when it is
+                // an HTML page (rule 4's exception, owner ruling 2026-10-11: theme 404 pages exceed 64 KB).
+                if ($obs['redirect'] || self::blocking_page($obs['status'], $obs['body'], (bool) $obs['truncated'])) {
+                    // Signatures first (rule 4): a login on the error page still counts.
+                    foreach (self::names_in($obs['body'], $c['kind'] === 'feed', (bool) $obs['truncated']) as $name) {
+                        $names[$name][$c['kind']] = true;
+                    }
                     $closed++;
+                    continue;
+                }
+                // A cut JSON or XML error body is no evidence either way (rule 4), but a login in it counts.
+                if (in_array($obs['status'], [403, 404, 410], true)) {
+                    foreach (self::names_in($obs['body'], $c['kind'] === 'feed', (bool) $obs['truncated']) as $name) {
+                        $names[$name][$c['kind']] = true;
+                    }
                     continue;
                 }
                 if ($obs['status'] === 200 && $obs['body'] !== '') {
@@ -108,10 +121,17 @@ final class AccountOutside
         $r = Fetch::loopback('GET', home_url('/?author=1'));
         if ($r['error'] !== '' || $r['challenge']) {
             $sources['author_redirect'] = 'unknown';
-        } elseif (in_array($r['status'], [403, 404, 410], true) && $r['body'] !== '' && !$r['truncated']) {
+        } elseif (self::blocking_page($r['status'], $r['body'], (bool) $r['truncated'])) {
             $sources['author_redirect'] = 'closed';
+            // Signatures first (rule 4): a login on the error page still counts.
+            foreach (self::names_in($r['body']) as $name) {
+                $names[$name]['author_redirect'] = true;
+            }
         } elseif (in_array($r['status'], [403, 404, 410], true)) {
             $sources['author_redirect'] = 'unknown';
+            foreach (self::names_in($r['body']) as $name) {
+                $names[$name]['author_redirect'] = true;
+            }
         } elseif (!$r['redirect'] && $r['status'] !== 200) {
             $sources['author_redirect'] = 'unknown';
         } else {
@@ -147,6 +167,22 @@ final class AccountOutside
         }
 
         return ['sources' => $sources, 'reasons' => $reasons, 'matches' => $list, 'hints' => $hints];
+    }
+
+    /**
+     * A blocking answer that closes a login-name source: a non-empty 403/404/410,
+     * complete — or cut when it is an HTML page, as a theme's 404 page beyond
+     * 64 KB is (owner ruling 2026-10-11). A cut JSON or XML body stays no evidence.
+     */
+    private static function blocking_page(int $status, string $body, bool $truncated): bool
+    {
+        if (!in_array($status, [403, 404, 410], true) || $body === '') {
+            return false;
+        }
+
+        // An HTML document: optional BOM, whitespace and comments, then the html doctype or element
+        // (`<htmlError>` and other XML roots do not count).
+        return !$truncated || preg_match('/^(?:\xEF\xBB\xBF)?(?:\s++|<!--.*?-->)*+(?:<!doctype\s+html[\s>]|<html[\s>])/is', $body) === 1;
     }
 
     /** The answer has the format its source serves. */
@@ -278,7 +314,7 @@ final class AccountOutside
 
         $tls = 'skipped';
         if ($scheme === 'https') {
-            $r = Fetch::loopback('GET', home_url('/'));
+            $r = Fetch::loopback('GET', home_url('/'), null, true);
             $tls = $r['error'] === 'tls' ? 'fail' : ($r['error'] === '' ? 'ok' : 'unknown');
         }
 
@@ -300,44 +336,65 @@ final class AccountOutside
     /** A 200 answer counts only when the batch's comparison clearly did not serve a page (rule 4). */
     private static function xmlrpc_facts(array $comparison): array
     {
+        // Owner ruling 2026-10-11: the theme knows its own WP Optimizer switch.
+        $switch = ThemeSwitches::wp_optimizer('disable_xmlrpc');
         $r = Fetch::loopback('POST', site_url('/xmlrpc.php'), self::XMLRPC_BODY);
         if ($r['error'] !== '') {
-            return ['state' => 'unknown', 'status' => 0];
+            return ['state' => 'unknown', 'status' => 0, 'switch' => $switch];
         }
         // A challenge says nothing about XML-RPC, whatever its status (rule 4).
         if ($r['challenge']) {
             $state = 'other';
-        } elseif (in_array($r['status'], [403, 404, 405, 410], true) && $r['body'] !== '' && !$r['truncated']) {
+        } elseif (preg_match('#<methodResponse>\s*<params>.*<string>[a-z]+\.[A-Za-z.]+</string>#s', $r['body']) === 1 && ($r['status'] !== 200 || Evidence::comparison_refused($comparison))) {
+            // The methods answer is the signature (rule 5): it counts whatever the status.
+            $state = 'answers';
+        } elseif (in_array($r['status'], [403, 404, 405, 410], true) && $r['body'] !== '') {
+            // A cut, non-empty blocking answer counts as well (rule 4's exception, owner ruling 2026-10-11).
             $state = 'blocked';
+        } elseif ($r['status'] === 503) {
+            // Owner ruling 2026-10-11: hosts block xmlrpc.php in front of WordPress with a 503.
+            $state = 'host_503';
         } elseif ($r['status'] === 200 && !Evidence::comparison_refused($comparison)) {
             $state = 'other';
         } elseif ($r['status'] === 200 && strpos($r['body'], '<methodResponse') !== false && strpos($r['body'], '<fault>') !== false) {
             $state = 'fault';
-        } elseif ($r['status'] === 200 && preg_match('#<methodResponse>\s*<params>.*<string>[a-z]+\.[A-Za-z.]+</string>#s', $r['body']) === 1) {
-            $state = 'answers';
         } else {
             $state = 'other';
         }
 
-        return ['state' => $state, 'status' => $r['status']];
+        return ['state' => $state, 'status' => $r['status'], 'switch' => $switch];
     }
 
     private static function grade_xmlrpc(array $facts): array
     {
         $note = __('Loopback: one anonymous system.listMethods call to xmlrpc.php; no pingback.', 'sfxtheme');
-        switch ($facts['state'] ?? '') {
+        $state = (string) ($facts['state'] ?? '');
+        // The switch never replaces the call (owner ruling 2026-10-11): it only names why an answer is surprising.
+        $switch = !empty($facts['switch']);
+        switch ($state) {
             case 'answers':
-                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::YELLOW, __('XML-RPC answers anonymous requests', 'sfxtheme'));
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::YELLOW, $switch
+                    ? __('XML-RPC answers anonymous requests although "Disable XMLRPC" is on in WP Optimizer: something serves it anyway', 'sfxtheme')
+                    : __('XML-RPC answers anonymous requests', 'sfxtheme'));
                 break;
             case 'blocked':
                 /* translators: %d: HTTP status code */
                 $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::GREEN, sprintf(__('XML-RPC is blocked (status %d)', 'sfxtheme'), (int) $facts['status']));
                 break;
+            case 'host_503':
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::HINT, sprintf(
+                    /* translators: %s: the XML-RPC address the check called */
+                    __('The server answers 503 (unavailable): usually the host blocks XML-RPC. Open %s in a browser; an error page instead of "XML-RPC server accepts POST requests only" means it is blocked.', 'sfxtheme'),
+                    site_url('/xmlrpc.php')
+                ));
+                break;
             case 'fault':
                 $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, __('XML-RPC answered with an error; whether it is usable is unclear', 'sfxtheme'));
                 break;
             default:
-                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, __('no recognisable answer', 'sfxtheme'));
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, $switch
+                    ? __('no recognisable answer; "Disable XMLRPC" is on in WP Optimizer, but only a real call shows whether it works', 'sfxtheme')
+                    : __('no recognisable answer', 'sfxtheme'));
         }
 
         return Observations::result([$f], Status::UNKNOWN, 'loopback', $note);
