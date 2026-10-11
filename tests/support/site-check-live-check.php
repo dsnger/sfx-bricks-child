@@ -494,13 +494,14 @@ echo '     saved result counts: ' . json_encode($counts) . "\n";
 post(['item' => 'contact_form', 'done' => '1']);
 [$code, $body] = Runs::items_request();
 check($code === 200 && isset(Runs::items()['contact_form']), 'items: ticking an item is stored');
-post(['reset' => '1']);
-[$code, $body] = Runs::items_request();
-check($code === 200 && Runs::items() === [], 'items: reset clears them');
 
 $box = render_box();
 check(native_widget_registered() === true, 'the native dashboard widget is registered for the administrator (control for the editor check)');
 check(strpos($box, 'sfx-site-check-box') !== false && strpos($box, 'data-count') !== false, 'the dashboard box shows the saved run to the administrator');
+
+post([]);
+[$code, $body] = Runs::reset_request();
+check($code === 200 && Runs::items() === [] && Runs::last() === null, 'reset clears the saved run and the items');
 
 // ---- as editor
 $manual_before = rows_with_prefix($prefix)[Options::name('manual')] ?? null;
@@ -514,6 +515,7 @@ $refusals = [
     'server' => [static fn() => Runs::server_request(), ['run' => $run, 'check' => 'php_in_uploads']],
     'save' => [static fn() => Runs::save_request(), ['run' => $run, 'results' => '{}']],
     'items' => [static fn() => Runs::items_request(), ['item' => 'contact_form', 'done' => '1']],
+    'reset' => [static fn() => Runs::reset_request(), []],
     'targets' => [static fn() => OutsideEndpoints::targets_request(), ['run' => $run, 'check' => 'robots_txt']],
     'observe' => [static fn() => OutsideEndpoints::observe_request(), ['run' => $run, 'check' => 'robots_txt', 'observations' => '[]']],
 ];

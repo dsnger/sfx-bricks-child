@@ -143,7 +143,7 @@ final class AdminPage
                 'nextProfile' => __('The next check uses the profile %1$s.', 'sfxtheme'),
                 'change' => __('Change', 'sfxtheme'),
                 'check' => __('Check now', 'sfxtheme'),
-                'probe' => __('Uploads probe (active test: briefly creates a test file)', 'sfxtheme'),
+                'probe' => __('Also run the uploads test (active test: briefly creates a test file in the uploads folder)', 'sfxtheme'),
                 'sectionsTitle' => __('Areas', 'sfxtheme'),
                 'urgentTitle' => __('Most urgent', 'sfxtheme'),
                 'urgentNone' => __('Nothing urgent: no red or yellow checks.', 'sfxtheme'),
@@ -168,8 +168,12 @@ final class AdminPage
                 'itemsTitle' => __('Checked by hand', 'sfxtheme'),
                 /* translators: 1: user, 2: date */
                 'itemDone' => __('done by %1$s on %2$s', 'sfxtheme'),
-                'itemsReset' => __('Reset these items', 'sfxtheme'),
-                'itemsResetConfirm' => __('Untick all four items?', 'sfxtheme'),
+                'reset' => __('Reset results', 'sfxtheme'),
+                'resetConfirm' => __('Delete all check results and the ticks under "Checked by hand"? The settings stay.', 'sfxtheme'),
+                'resetDone' => __('Results reset. The site counts as not checked.', 'sfxtheme'),
+                /* translators: %1$s: error message */
+                'resetFailed' => __('Could not reset: %1$s', 'sfxtheme'),
+                'resetUnknown' => __('No answer to the reset: the results may already be deleted. Reload the page to see what is stored.', 'sfxtheme'),
                 'copied' => __('Copied', 'sfxtheme'),
                 'copyFailed' => __('Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C.', 'sfxtheme'),
                 'settingsDirty' => __('not saved', 'sfxtheme'),

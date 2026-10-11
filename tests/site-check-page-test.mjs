@@ -380,7 +380,7 @@ const STRINGS = {
   running: 'PRÜFUNG LÄUFT', progress: '%1$s von %2$s', saving: 'Speichere', saved: 'GESPEICHERT', startFailed: 'START-FEHLER %1$s',
   notSaved: 'NICHT GESPEICHERT %1$s', unknownSave: 'SPEICHERSTATUS UNBEKANNT',
   statusStartFailed: 'START KURZ', statusNotSaved: 'NICHT GESPEICHERT KURZ', statusUnknown: 'UNBEKANNT KURZ', retry: 'Erneut speichern', recheck: 'Neu prüfen', reload: 'Seite neu laden',
-  requestFailed: 'Anfrage fehlgeschlagen', timeout: 'Keine Antwort in 60 Sekunden', itemsTitle: 'Von Hand geprüft', itemDone: 'erledigt von %1$s am %2$s', itemsReset: 'Zurücksetzen', itemsResetConfirm: 'Sicher?',
+  requestFailed: 'Anfrage fehlgeschlagen', timeout: 'Keine Antwort in 60 Sekunden', itemsTitle: 'Von Hand geprüft', itemDone: 'erledigt von %1$s am %2$s', reset: 'Ergebnisse zurücksetzen', resetConfirm: 'Sicher?', resetDone: 'ZURÜCKGESETZT', resetFailed: 'RESET-FEHLER %1$s', resetUnknown: 'RESET UNBEKANNT',
   copied: 'Kopiert', copyFailed: 'KOPIEREN NICHT MÖGLICH', settingsDirty: 'nicht gespeichert', tablist: 'Bereiche',
 };
 const TABS = [
@@ -442,9 +442,11 @@ function page({ hash = '', last = null, settingsProfile = 'live', items = [], au
   const take = (action) => { const r = requests.find((x) => x.f.action === action && !x.done); assert.ok(r, 'a pending ' + action); r.done = true; return r; };
   const reply = (action, data, status = 200) => answer(take(action), status, status === 200 ? { success: true, data } : { success: false, data });
   const startButton = () => doc.getElementById('sfx-sc-start');
+  const runbar = () => find(doc.body, (e) => e.className === 'sfx-sc-runbar');
+  const resetButton = () => doc.getElementById('sfx-sc-reset');
   const status = () => doc.getElementById('sfx-sc-status');
   const notice = () => doc.getElementById('sfx-sc-notice');
-  return { api, win, requests, tab, panel, row, summary, reply, take, pending, startButton, status, notice, form, input, save, dirty, copy };
+  return { api, win, requests, tab, panel, row, summary, reply, take, pending, startButton, runbar, resetButton, status, notice, form, input, save, dirty, copy };
 }
 const ok = (data) => [200, { success: true, data }];
 const settle = async () => { for (let i = 0; i < 40; i++) await flush(); };
@@ -673,7 +675,7 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   await settle();
   assert.equal(p.status().textContent, 'GESPEICHERT', 'delayed success → saved');
   assert.ok(p.row('config_copies').textContent.includes('STORED') && !p.row('config_copies').textContent.includes('nicht gespeichert'), 'on success the stored run is shown');
-  assert.ok(p.panel('uebersicht').textContent.includes('11.10.2026, 00:01'), 'the server-formatted date is shown as is');
+  assert.ok(p.runbar().textContent.includes('11.10.2026, 00:01'), 'the server-formatted date is shown as is');
   assert.equal(p.notice().textContent, '', 'the notice is gone');
 }
 
@@ -720,8 +722,8 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   const sums = findAll(find(ov, (e) => e.className.includes('sfx-sc-summaries')), (e) => e.tagName === 'a');
   assert.deepEqual(sums.map((a) => a.getAttribute('href')), ['#sicherheit', '#live-gang', '#aufraeumen'], 'each section summary opens its tab');
   assert.ok(sums[0].parentNode.textContent.includes('2 Rot') && sums[0].parentNode.textContent.includes('2 Gelb'), 'section summary counts');
-  assert.ok(ov.textContent.includes('Profil Staging') && ov.textContent.includes('Nächste Prüfung: Profil Live'), 'last and next profile both shown');
-  const change = byText(ov, 'a', 'ändern');
+  assert.ok(p.runbar().textContent.includes('Profil Staging') && p.runbar().textContent.includes('Nächste Prüfung: Profil Live'), 'last and next profile both shown in the run bar');
+  const change = byText(p.runbar(), 'a', 'ändern');
   assert.equal(change && change.getAttribute('href'), '#einstellungen', 'the next profile links to the settings');
   assert.ok(ov.textContent.includes('ITEM-2FA'), 'manual items in Übersicht');
   for (const id of ['sicherheit', 'live-gang', 'aufraeumen', 'htaccess', 'einstellungen']) {
@@ -737,28 +739,16 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
     assert.ok(p.panel(id).textContent.includes('Noch nicht geprüft.'), `${id}: "Noch nicht geprüft" before the first run`);
     assert.ok(!visible(p.row(CATALOGUE.find((c) => c.section === { sicherheit: 'security', 'live-gang': 'golive', aufraeumen: 'cleanup' }[id]).id)), `${id}: no rows before the first run`);
   }
-  // Gate B pass 2 (spec-13): the adopted panels say so too, with a working control.
-  for (const id of ['htaccess', 'einstellungen']) {
-    assert.ok(p.panel(id).textContent.includes('Noch nicht geprüft.'), `${id}: "Noch nicht geprüft" before the first run`);
-    const b = byText(p.panel(id), 'button', 'Prüfen');
-    assert.ok(b && !b.parentNode.hidden, `${id}: a shown "Prüfen" control`);
+  // Owner ruling 2026-10-11: one "Prüfen" control, in the run bar above the tabs, on every tab.
+  assert.equal(findAll(doc.body, (e) => e.tagName === 'button' && e.textContent === 'Prüfen').length, 1, 'exactly one "Prüfen" control');
+  for (const t of TABS) {
+    p.tab(t.id).click();
+    assert.ok(visible(p.startButton()) && !p.panel(t.id).all().includes(p.startButton()), `${t.id}: the run bar's control is shown, outside the panel`);
   }
-  byText(p.panel('htaccess'), 'button', 'Prüfen').click();
-  assert.equal(p.pending('sfx_site_check_start').length, 1, 'the .htaccess tab control starts a run');
-  const fresh = page({ last: null, auto: (f) => null });
-  byText(fresh.panel('einstellungen'), 'button', 'Prüfen').click();
-  assert.equal(fresh.pending('sfx_site_check_start').length, 1, 'the settings tab control starts a run');
-  const after = page({ last: savedRun({ updates: g('hint') }) });
-  for (const id of ['htaccess', 'einstellungen']) {
-    const b = byText(after.panel(id), 'button', 'Prüfen');
-    assert.ok(!b || b.parentNode.hidden, `${id}: no fresh-site box once a run is saved`);
-  }
-  const button = byText(p.panel('live-gang'), 'button', 'Prüfen');
-  assert.ok(button, 'each empty tab has the "Prüfen" control');
-  assert.ok(button, 'each empty tab has the "Prüfen" control');
-  const third = page({ last: null, auto: (f) => null });
-  byText(third.panel('live-gang'), 'button', 'Prüfen').click();
-  assert.equal(third.pending('sfx_site_check_start').length, 1, 'and it starts a run');
+  assert.ok(p.runbar().textContent.includes('Noch nicht geprüft.'), 'the run bar says "not checked yet" before the first run');
+  assert.ok(p.runbar().all().includes(find(doc.body, (e) => e.id === 'sfx-sc-probe')), 'the uploads test option sits in the run bar');
+  p.startButton().click();
+  assert.equal(p.pending('sfx_site_check_start').length, 1, 'the run bar control starts a run');
 
   const q = page({ last: savedRun({ updates: g('hint'), table_prefix: g('green'), inactive_plugins: g('green') }) });
   const filter = find(q.panel('aufraeumen'), (e) => e.tagName === 'input' && e.type === 'checkbox');
@@ -778,24 +768,81 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   assert.ok(box.parentNode.parentNode.textContent.includes('erledigt von Dev am 10.10.2026, 23:59'), 'an item shows the server-formatted date');
 }
 
-// ---- Gate B pass 3: manual items serialise their writes (tick vs reset)
+// ---- reset (owner ruling 2026-10-11): results and ticks go, one write at a time
 
 {
-  const p = page({ items: [{ id: 'two_factor', label: 'ITEM-A', done: false, meta: '' }, { id: 'backup', label: 'ITEM-B', done: false, meta: '' }] });
+  const p = page({ last: savedRun({ logs_public: g('red', [['red', 'LEAK']]) }), items: [{ id: 'two_factor', label: 'ITEM-A', done: true, meta: 'erledigt von X' }, { id: 'backup', label: 'ITEM-B', done: false, meta: '' }] });
   const ov = p.panel('uebersicht');
   const box = (label) => find(ov, (e) => e.tagName === 'input' && e.type === 'checkbox' && e.parentNode.textContent.includes(label));
-  const reset = byText(ov, 'button', 'Zurücksetzen');
-  box('ITEM-A').checked = true; box('ITEM-A').dispatch('change');
-  assert.ok(reset.disabled && box('ITEM-B').disabled, 'while a tick is pending, reset and the other items are disabled');
-  p.reply('sfx_site_check_items', { items: { two_factor: { user: 7, date: 1, date_display: 'D1' } } });
+  const reset = p.resetButton();
+  assert.ok(reset && p.runbar().all().includes(reset) && reset.textContent === 'Ergebnisse zurücksetzen', 'one reset button, in the run bar');
+  assert.equal(byText(ov, 'button', 'Zurücksetzen'), null, 'no separate items reset any more');
+
+  box('ITEM-B').checked = true; box('ITEM-B').dispatch('change');
+  assert.ok(reset.disabled && box('ITEM-A').disabled, 'while a tick is pending, reset and the other items are disabled');
+  p.reply('sfx_site_check_items', { items: { two_factor: { user: 7, date: 1, date_display: 'D1' }, backup: { user: 7, date: 1, date_display: 'D1' } } });
   await settle();
-  assert.ok(!reset.disabled && !box('ITEM-B').disabled && !box('ITEM-A').disabled, 'after the answer everything is enabled again');
+  assert.ok(!reset.disabled && !box('ITEM-B').disabled, 'after the answer everything is enabled again');
+
+  p.win.confirm = () => false;
   reset.click();
-  assert.ok(box('ITEM-A').disabled && box('ITEM-B').disabled && reset.disabled, 'while a reset is pending no item can be ticked');
-  p.reply('sfx_site_check_items', { items: {} });
+  assert.equal(p.pending('sfx_site_check_reset').length, 0, 'cancelled confirm sends nothing');
+  p.win.confirm = () => true;
+  reset.click();
+  assert.ok(box('ITEM-A').disabled && reset.disabled && p.startButton().disabled, 'while a reset is pending, items, reset and start are disabled');
+  p.reply('sfx_site_check_reset', {});
   await settle();
-  assert.ok(!box('ITEM-A').checked && !box('ITEM-A').disabled, 'the reset answer clears and re-enables');
-  assert.equal(box('ITEM-A').parentNode.parentNode.textContent.includes('erledigt'), false, 'and removes the done note');
+  assert.equal(p.status().textContent, 'ZURÜCKGESETZT', 'reset is announced');
+  assert.ok(!box('ITEM-A').checked && !box('ITEM-B').checked && !box('ITEM-A').disabled, 'ticks cleared and items enabled');
+  assert.equal(ov.textContent.includes('erledigt'), false, 'done notes removed');
+  assert.ok(p.runbar().textContent.includes('Noch nicht geprüft.') && !visible(p.row('logs_public')), 'the page is back to "not checked yet"');
+  assert.ok(!p.startButton().disabled && !reset.disabled, 'controls free again');
+
+  // Gate B pass 1: the reset's own close of an open row is not the admin's choice.
+  const q = page({ last: savedRun({ config_copies: g('red', [['red', 'OLD']]) }) });
+  assert.ok(q.row('config_copies').open, 'fixture: a red row opened on its result');
+  q.resetButton().click();
+  q.reply('sfx_site_check_reset', {});
+  await settle();
+  assert.ok(!q.row('config_copies').open, 'reset closes the row');
+  q.row('config_copies').dispatch('toggle'); // the browser fires the close's toggle afterwards
+  q.startButton().click();
+  q.reply('sfx_site_check_start', { run: 'r2', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
+  await settle();
+  q.reply('sfx_site_check_server', { graded: g('red', [['red', 'NEW']]), token: 't' });
+  await settle();
+  assert.ok(q.row('config_copies').open, 'the next run opens the red row again');
+}
+
+{
+  // Gate B pass 1: a busy reset deletes nothing and keeps the run's notice and retry.
+  const p = page({ last: null });
+  p.startButton().click();
+  p.reply('sfx_site_check_start', { run: 'r1', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
+  await settle();
+  p.reply('sfx_site_check_server', { graded: g('red', [['red', 'X']]), token: 't' });
+  await settle();
+  p.reply('sfx_site_check_save', { message: 'Beschäftigt.' }, 503);
+  await settle();
+  assert.ok(byText(p.notice(), 'button', 'Erneut speichern'), 'fixture: busy save offers a retry');
+  p.resetButton().click();
+  p.reply('sfx_site_check_reset', { message: 'Belegt.' }, 503);
+  await settle();
+  assert.ok(byText(p.notice(), 'button', 'Erneut speichern'), 'a busy reset keeps the retry');
+  assert.equal(p.status().textContent, 'RESET-FEHLER Belegt.', 'a refused reset is announced in the live status');
+  assert.ok(p.row('config_copies').textContent.includes('X'), 'and the page still shows what it had');
+
+  // Lost answer or partial reset: what is stored is unknown → offer a reload.
+  p.resetButton().click();
+  p.reply('sfx_site_check_reset', { message: 'Nicht vollständig.' }, 500);
+  await settle();
+  const reload = byText(p.notice(), 'button', 'Seite neu laden');
+  assert.ok(reload && p.notice().textContent.includes('RESET-FEHLER Nicht vollständig.'), 'a partial reset offers reloading the page');
+  const lost = page({ last: savedRun({ updates: g('hint') }), auto: (f) => (f.action === 'sfx_site_check_reset' ? 'lost' : null) });
+  lost.resetButton().click();
+  await settle();
+  assert.ok(byText(lost.notice(), 'button', 'Seite neu laden'), 'a lost reset answer offers reloading the page');
+  assert.ok(lost.notice().textContent.includes('RESET UNBEKANNT') && lost.status().textContent === 'RESET UNBEKANNT', 'and says the outcome is unknown');
 }
 
 // ---- Gate B pass 4: a graded row with no findings shows "0 Funde"

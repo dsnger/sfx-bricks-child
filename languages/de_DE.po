@@ -8938,8 +8938,6 @@ msgstr "abgelehnt: kein gültiger Pfad dieser Website; übersprungen"
 msgid "Request failed."
 msgstr "Die Anfrage ist fehlgeschlagen."
 
-msgid "Reset these items"
-msgstr "Diese Punkte zurücksetzen"
 
 msgid "REST API user list"
 msgstr "Benutzerliste der REST-API"
@@ -9229,8 +9227,6 @@ msgstr "Unbekannter Punkt."
 msgid "unknown script, check and delete it"
 msgstr "unbekanntes Skript – prüfen und löschen"
 
-msgid "Untick all four items?"
-msgstr "Alle vier Punkte abwählen?"
 
 msgid "Updates"
 msgstr "Updates"
@@ -9238,8 +9234,6 @@ msgstr "Updates"
 msgid "Uploads folder: no PHP"
 msgstr "Uploads-Ordner: kein PHP"
 
-msgid "Uploads probe (active test: briefly creates a test file)"
-msgstr "Uploads-Test (aktiver Test: legt kurz eine Testdatei an)"
 
 msgid "User #%1$d: the login name is visible to guests (%2$s)"
 msgstr "Benutzer #%1$d: Der Login-Name ist für Gäste sichtbar (%2$s)"
@@ -10075,3 +10069,25 @@ msgstr "Das Webverzeichnis dieser Seite ist nicht festgestellt (Website- und Wor
 
 msgid "Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C."
 msgstr "Kopieren nicht möglich – Text ist markiert, bitte mit Strg/Cmd+C kopieren."
+
+msgid "Also run the uploads test (active test: briefly creates a test file in the uploads folder)"
+msgstr "Zusätzlich den Uploads-Test ausführen (aktiver Test: legt kurz eine Testdatei im Uploads-Ordner an)"
+
+msgid "Reset results"
+msgstr "Ergebnisse zurücksetzen"
+
+msgid "Delete all check results and the ticks under \"Checked by hand\"? The settings stay."
+msgstr "Alle Prüfergebnisse und die Häkchen unter „Von Hand geprüft“ löschen? Die Einstellungen bleiben."
+
+msgid "Results reset. The site counts as not checked."
+msgstr "Ergebnisse zurückgesetzt. Die Seite gilt als noch nicht geprüft."
+
+#. translators: %1$s: error message
+msgid "Could not reset: %1$s"
+msgstr "Zurücksetzen nicht möglich: %1$s"
+
+msgid "Not fully reset: part of the results may already be deleted. Reload the page and reset again."
+msgstr "Nicht vollständig zurückgesetzt: Ein Teil der Ergebnisse ist eventuell schon gelöscht. Lade die Seite neu und setze erneut zurück."
+
+msgid "No answer to the reset: the results may already be deleted. Reload the page to see what is stored."
+msgstr "Keine Antwort auf das Zurücksetzen: Die Ergebnisse sind eventuell schon gelöscht. Lade die Seite neu, um den gespeicherten Stand zu sehen."

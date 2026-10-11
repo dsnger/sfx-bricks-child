@@ -104,6 +104,8 @@ namespace {
         public array $autoload = [];
         /** @var callable|null what another process does just before the next mutex acquire */
         public $on_acquire = null;
+        /** @var list<string> options whose DELETE the database refuses (query error) */
+        public array $fail_delete = [];
 
         public function prepare($query, ...$args)
         {
@@ -156,6 +158,9 @@ namespace {
             }
             if (str_starts_with($q, 'DELETE o')) {
                 [$mutex, $held, $option] = $a;
+                if (in_array($option, $this->fail_delete, true)) {
+                    return false;
+                }
                 if (($this->rows[$mutex] ?? null) !== $held || !array_key_exists($option, $this->rows)) {
                     return 0;
                 }
@@ -882,11 +887,38 @@ namespace {
     post(['item' => 'backdoor', 'done' => '1']);
     assert_same(400, Runs::items_request()[0], 'unknown item ID → refused');
     assert_true(!isset(Runs::items()['backdoor']), 'unknown item not stored');
-    post(['reset' => '1']);
-    assert_same(200, Runs::items_request()[0], 'reset');
-    assert_same([], Runs::items(), 'reset clears all four');
-    assert_true(!isset($db->rows[Options::name('items')]), 'reset removes the option');
     assert_same($previous, saved(), 'items never touch the saved run');
+    post(['reset' => '1', 'item' => 'contact_form', 'done' => '0']);
+    Runs::items_request();
+    assert_true(isset(Runs::items()['offsite_backup']), 'the items endpoint no longer resets');
+
+    // Reset (owner ruling 2026-10-11): saved run, issued run and ticks go; settings stay.
+    $settings_before = $db->rows[Options::name('settings')] ?? null;
+    $pending = start();
+    post([]);
+    assert_same(200, Runs::reset_request()[0], 'reset');
+    assert_same([], Runs::items(), 'reset clears all items');
+    assert_true(!isset($db->rows[Options::name('items')]) && !isset($db->rows[Options::name('manual')]), 'reset removes both options');
+    assert_same(null, Runs::last(), 'no saved run after reset');
+    assert_same('no_run', Runs::save($pending, []), 'a run issued before the reset cannot save');
+    assert_same($settings_before, $db->rows[Options::name('settings')] ?? null, 'settings untouched');
+    post([]);
+    assert_same(200, Runs::reset_request()[0], 'a second reset (nothing stored) still succeeds');
+
+    // A partly refused reset says so instead of "nothing was changed".
+    post(['item' => 'contact_form', 'done' => '1']);
+    Runs::items_request();
+    start();
+    $db->fail_delete = [Options::name('items')];
+    post([]);
+    [$code, $body] = Runs::reset_request();
+    $db->fail_delete = [];
+    assert_same(500, $code, 'partial reset → error');
+    assert_true(strpos($body['data']['message'], 'Not fully reset') === 0, 'partial reset says results may already be deleted');
+    assert_true(!isset($db->rows[Options::name('manual')]) && isset($db->rows[Options::name('items')]), 'fixture: one delete went through, one did not');
+    post([]);
+    assert_same(200, Runs::reset_request()[0], 'resetting again completes it');
+    assert_same([], Runs::items(), 'and the items are gone');
     $GLOBALS['stub']['user'] = 7;
 
     // =========================================================== access and nonce, reads included
@@ -900,7 +932,7 @@ namespace {
         'server' => static fn() => Runs::server_request(),
         'save'   => static fn() => Runs::save_request(),
         'items'  => static fn() => Runs::items_request(),
-        'reset'  => static fn() => Runs::items_request(),
+        'reset'  => static fn() => Runs::reset_request(),
     ];
     foreach ([['access' => false, 'nonce' => true], ['access' => true, 'nonce' => false]] as $gate) {
         $GLOBALS['stub']['access'] = $gate['access'];

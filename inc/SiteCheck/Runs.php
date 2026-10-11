@@ -14,7 +14,7 @@ use SFX\SiteCheck\Checks\ServerChecks;
  * - issued: {run, started, user, profile, indexability_paths (valid ones
  *   only), sitemap_allow, fallback_theme, probe (consent, this run only),
  *   checks (the catalogue IDs this run covers)} — written by start(),
- *   dropped by the save that consumes it and by purge.
+ *   dropped by the save that consumes it, by reset() and by purge.
  * - saved: {run, date, user, profile, results: [check => graded]} — the
  *   only thing a run leaves behind (spec rule 7); read by last().
  *
@@ -53,7 +53,7 @@ final class Runs
 
     public static function register(): void
     {
-        foreach (['start', 'server', 'save', 'items'] as $action) {
+        foreach (['start', 'server', 'save', 'items', 'reset'] as $action) {
             add_action('wp_ajax_sfx_site_check_' . $action, [self::class, 'handle_' . $action]);
         }
     }
@@ -281,10 +281,24 @@ final class Runs
         return $outcome === Mutex::Busy ? 'busy' : $outcome;
     }
 
-    /** Clears all four items; the saved run is not touched. */
-    public static function reset_items(): string
+    /**
+     * Back to "not checked yet": the saved run, an issued run (its save then
+     * answers no_run) and the ticked items go; settings and the probe
+     * registry stay.
+     *
+     * Two deletes, not one transaction: 'partial' means one of them may
+     * already have gone through, so the page must reload rather than keep
+     * showing what it had.
+     *
+     * @return string saved | busy | partial
+     */
+    public static function reset(): string
     {
-        $outcome = Mutex::with(static fn(): string => self::store_items([]) ? 'saved' : 'refused');
+        $outcome = Mutex::with(static function (): string {
+            $manual = Mutex::delete(Options::name('manual'));
+            $items = Mutex::delete(Options::name('items'));
+            return $manual && $items ? 'saved' : 'partial';
+        });
         return $outcome === Mutex::Busy ? 'busy' : $outcome;
     }
 
@@ -308,6 +322,11 @@ final class Runs
     public static function handle_items(): void
     {
         self::send(self::items_request());
+    }
+
+    public static function handle_reset(): void
+    {
+        self::send(self::reset_request());
     }
 
     /** POST probe ('1' = the active test was ticked). @return array{0:int, 1:array} */
@@ -361,18 +380,14 @@ final class Runs
         return [200, ['success' => true, 'data' => ['last' => $last === null ? null : $last + ['date_display' => self::date_display($last['date'])]]]];
     }
 
-    /** POST item + done ('1'/'0'), or reset = '1'. @return array{0:int, 1:array} */
+    /** POST item + done ('1'/'0'). @return array{0:int, 1:array} */
     public static function items_request(): array
     {
         if (!self::gate()) {
             return self::denied();
         }
-        if (isset($_POST['reset']) && $_POST['reset'] === '1') {
-            $outcome = self::reset_items();
-        } else {
-            $item = isset($_POST['item']) && is_string($_POST['item']) ? $_POST['item'] : '';
-            $outcome = self::set_item($item, isset($_POST['done']) && $_POST['done'] === '1');
-        }
+        $item = isset($_POST['item']) && is_string($_POST['item']) ? $_POST['item'] : '';
+        $outcome = self::set_item($item, isset($_POST['done']) && $_POST['done'] === '1');
         if ($outcome === 'unknown') {
             return self::error(400, __('Unknown item.', 'sfxtheme'));
         }
@@ -382,6 +397,22 @@ final class Runs
         $items = array_map(static fn(array $item): array => $item + ['date_display' => self::date_display($item['date'])], self::items());
 
         return [200, ['success' => true, 'data' => ['items' => $items]]];
+    }
+
+    /** Deletes results and ticked items (reset()). @return array{0:int, 1:array} */
+    public static function reset_request(): array
+    {
+        if (!self::gate()) {
+            return self::denied();
+        }
+        $outcome = self::reset();
+        if ($outcome === 'partial') {
+            return self::error(500, __('Not fully reset: part of the results may already be deleted. Reload the page and reset again.', 'sfxtheme'));
+        }
+        if ($outcome !== 'saved') {
+            return self::outcome_error($outcome);
+        }
+        return [200, ['success' => true, 'data' => []]];
     }
 
     /** A timestamp in the site's time zone and date/time format; the page and the box show only this. */

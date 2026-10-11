@@ -474,6 +474,10 @@
     var current = null;
     var rows = {};
     var startButtons = [];
+    var clearItems = null;
+    /** An item write is pending: the reset waits for it (one write at a time). */
+    var itemsBusy = false;
+    var lockItems = null;
 
     // ---------------------------------------------------------- frame
 
@@ -486,6 +490,28 @@
     progressLine.id = 'sfx-sc-progress';
     var noticeArea = el(doc, 'div', 'sfx-sc-notices');
     noticeArea.id = 'sfx-sc-notice';
+    // The run bar sits above the tabs, so "Check now" is the same control on every tab.
+    var runbar = el(doc, 'div', 'sfx-sc-runbar');
+    var runMain = runbar.appendChild(el(doc, 'div', 'sfx-sc-runmain'));
+    var start = runMain.appendChild(startButton());
+    start.id = 'sfx-sc-start';
+    var runInfo = runMain.appendChild(el(doc, 'div', 'sfx-sc-runinfo'));
+    var meta = runInfo.appendChild(el(doc, 'p', 'sfx-sc-meta'));
+    var next = runInfo.appendChild(el(doc, 'p', 'sfx-sc-next'));
+    var nextText = next.appendChild(el(doc, 'span'));
+    next.appendChild(doc.createTextNode(' '));
+    var change = next.appendChild(el(doc, 'a', null, strings.change));
+    change.setAttribute('href', '#einstellungen');
+    var resetButton = runMain.appendChild(el(doc, 'button', 'button sfx-sc-reset', strings.reset));
+    resetButton.type = 'button';
+    resetButton.id = 'sfx-sc-reset';
+    resetButton.addEventListener('click', resetAll);
+    var probeLabel = runbar.appendChild(el(doc, 'label', 'sfx-sc-probe'));
+    var probe = probeLabel.appendChild(el(doc, 'input'));
+    probe.type = 'checkbox';
+    probe.id = 'sfx-sc-probe';
+    probeLabel.appendChild(doc.createTextNode(' ' + (strings.probe || '')));
+
     var tablist = el(doc, 'nav', 'nav-tab-wrapper sfx-sc-tabs');
     tablist.setAttribute('role', 'tablist');
     tablist.setAttribute('aria-label', strings.tablist || '');
@@ -494,7 +520,7 @@
     var panels = {};
     var counts = {};
     var adopted = { htaccess: doc.getElementById('sfx-sc-panel-htaccess'), einstellungen: doc.getElementById('sfx-sc-panel-einstellungen') };
-    var built = [statusLine, progressLine, noticeArea, tablist];
+    var built = [runbar, statusLine, progressLine, noticeArea, tablist];
     tabs.forEach(function (tab) {
       var a = el(doc, 'a', 'nav-tab');
       a.id = 'sfx-sc-tab-' + tab.id;
@@ -536,21 +562,6 @@
     // ---------------------------------------------------------- Übersicht
 
     var overview = panels.uebersicht;
-    var meta = overview.appendChild(el(doc, 'p', 'sfx-sc-meta'));
-    var next = overview.appendChild(el(doc, 'p', 'sfx-sc-next'));
-    var nextText = next.appendChild(el(doc, 'span'));
-    next.appendChild(doc.createTextNode(' '));
-    var change = next.appendChild(el(doc, 'a', null, strings.change));
-    change.setAttribute('href', '#einstellungen');
-    var controls = overview.appendChild(el(doc, 'p', 'sfx-sc-controls'));
-    var probeLabel = controls.appendChild(el(doc, 'label', 'sfx-sc-probe'));
-    var probe = probeLabel.appendChild(el(doc, 'input'));
-    probe.type = 'checkbox';
-    probe.id = 'sfx-sc-probe';
-    probeLabel.appendChild(doc.createTextNode(' ' + (strings.probe || '')));
-    var start = controls.appendChild(startButton(true));
-    start.id = 'sfx-sc-start';
-
     overview.appendChild(el(doc, 'h2', null, strings.sectionsTitle));
     var summaries = overview.appendChild(el(doc, 'ul', 'sfx-sc-summaries'));
     var summaryRows = {};
@@ -565,27 +576,13 @@
     var urgentList = urgentBox.appendChild(el(doc, 'ol', 'sfx-sc-urgent-list'));
     overview.appendChild(renderItems());
 
-    function startButton(primary) {
-      var b = el(doc, 'button', primary ? 'button button-primary' : 'button', strings.check);
+    function startButton() {
+      var b = el(doc, 'button', 'button button-primary button-hero', strings.check);
       b.type = 'button';
       b.addEventListener('click', startRun);
       startButtons.push(b);
       return b;
     }
-
-    // Fresh site: the adopted panels (.htaccess, settings) say "not checked yet" with a working control too.
-    var freshBoxes = [];
-    Object.keys(adopted).forEach(function (id) {
-      var panel = adopted[id];
-      if (!panel) {
-        return;
-      }
-      var box = el(doc, 'div', 'sfx-sc-empty');
-      box.appendChild(el(doc, 'p', null, strings.notChecked));
-      box.appendChild(startButton(false));
-      panel.insertBefore(box, panel.firstChild || null);
-      freshBoxes.push(box);
-    });
 
     // ---------------------------------------------------------- section tabs
 
@@ -610,8 +607,7 @@
       });
       var empty = panel.appendChild(el(doc, 'div', 'sfx-sc-empty'));
       var emptyText = empty.appendChild(el(doc, 'p'));
-      var emptyButton = empty.appendChild(startButton(false));
-      empties[section.id] = { box: empty, text: emptyText, button: emptyButton };
+      empties[section.id] = { box: empty, text: emptyText };
       lists[section.id] = panel.appendChild(el(doc, 'div', 'sfx-sc-list'));
       catalogue.filter(function (c) { return c.section === section.id; }).forEach(function (check) {
         rows[check.id] = createRow(check);
@@ -631,8 +627,15 @@
       var result = body.appendChild(el(doc, 'div', 'sfx-sc-result'));
       var guide = renderGuidance(doc, check, strings);
       body.appendChild(guide.box);
-      var row = { details: details, summary: summary, badge: badge, count: count, tag: tag, result: result, guide: guide, decided: false, key: null };
-      details.addEventListener('toggle', function () { row.decided = true; });
+      var row = { details: details, summary: summary, badge: badge, count: count, tag: tag, result: result, guide: guide, decided: false, silent: false, key: null };
+      details.addEventListener('toggle', function () {
+        // The reset's own close fires one toggle (asynchronously); that one is not the admin's choice.
+        if (row.silent) {
+          row.silent = false;
+          return;
+        }
+        row.decided = true;
+      });
       return row;
     }
 
@@ -747,9 +750,9 @@
 
       renderUrgent(countResults);
       renderMeta();
-      freshBoxes.forEach(function (box) { box.hidden = !(saved === null && incoming === null && phase === 'idle'); });
       startButtons.forEach(function (b) { b.disabled = busy; });
       probe.disabled = busy;
+      resetButton.disabled = busy || itemsBusy;
       if (formSave) {
         formSave.disabled = busy;
       }
@@ -781,7 +784,6 @@
       var empty = empties[section];
       empty.box.hidden = !noRun && shown > 0;
       empty.text.textContent = noRun ? strings.notChecked : strings.noActionTab;
-      empty.button.hidden = !noRun;
     }
 
     /** Moves rows into order only when it changed; focus inside a moved row is restored. */
@@ -1043,6 +1045,54 @@
       });
     }
 
+    /** Back to "not checked yet": results and ticked items are deleted; settings stay. */
+    function resetAll() {
+      if (busy || itemsBusy || !win.confirm(strings.resetConfirm)) {
+        return;
+      }
+      busy = true;
+      var mine = ++op;
+      lockItems(true);
+      render();
+      fetcher.post('sfx_site_check_reset', {}).then(function () {
+        if (mine !== op) {
+          return;
+        }
+        saved = null;
+        incoming = null;
+        phase = 'idle';
+        retrySave = null;
+        progressLine.textContent = '';
+        Object.keys(rows).forEach(function (id) {
+          if (rows[id].details.open) {
+            rows[id].silent = true;
+            rows[id].details.open = false;
+          }
+          rows[id].decided = false;
+        });
+        clearItems();
+        notice(null);
+        setStatus(strings.resetDone);
+      }, function (e) {
+        if (mine !== op) {
+          return;
+        }
+        var text = e.lost ? strings.resetUnknown : format(strings.resetFailed, [e.message]);
+        setStatus(text);
+        if (!e.busy) {
+          // Lost answer or partial delete: what is stored is unknown, so the page stops claiming it.
+          notice('warning', text, { label: strings.reload, run: function () { win.location.reload(); } });
+        }
+        // Busy: nothing was deleted; any notice from a run (and its retry) stays as it was.
+      }).then(function () {
+        if (mine === op) {
+          busy = false;
+          lockItems(false);
+          render();
+        }
+      });
+    }
+
     // ---------------------------------------------------------- settings form (rendered by PHP)
 
     var form = doc.getElementById('sfx-sc-settings');
@@ -1071,13 +1121,13 @@
       var itemRows = [];
       /** One item write at a time: every control is disabled until it settles; older answers are ignored. */
       var itemOp = 0;
-      var reset = null;
-      function lockItems(on) {
+      lockItems = function (on) {
         itemRows.forEach(function (r) { r.box.disabled = on; });
-        if (reset) {
-          reset.disabled = on;
-        }
-      }
+      };
+      clearItems = function () {
+        itemOp++;
+        itemRows.forEach(function (r) { r.box.checked = false; r.note.textContent = ''; });
+      };
       (config.items || []).forEach(function (item) {
         var row = wrap.appendChild(el(doc, 'p', 'sfx-sc-item'));
         var label = row.appendChild(el(doc, 'label'));
@@ -1091,6 +1141,8 @@
           var done = !!box.checked;
           var mine = ++itemOp;
           lockItems(true);
+          itemsBusy = true;
+          resetButton.disabled = true;
           fetcher.post('sfx_site_check_items', { item: item.id, done: done ? '1' : '0' }).then(function (data) {
             if (mine !== itemOp) {
               return;
@@ -1106,31 +1158,11 @@
             note.textContent = e.message;
           }).then(function () {
             if (mine === itemOp) {
+              itemsBusy = false;
               lockItems(false);
+              resetButton.disabled = busy;
             }
           });
-        });
-      });
-      reset = wrap.appendChild(el(doc, 'button', 'button', strings.itemsReset));
-      reset.type = 'button';
-      reset.addEventListener('click', function () {
-        if (!win.confirm(strings.itemsResetConfirm)) {
-          return;
-        }
-        var mine = ++itemOp;
-        lockItems(true);
-        fetcher.post('sfx_site_check_items', { reset: '1' }).then(function () {
-          if (mine === itemOp) {
-            itemRows.forEach(function (r) { r.box.checked = false; r.note.textContent = ''; });
-          }
-        }, function (e) {
-          if (mine === itemOp) {
-            setStatus(e.message);
-          }
-        }).then(function () {
-          if (mine === itemOp) {
-            lockItems(false);
-          }
         });
       });
       return wrap;

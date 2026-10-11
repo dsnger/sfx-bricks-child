@@ -4,6 +4,15 @@
  * Status is always also written as a word; colour only supports it.
  */
 
+/* Run bar, above the tabs on every tab: the main action, the last run, the reset. */
+.sfx-sc-runbar { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 16px; margin: 12px 0 8px; max-width: 960px; box-sizing: border-box; }
+.sfx-sc-runmain { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.sfx-sc-runinfo { flex: 1 1 260px; min-width: 0; }
+.sfx-sc-runinfo p { margin: 0; }
+.sfx-sc-runbar .sfx-sc-next { margin-top: 2px; }
+.sfx-sc-reset { margin-left: auto; }
+.sfx-sc-probe { display: block; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f1; color: #50575e; }
+
 /* Run status line, above the tabs on every tab. */
 .sfx-sc-runline { min-height: 1.5em; margin: 8px 0; font-weight: 600; }
 .sfx-sc-runline:empty { margin: 0; min-height: 0; }
@@ -22,9 +31,8 @@
 .sfx-sc-panel > h2:first-child { margin-top: 0; }
 
 /* Übersicht */
-.sfx-sc-meta { font-weight: 600; margin: 0 0 4px; }
-.sfx-sc-next { margin: 0 0 16px; color: #50575e; }
-.sfx-sc-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 24px; }
+.sfx-sc-meta { font-weight: 600; }
+.sfx-sc-next { color: #50575e; }
 .sfx-sc-summaries,
 .sfx-sc-urgent-list { margin: 0 0 24px; padding: 0; list-style: none; max-width: 720px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px; }
 .sfx-sc-summaries li,
@@ -92,6 +100,7 @@
 @media (max-width: 782px) {
     .sfx-sc-tabs .nav-tab { margin-bottom: 4px; }
     .sfx-sc-body { padding-left: 12px; }
+    .sfx-sc-reset { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -63,7 +63,7 @@ default off, page under Tools like Redirects.
 
 ## Site profile
 
-Set in the *Einstellungen* tab and shown beside "Prüfen" in *Übersicht* as the profile the next run uses; stored per site, never exported:
+Set in the *Einstellungen* tab and shown in the run bar (every tab) as the profile the next run uses; stored per site, never exported:
 
 | Profile | Meaning |
 |---|---|
@@ -220,10 +220,25 @@ and the WordPress-version part of `version_leaks` grade Gelb.
 
 | Tab | Content |
 |---|---|
-| **Übersicht** (default) | Last saved run (date and time in the site's time zone and date/time format, user, profile) or "Noch nicht geprüft" with one sentence on what the check does; the profile the next run uses with a link to change it; "Prüfen" with the probe checkbox; one summary per section (counts Rot / Gelb / Nicht prüfbar) that opens that tab; the most urgent Rot and Gelb checks across all sections (at most 5), each opening its check; the manual items. Plan 2 adds a "Überwachung" panel here (last monitor run, overdue state, open red findings with "aus der Überwachung" and their time, last mail hand-over); a mail link opens this tab. |
+| **Übersicht** (default) | One summary per section (counts Rot / Gelb / Nicht prüfbar) that opens that tab; the most urgent Rot and Gelb checks across all sections (at most 5), each opening its check; the manual items. Plan 2 adds a "Überwachung" panel here (last monitor run, overdue state, open red findings with "aus der Überwachung" and their time, last mail hand-over); a mail link opens this tab. |
 | **Sicherheit**, **Live-Gang**, **Aufräumen** | That section's checks, sorted as in "Sections". Each tab label shows its Rot and Gelb counts. A switch "Nur Handlungsbedarf" hides Grün and Hinweis rows; it changes no count. Plan 2 puts the account-baseline approval on the `admin_accounts` row. |
 | **.htaccess-Vorlage** | The template section, unchanged in content. Each block's copy button writes to the clipboard; where that is unavailable or refused, the block's text is selected and a message says to copy it by hand (Strg/Cmd+C). |
 | **Einstellungen** | Profile, indexability paths, sitemap allow list, fallback theme. Plan 2 adds the "Überwachung" group here (interval, monitored checks, probe selection, e-mail switch). |
+
+**Run bar** (owner ruling 2026-10-11, Daniel: "Jetzt prüfen" is the feature's main action and
+must not read as part of the probe option; it belongs on every tab; "Diese Punkte zurücksetzen"
+was unclear and a general reset is needed). Above the tabs, on every tab: the one "Jetzt prüfen"
+control as the page's primary button; next to it the last saved run (date and time in the site's
+time zone and date/time format, user, profile) or "Noch nicht geprüft" with one sentence on what
+the check does, and the profile the next run uses with a link to change it; "Ergebnisse
+zurücksetzen"; below, set apart, the probe option ("Zusätzlich den Uploads-Test ausführen").
+The reset asks for confirmation, then deletes the saved run, an issued run (its save is then
+refused as no longer current) and the manual items' ticks — settings and the probe record stay —
+and the page shows "Noch nicht geprüft". It is disabled while a run, a save or an item write is
+pending. A busy server deletes nothing: the page stays as it was, a notice from the last run
+(and its retry) included, and the status line says so. A lost answer, or a reset the server could
+only partly complete, leaves what is stored unknown: a notice says so and offers reloading the
+page.
 
 **Counting.** A check's status is the worst of its findings in the order Rot, Gelb,
 Nicht prüfbar, Hinweis, Grün (a check with no findings takes the status its row grades).
@@ -264,8 +279,8 @@ selected state and controls, one tab stop with arrow-key movement, inactive pane
 hidden from focus). Disclosures use the native element. Status is never shown by colour
 alone.
 
-**Empty states.** Before the first run: "Noch nicht geprüft" on every tab with the
-"Prüfen" control — the *.htaccess-Vorlage* and *Einstellungen* tabs included; a check link (`#check-<id>`) still shows its own row. When "Nur Handlungsbedarf" leaves a tab empty after a run: "Kein
+**Empty states.** Before the first run: the run bar says "Noch nicht geprüft" on every tab,
+and each section tab says it too; a check link (`#check-<id>`) still shows its own row. When "Nur Handlungsbedarf" leaves a tab empty after a run: "Kein
 Handlungsbedarf in diesem Bereich."
 
 **Guidance per check**, fixed text in the catalogue, the same for every site:
@@ -360,7 +375,7 @@ or unreadable folder, an unmapped path) is Nicht prüfbar with the refusal reaso
 
 ### Manual items
 
-Ticked by the admin, stored with user and date in their own option, reset by a button.
+Ticked by the admin, stored with user and date in their own option, cleared by the run bar's reset.
 One write at a time: while a tick or the reset is pending, every item control is disabled.
 Shown in the *Übersicht* tab only. Never touched by the monitor.
 
@@ -371,7 +386,7 @@ Shown in the *Übersicht* tab only. Never touched by the monitor.
 
 ## Uploads probe (active test)
 
-The only check that writes a file. Labelled "aktiver Test: legt kurz eine Testdatei an".
+The only check that writes a file. Labelled as an active test that briefly creates a test file in the uploads folder (the run bar's probe option).
 It runs only when ticked for this manual run, or when selected for the monitor on this
 site (that selection is the consent; it is never imported).
 
