@@ -201,6 +201,10 @@ function http_answer(string $method, string $url, array $args)
     if (isset($GLOBALS['stub']['on_request'])) {
         ($GLOBALS['stub']['on_request'])();
     }
+    // A certificate the site cannot verify (a local self-signed one) fails only verified requests.
+    if (!empty($GLOBALS['stub']['untrusted_cert']) && ($args['sslverify'] ?? true) !== false && str_starts_with($url, 'https://')) {
+        return new WP_Error('http_request_failed', 'cURL error 60: SSL certificate problem: self-signed certificate');
+    }
     $route = $GLOBALS['stub']['routes'][$method . ' ' . $url] ?? $GLOBALS['stub']['routes'][$url] ?? null;
     if ($route instanceof WP_Error) {
         return $route;
@@ -1168,6 +1172,32 @@ foreach ($cases as [$route, $want, $label]) {
     assert_same([0, 10, 65536], [$req['args']['redirection'], $req['args']['timeout'], $req['args']['limit_response_size']], 'xmlrpc: rule-9 bounds, no redirects');
 }
 
+// Owner ruling 2026-10-11: a self-signed certificate (local stack) does not hide the answer; the https check still sees it.
+$GLOBALS['stub']['untrusted_cert'] = true;
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 403, 'body' => 'x'], 'http://ex.test/' => ['status' => 301, 'headers' => ['location' => 'https://ex.test/']]];
+$GLOBALS['stub']['requests'] = [];
+$r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(Status::GREEN, $r['status'], 'xmlrpc: untrusted certificate → retried unverified, the blocking answer counts');
+assert_same([true, false], array_map(static fn($q) => $q['args']['sslverify'], array_values(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php')))), 'xmlrpc: verified first, unverified only after a TLS failure');
+[, $r] = run_loopback('https', ctx());
+assert_same(Status::RED, statuses($r)['https:tls'], 'https: the untrusted certificate is still reported (strict TLS)');
+unset($GLOBALS['stub']['untrusted_cert']);
+// Gate B pass 3: the streams transport's certificate name check is a certificate failure, retried once.
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'SSL certificate did not match the requested domain name')];
+$GLOBALS['stub']['requests'] = [];
+Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(2, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: a name-mismatch certificate failure is retried once');
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'stream_socket_client(): failed loading cafile stream')];
+$GLOBALS['stub']['requests'] = [];
+Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(2, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: an unreadable CA bundle is a certificate failure, retried once');
+// Gate B pass 2: a TLS failure that is not about the certificate is not retried unverified.
+$GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => new WP_Error('http_request_failed', 'cURL error 35: OpenSSL SSL_connect: SSL_ERROR_SYSCALL')];
+$GLOBALS['stub']['requests'] = [];
+$r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+assert_same(Status::UNKNOWN, $r['status'], 'xmlrpc: handshake failure → Nicht prüfbar');
+assert_same(1, count(array_filter($GLOBALS['stub']['requests'], static fn($q) => str_ends_with($q['url'], 'xmlrpc.php'))), 'xmlrpc: a non-certificate TLS failure is not retried');
+
 // WP Optimizer's "Disable XMLRPC" never replaces the call (owner ruling 2026-10-11): the answer grades, the switch only words it.
 \SFX\SiteCheck\ThemeSwitches::$probe = static fn(string $key): bool => $key === 'disable_xmlrpc';
 foreach ([
@@ -1534,6 +1564,30 @@ assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'tru
 assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login found in a truncated answer is still reported');
 [, $r] = run_browser('usernames_public', ctx(), $rest_only('[]'));
 assert_same(Status::GREEN, $r['status'], 'an empty, valid user list with a 404 comparison → read → Grün');
+// Owner ruling 2026-10-11: a theme's 404 page exceeds 64 KB; a cut 404 that is an HTML page still closes a source.
+$html_404 = '<!DOCTYPE html><html lang="de"><head><title>Seite nicht gefunden</title></head><body>' . str_repeat('x', 200);
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, $html_404, ['truncated' => true]]);
+assert_same(Status::GREEN, statuses($r)['usernames_public:sitemap'] ?? Status::GREEN, 'cut HTML 404 author sitemap → closed, not Nicht prüfbar');
+assert_same(Status::GREEN, $r['status'], 'cut HTML 404 pages everywhere else → Grün');
+// Gate B pass 8: BOM and a leading comment are still an HTML page; an XML root named html… is not.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, "\xEF\xBB\xBF<!-- cache -->\n" . $html_404, ['truncated' => true]]);
+assert_same(Status::GREEN, $r['status'], 'cut HTML 404 with BOM and a comment → closed');
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '<htmlError><message>Forbidden</message>' . str_repeat('x', 200), ['truncated' => true]]);
+assert_true($r['status'] !== Status::GREEN, 'cut XML <htmlError> body → not closed, never Grün');
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '']);
+assert_same(Status::UNKNOWN, $r['status'], 'an empty 404 is still no evidence');
+// Gate B (cycle prv9jv3vrc): a login on a cut error page is found before the source counts as closed.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [404, '[{"id":2,"slug":"maxm"}]', ['truncated' => true]] : [404, 'nf']);
+assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login in a cut 404 REST body → Gelb, not closed-and-Grün');
+// Owner ruling after Gate B pass 7: only a cut HTML page closes a source; a cut JSON error body is no
+// evidence either way, so an escaped login in it can no longer hide behind a "closed" source.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'oembed') !== false ? [404, '{"author_url":"https:\\/\\/ex.test\\/author\\/maxm\\/?q=' . str_repeat('a', 64000), ['truncated' => true]] : [404, '<!DOCTYPE html><html><body>nf</body></html>']);
+assert_same(Status::UNKNOWN, statuses($r)['usernames_public:oembed'] ?? null, 'a cut JSON 404 body → oEmbed source Nicht prüfbar, never closed');
+assert_true($r['status'] !== Status::GREEN, 'a cut JSON 404 body → never Grün');
+$GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404, 'body' => '<a href="https://ex.test/author/maxm/">x</a>']];
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => [404, 'nf']);
+assert_same(Status::YELLOW, statuses($r)['usernames_public:user-2'] ?? null, 'a login on the ?author=1 error page → Gelb');
+$GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404]];
 [, $r] = run_browser('usernames_public', ctx(), $rest_only('[]'), [200, 'soft']);
 assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'soft-404 site (comparison 200) → source unknown');
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [200, '<html><body>Welcome</body></html>'], [200, 'soft']);
@@ -1685,7 +1739,8 @@ foreach ([
     assert_same($want, statuses($r)['version_leaks:/'] ?? null, "generator: {$head}");
 }
 
-// Rule 4 before status-only verdicts: an empty or truncated "closed"/"blocked" answer proves nothing.
+// Rule 4 before status-only verdicts: an empty "closed"/"blocked" answer proves nothing; a cut one closes a
+// login-name source only when it is an HTML page (owner ruling 2026-10-11); a login on it still counts.
 $GLOBALS['stub']['users'] = [user(2, 'maxm', 'Max M.')];
 $GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404, 'body' => '']];
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [404, '']);
@@ -1693,7 +1748,7 @@ assert_true($r['status'] !== Status::GREEN, 'usernames: empty 404 answers → ne
 assert_same(Status::UNKNOWN, statuses($r)['usernames_public:author_redirect'] ?? null, '?author=1 empty 404 → unknown');
 $GLOBALS['stub']['routes'] = ['https://ex.test/?author=1' => ['status' => 404]];
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => [403, 'Forbidden', ['truncated' => true]]);
-assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'usernames: truncated 403 → unknown');
+assert_same(Status::UNKNOWN, statuses($r)['usernames_public:rest'] ?? null, 'usernames: a cut non-HTML 403 → unknown (only a cut HTML page closes)');
 $GLOBALS['stub']['users'] = [];
 $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => ['status' => 403, 'body' => '']];
 assert_same(Status::UNKNOWN, Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx())['status'], 'xmlrpc: empty 403 → Nicht prüfbar');

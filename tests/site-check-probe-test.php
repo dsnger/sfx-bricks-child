@@ -425,6 +425,9 @@ namespace {
     function wp_remote_get($url, $args = [])
     {
         $GLOBALS['stub']['requests'][] = $url;
+        if (isset($GLOBALS['stub']['tick'])) {
+            $GLOBALS['fake_now'] += $GLOBALS['stub']['tick'];
+        }
         $answer = $GLOBALS['stub']['answer'];
         if (strpos($url, '/sfx-site-check-missing-') !== false) {
             // The batch's comparison URL (rule 2): 404 unless a case says otherwise.
@@ -1113,6 +1116,18 @@ namespace {
     assert_same(true, $c['store_failed'], 'cleanup: a failed registry write is reported');
     $db->fail = [];
     assert_same(false, Probe::cleanup()['store_failed'], 'cleanup: a working registry write is not');
+
+    // ------------------------------- Gate B (cycle prv9jv3vrc): the probe's fetches share one time budget
+    // Every request fails TLS and takes 10 s; with the unverified retry that would be four 10 s
+    // requests (comparison and probe, each twice) without a budget.
+    $GLOBALS['fake_now'] = 5000.0;
+    Fetch::use_clock(static fn(): float => $GLOBALS['fake_now']);
+    $GLOBALS['stub']['tick'] = 10.0;
+    $GLOBALS['stub']['comparison'] = new WP_Error('http_request_failed', 'cURL error 60: SSL certificate problem: self-signed certificate');
+    probe(static fn($u) => new WP_Error('http_request_failed', 'cURL error 60: SSL certificate problem: self-signed certificate'));
+    assert_true($GLOBALS['fake_now'] - 5000.0 <= Fetch::BUDGET, 'the probe batch stays within Fetch::BUDGET, retries included');
+    unset($GLOBALS['stub']['tick'], $GLOBALS['stub']['comparison']);
+    Fetch::use_clock(null);
 
     // ------------------------------------------------------------ wiring
 

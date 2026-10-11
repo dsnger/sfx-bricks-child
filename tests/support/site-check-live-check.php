@@ -337,16 +337,11 @@ add_filter('upload_dir', static function (array $dirs) use ($harness_name): arra
     $dirs['subdir']  = '';
     return $dirs;
 });
-// The local site's certificate is not in PHP's CA bundle, so Fetch's verified loopback fails with `tls`
-// and the probe could never give a definite answer. Accept it for the harness folder's URLs only; every
-// other request keeps verification, so the https check still reports what a real run sees here.
-// It also records every probe-folder URL requested, so the check below can see where the probe ran
-// (an empty probe folder is removed after the run, so the folder itself is no evidence).
+// Records every probe-folder URL requested, so the check below can see where the probe ran
+// (an empty probe folder is removed after the run, so the folder itself is no evidence). The local
+// self-signed certificate needs no override: Fetch's Loopback retries it unverified itself.
 $GLOBALS['probe_urls'] = [];
-add_filter('http_request_args', static function (array $args, string $url) use ($harness_name): array {
-    if (strpos($url, '/' . $harness_name . '/') !== false) {
-        $args['sslverify'] = false;
-    }
+add_filter('http_request_args', static function (array $args, string $url): array {
     if (strpos($url, '/sfx-site-check/') !== false) {
         $GLOBALS['probe_urls'][] = $url;
     }

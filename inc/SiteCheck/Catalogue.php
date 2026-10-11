@@ -172,8 +172,10 @@ final class Catalogue
                 'why' => __('Security headers tell the browser to block common attacks such as clickjacking and content sniffing. Once set, they cost nothing.', 'sfxtheme'),
                 'recommendation' => __('Send the missing headers, and take care with the Content-Security-Policy.', 'sfxtheme'),
                 'steps' => [
-                    __('Open the Security Header module of this theme and switch on the headers listed as missing.', 'sfxtheme'),
-                    __('Test a Content-Security-Policy on a staging site first: a strict policy can block scripts, fonts and embeds.', 'sfxtheme'),
+                    __('Open the Security Header module of this theme, fill or switch on each header the findings name, and save.', 'sfxtheme'),
+                    __('Permissions-Policy: the field is empty until filled. A start for a typical company site: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Leave out a feature the site uses, such as location in a map or a payment button.', 'sfxtheme'),
+                    __('Content-Security-Policy: the default upgrade-insecure-requests only loads http resources over https; it names no allowed sources, so it does not stop injected scripts. A start for a Bricks site: default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: https:; font-src \'self\' data:; frame-src https:; object-src \'none\'; base-uri \'self\'; frame-ancestors \'self\'; upgrade-insecure-requests. Add every outside host the site loads: fonts, analytics, maps, videos, cookie banner.', 'sfxtheme'),
+                    __('Test a Content-Security-Policy on a staging site first and look at the browser console: a strict policy can block scripts, fonts and embeds.', 'sfxtheme'),
                     __('The check only says whether a Content-Security-Policy and a Permissions-Policy are present; what they allow is not judged in detail. Review them with a dedicated tool if they matter for this site.', 'sfxtheme'),
                     __('Run the check again.', 'sfxtheme'),
                 ],

@@ -83,9 +83,21 @@ final class AccountOutside
                     continue;
                 }
                 // 401 is no evidence (rule 4): neither closed nor read.
-                // Rule 4 before rule 3: an empty or truncated status answer is no evidence.
-                if ($obs['redirect'] || (in_array($obs['status'], [403, 404, 410], true) && $obs['body'] !== '' && !$obs['truncated'])) {
+                // Rule 4 before rule 3: an empty status answer is no evidence; a cut one only when it is
+                // an HTML page (rule 4's exception, owner ruling 2026-10-11: theme 404 pages exceed 64 KB).
+                if ($obs['redirect'] || self::blocking_page($obs['status'], $obs['body'], (bool) $obs['truncated'])) {
+                    // Signatures first (rule 4): a login on the error page still counts.
+                    foreach (self::names_in($obs['body'], $c['kind'] === 'feed', (bool) $obs['truncated']) as $name) {
+                        $names[$name][$c['kind']] = true;
+                    }
                     $closed++;
+                    continue;
+                }
+                // A cut JSON or XML error body is no evidence either way (rule 4), but a login in it counts.
+                if (in_array($obs['status'], [403, 404, 410], true)) {
+                    foreach (self::names_in($obs['body'], $c['kind'] === 'feed', (bool) $obs['truncated']) as $name) {
+                        $names[$name][$c['kind']] = true;
+                    }
                     continue;
                 }
                 if ($obs['status'] === 200 && $obs['body'] !== '') {
@@ -109,10 +121,17 @@ final class AccountOutside
         $r = Fetch::loopback('GET', home_url('/?author=1'));
         if ($r['error'] !== '' || $r['challenge']) {
             $sources['author_redirect'] = 'unknown';
-        } elseif (in_array($r['status'], [403, 404, 410], true) && $r['body'] !== '' && !$r['truncated']) {
+        } elseif (self::blocking_page($r['status'], $r['body'], (bool) $r['truncated'])) {
             $sources['author_redirect'] = 'closed';
+            // Signatures first (rule 4): a login on the error page still counts.
+            foreach (self::names_in($r['body']) as $name) {
+                $names[$name]['author_redirect'] = true;
+            }
         } elseif (in_array($r['status'], [403, 404, 410], true)) {
             $sources['author_redirect'] = 'unknown';
+            foreach (self::names_in($r['body']) as $name) {
+                $names[$name]['author_redirect'] = true;
+            }
         } elseif (!$r['redirect'] && $r['status'] !== 200) {
             $sources['author_redirect'] = 'unknown';
         } else {
@@ -148,6 +167,22 @@ final class AccountOutside
         }
 
         return ['sources' => $sources, 'reasons' => $reasons, 'matches' => $list, 'hints' => $hints];
+    }
+
+    /**
+     * A blocking answer that closes a login-name source: a non-empty 403/404/410,
+     * complete — or cut when it is an HTML page, as a theme's 404 page beyond
+     * 64 KB is (owner ruling 2026-10-11). A cut JSON or XML body stays no evidence.
+     */
+    private static function blocking_page(int $status, string $body, bool $truncated): bool
+    {
+        if (!in_array($status, [403, 404, 410], true) || $body === '') {
+            return false;
+        }
+
+        // An HTML document: optional BOM, whitespace and comments, then the html doctype or element
+        // (`<htmlError>` and other XML roots do not count).
+        return !$truncated || preg_match('/^(?:\xEF\xBB\xBF)?(?:\s++|<!--.*?-->)*+(?:<!doctype\s+html[\s>]|<html[\s>])/is', $body) === 1;
     }
 
     /** The answer has the format its source serves. */
@@ -279,7 +314,7 @@ final class AccountOutside
 
         $tls = 'skipped';
         if ($scheme === 'https') {
-            $r = Fetch::loopback('GET', home_url('/'));
+            $r = Fetch::loopback('GET', home_url('/'), null, true);
             $tls = $r['error'] === 'tls' ? 'fail' : ($r['error'] === '' ? 'ok' : 'unknown');
         }
 

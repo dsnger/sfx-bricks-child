@@ -9541,12 +9541,6 @@ msgstr "Security-Header weisen den Browser an, gängige Angriffe wie Clickjackin
 msgid "Send the missing headers, and take care with the Content-Security-Policy."
 msgstr "Sende die fehlenden Header – bei der Content-Security-Policy mit Bedacht."
 
-msgid "Open the Security Header module of this theme and switch on the headers listed as missing."
-msgstr "Öffne das Modul Security Header dieses Themes und schalte die als fehlend gelisteten Header ein."
-
-msgid "Test a Content-Security-Policy on a staging site first: a strict policy can block scripts, fonts and embeds."
-msgstr "Teste eine Content-Security-Policy zuerst auf einer Staging-Seite: Eine strenge Richtlinie kann Skripte, Schriften und Einbettungen blockieren."
-
 msgid "With the file editor on, anyone who gets into an admin account can change PHP code directly. One stolen password becomes full control."
 msgstr "Ist der Datei-Editor an, kann jeder, der in ein Admin-Konto kommt, PHP-Code direkt ändern. Aus einem gestohlenen Passwort wird volle Kontrolle."
 
@@ -10238,3 +10232,15 @@ msgstr "in Ordnung"
 
 msgid "Nothing to fix."
 msgstr "Nichts zu erledigen."
+
+msgid "Open the Security Header module of this theme, fill or switch on each header the findings name, and save."
+msgstr "Öffne das Modul Security Header dieses Themes, fülle jeden Header aus den Befunden aus oder schalte ihn ein, und speichere."
+
+msgid "Permissions-Policy: the field is empty until filled. A start for a typical company site: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Leave out a feature the site uses, such as location in a map or a payment button."
+msgstr "Permissions-Policy: Das Feld ist leer, bis du es füllst. Ein Start für eine typische Firmenseite: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Lass eine Funktion weg, die die Seite nutzt, etwa den Standort in einer Karte oder einen Bezahl-Button."
+
+msgid "Content-Security-Policy: the default upgrade-insecure-requests only loads http resources over https; it names no allowed sources, so it does not stop injected scripts. A start for a Bricks site: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; upgrade-insecure-requests. Add every outside host the site loads: fonts, analytics, maps, videos, cookie banner."
+msgstr "Content-Security-Policy: Der Standard upgrade-insecure-requests lädt http-Inhalte nur über https; er nennt keine erlaubten Quellen und hält deshalb eingeschleuste Skripte nicht auf. Ein Start für eine Bricks-Seite: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; upgrade-insecure-requests. Ergänze jeden fremden Host, den die Seite lädt: Schriften, Statistik, Karten, Videos, Cookie-Banner."
+
+msgid "Test a Content-Security-Policy on a staging site first and look at the browser console: a strict policy can block scripts, fonts and embeds."
+msgstr "Teste eine Content-Security-Policy zuerst auf einer Staging-Seite und schau in die Browser-Konsole: Eine strenge Policy kann Skripte, Schriften und Einbettungen blockieren."

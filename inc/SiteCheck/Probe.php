@@ -84,7 +84,9 @@ final class Probe
         if ($created === '') {
             $present = Mutex::with(static fn(): bool => self::find($path) !== null);
             if ($present === true) {
-                // Rule 2: this batch's comparison URL, by Loopback, right before the probe.
+                // Rule 2: this batch's comparison URL, by Loopback, right before the probe;
+                // both share one time budget (rule 9), the TLS retry included.
+                Fetch::start_budget();
                 $comparison = Checks\OutsideChecks::loopback_comparison('php_in_uploads', $ctx);
                 self::$fetching = $url;
                 try {
