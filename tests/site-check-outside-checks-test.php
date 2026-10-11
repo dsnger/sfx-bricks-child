@@ -272,7 +272,7 @@ function get_taxonomies($args = [], $output = 'names')
     return ['category' => (object) ['name' => 'category', 'public' => true, 'rewrite' => ['slug' => 'category']]];
 }
 
-foreach (['Status', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Robots', 'Settings', 'Access', 'OutsideEndpoints', 'Fetch', 'Observations', 'Probe', 'Runs'] as $class) {
+foreach (['Status', 'ThemeSwitches', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Robots', 'Settings', 'Access', 'OutsideEndpoints', 'Fetch', 'Observations', 'Probe', 'Runs'] as $class) {
     require_once __DIR__ . '/../inc/SiteCheck/' . $class . '.php';
 }
 foreach (['ServerChecks', 'FileChecks', 'ConfigChecks', 'AccountChecks', 'CleanupChecks', 'OutsideChecks', 'OutsideFiles', 'HeaderChecks', 'CrawlChecks', 'AccountOutside'] as $class) {
@@ -1033,7 +1033,14 @@ assert_same(Status::UNKNOWN, $vs($r)[0], 'cut home page, generator printed by Wo
 $GLOBALS['stub']['wp_generator_hooked'] = false;
 [, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
 assert_same(Status::HINT, $vs($r)[0], 'cut home page, wp_generator removed from wp_head → Hinweis (server context, not the public page)');
+// The same server fact plus this theme's own WP Optimizer switch → Grün (owner ruling 2026-10-11).
+\SFX\SiteCheck\ThemeSwitches::$probe = static fn(string $key): bool => $key === 'disable_wp_version';
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::GREEN, $vs($r)[0], 'cut home page, generator removed by the WP Optimizer switch → Grün');
 $GLOBALS['stub']['wp_generator_hooked'] = true;
+[, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
+assert_same(Status::UNKNOWN, $vs($r)[0], 'switch on but WordPress still prints a generator → Nicht prüfbar, the switch alone settles nothing');
+\SFX\SiteCheck\ThemeSwitches::$probe = null;
 $GLOBALS['stub']['the_generator'] = '';
 [, $r] = observe_joined('version_leaks', $vl([200, $big_home, ['truncated' => true]], [200, $rss_clean]));
 assert_same(Status::HINT, $vs($r)[0], 'cut home page, the_generator filtered empty (WP Optimizer) → Hinweis');
@@ -1160,6 +1167,21 @@ foreach ($cases as [$route, $want, $label]) {
     assert_true(!in_array('cookie', $names, true) && !in_array('authorization', $names, true), 'xmlrpc: no Cookie or Authorization header');
     assert_same([0, 10, 65536], [$req['args']['redirection'], $req['args']['timeout'], $req['args']['limit_response_size']], 'xmlrpc: rule-9 bounds, no redirects');
 }
+
+// WP Optimizer's "Disable XMLRPC" never replaces the call (owner ruling 2026-10-11): the answer grades, the switch only words it.
+\SFX\SiteCheck\ThemeSwitches::$probe = static fn(string $key): bool => $key === 'disable_xmlrpc';
+foreach ([
+    [['status' => 200, 'body' => $methods], Status::YELLOW, 'Disable XMLRPC', 'switch on, methods answer → still Gelb, named'],
+    [['status' => 200, 'body' => '<html>hello</html>'], Status::UNKNOWN, 'Disable XMLRPC', 'switch on, other answer → still Nicht prüfbar'],
+    [new WP_Error('x', 'cURL error 7'), Status::UNKNOWN, 'Disable XMLRPC', 'switch on, no answer → still Nicht prüfbar'],
+    [['status' => 403, 'body' => 'x'], Status::GREEN, 'blocked', 'switch on, blocking answer → Grün from the answer'],
+] as [$route, $want, $needle, $label]) {
+    $GLOBALS['stub']['routes'] = ['POST https://ex.test/xmlrpc.php' => $route];
+    $r = Catalogue::grade('xmlrpc', OutsideChecks::observe('xmlrpc', ctx(), []), ctx());
+    assert_same($want, $r['status'], "xmlrpc: {$label}");
+    assert_true(strpos($r['findings'][0]['label'], $needle) !== false, "xmlrpc: {$label} (label)");
+}
+\SFX\SiteCheck\ThemeSwitches::$probe = null;
 
 // ---------------------------------------------------------------- sitemap (Loopback)
 

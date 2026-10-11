@@ -251,6 +251,7 @@ namespace {
     require_once __DIR__ . '/../inc/SiteCheck/Settings.php';
     require_once __DIR__ . '/../inc/SiteCheck/AdminPage.php';
     require_once __DIR__ . '/../inc/SiteCheck/Status.php';
+    require_once __DIR__ . '/../inc/SiteCheck/ThemeSwitches.php';
     require_once __DIR__ . '/../inc/SiteCheck/Catalogue.php';
 
     use SFX\SiteCheck\AdminPage;
@@ -535,7 +536,7 @@ namespace {
 
     $catalogue = Catalogue::all();
     assert_same(34, count($catalogue), 'all catalogue checks');
-    $tab_fragments = ['#uebersicht', '#sicherheit', '#live-gang', '#aufraeumen', '#htaccess', '#einstellungen'];
+    $tab_fragments = ['#ergebnis', '#uebersicht', '#sicherheit', '#live-gang', '#aufraeumen', '#htaccess', '#einstellungen'];
     foreach ($catalogue as $id => $row) {
         assert_true(!isset($row['tip']), "{$id}: the old tip is gone");
         assert_true(is_string($row['why']) && trim($row['why']) !== '', "{$id}: Warum");

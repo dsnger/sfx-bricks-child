@@ -503,7 +503,7 @@ final class FileChecks
             $findings[] = ServerChecks::finding($id, (string) $t['target'], $status, $t['target'] . ' — ' . $label) + (($t['kind'] ?? '') === 'folder' ? ['coverage' => true] : []);
         }
 
-        return ServerChecks::result($findings, Status::GREEN, __('Server: what is on disk. Browser: whether it can be read from outside.', 'sfxtheme'), 'browser');
+        return ServerChecks::result($findings, Status::GREEN, __('The server looked at what is on disk; your browser checked whether it can be read from outside.', 'sfxtheme'), 'browser');
     }
 
     // ------------------------------------------------------------ public_files

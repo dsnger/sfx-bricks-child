@@ -9,6 +9,7 @@ use SFX\SiteCheck\Fetch;
 use SFX\SiteCheck\Observations;
 use SFX\SiteCheck\RunContext;
 use SFX\SiteCheck\Status;
+use SFX\SiteCheck\ThemeSwitches;
 
 /**
  * usernames_public (Browser plus Loopback for ?author=1), xmlrpc and the
@@ -300,9 +301,11 @@ final class AccountOutside
     /** A 200 answer counts only when the batch's comparison clearly did not serve a page (rule 4). */
     private static function xmlrpc_facts(array $comparison): array
     {
+        // Owner ruling 2026-10-11: the theme knows its own WP Optimizer switch.
+        $switch = ThemeSwitches::wp_optimizer('disable_xmlrpc');
         $r = Fetch::loopback('POST', site_url('/xmlrpc.php'), self::XMLRPC_BODY);
         if ($r['error'] !== '') {
-            return ['state' => 'unknown', 'status' => 0];
+            return ['state' => 'unknown', 'status' => 0, 'switch' => $switch];
         }
         // A challenge says nothing about XML-RPC, whatever its status (rule 4).
         if ($r['challenge']) {
@@ -324,15 +327,20 @@ final class AccountOutside
             $state = 'other';
         }
 
-        return ['state' => $state, 'status' => $r['status']];
+        return ['state' => $state, 'status' => $r['status'], 'switch' => $switch];
     }
 
     private static function grade_xmlrpc(array $facts): array
     {
         $note = __('Loopback: one anonymous system.listMethods call to xmlrpc.php; no pingback.', 'sfxtheme');
-        switch ($facts['state'] ?? '') {
+        $state = (string) ($facts['state'] ?? '');
+        // The switch never replaces the call (owner ruling 2026-10-11): it only names why an answer is surprising.
+        $switch = !empty($facts['switch']);
+        switch ($state) {
             case 'answers':
-                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::YELLOW, __('XML-RPC answers anonymous requests', 'sfxtheme'));
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::YELLOW, $switch
+                    ? __('XML-RPC answers anonymous requests although "Disable XMLRPC" is on in WP Optimizer: something serves it anyway', 'sfxtheme')
+                    : __('XML-RPC answers anonymous requests', 'sfxtheme'));
                 break;
             case 'blocked':
                 /* translators: %d: HTTP status code */
@@ -349,7 +357,9 @@ final class AccountOutside
                 $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, __('XML-RPC answered with an error; whether it is usable is unclear', 'sfxtheme'));
                 break;
             default:
-                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, __('no recognisable answer', 'sfxtheme'));
+                $f = Observations::finding('xmlrpc', '/xmlrpc.php', Status::UNKNOWN, $switch
+                    ? __('no recognisable answer; "Disable XMLRPC" is on in WP Optimizer, but only a real call shows whether it works', 'sfxtheme')
+                    : __('no recognisable answer', 'sfxtheme'));
         }
 
         return Observations::result([$f], Status::UNKNOWN, 'loopback', $note);

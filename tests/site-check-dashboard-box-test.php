@@ -98,7 +98,7 @@ function add_action(...$a): bool
 }
 
 $src = dirname(__DIR__) . '/inc/SiteCheck/';
-foreach (['Options', 'Status', 'Access', 'Catalogue', 'Runs', 'AdminPage', 'DashboardBox'] as $file) {
+foreach (['Options', 'Status', 'Access', 'ThemeSwitches', 'Catalogue', 'Runs', 'AdminPage', 'DashboardBox'] as $file) {
     if (!is_file($src . $file . '.php')) {
         echo "FAIL: {$file}.php missing\n";
         exit(1);

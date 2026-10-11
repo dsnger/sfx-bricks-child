@@ -296,7 +296,7 @@ function get_site_transient($name)
     return $GLOBALS['stub']['transients'][$name] ?? false;
 }
 
-foreach (['Status', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Mutex', 'Probe'] as $class) {
+foreach (['Status', 'ThemeSwitches', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Mutex', 'Probe'] as $class) {
     require_once __DIR__ . '/../inc/SiteCheck/' . $class . '.php';
 }
 foreach (['ServerChecks', 'FileChecks', 'ConfigChecks', 'AccountChecks', 'CleanupChecks', 'OutsideChecks'] as $class) {

@@ -8,6 +8,7 @@ use SFX\SiteCheck\Evidence;
 use SFX\SiteCheck\Observations;
 use SFX\SiteCheck\RunContext;
 use SFX\SiteCheck\Status;
+use SFX\SiteCheck\ThemeSwitches;
 
 /**
  * security_headers: the home page's response headers as the browser received
@@ -345,7 +346,7 @@ final class HeaderChecks
         $type = (string) apply_filters('wp_generator_type', 'xhtml');
         $generator_off = has_action('wp_head', 'wp_generator') === false
             || trim((string) apply_filters('the_generator', get_the_generator($type), $type)) === '';
-        $facts = ['sources' => [], 'leaks' => []];
+        $facts = ['sources' => [], 'leaks' => [], 'wpo_version_off' => ThemeSwitches::wp_optimizer('disable_wp_version')];
         // A source the plan did not fetch (rule 6, Locations) stays Nicht prüfbar, with its reason.
         foreach ($plan['skipped'] as $skip) {
             foreach (self::candidates('version_leaks', $ctx) as $c) {
@@ -484,8 +485,11 @@ final class HeaderChecks
                     $findings[] = Observations::finding('version_leaks', $target, Status::GREEN, $target . ' — ' . __('WordPress version not found in the sources checked', 'sfxtheme'));
                     break;
                 case 'off':
-                    // Hinweis, not Grün: the server sees its own (admin) context, not the public page itself.
-                    $findings[] = Observations::finding('version_leaks', $target, Status::HINT, $target . ' — ' . __('According to the WordPress setting no version tag is printed; the page is too large to read completely, and no version was in the part read', 'sfxtheme'));
+                    // Grün when this theme's WP Optimizer removes the version (owner ruling 2026-10-11: the
+                    // theme knows its own switch); otherwise Hinweis — the server sees its admin context only.
+                    $findings[] = !empty($facts['wpo_version_off'])
+                        ? Observations::finding('version_leaks', $target, Status::GREEN, $target . ' — ' . __('the WordPress version is removed by this theme\'s WP Optimizer; no version in the part read', 'sfxtheme'))
+                        : Observations::finding('version_leaks', $target, Status::HINT, $target . ' — ' . __('According to the WordPress setting no version tag is printed; the page is too large to read completely, and no version was in the part read', 'sfxtheme'));
                     break;
                 case 'absent':
                     $findings[] = Observations::finding('version_leaks', $target, Status::GREEN, $target . ' — ' . __('feed not present', 'sfxtheme'));

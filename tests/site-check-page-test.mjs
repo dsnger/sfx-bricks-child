@@ -3,9 +3,10 @@
  * each check its own request, at most 4 in parallel; a failing or timed-out
  * request settles as Nicht prüfbar "Anfrage fehlgeschlagen" and the run still
  * saves; the save carries tokens only; sections sort Rot → Gelb → Nicht
- * prüfbar → Hinweis → Grün. The page (Task 11): six tabs with the ARIA
- * tabs pattern and fragments, counting, rows kept in place, run states,
- * Übersicht, empty states, guidance; labels reach the page as text, never
+ * prüfbar → Hinweis → Grün. The page (spec "Page layout and guidance"):
+ * verdict panel, three tabs with the ARIA tabs pattern, area fragments and
+ * the area filter, groups, closed rows kept in place, run states, empty
+ * states, findings and guidance; labels reach the page as text, never
  * as HTML (the fake DOM throws on innerHTML).
  *
  * WHAT THIS PROVES, AND WHAT IT DOES NOT. The script runs in a vm context
@@ -381,7 +382,9 @@ const STRINGS = {
   groupAct: 'Handeln', groupSelf: 'Selbst prüfen', groupSelfIntro: 'SELF-INTRO', groupFine: 'In Ordnung',
   selfStep: { server: 'SELBST-SERVER', browser: 'SELBST-BROWSER', loopback: 'SELBST-LOOPBACK', robots_txt: 'SELBST-ROBOTS' }, notChecked: 'Noch nicht geprüft.', intro: 'INTRO', noActionTab: 'Kein Handlungsbedarf in diesem Bereich.',
   meta: 'Zuletzt: %1$s von %2$s, Profil %3$s.', nextProfile: 'Nächste Prüfung: Profil %1$s.', change: 'ändern',
-  check: 'Prüfen', probe: 'Uploads-Test', sectionsTitle: 'Bereiche', urgentTitle: 'Am dringendsten', urgentNone: 'Nichts Dringendes.',
+  check: 'Prüfen', probe: 'Uploads-Test', groupActIntro: 'ACT-INTRO', filterLabel: 'Bereich', filterAll: 'Alle', emptyResult: 'LEER', findingsTitle: 'BEFUNDE',
+  findingKind: { red: 'Problem:', yellow: 'Problem:', unknown: 'Unklar:', hint: 'Info:', green: 'In Ordnung:' },
+  verdictRunning: 'PRÜFUNG LÄUFT ...', verdictActOne: '%1$s ZU ERLEDIGEN EINS', verdictActMany: '%1$s ZU ERLEDIGEN', verdictSelfOne: 'NICHTS · %1$s SELBST EINS', verdictSelfMany: 'NICHTS · %1$s SELBST', verdictOk: 'ALLES OK', verdictFine: 'in Ordnung',
   running: 'PRÜFUNG LÄUFT', progress: '%1$s von %2$s', saving: 'Speichere', saved: 'GESPEICHERT', startFailed: 'START-FEHLER %1$s',
   notSaved: 'NICHT GESPEICHERT %1$s', unknownSave: 'SPEICHERSTATUS UNBEKANNT',
   statusStartFailed: 'START KURZ', statusNotSaved: 'NICHT GESPEICHERT KURZ', statusUnknown: 'UNBEKANNT KURZ', retry: 'Erneut speichern', recheck: 'Neu prüfen', reload: 'Seite neu laden',
@@ -389,9 +392,7 @@ const STRINGS = {
   copied: 'Kopiert', copyFailed: 'KOPIEREN NICHT MÖGLICH', settingsDirty: 'nicht gespeichert', tablist: 'Bereiche',
 };
 const TABS = [
-  { id: 'uebersicht', title: 'Übersicht' }, { id: 'sicherheit', title: 'Sicherheit', section: 'security' },
-  { id: 'live-gang', title: 'Live-Gang', section: 'golive' }, { id: 'aufraeumen', title: 'Aufräumen', section: 'cleanup' },
-  { id: 'htaccess', title: '.htaccess-Vorlage' }, { id: 'einstellungen', title: 'Einstellungen' },
+  { id: 'ergebnis', title: 'Ergebnis' }, { id: 'htaccess', title: '.htaccess-Vorlage' }, { id: 'einstellungen', title: 'Einstellungen' },
 ];
 const g = (status, findings = [], note = '', perspective = 'server') => ({ status, findings: findings.map(([s, label], i) => ({ id: 'f' + i, status: s, label })), perspective, note });
 
@@ -447,7 +448,7 @@ function page({ hash = '', last = null, settingsProfile = 'live', items = [], au
   const take = (action) => { const r = requests.find((x) => x.f.action === action && !x.done); assert.ok(r, 'a pending ' + action); r.done = true; return r; };
   const reply = (action, data, status = 200) => answer(take(action), status, status === 200 ? { success: true, data } : { success: false, data });
   const startButton = () => doc.getElementById('sfx-sc-start');
-  const runbar = () => find(doc.body, (e) => e.className === 'sfx-sc-runbar');
+  const runbar = () => find(doc.body, (e) => e.className.startsWith('sfx-sc-head-panel'));
   const resetButton = () => doc.getElementById('sfx-sc-reset');
   const status = () => doc.getElementById('sfx-sc-status');
   const notice = () => doc.getElementById('sfx-sc-notice');
@@ -458,15 +459,15 @@ const settle = async () => { for (let i = 0; i < 40; i++) await flush(); };
 const savedRun = (results, extra = {}) => ({ run: 'r0', date: 1, date_display: '10.10.2026, 23:59', user: 'Anna', profile: 'live', results, ...extra });
 const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) => ({ id, how, perspective })) };
 
-// ---- six tabs, ARIA, roving tabindex, keyboard
+// ---- three tabs, ARIA, roving tabindex, keyboard
 
 {
   const p = page();
-  const list = p.tab('uebersicht').parentNode;
+  const list = p.tab('ergebnis').parentNode;
   assert.equal(list.getAttribute('role'), 'tablist', 'the tab bar is a tablist');
   assert.equal(list.className.includes('nav-tab-wrapper'), true, 'in wp-admin\'s tab look');
   const ids = TABS.map((t) => t.id);
-  assert.deepEqual(list.children.map((t) => t.id), ids.map((id) => 'sfx-sc-tab-' + id), 'six tabs in order');
+  assert.deepEqual(list.children.map((t) => t.id), ids.map((id) => 'sfx-sc-tab-' + id), 'three tabs in order');
   for (const id of ids) {
     assert.equal(p.tab(id).getAttribute('role'), 'tab', `${id}: role tab`);
     assert.equal(p.tab(id).getAttribute('aria-controls'), 'sfx-sc-panel-' + id, `${id}: aria-controls`);
@@ -476,120 +477,143 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   const selected = () => ids.filter((id) => p.tab(id).getAttribute('aria-selected') === 'true');
   const stops = () => ids.filter((id) => p.tab(id).getAttribute('tabindex') === '0');
   const shown = () => ids.filter((id) => !p.panel(id).hidden);
-  assert.deepEqual([selected(), stops(), shown()], [['uebersicht'], ['uebersicht'], ['uebersicht']], 'no fragment → Übersicht selected, one tab stop, other panels hidden');
-  assert.ok(ids.every((id) => p.tab(id).getAttribute('tabindex') === (id === 'uebersicht' ? '0' : '-1')), 'roving tabindex');
-  p.tab('uebersicht').focus();
-  p.tab('uebersicht').dispatch('keydown', { key: 'ArrowRight' });
-  assert.deepEqual([selected(), shown(), doc.activeElement.id], [['sicherheit'], ['sicherheit'], 'sfx-sc-tab-sicherheit'], 'ArrowRight moves focus and selection');
-  assert.equal(p.win.location.hash, '#sicherheit', 'the fragment follows the tab');
-  p.tab('sicherheit').dispatch('keydown', { key: 'End' });
+  assert.deepEqual([selected(), stops(), shown()], [['ergebnis'], ['ergebnis'], ['ergebnis']], 'no fragment → Ergebnis selected, one tab stop, other panels hidden');
+  p.tab('ergebnis').focus();
+  p.tab('ergebnis').dispatch('keydown', { key: 'ArrowRight' });
+  assert.deepEqual([selected(), shown(), doc.activeElement.id], [['htaccess'], ['htaccess'], 'sfx-sc-tab-htaccess'], 'ArrowRight moves focus and selection');
+  assert.equal(p.win.location.hash, '#htaccess', 'the fragment follows the tab');
+  p.tab('htaccess').dispatch('keydown', { key: 'End' });
   assert.deepEqual([selected(), doc.activeElement.id], [['einstellungen'], 'sfx-sc-tab-einstellungen'], 'End → last tab');
   p.tab('einstellungen').dispatch('keydown', { key: 'ArrowRight' });
-  assert.deepEqual(selected(), ['uebersicht'], 'ArrowRight wraps');
-  p.tab('uebersicht').dispatch('keydown', { key: 'ArrowLeft' });
+  assert.deepEqual(selected(), ['ergebnis'], 'ArrowRight wraps');
+  p.tab('ergebnis').dispatch('keydown', { key: 'ArrowLeft' });
   assert.deepEqual(selected(), ['einstellungen'], 'ArrowLeft wraps');
   p.tab('einstellungen').dispatch('keydown', { key: 'Home' });
-  assert.deepEqual([selected(), stops()], [['uebersicht'], ['uebersicht']], 'Home → first tab, tab stop follows');
-  const e = p.tab('live-gang').click();
+  assert.deepEqual([selected(), stops()], [['ergebnis'], ['ergebnis']], 'Home → first tab, tab stop follows');
+  const e = p.tab('htaccess').click();
   assert.ok(e.defaultPrevented, 'a tab click is handled in place');
-  assert.deepEqual([selected(), p.win.location.hash], [['live-gang'], '#live-gang'], 'click selects and updates the fragment');
-  assert.ok(p.tab('htaccess').className.includes('nav-tab') && p.tab('live-gang').className.includes('nav-tab-active'), 'active tab marked the wp-admin way');
+  assert.deepEqual([selected(), p.win.location.hash], [['htaccess'], '#htaccess'], 'click selects and updates the fragment');
+  assert.ok(p.tab('htaccess').className.includes('nav-tab-active'), 'active tab marked the wp-admin way');
 }
 
 // ---- fragments on load and later
 
 {
-  let p = page({ hash: '#sicherheit' });
-  assert.equal(p.tab('sicherheit').getAttribute('aria-selected'), 'true', '#sicherheit on load opens that tab');
+  const sec = { last: savedRun({ https: g('red', [['red', 'x']]), robots_txt: g('yellow', [['yellow', 'y']]), updates: g('yellow', [['yellow', 'z']]) }) };
+  let p = page({ hash: '#sicherheit', ...sec });
+  assert.equal(p.tab('ergebnis').getAttribute('aria-selected'), 'true', 'an old area fragment opens Ergebnis');
+  assert.ok(visible(p.row('https')) && !visible(p.row('robots_txt')) && !visible(p.row('updates')), '#sicherheit filters Ergebnis to that area');
+  p.win.go('#ergebnis');
+  assert.ok(visible(p.row('robots_txt')) && visible(p.row('updates')), '#ergebnis shows every area again');
   p = page({ hash: '#nonsense' });
-  assert.equal(p.tab('uebersicht').getAttribute('aria-selected'), 'true', 'unknown fragment → Übersicht');
+  assert.equal(p.tab('ergebnis').getAttribute('aria-selected'), 'true', 'unknown fragment → Ergebnis');
   p = page({ hash: '#check-https', last: savedRun({ https: g('green', [['green', 'ok']]) }) });
-  assert.equal(p.tab('sicherheit').getAttribute('aria-selected'), 'true', '#check-https on load opens Sicherheit');
+  assert.equal(p.tab('ergebnis').getAttribute('aria-selected'), 'true', '#check-https on load opens Ergebnis');
   assert.ok(p.row('https').open && doc.activeElement === p.summary('https'), '#check-https opens and focuses the row');
 
-  // Gate B pass 1 (spec-13): a check link shows its row before the first run too.
+  // A check link shows its row before the first run too.
   p = page({ hash: '#check-https', last: null });
   assert.ok(visible(p.row('https')) && p.row('https').open && doc.activeElement === p.summary('https'), '#check-https before any run shows, opens and focuses the row');
-  p.win.go('#sicherheit');
+  p.win.go('#ergebnis');
   assert.ok(!visible(p.row('https')), 'back on the tab before any run: rows hidden again');
 
   p = page({ last: savedRun({ https: g('green', [['green', 'ok']]), logs_public: g('red', [['red', 'leak']]) }) });
-  p.win.go('#sicherheit');
-  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  const fine = find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-fine'));
   assert.ok(fine.all().includes(p.row('https')) && !fine.open, 'fixture: the green https row sits in the folded "In Ordnung" group');
   p.win.go('#check-https');
   assert.ok(fine.open && p.row('https').open && doc.activeElement === p.summary('https'), 'a later #check-https unfolds its group, opens and focuses the row');
   p.row('https').open = false; p.row('https').dispatch('toggle');
-  p.win.go('#sicherheit');
-  assert.equal(doc.activeElement, p.tab('sicherheit'), 'Back to the tab: focus on the tab');
+  p.win.go('#ergebnis');
+  assert.equal(doc.activeElement, p.tab('ergebnis'), 'Back to the tab: focus on the tab');
   p.win.go('#check-https');
   assert.ok(visible(p.row('https')) && p.row('https').open && doc.activeElement === p.summary('https'), 'Forward to the check link: shown, opened and focused again');
-  p.win.go('#live-gang');
-  assert.equal(p.tab('live-gang').getAttribute('aria-selected'), 'true', 'a later tab fragment selects that tab');
-  // Gate B pass 5: inherited Object names are no tabs.
+  p.win.go('#einstellungen');
+  assert.equal(p.tab('einstellungen').getAttribute('aria-selected'), 'true', 'a later tab fragment selects that tab');
+  // Inherited Object names are no tabs, areas or checks.
   for (const frag of ['#constructor', '#toString', '#check-constructor', '#__proto__']) {
     const q = page({ hash: frag });
-    assert.equal(q.tab('uebersicht').getAttribute('aria-selected'), 'true', `${frag} on load → Übersicht`);
-    q.win.go('#sicherheit');
+    assert.equal(q.tab('ergebnis').getAttribute('aria-selected'), 'true', `${frag} on load → Ergebnis`);
+    q.win.go('#htaccess');
     q.win.go(frag);
-    assert.equal(q.tab('uebersicht').getAttribute('aria-selected'), 'true', `${frag} later → Übersicht`);
+    assert.equal(q.tab('ergebnis').getAttribute('aria-selected'), 'true', `${frag} later → Ergebnis`);
   }
-  p.win.go('#check-nope');
-  assert.equal(p.tab('uebersicht').getAttribute('aria-selected'), 'true', 'a later unknown fragment → Übersicht');
 }
 
-// ---- counting, rows, guidance
+// ---- verdict, groups, rows, findings, guidance (owner ruling 2026-10-11: Website-Zustand pattern)
 
 {
   const last = savedRun({
-    logs_public: g('red', [['red', 'R1'], ['unknown', 'U1']], 'Notiz-logs'),
+    logs_public: g('red', [['red', 'R1'], ['unknown', 'U1'], ['green', 'G-LOG']], 'Notiz-logs'),
     config_copies: g('yellow', [['yellow', 'Y1']]),
     https: g('green', [['green', 'G1']]),
     security_headers: g('green', [['green', 'alles gesetzt']], 'Header-Notiz', 'browser'),
     php_in_uploads: g('yellow', [['yellow', '<img src=x onerror=alert(1)>']], '<script>n</script>', 'loopback'),
     table_prefix: g('hint', [['hint', 'wp_']]),
+    robots_txt: g('unknown', [['unknown', 'keine Antwort']], 'R-NOTE', 'browser'),
   });
-  const p = page({ last, hash: '#sicherheit' });
-  const badge = (id) => find(p.tab(id), (e) => e.className.includes('sfx-sc-tabcount'));
-  assert.equal(badge('sicherheit').textContent, '1 Rot2 Gelb', 'tab badge counts checks: Rot+Nicht prüfbar findings count once as Rot');
-  // Owner ruling 2026-10-11: three groups instead of a filter.
-  const grp = (kind) => find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-' + kind));
-  // Rendered order: the rows as they sit in the group's list.
+  const p = page({ last });
+  const headPanel = p.runbar();
+  assert.ok(headPanel.className.includes('sfx-sc-state-red'), 'the verdict panel takes the worst state');
+  assert.equal(find(headPanel, (e) => e.tagName === 'h2').textContent, '3 ZU ERLEDIGEN', 'one verdict: how many checks to fix');
+  assert.ok(headPanel.textContent.includes('1 Rot') && headPanel.textContent.includes('2 Gelb') && headPanel.textContent.includes('1 Nicht prüfbar'), 'the verdict line counts by status, in words');
+  const grp = (kind) => find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-' + kind));
   const ids = (kind) => find(grp(kind), (e) => e.className === 'sfx-sc-list').children.map((d) => d.id.replace('sfx-sc-check-', ''));
-  assert.deepEqual(ids('act'), ['logs_public', 'config_copies', 'php_in_uploads', 'admin_accounts'], 'Rot first, then Gelb, a check without a result last — in rendered order');
-  assert.deepEqual(ids('fine').sort(), ['https', 'security_headers'], 'Grün rows are in the folded "In Ordnung"');
-  assert.ok(grp('self').hidden, 'an empty "Selbst prüfen" group is not shown');
-  assert.ok(grp('act').textContent.includes('Handeln (4)') && !grp('fine').open, 'group heads count their rows; "In Ordnung" starts folded');
-  // A finding repeats the row's status only where it differs.
-  const dots = findAll(p.row('logs_public'), (e) => e.className.includes('sfx-sc-dot'));
-  assert.deepEqual(dots.map((d) => d.textContent), ['Nicht prüfbar'], 'the red row tags only its differing finding');
-  assert.ok(p.row('logs_public').textContent.includes('R1'), 'the same-status finding is still listed');
-
-  assert.ok(p.row('logs_public').open && p.row('php_in_uploads').open, 'Rot and Gelb rows open when they first get their result');
-  assert.ok(!p.row('https').open && !p.row('table_prefix').open, 'other rows start closed');
+  assert.deepEqual(ids('act').slice(0, 3), ['logs_public', 'config_copies', 'php_in_uploads'], 'Zu erledigen: Rot first, then Gelb, in rendered order');
+  assert.deepEqual(ids('self'), ['robots_txt'], 'Selbst prüfen holds the unclear checks');
+  assert.deepEqual(ids('fine').sort(), ['https', 'security_headers', 'table_prefix'], 'In Ordnung holds Grün and Info');
+  assert.ok(!grp('fine').open, '"In Ordnung" starts folded');
+  assert.ok(grp('act').textContent.includes('Handeln (3)'), 'group heads count their rows (graded only, across all areas)');
+  // Accordions closed by default — no auto-open (owner ruling 2026-10-11).
+  assert.ok(CATALOGUE.every((c) => !p.row(c.id).open), 'every check starts closed, red ones included');
+  // The summary: one traffic light, title, area, finding count, and for rows to fix the next step.
   const head = p.summary('logs_public').textContent;
-  assert.ok(head.includes('Rot') && head.includes('T-logs_public') && head.includes('2 Funde'), 'closed: status, title, finding count');
+  assert.ok(head.includes('Rot') && head.includes('T-logs_public') && head.includes('Sicherheit') && head.includes('3 Funde') && head.includes('REC-logs_public'), 'closed: status, title, area, count, next step');
+  assert.equal(findAll(p.summary('logs_public'), (e) => e.className.includes('sfx-sc-badge')).length, 1, 'exactly one traffic light per check');
+  assert.ok(!visible(find(p.summary('https'), (e) => e.className === 'sfx-sc-nextstep')), 'a row in order shows no next step');
+  // Findings: a neutral detail list with glyphs and a spoken kind — never a second traffic light.
+  const lp = p.row('logs_public');
+  assert.equal(findAll(find(lp, (e) => e.className === 'sfx-sc-result'), (e) => e.className.includes('sfx-sc-badge')).length, 0, 'no traffic-light badge among the findings');
+  const items = findAll(lp, (e) => e.className.startsWith('sfx-sc-finding '));
+  assert.deepEqual(items.map((li) => li.textContent), ['Problem:R1', 'Unklar:U1', 'In Ordnung:G-LOG'], 'findings worst first, each with its kind as text');
+  assert.ok(find(items[0], (e) => e.className.includes('dashicons-warning')) && find(items[2], (e) => e.className.includes('dashicons-yes')), 'each finding carries a neutral glyph');
+  assert.ok(find(lp, (e) => e.textContent === 'BEFUNDE'), 'the findings list is headed "Befunde"');
 
   const text = p.row('php_in_uploads').textContent;
-  const order = ['<img src=x onerror=alert(1)>', '<script>n</script>', 'Warum', 'WHY-php_in_uploads', 'Empfehlung', 'REC-php_in_uploads', "So geht's", 'STEP-1', 'STEP-2'].map((t) => text.indexOf(t));
-  assert.ok(order.every((i) => i >= 0), 'findings, note and guidance shown as text: ' + order);
-  assert.deepEqual([...order].sort((a, b) => a - b), order, 'order: findings → note → Warum → Empfehlung → So geht\'s');
+  const order = ['<img src=x onerror=alert(1)>', 'Warum', 'WHY-php_in_uploads', 'Empfehlung', 'REC-php_in_uploads', "So geht's", 'STEP-1', 'STEP-2', '<script>n</script>'].map((t) => text.lastIndexOf(t));
+  assert.ok(order.every((i) => i >= 0), 'findings, guidance and note shown as text: ' + order);
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'order: findings → Warum → Empfehlung → So geht\'s → technical note');
   const ol = find(p.row('php_in_uploads'), (e) => e.tagName === 'ol');
   assert.deepEqual(ol && ol.children.map((li) => li.textContent), ['STEP-1', 'STEP-2'], 'steps as a numbered list');
   const link = find(p.row('php_in_uploads'), (e) => e.tagName === 'a');
   assert.deepEqual([link.getAttribute('href'), link.textContent], ['#htaccess', 'Vorlage'], 'link to the .htaccess-Vorlage tab');
   const sh = find(p.row('security_headers'), (e) => e.tagName === 'a');
   assert.equal(sh.getAttribute('href'), 'https://ex.test/wp-admin/admin.php?page=sfx-security-header', 'module link as given by the server');
-
-  assert.ok(findAll(p.row('php_in_uploads'), (e) => e.tagName === 'h3').length === 3 && !find(p.row('php_in_uploads'), (e) => e.tagName === 'h4'), 'guidance headings are h3');
-  const h2 = find(p.panel('sicherheit'), (e) => e.tagName === 'h2');
-  assert.ok(h2 && h2.textContent === 'Sicherheit', 'each section tab has its h2, so headings do not jump');
+  assert.ok(findAll(p.row('php_in_uploads'), (e) => e.tagName === 'h4').length === 4, 'Befunde and guidance headings are h4, under the group h3');
   const tp = p.row('table_prefix').textContent;
   assert.ok(tp.includes('WHY-table_prefix') && tp.includes('REC-table_prefix') && !find(p.row('table_prefix'), (e) => e.tagName === 'ol'), 'informational check: Warum and Empfehlung, no steps');
   const green = p.row('security_headers');
   assert.ok(green.textContent.includes('Nichts zu tun.') && green.textContent.includes('Header-Notiz'), 'a green row says no action is needed and keeps its note');
   assert.ok(!visible(find(green, (e) => e.textContent === 'REC-security_headers' && e.tagName === 'p')), 'a green row hides the fix');
   assert.ok(green.textContent.includes('Browser'), 'the note names its perspective');
+  // Selbst prüfen: intro, manual step after the findings and before the guidance.
+  assert.ok(grp('self').textContent.includes('SELF-INTRO'), '"Selbst prüfen" has its intro');
+  const rt = p.row('robots_txt').textContent;
+  assert.ok(rt.includes('SELBST-ROBOTS') && !rt.includes('SELBST-BROWSER'), 'a check with its own manual step gets that one');
+  assert.ok(rt.indexOf('keine Antwort') < rt.indexOf('SELBST-ROBOTS') && rt.indexOf('SELBST-ROBOTS') < rt.indexOf('WHY-robots_txt') && rt.indexOf('WHY-robots_txt') < rt.indexOf('R-NOTE'), 'order: findings, manual step, guidance, note');
+}
+
+{
+  // The area filter: counts what is to fix per area; a click filters and sets the fragment.
+  const p = page({ last: savedRun({ logs_public: g('red', [['red', 'x']]), robots_txt: g('yellow', [['yellow', 'y']]), updates: g('green', []), table_prefix: g('unknown', [['unknown', 'u']]) }) });
+  const bar = find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-filter'));
+  assert.deepEqual(findAll(bar, (e) => e.tagName === 'a').map((a) => a.textContent), ['Alle (2)', 'Sicherheit (1)', 'Live-Gang (1)', 'Aufräumen (0)'], 'filters count what is to fix (Rot, Gelb); Selbst prüfen is not counted');
+  const live = byText(bar, 'a', 'Live-Gang (1)');
+  assert.ok(!p.panel('ergebnis').textContent.includes('· '), 'no separator glyph in the text; the area and count sit in one unit');
+  live.focus();
+  live.click();
+  assert.ok(!visible(p.row('logs_public')) && visible(p.row('robots_txt')) && p.win.location.hash === '#live-gang' && live.className === 'current', 'a filter shows its area and marks itself current');
+  p.win.go('#live-gang');
+  assert.equal(doc.activeElement, live, 'the hashchange of a filter click leaves focus on the filter');
 }
 
 // ---- rows updated in place; open/closed choice kept
@@ -597,7 +621,6 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
 {
   const p = page({ last: savedRun({ logs_public: g('red', [['red', 'old']]), https: g('green', [['green', 'g']]) }) });
   const logs = p.row('logs_public');
-  logs.open = false; logs.dispatch('toggle');
   const https = p.row('https');
   https.open = true; https.dispatch('toggle');
   p.summary('https').focus();
@@ -612,22 +635,23 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   obs.resolve({ status: 200, json: async () => ({ success: true, data: { graded: g('red', [['red', 'new']]), token: 't' } }) });
   await settle();
   assert.equal(p.row('logs_public'), logs, 'the row element is kept, not replaced');
-  assert.ok(!logs.open, 'a row the admin closed stays closed when another result arrives');
-  assert.ok(https.open, 'an open Grün row stays open');
+  assert.ok(!logs.open, 'a red result does not open its row');
+  assert.ok(https.open, 'a row the admin opened stays open');
   assert.equal(doc.activeElement, p.summary('https'), 'focus survives updates');
 }
 
-// ---- run states: counts vs rows, one operation at a time
+// ---- run states: verdict vs rows, one operation at a time
 
 {
   const p = page({ last: savedRun({ logs_public: g('yellow', [['yellow', 'SAVED-Y']]) }), settingsProfile: 'live' });
-  const badge = () => find(p.tab('sicherheit'), (e) => e.className.includes('sfx-sc-tabcount')).textContent;
-  assert.equal(badge(), '1 Gelb', 'fixture: saved run Gelb');
+  const verdict = () => find(p.runbar(), (e) => e.tagName === 'h2').textContent;
+  assert.equal(verdict(), '1 ZU ERLEDIGEN EINS', 'fixture: saved run, one to fix');
   assert.equal(p.status().getAttribute('aria-live'), 'polite', 'the run status line is announced');
   p.input.dispatch('input');
   assert.equal(p.dirty.textContent, 'nicht gespeichert', 'an edited setting is marked unsaved');
   p.startButton().click();
   assert.ok(p.save.disabled, 'settings save disabled while a run is in progress');
+  assert.equal(verdict(), 'PRÜFUNG LÄUFT ...', 'the verdict says the check is running');
   p.reply('sfx_site_check_start', { run: 'r1', checks: [{ id: 'logs_public', how: 'S+B', perspective: 'browser' }, { id: 'config_copies', how: 'S', perspective: 'server' }] });
   await settle();
   p.startButton().click();
@@ -636,22 +660,18 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   await settle();
   p.reply('sfx_site_check_observe', { graded: g('red', [['red', 'INCOMING-R']]), token: 't1' });
   await settle();
-  assert.equal(badge(), '1 Rot', 'while running, incoming results drive the counts');
-  assert.ok(p.row('logs_public').textContent.includes('INCOMING-R') && p.row('logs_public').textContent.includes('vorläufig'), 'and the rows, marked in progress');
+  assert.ok(p.row('logs_public').textContent.includes('INCOMING-R') && p.row('logs_public').textContent.includes('vorläufig'), 'rows show incoming results, marked in progress');
   assert.equal(p.status().textContent, 'PRÜFUNG LÄUFT', 'the announced status line says the run started and does not change per result');
   const progress = doc.getElementById('sfx-sc-progress');
   assert.ok(progress && progress.textContent === '1 von 2' && progress.getAttribute('aria-live') === null, 'progress is counted outside the live region');
   p.reply('sfx_site_check_server', { graded: g('green', []), token: 't2' });
   await settle();
-  // Delayed refusal of the save (409).
   assert.ok(p.startButton().disabled && p.save.disabled, 'still one operation: start and settings save disabled while saving');
   p.reply('sfx_site_check_save', { message: 'Veraltet.' }, 409);
   await settle();
   assert.ok(p.notice().textContent.includes('NICHT GESPEICHERT Veraltet.'), 'refused save: notice says not saved');
-  assert.equal(p.status().textContent, 'NICHT GESPEICHERT KURZ', 'refused save: the status line announces the state in short, not the notice text again');
-  assert.equal(badge(), '1 Gelb', 'refused save: counts show the last saved run');
-  const urgent = find(p.panel('uebersicht'), (e) => e.className.includes('sfx-sc-urgent'));
-  assert.ok(urgent.textContent.includes('Gelb') && !urgent.textContent.includes('Rot'), 'refused save: the urgent list shows the last saved run');
+  assert.equal(p.status().textContent, 'NICHT GESPEICHERT KURZ', 'refused save: the status line announces the state in short');
+  assert.equal(verdict(), '1 ZU ERLEDIGEN EINS', 'refused save: the verdict shows the last saved run');
   assert.ok(p.row('logs_public').textContent.includes('INCOMING-R') && p.row('logs_public').textContent.includes('nicht gespeichert'), 'refused save: incoming rows stay, marked unsaved');
   const recheck = byText(p.notice(), 'button', 'Neu prüfen');
   assert.ok(recheck && !byText(p.notice(), 'button', 'Erneut speichern'), 'not busy → "Neu prüfen", no retry');
@@ -670,8 +690,7 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   await settle();
   const retry = byText(p.notice(), 'button', 'Erneut speichern');
   assert.ok(retry, 'busy save → "Erneut speichern"');
-  const summary = find(p.panel('uebersicht'), (e) => e.className.includes('sfx-sc-summaries'));
-  assert.ok(summary.textContent.includes('Noch nicht geprüft.'), 'no previous run: the summaries still say not checked');
+  assert.equal(find(p.runbar(), (e) => e.tagName === 'h2').textContent, 'Noch nicht geprüft.', 'no previous run: the verdict still says not checked');
   assert.ok(p.row('config_copies').textContent.includes('nicht gespeichert'), 'no previous run: incoming rows visible, unsaved');
   retry.click();
   assert.ok(retry.disabled && p.startButton().disabled && p.save.disabled, 'a retry in flight disables retry, start and settings save');
@@ -707,69 +726,50 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   assert.ok(p.row('logs_public').textContent.includes('SAVED-ROW'), 'after a failed start the saved run is shown');
   assert.ok(!p.startButton().disabled, 'and a new start is possible');
 
-  // Gate B pass 1 (spec-15): a start that gets no answer shows the localised text.
   p = page({ last: null, auto: () => 'lost' });
   p.startButton().click();
   await settle();
   assert.ok(p.notice().textContent.includes('START-FEHLER Anfrage fehlgeschlagen'), 'lost start → localised failure text, not English');
 }
 
-// ---- Übersicht
+// ---- verdict panel: profile, change link, manual items on Ergebnis
 
 {
-  const last = savedRun({
-    logs_public: g('yellow'), config_copies: g('red'), php_in_uploads: g('yellow'), https: g('red'),
-    search_visibility: g('red'), robots_txt: g('yellow'), updates: g('yellow'), table_prefix: g('hint'),
-  }, { profile: 'staging' });
-  const p = page({ last, settingsProfile: 'live', items: [{ id: 'two_factor', label: 'ITEM-2FA', done: false, meta: '' }] });
-  const ov = p.panel('uebersicht');
-  const urgent = find(ov, (e) => e.className.includes('sfx-sc-urgent'));
-  const links = findAll(urgent, (e) => e.tagName === 'a');
-  assert.deepEqual(links.map((a) => a.getAttribute('href')), ['#check-config_copies', '#check-https', '#check-search_visibility', '#check-logs_public', '#check-php_in_uploads'], 'at most five, Rot first, then catalogue order');
-  const sums = findAll(find(ov, (e) => e.className.includes('sfx-sc-summaries')), (e) => e.tagName === 'a');
-  assert.deepEqual(sums.map((a) => a.getAttribute('href')), ['#sicherheit', '#live-gang', '#aufraeumen'], 'each section summary opens its tab');
-  assert.ok(sums[0].parentNode.textContent.includes('2 Rot') && sums[0].parentNode.textContent.includes('2 Gelb'), 'section summary counts');
-  assert.ok(p.runbar().textContent.includes('Profil Staging') && p.runbar().textContent.includes('Nächste Prüfung: Profil Live'), 'last and next profile both shown in the run bar');
+  const p = page({ last: savedRun({ https: g('green') }, { profile: 'staging' }), settingsProfile: 'live', items: [{ id: 'two_factor', label: 'ITEM-2FA', done: false, meta: '' }] });
+  assert.equal(find(p.runbar(), (e) => e.tagName === 'h2').textContent, 'ALLES OK', 'nothing to fix or check → all in order');
+  assert.ok(p.runbar().textContent.includes('Profil Staging') && p.runbar().textContent.includes('Nächste Prüfung: Profil Live'), 'last and next profile both shown');
   const change = byText(p.runbar(), 'a', 'ändern');
   assert.equal(change && change.getAttribute('href'), '#einstellungen', 'the next profile links to the settings');
-  assert.ok(ov.textContent.includes('ITEM-2FA'), 'manual items in Übersicht');
-  for (const id of ['sicherheit', 'live-gang', 'aufraeumen', 'htaccess', 'einstellungen']) {
+  assert.ok(p.panel('ergebnis').textContent.includes('ITEM-2FA'), 'manual items on Ergebnis');
+  for (const id of ['htaccess', 'einstellungen']) {
     assert.ok(!p.panel(id).textContent.includes('ITEM-2FA'), `manual items not in ${id}`);
   }
+  const s = page({ last: savedRun({ https: g('unknown', [['unknown', 'u']]) }) });
+  assert.equal(find(s.runbar(), (e) => e.tagName === 'h2').textContent, 'NICHTS · 1 SELBST EINS', 'nothing to fix but something unclear → says so');
 }
 
 // ---- empty states
 
 {
-  const p = page({ last: null, auto: (f) => (f.action === 'sfx_site_check_start' ? null : null) });
-  for (const id of ['sicherheit', 'live-gang', 'aufraeumen']) {
-    assert.ok(p.panel(id).textContent.includes('Noch nicht geprüft.'), `${id}: "Noch nicht geprüft" before the first run`);
-    assert.ok(!visible(p.row(CATALOGUE.find((c) => c.section === { sicherheit: 'security', 'live-gang': 'golive', aufraeumen: 'cleanup' }[id]).id)), `${id}: no rows before the first run`);
-  }
-  // Owner ruling 2026-10-11: one "Prüfen" control, in the run bar above the tabs, on every tab.
+  const p = page({ last: null });
+  assert.ok(p.panel('ergebnis').textContent.includes('LEER'), 'Ergebnis says there are no results yet');
+  assert.ok(CATALOGUE.every((c) => !visible(p.row(c.id))), 'no rows before the first run');
+  assert.ok(!visible(find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-filter'))), 'no filter before the first run');
+  assert.equal(find(p.runbar(), (e) => e.tagName === 'h2').textContent, 'Noch nicht geprüft.', 'the verdict says not checked yet');
+  assert.ok(p.runbar().textContent.includes('INTRO'), 'with one sentence on what the check does');
+  // One "Prüfen" control, above the tabs, on every tab.
   assert.equal(findAll(doc.body, (e) => e.tagName === 'button' && e.textContent === 'Prüfen').length, 1, 'exactly one "Prüfen" control');
   for (const t of TABS) {
     p.tab(t.id).click();
-    assert.ok(visible(p.startButton()) && !p.panel(t.id).all().includes(p.startButton()), `${t.id}: the run bar's control is shown, outside the panel`);
+    assert.ok(visible(p.startButton()) && !p.panel(t.id).all().includes(p.startButton()), `${t.id}: the control is shown, outside the panel`);
   }
-  assert.ok(p.runbar().textContent.includes('Noch nicht geprüft.'), 'the run bar says "not checked yet" before the first run');
-  assert.ok(p.runbar().all().includes(find(doc.body, (e) => e.id === 'sfx-sc-probe')), 'the uploads test option sits in the run bar');
+  assert.ok(p.runbar().all().includes(find(doc.body, (e) => e.id === 'sfx-sc-probe')), 'the uploads test option sits with the run control');
   p.startButton().click();
-  assert.equal(p.pending('sfx_site_check_start').length, 1, 'the run bar control starts a run');
+  assert.equal(p.pending('sfx_site_check_start').length, 1, 'the control starts a run');
 
   const q = page({ last: savedRun({ updates: g('hint'), table_prefix: g('green'), inactive_plugins: g('green') }) });
-  const act = find(q.panel('aufraeumen'), (e) => e.className.includes('sfx-sc-group-act'));
-  assert.ok(!act.hidden && act.textContent.includes('Kein Handlungsbedarf in diesem Bereich.') && act.textContent.includes('Handeln (0)'), 'a tab with nothing to act on says so, with its zero count');
-  const table = find(q.panel('aufraeumen'), (e) => e.className.includes('sfx-sc-group-fine'));
-  assert.ok(table.all().includes(q.row('updates')), 'Info rows sit in "In Ordnung"');
-
-  const r = page({ last: savedRun({ robots_txt: g('unknown', [['unknown', 'keine Antwort']], '', 'browser'), logs_public: g('unknown', [['unknown', 'x']], '', 'browser') }) });
-  const self = find(r.panel('live-gang'), (e) => e.className.includes('sfx-sc-group-self'));
-  assert.ok(!self.hidden && self.all().includes(r.row('robots_txt')) && self.textContent.includes('SELF-INTRO'), '"Selbst prüfen" rows have their own group with an intro');
-  assert.ok(r.row('robots_txt').textContent.includes('SELBST-ROBOTS') && !r.row('robots_txt').textContent.includes('SELBST-BROWSER'), 'a check with its own manual step gets that one');
-  assert.ok(r.row('logs_public').textContent.includes('SELBST-BROWSER'), 'other rows to check yourself get the step for their perspective');
-  const rt = r.row('robots_txt').textContent;
-  assert.ok(rt.indexOf('keine Antwort') < rt.indexOf('Browser') && rt.indexOf('Browser') < rt.indexOf('SELBST-ROBOTS') && rt.indexOf('SELBST-ROBOTS') < rt.indexOf('WHY-robots_txt'), 'order: findings, note, manual step, guidance');
+  const act = find(q.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-act'));
+  assert.ok(!act.hidden && act.textContent.includes('Kein Handlungsbedarf in diesem Bereich.') && act.textContent.includes('Handeln (0)'), 'nothing to fix says so, with its zero count');
 }
 
 // ---- dates: the script never formats a date itself
@@ -777,33 +777,33 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
 {
   assert.ok(!/toLocale(?:Date|Time)?String|Intl\.DateTimeFormat|new Date\(/.test(SCRIPT), 'site-check.js formats no date');
   const p = page({ items: [{ id: 'two_factor', label: 'ITEM', done: false, meta: '' }] });
-  const box = find(p.panel('uebersicht'), (e) => e.tagName === 'input' && e.type === 'checkbox' && e.parentNode.textContent.includes('ITEM'));
+  const box = find(p.panel('ergebnis'), (e) => e.tagName === 'input' && e.type === 'checkbox' && e.parentNode.textContent.includes('ITEM'));
   box.checked = true; box.dispatch('change');
   p.reply('sfx_site_check_items', { items: { two_factor: { user: 7, date: 1, date_display: '10.10.2026, 23:59' } } });
   await settle();
   assert.ok(box.parentNode.parentNode.textContent.includes('erledigt von Dev am 10.10.2026, 23:59'), 'an item shows the server-formatted date');
 }
 
-// ---- Gate B pass 2: a focused row moving into the folded group keeps focus
+// ---- Gate B pass 2: a focused row moving into the folded group keeps the keyboard position
 
 {
-  const p = page({ last: null, hash: '#sicherheit' });
+  const p = page({ last: null, hash: '#ergebnis' });
   p.startButton().click();
   p.reply('sfx_site_check_start', { run: 'r1', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }, { id: 'admin_accounts', how: 'S', perspective: 'server' }] });
   await settle();
   p.summary('config_copies').focus();
   p.reply('sfx_site_check_server', { graded: g('green', [['green', 'none']]), token: 't' });
   await settle();
-  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  const fine = find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-fine'));
   assert.ok(fine.contains(p.row('config_copies')), 'fixture: the green row moved into "In Ordnung"');
-  assert.equal(doc.activeElement, p.summary('config_copies'), 'focus stays on the moved row');
-  assert.ok(fine.open, 'and its folded group opens so the focused row is visible');
+  assert.ok(!fine.open, 'the folded group stays closed (no auto-open, owner ruling 2026-10-11)');
+  assert.equal(doc.activeElement, find(fine, (e) => e.tagName === 'summary' && e.className === 'sfx-sc-grouphead'), 'focus moves to the group toggle, not lost');
 }
 
 {
   // Gate B pass 3: a check link unfolds "In Ordnung" once; the admin's later fold stands.
   const p = page({ last: savedRun({ https: g('green', [['green', 'ok']]) }), hash: '#check-https' });
-  const fine = find(p.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  const fine = find(p.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-fine'));
   assert.ok(fine.open, 'fixture: the check link unfolded the group');
   fine.open = false;
   fine.children[0].focus();
@@ -816,7 +816,7 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
 
   // A link to an action row: the admin opens and folds "In Ordnung"; the row turning green later does not reopen it.
   const q = page({ last: savedRun({ config_copies: g('yellow', [['yellow', 'y']]) }), hash: '#check-config_copies' });
-  const qf = find(q.panel('sicherheit'), (e) => e.className.includes('sfx-sc-group-fine'));
+  const qf = find(q.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-fine'));
   qf.children[0].focus(); // the admin clicks the group's summary to open and fold it
   qf.open = true; qf.dispatch('toggle'); qf.open = false; qf.dispatch('toggle');
   q.startButton().click();
@@ -825,13 +825,23 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   q.reply('sfx_site_check_server', { graded: g('green', [['green', 'ok']]), token: 't' });
   await settle();
   assert.ok(!qf.open, 'the admin\'s fold stands after the linked row turns green');
+
+  // Gate B pass 3 (cycle 3700t0321h): without any toggle, a linked row turning green later does not unfold the group.
+  const r = page({ last: savedRun({ config_copies: g('yellow', [['yellow', 'y']]) }), hash: '#check-config_copies' });
+  const rf = find(r.panel('ergebnis'), (e) => e.className.includes('sfx-sc-group-fine'));
+  r.startButton().click();
+  r.reply('sfx_site_check_start', { run: 'r11', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
+  await settle();
+  r.reply('sfx_site_check_server', { graded: g('green', [['green', 'ok']]), token: 't' });
+  await settle();
+  assert.ok(!rf.open, 'a result never unfolds "In Ordnung"; only the link does, for where the row is then');
 }
 
 // ---- reset (owner ruling 2026-10-11): results and ticks go, one write at a time
 
 {
   const p = page({ last: savedRun({ logs_public: g('red', [['red', 'LEAK']]) }), items: [{ id: 'two_factor', label: 'ITEM-A', done: true, meta: 'erledigt von X' }, { id: 'backup', label: 'ITEM-B', done: false, meta: '' }] });
-  const ov = p.panel('uebersicht');
+  const ov = p.panel('ergebnis');
   const box = (label) => find(ov, (e) => e.tagName === 'input' && e.type === 'checkbox' && e.parentNode.textContent.includes(label));
   const reset = p.resetButton();
   assert.ok(reset && p.runbar().all().includes(reset) && reset.textContent === 'Ergebnisse zurücksetzen', 'one reset button, in the run bar');
@@ -857,20 +867,13 @@ const STARTED = { run: 'r1', checks: CATALOGUE.map(({ id, how, perspective }) =>
   assert.ok(p.runbar().textContent.includes('Noch nicht geprüft.') && !visible(p.row('logs_public')), 'the page is back to "not checked yet"');
   assert.ok(!p.startButton().disabled && !reset.disabled, 'controls free again');
 
-  // Gate B pass 1: the reset's own close of an open row is not the admin's choice.
+  // The reset closes rows the admin had opened; the page is back to its quiet state.
   const q = page({ last: savedRun({ config_copies: g('red', [['red', 'OLD']]) }) });
-  assert.ok(q.row('config_copies').open, 'fixture: a red row opened on its result');
+  q.row('config_copies').open = true;
   q.resetButton().click();
   q.reply('sfx_site_check_reset', {});
   await settle();
   assert.ok(!q.row('config_copies').open, 'reset closes the row');
-  q.row('config_copies').dispatch('toggle'); // the browser fires the close's toggle afterwards
-  q.startButton().click();
-  q.reply('sfx_site_check_start', { run: 'r2', checks: [{ id: 'config_copies', how: 'S', perspective: 'server' }] });
-  await settle();
-  q.reply('sfx_site_check_server', { graded: g('red', [['red', 'NEW']]), token: 't' });
-  await settle();
-  assert.ok(q.row('config_copies').open, 'the next run opens the red row again');
 }
 
 {

@@ -9,10 +9,11 @@ namespace SFX\SiteCheck;
  * lets in; the page and the save handler check it again, and the handler
  * checks the nonce Access::NONCE.
  *
- * The page (spec "Page layout and guidance") is six tabs. PHP renders the
- * two panels that need the server — the .htaccess template and the settings
- * form — inside `#sfx-sc-app`; assets/site-check.js builds the tab bar, the
- * Übersicht and the three section tabs around them from script_data().
+ * The page (spec "Page layout and guidance") is a verdict panel and three
+ * tabs. PHP renders the two panels that need the server — the .htaccess
+ * template and the settings form — inside `#sfx-sc-app`; assets/site-check.js
+ * builds the verdict panel, the tab bar and the Ergebnis tab around them
+ * from script_data().
  */
 final class AdminPage
 {
@@ -93,10 +94,7 @@ final class AdminPage
             'nonce' => wp_create_nonce(Access::NONCE),
             'catalogue' => self::catalogue_data(),
             'tabs' => [
-                ['id' => 'uebersicht', 'title' => __('Overview', 'sfxtheme')],
-                ['id' => 'sicherheit', 'title' => __('Security', 'sfxtheme'), 'section' => Catalogue::SECURITY],
-                ['id' => 'live-gang', 'title' => __('Go-live', 'sfxtheme'), 'section' => Catalogue::GOLIVE],
-                ['id' => 'aufraeumen', 'title' => __('Clean-up', 'sfxtheme'), 'section' => Catalogue::CLEANUP],
+                ['id' => 'ergebnis', 'title' => __('Result', 'sfxtheme')],
                 ['id' => 'htaccess', 'title' => __('.htaccess template', 'sfxtheme')],
                 ['id' => 'einstellungen', 'title' => __('Settings', 'sfxtheme')],
             ],
@@ -134,6 +132,29 @@ final class AdminPage
                 'steps' => __('How to', 'sfxtheme'),
                 'noAction' => __('Nothing to do: this is the good state.', 'sfxtheme'),
                 'groupAct' => __('To act on', 'sfxtheme'),
+                'groupActIntro' => __('Open a point to see what was found, why it matters and how to fix it.', 'sfxtheme'),
+                'filterLabel' => __('Show area', 'sfxtheme'),
+                'filterAll' => __('All', 'sfxtheme'),
+                'emptyResult' => __('No results yet. Start the check with "Check now".', 'sfxtheme'),
+                'findingsTitle' => __('Findings', 'sfxtheme'),
+                'findingKind' => [
+                    'red' => __('Problem:', 'sfxtheme'),
+                    'yellow' => __('Problem:', 'sfxtheme'),
+                    'unknown' => __('Unclear:', 'sfxtheme'),
+                    'hint' => __('Info:', 'sfxtheme'),
+                    'green' => __('In order:', 'sfxtheme'),
+                ],
+                'verdictRunning' => __('Checking …', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictActOne' => __('%1$s point to fix', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictActMany' => __('%1$s points to fix', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictSelfOne' => __('Nothing to fix — %1$s point to check yourself', 'sfxtheme'),
+                /* translators: %1$s: number of checks */
+                'verdictSelfMany' => __('Nothing to fix — %1$s points to check yourself', 'sfxtheme'),
+                'verdictOk' => __('All in order', 'sfxtheme'),
+                'verdictFine' => __('in order', 'sfxtheme'),
                 'groupSelf' => __('Check yourself', 'sfxtheme'),
                 'groupSelfIntro' => __('The check got no reliable answer here, for example because the host or a firewall answered instead of the site. A quick look by hand settles it.', 'sfxtheme'),
                 'groupFine' => __('In order', 'sfxtheme'),
@@ -152,17 +173,14 @@ final class AdminPage
                 ],
                 'notChecked' => __('Not checked yet.', 'sfxtheme'),
                 'intro' => __('The check looks for exposed files, risky settings and launch mistakes, and shows what to fix first.', 'sfxtheme'),
-                'noActionTab' => __('No action needed in this area.', 'sfxtheme'),
+                'noActionTab' => __('Nothing to fix.', 'sfxtheme'),
                 /* translators: 1: date, 2: user, 3: site profile */
                 'meta' => __('Last check: %1$s by %2$s, profile %3$s.', 'sfxtheme'),
                 /* translators: %1$s: site profile */
                 'nextProfile' => __('The next check uses the profile %1$s.', 'sfxtheme'),
                 'change' => __('Change', 'sfxtheme'),
                 'check' => __('Check now', 'sfxtheme'),
-                'probe' => __('Also run the uploads test (active test: briefly creates a test file in the uploads folder)', 'sfxtheme'),
-                'sectionsTitle' => __('Areas', 'sfxtheme'),
-                'urgentTitle' => __('Most urgent', 'sfxtheme'),
-                'urgentNone' => __('Nothing urgent: no red or yellow checks.', 'sfxtheme'),
+                'probe' => __('Include the uploads test (briefly creates a test file)', 'sfxtheme'),
                 'running' => __('Checking … keep this tab open until the results are saved.', 'sfxtheme'),
                 /* translators: 1: checks done, 2: checks in this run */
                 'progress' => __('%1$s of %2$s checks done', 'sfxtheme'),
@@ -327,7 +345,7 @@ final class AdminPage
 
     /**
      * The app container with the two server-rendered panels; the script
-     * adds the tab bar, the Übersicht and the section tabs around them.
+     * adds the verdict panel, the tab bar and the Ergebnis tab around them.
      *
      * @param array<string,string> $offered stylesheet => name
      * @param array<string,string> $themes  stylesheet => name

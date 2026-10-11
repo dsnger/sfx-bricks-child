@@ -167,7 +167,7 @@ final class ConfigChecks
             $findings[] = ServerChecks::finding('https', 'http_redirect', Status::UNKNOWN, __('http:// redirect: not measured from outside', 'sfxtheme'));
         }
 
-        return ServerChecks::result($findings, Status::GREEN, __('Addresses: Server. TLS and the http:// redirect: Loopback, the server fetching its own address without login.', 'sfxtheme'), 'loopback');
+        return ServerChecks::result($findings, Status::GREEN, __('The addresses were read on the server; TLS and the http:// redirect were checked by the server calling its own address without login.', 'sfxtheme'), 'loopback');
     }
 
     private static function grade_php_version(array $obs): array

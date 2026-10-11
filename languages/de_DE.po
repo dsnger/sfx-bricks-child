@@ -8404,8 +8404,8 @@ msgstr "Konten mit manage_options. Bricks ist nicht aktiv, daher werden Rechte z
 msgid "Add one block at a time. A host can forbid some directives (AllowOverride), which shows as a 500 error. Conflicts with other rules cannot be ruled out."
 msgstr "Füge die Blöcke einzeln hinzu. Ein Hoster kann manche Anweisungen verbieten (AllowOverride); das zeigt sich als 500-Fehler. Konflikte mit anderen Regeln lassen sich nicht ausschließen."
 
-msgid "Addresses: Server. TLS and the http:// redirect: Loopback, the server fetching its own address without login."
-msgstr "Adressen: Server. TLS und die Weiterleitung von http://: Loopback, der Server ruft seine eigene Adresse ohne Anmeldung ab."
+msgid "The addresses were read on the server; TLS and the http:// redirect were checked by the server calling its own address without login."
+msgstr "Die Adressen wurden auf dem Server gelesen; TLS und die Weiterleitung von http:// prüfte der Server, indem er seine eigene Adresse ohne Anmeldung aufrief."
 
 msgid "Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes."
 msgstr "Fügt Werkzeuge → Sicherheits-Check hinzu: prüft die Website auf offen liegende Dateien, riskante Einstellungen und Fehler vor dem Live-Gang."
@@ -9035,8 +9035,8 @@ msgstr "Gesehen: die Updater-Schalter, WP_AUTO_UPDATE_CORE, die Option für auto
 msgid "Server"
 msgstr "Server"
 
-msgid "Server: what is on disk. Browser: whether it can be read from outside."
-msgstr "Server: was auf der Festplatte liegt. Browser: ob es von außen gelesen werden kann."
+msgid "The server looked at what is on disk; your browser checked whether it can be read from outside."
+msgstr "Der Server hat nachgesehen, was auf der Festplatte liegt; dein Browser hat geprüft, ob es von außen lesbar ist."
 
 msgid "set"
 msgstr "gesetzt"
@@ -9553,6 +9553,9 @@ msgstr "Ist der Datei-Editor an, kann jeder, der in ein Admin-Konto kommt, PHP-C
 msgid "Switch the file editor off."
 msgstr "Schalte den Datei-Editor aus."
 
+msgid "\"Disable Theme Editor\" is already on in WP Optimizer. If the check still finds the editor on, wp-config.php defines DISALLOW_FILE_EDIT as false before the theme loads: set it to true there."
+msgstr "„Theme-Editor deaktivieren“ ist im WP Optimizer schon an. Findet der Check den Editor trotzdem an, setzt wp-config.php DISALLOW_FILE_EDIT vor dem Theme auf false: stell es dort auf true."
+
 msgid "Switch on \"Disable Theme Editor\" in WP Optimizer, or add define( 'DISALLOW_FILE_EDIT', true ); to wp-config.php."
 msgstr "Schalte in WP Optimizer „Theme-Editor deaktivieren“ ein oder trag define( 'DISALLOW_FILE_EDIT', true ); in die wp-config.php ein."
 
@@ -9613,8 +9616,24 @@ msgstr "Ein bekannter Login-Name ist die halbe Anmeldung. Angreifer sammeln sie 
 msgid "Show display names instead of logins and close the public user sources."
 msgstr "Zeig Anzeigenamen statt Logins und schließ die öffentlichen Benutzerquellen."
 
-msgid "In WP Optimizer switch on \"Block ?author= Enumeration\", \"Block REST API Users for Guests\" and \"Remove Users Sitemap\"."
-msgstr "Schalte in WP Optimizer „?author=-Enumeration blockieren“, „REST-API-Benutzer für Gäste blockieren“ und „Benutzer-Sitemap entfernen“ ein."
+msgid "\"Block ?author= Enumeration\""
+msgstr "„?author=-Enumeration blockieren“"
+
+msgid "\"Block REST API Users for Guests\""
+msgstr "„REST-API-Benutzer für Gäste blockieren“"
+
+msgid "\"Remove Users Sitemap\""
+msgstr "„Benutzer-Sitemap entfernen“"
+
+#. translators: %s: quoted WP Optimizer switch names, comma separated
+msgid "In WP Optimizer switch on %s."
+msgstr "Schalte in WP Optimizer %s ein."
+
+msgid "The three user switches are already on in WP Optimizer. A login name still found comes from another source: in the feed the display name step covers it; in an oEmbed author link it is the account's URL slug, which WordPress builds from the login and no setting here changes."
+msgstr "Die drei Benutzer-Schalter sind im WP Optimizer schon an. Ein trotzdem gefundener Login-Name stammt aus einer anderen Quelle: im Feed hilft der Schritt mit dem Anzeigenamen; in einem oEmbed-Autorenlink ist es die URL-Kennung des Kontos, die WordPress aus dem Login bildet und die keine Einstellung hier ändert."
+
+msgid "For the author list: \"Remove Users Sitemap\" is already on in WP Optimizer; if the list still appears, the SEO plugin builds it: exclude authors there."
+msgstr "Für die Autorenliste: „Benutzer-Sitemap entfernen“ ist im WP Optimizer schon an; erscheint die Liste trotzdem, baut das SEO-Plugin sie: schließe die Autoren dort aus."
 
 msgid "Code execution in Bricks runs PHP from the builder: whoever holds it can do anything on the server. SVG files can carry scripts."
 msgstr "Code-Ausführung in Bricks führt PHP aus dem Builder aus: Wer sie hat, kann auf dem Server alles. SVG-Dateien können Skripte enthalten."
@@ -9818,8 +9837,6 @@ msgstr "Einstellungen dieses Checks"
 msgid "Switch on %s in the theme settings"
 msgstr "%s in den Theme-Einstellungen einschalten"
 
-msgid "Overview"
-msgstr "Übersicht"
 
 msgid "Being checked"
 msgstr "wird geprüft"
@@ -9851,8 +9868,6 @@ msgstr "Nur Handlungsbedarf"
 msgid "The check looks for exposed files, risky settings and launch mistakes, and shows what to fix first."
 msgstr "Der Check sucht offen liegende Dateien, riskante Einstellungen und Fehler beim Live-Gang und zeigt, was zuerst zu beheben ist."
 
-msgid "No action needed in this area."
-msgstr "Kein Handlungsbedarf in diesem Bereich."
 
 #, php-format
 msgid "The next check uses the profile %1$s."
@@ -9861,14 +9876,8 @@ msgstr "Die nächste Prüfung nutzt das Profil %1$s."
 msgid "Change"
 msgstr "ändern"
 
-msgid "Areas"
-msgstr "Bereiche"
 
-msgid "Most urgent"
-msgstr "Am dringendsten"
 
-msgid "Nothing urgent: no red or yellow checks."
-msgstr "Nichts Dringendes: keine roten oder gelben Checks."
 
 msgid "Saving the results …"
 msgstr "Speichere die Ergebnisse …"
@@ -10070,8 +10079,8 @@ msgstr "Das Webverzeichnis dieser Seite ist nicht festgestellt (Website- und Wor
 msgid "Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C."
 msgstr "Kopieren nicht möglich – Text ist markiert, bitte mit Strg/Cmd+C kopieren."
 
-msgid "Also run the uploads test (active test: briefly creates a test file in the uploads folder)"
-msgstr "Zusätzlich den Uploads-Test ausführen (aktiver Test: legt kurz eine Testdatei im Uploads-Ordner an)"
+msgid "Include the uploads test (briefly creates a test file)"
+msgstr "Uploads-Test mit ausführen (legt kurz eine Testdatei an)"
 
 msgid "Reset results"
 msgstr "Ergebnisse zurücksetzen"
@@ -10096,7 +10105,7 @@ msgid "The sitemap entries that are intended (not the site profile)"
 msgstr "Die gewollten Sitemap-Einträge (nicht das Seitenprofil)"
 
 msgid "To act on"
-msgstr "Handeln"
+msgstr "Zu erledigen"
 
 msgid "The check got no reliable answer here, for example because the host or a firewall answered instead of the site. A quick look by hand settles it."
 msgstr "Hier bekam der Check keine verlässliche Antwort, zum Beispiel weil der Hoster oder eine Firewall statt der Seite geantwortet hat. Ein kurzer Blick von Hand klärt es."
@@ -10158,3 +10167,74 @@ msgstr "Von Hand: Öffne die Startseite, drücke F12, wähle „Netzwerk“, lad
 
 msgid "According to the WordPress setting no version tag is printed; the page is too large to read completely, and no version was in the part read"
 msgstr "Laut WordPress-Einstellung wird keine Versionsangabe ausgegeben; die Seite ist zu groß, um sie ganz zu lesen, und im gelesenen Teil stand keine Version"
+
+
+msgid "XML-RPC answers anonymous requests although \"Disable XMLRPC\" is on in WP Optimizer: something serves it anyway"
+msgstr "XML-RPC beantwortet anonyme Anfragen, obwohl „XMLRPC deaktivieren“ im WP Optimizer an ist: etwas liefert es trotzdem aus"
+
+msgid "no recognisable answer; \"Disable XMLRPC\" is on in WP Optimizer, but only a real call shows whether it works"
+msgstr "keine erkennbare Antwort; „XMLRPC deaktivieren“ ist im WP Optimizer an, aber erst ein echter Aufruf zeigt, ob es wirkt"
+
+msgid "\"Disable XMLRPC\" is already on in WP Optimizer. If XML-RPC still answers, a plugin or the server serves it anyway: block the file with the .htaccess block below."
+msgstr "„XMLRPC deaktivieren“ ist im WP Optimizer schon an. Antwortet XML-RPC trotzdem, liefert ein Plugin oder der Server es aus: sperre die Datei mit dem .htaccess-Block unten."
+
+msgid "\"Disable WP Version\" is already on in WP Optimizer; it removes the WordPress version. Server and PHP versions come from the server."
+msgstr "„WP-Version deaktivieren“ ist im WP Optimizer schon an; es entfernt die WordPress-Version. Server- und PHP-Version gibt der Server aus."
+
+msgid "the WordPress version is removed by this theme's WP Optimizer; no version in the part read"
+msgstr "die WordPress-Version wird vom WP Optimizer dieses Themes entfernt; im gelesenen Teil stand keine Version"
+
+msgid "Open a point to see what was found, why it matters and how to fix it."
+msgstr "Öffne einen Punkt, um zu sehen, was gefunden wurde, warum es wichtig ist und wie du es behebst."
+
+msgid "Show area"
+msgstr "Bereich anzeigen"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "No results yet. Start the check with \"Check now\"."
+msgstr "Noch keine Ergebnisse. Starte die Prüfung mit „Jetzt prüfen“."
+
+msgid "Findings"
+msgstr "Befunde"
+
+msgid "Problem:"
+msgstr "Problem:"
+
+msgid "Unclear:"
+msgstr "Unklar:"
+
+msgid "Info:"
+msgstr "Info:"
+
+msgid "In order:"
+msgstr "In Ordnung:"
+
+msgid "Checking …"
+msgstr "Prüfung läuft …"
+
+#. translators: %1$s: number of checks
+msgid "%1$s point to fix"
+msgstr "%1$s Punkt zu erledigen"
+
+#. translators: %1$s: number of checks
+msgid "%1$s points to fix"
+msgstr "%1$s Punkte zu erledigen"
+
+#. translators: %1$s: number of checks
+msgid "Nothing to fix — %1$s point to check yourself"
+msgstr "Nichts zu erledigen – %1$s Punkt selbst prüfen"
+
+#. translators: %1$s: number of checks
+msgid "Nothing to fix — %1$s points to check yourself"
+msgstr "Nichts zu erledigen – %1$s Punkte selbst prüfen"
+
+msgid "All in order"
+msgstr "Alles in Ordnung"
+
+msgid "in order"
+msgstr "in Ordnung"
+
+msgid "Nothing to fix."
+msgstr "Nichts zu erledigen."
