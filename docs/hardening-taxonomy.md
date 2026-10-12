@@ -16,6 +16,13 @@ same string twice.
 **Format:** kebab-case `domain-problem-class`, one line, with an alias hint naming
 the synonyms a future reader might search for instead.
 
+**A class that names a remedy promises only what that remedy does.** Before naming a
+function, parser or check as the fix, read its contract in the code and limit the class
+to the inputs it handles; name what stays outside. *Why:* a class is read on every
+fingerprint step, so an over-broad remedy sends the next hardening to a tool that cannot
+handle the case — `adversarial-input-against-handwritten-parser` first prescribed the
+HTML-only `Observations::html_document()` for HTTP header values (Gate B, 2026-10-12).
+
 ## Classes
 
 <!-- Add classes as harden-finding mints them, e.g.:
