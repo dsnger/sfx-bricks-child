@@ -116,7 +116,10 @@ references an entry here must still be able to find it.
       template adopted 2026-10-12. Still open: CLAUDE.md §5 treats a missing
       `.claude/review-gates.md` as "no gate rules" without first checking the agent
       is in the right checkout, so `/workflow-init` could write it in the wrong one
-      (CodeRabbit on PR #58).
+      (CodeRabbit on PR #58). Also from the 0.23.0 template: the ledger check counts
+      "`fixed` lines, each `same as` pair counted once", which can count one repair
+      twice when a `fixed` finding has several `same as` aliases; every alias should
+      collapse into its referenced finding (CodeRabbit on PR #62).
 - [ ] Re-check `docs/prompt-standards.md` against the current model-specific
       prompting pages on every model-generation change (new Claude model in Claude
       Code, new Codex model for the gates).
