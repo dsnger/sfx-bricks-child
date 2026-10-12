@@ -224,35 +224,54 @@ final class Observations
     }
 
     /**
-     * Attributes of every `meta` element of an HTML text, read by
-     * libxml's HTML parser (DOMDocument): comments and script text are not
-     * markup, attribute values may be quoted or not, entities are decoded,
-     * names are lower-case. Input is only the bytes read (≤ 64 KB); no
-     * network (LIBXML_NONET). Null when DOM is unavailable or parsing fails —
-     * the caller then has no evidence.
+     * An HTML document read by WordPress' own tag processor (WP_HTML_Tag_Processor,
+     * WordPress 6.7+ for doctype info): it must open, after only comments, a BOM
+     * and whitespace, with the html doctype or an `<html>` start tag
+     * (`<htmlError>`, XML roots and leading text do not count). Then the
+     * attributes of every `meta` element: comments and script text are not
+     * markup, values are decoded, names lower-case, the first of a repeated
+     * attribute wins. Input is only the bytes read (≤ 64 KB); a cut document
+     * yields the elements before the cut. Null when the processor is missing
+     * or the text is not such a document — the caller then has no evidence.
      *
      * @return array{meta:list<array<string,string>>}|null
      */
-    public static function html_tags(string $body): ?array
+    public static function html_document(string $body): ?array
     {
-        if (!class_exists(\DOMDocument::class) || trim($body) === '') {
+        if (!class_exists(\WP_HTML_Tag_Processor::class) || !method_exists(\WP_HTML_Tag_Processor::class, 'get_doctype_info')) {
             return null;
         }
-        $previous = libxml_use_internal_errors(true);
-        $doc = new \DOMDocument();
-        // The XML declaration makes libxml read the bytes as UTF-8.
-        $loaded = $doc->loadHTML('<?xml encoding="UTF-8">' . $body, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-        if ($loaded === false) {
+        // A BOM counts only at the very start of the document.
+        if (strncmp($body, "\xEF\xBB\xBF", 3) === 0) {
+            $body = substr($body, 3);
+        }
+        $p = new \WP_HTML_Tag_Processor($body);
+        $html = false;
+        while ($p->next_token()) {
+            $type = $p->get_token_type();
+            if ($type === '#comment') {
+                continue;
+            }
+            if ($type === '#text') {
+                if (trim($p->get_modifiable_text(), " \t\n\r\f") === '') {
+                    continue;
+                }
+                break;
+            }
+            $html = $type === '#doctype'
+                ? strtolower((string) ($p->get_doctype_info()->name ?? '')) === 'html'
+                : $type === '#tag' && $p->get_tag() === 'HTML' && !$p->is_tag_closer();
+            break;
+        }
+        if (!$html) {
             return null;
         }
         $out = ['meta' => []];
-        foreach ($doc->getElementsByTagName('meta') as $element) {
+        while ($p->next_tag('meta')) {
             $attrs = [];
-            foreach ($element->attributes ?? [] as $attr) {
-                $name = strtolower($attr->name);
-                $attrs[$name] = $attrs[$name] ?? (string) $attr->value;
+            foreach ($p->get_attribute_names_with_prefix('') ?? [] as $name) {
+                $value = $p->get_attribute($name);
+                $attrs[$name] = is_string($value) ? $value : '';
             }
             $out['meta'][] = $attrs;
         }

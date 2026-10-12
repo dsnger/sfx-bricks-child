@@ -392,7 +392,43 @@
   var FINDING_ICON = { red: 'warning', yellow: 'warning', unknown: 'editor-help', hint: 'info-outline', green: 'yes' };
 
   /** Guidance block of one check: Warum, Empfehlung, So geht's (catalogue text only; no site data beyond WP Optimizer switch states). */
-  function renderGuidance(doc, check, strings) {
+  /** A copy button for a text block: clipboard, else select the text and say how to copy it by hand. */
+  function wireCopy(doc, win, strings, copy, getSource) {
+    var message = null;
+    function fallback(source) {
+      if (doc.createRange && win.getSelection) {
+        var range = doc.createRange();
+        range.selectNodeContents(source);
+        var selection = win.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      if (!message) {
+        message = el(doc, 'span', 'sfx-sc-copy-msg');
+        message.setAttribute('role', 'status');
+        copy.parentNode.appendChild(message);
+      }
+      message.textContent = ' ' + (strings.copyFailed || '');
+    }
+    copy.addEventListener('click', function () {
+      var source = getSource();
+      if (!source) {
+        return;
+      }
+      var clipboard = root.navigator && root.navigator.clipboard;
+      if (!clipboard || typeof clipboard.writeText !== 'function') {
+        fallback(source);
+        return;
+      }
+      clipboard.writeText(source.textContent).then(function () {
+        copy.textContent = strings.copied;
+      }, function () {
+        fallback(source);
+      });
+    });
+  }
+
+  function renderGuidance(doc, check, strings, win) {
     var box = el(doc, 'div', 'sfx-sc-guidance');
     var why = el(doc, 'div', 'sfx-sc-why');
     why.appendChild(el(doc, 'h4', null, strings.why));
@@ -407,7 +443,20 @@
       fix.appendChild(el(doc, 'h4', null, strings.steps));
       if (steps.length) {
         var ol = el(doc, 'ol', 'sfx-sc-steps');
-        steps.forEach(function (step) { ol.appendChild(el(doc, 'li', null, step)); });
+        steps.forEach(function (step) {
+          if (typeof step === 'string') {
+            ol.appendChild(el(doc, 'li', null, step));
+            return;
+          }
+          // A step with a value to copy as a whole: the explanation, then the value as a block.
+          var li = ol.appendChild(el(doc, 'li'));
+          li.appendChild(el(doc, 'p', null, step.text));
+          var pre = li.appendChild(el(doc, 'pre', 'sfx-sc-template', step.code));
+          var p = li.appendChild(el(doc, 'p'));
+          var copy = p.appendChild(el(doc, 'button', 'button sfx-sc-copy', strings.copy));
+          copy.type = 'button';
+          wireCopy(doc, win, strings, copy, function () { return pre; });
+        });
         fix.appendChild(ol);
       }
       if (links.length) {
@@ -510,6 +559,7 @@
     probe.type = 'checkbox';
     probe.id = 'sfx-sc-probe';
     probeLabel.appendChild(doc.createTextNode(' ' + (strings.probe || '')));
+    actions.appendChild(el(doc, 'p', 'sfx-sc-cache', strings.cacheHint || ''));
     var resetButton = actions.appendChild(el(doc, 'button', 'button-link sfx-sc-reset', strings.reset));
     resetButton.type = 'button';
     resetButton.id = 'sfx-sc-reset';
@@ -649,7 +699,7 @@
       var hint = main.appendChild(el(doc, 'span', 'sfx-sc-nextstep', check.recommendation));
       var body = details.appendChild(el(doc, 'div', 'sfx-sc-body'));
       var resultBox = body.appendChild(el(doc, 'div', 'sfx-sc-result'));
-      var guide = renderGuidance(doc, check, strings);
+      var guide = renderGuidance(doc, check, strings, win);
       body.appendChild(guide.box);
       var note = body.appendChild(el(doc, 'p', 'sfx-sc-note'));
       return { id: check.id, details: details, summary: summary, badge: badge, count: count, tag: tag, hint: hint, result: resultBox, note: note, guide: guide, key: null };
@@ -1225,39 +1275,7 @@
     // ---------------------------------------------------------- template copy buttons (rendered by PHP)
 
     Array.prototype.forEach.call(doc.querySelectorAll('.sfx-sc-copy'), function (copy) {
-      var message = null;
-      /** No clipboard, or it refused: select the block's text and say how to copy it by hand. */
-      function fallback(source) {
-        if (doc.createRange && win.getSelection) {
-          var range = doc.createRange();
-          range.selectNodeContents(source);
-          var selection = win.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-        if (!message) {
-          message = el(doc, 'span', 'sfx-sc-copy-msg');
-          message.setAttribute('role', 'status');
-          copy.parentNode.appendChild(message);
-        }
-        message.textContent = ' ' + (strings.copyFailed || '');
-      }
-      copy.addEventListener('click', function () {
-        var source = doc.getElementById(copy.getAttribute('data-target'));
-        if (!source) {
-          return;
-        }
-        var clipboard = root.navigator && root.navigator.clipboard;
-        if (!clipboard || typeof clipboard.writeText !== 'function') {
-          fallback(source);
-          return;
-        }
-        clipboard.writeText(source.textContent).then(function () {
-          copy.textContent = strings.copied;
-        }, function () {
-          fallback(source);
-        });
-      });
+      wireCopy(doc, win, strings, copy, function () { return doc.getElementById(copy.getAttribute('data-target')); });
     });
 
     route(false);

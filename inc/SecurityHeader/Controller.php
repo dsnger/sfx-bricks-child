@@ -66,8 +66,8 @@ class Controller
             $headers['Strict-Transport-Security'] = self::get_hsts_header();
         }
         
-        // CSP
-        if (! (bool) get_option('sfx_disable_csp_header', false)) {
+        // CSP — not in the Bricks builder: it evaluates strings as code, which a strict policy blocks
+        if (! (bool) get_option('sfx_disable_csp_header', false) && ! self::is_bricks_builder()) {
             $headers['Content-Security-Policy'] = self::get_csp_header();
             
             // CSP Report Only - add if report URI is set
@@ -107,9 +107,6 @@ class Controller
         $headers['Access-Control-Allow-Methods'] = 'GET,POST';
         $headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         
-        // Legacy/additional headers
-        $headers['X-Content-Security-Policy'] = 'default-src \'self\'; img-src *; media-src * data:;';
-        
         // Referrer Policy
         $headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
         
@@ -125,6 +122,13 @@ class Controller
     public static function filter_wp_headers(array $headers): array
     {
         return array_merge($headers, self::build_headers_array());
+    }
+
+    /** The builder param alone is a URL anyone can type; only a user allowed to use the builder skips the CSP. */
+    private static function is_bricks_builder(): bool
+    {
+        return function_exists('bricks_is_builder') && bricks_is_builder()
+            && class_exists('\\Bricks\\Capabilities') && \Bricks\Capabilities::current_user_can_use_builder();
     }
 
     private static function get_hsts_header(): string

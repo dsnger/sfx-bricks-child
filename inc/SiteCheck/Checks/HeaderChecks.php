@@ -192,9 +192,10 @@ final class HeaderChecks
     }
 
     /**
-     * CSP is not graded in detail (ruling, Gate B pass 3): an enforcing
-     * policy is `present` (Hinweis); none, only Report-Only, or only
-     * upgrade-insecure-requests / block-all-mixed-content → Gelb.
+     * CSP is not graded in detail (owner ruling 2026-10-12): an enforcing
+     * policy is `present` (Grün); only the mixed-content rules
+     * upgrade-insecure-requests / block-all-mixed-content (the module default
+     * is the first) → Hinweis; none or only Report-Only → Gelb.
      */
     private static function judge_csp(string $csp, bool $report_only): array
     {
@@ -269,7 +270,7 @@ final class HeaderChecks
         return in_array($last, self::REFERRER_SAFE, true) ? self::line('ok') : self::line('weak', $last);
     }
 
-    /** Permissions-Policy is not graded in detail (ruling): present → Hinweis, missing → Gelb. */
+    /** Permissions-Policy is not graded in detail (ruling): present → Grün, missing → Gelb. */
     private static function judge_permissions(string $value): array
     {
         return trim($value) === '' ? self::line('missing') : self::line('present');
@@ -303,7 +304,7 @@ final class HeaderChecks
                     $line = [Status::YELLOW, __('missing (a Report-Only policy does not protect)', 'sfxtheme')];
                     break;
                 case 'upgrade_only':
-                    $line = [Status::YELLOW, __('present, protects little (only upgrade-insecure-requests)', 'sfxtheme')];
+                    $line = [Status::HINT, __('only mixed-content rules such as the module default upgrade-insecure-requests; a stricter policy is optional, see the steps below', 'sfxtheme')];
                     break;
                 case 'weak':
                     $line = [Status::YELLOW, $key === 'strict-transport-security'
@@ -312,7 +313,7 @@ final class HeaderChecks
                         : sprintf(__('present, protects little (%s)', 'sfxtheme'), $detail)];
                     break;
                 case 'present':
-                    $line = [Status::HINT, __('present — its effect is not judged in detail', 'sfxtheme')];
+                    $line = [Status::GREEN, __('set — its content is not judged in detail', 'sfxtheme')];
                     break;
                 case 'cut':
                     $line = [Status::UNKNOWN, __('too long to read completely; not judged', 'sfxtheme')];
@@ -429,14 +430,14 @@ final class HeaderChecks
         if ($r['truncated']) {
             // Owner ruling 2026-10-11: Bricks home pages often exceed what is read. When WordPress
             // itself prints no generator (WP Optimizer's switch, or removed), the cut page is judged.
-            // Only a part read that parses as an HTML page counts as "no version in the part read".
-            $parsed = preg_match('/<(?:html|head)\b/i', $r['body']) === 1 && Observations::html_tags($r['body']) !== null;
+            // Only a part read that WordPress' tag processor reads as an HTML document counts as "no version in the part read".
+            $parsed = Observations::html_document($r['body']) !== null;
             return $kind === 'home' && $generator_off && $parsed ? ['off', ''] : ['failed', __('too large to read completely, no version in the part read', 'sfxtheme')];
         }
         // A feed is clean only as a complete, well-formed feed document (rule 4: unparseable).
         $parsed = $kind === 'feed'
             ? in_array(Observations::xml_root($r['body']), ['rss', 'feed', 'rdf'], true) && Observations::well_formed_xml($r['body'])
-            : preg_match('/<(?:html|head)\b/i', $r['body']) === 1 && Observations::html_tags($r['body']) !== null;
+            : Observations::html_document($r['body']) !== null;
 
         return $parsed ? ['clean', ''] : ['failed', $kind === 'feed' ? __('the answer is not a feed', 'sfxtheme') : __('the answer is not an HTML page', 'sfxtheme')];
     }
@@ -459,7 +460,7 @@ final class HeaderChecks
             return false;
         }
         // Home: the parsed generator meta tag (exact name, entities decoded, comments ignored).
-        foreach (Observations::html_tags($body)['meta'] ?? [] as $a) {
+        foreach (Observations::html_document($body)['meta'] ?? [] as $a) {
             if (strtolower(trim($a['name'] ?? '')) === 'generator'
                 && preg_match('/^\s*WordPress\s+' . $exact . '/i', $a['content'] ?? '') === 1) {
                 return true;

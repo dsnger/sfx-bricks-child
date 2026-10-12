@@ -363,7 +363,7 @@ const byText = (root, tag, text) => find(root, (e) => e.tagName === tag && e.tex
 
 const guidance = (id) => ({
   why: 'WHY-' + id, recommendation: 'REC-' + id,
-  steps: id === 'php_in_uploads' ? ['STEP-1', 'STEP-2'] : [],
+  steps: id === 'php_in_uploads' ? ['STEP-1', 'STEP-2'] : (id === 'https' ? ['STEP-A', { text: 'STEP-B', code: 'CODE-B' }] : []),
   links: id === 'php_in_uploads' ? [{ label: 'Vorlage', url: '#htaccess' }] : (id === 'security_headers' ? [{ label: 'Security Header öffnen', url: 'https://ex.test/wp-admin/admin.php?page=sfx-security-header' }] : []),
 });
 const CATALOGUE = [
@@ -389,7 +389,7 @@ const STRINGS = {
   notSaved: 'NICHT GESPEICHERT %1$s', unknownSave: 'SPEICHERSTATUS UNBEKANNT',
   statusStartFailed: 'START KURZ', statusNotSaved: 'NICHT GESPEICHERT KURZ', statusUnknown: 'UNBEKANNT KURZ', retry: 'Erneut speichern', recheck: 'Neu prüfen', reload: 'Seite neu laden',
   requestFailed: 'Anfrage fehlgeschlagen', timeout: 'Keine Antwort in 60 Sekunden', itemsTitle: 'Von Hand geprüft', itemDone: 'erledigt von %1$s am %2$s', reset: 'Ergebnisse zurücksetzen', resetConfirm: 'Sicher?', resetDone: 'ZURÜCKGESETZT', resetFailed: 'RESET-FEHLER %1$s', resetUnknown: 'RESET UNBEKANNT',
-  copied: 'Kopiert', copyFailed: 'KOPIEREN NICHT MÖGLICH', settingsDirty: 'nicht gespeichert', tablist: 'Bereiche',
+  copy: 'KOPIEREN', copied: 'Kopiert', copyFailed: 'KOPIEREN NICHT MÖGLICH', settingsDirty: 'nicht gespeichert', tablist: 'Bereiche',
 };
 const TABS = [
   { id: 'ergebnis', title: 'Ergebnis' }, { id: 'htaccess', title: '.htaccess-Vorlage' }, { id: 'einstellungen', title: 'Einstellungen' },
@@ -933,6 +933,18 @@ for (const [what, navigator] of [['no clipboard', {}], ['rejected', { clipboard:
   await settle();
   assert.equal(written, 'BLOCK TEXT', 'clipboard available: the block text is written');
   assert.ok(!p.panel('htaccess').textContent.includes('KOPIEREN NICHT MÖGLICH'), 'and no failure message');
+}
+
+// ---- a step with a value to copy: text, the value as a block, a copy button for that block
+{
+  let written = null;
+  const p = page({ navigator: { clipboard: { writeText: async (t) => { written = t; } } } });
+  const ol = find(p.row('https'), (e) => e.tagName === 'ol');
+  assert.deepEqual(ol.children.map((li) => li.textContent), ['STEP-A', 'STEP-BCODE-BKOPIEREN'], 'a code step: its text, the value, the copy button');
+  assert.equal(find(ol, (e) => e.tagName === 'pre').textContent, 'CODE-B', 'the value is a block of its own');
+  find(ol, (e) => e.className && e.className.includes('sfx-sc-copy')).click();
+  await settle();
+  assert.equal(written, 'CODE-B', 'copy writes the value only, not the explanation');
 }
 
 console.log('site-check page: ok');

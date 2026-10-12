@@ -51,6 +51,7 @@
 .sfx-sc-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; flex: 0 1 300px; }
 .sfx-sc-actions .button-hero { margin: 0; }
 .sfx-sc-probe { color: var(--sfx-sc-ink-2); }
+.sfx-sc-cache { margin: 0; color: var(--sfx-sc-ink-2); }
 .sfx-sc-actions .button-link.sfx-sc-reset { color: var(--sfx-sc-ink-3); text-decoration: none; }
 .sfx-sc-actions .button-link.sfx-sc-reset:hover, .sfx-sc-actions .button-link.sfx-sc-reset:focus { color: var(--sfx-sc-red); text-decoration: underline; }
 
