@@ -122,6 +122,12 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 
 ## Don'ts
 
+- **Don't read HTML in a check with a hand-written regex or DOMDocument.** Use
+  `SiteCheck\Observations::html_document()` (WordPress' `WP_HTML_Tag_Processor`), and
+  grade whatever it cannot read with certainty as Nicht prüfbar. *Why:* 25 Gate-B passes in
+  two cycles (xxb2ep650r, prv9jv3vrc) over hand-written HTML/header heuristics kept finding
+  crafted variants each fix missed (comment forms, whitespace, truncation); the parser swap
+  closed its cycle in two passes.
 - **Don't edit the Bricks parent theme or `wp-includes/`.** This is a child theme; parent
   changes are lost on update. Extend via hooks and filters.
 - **Don't add a runtime dependency for what a few lines of PHP do.** `composer.json` has

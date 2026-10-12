@@ -75,6 +75,11 @@ block — to every grep and skill scanning the table a superseded row is unchang
 including one whose entry says its fingerprint is wrong; prose readers get the
 correction, mechanical readers do not, and nothing checks the difference.
 
+**Superseded rows:**
+
+- 2026-10-12 · supersedes 2026-10-12 `adversarial-input-against-handwritten-parser` · the count "45 Gate-B passes" was never true of the two cycles it names: they ran 25 (xxb2ep650r 16, prv9jv3vrc 9) · the curves in the squash body of b4306e4 (PR #60)
+- 2026-10-12 · supersedes 2026-10-12 `adversarial-input-against-handwritten-parser` · the count "45 Gate-B passes" was never true of the two cycles the row names · the Gate B curves of xxb2ep650r and prv9jv3vrc in the squash body of b4306e4 (PR #60)
+
 Columns: `date` (YYYY-MM-DD), `fingerprint` (canonical class), `finding` (short,
 escape `\|`, one line), `source` (gate-a|gate-b|bot|manual),
 `severity` (blocker|major|minor|nit), `rung` (e.g. `2 lint`, `4 test`, `1 prose`,
@@ -86,3 +91,4 @@ leading bold title).
 |------|-------------|---------|--------|----------|------|-----|
 | 2026-08-26 | docs-drift | AGENTS.md restated CLAUDE.md §5's prompt-artifact path list without `plugins/` | bot | minor | 4 test | tests/prompt-artifact-paths-test.php |
 | 2026-09-16 | harness-unguarded-real-state | media-credits-rest-live-check.php deleted its Case 5 draft post inline, so a fatal left it on the live site | bot | minor | 1 prose | AGENTS.md § Don'ts, "verification harness ... guaranteed teardown" |
+| 2026-10-12 | adversarial-input-against-handwritten-parser | 45 Gate-B passes (cycles xxb2ep650r, prv9jv3vrc) on hand-written HTML/header heuristics in the site check; shrunk to WP_HTML_Tag_Processor, uncertain → Nicht prüfbar (PR #61) | gate-b | major | 1 prose | AGENTS.md § Don'ts, "Don't read HTML in a check with a hand-written regex"; reader pinned by tests/site-check-outside-checks-test.php (html_document) |

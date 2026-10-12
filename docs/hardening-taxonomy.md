@@ -31,3 +31,4 @@ the synonyms a future reader might search for instead.
   harnesses (`tests/support/*`) run against the real checkout and the real site,
   which is what makes the class worth its own name here rather than a generic
   test-hygiene one.
+- `adversarial-input-against-handwritten-parser` — a SiteCheck check reads a site's HTML (a page body, including HTML a header check inspects) with a hand-written regex, prefix test or DOMDocument instead of `Observations::html_document()` (WordPress' `WP_HTML_Tag_Processor`), so each crafted variant becomes a new review finding; the remedy is that parser plus Nicht prüfbar for what it cannot read with certainty. HTTP header values (CSP, HSTS) are not HTML and are outside this class (aliases: regex parser, HTML regex, comment forms, `--!>`, PCRE whitespace, truncated body read as clean, review loop on edge cases, parser swap).
