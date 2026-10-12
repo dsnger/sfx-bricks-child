@@ -47,6 +47,11 @@ final class Template
                 self::deny("\t"),
                 '</FilesMatch>',
             ], __('This rule also applies in every subfolder: a plugin\'s readme.html or any .log file below this folder is blocked too.', 'sfxtheme')),
+            self::block('hidden', __('Root folder: hidden files', 'sfxtheme'), $in($root, '.htaccess'), 'hidden-files', [
+                '<FilesMatch "^\\.">',
+                self::deny("\t"),
+                '</FilesMatch>',
+            ], __('Blocks files whose name starts with a dot, such as .user.ini, .htpasswd or .DS_Store, in this folder and every subfolder. Certificate checks under .well-known keep working: their file names do not start with a dot.', 'sfxtheme')),
             self::block('git', __('.git folder: its own .htaccess inside .git', 'sfxtheme'), $in($root, '.git/.htaccess'), 'git', [
                 self::deny(''),
             ], __('Best remove .git from the web folder. Only if it must stay, use this as its own file inside .git.', 'sfxtheme')),
@@ -92,6 +97,9 @@ final class Template
             $blocks[] = self::block('nginx', __('nginx (server configuration, for the host)', 'sfxtheme'), '', 'nginx', array_merge([
                 '# ' . __('Place these blocks before the location block that hands PHP files to PHP (usually location ~ \.php$): nginx uses the first matching regular-expression location.', 'sfxtheme'),
                 'location ~* (^|/)(\.?wp-config[^/]*(\.(' . FileChecks::COPY_SUFFIXES . ')|~)|[^/]*\.sql(\.gz)?|[^/]*\.log|error_log|\.env|readme\.html|license\.txt)$ {',
+                "\tdeny all;",
+                '}',
+                'location ~ /\.(?!well-known/) {',
                 "\tdeny all;",
                 '}',
                 'location ~ /\.git(/|$) {',

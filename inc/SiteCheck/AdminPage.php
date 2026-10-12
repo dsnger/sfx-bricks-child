@@ -181,6 +181,7 @@ final class AdminPage
                 'change' => __('Change', 'sfxtheme'),
                 'check' => __('Check now', 'sfxtheme'),
                 'probe' => __('Include the uploads test (briefly creates a test file)', 'sfxtheme'),
+                'cacheHint' => __('Clear the page cache and the server cache before "Check now". Otherwise the check may see old pages and old headers.', 'sfxtheme'),
                 'running' => __('Checking … keep this tab open until the results are saved.', 'sfxtheme'),
                 /* translators: 1: checks done, 2: checks in this run */
                 'progress' => __('%1$s of %2$s checks done', 'sfxtheme'),
@@ -208,6 +209,7 @@ final class AdminPage
                 /* translators: %1$s: error message */
                 'resetFailed' => __('Could not reset: %1$s', 'sfxtheme'),
                 'resetUnknown' => __('No answer to the reset: the results may already be deleted. Reload the page to see what is stored.', 'sfxtheme'),
+                'copy' => __('Copy', 'sfxtheme'),
                 'copied' => __('Copied', 'sfxtheme'),
                 'copyFailed' => __('Copying is not possible here – the text is selected, copy it with Ctrl+C or Cmd+C.', 'sfxtheme'),
                 'settingsDirty' => __('not saved', 'sfxtheme'),
@@ -221,7 +223,7 @@ final class AdminPage
      * resolved to admin URLs (tab fragments stay fragments). A theme
      * module's link goes to the theme settings page while the module is off.
      *
-     * @return list<array{id:string, section:string, how:string, perspective:string, title:string, why:string, recommendation:string, steps:list<string>, links:list<array{label:string, url:string}>}>
+     * @return list<array{id:string, section:string, how:string, perspective:string, title:string, why:string, recommendation:string, steps:list<string|array{text:string, code:string}>, links:list<array{label:string, url:string}>}>
      */
     public static function catalogue_data(): array
     {
@@ -512,7 +514,7 @@ final class AdminPage
             'contact_form' => __('Contact form sent as a guest, and the e-mail arrived.', 'sfxtheme'),
             'offsite_backup' => __('A backup exists outside the server, and a restore has been tested.', 'sfxtheme'),
             'two_factor' => __('All administrators use two-factor sign-in.', 'sfxtheme'),
-            'accounts_handover' => __('Test and old accounts removed; access handed over to the client.', 'sfxtheme'),
+            'accounts_handover' => __('Unused accounts and test accounts removed.', 'sfxtheme'),
         ];
     }
 

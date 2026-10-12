@@ -8497,6 +8497,9 @@ msgstr "trägt noindex (hier erwartet)"
 msgid "Check now"
 msgstr "Jetzt prüfen"
 
+msgid "Clear the page cache and the server cache before \"Check now\". Otherwise the check may see old pages and old headers."
+msgstr "Leere vor „Jetzt prüfen“ den Seiten-Cache und den Server-Cache. Sonst sieht der Check womöglich alte Seiten und alte Header."
+
 msgid "Checked by hand"
 msgstr "Von Hand geprüft"
 
@@ -8875,8 +8878,8 @@ msgstr "Beitragstyp: %s"
 msgid "present, but without a positive max-age"
 msgstr "vorhanden, aber ohne positives max-age"
 
-msgid "present, protects little (only upgrade-insecure-requests)"
-msgstr "vorhanden, schützt kaum (nur upgrade-insecure-requests)"
+msgid "only mixed-content rules such as the module default upgrade-insecure-requests; a stricter policy is optional, see the steps below"
+msgstr "nur Mixed-Content-Regeln wie der Modul-Standard upgrade-insecure-requests; eine strengere Policy ist optional, siehe die Schritte unten"
 
 msgid "Privileged accounts"
 msgstr "Konten mit erweiterten Rechten"
@@ -9086,8 +9089,8 @@ msgstr "Taxonomie: %s"
 msgid "Template for .htaccess"
 msgstr "Vorlage für .htaccess"
 
-msgid "Test and old accounts removed; access handed over to the client."
-msgstr "Test- und Alt-Konten entfernt; Zugang an den Kunden übergeben."
+msgid "Unused accounts and test accounts removed."
+msgstr "Ungenutzte Konten und Test-Konten entfernt."
 
 msgid "Test file could not be deleted: %s"
 msgstr "Testdatei konnte nicht gelöscht werden: %s"
@@ -10025,8 +10028,8 @@ msgstr "konnte auf dem Server nicht untersucht werden (Dateiinformationen nicht 
 msgid "linked folder, not followed; check what it points to"
 msgstr "verlinkter Ordner, nicht verfolgt; prüfen, worauf er zeigt"
 
-msgid "present — its effect is not judged in detail"
-msgstr "vorhanden — Wirkung wird nicht im Detail bewertet"
+msgid "set — its content is not judged in detail"
+msgstr "gesetzt — Inhalt wird nicht im Detail bewertet"
 
 msgid "The uploads folder could not be determined on this site, so no uploads rule is given; ask the host."
 msgstr "Der Upload-Ordner konnte auf dieser Seite nicht bestimmt werden, daher fehlt die Upload-Regel; frag den Hoster."
@@ -10236,11 +10239,17 @@ msgstr "Nichts zu erledigen."
 msgid "Open the Security Header module of this theme, fill or switch on each header the findings name, and save."
 msgstr "Öffne das Modul Security Header dieses Themes, fülle jeden Header aus den Befunden aus oder schalte ihn ein, und speichere."
 
-msgid "Permissions-Policy: the field is empty until filled. A start for a typical company site: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Leave out a feature the site uses, such as location in a map or a payment button."
-msgstr "Permissions-Policy: Das Feld ist leer, bis du es füllst. Ein Start für eine typische Firmenseite: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Lass eine Funktion weg, die die Seite nutzt, etwa den Standort in einer Karte oder einen Bezahl-Button."
+msgid "Permissions-Policy: the field is empty until filled. Copy this start for a typical company site into it. Remove geolocation=() if a map shows the visitor's location, and payment=() if the site has a payment button such as Apple Pay or Google Pay."
+msgstr "Permissions-Policy: Das Feld ist leer, bis du es füllst. Kopiere diesen Start für eine typische Firmenseite hinein. Entferne geolocation=(), wenn eine Karte den Standort des Besuchers zeigt, und payment=(), wenn die Seite einen Bezahl-Button wie Apple Pay oder Google Pay hat."
 
-msgid "Content-Security-Policy: the default upgrade-insecure-requests only loads http resources over https; it names no allowed sources, so it does not stop injected scripts. A start for a Bricks site: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; upgrade-insecure-requests. Add every outside host the site loads: fonts, analytics, maps, videos, cookie banner."
-msgstr "Content-Security-Policy: Der Standard upgrade-insecure-requests lädt http-Inhalte nur über https; er nennt keine erlaubten Quellen und hält deshalb eingeschleuste Skripte nicht auf. Ein Start für eine Bricks-Seite: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; upgrade-insecure-requests. Ergänze jeden fremden Host, den die Seite lädt: Schriften, Statistik, Karten, Videos, Cookie-Banner."
+msgid "Stricter version: it also allows only this site's own scripts, styles, fonts and embeds. Test it on a staging site first. If something stops working, go back to the safe start, or add the outside host to the matching entry, for example YouTube to frame-src or Google Fonts to font-src and style-src."
+msgstr "Strengere Fassung: Sie erlaubt außerdem nur die eigenen Skripte, Styles, Schriften und Einbettungen der Seite. Teste sie zuerst auf einer Staging-Seite. Hängt danach etwas, geh zurück zum sicheren Start oder trage den fremden Host beim passenden Eintrag ein, zum Beispiel YouTube bei frame-src oder Google Fonts bei font-src und style-src."
 
-msgid "Test a Content-Security-Policy on a staging site first and look at the browser console: a strict policy can block scripts, fonts and embeds."
-msgstr "Teste eine Content-Security-Policy zuerst auf einer Staging-Seite und schau in die Browser-Konsole: Eine strenge Policy kann Skripte, Schriften und Einbettungen blockieren."
+msgid "Content-Security-Policy, safe start: the default upgrade-insecure-requests does not stop injected scripts. This start adds two rules a normal site does not notice. Copy it into the field."
+msgstr "Content-Security-Policy, sicherer Start: Der Standard upgrade-insecure-requests hält eingeschleuste Skripte nicht auf. Dieser Start ergänzt zwei Regeln, die eine normale Seite nicht bemerkt. Kopiere ihn in das Feld."
+
+msgid "Root folder: hidden files"
+msgstr "Hauptordner: versteckte Dateien"
+
+msgid "Blocks files whose name starts with a dot, such as .user.ini, .htpasswd or .DS_Store, in this folder and every subfolder. Certificate checks under .well-known keep working: their file names do not start with a dot."
+msgstr "Sperrt Dateien, deren Name mit einem Punkt beginnt, etwa .user.ini, .htpasswd oder .DS_Store, in diesem Ordner und allen Unterordnern. Zertifikatsprüfungen unter .well-known funktionieren weiter: Deren Dateinamen beginnen nicht mit einem Punkt."

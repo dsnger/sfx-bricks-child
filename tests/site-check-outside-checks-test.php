@@ -276,6 +276,9 @@ function get_taxonomies($args = [], $output = 'names')
     return ['category' => (object) ['name' => 'category', 'public' => true, 'rewrite' => ['slug' => 'category']]];
 }
 
+// WordPress' HTML tag processor, pinned in tests/support (CI has no WordPress core).
+require_once __DIR__ . '/support/html-api.php';
+
 foreach (['Status', 'ThemeSwitches', 'Evidence', 'Finding', 'Locations', 'Options', 'RunContext', 'Catalogue', 'Robots', 'Settings', 'Access', 'OutsideEndpoints', 'Fetch', 'Observations', 'Probe', 'Runs'] as $class) {
     require_once __DIR__ . '/../inc/SiteCheck/' . $class . '.php';
 }
@@ -832,17 +835,21 @@ assert_same(Status::YELLOW, $s['security_headers:framing'], 'nothing for framing
 assert_true(!in_array(Status::RED, array_values($s), true), 'never Rot');
 [, $r] = run_browser('security_headers', ctx(), $headers_answer(['content-security-policy' => 'upgrade-insecure-requests;']));
 $s = statuses($r);
-assert_same(Status::YELLOW, $s['security_headers:content-security-policy'], 'only upgrade-insecure-requests → Gelb');
-assert_true(strpos(implode(' ', array_column($r['findings'], 'label')), 'protects little') !== false, '"schützt kaum" wording');
+assert_same(Status::HINT, $s['security_headers:content-security-policy'], 'only upgrade-insecure-requests (the module default) → Hinweis (owner ruling 2026-10-12)');
+assert_true(strpos(implode(' ', array_column($r['findings'], 'label')), 'module default') !== false, 'the label names the module default');
+foreach (['block-all-mixed-content', 'upgrade-insecure-requests; block-all-mixed-content'] as $mixed) {
+    [, $r] = run_browser('security_headers', ctx(), $headers_answer(['content-security-policy' => $mixed]));
+    assert_same(Status::HINT, statuses($r)['security_headers:content-security-policy'], "only mixed-content rules ({$mixed}) → Hinweis, named as such");
+}
 [, $r] = run_browser('security_headers', ctx(), $headers_answer([
     'strict-transport-security' => 'max-age=31536000', 'content-security-policy' => "default-src 'self'; frame-ancestors 'none'",
     'x-content-type-options' => 'nosniff', 'referrer-policy' => 'strict-origin-when-cross-origin', 'permissions-policy' => 'camera=()',
 ]));
 $s = statuses($r);
 assert_same(Status::GREEN, $s['security_headers:framing'], 'frame-ancestors counts for framing');
-assert_same(Status::HINT, $s['security_headers:content-security-policy'], 'Gate B pass 3: an enforcing CSP is Hinweis (effect not judged in detail)');
-assert_same(Status::HINT, $s['security_headers:permissions-policy'], 'Gate B pass 3: a Permissions-Policy is Hinweis');
-assert_same(Status::HINT, $r['status'], 'all headers set: the exact ones Grün, CSP and Permissions-Policy Hinweis → Hinweis');
+assert_same(Status::GREEN, $s['security_headers:content-security-policy'], 'owner ruling 2026-10-12: an enforcing CSP is Grün (content not judged in detail)');
+assert_same(Status::GREEN, $s['security_headers:permissions-policy'], 'owner ruling 2026-10-12: a Permissions-Policy is Grün');
+assert_same(Status::GREEN, $r['status'], 'all headers set → Grün');
 [, $r] = run_browser('security_headers', ctx(), $headers_answer(['x-frame-options' => 'SAMEORIGIN', 'strict-transport-security' => 'max-age=0']));
 $s = statuses($r);
 assert_same(Status::GREEN, $s['security_headers:framing'], 'X-Frame-Options counts for framing');
@@ -1524,15 +1531,15 @@ assert_same(Status::GREEN, $r['status'], 'robots_txt: Disallow: /$ is not a whol
 [, $r] = run_browser('robots_txt', ctx(), static fn($u) => [200, "User-agent: *\nDisallow: /wp-admin/\n"], [200, 'soft']);
 assert_same(Status::GREEN, $r['status'], 'robots_txt: a recognisable robots.txt counts on a soft-404 site (content, rule 2)');
 
-// Security headers (Gate B pass 3 ruling): CSP and Permissions-Policy present → Hinweis; exact grammar for the rest.
+// Security headers (owner ruling 2026-10-12, was Gate B pass 3): CSP and Permissions-Policy present → Grün; exact grammar for the rest.
 $hdr = static fn(array $h) => statuses(run_browser('security_headers', ctx(), static fn($u) => [200, '<html></html>', ['headers' => $h]])[1]);
 $s = $hdr(['content-security-policy' => 'invalid', 'referrer-policy' => 'invalid', 'permissions-policy' => 'invalid']);
-assert_same(Status::HINT, $s['security_headers:content-security-policy'], 'CSP present (whatever it says) → Hinweis, never Grün');
+assert_same(Status::GREEN, $s['security_headers:content-security-policy'], 'CSP present (whatever it says) → Grün; its content is not judged');
 assert_same(Status::YELLOW, $s['security_headers:referrer-policy'], 'Referrer-Policy "invalid" → Gelb');
-assert_same(Status::HINT, $s['security_headers:permissions-policy'], 'Permissions-Policy present → Hinweis, never Grün');
+assert_same(Status::GREEN, $s['security_headers:permissions-policy'], 'Permissions-Policy present → Grün');
 $s = $hdr(['referrer-policy' => 'no-referrer-when-downgrade', 'permissions-policy' => 'camera=(), camera=*']);
 assert_same(Status::YELLOW, $s['security_headers:referrer-policy'], 'no-referrer-when-downgrade → Gelb (sends the full URL)');
-assert_same(Status::HINT, $s['security_headers:permissions-policy'], 'an overwritten Permissions-Policy is no Grün either');
+assert_same(Status::GREEN, $s['security_headers:permissions-policy'], 'an overwritten Permissions-Policy is present too: not judged in detail');
 foreach (['origin', 'origin-when-cross-origin', 'unsafe-url'] as $weak) {
     assert_same(Status::YELLOW, $hdr(['referrer-policy' => $weak])['security_headers:referrer-policy'], "Referrer-Policy {$weak} → Gelb (not on the safe list)");
 }
@@ -1574,6 +1581,25 @@ assert_same(Status::GREEN, $r['status'], 'cut HTML 404 pages everywhere else →
 assert_same(Status::GREEN, $r['status'], 'cut HTML 404 with BOM and a comment → closed');
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '<htmlError><message>Forbidden</message>' . str_repeat('x', 200), ['truncated' => true]]);
 assert_true($r['status'] !== Status::GREEN, 'cut XML <htmlError> body → not closed, never Grün');
+// Option A (owner decision 2026-10-11): WordPress' tag processor decides "HTML document", not a regex.
+// `--!>` closes a comment in HTML; the old prefix regex did not see the doctype behind it.
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '<!-- a --!>' . $html_404, ['truncated' => true]]);
+assert_same(Status::GREEN, $r['status'], 'cut HTML 404 behind a --!> comment → closed (read by the tag processor)');
+[, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, "Warning: x in y.php\n" . $html_404, ['truncated' => true]]);
+assert_true($r['status'] !== Status::GREEN, 'cut 404 with text before the doctype → not read with certainty, never Grün');
+
+// html_document(): the document test and the meta reader, as the tag processor reads them.
+assert_same(null, \SFX\SiteCheck\Observations::html_document('<?xml version="1.0"?><urlset></urlset>'), 'an XML root is no HTML document');
+assert_same(null, \SFX\SiteCheck\Observations::html_document('<!DOCTYPE svg><svg></svg>'), 'another doctype is no HTML document');
+assert_same(null, \SFX\SiteCheck\Observations::html_document(''), 'nothing is no HTML document');
+assert_same(['meta' => []], \SFX\SiteCheck\Observations::html_document("\xEF\xBB\xBF\n<html><body>"), 'BOM and whitespace before <html> → a document');
+assert_same(null, \SFX\SiteCheck\Observations::html_document("<!--c-->\xEF\xBB\xBF<html>"), 'a BOM after a comment is text, not a BOM → no document');
+assert_same(null, \SFX\SiteCheck\Observations::html_document(" \xEF\xBB\xBF<html>"), 'a BOM after whitespace is text → no document');
+$doc = \SFX\SiteCheck\Observations::html_document('<!DOCTYPE html><!-- <meta name="generator" content="WordPress 1.0"> --><script>"<meta name=x>"</script><META NAME="Generator" content="WordPress&#32;7.1" name="dup"><meta charset=utf-8>');
+assert_same([['name' => 'Generator', 'content' => 'WordPress 7.1'], ['charset' => 'utf-8']], $doc['meta'] ?? null, 'meta: names lower-case, values decoded, the first repeated attribute wins, comments and script text are no markup');
+// Without the processor (WordPress < 6.7, or not loaded) nothing is read: the caller has no evidence.
+$probe = sprintf('require %s; echo json_encode(SFX\SiteCheck\Observations::html_document("<!DOCTYPE html><html>"));', var_export(__DIR__ . '/../inc/SiteCheck/Observations.php', true));
+assert_same('null', trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($probe))), 'no tag processor → null (Nicht prüfbar)');
 [, $r] = run_browser('usernames_public', ctx(), static fn($u) => strpos($u, 'wp/v2/users') !== false ? [200, '[]'] : [404, '']);
 assert_same(Status::UNKNOWN, $r['status'], 'an empty 404 is still no evidence');
 // Gate B (cycle prv9jv3vrc): a login on a cut error page is found before the source counts as closed.
@@ -1668,7 +1694,7 @@ assert_same(Status::UNKNOWN, $r['status'], 'security_headers: empty home page �
 [, $r] = run_browser('security_headers', ctx(), static fn($u) => [200, '<html></html>', ['headers' => $good]], [200, '<html></html>']);
 assert_same(Status::UNKNOWN, $r['status'], 'security_headers: soft-404 site → Nicht prüfbar');
 [, $r] = run_browser('security_headers', ctx(), static fn($u) => [200, '<html></html>', ['headers' => $good]]);
-assert_same(Status::HINT, $r['status'], 'control: a reliable answer with good headers → graded (Hinweis for CSP/Permissions-Policy)');
+assert_same(Status::GREEN, $r['status'], 'control: a reliable answer with good headers → graded Grün');
 
 // spec-5 / quality-3: whole header values up to 8 KB; a cut value is never Grün.
 $long = "default-src 'self'; img-src " . implode(' ', array_map(static fn($i) => "https://img{$i}.example.com", range(1, 40))) . "; frame-ancestors *";

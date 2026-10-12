@@ -180,9 +180,8 @@ final class AccountOutside
             return false;
         }
 
-        // An HTML document: optional BOM, whitespace and comments, then the html doctype or element
-        // (`<htmlError>` and other XML roots do not count).
-        return !$truncated || preg_match('/^(?:\xEF\xBB\xBF)?(?:\s++|<!--.*?-->)*+(?:<!doctype\s+html[\s>]|<html[\s>])/is', $body) === 1;
+        // An HTML document as WordPress' tag processor reads it (`<htmlError>` and XML roots do not count).
+        return !$truncated || Observations::html_document($body) !== null;
     }
 
     /** The answer has the format its source serves. */

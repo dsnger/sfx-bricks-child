@@ -47,7 +47,7 @@ $blocks = [];
 foreach (Template::blocks($locations, false) as $block) {
     $blocks[$block['id']] = $block;
 }
-assert_same(['sensitive', 'git', 'indexes', 'uploads', 'xmlrpc'], array_keys($blocks), 'Apache blocks, no nginx text on Apache');
+assert_same(['sensitive', 'hidden', 'git', 'indexes', 'uploads', 'xmlrpc'], array_keys($blocks), 'Apache blocks, no nginx text on Apache');
 
 /** The FilesMatch pattern of a block, as a PHP regex. */
 function files_match(string $text): string
@@ -76,7 +76,7 @@ foreach ($blocks as $id => $block) {
     assert_true($block['title'] !== '', "{$id}: has a title");
 }
 
-foreach (['sensitive', 'git', 'uploads'] as $id) {
+foreach (['sensitive', 'hidden', 'git', 'uploads'] as $id) {
     $text = $blocks[$id]['text'];
     assert_true(strpos($text, "<IfModule mod_authz_core.c>") !== false && strpos($text, 'Require all denied') !== false, "{$id}: Apache 2.4 syntax");
     assert_true(strpos($text, "<IfModule !mod_authz_core.c>") !== false && strpos($text, 'Deny from all') !== false && strpos($text, 'Order allow,deny') !== false, "{$id}: Apache 2.2 syntax");
@@ -104,6 +104,18 @@ foreach (explode('|', \SFX\SiteCheck\Checks\FileChecks::COPY_SUFFIXES) as $suffi
 }
 assert_true(preg_match('/subfolder/i', $blocks['sensitive']['note']) === 1 && strpos($blocks['sensitive']['note'], 'readme.html') !== false && strpos($blocks['sensitive']['note'], '.log') !== false,
     'sensitive block says it also applies in subfolders (readme.html, .log)');
+
+// ------------------------------------------------------------ hidden files
+
+assert_same('/srv/www/.htaccess', $blocks['hidden']['file'], 'hidden-files block goes into the web root');
+$hidden = files_match($blocks['hidden']['text']);
+foreach (['.user.ini', '.htpasswd', '.DS_Store', '.gitignore', '.env'] as $name) {
+    assert_true(preg_match($hidden, $name) === 1, "hidden-files block denies {$name}");
+}
+// FilesMatch sees the file name only: .well-known/acme-challenge/<token> is never a dot name.
+foreach (['acme-token', 'apple-app-site-association', 'index.php', 'style.css', 'image.jpg'] as $name) {
+    assert_true(preg_match($hidden, $name) !== 1, "hidden-files block leaves {$name} alone");
+}
 
 // ------------------------------------------------------------ .git
 
@@ -139,7 +151,7 @@ assert_true(strpos($blocks['xmlrpc']['text'], 'xmlrpc.php') !== false, 'xmlrpc b
 $no_web = $locations;
 $no_web['web'] = null;
 $files = array_column(Template::blocks($no_web, false), 'file', 'id');
-foreach (['sensitive', 'git', 'indexes', 'xmlrpc'] as $id) {
+foreach (['sensitive', 'hidden', 'git', 'indexes', 'xmlrpc'] as $id) {
     assert_same(null, $files[$id], "{$id}: web root unknown → location unknown, no bare .htaccess path");
 }
 assert_same('/data/media/uploads/.htaccess', $files['uploads'], 'uploads path unaffected by an unknown web root');
@@ -158,6 +170,9 @@ $text = $nginx['nginx']['text'];
 assert_true(strpos($text, 'deny all;') !== false, 'nginx text denies');
 assert_true(strpos($text, '/media/uploads/') !== false, 'nginx uploads rule uses the uploads URL path');
 assert_true(strpos($text, 'autoindex off;') !== false, 'nginx text turns listings off');
+assert_true(strpos($text, 'location ~ /\\.(?!well-known/) {') !== false, 'nginx denies dot paths, except .well-known');
+$dot = '#/\\.(?!well-known/)#';
+assert_true(preg_match($dot, '/.user.ini') === 1 && preg_match($dot, '/.well-known/acme-challenge/x') !== 1, 'nginx dot rule: .user.ini denied, .well-known allowed');
 assert_true(preg_match('/^# BEGIN sfx-nginx/', $text) === 1 && preg_match('/# END sfx-nginx$/', rtrim($text)) === 1, 'nginx text carries sfx markers');
 assert_true(preg_match('/\b(rewrite|return|add_header)\b/', $text) !== 1, 'nginx text: no rewrite, return or add_header');
 assert_true(preg_match('/^# .*before.*PHP/m', $text) === 1, 'nginx text says the deny locations go before the PHP location block');

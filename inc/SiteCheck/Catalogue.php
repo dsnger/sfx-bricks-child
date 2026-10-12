@@ -33,7 +33,7 @@ final class Catalogue
      * `fallback_label`; AdminPage resolves it to the theme settings page when
      * that module is off. No module class is referenced.
      *
-     * @return array<string, array{section:string, how:string, monitor:bool, title:string, why:string, recommendation:string, steps:list<string>, links:list<array{label:string, url:string}>}>
+     * @return array<string, array{section:string, how:string, monitor:bool, title:string, why:string, recommendation:string, steps:list<string|array{text:string, code:string}>, links:list<array{label:string, url:string}>}>
      */
     public static function all(): array
     {
@@ -173,9 +173,18 @@ final class Catalogue
                 'recommendation' => __('Send the missing headers, and take care with the Content-Security-Policy.', 'sfxtheme'),
                 'steps' => [
                     __('Open the Security Header module of this theme, fill or switch on each header the findings name, and save.', 'sfxtheme'),
-                    __('Permissions-Policy: the field is empty until filled. A start for a typical company site: camera=(), microphone=(), geolocation=(), payment=(), usb=(). Leave out a feature the site uses, such as location in a map or a payment button.', 'sfxtheme'),
-                    __('Content-Security-Policy: the default upgrade-insecure-requests only loads http resources over https; it names no allowed sources, so it does not stop injected scripts. A start for a Bricks site: default-src \'self\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; img-src \'self\' data: https:; font-src \'self\' data:; frame-src https:; object-src \'none\'; base-uri \'self\'; frame-ancestors \'self\'; upgrade-insecure-requests. Add every outside host the site loads: fonts, analytics, maps, videos, cookie banner.', 'sfxtheme'),
-                    __('Test a Content-Security-Policy on a staging site first and look at the browser console: a strict policy can block scripts, fonts and embeds.', 'sfxtheme'),
+                    [
+                        'text' => __('Permissions-Policy: the field is empty until filled. Copy this start for a typical company site into it. Remove geolocation=() if a map shows the visitor\'s location, and payment=() if the site has a payment button such as Apple Pay or Google Pay.', 'sfxtheme'),
+                        'code' => 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+                    ],
+                    [
+                        'text' => __('Content-Security-Policy, safe start: the default upgrade-insecure-requests does not stop injected scripts. This start adds two rules a normal site does not notice. Copy it into the field.', 'sfxtheme'),
+                        'code' => "upgrade-insecure-requests; base-uri 'self'; object-src 'none';",
+                    ],
+                    [
+                        'text' => __('Stricter version: it also allows only this site\'s own scripts, styles, fonts and embeds. Test it on a staging site first. If something stops working, go back to the safe start, or add the outside host to the matching entry, for example YouTube to frame-src or Google Fonts to font-src and style-src.', 'sfxtheme'),
+                        'code' => "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; media-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;",
+                    ],
                     __('The check only says whether a Content-Security-Policy and a Permissions-Policy are present; what they allow is not judged in detail. Review them with a dedicated tool if they matter for this site.', 'sfxtheme'),
                     __('Run the check again.', 'sfxtheme'),
                 ],
@@ -452,7 +461,7 @@ final class Catalogue
         return ['status' => Status::UNKNOWN, 'findings' => [], 'perspective' => 'server', 'note' => $note];
     }
 
-    /** @param array{why:string, recommendation:string, steps:list<string>, links:list<array>} $guidance */
+    /** @param array{why:string, recommendation:string, steps:list<string|array{text:string, code:string}>, links:list<array>} $guidance */
     private static function row(string $section, string $how, bool $monitor, string $title, array $guidance): array
     {
         return ['section' => $section, 'how' => $how, 'monitor' => $monitor, 'title' => $title] + $guidance;

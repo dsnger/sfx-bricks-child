@@ -541,7 +541,10 @@ namespace {
         assert_true(!isset($row['tip']), "{$id}: the old tip is gone");
         assert_true(is_string($row['why']) && trim($row['why']) !== '', "{$id}: Warum");
         assert_true(is_string($row['recommendation']) && trim($row['recommendation']) !== '', "{$id}: Empfehlung");
-        assert_true(is_array($row['steps']) && array_filter($row['steps'], static fn($x) => !is_string($x) || trim($x) === '') === [], "{$id}: steps are texts");
+        $bad_step = static fn($x) => is_array($x)
+            ? array_keys($x) !== ['text', 'code'] || trim((string) $x['text']) === '' || trim((string) $x['code']) === ''
+            : !is_string($x) || trim($x) === '';
+        assert_true(is_array($row['steps']) && array_filter($row['steps'], $bad_step) === [], "{$id}: steps are texts, or a text with a value to copy");
         foreach ($row['links'] as $link) {
             assert_true(trim($link['label']) !== '', "{$id}: link label");
             $url = $link['url'];
@@ -554,6 +557,11 @@ namespace {
     $in = $catalogue['php_in_uploads'];
     assert_true(count($in['steps']) >= 3 && in_array('#htaccess', array_column($in['links'], 'url'), true), 'php_in_uploads: numbered steps and a link to the .htaccess template');
     assert_same([], $catalogue['table_prefix']['steps'], 'table_prefix is informational: no steps');
+    $codes = array_column(array_filter($catalogue['security_headers']['steps'], 'is_array'), 'code');
+    assert_same(3, count($codes), 'security_headers: the Permissions-Policy, a safe CSP start and a stricter CSP as values to copy');
+    assert_true(str_starts_with($codes[0], 'camera=()'), 'security_headers: the Permissions-Policy start');
+    assert_true(!str_contains($codes[1], "-src 'self'") && str_contains($codes[1], 'upgrade-insecure-requests'), 'security_headers: the safe start restricts no scripts, styles or images');
+    assert_true(str_contains($codes[2], "default-src 'self'") && str_contains($codes[2], "img-src 'self' data: https:") && str_contains($codes[2], 'upgrade-insecure-requests'), 'security_headers: the stricter version allows https images (Gravatar)');
     foreach ($catalogue as $id => $row) {
         assert_same(Catalogue::perspective($id), Catalogue::perspective_for($id, $row['how']), "{$id}: perspective_for() agrees with perspective()");
     }
