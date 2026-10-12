@@ -109,7 +109,7 @@ references an entry here must still be able to find it.
       whether that trade is worth it before writing tests one file at a time.
 
 ## Tooling revalidation
-- [ ] **Report a dev-workflow template defect upstream** (PR #58, kept
+- [x] **Report a dev-workflow template defect upstream** — reported 2026-10-12 as dsnger/dev-workflow-kit#66 (both open defects below) (PR #58, kept
       unpatched here by owner decision 2026-10-10, files stay byte-identical to the
       templates). A second one — `.claude/review-gates.md` saying findings follow "the
       format above" without defining the six-field line — is fixed in the 0.23.0
