@@ -112,6 +112,7 @@ $hidden = files_match($blocks['hidden']['text']);
 foreach (['.user.ini', '.htpasswd', '.DS_Store', '.gitignore', '.env'] as $name) {
     assert_true(preg_match($hidden, $name) === 1, "hidden-files block denies {$name}");
 }
+assert_true(strpos($blocks['hidden']['note'], '.svn') !== false, 'the note names the gap: files inside a hidden folder are not covered');
 // FilesMatch sees the file name only: .well-known/acme-challenge/<token> is never a dot name.
 foreach (['acme-token', 'apple-app-site-association', 'index.php', 'style.css', 'image.jpg'] as $name) {
     assert_true(preg_match($hidden, $name) !== 1, "hidden-files block leaves {$name} alone");

@@ -182,7 +182,7 @@ final class Catalogue
                         'code' => "upgrade-insecure-requests; base-uri 'self'; object-src 'none';",
                     ],
                     [
-                        'text' => __('Stricter version: it also allows only this site\'s own scripts, styles, fonts and embeds. Test it on a staging site first. If something stops working, go back to the safe start, or add the outside host to the matching entry, for example YouTube to frame-src or Google Fonts to font-src and style-src.', 'sfxtheme'),
+                        'text' => __('Stricter version: it also limits scripts, styles, fonts and embeds to this site. It keeps \'unsafe-inline\' because Bricks writes scripts and styles into the page, so an injected inline script still runs; scripts from outside hosts are blocked. Test it on a staging site first. If something stops working, go back to the safe start, or add the outside host to the matching entry, for example YouTube to frame-src or Google Fonts to font-src and style-src.', 'sfxtheme'),
                         'code' => "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; media-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;",
                     ],
                     __('The check only says whether a Content-Security-Policy and a Permissions-Policy are present; what they allow is not judged in detail. Review them with a dedicated tool if they matter for this site.', 'sfxtheme'),

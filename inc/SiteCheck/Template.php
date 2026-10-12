@@ -51,7 +51,7 @@ final class Template
                 '<FilesMatch "^\\.">',
                 self::deny("\t"),
                 '</FilesMatch>',
-            ], __('Blocks files whose name starts with a dot, such as .user.ini, .htpasswd or .DS_Store, in this folder and every subfolder. Certificate checks under .well-known keep working: their file names do not start with a dot.', 'sfxtheme')),
+            ], __('Blocks files whose name starts with a dot, such as .user.ini, .htpasswd or .DS_Store, in this folder and every subfolder. Certificate checks under .well-known keep working: their file names do not start with a dot. Files inside a folder whose name starts with a dot, such as .svn, are not covered: remove such folders from the web folder, as with .git.', 'sfxtheme')),
             self::block('git', __('.git folder: its own .htaccess inside .git', 'sfxtheme'), $in($root, '.git/.htaccess'), 'git', [
                 self::deny(''),
             ], __('Best remove .git from the web folder. Only if it must stay, use this as its own file inside .git.', 'sfxtheme')),

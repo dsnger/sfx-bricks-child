@@ -578,7 +578,7 @@ the check again; 4. on a 500 error put the backup back (or delete the newly crea
 - **Root, hidden files** (owner request 2026-10-12, from the lake-studio comparison): deny
   every file name starting with a dot (`FilesMatch "^\."`, same two-version syntax), e.g.
   `.user.ini`, `.htpasswd`, `.DS_Store`. `.well-known` keeps working because `FilesMatch`
-  sees file names only, and ACME tokens have no leading dot. nginx: `location ~ /\.(?!well-known/)`.
+  sees file names only, and ACME tokens have no leading dot. The same fact means files inside a hidden folder (`.svn/entries`) are not covered; the note says to remove such folders, as for `.git` (a path rule would need `<If>`, which not every host supports). nginx: `location ~ /\.(?!well-known/)` covers folders too.
   Not taken from that comparison: `Header unset X-Powered-By` (a header change; `expose_php`
   is the place) and a `wp-includes` PHP block (needs rewrites; TinyMCE loads `wp-tinymce.php` directly).
 - **`.git` folder:** `FilesMatch` matches file names, not a folder path like `.git/`,
