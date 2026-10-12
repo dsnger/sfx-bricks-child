@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.32.0] - 2026-10-12
+
+- Sicherheits-Check: the security header guidance shows its starting values as blocks to copy: a Permissions-Policy, a safe Content-Security-Policy start that breaks nothing, and a stricter version to test on staging first.
+- Sicherheits-Check: a Content-Security-Policy beyond the module default and a set Permissions-Policy now count as in order. The module default (upgrade-insecure-requests) shows as Info instead of a warning.
+- Sicherheits-Check: a note to clear the page and server cache before "Jetzt prüfen". The manual item on accounts now reads "Ungenutzte Konten und Test-Konten entfernt."
+- Sicherheits-Check: HTML pages are read with WordPress' own HTML parser; anything it cannot read with certainty shows as "Nicht prüfbar".
+- .htaccess template: an optional block that blocks hidden files such as .user.ini or .htpasswd (nginx text included).
+- Security Header: the Bricks builder no longer gets a Content-Security-Policy for users allowed to use it, so a strict policy no longer leaves the builder blank. The outdated X-Content-Security-Policy header is no longer sent.
+
 ## [0.31.0] - 2026-10-11
 
 - Sicherheits-Check: new page layout. One verdict for the site at the top, "Jetzt prüfen" on every tab and a reset. Results grouped by what to do (Zu erledigen, Selbst prüfen, In Ordnung), filterable by area. Each check shows one traffic light; its findings are a plain list below it. Checks stay closed until opened.
