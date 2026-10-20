@@ -39,37 +39,6 @@ references an entry here must still be able to find it.
       `quality.sh` and CI cannot catch regressions there. Needs a WordPress + MySQL
       test environment in CI (e.g. a MySQL service + wp-env or the core test suite) —
       its own design pass.
-- [ ] **release.sh rollback leaves the bump commit as HEAD** (from Greptile on
-      PR #30, 2026-08-26): any failure after the release commit — not just a
-      missing autoloader, e.g. a zip/rsync failure in `build_theme` — triggers
-      `rollback()`, which deletes the tag locally and on the remote but keeps
-      the version-bump commit as HEAD (`git reset --hard HEAD` is a no-op
-      against the commit itself). The checkout is then on an untagged,
-      unpublished release commit. PR #30 removed the most likely trigger by
-      checking the autoloader in the preflight; making `rollback()` also
-      restore the pre-release HEAD is a separate, riskier change (the trap
-      fires for every ERR, and eating a commit on an unrelated failure would
-      be worse) and needs its own design pass.
-      Narrowed 2026-08-28: the trap is now cleared explicitly when
-      `create_github_release` returns — before the zip cleanup — so neither that
-      cleanup nor the new release-commit push can roll anything back. Deleting
-      the tag of a published release would have been worse than the unpushed
-      commit the push was added to fix. See the entry below, though: the window
-      is also much smaller than it reads, which changes what this finding is
-      worth fixing for.
-- [ ] **The release rollback does not fire for failures inside its helpers**
-      (Codex Gate B on the release-push PR, 2026-08-28): `release.sh` arms
-      `trap rollback ERR` with `set -e` but *without* `set -E`, so the trap runs
-      only for failures in `main` itself. A failure inside `create_git_tag`,
-      `build_theme` or `create_github_release` — including a `gh release upload`
-      that fails after `gh release create` succeeded — ends the script with no
-      rollback at all. Verified with a probe, not read off the source. Two
-      consequences: the rollback is largely decorative for the steps that
-      actually fail, and a failed upload leaves a published release without its
-      zip and with the version bump unpushed. Enabling `set -E` is NOT the fix
-      on its own — it would let an upload failure delete the tag of a live
-      release. This needs explicit checked phases with the irreversible boundary
-      at a successful `gh release create`, which is its own design pass.
 
 ## Someday
 - [ ] **Two pre-existing docs disagree with `AGENTS.md`** (Codex Gate B pass 3,
@@ -79,19 +48,10 @@ references an entry here must still be able to find it.
       modules where there are 14 (missing SmoothScroll, NavMenuQuery,
       PasswordProtected, ThemeSettingsOverview). Both were already wrong before this
       PR; left alone to keep its diff to the workflow scaffolding.
-- [ ] **`./build-theme.sh` is not run in CI** (Codex Gate B on the workflow-init PR,
-      2026-08-26): `tests/build-package-exclude-test.php` checks the exclude list as
-      *text*, not the archive it produces — which is why tracked `.mcp/` state was
-      eligible to ship until this PR caught it by hand. Running the build in CI and
-      asserting the resulting zip's contents would make that behavioural — including
-      the stale-entry case fixed in this PR (seed a forbidden path into an existing
-      same-version zip, rebuild, assert it is gone; verified by hand here, not pinned).
-- [ ] **composer.lock is stale relative to composer.json** (Codex Gate B on the
-      workflow-init PR, 2026-08-26): `composer validate --strict` exits 2 with
-      "lock file is not up to date". `composer install` still installs exactly what
-      the lock pins, so CI stays reproducible, but a `composer validate --strict`
-      step cannot be added to `.github/workflows/quality.yml` until the lock is
-      regenerated. Regenerate and add the step together.
+- [ ] **Add `composer validate --strict` to CI** (from the stale-lock entry, Codex Gate B
+      on the workflow-init PR, 2026-08-26). The lock was regenerated when Parsedown was
+      dropped (2026-10-20) and `composer validate --strict` now passes locally; the CI
+      step is still missing.
 - [ ] No static analyser installed (PHPStan/Psalm). `AGENTS.md` § Commands
       lists the `typecheck` row as TODO and points here.
 - [ ] **Most admin JavaScript is still untested** (follow-up to the Node test leg,
@@ -133,6 +93,14 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Obsolete with the old release scripts** (2026-10-20, Theme PR 1 of the skillset's
+      part E): `release.sh`, `release` and `build-theme.sh` were removed for the canonical
+      `bin/release.sh` block, so three entries closed without a fix: "release.sh rollback
+      leaves the bump commit as HEAD" (Greptile on PR #30), "the release rollback does not
+      fire for failures inside its helpers" (Codex Gate B, 2026-08-28) and
+      "`./build-theme.sh` is not run in CI" (Codex Gate B, 2026-08-26). The block has no
+      destructive rollback, and its `publish` refuses a ZIP whose files differ from
+      `SHIPPED` at `HEAD`.
 - [x] **A Node test leg now covers the theme's own JavaScript** (raised by Codex
       Gate B on PR #36 in all three passes; done 2026-08-28): `quality.sh` used to
       run `tests/*-test.php` only, so 13 own JS files under `inc/*/assets/`

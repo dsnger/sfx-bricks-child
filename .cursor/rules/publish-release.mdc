@@ -1,6 +1,6 @@
 ---
 description: Release workflow for SFX Bricks Child theme
-globs: release.sh
+globs: bin/release.sh, bin/plugin.conf
 alwaysApply: true
 ---
 # Release workflow (manual only)
@@ -8,80 +8,24 @@ alwaysApply: true
 ## Permission and safety
 - Always ask the user before any release action.
 - Never run release steps automatically or without explicit approval.
-- Release notes must be ASCII only (no emojis or Unicode symbols).
 
-## Preferred path
-- Use `./release.sh <version> [release_notes] [--rc]` from the theme root.
-- The script owns versioning, changelog, tagging, and release publishing.
+## The two phases
+The release script is the canonical SFX release-script block (`bin/release.sh`, placed
+unchanged; its README in the sfx-wp-plugin-skills repository describes it). Its values
+live in `bin/plugin.conf` (`KIND=theme`). Never edit `bin/release.sh` by hand: a new
+version is placed by `adopt-block`.
 
-## Preflight checks
-- Git working tree must be clean (the script enforces this).
-- GitHub CLI (`gh`) must be installed and authenticated for non-RC releases.
-- `build-theme.sh` must exist and be executable.
-- For a publishing (non-RC) release, HEAD must be on a branch — not detached — and that
-  branch must be exactly level with `refs/heads/<branch>` on origin. The script fetches
-  and compares before it publishes anything, because the final push would otherwise send
-  every commit the remote is missing, and `AGENTS.md` invariant 7 reserves that for pull
-  requests. An RC skips these checks: it publishes and pushes nothing.
+1. **Bump** on a clean `main` equal to `origin/main`:
+   `bash bin/release.sh patch|minor|major`. It creates `release/<next>`, sets the one
+   `Version:` line of `style.css`, moves the `## [Unreleased]` entries of `CHANGELOG.md`
+   under the new version, writes `languages/sfxtheme.pot`, runs `bash quality.sh` and
+   stops. Review the diff, commit, open a pull request and merge it (`AGENTS.md`
+   invariant 7).
+2. **Publish** on `main` after that merge: `bash bin/release.sh publish`. It builds
+   `sfx-bricks-child-<version>.zip` with `git archive` from `HEAD`, holding only the
+   `SHIPPED` entries under `sfx-bricks-child/`, refuses a ZIP that differs from them,
+   then pushes the annotated tag `v<version>` and creates the GitHub release.
+   `bash bin/release.sh publish --no-upload` stops after the ZIP and prints its path.
 
-## What `release.sh` does
-- Updates `style.css` version (unless re-releasing same RC).
-- Prepends a new entry to `CHANGELOG.md` and re-appends all older version sections (do not change the 10-line changelog intro without updating `release.sh` `tail` offset in `update_changelog`).
-- Commits the version + changelog changes.
-- Creates a git tag `vX.Y.Z`.
-- Builds the theme zip via `build-theme.sh`.
-- Creates a GitHub release and uploads the zip (skipped for RC).
-- Cleans up the local zip after upload (skipped for RC); a failure here only warns.
-- Pushes the release commit to its branch (skipped for RC). Without this the tag is on
-  the remote and the version bump is not, which the next release reads back as a stale
-  version out of `style.css`. It pushes the pinned commit SHA, not `HEAD`, so only the
-  generated commit travels. `--skip-bump` creates no commit, so this step is skipped.
-
-## RC (release candidate) behavior
-- Use `--rc` or include `_rc` in the version (e.g., `1.2.3_rc`).
-- No tag push and no GitHub release; zip is kept locally.
-
-## Critical warning
-- On failure, `release.sh` may run `git reset --hard` and `git clean -fd`.
-- Do not run the script if there are untracked files you want to keep.
-- **The rollback covers less than it looks like.** The `ERR` trap is armed with `set -e`
-  but without `set -E`, so it fires only for failures in `main` itself. A failure inside
-  `create_git_tag`, `build_theme` or `create_github_release` ends the script *without*
-  rolling anything back. Verified by probe, not read off the source.
-- Once `gh release create` succeeds the release is public, and from that point nothing
-  rolls back by design: deleting the tag of a published release would be worse than any
-  state the remaining steps can leave. The trap is cleared explicitly when
-  `create_github_release` returns.
-- If the final branch push fails, the release and its tag are intact and whether the
-  commit reached the remote is UNKNOWN — a push can fail after the server accepted it.
-  Settle it before doing anything else, which is also what the script prints:
-
-  The script prints two SHAs: the release commit, and the remote state its preflight
-  approved. Use those, not `HEAD` — it may have moved.
-
-  ```sh
-  git fetch origin refs/heads/<branch> \
-    && { git merge-base --is-ancestor <release-commit> FETCH_HEAD \
-         && echo arrived || echo missing; }
-  ```
-
-  `refs/heads/` and the `&&` both matter: an unqualified fetch can be answered by a
-  same-named tag, and a failed fetch leaves a stale `FETCH_HEAD` that reads as arrived.
-
-  **Arrived** → nothing to do. **Missing** → retry with the same lease the script used,
-  never a plain push, or a remote that was rewound in the meantime gets rolled forward:
-
-  ```sh
-  git push --force-with-lease=refs/heads/<branch>:<preflight-remote-sha> \
-    origin <release-commit>:refs/heads/<branch>
-  ```
-
-  If that is refused, either origin moved since the release started or the push was
-  rejected for another reason — a protected branch or a server hook. Stop and look
-  before pushing anything; the release itself is already published and is not at risk.
-
-  Missing → push again. Rejected (protected branch, non-fast-forward) → fix the cause;
-  rerunning will not help.
-- A **publishing** release refuses to run from a detached HEAD, because the release commit
-  needs a branch to be pushed to and discovering that after publication leaves no good
-  move. An RC has no destination and is still valid detached.
+A pre-release `X.Y.Z-rc.N` is set and tagged by hand; the script publishes it as a
+GitHub pre-release.

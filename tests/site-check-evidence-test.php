@@ -142,10 +142,14 @@ foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
 
 // ---------------------------------------------------------------- autoload in a fresh process
 
-$autoload = __DIR__ . '/../vendor/autoload.php';
-$code = 'require ' . var_export($autoload, true) . ';'
+// Through functions.php's own autoloader, the only loader a release ships (no vendor/).
+// Dev mode on keeps the old updater from starting.
+$code = 'define("ABSPATH", ' . var_export(dirname(__DIR__) . '/', true) . '); define("SFX_THEME_DEV_MODE", true);'
+    . '$GLOBALS["sfx_theme_dir"] = ' . var_export(dirname(__DIR__), true) . ';'
+    . 'require ' . var_export(__DIR__ . '/support/functions-php-stubs.php', true) . ';'
+    . 'require ' . var_export(dirname(__DIR__) . '/functions.php', true) . ';'
     . 'echo (class_exists("SFX\\\\SiteCheck\\\\Status") && class_exists("SFX\\\\SiteCheck\\\\RunContext") && class_exists("SFX\\\\SiteCheck\\\\Finding")) ? "AUTOLOAD_OK" : "AUTOLOAD_MISSING";';
 $out = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code) . ' 2>/dev/null');
-assert_same('AUTOLOAD_OK', is_string($out) ? trim($out) : $out, 'Status, RunContext, Finding resolve via the Composer autoloader in a fresh process');
+assert_same('AUTOLOAD_OK', is_string($out) ? trim($out) : $out, "Status, RunContext, Finding resolve via functions.php's own autoloader in a fresh process");
 
 echo "site-check-evidence: PASS\n";

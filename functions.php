@@ -9,41 +9,29 @@
 
 defined('ABSPATH') || exit;
 
-// Include Composer Autoloader (RECOMMENDED APPROACH)
-$composer_autoload = __DIR__ . '/vendor/autoload.php';
-if (file_exists($composer_autoload)) {
-    require_once $composer_autoload;
-} else {
-    // Clean PSR-4 fallback autoloader (WordPress best practice)
-    spl_autoload_register(function ($class) {
-        // Only handle our own namespaces
-        if (strpos($class, 'SFX\\') !== 0) {
-            return;
-        }
+// The theme's own PSR-4 autoloader for SFX\ -> inc/, its only class loader: the release
+// ZIP ships no vendor/ (SHIPPED in bin/plugin.conf).
+spl_autoload_register(function ($class) {
+    // Only handle our own namespaces
+    if (strpos($class, 'SFX\\') !== 0) {
+        return;
+    }
 
-        // PSR-4 compliant autoloader
-        $prefix = 'SFX\\';
-        $base_dir = get_stylesheet_directory() . '/inc/';
+    // PSR-4 compliant autoloader
+    $prefix = 'SFX\\';
+    $base_dir = get_stylesheet_directory() . '/inc/';
 
-        // Remove the namespace prefix
-        $relative_class = substr($class, strlen($prefix));
+    // Remove the namespace prefix
+    $relative_class = substr($class, strlen($prefix));
 
-        // Replace namespace separators with directory separators
-        $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+    // Replace namespace separators with directory separators
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
-        // Load the file if it exists
-        if (file_exists($file)) {
-            require_once $file;
-        }
-    });
-
-    // Display admin notice if autoloader is missing
-    add_action('admin_notices', function () {
-        echo '<div class="notice notice-error"><p>';
-        echo 'Error: Composer autoloader not found. Please run <code>composer install</code> in the theme root directory.';
-        echo '</p></div>';
-    });
-}
+    // Load the file if it exists
+    if (file_exists($file)) {
+        require_once $file;
+    }
+});
 
 
 // Load environment handler

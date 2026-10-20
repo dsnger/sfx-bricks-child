@@ -60,22 +60,28 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 ## Requirements
 
 - WordPress with **Bricks** parent theme
-- **PHP 8+**
-- Run `composer install` in the theme root (autoloader; admin notice shown if missing)
+- **PHP 8.0+** and **WordPress 6.1+** (`Requires PHP` and `Requires at least` in `style.css`)
+- No Composer step: the theme loads its classes with its own autoloader. `composer install` is only for the test tooling.
 
 ## Development mode
 
-Disable GitHub update checks during local development.
+Disable GitHub update checks during local development, in either of two ways:
 
-1. Create `.env.local` in the theme root:
+- In the site's `wp-config.php` (survives a refreshed copy of the theme folder):
 
-   ```bash
-   SFX_THEME_DEV_MODE=true
-   ```
+  ```php
+  define('SFX_THEME_DEV_MODE', true);
+  ```
 
-2. `.env.local` is gitignored (via `.env.*`).
+- Or a `.env.local` in the theme root (gitignored via `.env.*`):
 
-3. For production, delete the file or set `SFX_THEME_DEV_MODE=false`.
+  ```bash
+  SFX_THEME_DEV_MODE=true
+  ```
+
+For production, switch off both sources: remove the constant (or define it `false`) and
+remove `.env.local` (or set it to `SFX_THEME_DEV_MODE=false`). Either one left on keeps
+development mode on.
 
 When enabled, `SFX\Environment::is_dev_mode()` is true and the GitHub updater is not initialized.
 
@@ -91,17 +97,33 @@ Create a [classic personal access token](https://github.com/settings/tokens) wit
 
 Debug page: `/wp-admin/themes.php?page=theme-updater-debug`
 
-## Build a release zip
+## Release
 
-From the theme root:
+Two phases with the canonical SFX release script, its values in `bin/plugin.conf`:
 
 ```bash
-./build-theme.sh
+bash bin/release.sh patch      # or minor|major: release branch, version, changelog, .pot, battery
+# review, commit, pull request, merge
+bash bin/release.sh publish    # on main: ZIP, tag v<version>, GitHub release
 ```
 
-Creates `sfx-bricks-child-v{VERSION}.zip` using the version from `style.css`, excluding dev files (`.git`, `node_modules`, `.env`, etc.).
+The ZIP is `sfx-bricks-child-<version>.zip` and holds only the `SHIPPED` entries of
+`bin/plugin.conf` under `sfx-bricks-child/`. `bash bin/release.sh publish --no-upload` stops
+after the ZIP. Details: `AGENTS.md` invariant 6.
 
-For versioned releases with changelog and tagging, use `./release.sh <version>` (see `.cursor/rules/publish-release.mdc`).
+## Local test site
+
+`bin/test-instance.sh` copies the `SHIPPED` entries into a local test site, never a symlink:
+
+```bash
+SFX_TEST_SITE=<site path> bash bin/test-instance.sh install --activate   # or refresh, remove
+```
+
+With `SFX_TEST_URL=<https://origin>` (and `SFX_TEST_ADMIN=<login>`) it also checks that the
+front end, the login page (and the admin) answer 200. For a DDEV site add
+`SFX_TEST_WP="ddev exec -p <project> --raw -- wp" SFX_TEST_WP_PATH=/var/www/html`. Keep
+site paths, URLs and logins out of the repository. A refreshed copy drops `.env.local`, so
+use the `wp-config.php` constant for development mode there.
 
 ## Restricting settings access
 

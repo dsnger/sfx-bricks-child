@@ -97,6 +97,11 @@ class Environment
    */
   public static function is_dev_mode(): bool
   {
+    // define('SFX_THEME_DEV_MODE', true) in wp-config.php survives a refreshed copy of
+    // the theme folder, which .env.local does not.
+    if (defined('SFX_THEME_DEV_MODE') && constant('SFX_THEME_DEV_MODE') === true) {
+      return true;
+    }
     return self::get('SFX_THEME_DEV_MODE', 'false') === 'true';
   }
 }
