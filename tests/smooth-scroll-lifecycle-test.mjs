@@ -22,6 +22,15 @@
  * flushed frame exactly one request is outstanding. Two loops leave two — the
  * deterministic form of the per-frame driver count the HTML harness measures.
  *
+ * The start itself (cases 7-14) is pinned too: Lenis must never take over a
+ * scroll the browser is still running, because both then drive the page and it
+ * jumps back and forth (visitessen, 2026-10-20). A trigger only starts it once
+ * nothing has scrolled for QUIET_MS and no finger is down, and once running it
+ * leaves every event it cannot cancel to the browser. The clock and timers are
+ * faked, so "still running" is a premise the test sets, as above; the browser
+ * measurement that observed the bounce is recorded in the commit introducing
+ * these cases.
+ *
  * Run: node tests/smooth-scroll-lifecycle-test.mjs
  */
 
@@ -42,10 +51,14 @@ const source = readFileSync(MODULE_PATH, 'utf8');
  * needs. `onRaf` runs inside the fake Lenis' raf(), which is how the
  * destroy-from-inside-the-driver case is reproduced.
  */
-function load({ onRaf } = {}) {
+function load({ onRaf, hash = '' } = {}) {
   const listeners = new Map();
   const frames = new Map();
+  const timers = new Map();
+  const scrollTos = [];
   let nextFrameId = 1;
+  let nextTimerId = 1;
+  let now = 0;
   let driverCalls = 0;
   let destroyCalls = 0;
 
@@ -55,9 +68,30 @@ function load({ onRaf } = {}) {
   // call in a browser, and a stub that only answers the bare form would fail a
   // rewrite that is behaviour-preserving everywhere else.
   const win = {
-    sfxSmoothScroll: { smoothWheel: true, anchors: false, easing: '', defaultEasing: '' },
-    document: { readyState: 'loading' },
+    sfxSmoothScroll: { smoothWheel: true, anchors: !!hash, easing: '', defaultEasing: '' },
+    document: {
+      readyState: 'loading',
+      addEventListener() {},
+      getElementById: (id) => ({ id }),
+    },
+    location: {
+      href: 'https://example.test/page' + hash,
+      origin: 'https://example.test',
+      pathname: '/page',
+      search: '',
+      hash,
+    },
+    URL,
     console,
+    performance: { now: () => now },
+    setTimeout(cb, ms) {
+      const id = nextTimerId++;
+      timers.set(id, { at: now + ms, cb });
+      return id;
+    },
+    clearTimeout(id) {
+      timers.delete(id);
+    },
     addEventListener(type, fn, opts) {
       if (!listeners.has(type)) listeners.set(type, []);
       listeners.get(type).push({ fn, once: !!(opts && opts.once) });
@@ -80,7 +114,8 @@ function load({ onRaf } = {}) {
   win.window = win;
   win.globalThis = win;
 
-  win.Lenis = function Lenis() {
+  win.Lenis = function Lenis(opts) {
+    win.lenisOpts = opts;
     return {
       raf(time) {
         driverCalls++;
@@ -88,6 +123,9 @@ function load({ onRaf } = {}) {
       },
       destroy() {
         destroyCalls++;
+      },
+      scrollTo(target) {
+        scrollTos.push(target);
       },
     };
   };
@@ -101,12 +139,29 @@ function load({ onRaf } = {}) {
     listenerCount: (type) => (listeners.get(type) || []).length,
     driverCalls: () => driverCalls,
     destroyCalls: () => destroyCalls,
+    /** Lenis exists once the module has started it. */
+    isStarted: () => !!win.sfxLenis,
+    scrollTos: () => scrollTos,
     dispatch(type, event = {}) {
       const l = listeners.get(type) || [];
       for (const entry of l.slice()) {
         if (entry.once) this.win.removeEventListener(type, entry.fn);
-        entry.fn(event);
+        entry.fn({ type, ...event });
       }
+    },
+    /** Move the clock, firing every timer that falls due on the way. */
+    advance(ms) {
+      const end = now + ms;
+      for (;;) {
+        const due = [...timers.entries()]
+          .filter(([, t]) => t.at <= end)
+          .sort((a, b) => a[1].at - b[1].at)[0];
+        if (!due) break;
+        timers.delete(due[0]);
+        now = due[1].at;
+        due[1].cb();
+      }
+      now = end;
     },
     /** Run every callback queued for one frame; they may queue the next. */
     flushFrame(time) {
@@ -222,6 +277,127 @@ function started(opts) {
   assert.equal(m.pending(), 0, 'no frame is requeued after an in-driver destroy');
   m.flushFrame(96);
   assert.equal(m.driverCalls(), 1, 'and the destroyed instance is never driven again');
+}
+
+// 7. Nothing scrolling: load and a click start Lenis at once, as before. The
+//    click matters: started at pointerdown, Lenis' own anchor handler is in
+//    place for the click that follows.
+{
+  const m = load();
+  m.dispatch('load');
+  assert.ok(m.isStarted(), 'load with no scroll running starts Lenis at once');
+
+  const c = load();
+  c.dispatch('pointerdown');
+  assert.ok(c.isStarted(), 'a click with no scroll running starts Lenis at once');
+}
+
+// 8. A wheel before load: the browser keeps the gesture until nothing has
+//    scrolled for QUIET_MS (200 ms) -- wheel smoothing reports itself through
+//    scroll events, not wheel events.
+{
+  const m = load();
+  m.dispatch('wheel');
+  assert.ok(!m.isStarted(), 'the first wheel does not hand the gesture to Lenis');
+  m.advance(150);
+  m.dispatch('scroll');
+  m.advance(150);
+  m.dispatch('load');
+  assert.ok(!m.isStarted(), 'load during a running scroll does not start it either');
+  m.advance(49);
+  assert.ok(!m.isStarted(), 'still inside the quiet time');
+  m.advance(1);
+  assert.ok(m.isStarted(), 'starts once nothing has scrolled for 200 ms');
+  assert.equal(m.listenerCount('scroll'), 0, 'and stops listening for scroll');
+  assert.equal(m.pending(), 1, 'with exactly one loop');
+}
+
+// 9. Load while the page is still scrolling without a trigger (scrollbar,
+//    restored position) waits as well -- and, no user trigger having come
+//    first, keeps the one-time scroll to the URL anchor.
+{
+  const m = load({ hash: '#sec' });
+  m.dispatch('scroll');
+  m.advance(50);
+  m.dispatch('load');
+  assert.ok(!m.isStarted(), 'load 50 ms after a scroll waits');
+  m.advance(150);
+  assert.ok(m.isStarted(), 'and starts 200 ms after that scroll');
+  m.flushFrame(16);
+  assert.deepEqual(m.scrollTos(), [{ id: 'sec' }], 'the load-time hash scroll still runs');
+}
+
+// 10. A user scroll before the start skips the hash scroll, exactly as an
+//     interaction-triggered start always did -- even when load came first.
+{
+  const m = load({ hash: '#sec' });
+  m.dispatch('scroll');
+  m.dispatch('load');
+  m.dispatch('wheel');
+  m.advance(200);
+  assert.ok(m.isStarted(), 'started after the quiet time');
+  m.flushFrame(16);
+  assert.deepEqual(m.scrollTos(), [], 'no jump back to the anchor the user scrolled away from');
+}
+
+// 11. Touch: never while a finger is down -- Lenis would miss the touchstart and
+//     read the first move as a jump from (0,0) -- and not during the momentum
+//     that follows the release.
+{
+  const m = load();
+  m.dispatch('touchstart', { touches: [{}] });
+  m.advance(1000);
+  assert.ok(!m.isStarted(), 'a finger held still does not start Lenis');
+  m.dispatch('touchstart', { touches: [{}, {}] });
+  m.dispatch('touchend', { touches: [{}] });
+  m.advance(1000);
+  assert.ok(!m.isStarted(), 'nor does one finger left on the screen');
+  m.dispatch('touchend', { touches: [] });
+  m.advance(100);
+  m.dispatch('scroll');
+  m.advance(199);
+  assert.ok(!m.isStarted(), 'momentum scroll keeps the gesture native');
+  m.advance(1);
+  assert.ok(m.isStarted(), 'starts 200 ms after the momentum ends');
+}
+
+// 12. A cancelled touch counts as released.
+{
+  const m = load();
+  m.dispatch('touchstart', { touches: [{}] });
+  m.dispatch('touchcancel', { touches: [] });
+  m.advance(200);
+  assert.ok(m.isStarted(), 'touchcancel releases the hold');
+}
+
+// 13. Once running, Lenis leaves alone every event it cannot cancel: the browser
+//     is already scrolling by it (the rest of a gesture that began earlier, or
+//     events the page delivered late while busy), and smoothing it as well puts
+//     two drivers on the page. Events it can cancel stay Lenis' own.
+{
+  const m = load();
+  m.dispatch('load');
+  const filter = m.win.lenisOpts.virtualScroll;
+  assert.equal(typeof filter, 'function', 'Lenis gets the virtualScroll filter');
+  assert.equal(filter({ event: { type: 'wheel', cancelable: false } }), false, 'an uncancelable wheel stays native');
+  assert.equal(filter({ event: { type: 'touchmove', cancelable: false } }), false, 'an uncancelable touchmove stays native');
+  assert.equal(filter({ event: { type: 'wheel', cancelable: true } }), true, 'a cancelable wheel is smoothed');
+}
+
+// 14. A touch that began before the module ran: its touchstart was never seen,
+//     but the moves that follow show a finger down and a user scrolling -- so
+//     no start while it is held, and no jump back to the URL anchor after it.
+{
+  const m = load({ hash: '#sec' });
+  m.dispatch('touchmove', { touches: [{}] });
+  m.dispatch('load');
+  m.advance(1000);
+  assert.ok(!m.isStarted(), 'a finger held since before the module ran blocks the start');
+  m.dispatch('touchend', { touches: [] });
+  m.advance(200);
+  assert.ok(m.isStarted(), 'and the start follows its release');
+  m.flushFrame(16);
+  assert.deepEqual(m.scrollTos(), [], 'that touch counts as a user scroll: no hash scroll');
 }
 
 console.log('OK');
