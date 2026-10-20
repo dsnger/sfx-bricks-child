@@ -163,7 +163,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | release | `bash bin/release.sh patch\|minor\|major`, then `bash bin/release.sh publish` (invariant 6); `publish --no-upload` builds the ZIP only and prints its path |
 | test instance | `SFX_TEST_SITE=<site> bash bin/test-instance.sh install\|refresh\|remove` — copies `SHIPPED` into a local test site's `wp-content/themes/sfx-bricks-child`; the site path, URL and user come from the environment and never go into the repository |
 
-`quality.sh` was last run on 2026-10-20 and seen to exit cleanly (56 PHP tests, 6 JS
+`quality.sh` was last run on 2026-10-20 and seen to exit cleanly (57 PHP tests, 6 JS
 tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a
