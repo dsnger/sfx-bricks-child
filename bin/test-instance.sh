@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SFX Block: test-instance 1.2.1 sha256:4d441fcd65c347fe3bb68075a6df621edf976d66f8b36c891f35ad0eec058f9c.
+# SFX Block: test-instance 1.2.2 sha256:d3ff701b1a01f2df8a2f6f3c95648e88acf54bd8a8c24d06dbee0d39751e168b.
 # Copies this plugin or theme into a local, single-user WordPress test site and takes it out
 # again (SFX standard STD-TST-06). Never for a shared or production site.
 #   bin/test-instance.sh install [--full] [--activate] [--site <path>]
@@ -214,6 +214,12 @@ wp_cli() { # wp_cli activate|deactivate
   wpc $KIND "$1" "$SLUG"; rc=$?
   [ $rc -eq 0 ] || die "WP-CLI $KIND $1 $SLUG failed with exit $rc; the files stay as they are"
 }
+activate() { # WP-CLI only warns (exit 0) when the plugin or theme is already active, so skip it then
+  if [ $KIND = theme ]; then opt stylesheet; [ "$OPT" = "$SLUG" ]
+  else wpc plugin is-active "$SLUG" --skip-themes --skip-plugins || wpc plugin is-active "$SLUG" --network --skip-themes --skip-plugins; fi \
+    && { echo "test-instance: $SLUG is already active; activation skipped"; return; }
+  wp_cli activate
+}
 [ $KIND = plugin ] || [ "$ACTION" = remove ] || { opt stylesheet; BEFORE=$OPT; }
 
 case "$ACTION" in
@@ -222,7 +228,7 @@ case "$ACTION" in
     if [ -e "$TARGET" ] || [ -L "$TARGET" ] || ! mv "$STAGE" "$TARGET"; then
       rm -rf "$STAGE"; die "could not publish $TARGET (did it appear meanwhile?)"
     fi
-    [ "$WP_ACT" != activate ] || wp_cli activate
+    [ "$WP_ACT" != activate ] || activate
     echo "test-instance: installed $TARGET"
     ;;
   refresh)
@@ -237,7 +243,7 @@ case "$ACTION" in
       die "could not move the new copy in nor the previous instance back: previous instance $OLD, new copy $STAGE; rename $OLD to $TARGET by hand"
     fi
     rm -rf "$OLD" || die "refreshed $TARGET, but could not delete $OLD; delete it by hand"
-    [ "$WP_ACT" != activate ] || wp_cli activate
+    [ "$WP_ACT" != activate ] || activate
     echo "test-instance: refreshed $TARGET"
     ;;
   remove)
