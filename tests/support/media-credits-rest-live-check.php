@@ -20,7 +20,7 @@ declare(strict_types=1);
  *   WP_ROOT=/path/to/wordpress php tests/support/media-credits-rest-live-check.php
  *
  * It boots wp-load.php by hand because WP-CLI could not reach the database of the
- * earlier local site. It does not run against the DDEV test site yet (todos.md,
+ * MAMP site. It does not run against the DDEV test site yet (todos.md,
  * "Live checks").
  *
  * Creates its own fixtures — an attachment, a subscriber and a draft post,

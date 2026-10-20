@@ -10,9 +10,9 @@ references an entry here must still be able to find it.
 
 ## Next
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
-      2026-10-20 — the local site moved to DDEV). The six
-      `tests/support/*-live-check.php` that boot WordPress were written for the earlier
-      site and have not been run against the DDEV one: `redirects-`, `site-check-` and
+      2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
+      good). The six `tests/support/*-live-check.php` that boot WordPress were written for
+      the MAMP site and have not been run against the DDEV one: `redirects-`, `site-check-` and
       `site-check-mutex-live-check.php` hard-code that site's paths and the host
       `sfx-bricks-child.local`; `rest-guest-` and `tel-format-live-check.php` load
       `wp-load.php` relative to their own folder, so they must sit in the site's theme

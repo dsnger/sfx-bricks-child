@@ -16,8 +16,8 @@ declare(strict_types=1);
  *
  *   php tests/support/site-check-mutex-live-check.php
  *
- * Written for the earlier local site; it does not run against the DDEV test site
- * yet (todos.md, "Live checks").
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Every option it writes carries a random prefix `sfx_site_check_h<random>_`
  * set through Options::use_harness_prefix() and asserted before the first

@@ -11,8 +11,8 @@ declare(strict_types=1);
  *
  *   php tests/support/site-check-live-check.php
  *
- * Written for the earlier local site; it does not run against the DDEV test site
- * yet (todos.md, "Live checks").
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Isolation, per the AGENTS.md harness rule. In this order:
  *   1. fatal guards on where this runs — they write nothing;

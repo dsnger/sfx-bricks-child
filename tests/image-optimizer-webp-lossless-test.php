@@ -4,7 +4,7 @@
  * Assert WebpEncoder::webpArg() never evaluates IMG_WEBP_LOSSLESS itself.
  *
  * GD is compiled per host: a build can support WebP output yet not define
- * IMG_WEBP_LOSSLESS. Observed on PHP 8.4 at IONOS, while PHP 8.5 locally
+ * IMG_WEBP_LOSSLESS. Observed on PHP 8.4 at IONOS, while PHP 8.5 under MAMP
  * defines it — so the crash reproduces on a client site while local runs and CI
  * stay green. Naming an undefined constant is a fatal Error in PHP 8, and this
  * one sat on the upload path: every image upload returned HTTP 500, the file

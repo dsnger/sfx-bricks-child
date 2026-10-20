@@ -16,8 +16,8 @@ declare(strict_types=1);
  *
  *   php tests/support/redirects-live-check.php
  *
- * Written for the earlier local site; it does not run against the DDEV test site
- * yet (todos.md, "Live checks").
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Order, per the AGENTS.md harness rule:
  *   1. boot WordPress (a CLI boot fires no admin_init, so nothing is installed

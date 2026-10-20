@@ -15,8 +15,8 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit(1); }
  *   php tests/support/rest-guest-live-check.php
  *   php tests/support/rest-guest-live-check.php --scenario=optimizer-on
  *
- * Written for the earlier local site; it does not run against the DDEV test site
- * yet (todos.md, "Live checks").
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Why it is built this way (AGENTS.md Don't: "a verification harness must not
  * touch real state outside a guaranteed teardown"):

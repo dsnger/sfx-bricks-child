@@ -180,9 +180,10 @@ smuggle a copy back in, so keep the rule where it is defined.
 
 **Local PHP:** `quality.sh` resolves `$PHP` (a bare command name goes through PATH, an
 absolute path is used as given), then `php` on PATH, so it works in CI and locally without
-editing. The local test site runs on DDEV (Docker); `ddev wp` from the site's directory
-reaches its WordPress. The manual live checks in `tests/support/` do not run against it yet
-(`todos.md`).
+editing. The local test site runs on DDEV (Docker): MAMP crashes at the moment, and the
+plan leans towards staying with DDEV. `ddev wp` from the site's directory reaches its
+WordPress. The manual live checks in `tests/support/` were written for the MAMP site and do
+not run against DDEV yet (`todos.md`).
 
 **Local Node:** `quality.sh` resolves `$NODE` the same way, then `node` on PATH, then
 `~/.local/share/fnm/aliases/default/bin/node`. That last one is the fnm *alias*, not

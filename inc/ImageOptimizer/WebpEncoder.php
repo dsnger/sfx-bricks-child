@@ -54,7 +54,7 @@ final class WebpEncoder
      * plain quality value.
      *
      * A GD build can support WebP output yet not define IMG_WEBP_LOSSLESS
-     * (seen on PHP 8.4 at IONOS, while PHP 8.5 locally defines it), and
+     * (seen on PHP 8.4 at IONOS, while PHP 8.5 under MAMP defines it), and
      * naming an undefined constant is a fatal Error in PHP 8. So this method
      * names no constant at all: the caller resolves the marker behind its own
      * defined() check and passes null when the build lacks it. No argument any
