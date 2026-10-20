@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-20
+
+### Fixed
+
+- Smooth Scroll: scrolling right after a page loads no longer jumps back and forth and then drags (pages whose loading finishes late, such as pages with a map). Smooth scrolling now takes over only once the page has been still for 200 ms and no finger is on the screen, and it leaves a scroll the browser is already running to the browser. An in-page anchor link clicked in that moment still scrolls with its offset.
+
 ### Changed
 
 - Releases run through the canonical SFX release script (`bin/release.sh`, two phases: bump, review and merge, publish); the release ZIP is `sfx-bricks-child-<version>.zip` and ships only the files listed in `bin/plugin.conf`.
