@@ -68,6 +68,59 @@
   // built-in `anchors` option, so we can support /#-prefixed links, a
   // consistent offset, cross-page links, and the initial load-time hash.
 
+  function normPath(path) {
+    return path.replace(/\/+$/, '') || '/';
+  }
+
+  // Returns the in-page target element for an href, or null when the href
+  // points to another page, origin, query string, or missing section.
+  function resolveLocalTarget(href) {
+    if (!href) {
+      return null;
+    }
+    var url;
+    try {
+      url = new URL(href, window.location.href);
+    } catch (e) {
+      return null;
+    }
+    if (url.origin !== window.location.origin) {
+      return null;
+    }
+    if (normPath(url.pathname) !== normPath(window.location.pathname)) {
+      return null;
+    }
+    // Different query (pagination, filters, sort) is a real navigation.
+    if (url.search !== window.location.search) {
+      return null;
+    }
+    var id = url.hash ? url.hash.slice(1) : '';
+    if (!id) {
+      return null;
+    }
+    return document.getElementById(id);
+  }
+
+  // The section a plain click on a same-page anchor link scrolls to, or null
+  // for any other click (modified, other button, other window, other page).
+  function anchorTarget(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return null;
+    }
+    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link) {
+      return null;
+    }
+    if (link.target && link.target !== '_self') {
+      return null;
+    }
+    var href = link.getAttribute('href');
+    if (!href || href.indexOf('#') === -1) {
+      return null;
+    }
+    return resolveLocalTarget(href);
+  }
+
   function start(skipHashScroll) {
     var lenis = new window.Lenis(opts);
     window.sfxLenis = lenis;
@@ -137,55 +190,8 @@
       // so a positive setting produces a downward gap below the top.
       var anchorOffset = -(cfg.anchorOffset || 0);
 
-      function normPath(path) {
-        return path.replace(/\/+$/, '') || '/';
-      }
-
-      // Returns the in-page target element for an href, or null when the href
-      // points to another page, origin, query string, or missing section.
-      function resolveLocalTarget(href) {
-        if (!href) {
-          return null;
-        }
-        var url;
-        try {
-          url = new URL(href, window.location.href);
-        } catch (e) {
-          return null;
-        }
-        if (url.origin !== window.location.origin) {
-          return null;
-        }
-        if (normPath(url.pathname) !== normPath(window.location.pathname)) {
-          return null;
-        }
-        // Different query (pagination, filters, sort) is a real navigation.
-        if (url.search !== window.location.search) {
-          return null;
-        }
-        var id = url.hash ? url.hash.slice(1) : '';
-        if (!id) {
-          return null;
-        }
-        return document.getElementById(id);
-      }
-
       document.addEventListener('click', function (event) {
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-          return;
-        }
-        var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-        if (!link) {
-          return;
-        }
-        if (link.target && link.target !== '_self') {
-          return;
-        }
-        var href = link.getAttribute('href');
-        if (!href || href.indexOf('#') === -1) {
-          return;
-        }
-        var target = resolveLocalTarget(href);
+        var target = anchorTarget(event);
         if (!target) {
           return;
         }
@@ -218,7 +224,8 @@
   // the whole gesture and Lenis can no longer cancel its events: both then
   // drive the page, which jumps back and drags. So a trigger starts Lenis only
   // once nothing has scrolled for QUIET_MS and no finger is down; until then
-  // the browser scrolls natively. With nothing scrolling it starts at once.
+  // the browser scrolls natively. With nothing scrolling it starts at once; a
+  // plain click on a same-page anchor link starts it at once too (onEarlyClick).
   var QUIET_MS = 200;
   var started = false;
   // touchmove too: a touch that began before this script ran shows itself only
@@ -241,6 +248,7 @@
     events.forEach(function (ev) {
       window.removeEventListener(ev, onEvent);
     });
+    window.removeEventListener('click', onEarlyClick, true);
     // If a user interaction (not `load`) came first, the user is already
     // scrolling — skip the one-time hash scroll so we don't yank the viewport
     // back to the URL anchor they just scrolled away from. Click-based anchor
@@ -254,6 +262,17 @@
     if (wait > 0) {
       timer = setTimeout(settle, wait);
     } else {
+      startOnce();
+    }
+  }
+
+  // The one exception to the quiet time: a plain click on a same-page anchor
+  // link must keep our offset rather than jump natively. Lenis starts in the
+  // capture phase, so the click handler start() adds to document still
+  // receives this same click. Never while a finger is down.
+  function onEarlyClick(event) {
+    if (!touching && anchorTarget(event)) {
+      interacted = true;
       startOnce();
     }
   }
@@ -281,5 +300,8 @@
     events.forEach(function (ev) {
       window.addEventListener(ev, onEvent, { passive: true });
     });
+    if (cfg.anchors) {
+      window.addEventListener('click', onEarlyClick, true);
+    }
   }
 })();

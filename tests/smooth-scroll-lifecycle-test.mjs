@@ -22,11 +22,12 @@
  * flushed frame exactly one request is outstanding. Two loops leave two — the
  * deterministic form of the per-frame driver count the HTML harness measures.
  *
- * The start itself (cases 7-14) is pinned too: Lenis must never take over a
+ * The start itself (cases 7-15) is pinned too: Lenis must never take over a
  * scroll the browser is still running, because both then drive the page and it
  * jumps back and forth (visitessen, 2026-10-20). A trigger only starts it once
  * nothing has scrolled for QUIET_MS and no finger is down, and once running it
- * leaves every event it cannot cancel to the browser. The clock and timers are
+ * leaves every event it cannot cancel to the browser. The one exception is a
+ * plain click on a same-page anchor link, which starts it at once (case 15). The clock and timers are
  * faked, so "still running" is a premise the test sets, as above; the browser
  * measurement that observed the bounce is recorded in the commit introducing
  * these cases.
@@ -51,11 +52,13 @@ const source = readFileSync(MODULE_PATH, 'utf8');
  * needs. `onRaf` runs inside the fake Lenis' raf(), which is how the
  * destroy-from-inside-the-driver case is reproduced.
  */
-function load({ onRaf, hash = '' } = {}) {
+function load({ onRaf, hash = '', anchors = !!hash } = {}) {
   const listeners = new Map();
   const frames = new Map();
   const timers = new Map();
+  const docListeners = [];
   const scrollTos = [];
+  const scrollOpts = [];
   let nextFrameId = 1;
   let nextTimerId = 1;
   let now = 0;
@@ -68,10 +71,12 @@ function load({ onRaf, hash = '' } = {}) {
   // call in a browser, and a stub that only answers the bare form would fail a
   // rewrite that is behaviour-preserving everywhere else.
   const win = {
-    sfxSmoothScroll: { smoothWheel: true, anchors: !!hash, easing: '', defaultEasing: '' },
+    sfxSmoothScroll: { smoothWheel: true, anchors, anchorOffset: 100, easing: '', defaultEasing: '' },
     document: {
       readyState: 'loading',
-      addEventListener() {},
+      addEventListener(type, fn) {
+        if (type === 'click') docListeners.push(fn);
+      },
       getElementById: (id) => ({ id }),
     },
     location: {
@@ -92,14 +97,18 @@ function load({ onRaf, hash = '' } = {}) {
     clearTimeout(id) {
       timers.delete(id);
     },
+    // Capture-aware, as in a browser: a listener is identified by its function
+    // AND its capture flag, so removing it with the wrong flag leaves it in place.
     addEventListener(type, fn, opts) {
       if (!listeners.has(type)) listeners.set(type, []);
-      listeners.get(type).push({ fn, once: !!(opts && opts.once) });
+      const capture = opts === true || !!(opts && opts.capture);
+      listeners.get(type).push({ fn, once: !!(opts && opts.once), capture });
     },
-    removeEventListener(type, fn) {
+    removeEventListener(type, fn, opts) {
       const l = listeners.get(type);
       if (!l) return;
-      const i = l.findIndex((e) => e.fn === fn);
+      const capture = opts === true || !!(opts && opts.capture);
+      const i = l.findIndex((e) => e.fn === fn && e.capture === capture);
       if (i !== -1) l.splice(i, 1);
     },
     requestAnimationFrame(cb) {
@@ -124,8 +133,9 @@ function load({ onRaf, hash = '' } = {}) {
       destroy() {
         destroyCalls++;
       },
-      scrollTo(target) {
+      scrollTo(target, opts) {
         scrollTos.push(target);
+        scrollOpts.push(opts);
       },
     };
   };
@@ -142,12 +152,34 @@ function load({ onRaf, hash = '' } = {}) {
     /** Lenis exists once the module has started it. */
     isStarted: () => !!win.sfxLenis,
     scrollTos: () => scrollTos,
+    scrollOpts: () => scrollOpts,
     dispatch(type, event = {}) {
       const l = listeners.get(type) || [];
       for (const entry of l.slice()) {
-        if (entry.once) this.win.removeEventListener(type, entry.fn);
+        if (entry.once) this.win.removeEventListener(type, entry.fn, { capture: entry.capture });
         entry.fn({ type, ...event });
       }
+    },
+    /**
+     * A click on a link inside document, in DOM dispatch order: window capture,
+     * then document, then window bubble. Each step reads its listener list when
+     * it is reached, so a document listener added during window capture still
+     * receives this click -- which is what the early anchor start relies on.
+     */
+    click(fields) {
+      const event = {
+        type: 'click', button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false,
+        defaultPrevented: false,
+        preventDefault() { this.defaultPrevented = true; },
+        ...fields,
+      };
+      const onWindow = (capture) => (listeners.get('click') || [])
+        .filter((e) => e.capture === capture)
+        .forEach((e) => e.fn(event));
+      onWindow(true);
+      docListeners.slice().forEach((fn) => fn(event));
+      onWindow(false);
+      return event;
     },
     /** Move the clock, firing every timer that falls due on the way. */
     advance(ms) {
@@ -398,6 +430,54 @@ function started(opts) {
   assert.ok(m.isStarted(), 'and the start follows its release');
   m.flushFrame(16);
   assert.deepEqual(m.scrollTos(), [], 'that touch counts as a user scroll: no hash scroll');
+}
+
+// 15. The one exception to the quiet time: a plain click on a same-page anchor
+//     link while Lenis waits (Greptile on PR #66). Lenis starts in the capture
+//     phase, so its own anchor handler -- added to document during that same
+//     click -- takes it: preventDefault and a scroll with the offset instead of
+//     a native jump. Any other click leaves the wait alone.
+const anchorLink = (href) => ({ closest: () => ({ target: '', getAttribute: () => href }) });
+{
+  const m = load({ anchors: true });
+  m.dispatch('wheel');
+  assert.ok(!m.isStarted(), 'waiting after the wheel');
+  const ev = m.click({ target: anchorLink('#sec') });
+  assert.ok(m.isStarted(), 'an anchor click starts Lenis at once');
+  assert.ok(ev.defaultPrevented, 'and Lenis takes that same click: no native jump');
+  assert.deepEqual(m.scrollTos(), [{ id: 'sec' }], 'scrolling to the section');
+  assert.equal(m.scrollOpts()[0].offset, -100, 'with the configured offset');
+  assert.equal(m.listenerCount('click'), 0, 'and the early click listener is gone');
+}
+{
+  const m = load({ anchors: true });
+  m.dispatch('wheel');
+  m.click({ target: { closest: () => null } });
+  assert.ok(!m.isStarted(), 'a click on anything else does not cut the wait');
+  m.click({ target: anchorLink('#sec'), ctrlKey: true });
+  assert.ok(!m.isStarted(), 'nor does a modified click on an anchor');
+  m.click({ target: anchorLink('/other#sec') });
+  assert.ok(!m.isStarted(), 'nor a link to another page');
+  m.dispatch('touchstart', { touches: [{}] });
+  m.click({ target: anchorLink('#sec') });
+  assert.ok(!m.isStarted(), 'nor an anchor click while a finger is down');
+}
+{
+  const m = load();
+  m.dispatch('wheel');
+  m.click({ target: anchorLink('#sec') });
+  assert.ok(!m.isStarted(), 'with anchor handling off a click changes nothing');
+}
+{
+  // A click with no pointer or key event before it (element.click()) is still
+  // the user's navigation: the URL's old hash must not pull the page back.
+  const m = load({ hash: '#old' });
+  m.dispatch('scroll');
+  m.dispatch('load');
+  m.click({ target: anchorLink('#sec') });
+  assert.ok(m.isStarted(), 'the anchor click starts Lenis');
+  m.flushFrame(16);
+  assert.deepEqual(m.scrollTos(), [{ id: 'sec' }], 'to the clicked section only, no load-hash scroll after it');
 }
 
 console.log('OK');
