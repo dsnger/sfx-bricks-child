@@ -58,9 +58,68 @@
   if (easing) {
     opts.easing = easing;
   }
+  // An event Lenis cannot cancel is already being scrolled by the browser
+  // (the rest of a gesture that began before Lenis ran). Smoothing it as well
+  // would make two drivers fight over the page, so leave it to the browser.
+  opts.virtualScroll = function (data) {
+    return data.event.cancelable !== false;
+  };
   // Anchor handling is done by us below (see setupAnchors) instead of Lenis'
   // built-in `anchors` option, so we can support /#-prefixed links, a
   // consistent offset, cross-page links, and the initial load-time hash.
+
+  function normPath(path) {
+    return path.replace(/\/+$/, '') || '/';
+  }
+
+  // Returns the in-page target element for an href, or null when the href
+  // points to another page, origin, query string, or missing section.
+  function resolveLocalTarget(href) {
+    if (!href) {
+      return null;
+    }
+    var url;
+    try {
+      url = new URL(href, window.location.href);
+    } catch (e) {
+      return null;
+    }
+    if (url.origin !== window.location.origin) {
+      return null;
+    }
+    if (normPath(url.pathname) !== normPath(window.location.pathname)) {
+      return null;
+    }
+    // Different query (pagination, filters, sort) is a real navigation.
+    if (url.search !== window.location.search) {
+      return null;
+    }
+    var id = url.hash ? url.hash.slice(1) : '';
+    if (!id) {
+      return null;
+    }
+    return document.getElementById(id);
+  }
+
+  // The section a plain click on a same-page anchor link scrolls to, or null
+  // for any other click (modified, other button, other window, other page).
+  function anchorTarget(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return null;
+    }
+    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link) {
+      return null;
+    }
+    if (link.target && link.target !== '_self') {
+      return null;
+    }
+    var href = link.getAttribute('href');
+    if (!href || href.indexOf('#') === -1) {
+      return null;
+    }
+    return resolveLocalTarget(href);
+  }
 
   function start(skipHashScroll) {
     var lenis = new window.Lenis(opts);
@@ -131,55 +190,8 @@
       // so a positive setting produces a downward gap below the top.
       var anchorOffset = -(cfg.anchorOffset || 0);
 
-      function normPath(path) {
-        return path.replace(/\/+$/, '') || '/';
-      }
-
-      // Returns the in-page target element for an href, or null when the href
-      // points to another page, origin, query string, or missing section.
-      function resolveLocalTarget(href) {
-        if (!href) {
-          return null;
-        }
-        var url;
-        try {
-          url = new URL(href, window.location.href);
-        } catch (e) {
-          return null;
-        }
-        if (url.origin !== window.location.origin) {
-          return null;
-        }
-        if (normPath(url.pathname) !== normPath(window.location.pathname)) {
-          return null;
-        }
-        // Different query (pagination, filters, sort) is a real navigation.
-        if (url.search !== window.location.search) {
-          return null;
-        }
-        var id = url.hash ? url.hash.slice(1) : '';
-        if (!id) {
-          return null;
-        }
-        return document.getElementById(id);
-      }
-
       document.addEventListener('click', function (event) {
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-          return;
-        }
-        var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-        if (!link) {
-          return;
-        }
-        if (link.target && link.target !== '_self') {
-          return;
-        }
-        var href = link.getAttribute('href');
-        if (!href || href.indexOf('#') === -1) {
-          return;
-        }
-        var target = resolveLocalTarget(href);
+        var target = anchorTarget(event);
         if (!target) {
           return;
         }
@@ -205,34 +217,91 @@
   // Defer instantiation + the rAF loop until the page has loaded, so Lenis does
   // not compete with critical rendering and inflate page-load metrics (its
   // every-frame rAF was the main cost). Falls back to the first real scroll
-  // intent in case the user interacts before `load` fires, so smooth scroll is
-  // always ready by the time it's actually needed — behaviour is unchanged.
+  // intent in case the user interacts before `load` fires.
+  //
+  // Lenis must never take over a scroll the browser is already running. The
+  // event that would start it is one Lenis cannot see, so the browser claims
+  // the whole gesture and Lenis can no longer cancel its events: both then
+  // drive the page, which jumps back and drags. So a trigger starts Lenis only
+  // once nothing has scrolled for QUIET_MS and no finger is down; until then
+  // the browser scrolls natively. With nothing scrolling it starts at once; a
+  // plain click on a same-page anchor link starts it at once too (onEarlyClick).
+  var QUIET_MS = 200;
   var started = false;
-  var triggers = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+  // touchmove too: a touch that began before this script ran shows itself only
+  // by its moves.
+  var triggers = ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown'];
+  var gestures = ['scroll', 'wheel', 'touchstart', 'touchmove', 'touchend', 'touchcancel'];
+  var events = ['load', 'keydown', 'pointerdown'].concat(gestures);
+  var lastGesture = -Infinity;
+  var touching = false;
+  var armed = false;
+  var interacted = false;
+  var timer = null;
 
-  function startOnce(event) {
+  function startOnce() {
     if (started) {
       return;
     }
     started = true;
-    window.removeEventListener('load', startOnce);
-    triggers.forEach(function (ev) {
-      window.removeEventListener(ev, startOnce);
+    clearTimeout(timer);
+    events.forEach(function (ev) {
+      window.removeEventListener(ev, onEvent);
     });
-    // If a user interaction (not `load`) triggered the start, the user is
-    // already scrolling — skip the one-time hash scroll so we don't yank the
-    // viewport back to the URL anchor they just scrolled away from. Click-based
-    // anchor navigation is unaffected.
-    var userInteracted = !!(event && event.type && event.type !== 'load');
-    start(userInteracted);
+    window.removeEventListener('click', onEarlyClick, true);
+    // If a user interaction (not `load`) came first, the user is already
+    // scrolling — skip the one-time hash scroll so we don't yank the viewport
+    // back to the URL anchor they just scrolled away from. Click-based anchor
+    // navigation is unaffected.
+    start(interacted);
+  }
+
+  function settle() {
+    timer = null;
+    var wait = touching ? QUIET_MS : lastGesture + QUIET_MS - performance.now();
+    if (wait > 0) {
+      timer = setTimeout(settle, wait);
+    } else {
+      startOnce();
+    }
+  }
+
+  // The one exception to the quiet time: a plain click on a same-page anchor
+  // link must keep our offset rather than jump natively. Lenis starts in the
+  // capture phase, so the click handler start() adds to document still
+  // receives this same click. Never while a finger is down.
+  function onEarlyClick(event) {
+    if (!touching && anchorTarget(event)) {
+      interacted = true;
+      startOnce();
+    }
+  }
+
+  function onEvent(event) {
+    var type = event.type;
+    if (type.indexOf('touch') === 0) {
+      touching = event.touches.length > 0;
+    }
+    if (gestures.indexOf(type) !== -1) {
+      lastGesture = performance.now();
+    }
+    if (type === 'load' || triggers.indexOf(type) !== -1) {
+      armed = true;
+      interacted = interacted || type !== 'load';
+    }
+    if (armed && timer === null) {
+      settle();
+    }
   }
 
   if (document.readyState === 'complete') {
     startOnce();
   } else {
-    window.addEventListener('load', startOnce, { once: true });
-    triggers.forEach(function (ev) {
-      window.addEventListener(ev, startOnce, { once: true, passive: true });
+    events.forEach(function (ev) {
+      window.addEventListener(ev, onEvent, { passive: true });
     });
+    if (cfg.anchors) {
+      window.addEventListener('click', onEarlyClick, true);
+    }
   }
 })();
