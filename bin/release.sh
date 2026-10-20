@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SFX Block: release-script 1.1.0 sha256:868fc0b04c4386e854cc68a9628f1d5772cb0cdf2095cbcb0c63b2c957b085d5.
+# SFX Block: release-script 1.1.1 sha256:2c8316cc82a36687ce8a640853a06b1dbf63007fd4780a6e93f96523281722ce.
 # Release procedure (SFX standard STD-REL-05, STD-REL-09), two phases separated by review and merge:
 #   bin/release.sh patch|minor|major     on a clean main equal to origin/main: create
 #                                        release/<version>, bump, regenerate the .pot, run the
@@ -182,6 +182,7 @@ publish() {
   awk -v h="## [$version] - " 'index($0, h) == 1 { found = 1 } END { exit !found }' CHANGELOG.md \
     || die "CHANGELOG.md has no section for $version"
   notes=$(awk -v h="## [$version]" 'index($0, h) == 1 { on = 1; next } on && /^## \[/ { exit } on { print }' CHANGELOG.md)
+  [ -n "${notes//[[:space:]]/}" ] || die "CHANGELOG.md section $version holds no release notes; refusing a release with an empty body"
 
   # --- what ships (STD-REL-06) ---
   for e in "${SHIPPED[@]}"; do

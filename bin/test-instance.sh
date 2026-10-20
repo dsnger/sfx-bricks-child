@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SFX Block: test-instance 1.2.0 sha256:5634d8323d4461b75aab82052ac1357a2c54e3121e1390c5406d84d827965f81.
+# SFX Block: test-instance 1.2.1 sha256:4d441fcd65c347fe3bb68075a6df621edf976d66f8b36c891f35ad0eec058f9c.
 # Copies this plugin or theme into a local, single-user WordPress test site and takes it out
 # again (SFX standard STD-TST-06). Never for a shared or production site.
 #   bin/test-instance.sh install [--full] [--activate] [--site <path>]
@@ -145,7 +145,8 @@ wpc() { "${WP_WORDS[@]}" "--path=${SFX_TEST_WP_PATH-$SITE}" "$@"; }
 # Output this script parses; a TTY wrapper (ddev exec) may end lines with CR, and the guards compare exactly.
 wpo() { wpc "$@" | tr -d '\r'; return "${PIPESTATUS[0]}"; }
 opt() { # opt <name> : sets OPT to the site's option; a failing WP-CLI stops the run
-  OPT=$(wpo option get "$1") || die "WP-CLI option get $1 failed; theme kind and the admin check need a working WP-CLI (SFX_TEST_WP)"
+  # Without themes and plugins, so an installed copy that fatals on boot cannot block its own repair.
+  OPT=$(wpo option get "$1" --skip-themes --skip-plugins) || die "WP-CLI option get $1 failed; theme kind and the admin check need a working WP-CLI (SFX_TEST_WP)"
 }
 if [ $KIND = theme ] && [ "$ACTION" = remove ]; then
   # WordPress switches away from a missing active theme (spec F6); the developer switches first.
