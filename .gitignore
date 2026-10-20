@@ -1,7 +1,7 @@
 # Gitignore is not the production zip filter.
 # Clone this repo and you should have everything needed to keep developing:
-# tests, docs, Cursor rules, Claude commands, release scripts, composer.lock.
-# Production-only omissions live in build-theme.sh (EXCLUDE / FORBIDDEN_PATHS).
+# tests, docs, Cursor rules, Claude commands, bin/ scripts, composer.lock.
+# What a release ships is the SHIPPED allowlist in bin/plugin.conf, not this file.
 
 # OS generated files
 .DS_Store
@@ -63,9 +63,9 @@ Thumbs.db*
 !wp-content/themes/sfx-bricks-child/**
 !wp-content/plugins/**
 
-# Ignore build artifacts (keep *.sh tracked — release.sh / build-theme.sh are repo scripts)
+# Ignore build artifacts (keep *.sh tracked — bin/release.sh / bin/test-instance.sh are repo scripts)
 *.zip
-# build-theme.sh's per-run temp archive, if a build dies before its trap fires
+# the removed build-theme.sh's per-run temp archive, if one is still lying around
 .*.zip.??????
 *.tar
 *.gz

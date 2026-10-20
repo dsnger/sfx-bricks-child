@@ -1,7 +1,9 @@
 # SFX Bricks Child Theme Environment Configuration
 # Copy this file to .env.local and customize for your local development
 
-# Set to 'true' to disable GitHub theme updates during development
+# Set to 'true' to disable GitHub theme updates during development.
+# define('SFX_THEME_DEV_MODE', true); in wp-config.php does the same and survives
+# a refreshed copy of the theme folder (bin/test-instance.sh), which this file does not.
 SFX_THEME_DEV_MODE=true
 
 # Other environment variables can be added here

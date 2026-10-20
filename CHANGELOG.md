@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Changed
+
+- Releases run through the canonical SFX release script (`bin/release.sh`, two phases: bump, review and merge, publish); the release ZIP is `sfx-bricks-child-<version>.zip` and ships only the files listed in `bin/plugin.conf`.
+- The theme no longer loads Composer at runtime: its own autoloader is the only class loader, and the "Composer autoloader not found" admin notice is gone. Parsedown is no longer installed, so the theme's update details show the release notes as unconverted Markdown until the canonical updater replaces the old one.
+- `style.css` declares `Requires PHP: 8.0` and `Requires at least: 6.1`.
+
+### Added
+
+- Development mode can be switched on with `define( 'SFX_THEME_DEV_MODE', true );` in `wp-config.php`, beside `.env.local`.
+- `bin/test-instance.sh` copies the theme into a local test site and checks that the site and its admin answer.
+
+### Removed
+
+- The old `release.sh`, `release` and `build-theme.sh` scripts and their tests.
 
 ## [0.32.0] - 2026-10-12
 
@@ -405,8 +421,6 @@ Publishes WP Optimizer revision limiting and README updates since v0.14.0. See C
 ### Changed
 
 - README: align documented features with the codebase, add requirements, and remove outdated claims.
-
-## [Unreleased]
 
 ## [0.14.1] - 2026-06-16
 

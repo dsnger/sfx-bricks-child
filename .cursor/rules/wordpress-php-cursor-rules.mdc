@@ -6,7 +6,7 @@ alwaysApply: true
 # SFX Bricks Child Theme context
 
 ## Architecture
-- Entry: `functions.php` loads Composer autoloader or a PSR-4 fallback (`SFX\*` -> `inc/`).
+- Entry: `functions.php` registers the theme's own PSR-4 autoloader (`SFX\*` -> `inc/`), its only runtime loader; the release ships no `vendor/` (AGENTS.md invariant 5).
 - Theme init: `SFX\SFXBricksChildTheme::init()` (consolidated hook phases + asset loading).
 - Feature registry: `inc/*/Controller.php` must implement `get_feature_config()` and is auto-registered.
 - Admin UI: `SFX\SFXBricksChildAdmin` renders feature cards from the registry.

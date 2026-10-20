@@ -21,8 +21,9 @@ Bricks parent theme.
 
 ## Architecture
 
-- **Autoloading** — PSR-4 `SFX\` → `inc/`, via Composer. `functions.php` falls back to an
-  `spl_autoload_register` shim when `vendor/` is absent, and shows an admin notice.
+- **Autoloading** — PSR-4 `SFX\` → `inc/`, by the theme's own `spl_autoload_register()`
+  in `functions.php`, its only class loader at runtime. `composer.json` keeps the same map
+  for the test tooling; the theme never loads `vendor/`.
 - **Module auto-discovery** — `SFXBricksChildTheme::auto_register_features()` globs
   `inc/*/Controller.php` and, for each class exposing a static `get_feature_config()`,
   calls `SFXBricksChildTheme::register_feature()` itself — a Controller supplies the
@@ -85,40 +86,35 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
    WPOptimizer, CustomDashboard, CustomScriptsManager, ImportExport. Don't add more, and
    don't report the existing ones as new violations.
 
-5. **A built package must contain a WORKING `vendor/autoload.php`.**
-   *Why:* a shipped RC was once built without it and installed broken. Existence is not
-   the property that matters — on 2026-08-28 a one-line `<?php` placeholder, written into
-   the checkout by a test harness, satisfied every file-exists check and produced a package
-   whose autoloader loads no class at all. Checking the file's shape is not enough either —
-   a vendor/ holding only `autoload.php` and `ClassLoader.php` looks plausible and fatals on
-   `require`, because Composer's entry point pulls in `composer/autoload_real.php`. Both
-   guards therefore RESOLVE CLASSES through it. Weaker predicates all failed in review: an
-   object exposing `loadClass()` passed, and so did a loader advertising the `SFX\` prefix
-   while it pointed at a directory that was not there. Both guards now require
-   `SFX\SFXBricksChildTheme` *and* `SFX\SFXBricksChildAdmin` to resolve — two classes, because
-   a stale `--optimize-autoloader` classmap can carry one and miss the other, and because
-   `functions.php` also requires the first by hand. Both discard the autoloader's own output and
-   demand a marker back on stdout rather than trusting an exit code, and `build-theme.sh` runs
-   `quality.sh`'s numeric version probe on its interpreter — `PHP=/usr/bin/true` waved
-   everything through until it did. Defense in depth, both stay. `tests/build-vendor-guard-test.php`
-   pins the build side across missing, placeholder and real; the `stubvendor` scenario in
-   `tests/support/release-push-harness.sh` drives release.sh end to end with the placeholder.
+5. **The theme loads its classes without `vendor/`, and a release ships only `SHIPPED`.**
+   *Why:* the release ZIP holds the `SHIPPED` entries of `bin/plugin.conf` and nothing else
+   — no `vendor/`, no tests, no tooling — so code that needs `vendor/` at runtime fatals on
+   every site that installs the release. A shipped RC was once built without its Composer
+   autoloader and installed broken; the theme dropped runtime Composer instead of guarding
+   it. `tests/theme-bootstrap-test.php` loads `functions.php` from a copy of the shipped
+   folders and requires the classes to resolve from `inc/`, a present `vendor/autoload.php`
+   to stay unloaded, and no Composer notice; `bin/release.sh publish` refuses a ZIP whose
+   files differ from `SHIPPED` at `HEAD`. A new runtime dependency is therefore a change to
+   this invariant, not a `composer require`.
 
-6. **The release version lives in `style.css`.**
-   *Why:* it is what WordPress and the GitHub updater read. A git tag alone does not make
-   a release, and does not create a GitHub Release.
+6. **The release version lives in `style.css`, and only `bin/release.sh` changes it.**
+   *Why:* it is what WordPress and the GitHub updater read. `bin/release.sh` is the
+   canonical SFX release-script block, placed unchanged (a newer version comes through
+   `adopt-block`, never a hand edit), with its values in `bin/plugin.conf`. It releases in
+   two phases: `bash bin/release.sh patch|minor|major` on a clean `main` equal to
+   `origin/main` sets the one `Version:` line, moves the `## [Unreleased]` changelog
+   entries under the new version, writes `languages/sfxtheme.pot`, runs the battery and
+   stops on a `release/<version>` branch; after that branch is merged,
+   `bash bin/release.sh publish` on `main` builds the ZIP, pushes the tag `v<version>` and
+   creates the GitHub release. A git tag alone does not make a release. A pre-release
+   (`X.Y.Z-rc.N`) is set and tagged by hand.
 
 7. **Work finishes as a pull request; never merge to `main` directly.**
    *Why:* the bot review gate (`docs/pr-review-bots.md`) only sees changes that arrive
    through a PR. This is instruction-backed, not enforced — `main` currently carries no
-   branch protection and no ruleset, so nothing stops a direct push but this rule.
-   *One named exception, and only this one:* the release commit `release.sh` makes and
-   pushes. It carries `style.css` and `CHANGELOG.md` and nothing else, both generated
-   from the version argument and the release notes, so there is nothing for a reviewer
-   to find. That commit has always been made directly on the release branch; since
-   2026-08-28 the script pushes it as well, because leaving that to a human hand is
-   what let v0.22.3 be tagged on the remote while the bump stayed local. Everything
-   else — including any change to `release.sh` itself — goes through a PR.
+   branch protection and no ruleset, so nothing stops a direct push but this rule. The
+   release bump is no exception: its `release/<version>` branch is reviewed and merged by
+   a PR like any other change, and `publish` pushes only the tag.
 
 ## Don'ts
 
@@ -130,8 +126,9 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
   closed its cycle in two passes.
 - **Don't edit the Bricks parent theme or `wp-includes/`.** This is a child theme; parent
   changes are lost on update. Extend via hooks and filters.
-- **Don't add a runtime dependency for what a few lines of PHP do.** `composer.json` has
-  exactly one (`erusev/parsedown`); keep it that way unless there's a real reason.
+- **Don't add a runtime dependency.** `composer.json` requires only `php`, and the release
+  ships no `vendor/` (invariant 5); what a dependency would do, a few lines of PHP in
+  `inc/` do.
 - **Don't bypass the module convention.** A feature registered from `functions.php`
   instead of a Controller is invisible to the feature registry and to the settings
   overview.
@@ -163,15 +160,15 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 | typecheck | TODO — no static analyser installed (PHPStan/Psalm); see `todos.md` |
 | lint | `./quality.sh` (syntax-lint stage), or `php -l <file>` for one file |
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
-| build | `./build-theme.sh` — produces the distributable zip (not run in CI; see `todos.md`) |
+| release | `bash bin/release.sh patch\|minor\|major`, then `bash bin/release.sh publish` (invariant 6); `publish --no-upload` builds the ZIP only and prints its path |
+| test instance | `SFX_TEST_SITE=<site> bash bin/test-instance.sh install\|refresh\|remove` — copies `SHIPPED` into a local test site's `wp-content/themes/sfx-bricks-child`; the site path, URL and user come from the environment and never go into the repository |
 
-`quality.sh` was last run on 2026-10-11 and seen to exit cleanly (56 PHP tests, 6 JS
+`quality.sh` was last run on 2026-10-20 and seen to exit cleanly (56 PHP tests, 6 JS
 tests, 0 syntax errors). An earlier session also saw it fail on a syntax error outside
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a
-control run with a real Node in the same stripped environment passed. `build-theme.sh`
-was run locally on 2026-10-08 and its zip inspected with `unzip -l` — verified there,
-still not run in CI.
+control run with a real Node in the same stripped environment passed. `bin/release.sh`
+is not run in CI; its `publish --no-upload` listing was checked by hand on 2026-10-20.
 
 **Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
 in the gate prompt when the change touches one. Which files those are is defined once,
@@ -184,9 +181,7 @@ smuggle a copy back in, so keep the rule where it is defined.
 **Local PHP:** development runs under MAMP (`/Applications/MAMP/bin/php/php8.5.2/bin/php`).
 `quality.sh` resolves `$PHP` (a bare command name goes through PATH, an absolute path is
 used as given), then `php` on PATH, then that MAMP path, so it works in CI and locally
-without editing. `build-theme.sh` uses the same three candidates and the same version probe (it does
-not repeat quality.sh's linter check, which is about linting rather than loading) — it needs
-PHP now, because verifying the Composer autoloader means loading it. WP-CLI cannot reach the local socket — use
+without editing. WP-CLI cannot reach the local socket — use
 `php` plus `wp-load.php` for anything needing a booted WordPress.
 
 **Local Node:** `quality.sh` resolves `$NODE` the same way, then `node` on PATH, then
