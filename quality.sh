@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # The whole quality battery: syntax lint + test suite. CI runs this; so should you.
-# PHP resolution, in this order: $PHP if set, then php on PATH, then the local MAMP
-# build. A candidate is accepted only after it answers a real PHP version probe —
-# `-x` alone accepts any executable, and `PHP=/usr/bin/true` then reported every test
-# as passed. The battery must not be able to pass without running PHP.
+# PHP resolution, in this order: $PHP if set, then php on PATH. A candidate is
+# accepted only after it answers a real PHP version probe — `-x` alone accepts any
+# executable, and `PHP=/usr/bin/true` then reported every test as passed. The
+# battery must not be able to pass without running PHP.
 php_usable() {
   [ -n "${1:-}" ] || return 1
   case "$1" in */*) [ -x "$1" ] || return 1 ;; *) command -v "$1" >/dev/null 2>&1 || return 1 ;; esac
@@ -33,11 +33,11 @@ probe_bad_js="$probe_dir/bad.js"
 
 php_override="${PHP:-}"
 PHP=""
-for candidate in "$php_override" php /Applications/MAMP/bin/php/php8.5.2/bin/php; do
+for candidate in "$php_override" php; do
   if php_usable "$candidate"; then PHP="$candidate"; break; fi
 done
 if [ -z "$PHP" ]; then
-  echo "error: no usable PHP >= 8.0 found (tried \$PHP, php on PATH, the MAMP build)" >&2
+  echo "error: no usable PHP >= 8.0 found (tried \$PHP and php on PATH)" >&2
   exit 1
 fi
 

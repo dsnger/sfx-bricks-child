@@ -178,11 +178,11 @@ written. `tests/prompt-artifact-paths-test.php` pins the citation and fails if t
 paragraph starts listing the paths again — it does not police every possible way to
 smuggle a copy back in, so keep the rule where it is defined.
 
-**Local PHP:** development runs under MAMP (`/Applications/MAMP/bin/php/php8.5.2/bin/php`).
-`quality.sh` resolves `$PHP` (a bare command name goes through PATH, an absolute path is
-used as given), then `php` on PATH, then that MAMP path, so it works in CI and locally
-without editing. WP-CLI cannot reach the local socket — use
-`php` plus `wp-load.php` for anything needing a booted WordPress.
+**Local PHP:** `quality.sh` resolves `$PHP` (a bare command name goes through PATH, an
+absolute path is used as given), then `php` on PATH, so it works in CI and locally without
+editing. The local test site runs on DDEV (Docker); `ddev wp` from the site's directory
+reaches its WordPress. The manual live checks in `tests/support/` do not run against it yet
+(`todos.md`).
 
 **Local Node:** `quality.sh` resolves `$NODE` the same way, then `node` on PATH, then
 `~/.local/share/fnm/aliases/default/bin/node`. That last one is the fnm *alias*, not
