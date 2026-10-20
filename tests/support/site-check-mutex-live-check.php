@@ -12,9 +12,12 @@ declare(strict_types=1);
  * is read fresh inside the next section. Spec: docs/superpowers/specs/
  * 2026-10-10-site-check-design.md, "Storage" → Writes.
  *
- * MANUAL. quality.sh does not run this. Run with MAMP's PHP (AGENTS.md § Local PHP):
+ * MANUAL. quality.sh does not run this. Run with a PHP that can boot WP_LOAD below:
  *
- *   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/site-check-mutex-live-check.php
+ *   php tests/support/site-check-mutex-live-check.php
+ *
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Every option it writes carries a random prefix `sfx_site_check_h<random>_`
  * set through Options::use_harness_prefix() and asserted before the first

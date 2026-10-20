@@ -7,9 +7,12 @@ declare(strict_types=1);
  * server checks and the uploads probe as an administrator, then every
  * endpoint and the dashboard box as an editor (who must be refused).
  *
- * MANUAL. quality.sh does not run this. Run with MAMP's PHP (AGENTS.md § Local PHP):
+ * MANUAL. quality.sh does not run this. Run with a PHP that can boot WP_LOAD below:
  *
- *   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/site-check-live-check.php
+ *   php tests/support/site-check-live-check.php
+ *
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Isolation, per the AGENTS.md harness rule. In this order:
  *   1. fatal guards on where this runs — they write nothing;

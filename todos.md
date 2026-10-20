@@ -9,6 +9,17 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
+      2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
+      good). The six `tests/support/*-live-check.php` that boot WordPress were written for
+      the MAMP site and have not been run against the DDEV one: `redirects-`, `site-check-` and
+      `site-check-mutex-live-check.php` hard-code that site's paths and the host
+      `sfx-bricks-child.local`; `rest-guest-` and `tel-format-live-check.php` load
+      `wp-load.php` relative to their own folder, so they must sit in the site's theme
+      folder, which `bin/test-instance.sh` now fills with the `SHIPPED` files only (no
+      `tests/`); `media-credits-rest-live-check.php` takes `WP_ROOT`. How they run under DDEV
+      (`ddev exec`, a mounted checkout, or another route) is undecided — its own design
+      pass, keeping the AGENTS.md harness rule (one teardown, fatal location guards).
 - [ ] **Sicherheits-Check: a backup removed between the targets and observe requests loses
       the leak it showed** (Greptile on PR #59, 2026-10-11). `OutsideChecks::observe()`
       re-derives the issued URLs from disk and drops observations for URLs it did not issue,
@@ -35,7 +46,7 @@ references an entry here must still be able to find it.
 - [ ] **Database-backed tests in CI for the Redirects module** (Greptile on PR #41,
       2026-09-29; deferred by Daniel): schema install, database-backed matching, the
       slug monitor and the loop simulation are only exercised by the manual harness
-      `tests/support/redirects-live-check.php` against the local MAMP site;
+      `tests/support/redirects-live-check.php` against a local site;
       `quality.sh` and CI cannot catch regressions there. Needs a WordPress + MySQL
       test environment in CI (e.g. a MySQL service + wp-env or the core test suite) —
       its own design pass.

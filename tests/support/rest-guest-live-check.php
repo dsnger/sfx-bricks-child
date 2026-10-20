@@ -10,10 +10,13 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit(1); }
  * "Testing → Live check".
  *
  * MANUAL. quality.sh does not run this (its globs are tests/*-test.php and
- * tests/*-test.mjs). Run with MAMP's PHP (AGENTS.md § Local PHP):
+ * tests/*-test.mjs). Run from the site's theme folder with a PHP that can boot it:
  *
- *   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/rest-guest-live-check.php
- *   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/rest-guest-live-check.php --scenario=optimizer-on
+ *   php tests/support/rest-guest-live-check.php
+ *   php tests/support/rest-guest-live-check.php --scenario=optimizer-on
+ *
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Why it is built this way (AGENTS.md Don't: "a verification harness must not
  * touch real state outside a guaranteed teardown"):

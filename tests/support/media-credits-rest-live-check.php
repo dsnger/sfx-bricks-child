@@ -19,8 +19,9 @@ declare(strict_types=1);
  *   php tests/support/media-credits-rest-live-check.php
  *   WP_ROOT=/path/to/wordpress php tests/support/media-credits-rest-live-check.php
  *
- * Locally that is MAMP's PHP (see AGENTS.md § Local PHP); WP-CLI cannot reach
- * the socket, which is why this boots wp-load.php by hand.
+ * It boots wp-load.php by hand because WP-CLI could not reach the database of the
+ * MAMP site. It does not run against the DDEV test site yet (todos.md,
+ * "Live checks").
  *
  * Creates its own fixtures — an attachment, a subscriber and a draft post,
  * each tagged with a per-run token — and deletes everything carrying that

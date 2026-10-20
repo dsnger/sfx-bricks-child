@@ -12,9 +12,12 @@ declare(strict_types=1);
  * (and flattens) auto rules. Spec: docs/superpowers/specs/2026-09-29-redirects-design.md,
  * "Testing → Live".
  *
- * MANUAL. quality.sh does not run this. Run with MAMP's PHP (AGENTS.md § Local PHP):
+ * MANUAL. quality.sh does not run this. Run with a PHP that can boot WP_LOAD below:
  *
- *   /Applications/MAMP/bin/php/php8.5.2/bin/php tests/support/redirects-live-check.php
+ *   php tests/support/redirects-live-check.php
+ *
+ * Written for the MAMP site, which crashes at the moment; it does not run against
+ * the DDEV test site yet (todos.md, "Live checks").
  *
  * Order, per the AGENTS.md harness rule:
  *   1. boot WordPress (a CLI boot fires no admin_init, so nothing is installed
