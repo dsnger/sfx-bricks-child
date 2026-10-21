@@ -113,7 +113,7 @@ if ($transient) {
 // Provide next steps
 echo "\nNext Steps:\n";
 echo "1. If 'Update Available' is YES but no updates are showing in WordPress:\n";
-echo "   - Try clearing the transient by accessing: " . admin_url('themes.php?force-check=sfx-theme-update') . "\n";
+echo "   - Try clearing the transient with 'Force Update Check' on: " . admin_url('themes.php?page=theme-updater-debug') . "\n";
 echo "2. Check if GitHub release tags follow semantic versioning (e.g., v1.2.3 or 1.2.3)\n";
 echo "3. Ensure your style.css Version is correctly formatted\n";
 echo "4. Consider adding a GitHub personal access token if you're hitting rate limits\n";

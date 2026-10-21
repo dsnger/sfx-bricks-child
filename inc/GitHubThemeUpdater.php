@@ -24,8 +24,8 @@ class GitHubThemeUpdater
 
   public function __construct()
   {
-    // Enable debug mode if debug_updater=1 parameter is present
-    if (isset($_GET['debug_updater']) && $_GET['debug_updater'] === '1') {
+    // Enable debug mode if debug_updater=1 parameter is present and the user is an administrator
+    if (isset($_GET['debug_updater']) && $_GET['debug_updater'] === '1' && current_user_can('manage_options')) {
       $this->debug = true;
     }
 
@@ -245,9 +245,6 @@ class GitHubThemeUpdater
     add_filter('pre_set_site_transient_update_themes', [$this, 'modify_transient'], 10, 1);
     add_filter('themes_api', [$this, 'theme_popup'], 10, 3);
     add_filter('upgrader_pre_download', [$this, 'download_package'], 10, 3);
-
-    // Add action to force check for updates (useful for debugging)
-    add_action('admin_init', [$this, 'force_check']);
 
     // Add admin menu for debugging
     add_action('admin_menu', [$this, 'add_debug_menu']);
@@ -484,19 +481,6 @@ class GitHubThemeUpdater
     echo '</div>';
   }
 
-  public function force_check(): void
-  {
-    // Only run on specific admin action
-    if (isset($_GET['force-check']) && $_GET['force-check'] === 'sfx-theme-update') {
-      // Delete the transient to force a fresh check
-      delete_site_transient('update_themes');
-      $this->debug_log('Forced update check triggered via URL parameter');
-      // Redirect back to themes page
-      wp_redirect(admin_url('themes.php?updated=force-check'));
-      exit;
-    }
-  }
-
   /**
    * Show admin notice for available updates
    */
@@ -518,13 +502,6 @@ class GitHubThemeUpdater
       echo '<p><strong>Theme Update Available:</strong> ';
       echo esc_html($this->theme_name) . ' version ' . esc_html($update_data['new_version']) . ' is available. ';
       echo '<a href="' . esc_url($update_url) . '">Update now</a></p>';
-      echo '</div>';
-    }
-
-    // Show success message after force check
-    if (isset($_GET['updated']) && $_GET['updated'] === 'force-check') {
-      echo '<div class="notice notice-success is-dismissible">';
-      echo '<p>Theme update check completed successfully!</p>';
       echo '</div>';
     }
   }
