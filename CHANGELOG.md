@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Theme updater: the URL-parameter update check is removed; "Force Update Check" on the Theme Updater Debug page remains. Debug logging switches on only for administrators.
+
 ## [0.33.0] - 2026-10-20
 
 ### Fixed
