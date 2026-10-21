@@ -1,6 +1,6 @@
 # T-1 — Updater maintenance trigger and debug switch lack administrator checks
 
-**Category:** bug · **State:** in-progress · **Severity:** blocker · **First seen:** unknown — not bisected; present at de07ac0
+**Category:** bug · **State:** done · **Severity:** blocker · **First seen:** unknown — not bisected; present at de07ac0
 **No story:** the commitment comes from AGENTS.md § Key invariants 2; the fix's Gate-B provenance line names `none`
 **Feature:** theme updater, `inc/GitHubThemeUpdater.php`
 
@@ -25,3 +25,4 @@ The update transient is cleared on request only through the debug page's nonce-c
 ## Log
 - 2026-10-21 · created · ready
 - 2026-10-21 · in-progress · fix on fix/updater-maintenance-hooks
+- 2026-10-21 · done · 77d98f8 (branch fix/updater-maintenance-hooks)
