@@ -293,23 +293,6 @@ $test_pll = ['Essen' => 'Essen (EN)'];
 assert_same('Essen (EN)', $sc->render_contact_info(['field' => 'city', 'contact_id' => '310']), '9: second language from cache');
 $test_pll = [];
 
-// 9b. WPML keys strings by contact ID: a by-type value is translated with the real ID,
-// also when only the field cache survived.
-define('ICL_SITEPRESS_VERSION', 'test');
-$test_icl_names = [];
-function icl_t($context, $name, $value)
-{
-    global $test_icl_names;
-    $test_icl_names[] = $name;
-    return $value;
-}
-$test_transients = ['sfx_contact_info_type_main' => 310];
-$sc->render_contact_info(['field' => 'city', 'type' => 'main']);
-unset($test_transients['sfx_contact_info_type_main']);
-$test_post_lists['sfx_contact_info'] = [$test_posts[310]];
-$sc->render_contact_info(['field' => 'city', 'type' => 'main']);
-assert_same(['city_310', 'city_310'], $test_icl_names, '9b: WPML gets the contact ID');
-
 // 10. The by-type lookup honours the Order field, then the newest entry.
 $test_transients = [];
 $test_last_query_args = [];

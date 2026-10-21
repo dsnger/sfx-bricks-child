@@ -29,10 +29,6 @@ references an entry here must still be able to find it.
       only add classes and the theme ships no CSS for them** (found 2026-10-02). Left as is on
       purpose: sites may already style against those classes, and the help documents it.
       Change only with a decision on migrating existing CSS.
-- [ ] **Contact Infos: WPML translation never matched** (Gate B, 2026-10-03). Strings are
-      registered as `Contact Information` / `contact_info_<field>_<id>` but looked up as
-      `sfx_contact_info` / `<field>_<id>`, so WPML sites always see the original. Align both
-      and test with a registration-backed stub. Polylang is unaffected.
 - [ ] **Live harness `tests/support/rest-guest-live-check.php`: concurrent edits during
       a run are overwritten by the restore** (Greptile on PR #48, 2026-10-02). A correct
       guard needs an atomic compare-and-swap restore per row; documented in the harness
@@ -104,6 +100,10 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Contact Infos: WPML translation never matched** (Gate B, 2026-10-03; closed
+      2026-10-21). The WPML lookup is removed rather than aligned (owner decision D7), and
+      the Polylang registration, which had never run either, is rebuilt — see
+      `docs/superpowers/specs/2026-10-21-contact-infos-polylang-strings-design.md`.
 - [x] **Obsolete with the old release scripts** (2026-10-20, Theme PR 1 of the skillset's
       part E): `release.sh`, `release` and `build-theme.sh` were removed for the canonical
       `bin/release.sh` block, so three entries closed without a fix: "release.sh rollback
