@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SFX Block: release-script 1.1.2 sha256:a4b61b2b72417961c33c3ad967be67dbdb73162cc361b7af0053031ff8203701.
+# SFX Block: release-script 1.1.3 sha256:07ad47aa6b157d3a795088e0b82882685b80b940c77f5f805cfea708ac8c403c.
 # Release procedure (SFX standard STD-REL-05, STD-REL-09), two phases separated by review and merge:
 #   bin/release.sh patch|minor|major     on a clean main equal to origin/main: create
 #                                        release/<version>, bump, regenerate the .pot, run the
@@ -165,7 +165,7 @@ TMP_DIR=''
 cleanup() { [ -n "$TMP_DIR" ] && [ $KEEP -eq 0 ] && rm -rf "$TMP_DIR"; }
 
 publish() {
-  local upload=1 version notes zip list files want bad e present=() repo='' url tag
+  local upload=1 version heading notes zip list files want bad e present=() repo='' url tag
   local local_state remote_state remote peeled err rc pre=()
   case "$#:${1:-}" in
     0:) ;;
@@ -179,8 +179,10 @@ publish() {
   [ "$version" = "$(constant_version)" ] || die "header Version '$version' and $VERSION_CONST '$(constant_version)' disagree"
   if [ -f readme.txt ] && [ "$version" != "$(stable_tag)" ]; then die "header Version '$version' and readme.txt Stable tag '$(stable_tag)' disagree"; fi
   fi
-  awk -v h="## [$version] - " 'index($0, h) == 1 { found = 1 } END { exit !found }' CHANGELOG.md \
-    || die "CHANGELOG.md has no section for $version"
+  heading=$(awk -v h="## [$version] - " 'index($0, h) == 1 { print; exit }' CHANGELOG.md)
+  [ -n "$heading" ] || die "CHANGELOG.md has no section for $version"
+  fits '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' "${heading#"## [$version] - "}" \
+    || die "CHANGELOG.md heading '$heading' needs the Keep a Changelog date form '## [$version] - YYYY-MM-DD'"
   notes=$(awk -v h="## [$version] - " 'index($0, h) == 1 { on = 1; next } on && /^## \[/ { exit } on { print }' CHANGELOG.md)
   [ -n "${notes//[[:space:]]/}" ] || die "CHANGELOG.md section $version holds no release notes; refusing a release with an empty body"
 
