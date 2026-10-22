@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.33.0\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.34.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-20T17:38:56+00:00\n"
+"POT-Creation-Date: 2026-10-22T09:22:53+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -55,7 +55,7 @@ msgid "Contact Info: %s (tel: link)"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:15
-#: inc/ContactInfos/PostType.php:287
+#: inc/ContactInfos/PostType.php:293
 #: inc/CustomDashboard/Settings.php:1165
 msgid "Company Name"
 msgstr ""
@@ -69,18 +69,18 @@ msgid "Street"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:18
-#: inc/ContactInfos/PostType.php:323
+#: inc/ContactInfos/PostType.php:329
 msgid "ZIP Code"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:19
-#: inc/ContactInfos/PostType.php:333
+#: inc/ContactInfos/PostType.php:339
 msgid "City"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:20
-#: inc/ContactInfos/PostType.php:343
-#: inc/ContactInfos/PostType.php:347
+#: inc/ContactInfos/PostType.php:349
+#: inc/ContactInfos/PostType.php:353
 msgid "Country"
 msgstr ""
 
@@ -89,27 +89,27 @@ msgid "Full Address"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:22
-#: inc/ContactInfos/PostType.php:385
+#: inc/ContactInfos/PostType.php:391
 msgid "Phone"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:23
-#: inc/ContactInfos/PostType.php:395
+#: inc/ContactInfos/PostType.php:401
 msgid "Mobile"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:24
-#: inc/ContactInfos/PostType.php:405
+#: inc/ContactInfos/PostType.php:411
 msgid "Fax"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:25
-#: inc/ContactInfos/PostType.php:415
+#: inc/ContactInfos/PostType.php:421
 msgid "Email"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:26
-#: inc/ContactInfos/PostType.php:431
+#: inc/ContactInfos/PostType.php:437
 msgid "Tax ID"
 msgstr ""
 
@@ -130,7 +130,7 @@ msgid "DSB"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:31
-#: inc/ContactInfos/PostType.php:487
+#: inc/ContactInfos/PostType.php:493
 msgid "Opening Hours"
 msgstr ""
 
@@ -159,7 +159,8 @@ msgstr ""
 
 #: inc/ContactInfos/HelpTab.php:69
 #: inc/ContactInfos/HelpTab.php:222
-#: inc/ContactInfos/PostType.php:99
+#: inc/ContactInfos/PostType.php:105
+#: inc/ContactInfos/PostType.php:762
 #: inc/CustomDashboard/Settings.php:595
 #: inc/CustomDashboard/Settings.php:1576
 #: inc/ImportExport/Controller.php:350
@@ -393,235 +394,235 @@ msgstr ""
 msgid "Result"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:100
-#: inc/ContactInfos/PostType.php:111
+#: inc/ContactInfos/PostType.php:106
+#: inc/ContactInfos/PostType.php:117
 #: inc/CustomDashboard/AdminPage.php:162
 #: inc/CustomDashboard/Settings.php:828
 msgid "Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:101
+#: inc/ContactInfos/PostType.php:107
 #: inc/CustomScriptsManager/PostType.php:103
 #: inc/SocialMediaAccounts/PostType.php:92
 msgid "Add New"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:102
+#: inc/ContactInfos/PostType.php:108
 msgid "Add New Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:103
+#: inc/ContactInfos/PostType.php:109
 msgid "Edit Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:104
+#: inc/ContactInfos/PostType.php:110
 msgid "New Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:105
+#: inc/ContactInfos/PostType.php:111
 msgid "View Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:106
+#: inc/ContactInfos/PostType.php:112
 msgid "Search Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:107
+#: inc/ContactInfos/PostType.php:113
 msgid "No contact info found"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:108
+#: inc/ContactInfos/PostType.php:114
 msgid "No contact info found in Trash"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:109
+#: inc/ContactInfos/PostType.php:115
 msgid "All Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:110
-#: inc/ContactInfos/PostType.php:281
+#: inc/ContactInfos/PostType.php:116
+#: inc/ContactInfos/PostType.php:287
 msgid "Company Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:216
+#: inc/ContactInfos/PostType.php:222
 msgid "Contact Information Configuration"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:268
+#: inc/ContactInfos/PostType.php:274
 msgid "Contact Type"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:272
-#: inc/ContactInfos/PostType.php:639
+#: inc/ContactInfos/PostType.php:278
+#: inc/ContactInfos/PostType.php:645
 msgid "Main Contact"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:273
-#: inc/ContactInfos/PostType.php:640
+#: inc/ContactInfos/PostType.php:279
+#: inc/ContactInfos/PostType.php:646
 msgid "Branch/Location"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:275
+#: inc/ContactInfos/PostType.php:281
 msgid "Select whether this is the main contact or a branch/location."
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:291
+#: inc/ContactInfos/PostType.php:297
 msgid "Name of the company"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:297
+#: inc/ContactInfos/PostType.php:303
 msgid "Managing Director(s)"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:301
+#: inc/ContactInfos/PostType.php:307
 msgid "Name of the managing director(s)"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:307
+#: inc/ContactInfos/PostType.php:313
 msgid "Address Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:313
+#: inc/ContactInfos/PostType.php:319
 msgid "Street / No."
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:317
+#: inc/ContactInfos/PostType.php:323
 msgid "Street name and number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:327
+#: inc/ContactInfos/PostType.php:333
 msgid "Postal code"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:337
+#: inc/ContactInfos/PostType.php:343
 msgid "City/Town"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:353
+#: inc/ContactInfos/PostType.php:359
 msgid "Formatted Address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:373
+#: inc/ContactInfos/PostType.php:379
 msgid "Formatted address for display"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:379
+#: inc/ContactInfos/PostType.php:385
 msgid "Contact Details"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:389
+#: inc/ContactInfos/PostType.php:395
 msgid "Phone number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:399
+#: inc/ContactInfos/PostType.php:405
 msgid "Mobile number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:409
+#: inc/ContactInfos/PostType.php:415
 msgid "Fax number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:419
+#: inc/ContactInfos/PostType.php:425
 msgid "Email address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:425
+#: inc/ContactInfos/PostType.php:431
 msgid "Business Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:435
+#: inc/ContactInfos/PostType.php:441
 msgid "Tax identification number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:441
+#: inc/ContactInfos/PostType.php:447
 msgid "VAT ID"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:445
+#: inc/ContactInfos/PostType.php:451
 msgid "VAT identification number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:451
+#: inc/ContactInfos/PostType.php:457
 msgid "Company Registration No."
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:455
+#: inc/ContactInfos/PostType.php:461
 msgid "Commercial register number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:461
+#: inc/ContactInfos/PostType.php:467
 msgid "Registration Court"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:465
+#: inc/ContactInfos/PostType.php:471
 msgid "Responsible registration court"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:471
+#: inc/ContactInfos/PostType.php:477
 msgid "Data Protection Officer"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:475
+#: inc/ContactInfos/PostType.php:481
 msgid "Name of the data protection officer"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:481
+#: inc/ContactInfos/PostType.php:487
 msgid "Additional Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:507
+#: inc/ContactInfos/PostType.php:513
 msgid "Business hours of the company"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:513
+#: inc/ContactInfos/PostType.php:519
 msgid "Google Maps Link"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:517
+#: inc/ContactInfos/PostType.php:523
 msgid "Link to Google Maps"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:596
+#: inc/ContactInfos/PostType.php:602
 #: inc/NavMenuQuery/MenuItemTags.php:257
 #: inc/SocialMediaAccounts/PostType.php:354
 msgid "ID"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:597
+#: inc/ContactInfos/PostType.php:603
 #: inc/CustomScriptsManager/PostType.php:679
 msgid "Type"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:598
+#: inc/ContactInfos/PostType.php:604
 msgid "Address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:599
+#: inc/ContactInfos/PostType.php:605
 #: inc/CustomDashboard/DashboardRenderer.php:868
 #: inc/CustomDashboard/Settings.php:1154
 msgid "Contact"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:600
+#: inc/ContactInfos/PostType.php:606
 #: inc/CustomScriptsManager/PostType.php:706
 #: inc/SocialMediaAccounts/PostType.php:358
 msgid "Status"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:673
+#: inc/ContactInfos/PostType.php:679
 #: inc/Redirects/AdminPage.php:1066
 msgid "Address:"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:677
+#: inc/ContactInfos/PostType.php:683
 msgid "No address data"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:711
+#: inc/ContactInfos/PostType.php:717
 msgid "No contact data"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:728
+#: inc/ContactInfos/PostType.php:734
 #: inc/CustomScriptsManager/PostType.php:770
 #: inc/Redirects/AdminPage.php:1082
 #: inc/SocialMediaAccounts/PostType.php:435
@@ -629,28 +630,28 @@ msgstr ""
 msgid "Active"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:729
+#: inc/ContactInfos/PostType.php:735
 #: inc/CustomScriptsManager/PostType.php:771
 #: inc/SocialMediaAccounts/PostType.php:436
 msgid "Draft"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:730
+#: inc/ContactInfos/PostType.php:736
 #: inc/CustomScriptsManager/PostType.php:772
 #: inc/SiteCheck/AdminPage.php:506
 #: inc/SocialMediaAccounts/PostType.php:437
 msgid "Private"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:922
+#: inc/ContactInfos/PostType.php:897
 msgid "Contact Info cache cleared successfully!"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:942
+#: inc/ContactInfos/PostType.php:917
 msgid "Clear Cache"
 msgstr ""
 
-#: inc/ContactInfos/Shortcode/SC_ContactInfos.php:513
+#: inc/ContactInfos/Shortcode/SC_ContactInfos.php:523
 msgid "View on Map"
 msgstr ""
 
