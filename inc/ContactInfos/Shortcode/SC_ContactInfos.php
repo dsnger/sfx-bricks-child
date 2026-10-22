@@ -325,6 +325,22 @@ class SC_ContactInfos
 
 
     /**
+     * One part of the composed address, translated when a translation exists.
+     *
+     * The lookup uses the text registered for translation (rows joined like get_field_value());
+     * untranslated, the part keeps its existing formatting.
+     *
+     * @param mixed $raw
+     */
+    private function address_part(int $contact_id, string $field, $raw): string
+    {
+        $registered = is_array($raw) ? implode(', ', $raw) : (string) $raw;
+        $translated = \SFX\ContactInfos\PostType::get_translated_field($contact_id, $field, $registered);
+
+        return $translated !== $registered ? $translated : $this->convert_meta_to_string($raw);
+    }
+
+    /**
      * Convert meta value to string, handling arrays and other types
      * 
      * @param mixed $value
@@ -442,16 +458,10 @@ class SC_ContactInfos
                 
 
                 
-                $street = $address_data['_street'] ?? '';
-                $zip = $address_data['_zip'] ?? '';
-                $city = $address_data['_city'] ?? '';
-                $country = $address_data['_country'] ?? '';
-                
-                // Convert arrays to strings with better handling
-                $street = $this->convert_meta_to_string($street);
-                $zip = $this->convert_meta_to_string($zip);
-                $city = $this->convert_meta_to_string($city);
-                $country = $this->convert_meta_to_string($country);
+                $street = $this->address_part($contact_id, 'street', $address_data['_street'] ?? '');
+                $zip = $this->address_part($contact_id, 'zip', $address_data['_zip'] ?? '');
+                $city = $this->address_part($contact_id, 'city', $address_data['_city'] ?? '');
+                $country = $this->address_part($contact_id, 'country', $address_data['_country'] ?? '');
                 
 
                 

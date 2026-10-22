@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Contact infos: with Polylang, every contact field can be translated under Languages → Translations (group "Contact Information"); a translation applies until the original text changes.
+- Contact infos: with WPML and its String Translation module, every contact field can be translated under WPML → String Translation (context "sfx-bricks-child contact infos"). The contact post type must stay "Not translatable" in WPML (its default for theme post types). Built from WPML's documentation; not yet tested against a live WPML.
+
 ### Security
 
 - Theme updater: the URL-parameter update check is removed; "Force Update Check" on the Theme Updater Debug page remains. Debug logging switches on only for administrators.

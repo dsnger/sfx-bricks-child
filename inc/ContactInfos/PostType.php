@@ -17,6 +17,12 @@ class PostType
     public static string $post_type = 'sfx_contact_info';
 
     /**
+     * WPML String Translation context. An identifier, not interface text: WPML finds a string by
+     * context and name, so neither may follow the admin's language.
+     */
+    public const WPML_CONTEXT = 'sfx-bricks-child contact infos';
+
+    /**
      * Initialize post type and meta box hooks.
      */
     public static function init(): void
@@ -32,8 +38,8 @@ class PostType
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
         
-        // Multilingual support through consolidated system
-        add_action('sfx_init_advanced_features', [self::class, 'register_multilingual_support']);
+        // Polylang or WPML string translations for the contact fields
+        add_action('admin_init', [self::class, 'register_translatable_strings']);
         
         // Add cache clearing functionality
         add_action('admin_notices', [self::class, 'admin_notices']);
@@ -734,78 +740,51 @@ class PostType
     }
 
     /**
-     * Register multilingual support for the post type.
+     * Offer every published contact's field values for translation: on Polylang's Translations
+     * screen, or else under WPML → String Translation.
+     *
+     * Polylang keeps registrations for the current request only, and WPML asks themes to register
+     * on every admin load, so this runs on every admin load.
      */
-    public static function register_multilingual_support(): void
+    public static function register_translatable_strings(): void
     {
-        // Polylang support
-        if (function_exists('pll_register_string')) {
-            add_action('add_meta_boxes', [self::class, 'register_polylang_strings']);
-        }
-        
-        // WPML support
-        if (defined('ICL_SITEPRESS_VERSION')) {
-            add_action('add_meta_boxes', [self::class, 'register_wpml_strings']);
-        }
-    }
-
-    /**
-     * Register Polylang strings for translation.
-     */
-    public static function register_polylang_strings(): void
-    {
-        $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== self::$post_type) {
+        $polylang = function_exists('pll_register_string');
+        if (!$polylang && !has_action('wpml_register_single_string')) {
             return;
         }
 
-        // Register meta fields for translation
-        $meta_fields = [
-            'company', 'director', 'street', 'zip', 'city', 'country',
-            'phone', 'mobile', 'fax', 'email', 'tax_id', 'vat', 'hrb', 'court', 'dsb'
-        ];
+        $contact_ids = get_posts([
+            'post_type' => self::$post_type,
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+        ]);
+        $group = __('Contact Information', 'sfxtheme');
+        // Contacts are entered in the site's default language; WPML would otherwise guess it.
+        $source_language = $polylang ? null : apply_filters('wpml_default_language', null);
 
-        foreach ($meta_fields as $field) {
-            add_action('save_post_' . self::$post_type, function($post_id) use ($field) {
-                $value = get_post_meta($post_id, '_' . $field, true);
-                if (!empty($value)) {
+        foreach ($contact_ids as $contact_id) {
+            $all_meta = get_post_meta((int) $contact_id, '', true);
+            foreach (FieldRegistry::get_fields() as $field => $label) {
+                // Same read as SC_ContactInfos::get_field_value(), so the original matches the printed text.
+                $value = $all_meta['_' . $field] ?? '';
+                $value = is_array($value) ? implode(', ', $value) : (string) $value;
+                // empty(), like get_translated_field(): "0" is never translated, so never offered.
+                if (empty($value)) {
+                    continue;
+                }
+                if ($polylang) {
+                    // No post title here: Polylang prints name and group unescaped.
                     pll_register_string(
-                        'contact_info_' . $field . '_' . $post_id,
+                        sprintf('%s #%d', $label, (int) $contact_id),
                         $value,
-                        'Contact Information'
+                        $group,
+                        in_array($field, ['address', 'opening'], true)
                     );
+                } else {
+                    do_action('wpml_register_single_string', self::WPML_CONTEXT, self::wpml_name($field, (int) $contact_id), $value, false, $source_language);
                 }
-            });
-        }
-    }
-
-    /**
-     * Register WPML strings for translation.
-     */
-    public static function register_wpml_strings(): void
-    {
-        $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== self::$post_type) {
-            return;
-        }
-
-        // Register meta fields for translation
-        $meta_fields = [
-            'company', 'director', 'street', 'zip', 'city', 'country',
-            'phone', 'mobile', 'fax', 'email', 'tax_id', 'vat', 'hrb', 'court', 'dsb'
-        ];
-
-        foreach ($meta_fields as $field) {
-            add_action('save_post_' . self::$post_type, function($post_id) use ($field) {
-                $value = get_post_meta($post_id, '_' . $field, true);
-                if (!empty($value)) {
-                    do_action('wpml_register_single_string', 
-                        'Contact Information', 
-                        'contact_info_' . $field . '_' . $post_id, 
-                        $value
-                    );
-                }
-            });
+            }
         }
     }
 
@@ -830,23 +809,19 @@ class PostType
             return '';
         }
         
-        // Polylang support
         if (function_exists('pll__')) {
-            $translated_value = pll__($value);
-            if ($translated_value !== $value) {
-                return $translated_value;
-            }
+            return pll__($value);
         }
-        
-        // WPML support
-        if (defined('ICL_SITEPRESS_VERSION')) {
-            $translated_value = icl_t('sfx_contact_info', $field . '_' . $post_id, $value);
-            if ($translated_value !== $value) {
-                return $translated_value;
-            }
-        }
-        
-        return $value;
+
+        return (string) apply_filters('wpml_translate_single_string', $value, self::WPML_CONTEXT, self::wpml_name($field, $post_id));
+    }
+
+    /**
+     * WPML string name: field key and contact ID, never a label or title.
+     */
+    private static function wpml_name(string $field, int $post_id): string
+    {
+        return sprintf('%s #%d', $field, $post_id);
     }
 
     /**

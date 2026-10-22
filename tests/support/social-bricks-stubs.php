@@ -96,12 +96,33 @@ function add_shortcode($tag, $callback): bool
 
 function add_action($hook, $callback, $priority = 10, $accepted_args = 1): bool
 {
+    global $test_added_actions;
+    $test_added_actions[$hook][] = $callback;
     return true;
 }
 
 function add_filter($hook, $callback, $priority = 10, $accepted_args = 1): bool
 {
     return true;
+}
+
+// Defaults for tests that define no hook table of their own; the contact tests define theirs first.
+if (!function_exists('apply_filters')) {
+    function apply_filters(string $hook, $value, ...$args)
+    {
+        return $value;
+    }
+}
+if (!function_exists('do_action')) {
+    function do_action(string $hook, ...$args): void
+    {
+    }
+}
+if (!function_exists('has_action')) {
+    function has_action(string $hook, $callback = false)
+    {
+        return false;
+    }
 }
 
 function shortcode_atts($defaults, $atts, $shortcode = ''): array
@@ -137,7 +158,8 @@ function get_post($post_id)
 
 function get_posts(array $args = []): array
 {
-    global $test_post_lists;
+    global $test_post_lists, $test_get_posts_calls;
+    $test_get_posts_calls[] = $args;
     $post_type = $args['post_type'] ?? '';
     return $test_post_lists[$post_type] ?? [];
 }
