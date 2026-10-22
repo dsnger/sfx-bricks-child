@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Media credits: a copyright icon (Media Credits → "Copyright icon"). With the credit style "Icons only" it replaces the copyright text and carries the full notice as its alternative text; "Icons and text" shows both. Without an icon the text stays as before.
+- Media credits: Bricks image galleries can show the credit line in each image's caption ("Include galleries", off by default). An image with a copyright shows its credit instead of the WordPress caption; an image without one keeps its caption, with an AI marking added where it has one. The lightbox caption stays plain text, and `no-credit` on a gallery element excludes it.
+- Media credits: the `sfx_media_credits_parts` and `sfx_media_credits_line` filters receive `copyright_icon_id`.
+
+### Fixed
+
+- Media credits: a credit filter that asks for the credit it is composing (or renders the same image) no longer recurses until the request fails; it gets no credit inside its own credit.
+
 ## [0.34.0] - 2026-10-22
 
 ### Added

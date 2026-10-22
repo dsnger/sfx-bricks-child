@@ -21,6 +21,9 @@ class Credit
     /** @var array<int, array<string, mixed>> per-request memoisation, keyed by attachment id */
     private static array $cache = [];
 
+    /** @var array<int, true> attachment ids whose credit is being composed right now */
+    private static array $composing = [];
+
     /**
      * Neutralise Bricks' dynamic-data delimiters.
      *
@@ -37,11 +40,11 @@ class Credit
     }
 
     /**
-     * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int, line: string}
+     * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int, copyright_icon_id: int, line: string}
      */
     public static function for(int $attachment_id): array
     {
-        $empty = ['copyright' => '', 'ai_key' => '', 'ai_label' => '', 'icon_id' => 0, 'line' => ''];
+        $empty = ['copyright' => '', 'ai_key' => '', 'ai_label' => '', 'icon_id' => 0, 'copyright_icon_id' => 0, 'line' => ''];
 
         if ($attachment_id <= 0) {
             return $empty;
@@ -50,6 +53,29 @@ class Credit
         if (array_key_exists($attachment_id, self::$cache)) {
             return self::$cache[$attachment_id];
         }
+
+        // A filter asking for the credit it is composing — directly, or by
+        // rendering the same image — would recurse until the request dies.
+        // It gets no credit inside its own credit instead; not cached.
+        if (isset(self::$composing[$attachment_id])) {
+            return $empty;
+        }
+
+        self::$composing[$attachment_id] = true;
+
+        try {
+            return self::compose_for($attachment_id, $empty);
+        } finally {
+            unset(self::$composing[$attachment_id]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $empty
+     * @return array<string, mixed>
+     */
+    private static function compose_for(int $attachment_id, array $empty): array
+    {
 
         // A stored id whose file is gone. Bricks keeps the id and renders a
         // placeholder (image.php:839-848); a confident copyright line under an
@@ -74,16 +100,17 @@ class Credit
         $icon_id  = $ai_key === '' ? 0 : (int) Settings::get('seal_' . $ai_key);
 
         $parts = [
-            'copyright' => $copyright,
-            'ai_key'    => $ai_key,
-            'ai_label'  => $ai_label,
-            'icon_id'   => $icon_id,
+            'copyright'         => $copyright,
+            'ai_key'            => $ai_key,
+            'ai_label'          => $ai_label,
+            'icon_id'           => $icon_id,
+            'copyright_icon_id' => $copyright === '' ? 0 : (int) Settings::get('copyright_icon'),
         ];
 
         $filtered = apply_filters('sfx_media_credits_parts', $parts, $attachment_id);
         $parts    = self::validate_parts(is_array($filtered) ? $filtered : $parts, $parts, $labels);
 
-        $line = self::compose($parts['copyright'], $parts['ai_key'], $parts['ai_label'], $parts['icon_id'], $attachment_id);
+        $line = self::compose($parts['copyright'], $parts['copyright_icon_id'], $parts['ai_key'], $parts['ai_label'], $parts['icon_id'], $attachment_id);
 
         if ($line !== '') {
             $line = (string) apply_filters('sfx_media_credits_line', $line, $attachment_id, $parts);
@@ -115,12 +142,12 @@ class Credit
         return $prefix . $escaped;
     }
 
-    private static function compose(string $copyright, string $ai_key, string $ai_label, int $icon_id, int $attachment_id): string
+    private static function compose(string $copyright, int $copyright_icon_id, string $ai_key, string $ai_label, int $icon_id, int $attachment_id): string
     {
         $bits = [];
 
         if ($copyright !== '') {
-            $bits[] = self::with_copyright_prefix($copyright, $attachment_id);
+            $bits[] = self::copyright_part($copyright, $copyright_icon_id, $attachment_id);
         }
 
         $ai = self::ai_part($ai_key, $ai_label, $icon_id, $attachment_id);
@@ -137,6 +164,39 @@ class Credit
         $separator = (string) apply_filters('sfx_media_credits_separator', '&nbsp;·&nbsp;', $attachment_id);
 
         return implode($separator, $bits);
+    }
+
+    /**
+     * The copyright as text, as the copyright icon, or both — the same
+     * display setting and fallback rule as the AI seal.
+     */
+    private static function copyright_part(string $copyright, int $icon_id, int $attachment_id): string
+    {
+        $text    = self::with_copyright_prefix($copyright, $attachment_id);
+        $display = (string) Settings::get('credit_display');
+        $url     = $icon_id > 0 ? wp_get_attachment_image_url($icon_id, 'full') : false;
+
+        if ($display === 'text' || !$url) {
+            return $text;
+        }
+
+        $size = (int) Settings::get('icon_size');
+
+        // The alt is the notice as a reader of the text form sees it: $text is
+        // already HTML, so it is decoded to plain text here and encoded at the
+        // output below WITH double encoding — esc_attr() would keep a stored
+        // "&amp;copy;" as an entity, and the browser would show a second "©".
+        $alt = $display === 'icon' ? html_entity_decode(wp_strip_all_tags($text), ENT_QUOTES, 'UTF-8') : '';
+
+        $img = sprintf(
+            '<img src="%s" alt="%s" width="%d" height="%d" class="sfx-credit__seal sfx-credit__copyright">',
+            esc_url((string) $url),
+            htmlspecialchars($alt, ENT_QUOTES, 'UTF-8', true),
+            $size,
+            $size
+        );
+
+        return $display === 'icon' ? $img : $img . '&nbsp;' . $text;
     }
 
     private static function ai_part(string $ai_key, string $ai_label, int $icon_id, int $attachment_id): string
@@ -174,7 +234,7 @@ class Credit
      * Re-validate the parts array a `sfx_media_credits_parts` filter returned.
      *
      * The validated ai_key is authoritative. ai_label and icon_id are ALWAYS
-     * derived from it, and any values the filter supplied for them are
+     * derived from it, and copyright_icon_id from the validated copyright, and any values the filter supplied for them are
      * discarded — never read here at all. Two Gate passes found holes when an
      * earlier draft let a filter set one and fall back independently on the
      * others: an invalid key with a stale label kept disclosing a marking
@@ -187,7 +247,7 @@ class Credit
      *   in rather than re-fetched, since sfx_media_credits_labels is a
      *   pre-existing filter with possible third-party callbacks, and this
      *   is on every for() call, not only when a parts filter is registered
-     * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int}
+     * @return array{copyright: string, ai_key: string, ai_label: string, icon_id: int, copyright_icon_id: int}
      */
     private static function validate_parts(array $filtered, array $original, array $labels): array
     {
@@ -196,11 +256,14 @@ class Credit
             $ai_key = '';
         }
 
+        $copyright = (string) ($filtered['copyright'] ?? $original['copyright']);
+
         return [
-            'copyright' => (string) ($filtered['copyright'] ?? $original['copyright']),
-            'ai_key'    => $ai_key,
-            'ai_label'  => $ai_key === '' ? '' : $labels[$ai_key],
-            'icon_id'   => $ai_key === '' ? 0 : (int) Settings::get('seal_' . $ai_key),
+            'copyright'         => $copyright,
+            'ai_key'            => $ai_key,
+            'ai_label'          => $ai_key === '' ? '' : $labels[$ai_key],
+            'icon_id'           => $ai_key === '' ? 0 : (int) Settings::get('seal_' . $ai_key),
+            'copyright_icon_id' => $copyright === '' ? 0 : (int) Settings::get('copyright_icon'),
         ];
     }
 

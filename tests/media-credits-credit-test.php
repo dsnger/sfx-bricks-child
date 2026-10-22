@@ -280,7 +280,9 @@ foreach ($groups as $group) {
     }
 }
 
-foreach (['seal_ai_generated', 'seal_ai_edited', 'seal_ai_assisted', 'seal_digitally_altered'] as $seal_key) {
+assert_same(true, in_array('include_galleries', $our_fields, true), 'Case 9e: the gallery switch is exported');
+
+foreach (['seal_ai_generated', 'seal_ai_edited', 'seal_ai_assisted', 'seal_digitally_altered', 'copyright_icon'] as $seal_key) {
     assert_same(false, in_array($seal_key, $our_fields, true), "Case 9d: no seal id ({$seal_key}) is exportable by any group");
 }
 
@@ -531,6 +533,143 @@ $GLOBALS['test_filter_returns']['sfx_media_credits_seal_html'] = static function
 Credit::reset_cache();
 assert_same('&#123;post_title&#125;', Credit::for(5)['line'], 'Case 10x: seal_html output is caught by the existing gate');
 unset($GLOBALS['test_filter_returns']['sfx_media_credits_seal_html']);
+
+// --------------------------------------------- Case 11: the copyright icon
+// The icon replaces the copyright text in "icon" mode and carries the full
+// notice as its alt; "icon_text" shows both; no icon (or a deleted one) keeps
+// today's text byte for byte.
+
+/** Attachment 5 with a copyright, icon 90, seal 91, display $display. */
+function t_icon_fixture(string $copyright, string $display, int $icon = 90, string $ai = ''): void
+{
+    test_reset();
+    $GLOBALS['test_attachment_url'][5] = 'https://example.test/photo.jpg';
+    $GLOBALS['test_post_meta'][5][Credit::META_COPYRIGHT] = $copyright;
+    $GLOBALS['test_post_meta'][5][Credit::META_AI] = $ai;
+    $GLOBALS['test_options'][Settings::OPTION_NAME] = [
+        'credit_display'    => $display,
+        'icon_size'         => 24,
+        'copyright_icon'    => $icon,
+        'seal_ai_generated' => 91,
+    ];
+    $GLOBALS['test_is_image'][90] = true;
+    $GLOBALS['test_is_image'][91] = true;
+    $GLOBALS['test_attachment_img'][90] = 'https://example.test/icon.png';
+    $GLOBALS['test_attachment_img'][91] = 'https://example.test/seal.svg';
+    Credit::reset_cache();
+}
+
+$nbsp = "\u{00A0}";
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon');
+$credit = Credit::for(5);
+assert_same(
+    '<img src="https://example.test/icon.png" alt="©' . $nbsp . 'Diana Blinkert/EMG" width="24" height="24" class="sfx-credit__seal sfx-credit__copyright">',
+    $credit['line'],
+    'Case 11a (c1): icon mode prints the icon alone, its alt the plain notice'
+);
+assert_same(90, $credit['copyright_icon_id'], 'Case 11b (c1): the parts carry the icon id');
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon', 0);
+assert_same('©&nbsp;Diana Blinkert/EMG', Credit::for(5)['line'], 'Case 11c (c2): no icon configured, text exactly as before');
+assert_same(0, Credit::for(5)['copyright_icon_id'], 'Case 11d (c2): no icon configured, id 0');
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon');
+$GLOBALS['test_attachment_img'][90] = false;
+Credit::reset_cache();
+assert_same('©&nbsp;Diana Blinkert/EMG', Credit::for(5)['line'], 'Case 11e (c2): a deleted icon falls back to the text');
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon', 90, 'ai_generated');
+$line = Credit::for(5)['line'];
+$sep  = strpos($line, '&nbsp;·&nbsp;');
+assert_true($sep !== false, 'Case 11f (c3): both parts joined by the separator');
+assert_true(strpos($line, 'sfx-credit__copyright') < $sep, 'Case 11g (c3): the copyright icon comes first');
+assert_true(strpos($line, 'seal.svg') > $sep, 'Case 11h (c3): the seal comes after the separator');
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon_text');
+assert_same(
+    '<img src="https://example.test/icon.png" alt="" width="24" height="24" class="sfx-credit__seal sfx-credit__copyright">&nbsp;©&nbsp;Diana Blinkert/EMG',
+    Credit::for(5)['line'],
+    'Case 11i (c4): icon_text prints the icon with an empty alt, then the text'
+);
+
+t_icon_fixture('', 'icon');
+$GLOBALS['test_options'][Settings::OPTION_NAME]['fallback_copyright'] = 'Stadt Essen';
+Credit::reset_cache();
+$credit = Credit::for(5);
+assert_contains('alt="©' . $nbsp . 'Stadt Essen"', $credit['line'], 'Case 11j (c5): the fallback copyright gets the icon too');
+assert_same(90, $credit['copyright_icon_id'], 'Case 11k (c5): and the icon id');
+
+t_icon_fixture('', 'icon', 90, 'ai_generated');
+assert_same(0, Credit::for(5)['copyright_icon_id'], 'Case 11l (c5): no copyright, no icon id');
+assert_not_contains('sfx-credit__copyright', Credit::for(5)['line'], 'Case 11m (c5): and no icon');
+
+t_icon_fixture('© EMG', 'icon');
+assert_contains('alt="© EMG"', Credit::for(5)['line'], 'Case 11n (c6): an existing © is not doubled in the alt');
+
+// A stored entity reads the same in the alt as in the text: the text shows
+// "&amp;copy;" literally, so the alt must not decode it into a second ©.
+t_icon_fixture('A &amp;copy; B', 'icon');
+assert_contains('alt="©' . $nbsp . 'A &amp;copy; B"', Credit::for(5)['line'], 'Case 11o: the alt is encoded once more, so a browser shows what the text shows');
+t_icon_fixture('A &amp;copy; B', 'text');
+assert_same('©&nbsp;A &amp;copy; B', Credit::for(5)['line'], 'Case 11p: the text form, for comparison (esc_html keeps the entity)');
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon');
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['copyright_icon_id'] = 999;
+    return $parts;
+};
+assert_same(90, Credit::for(5)['copyright_icon_id'], 'Case 11q (c7): a parts filter cannot set the icon id');
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function (array $parts) {
+    $parts['copyright'] = '';
+    return $parts;
+};
+Credit::reset_cache();
+assert_same(0, Credit::for(5)['copyright_icon_id'], 'Case 11r (c7): emptying the copyright drops the icon id');
+assert_same('', Credit::for(5)['line'], 'Case 11s (c7): and the icon');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+
+t_icon_fixture('Diana Blinkert/EMG', 'icon');
+$seen = null;
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) use (&$seen) {
+    $seen = $args[1];
+    return $line;
+};
+Credit::for(5);
+assert_same(90, $seen['copyright_icon_id'] ?? null, 'Case 11t (c8): the line filter receives copyright_icon_id');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_line']);
+
+test_reset();
+$GLOBALS['test_is_image'][90] = true;
+assert_same(90, Settings::normalize(['copyright_icon' => '90'])['copyright_icon'], 'Case 11u (c9): an image id is kept');
+assert_same(0, Settings::normalize(['copyright_icon' => '12'])['copyright_icon'], 'Case 11v (c9): a non-image id is dropped');
+assert_same(0, Settings::get_defaults()['copyright_icon'], 'Case 11w (c9): default 0');
+
+// ------------------------------------- Case 12: re-entry into the same credit
+// A line filter that asks for the credit it is composing gets the empty credit
+// once, instead of recursing until the request dies.
+
+t_icon_fixture('Foto A', 'text');
+$calls = 0;
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line) use (&$calls) {
+    $calls++;
+    $inner = Credit::for(5);
+    return $line . '|' . $inner['line'] . '|';
+};
+assert_same('©&nbsp;Foto A||', Credit::for(5)['line'], 'Case 12a (c10): the nested call sees the empty credit');
+assert_same(1, $calls, 'Case 12b (c10): the filter ran once, no recursion');
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_line']);
+
+t_icon_fixture('Foto A', 'text');
+$GLOBALS['test_filter_returns']['sfx_media_credits_parts'] = static function () {
+    throw new RuntimeException('boom');
+};
+try {
+    Credit::for(5);
+} catch (RuntimeException $e) {
+}
+unset($GLOBALS['test_filter_returns']['sfx_media_credits_parts']);
+assert_same('©&nbsp;Foto A', Credit::for(5)['line'], 'Case 12c (c10): the guard is released after an exception');
 
 // ------------------------------------------------------------- epilogue
 

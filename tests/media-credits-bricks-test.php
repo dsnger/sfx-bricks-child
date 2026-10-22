@@ -756,8 +756,8 @@ assert_same(false, Bricks::needs_stylesheet('off', 'text'), 'Case 19f: the defau
 // own aspect ratio instead of being forced square by the img's height
 // attribute.
 
-assert_same('.sfx-credit__seal{width:32px;height:auto}', Bricks::seal_style_rule(32), 'Case 20a: a normal size produces exactly one well-formed rule');
-assert_same('.sfx-credit__seal{width:9999px;height:auto}', Bricks::seal_style_rule(9999), 'Case 20b: an out-of-range value is rendered honestly, not clamped or rejected here — Settings::get() already clamps icon_size to 8-128 before this method ever sees it');
+assert_same('.sfx-credit__seal{width:32px;height:auto}.bricks-layout-wrapper .sfx-credit__seal{width:32px!important;height:auto!important}', Bricks::seal_style_rule(32), 'Case 20a: a normal size produces the base rule and the gallery rule');
+assert_same('.sfx-credit__seal{width:9999px;height:auto}.bricks-layout-wrapper .sfx-credit__seal{width:9999px!important;height:auto!important}', Bricks::seal_style_rule(9999), 'Case 20b: an out-of-range value is rendered honestly, not clamped or rejected here — Settings::get() already clamps icon_size to 8-128 before this method ever sees it');
 
 // ------------------- Case 21: a mixed-case root still takes its overlay
 //
@@ -800,6 +800,241 @@ assert_same(true, Bricks::has_marker('<span Class="sfx-credit">x</span>'), 'Case
 assert_same(false, Bricks::has_marker('<span class="SFX-Credit">x</span>'), 'Case 22d: a differently-cased class value is a different class');
 assert_same(false, Bricks::has_marker('<span class="sfx-credit-note">x</span>'), 'Case 22e: a longer class sharing the prefix is not the marker');
 
+
+// ------------------------------------------------- Case 23: gallery credits
+// Bricks' image-gallery prints wp_get_attachment_caption() itself. The module
+// intercepts that lookup for one gallery instance, for the ids that gallery's
+// own <li> rendering admitted, and rewrites the lightbox caption as text.
+
+/** Core's shape: false without the filter for a missing or non-attachment post. */
+function wp_get_attachment_caption($id)
+{
+    $post = get_post($id);
+
+    if (!$post instanceof WP_Post || $post->post_type !== 'attachment') {
+        return false;
+    }
+
+    return Bricks::attachment_caption($post->post_excerpt, (int) $id);
+}
+
+/** What Bricks' render does for item $n: render the <li> attributes, data-id included. */
+function t_render_li(object $el, int $n, int $id): void
+{
+    Bricks::gallery_render_attributes(['li-' . $n => ['data-id' => [$id]]], 'li-' . $n, $el);
+}
+
+/** Images 20-24: 20 own copyright, 21 AI only, 22 nothing, 23 outside the gallery, 24 empty caption. */
+function t_gallery_fixture(array $options = []): void
+{
+    test_reset();
+    \Bricks\Query::reset();
+    Bricks::reset_decisions();
+    $GLOBALS['test_options'][Settings::OPTION_NAME] = $options + ['include_galleries' => true];
+
+    $captions = [20 => 'Zeche', 21 => '<em>Halde</em>', 22 => 'Kanal', 23 => 'Fremd', 24 => ''];
+    foreach ($captions as $id => $caption) {
+        $GLOBALS['test_posts'][$id] = new WP_Post(['ID' => $id, 'post_type' => 'attachment', 'post_excerpt' => $caption]);
+    }
+    seed_attachment(20, 'Foto A');
+    seed_attachment(21, '', 'ai_generated');
+    seed_attachment(22);
+    seed_attachment(23, 'Foto Fremd');
+    seed_attachment(24);
+}
+
+/** Open a gallery scope and admit items 20, 21, 22, 21 the way render() would. */
+function t_open_gallery(array $settings, string $id = 'g1'): array
+{
+    $el       = new Test_Bricks_Element($settings, null, 'image-gallery', $id);
+    $settings = Bricks::element_settings($settings, $el);
+    foreach ([20, 21, 22, 21] as $n => $image) {
+        t_render_li($el, $n, $image);
+    }
+
+    return [$el, $settings];
+}
+
+$credit_20 = '<span class="sfx-credit">©&nbsp;Foto A</span>';
+$credit_21 = '<span class="sfx-credit">AI-generated</span>';
+
+// g1: caption checkbox on
+t_gallery_fixture();
+[$g, $gs] = t_open_gallery(['caption' => true]);
+assert_true(!empty($gs['caption']), 'Case 23a (g1): the caption stays on');
+assert_same($credit_20, wp_get_attachment_caption(20), 'Case 23b (g1): a copyright replaces the WordPress caption');
+assert_same('<em>Halde</em><br>' . $credit_21, wp_get_attachment_caption(21), 'Case 23c (g1): AI only keeps the caption and adds the marking');
+assert_same('Kanal', wp_get_attachment_caption(22), 'Case 23d (g1): no credit keeps the WordPress caption');
+assert_same('Fremd', wp_get_attachment_caption(23), 'Case 23e (g1/g0): an id the gallery never rendered is untouched');
+
+// g0: an <li> of another element instance admits nothing
+t_render_li(new Test_Bricks_Element([], null, 'image-gallery', 'other'), 0, 23);
+assert_same('Fremd', wp_get_attachment_caption(23), 'Case 23f (g0): another instance admits nothing');
+
+// g2: checkbox off
+t_gallery_fixture();
+[$g, $gs] = t_open_gallery([]);
+assert_true(!empty($gs['caption']), 'Case 23g (g2): the caption is switched on so the credit can print');
+assert_same($credit_20, wp_get_attachment_caption(20), 'Case 23h (g2): the credit prints with the checkbox off');
+assert_same($credit_21, wp_get_attachment_caption(21), 'Case 23i (g2): AI only, checkbox off: the marking alone');
+assert_same('', wp_get_attachment_caption(22), 'Case 23j (g2): no credit, checkbox off: no figcaption');
+assert_same($credit_21, wp_get_attachment_caption(21), 'Case 23k (g2): a repeated image gives the same result');
+
+// g3: a line filter emptying or changing the line
+t_gallery_fixture();
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) {
+    return $args[0] === 20 ? '' : $line;
+};
+[$g] = t_open_gallery(['caption' => true]);
+assert_same('Zeche', wp_get_attachment_caption(20), 'Case 23l (g3): an emptied line is no credit — the caption stays');
+t_gallery_fixture();
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) {
+    return $args[0] === 20 ? '' : $line;
+};
+[$g] = t_open_gallery([]);
+assert_same('', wp_get_attachment_caption(20), 'Case 23m (g3): and with the checkbox off, nothing');
+t_gallery_fixture();
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line) {
+    return $line . ' (EMG)';
+};
+[$g] = t_open_gallery(['caption' => true]);
+assert_contains('(EMG)', wp_get_attachment_caption(20), 'Case 23n (g3): the line filter reaches the gallery');
+
+// g4: re-entry from a line filter, cold cache
+t_gallery_fixture();
+$seen = null;
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) use (&$seen) {
+    if ($args[0] === 20) {
+        $seen = wp_get_attachment_caption(20);
+    }
+    return $line;
+};
+[$g] = t_open_gallery(['caption' => true]);
+assert_same($credit_20, wp_get_attachment_caption(20), 'Case 23o (g4): the outer lookup completes');
+assert_same('Zeche', $seen, 'Case 23p (g4): the nested lookup gets the WordPress caption');
+assert_same('Kanal', wp_get_attachment_caption(22), 'Case 23q (g4): the scope is intact afterwards');
+
+t_gallery_fixture();
+$GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) {
+    if ($args[0] === 20) {
+        Bricks::element_settings([], new Test_Bricks_Element([], null, 'image', 'nested'));
+    }
+    return $line;
+};
+[$g] = t_open_gallery(['caption' => true]);
+wp_get_attachment_caption(20);
+assert_same('<em>Halde</em><br>' . $credit_21, wp_get_attachment_caption(21), 'Case 23r (g4): a nested element render does not close the gallery scope');
+
+// g11: the real order without lightbox caption — image_attributes() composes first
+foreach (['caption', 'nested', 'gallery'] as $variant) {
+    t_gallery_fixture();
+    $seen = null;
+    $GLOBALS['test_filter_returns']['sfx_media_credits_line'] = static function ($line, $args) use (&$seen, $variant) {
+        if ($args[0] !== 20) {
+            return $line;
+        }
+        if ($variant === 'caption') {
+            $seen = wp_get_attachment_caption(20);
+        } elseif ($variant === 'nested') {
+            Bricks::element_settings([], new Test_Bricks_Element([], null, 'image', 'nested'));
+        } else {
+            $nested = new Test_Bricks_Element(['caption' => true], null, 'image-gallery', 'nested-gallery');
+            Bricks::element_settings(['caption' => true], $nested);
+            t_render_li($nested, 0, 20);
+            $seen = [Bricks::image_attributes([], 20), wp_get_attachment_caption(20)];
+        }
+        return $line;
+    };
+    $el = new Test_Bricks_Element(['caption' => true], null, 'image-gallery', 'g11');
+    Bricks::element_settings(['caption' => true], $el);
+    t_render_li($el, 0, 20);
+    Bricks::image_attributes(['class' => 'image'], 20);
+    assert_same($credit_20, wp_get_attachment_caption(20), "Case 23s (g11 {$variant}): the figcaption after image_attributes() is the credit");
+    t_render_li($el, 1, 21);
+    assert_same('<em>Halde</em><br>' . $credit_21, wp_get_attachment_caption(21), "Case 23t (g11 {$variant}): the next image keeps its credit");
+    if ($variant === 'caption') {
+        assert_same('Zeche', $seen, 'Case 23u (g11): the nested lookup gets the WordPress caption');
+    }
+    if ($variant === 'gallery') {
+        assert_same([[], 'Zeche'], $seen, 'Case 23v (g11): a nested gallery gets no credit and no data-sfx-ai, and terminates');
+    }
+}
+
+// g5: no-credit and switch off leave everything as Bricks has it
+t_gallery_fixture();
+$el = new Test_Bricks_Element(['_cssClasses' => 'foo no-credit'], null, 'image-gallery', 'nc');
+assert_same(['_cssClasses' => 'foo no-credit'], Bricks::element_settings(['_cssClasses' => 'foo no-credit'], $el), 'Case 23w (g5): no-credit leaves the settings unchanged');
+t_render_li($el, 0, 20);
+assert_same('Zeche', wp_get_attachment_caption(20), 'Case 23x (g5): and the caption');
+t_gallery_fixture(['include_galleries' => false]);
+$el = new Test_Bricks_Element([], null, 'image-gallery', 'off');
+assert_same([], Bricks::element_settings([], $el), 'Case 23y (g5): switch off leaves the settings unchanged');
+t_render_li($el, 0, 20);
+assert_same('Zeche', wp_get_attachment_caption(20), 'Case 23z (g5): and the caption');
+
+// g6: lightbox attribute rewritten from the WordPress caption
+t_gallery_fixture();
+[$g] = t_open_gallery(['link' => 'lightbox', 'lightboxCaption' => true]);
+$attrs = ['li-1' => ['data-id' => [21]], 'a-1' => ['href' => ['x']]];
+assert_same([Bricks::lightbox_text('<em>Halde</em>')], Bricks::gallery_render_attributes($attrs, 'a-1', $g)['a-1']['data-lightbox-caption'] ?? null, 'Case 24a (g6): AI-only image: the lightbox gets the caption text');
+assert_same('', wp_get_attachment_caption(22), 'Case 24b (g6): no credit, checkbox off: the figcaption lookup is empty');
+$attrs = ['li-2' => ['data-id' => [22]], 'a-2' => ['href' => ['x']]];
+assert_same([Bricks::lightbox_text('Kanal')], Bricks::gallery_render_attributes($attrs, 'a-2', $g)['a-2']['data-lightbox-caption'] ?? null, 'Case 24c (g6): yet the lightbox caption is restored');
+$attrs = ['li-0' => ['data-id' => [20]], 'a-0' => ['data-lightbox-caption' => [$credit_20]]];
+assert_same([Bricks::lightbox_text('Zeche')], Bricks::gallery_render_attributes($attrs, 'a-0', $g)['a-0']['data-lightbox-caption'], 'Case 24d (g6): the credit markup never reaches the lightbox');
+t_render_li($g, 4, 24);
+$attrs = ['li-4' => ['data-id' => [24]], 'a-4' => ['data-lightbox-caption' => ['x']]];
+assert_same(false, isset(Bricks::gallery_render_attributes($attrs, 'a-4', $g)['a-4']['data-lightbox-caption']), 'Case 24e (g6): an empty caption removes the attribute');
+$attrs = ['li-5' => ['class' => ['bricks-layout-item']], 'a-5' => ['data-lightbox-caption' => ['x']]];
+assert_same($attrs, Bricks::gallery_render_attributes($attrs, 'a-5', $g), 'Case 24f (g6): a placeholder item without data-id is untouched');
+
+// g12: a deleted attachment
+t_render_li($g, 6, 25);
+$attrs = ['li-6' => ['data-id' => [25]], 'a-6' => ['data-lightbox-caption' => ['x']]];
+assert_same(false, isset(Bricks::gallery_render_attributes($attrs, 'a-6', $g)['a-6']['data-lightbox-caption']), 'Case 24g (g12): a deleted attachment loses the stale attribute without an error');
+
+// g7: other links, other instances, other keys
+t_gallery_fixture();
+[$g] = t_open_gallery(['link' => 'custom', 'lightboxCaption' => true]);
+$attrs = ['li-0' => ['data-id' => [20]], 'a-0' => ['data-lightbox-caption' => ['<b>x</b>']]];
+assert_same($attrs, Bricks::gallery_render_attributes($attrs, 'a-0', $g), 'Case 24h (g7): a custom-link gallery is untouched');
+t_gallery_fixture();
+[$g] = t_open_gallery(['link' => 'lightbox', 'lightboxCaption' => true]);
+assert_same($attrs, Bricks::gallery_render_attributes($attrs, 'a-0', new Test_Bricks_Element([], null, 'image-gallery', 'x')), 'Case 24i (g7): another instance is untouched');
+$root = ['_root' => ['class' => ['brxe-image-gallery']]];
+assert_same($root, Bricks::gallery_render_attributes($root, '_root', $g), 'Case 24j (g7): the root key is untouched');
+
+// lightbox_text: plain text through the attribute decode and PhotoSwipe's innerHTML
+assert_same('Zeche Zollverein', Bricks::lightbox_text('<em>Zeche</em> Zollverein'), 'Case 24k: tags removed');
+$encoded = Bricks::lightbox_text('&lt;img src=x onerror=alert(1)&gt;');
+assert_same(htmlspecialchars('<img src=x onerror=alert(1)>', ENT_QUOTES, 'UTF-8'), html_entity_decode(esc_attr($encoded), ENT_QUOTES, 'UTF-8'), 'Case 24l: after esc_attr() and the attribute decode the markup is still escaped');
+assert_contains('&#123;post_title&#125;', Bricks::lightbox_text('{post_title}'), 'Case 24m: dynamic-data braces are neutralised');
+assert_not_contains('{', Bricks::lightbox_text('{post_title}'), 'Case 24n: no literal brace left');
+assert_same('', Bricks::lightbox_text('  '), 'Case 24o: whitespace is empty');
+
+// g8: the scope ends
+t_gallery_fixture();
+[$g] = t_open_gallery(['caption' => true]);
+Bricks::render_element('<ul></ul>', $g);
+assert_same('Zeche', wp_get_attachment_caption(20), 'Case 24p (g8): after render_element the caption is plain again');
+t_gallery_fixture();
+[$g] = t_open_gallery(['caption' => true]);
+Bricks::element_settings([], new Test_Bricks_Element([], null, 'image', 'next'));
+assert_same('Zeche', wp_get_attachment_caption(20), 'Case 24q (g8): the next element ends the scope');
+
+// g10: fallback copyright counts as copyright
+t_gallery_fixture(['fallback_copyright' => 'Stadt Essen']);
+[$g] = t_open_gallery(['caption' => true]);
+assert_same('<span class="sfx-credit">©&nbsp;Stadt Essen</span>', wp_get_attachment_caption(22), 'Case 24r (g10): the fallback replaces the caption');
+
+// g9: the switch normalises to bool
+assert_same(true, Settings::normalize(['include_galleries' => '1'])['include_galleries'], 'Case 24s (g9): truthy is on');
+assert_same(false, Settings::get_defaults()['include_galleries'], 'Case 24t (g9): off by default');
+
+// registration
+Bricks::register();
+assert_same(2, test_registrations('wp_get_attachment_caption')[0]['accepted_args'] ?? null, 'Case 24u: caption filter takes the id');
+assert_same(3, test_registrations('bricks/element/render_attributes')[0]['accepted_args'] ?? null, 'Case 24v: attribute filter takes key and element');
 
 // ------------------------------------------------------------- epilogue
 

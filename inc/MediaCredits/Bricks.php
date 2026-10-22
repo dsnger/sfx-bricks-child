@@ -7,10 +7,13 @@ namespace SFX\MediaCredits;
 /**
  * Bricks integration.
  *
- * Three mechanisms, only the last of which touches rendered HTML:
+ * Four mechanisms, only the third of which touches rendered HTML:
  *   1. tag substitution inside the Image element's own captionCustom setting
  *   2. caption auto-output, written as a setting
  *   3. overlay auto-output, injected into an existing wrapper
+ *   4. gallery captions: the image-gallery element prints
+ *      wp_get_attachment_caption() itself, so that lookup is answered for
+ *      the one gallery being rendered, and its lightbox attribute rewritten
  */
 class Bricks
 {
@@ -43,6 +46,25 @@ class Bricks
      */
     private static ?\SplObjectStorage $auto_output_decisions = null;
 
+    /**
+     * The gallery being rendered: its instance, the attachment ids its own
+     * <li> rendering admitted, the editor's caption checkbox and whether it
+     * shows lightbox captions. Opened in element_settings(), closed by
+     * render_element() for that instance or by the next element's settings
+     * (frontend.php:778 and ajax.php:1515 are the only element init() calls,
+     * and both apply render_element right after it).
+     *
+     * @var array{element: object, ids: array<int, true>, show_wp_caption: bool, lightbox: bool}|null
+     */
+    private static ?array $gallery = null;
+
+    /**
+     * Depth of compositions running while a gallery scope stands. A credit
+     * callback reading the caption, or rendering another element, must get
+     * the plain caption and must neither open nor close a scope.
+     */
+    private static int $bypass = 0;
+
     public static function register(): void
     {
         add_filter('bricks/element/settings', [self::class, 'element_settings'], 10, 2);
@@ -61,6 +83,9 @@ class Bricks
         add_filter('bricks/dynamic_data/render_tag', [self::class, 'render_tag'], 20, 3);
 
         add_filter('bricks/dynamic_data/render_content', [self::class, 'render_content'], 10, 3);
+
+        add_filter('wp_get_attachment_caption', [self::class, 'attachment_caption'], 10, 2);
+        add_filter('bricks/element/render_attributes', [self::class, 'gallery_render_attributes'], 10, 3);
     }
 
     /**
@@ -300,6 +325,8 @@ class Bricks
     public static function reset_decisions(): void
     {
         self::$auto_output_decisions = null;
+        self::$gallery               = null;
+        self::$bypass                = 0;
     }
 
     /**
@@ -317,7 +344,22 @@ class Bricks
      */
     public static function element_settings($settings, $element)
     {
-        if (!is_array($settings) || !is_object($element) || ($element->name ?? '') !== 'image') {
+        if (!is_array($settings) || !is_object($element)) {
+            return $settings;
+        }
+
+        // Elements render one after another, so any element's settings mean
+        // the previous gallery is done — unless we are inside a composition,
+        // where a callback may render elements in the middle of a gallery.
+        if (self::$bypass === 0) {
+            self::$gallery = null;
+
+            if (($element->name ?? '') === 'image-gallery') {
+                return self::open_gallery($settings, $element);
+            }
+        }
+
+        if (($element->name ?? '') !== 'image') {
             return $settings;
         }
 
@@ -418,6 +460,169 @@ class Bricks
         $settings['captionCustom'] = $effective === '' ? $credit : $effective . '<br>' . $credit;
 
         return $settings;
+    }
+
+    /**
+     * Mechanism 4, opened. The caption checkbox is switched on so Bricks asks
+     * for a caption at all; attachment_caption() then decides, per image,
+     * what that answer is — the editor's own checkbox included.
+     *
+     * @param array<string, mixed> $settings
+     * @return array<string, mixed>
+     */
+    private static function open_gallery(array $settings, object $element): array
+    {
+        if (!Settings::get('include_galleries') || self::has_no_credit_class($settings)) {
+            return $settings;
+        }
+
+        self::$gallery = [
+            'element'         => $element,
+            'ids'             => [],
+            'show_wp_caption' => !empty($settings['caption']),
+            'lightbox'        => ($settings['link'] ?? '') === 'lightbox' && isset($settings['lightboxCaption']),
+        ];
+
+        $settings['caption'] = true;
+
+        return $settings;
+    }
+
+    /**
+     * The gallery's figcaption, per image: the credit replaces the WordPress
+     * caption when there is a copyright; an AI marking alone is added to it;
+     * no credit leaves the caption — or nothing, where the editor turned
+     * captions off. An empty line is no credit, never an empty span.
+     *
+     * @param mixed $caption
+     * @param mixed $post_id
+     * @return mixed
+     */
+    public static function attachment_caption($caption, $post_id)
+    {
+        $id = (int) $post_id;
+
+        if (self::$gallery === null || self::$bypass > 0 || !isset(self::$gallery['ids'][$id])) {
+            return $caption;
+        }
+
+        $wp_caption = self::$gallery['show_wp_caption'] && is_string($caption) ? $caption : '';
+        $credit     = self::with_bypass(static fn (): array => Credit::for($id));
+
+        if ($credit['line'] === '') {
+            return $wp_caption;
+        }
+
+        $span = '<span class="' . self::MARKER_CLASS . '">' . $credit['line'] . '</span>';
+
+        if ($credit['copyright'] !== '' || trim($wp_caption) === '') {
+            return $span;
+        }
+
+        return $wp_caption . '<br>' . $span;
+    }
+
+    /**
+     * Two jobs for the gallery being rendered. An `li-<n>` key carries the
+     * item's attachment id — rendered before either caption lookup of that
+     * item, from the same resolved items render() uses — so it admits that
+     * id to the scope. An `a-<n>` key of a lightbox gallery gets its
+     * data-lightbox-caption rebuilt from the WordPress caption as text: the
+     * lookup Bricks made returned the figcaption answer, which may be credit
+     * markup or, with captions off, nothing at all.
+     *
+     * @param mixed $attributes
+     * @param mixed $key
+     * @param mixed $element
+     * @return mixed
+     */
+    public static function gallery_render_attributes($attributes, $key, $element)
+    {
+        if (!is_array($attributes) || !is_string($key) || self::$gallery === null || $element !== self::$gallery['element']) {
+            return $attributes;
+        }
+
+        if (preg_match('/^li-\d+$/', $key) === 1) {
+            $id = self::item_id($attributes, $key);
+
+            if ($id > 0) {
+                self::$gallery['ids'][$id] = true;
+            }
+
+            return $attributes;
+        }
+
+        if (!self::$gallery['lightbox'] || preg_match('/^a-(\d+)$/', $key, $m) !== 1) {
+            return $attributes;
+        }
+
+        // A placeholder item has no data-id and is not ours to touch.
+        $id = self::item_id($attributes, 'li-' . $m[1]);
+
+        if ($id <= 0 || !isset(self::$gallery['ids'][$id])) {
+            return $attributes;
+        }
+
+        // Core returns false for a deleted or non-attachment id.
+        $caption = self::with_bypass(static fn () => wp_get_attachment_caption($id));
+        $text    = self::lightbox_text(is_string($caption) ? $caption : '');
+
+        if ($text === '') {
+            unset($attributes[$key]['data-lightbox-caption']);
+        } else {
+            $attributes[$key]['data-lightbox-caption'] = [$text];
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * The WordPress caption as text that survives the whole lightbox path:
+     * Bricks' esc_attr() keeps existing entities, the browser decodes the
+     * attribute once, and PhotoSwipe's caption assigns the result to
+     * innerHTML. So the text is HTML-encoded twice, and Bricks'
+     * dynamic-data braces are neutralised last, because Bricks renders tags
+     * across the whole page after the element.
+     */
+    public static function lightbox_text(string $caption): string
+    {
+        $text = trim(html_entity_decode(wp_strip_all_tags($caption), ENT_QUOTES, 'UTF-8'));
+
+        if ($text === '') {
+            return '';
+        }
+
+        $once = htmlspecialchars($text, ENT_QUOTES, 'UTF-8', true);
+
+        return Credit::escape_braces(htmlspecialchars($once, ENT_QUOTES, 'UTF-8', true));
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    private static function item_id(array $attributes, string $li_key): int
+    {
+        $value = $attributes[$li_key]['data-id'] ?? 0;
+
+        return (int) (is_array($value) ? ($value[0] ?? 0) : $value);
+    }
+
+    /**
+     * Run a composition with the gallery bypass held, released on every exit.
+     *
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    private static function with_bypass(callable $fn)
+    {
+        self::$bypass++;
+
+        try {
+            return $fn();
+        } finally {
+            self::$bypass--;
+        }
     }
 
     /**
@@ -579,11 +784,13 @@ class Bricks
     /**
      * Overlay auto-output — the only place this module writes HTML.
      *
-     * Only fires on the frontend render path: Ajax::render_element() calls
-     * init() directly and never applies this filter (ajax.php:885-891), so
-     * while editing, an overlay appears on a full canvas load and not on the
-     * single element being re-rendered. Mechanisms 1 and 2 live inside init()
-     * and have no such gap, which is why caption mode is the recommended one.
+     * Older Bricks versions applied this filter on the frontend render path
+     * only — Ajax::render_element() called init() and stopped there — so an
+     * overlay appeared on a full canvas load and not on a single element being
+     * re-rendered. Bricks 2.4.3 applies it there too (ajax.php:1519); the
+     * admin tip keeps the caveat for sites on older versions. Mechanisms 1 and
+     * 2 live inside init() and never had the gap, which is why caption mode is
+     * the recommended one. This method also closes a gallery scope (mechanism 4).
      *
      * @param mixed $html
      * @param mixed $element
@@ -591,6 +798,10 @@ class Bricks
      */
     public static function render_element($html, $element)
     {
+        if (self::$gallery !== null && $element === self::$gallery['element']) {
+            self::$gallery = null;
+        }
+
         if (!is_string($html) || $html === '' || !is_object($element) || ($element->name ?? '') !== 'image') {
             return $html;
         }
@@ -743,8 +954,12 @@ class Bricks
      * also cannot rely on the img's width/height attributes — those are
      * presentational hints that lose to any CSS rule, and Bricks stretches
      * every <img> inside its image element to full width (measured 1890px
-     * for a 32px seal). A class selector wins without !important, so one
-     * generated rule is enough.
+     * for a 32px seal). For a single image a class selector wins without
+     * !important. Inside a gallery it does not: Bricks' metro layout sets
+     * `img{height:100%}` up to specificity (0,5,2)
+     * (`.bricks-layout-wrapper[data-layout=metro].isotope>li:nth-child(3n+1)
+     * :not(.bricks-isotope-sizer) img`), so a second rule, scoped to gallery
+     * wrappers, carries !important. Single images keep the plain rule.
      *
      * height is deliberately `auto`, not the same pixel value: the markup
      * also sets height="{$size}" alongside width, which would force a
@@ -758,7 +973,10 @@ class Bricks
      */
     public static function seal_style_rule(int $size): string
     {
-        return sprintf('.sfx-credit__seal{width:%dpx;height:auto}', $size);
+        return sprintf(
+            '.sfx-credit__seal{width:%1$dpx;height:auto}.bricks-layout-wrapper .sfx-credit__seal{width:%1$dpx!important;height:auto!important}',
+            $size
+        );
     }
 
     /**
@@ -821,7 +1039,11 @@ class Bricks
             return $attr;
         }
 
-        $ai_key = Credit::for($id)['ai_key'];
+        // wp_get_attachment_image() reaches this inside a gallery before the
+        // figcaption lookup, so it composes under the same bypass.
+        $ai_key = self::$gallery === null
+            ? Credit::for($id)['ai_key']
+            : self::with_bypass(static fn (): string => Credit::for($id)['ai_key']);
 
         if ($ai_key !== '') {
             $attr['data-sfx-ai'] = esc_attr($ai_key);
