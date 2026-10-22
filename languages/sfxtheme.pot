@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.34.0\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.35.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-22T09:22:53+00:00\n"
+"POT-Creation-Date: 2026-10-22T13:03:50+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -218,7 +218,7 @@ msgstr ""
 
 #: inc/ContactInfos/HelpTab.php:102
 #: inc/ContactInfos/HelpTab.php:205
-#: inc/MediaCredits/AdminPage.php:255
+#: inc/MediaCredits/AdminPage.php:283
 #: inc/SocialMediaAccounts/HelpTab.php:161
 #: inc/SocialMediaAccounts/HelpTab.php:185
 msgid "Output"
@@ -772,7 +772,8 @@ msgstr ""
 #: inc/CustomDashboard/AssetManager.php:117
 #: inc/CustomDashboard/Settings.php:2061
 #: inc/CustomDashboard/Settings.php:2335
-#: inc/MediaCredits/AdminPage.php:201
+#: inc/MediaCredits/AdminPage.php:202
+#: inc/MediaCredits/AdminPage.php:226
 msgid "Remove"
 msgstr ""
 
@@ -4185,7 +4186,7 @@ msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:20
 #: inc/MediaCredits/AdminPage.php:106
-#: inc/MediaCredits/Bricks.php:72
+#: inc/MediaCredits/Bricks.php:97
 #: inc/MediaCredits/MediaLibrary.php:393
 #: inc/ThemeSettingsOverview/OverviewProvider.php:73
 msgid "Media Credits"
@@ -4196,7 +4197,7 @@ msgid "Copyright notices and AI markings on media, with optional automatic outpu
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:85
-msgid "Choose a seal image"
+msgid "Choose an image"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:86
@@ -4229,7 +4230,7 @@ msgid "Overlay mode only: give image elements that have no HTML tag a figure wra
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:142
-msgid "AI marking style"
+msgid "Credit style"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:147
@@ -4237,15 +4238,15 @@ msgid "Text only"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:148
-msgid "Seal only"
+msgid "Icons only"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:149
-msgid "Seal and text"
+msgid "Icons and text"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:164
-msgid "Seal size (px)"
+msgid "Icon size (px)"
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:173
@@ -4256,129 +4257,164 @@ msgstr ""
 msgid "Used when an attachment has no copyright of its own. Careful: this gives EVERY image a credit, logos and icons included. Leave empty unless the site owns its imagery."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:183
-msgid "AI seals"
+#: inc/MediaCredits/AdminPage.php:182
+msgid "Include galleries"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:200
+#: inc/MediaCredits/AdminPage.php:186
+msgid "Show the credit line in the captions of Bricks image galleries. Images without a copyright keep their WordPress caption. Works independently of \"Automatic output\"."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:195
+#: inc/MediaCredits/AdminPage.php:199
+msgid "Copyright icon"
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:201
+#: inc/MediaCredits/AdminPage.php:225
 msgid "Choose image"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:213
+#: inc/MediaCredits/AdminPage.php:203
+msgid "Shown instead of the copyright text with \"Icons only\" (the icon's alternative text is then the full notice), or before the text with \"Icons and text\"."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:208
+msgid "AI seals"
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:238
 msgid "How output works"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:215
+#: inc/MediaCredits/AdminPage.php:240
 msgid "Place {sfx_media_credit} in an image element's Custom caption to control exactly where the credit appears. This works everywhere and is unaffected by the limits below."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:216
+#: inc/MediaCredits/AdminPage.php:241
 msgid "Caption mode is the reliable automatic mode: it writes the credit into the element's own caption, so Bricks renders valid markup and styles it with its own caption controls."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:217
+#: inc/MediaCredits/AdminPage.php:242
 msgid "Overlay mode needs something to attach to. Set the image element's HTML tag to figure, or switch on \"Force a wrapper\" above."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:218
+#: inc/MediaCredits/AdminPage.php:243
 msgid "Overlay cannot attach to a responsive image using Sources that has neither a link nor a caption — Bricks makes that a picture element. Use caption mode for those."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:219
-msgid "While editing, an overlay may only appear after the canvas reloads. Bricks does not run the output filter when it re-renders a single element."
+#: inc/MediaCredits/AdminPage.php:244
+msgid "Bricks versions before 2.4: while editing, an overlay may only appear after the canvas reloads, because they do not run the output filter when re-rendering a single element."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:220
+#: inc/MediaCredits/AdminPage.php:245
 msgid "Add no-credit in the image element's CSS classes field (Style tab) — not the global class picker — to exclude it from automatic output."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:224
+#: inc/MediaCredits/AdminPage.php:246
+msgid "Galleries: add no-credit to a gallery element's CSS classes to exclude it. The lightbox caption stays plain text."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:250
 msgid "Hooks for developers"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:225
+#: inc/MediaCredits/AdminPage.php:251
 msgid "Extension points for adjusting copyright and AI-marking behaviour from code, grouped by where each one fires. Signatures are shown as-is and are not translated."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:227
+#: inc/MediaCredits/AdminPage.php:253
 msgid "Composition"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:231
+#: inc/MediaCredits/AdminPage.php:257
 msgid "Fires when the label vocabulary is built. Reword the AI and alteration labels; their keys stay fixed."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:235
+#: inc/MediaCredits/AdminPage.php:261
 msgid "Fires after the copyright and AI values are resolved, before composition. The AI key you return is authoritative — its label and seal always follow from it."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:239
+#: inc/MediaCredits/AdminPage.php:262
+msgid "copyright_icon_id follows the copyright the same way: the configured icon when there is a copyright, else 0."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:266
 msgid "Fires only when the copyright text does not already start with ©, (c) or Copyright."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:243
+#: inc/MediaCredits/AdminPage.php:270
 msgid "Fires only when both a copyright and an AI part are present, right before they are joined."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:247
+#: inc/MediaCredits/AdminPage.php:274
 msgid "Fires after the seal image markup is built, only when a seal is actually rendered."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:251
+#: inc/MediaCredits/AdminPage.php:278
 msgid "The last word before the composed credit line is escaped. Replace it outright when nothing else fits."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:259
+#: inc/MediaCredits/AdminPage.php:279
+msgid "$parts carries copyright_icon_id as well."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:287
 msgid "Decides once per element whether automatic caption or overlay output happens at all."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:263
+#: inc/MediaCredits/AdminPage.php:288
+#: inc/MediaCredits/AdminPage.php:293
+msgid "Not fired for galleries."
+msgstr ""
+
+#: inc/MediaCredits/AdminPage.php:292
 msgid "Covers automatic caption output only. A hand-placed {sfx_media_credit} tag goes through a different path."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:267
+#: inc/MediaCredits/AdminPage.php:297
 msgid "Fires right before the overlay markup is spliced into the rendered image element."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:271
+#: inc/MediaCredits/AdminPage.php:301
 msgid "Fires before the root-tag check. The default list is img, picture and a."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:272
+#: inc/MediaCredits/AdminPage.php:302
 msgid "The list is global, not per attachment: it is the one hook of the twelve with no attachment id, so a site cannot make the skip decision for a single image."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:273
+#: inc/MediaCredits/AdminPage.php:303
 msgid "Adding figure to the list while \"Force a wrapper\" is on can leave an empty wrapper: the wrapper is written at settings time whenever a credit exists, and the skip list is only checked later, when the overlay itself is built — the two do not know about each other."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:277
+#: inc/MediaCredits/AdminPage.php:307
 msgid "Media library"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:281
+#: inc/MediaCredits/AdminPage.php:311
 msgid "Fires once, on first upload, after an IPTC copyright or credit value is read and before it is saved."
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:284
+#: inc/MediaCredits/AdminPage.php:314
 msgid "Action:"
 msgstr ""
 
-#: inc/MediaCredits/AdminPage.php:286
+#: inc/MediaCredits/AdminPage.php:316
 msgid "The seam for page-cache invalidation — the module deliberately knows nothing about caches."
 msgstr ""
 
-#: inc/MediaCredits/Bricks.php:74
+#: inc/MediaCredits/Bricks.php:99
 msgid "Copyright notice"
 msgstr ""
 
-#: inc/MediaCredits/Bricks.php:75
+#: inc/MediaCredits/Bricks.php:100
 #: inc/MediaCredits/MediaLibrary.php:333
 #: inc/MediaCredits/MediaLibrary.php:432
 msgid "AI marking"
 msgstr ""
 
-#: inc/MediaCredits/Bricks.php:76
+#: inc/MediaCredits/Bricks.php:101
 msgid "Credit line"
 msgstr ""
 

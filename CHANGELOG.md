@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-10-22
+
 ### Added
 
 - Media credits: a copyright icon (Media Credits → "Copyright icon"). With the credit style "Icons only" it replaces the copyright text and carries the full notice as its alternative text; "Icons and text" shows both. Without an icon the text stays as before.
