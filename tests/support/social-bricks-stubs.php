@@ -106,6 +106,25 @@ function add_filter($hook, $callback, $priority = 10, $accepted_args = 1): bool
     return true;
 }
 
+// Defaults for tests that define no hook table of their own; the contact tests define theirs first.
+if (!function_exists('apply_filters')) {
+    function apply_filters(string $hook, $value, ...$args)
+    {
+        return $value;
+    }
+}
+if (!function_exists('do_action')) {
+    function do_action(string $hook, ...$args): void
+    {
+    }
+}
+if (!function_exists('has_action')) {
+    function has_action(string $hook, $callback = false)
+    {
+        return false;
+    }
+}
+
 function shortcode_atts($defaults, $atts, $shortcode = ''): array
 {
     $atts = is_array($atts) ? $atts : [];

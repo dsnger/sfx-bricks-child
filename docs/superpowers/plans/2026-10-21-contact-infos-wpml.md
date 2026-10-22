@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-21-contact-infos-polylang-strings-design.md` at `27a5bba`, section "WPML (amendment, D10/D12)" and Acceptance 1, 2, 4, 7, 8. This plan builds on the Polylang plan (`docs/superpowers/plans/2026-10-21-contact-infos-polylang-strings.md`, implemented in `337065e`) and does not repeat it.
 
+**Superseded in part (D13, 2026-10-22, Gate B `fi2i4pzg3s` pass 1):** the canonical release and test-instance scripts reject `wpml-config.xml` as a `SHIPPED` entry, so the file and its `SHIPPED` entry were dropped; the spec now relies on WPML's default ("Not translatable") and Acceptance 8 reads "no `wpml-config.xml`, `SHIPPED` unchanged". Every `wpml-config.xml` step below is void.
+
 No story cited — unprofiled.
 
 ## Global Constraints

@@ -17,6 +17,12 @@ class PostType
     public static string $post_type = 'sfx_contact_info';
 
     /**
+     * WPML String Translation context. An identifier, not interface text: WPML finds a string by
+     * context and name, so neither may follow the admin's language.
+     */
+    public const WPML_CONTEXT = 'sfx-bricks-child contact infos';
+
+    /**
      * Initialize post type and meta box hooks.
      */
     public static function init(): void
@@ -32,7 +38,7 @@ class PostType
         add_filter('manage_' . self::$post_type . '_posts_columns', [self::class, 'define_list_columns'], 20);
         add_action('manage_' . self::$post_type . '_posts_custom_column', [self::class, 'render_list_column'], 10, 2);
         
-        // Polylang string translations for the contact fields
+        // Polylang or WPML string translations for the contact fields
         add_action('admin_init', [self::class, 'register_translatable_strings']);
         
         // Add cache clearing functionality
@@ -734,13 +740,16 @@ class PostType
     }
 
     /**
-     * Offer every published contact's field values on Polylang's Translations screen.
+     * Offer every published contact's field values for translation: on Polylang's Translations
+     * screen, or else under WPML → String Translation.
      *
-     * Polylang keeps registrations for the current request only, so this runs on every admin load.
+     * Polylang keeps registrations for the current request only, and WPML asks themes to register
+     * on every admin load, so this runs on every admin load.
      */
     public static function register_translatable_strings(): void
     {
-        if (!function_exists('pll_register_string')) {
+        $polylang = function_exists('pll_register_string');
+        if (!$polylang && !has_action('wpml_register_single_string')) {
             return;
         }
 
@@ -751,6 +760,8 @@ class PostType
             'fields' => 'ids',
         ]);
         $group = __('Contact Information', 'sfxtheme');
+        // Contacts are entered in the site's default language; WPML would otherwise guess it.
+        $source_language = $polylang ? null : apply_filters('wpml_default_language', null);
 
         foreach ($contact_ids as $contact_id) {
             $all_meta = get_post_meta((int) $contact_id, '', true);
@@ -758,16 +769,21 @@ class PostType
                 // Same read as SC_ContactInfos::get_field_value(), so the original matches the printed text.
                 $value = $all_meta['_' . $field] ?? '';
                 $value = is_array($value) ? implode(', ', $value) : (string) $value;
-                if ($value === '') {
+                // empty(), like get_translated_field(): "0" is never translated, so never offered.
+                if (empty($value)) {
                     continue;
                 }
-                // No post title here: Polylang prints name and group unescaped.
-                pll_register_string(
-                    sprintf('%s #%d', $label, (int) $contact_id),
-                    $value,
-                    $group,
-                    in_array($field, ['address', 'opening'], true)
-                );
+                if ($polylang) {
+                    // No post title here: Polylang prints name and group unescaped.
+                    pll_register_string(
+                        sprintf('%s #%d', $label, (int) $contact_id),
+                        $value,
+                        $group,
+                        in_array($field, ['address', 'opening'], true)
+                    );
+                } else {
+                    do_action('wpml_register_single_string', self::WPML_CONTEXT, self::wpml_name($field, (int) $contact_id), $value, false, $source_language);
+                }
             }
         }
     }
@@ -793,7 +809,19 @@ class PostType
             return '';
         }
         
-        return function_exists('pll__') ? pll__($value) : $value;
+        if (function_exists('pll__')) {
+            return pll__($value);
+        }
+
+        return (string) apply_filters('wpml_translate_single_string', $value, self::WPML_CONTEXT, self::wpml_name($field, $post_id));
+    }
+
+    /**
+     * WPML string name: field key and contact ID, never a label or title.
+     */
+    private static function wpml_name(string $field, int $post_id): string
+    {
+        return sprintf('%s #%d', $field, $post_id);
     }
 
     /**

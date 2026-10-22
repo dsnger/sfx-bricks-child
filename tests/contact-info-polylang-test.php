@@ -12,6 +12,18 @@ function apply_filters(string $hook, $value, ...$args)
     }
     return $value;
 }
+function do_action(string $hook, ...$args): void
+{
+    global $test_filter_callbacks;
+    foreach ($test_filter_callbacks[$hook] ?? [] as $callback) {
+        $callback(...$args);
+    }
+}
+function has_action(string $hook, $callback = false)
+{
+    global $test_filter_callbacks;
+    return !empty($test_filter_callbacks[$hook]);
+}
 
 require __DIR__ . '/support/social-bricks-stubs.php';
 
@@ -69,11 +81,11 @@ assert_true(
     '0a: hooked on admin_init'
 );
 
-// 0b. Without Polylang the admin callback queries nothing.
+// 0b. Without Polylang and without a WPML listener the admin callback queries nothing.
 PostType::register_translatable_strings();
-assert_same([], $test_get_posts_calls, '0b: no query without Polylang');
+assert_same([], $test_get_posts_calls, '0b: no query without Polylang or a WPML listener');
 
-// 0c. WPML is no longer consulted.
+// 0c. The legacy icl_t() lookup is no longer called.
 define('ICL_SITEPRESS_VERSION', 'test');
 $test_icl_names = [];
 if (!function_exists('icl_t')) {
@@ -104,6 +116,16 @@ if (!function_exists('pll_register_string')) {
     }
 }
 
+// With Polylang present, no WPML hook may run — not even through Polylang's own WPML emulation.
+$test_wpml_calls = [];
+foreach (['wpml_register_single_string', 'wpml_default_language', 'wpml_translate_single_string'] as $wpml_hook) {
+    $test_filter_callbacks[$wpml_hook][] = static function (...$args) use ($wpml_hook) {
+        global $test_wpml_calls;
+        $test_wpml_calls[] = $wpml_hook;
+        return 'WPML!';
+    };
+}
+
 // 1. Registration: every non-empty field of every published contact, safe labels only.
 PostType::register_translatable_strings();
 $query = end($test_get_posts_calls);
@@ -112,7 +134,6 @@ assert_same('publish', $query['post_status'] ?? null, '1: published only');
 assert_same(-1, $query['numberposts'] ?? null, '1: no five-post default');
 $expected = [
     ['Phone #410', '0201 123', 'Contact Information', false],
-    ['ZIP Code #410', '0', 'Contact Information', false],
     ['Country #410', 'Deutschland', 'Contact Information', false],
     ['Full Address #410', '<p>Hauptstr. 1</p>', 'Contact Information', true],
     ['Opening Hours #410', 'Mo–Fr 9–17', 'Contact Information', true],
@@ -151,6 +172,7 @@ assert_same('Essen', $sc->render_contact_info(['field' => 'address', 'contact_id
 $test_pll_translations[', Essen'] = 'Essen (EN)';
 assert_same('Essen (EN)', $sc->render_contact_info(['field' => 'city', 'contact_id' => '421']), '2: empty row, field');
 assert_same('Essen (EN)', $sc->render_contact_info(['field' => 'address', 'contact_id' => '421']), '2: empty row, composed');
+assert_same([], $test_wpml_calls, '2: no WPML hook with Polylang present');
 
 global $failures;
 if ($failures > 0) {

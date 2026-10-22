@@ -43,6 +43,9 @@ this (`inc/ContactInfos/PostType.php` `register_multilingual_support()` and the 
 - **D12:** there is no free WPML (wordpress.org closed the plugin in 2017; String Translation
   was never there) and no licence, so the WPML path is built from WPML's documentation and
   checked against stubs only. Better in place and fixed later than absent.
+- **D13 (2026-10-22):** no `wpml-config.xml`. WPML's default for a theme's post type
+  ("Not translatable") is the setting needed; making the contact type translatable is
+  unsupported.
 
 D7 also named "register the post types with `pll_get_post_types`" and "the language in the
 cache keys". Both belonged to the one-post-per-language route that D8 replaced: the post
@@ -123,22 +126,13 @@ originals in every language.
 The contact post type must stay **Not translatable** in WPML — the one-post decision (D8)
 holds for WPML too. If an administrator made `sfx_contact_info` translatable, WPML would filter
 the contact queries by language and the type lookup (`main`/`branch`) could find no contact, or
-a cached one from another language, before any string translation is reached. The theme ships
-that setting as WPML's documented language-configuration file, `wpml-config.xml` in the theme
-root:
-
-```xml
-<wpml-config>
-  <custom-types>
-    <custom-type translate="0">sfx_contact_info</custom-type>
-  </custom-types>
-</wpml-config>
-```
-
-WPML reads it from the active theme; an administrator can still override it in WPML's own
-settings, which is then unsupported. Polylang reads the same file and gets the setting the
-Polylang path already assumes. The file joins `SHIPPED` in `bin/plugin.conf`, or the release
-ZIP would not carry it (invariant 5).
+a cached one from another language, before any string translation is reached. That is WPML's
+own default: "Custom post types added by themes and plugins default to Not translatable"
+(wpml.org/documentation/translating-your-contents/posts-and-custom-post-types). The theme
+relies on that default and ships no `wpml-config.xml` (owner decision D13, 2026-10-22): the
+canonical release and test-instance scripts admit only the entries of the SFX release standard
+(`THEME_ALLOWED`, STD-REL-06), which has no place for it, and the scripts are not hand-edited
+(invariant 6). Setting `sfx_contact_info` to translatable in WPML's settings is **unsupported**.
 
 **When:** whenever Polylang is absent (`pll_register_string()` does not exist). The theme does
 not detect WPML: it calls WPML's documented hooks, and without a listener `do_action()` does
@@ -265,5 +259,5 @@ Polylang itself, so nothing visible changes); the existing test expectation that
    `wpml_translate_single_string` filter returns for that context and name. Without a
    listener, no contact query runs. With Polylang present, only the Polylang path runs and no
    WPML hook is called.
-8. `wpml-config.xml` in the theme root declares `sfx_contact_info` with `translate="0"`, is
-   well-formed XML, and is listed in `SHIPPED`.
+8. The theme ships no `wpml-config.xml`, and `SHIPPED` in `bin/plugin.conf` is unchanged by
+   this work (D13).
