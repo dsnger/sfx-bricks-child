@@ -82,7 +82,7 @@ class AdminPage
         );
 
         wp_localize_script('sfx-media-credits-admin', 'sfxMediaCredits', [
-            'frameTitle' => __('Choose a seal image', 'sfxtheme'),
+            'frameTitle' => __('Choose an image', 'sfxtheme'),
             'frameButton' => __('Use this image', 'sfxtheme'),
         ]);
     }
@@ -139,14 +139,14 @@ class AdminPage
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th scope="row"><label for="sfx-mc-display"><?php esc_html_e('AI marking style', 'sfxtheme'); ?></label></th>
+                                    <th scope="row"><label for="sfx-mc-display"><?php esc_html_e('Credit style', 'sfxtheme'); ?></label></th>
                                     <td>
                                         <select id="sfx-mc-display" name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[credit_display]">
                                             <?php
                                             $display_labels = [
                                                 'text'      => __('Text only', 'sfxtheme'),
-                                                'icon'      => __('Seal only', 'sfxtheme'),
-                                                'icon_text' => __('Seal and text', 'sfxtheme'),
+                                                'icon'      => __('Icons only', 'sfxtheme'),
+                                                'icon_text' => __('Icons and text', 'sfxtheme'),
                                             ];
                                             foreach (Settings::CREDIT_DISPLAYS as $display) {
                                                 printf(
@@ -161,7 +161,7 @@ class AdminPage
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th scope="row"><label for="sfx-mc-icon-size"><?php esc_html_e('Seal size (px)', 'sfxtheme'); ?></label></th>
+                                    <th scope="row"><label for="sfx-mc-icon-size"><?php esc_html_e('Icon size (px)', 'sfxtheme'); ?></label></th>
                                     <td>
                                         <input type="number" id="sfx-mc-icon-size" name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[icon_size]"
                                                value="<?php echo esc_attr((string) $options['icon_size']); ?>"
@@ -176,6 +176,31 @@ class AdminPage
                                                name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[fallback_copyright]"
                                                value="<?php echo esc_attr((string) $options['fallback_copyright']); ?>">
                                         <p class="description"><?php esc_html_e('Used when an attachment has no copyright of its own. Careful: this gives EVERY image a credit, logos and icons included. Leave empty unless the site owns its imagery.', 'sfxtheme'); ?></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"><?php esc_html_e('Include galleries', 'sfxtheme'); ?></th>
+                                    <td>
+                                        <label>
+                                            <input type="checkbox" name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[include_galleries]" value="1" <?php checked(!empty($options['include_galleries'])); ?>>
+                                            <?php esc_html_e('Show the credit line in the captions of Bricks image galleries. Images without a copyright keep their WordPress caption. Works independently of "Automatic output".', 'sfxtheme'); ?>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <?php
+                                $icon_id  = (int) ($options['copyright_icon'] ?? 0);
+                                $icon_url = $icon_id > 0 ? (string) wp_get_attachment_image_url($icon_id, 'thumbnail') : '';
+                                ?>
+                                <tr>
+                                    <th scope="row"><?php esc_html_e('Copyright icon', 'sfxtheme'); ?></th>
+                                    <td class="sfx-mc-seal" data-field="copyright_icon">
+                                        <input type="hidden" name="<?php echo esc_attr(Settings::OPTION_NAME); ?>[copyright_icon]"
+                                               value="<?php echo esc_attr((string) $icon_id); ?>" class="sfx-mc-seal-input">
+                                        <img<?php echo $icon_url !== '' ? ' src="' . esc_url($icon_url) . '"' : ''; ?> alt="<?php esc_attr_e('Copyright icon', 'sfxtheme'); ?>"
+                                             class="sfx-mc-seal-preview" style="max-width:48px;height:auto;vertical-align:middle;<?php echo $icon_url ? '' : 'display:none;'; ?>">
+                                        <button type="button" class="button sfx-mc-seal-choose"><?php esc_html_e('Choose image', 'sfxtheme'); ?></button>
+                                        <button type="button" class="button-link sfx-mc-seal-remove" <?php echo $icon_url ? '' : 'style="display:none;"'; ?>><?php esc_html_e('Remove', 'sfxtheme'); ?></button>
+                                        <p class="description"><?php esc_html_e('Shown instead of the copyright text with "Icons only" (the icon\'s alternative text is then the full notice), or before the text with "Icons and text".', 'sfxtheme'); ?></p>
                                     </td>
                                 </tr>
                             </table>
@@ -216,8 +241,9 @@ class AdminPage
                             <li><?php esc_html_e('Caption mode is the reliable automatic mode: it writes the credit into the element\'s own caption, so Bricks renders valid markup and styles it with its own caption controls.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Overlay mode needs something to attach to. Set the image element\'s HTML tag to figure, or switch on "Force a wrapper" above.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Overlay cannot attach to a responsive image using Sources that has neither a link nor a caption — Bricks makes that a picture element. Use caption mode for those.', 'sfxtheme'); ?></li>
-                            <li><?php esc_html_e('While editing, an overlay may only appear after the canvas reloads. Bricks does not run the output filter when it re-renders a single element.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Bricks versions before 2.4: while editing, an overlay may only appear after the canvas reloads, because they do not run the output filter when re-rendering a single element.', 'sfxtheme'); ?></li>
                             <li><?php esc_html_e('Add no-credit in the image element\'s CSS classes field (Style tab) — not the global class picker — to exclude it from automatic output.', 'sfxtheme'); ?></li>
+                            <li><?php esc_html_e('Galleries: add no-credit to a gallery element\'s CSS classes to exclude it. The lightbox caption stays plain text.', 'sfxtheme'); ?></li>
                         </ul>
                     </div>
                     <div class="sfx-card">
@@ -233,6 +259,7 @@ class AdminPage
                             <li>
                                 <code>apply_filters('sfx_media_credits_parts', array $parts, int $attachment_id): array</code><br>
                                 <?php esc_html_e('Fires after the copyright and AI values are resolved, before composition. The AI key you return is authoritative — its label and seal always follow from it.', 'sfxtheme'); ?>
+                                <?php esc_html_e('copyright_icon_id follows the copyright the same way: the configured icon when there is a copyright, else 0.', 'sfxtheme'); ?>
                             </li>
                             <li>
                                 <code>apply_filters('sfx_media_credits_copyright_prefix', string $prefix, string $copyright, int $attachment_id): string</code><br>
@@ -249,6 +276,7 @@ class AdminPage
                             <li>
                                 <code>apply_filters('sfx_media_credits_line', string $line, int $attachment_id, array $parts): string</code><br>
                                 <?php esc_html_e('The last word before the composed credit line is escaped. Replace it outright when nothing else fits.', 'sfxtheme'); ?>
+                                <?php esc_html_e('$parts carries copyright_icon_id as well.', 'sfxtheme'); ?>
                             </li>
                         </ul>
 
@@ -257,10 +285,12 @@ class AdminPage
                             <li>
                                 <code>apply_filters('sfx_media_credits_should_auto_output', bool $should, string $mode, int $attachment_id, $element): bool</code><br>
                                 <?php esc_html_e('Decides once per element whether automatic caption or overlay output happens at all.', 'sfxtheme'); ?>
+                                <?php esc_html_e('Not fired for galleries.', 'sfxtheme'); ?>
                             </li>
                             <li>
                                 <code>apply_filters('sfx_media_credits_caption_auto_html', string $html, int $attachment_id, array $settings): string</code><br>
                                 <?php esc_html_e('Covers automatic caption output only. A hand-placed {sfx_media_credit} tag goes through a different path.', 'sfxtheme'); ?>
+                                <?php esc_html_e('Not fired for galleries.', 'sfxtheme'); ?>
                             </li>
                             <li>
                                 <code>apply_filters('sfx_media_credits_overlay_html', string $html, int $attachment_id, string $root_tag): string</code><br>

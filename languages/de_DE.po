@@ -10253,3 +10253,45 @@ msgstr "Hauptordner: versteckte Dateien"
 
 msgid "Blocks files whose name starts with a dot, such as .user.ini, .htpasswd or .DS_Store, in this folder and every subfolder. Certificate checks under .well-known keep working: their file names do not start with a dot. Files inside a folder whose name starts with a dot, such as .svn, are not covered: remove such folders from the web folder, as with .git."
 msgstr "Sperrt Dateien, deren Name mit einem Punkt beginnt, etwa .user.ini, .htpasswd oder .DS_Store, in diesem Ordner und allen Unterordnern. Zertifikatsprüfungen unter .well-known funktionieren weiter: Deren Dateinamen beginnen nicht mit einem Punkt. Dateien in einem Ordner, dessen Name mit einem Punkt beginnt, etwa .svn, sind nicht abgedeckt: Entferne solche Ordner aus dem Webordner, wie beim .git-Ordner."
+
+msgid "Choose an image"
+msgstr "Bild auswählen"
+
+msgid "Credit style"
+msgstr "Darstellung der Nachweise"
+
+msgid "Icons only"
+msgstr "Nur Icons"
+
+msgid "Icons and text"
+msgstr "Icons und Text"
+
+msgid "Icon size (px)"
+msgstr "Icongröße (px)"
+
+msgid "Include galleries"
+msgstr "Galerien einbeziehen"
+
+msgid "Show the credit line in the captions of Bricks image galleries. Images without a copyright keep their WordPress caption. Works independently of \"Automatic output\"."
+msgstr "Zeigt die Nachweiszeile in den Bildunterschriften von Bricks-Bildergalerien. Bilder ohne Copyright behalten ihre WordPress-Bildunterschrift. Unabhängig von „Automatische Ausgabe“."
+
+msgid "Copyright icon"
+msgstr "Copyright-Icon"
+
+msgid "Shown instead of the copyright text with \"Icons only\" (the icon's alternative text is then the full notice), or before the text with \"Icons and text\"."
+msgstr "Erscheint bei „Nur Icons“ statt des Copyright-Textes (der Alternativtext des Icons ist dann der vollständige Nachweis), bei „Icons und Text“ vor dem Text."
+
+msgid "Galleries: add no-credit to a gallery element's CSS classes to exclude it. The lightbox caption stays plain text."
+msgstr "Galerien: no-credit in den CSS-Klassen eines Galerie-Elements schließt es aus. Die Lightbox-Unterschrift bleibt reiner Text."
+
+msgid "copyright_icon_id follows the copyright the same way: the configured icon when there is a copyright, else 0."
+msgstr "copyright_icon_id folgt ebenso dem Copyright: das eingestellte Icon, wenn ein Copyright vorhanden ist, sonst 0."
+
+msgid "$parts carries copyright_icon_id as well."
+msgstr "$parts enthält auch copyright_icon_id."
+
+msgid "Not fired for galleries."
+msgstr "Wird für Galerien nicht ausgelöst."
+
+msgid "Bricks versions before 2.4: while editing, an overlay may only appear after the canvas reloads, because they do not run the output filter when re-rendering a single element."
+msgstr "Bricks-Versionen vor 2.4: Beim Bearbeiten erscheint ein Overlay womöglich erst nach dem Neuladen der Arbeitsfläche, weil sie den Ausgabefilter beim Neuzeichnen eines einzelnen Elements nicht ausführen."

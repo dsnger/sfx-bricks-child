@@ -292,7 +292,7 @@ class Controller
                 'description' => __('Copyright and AI-labelling output settings', 'sfxtheme'),
                 'option_key'  => 'sfx_media_credits_options',
                 'type'        => 'subset',
-                'fields'      => ['output_mode', 'force_wrapper', 'credit_display', 'icon_size', 'fallback_copyright'],
+                'fields'      => ['output_mode', 'force_wrapper', 'credit_display', 'icon_size', 'fallback_copyright', 'include_galleries'],
             ],
             // Settings only. The rules live in their own table and travel as
             // CSV from Tools → Redirects, not in this JSON; the 404 log is

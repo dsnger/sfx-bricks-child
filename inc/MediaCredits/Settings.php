@@ -83,6 +83,8 @@ class Settings
             'credit_display'     => 'text',
             'icon_size'          => self::ICON_SIZE_DEFAULT,
             'fallback_copyright' => '',
+            'copyright_icon'     => 0,
+            'include_galleries'  => false,
         ];
 
         foreach (array_keys(self::get_default_labels()) as $slug) {
@@ -109,7 +111,11 @@ class Settings
             'credit_display'     => in_array($display, self::CREDIT_DISPLAYS, true) ? $display : $defaults['credit_display'],
             'icon_size'          => max(self::ICON_SIZE_MIN, min(self::ICON_SIZE_MAX, absint($raw['icon_size'] ?? self::ICON_SIZE_DEFAULT))),
             'fallback_copyright' => sanitize_text_field((string) ($raw['fallback_copyright'] ?? '')),
+            'include_galleries'  => !empty($raw['include_galleries']),
         ];
+
+        $icon = absint($raw['copyright_icon'] ?? 0);
+        $clean['copyright_icon'] = ($icon > 0 && wp_attachment_is_image($icon)) ? $icon : 0;
 
         foreach (array_keys(self::get_default_labels()) as $slug) {
             $id = absint($raw['seal_' . $slug] ?? 0);

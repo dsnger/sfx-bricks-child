@@ -89,6 +89,16 @@ function esc_attr($text)
     return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8', false);
 }
 
+/** As core: drop script/style blocks with their content, then every tag, then trim. */
+if (!function_exists('wp_strip_all_tags')) {
+    function wp_strip_all_tags($text)
+    {
+        $text = preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', (string) $text);
+
+        return trim(strip_tags((string) $text));
+    }
+}
+
 function esc_url($url)
 {
     return str_replace(['"', '<', '>'], '', (string) $url);

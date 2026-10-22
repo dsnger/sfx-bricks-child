@@ -1,5 +1,7 @@
 # Media Credits — Hooks & Filters (Addendum)
 
+> **Extended 2026-10-22** by `2026-10-22-media-credits-copyright-icon-galleries-design.md`: a copyright icon setting (`copyright_icon`), credits in Bricks image galleries (`include_galleries`, exported), and `copyright_icon_id` in `Credit::for()` and `$parts`. Where this document lists the return shape, the parts keys, the settings, the mechanisms or the export subset, read that spec beside it.
+
 **Date:** 2026-08-24
 **Branch:** `feature/image-credit-fields`
 **Status:** concept, not implemented — **revised after Codex Gate A passes 1, 2 and 3**
