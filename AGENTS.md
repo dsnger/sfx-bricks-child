@@ -168,7 +168,10 @@ tests, 0 syntax errors). An earlier session also saw it fail on a syntax error o
 `inc/`, on an empty test glob for either battery, and on a failing JS test; its Node
 resolution was seen to reject an unusable override with every fallback removed, and a
 control run with a real Node in the same stripped environment passed. `bin/release.sh`
-is not run in CI; its `publish --no-upload` listing was checked by hand on 2026-10-20.
+runs in CI only as far as its startup check of `bin/plugin.conf`
+(`tests/release-config-test.php`, which does the same for `bin/test-instance.sh`); a bump,
+the ZIP and publishing are not run there, and its `publish --no-upload` listing was checked
+by hand on 2026-10-20.
 
 **Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
 in the gate prompt when the change touches one. Which files those are is defined once,
