@@ -95,3 +95,4 @@ leading bold title).
 | 2026-10-12 | docs-drift | taxonomy class text prescribed the HTML-only Observations::html_document() for HTTP header values | gate-b | minor | 1 prose | docs/hardening-taxonomy.md "Format", "A class that names a remedy promises only what that remedy does" |
 | 2026-10-20 | docs-drift | README production note named only .env.local after the wp-config SFX_THEME_DEV_MODE constant became a second dev-mode source (cycle ioopr1xcoz) | gate-b | minor | 4 test | tests/docs-runtime-claims-test.php |
 | 2026-10-20 | docs-drift | .cursor rule still said functions.php loads a Composer autoloader after runtime Composer was dropped (cycle ioopr1xcoz) | gate-b | minor | 4 test | tests/docs-runtime-claims-test.php |
+| 2026-10-22 | release-config-unchecked | SHIPPED gained wpml-config.xml, which release.sh and test-instance.sh reject as outside STD-REL-06; the battery ran neither (cycle fi2i4pzg3s) | gate-b | blocker | 4 test | tests/release-config-test.php |
