@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Unused bundled libraries in `assets/libs/` (Alpine, Flowbite, GSAP, Headless UI, htmx) and the orphan `assets/libs/controller.php`. The theme never loaded them. A site whose own custom code loads one of these files by URL needs its own copy. Lenis stays.
+
 ## [0.35.0] - 2026-10-22
 
 ### Added
