@@ -109,3 +109,41 @@
 .sfx-redirects-clear-log {
 	margin-top: 16px;
 }
+
+/* List tables: core's fixed layout gives every column the same width, so the long
+   URL columns (source, target, 404 path, referrer) wrapped into slivers. Size the
+   short columns in percent, so the URL columns keep their share at any desktop
+   width; below 782px core stacks the rows. */
+@media (min-width: 783px) {
+	.sfx_redirects .column-status_code {
+		width: 5%;
+	}
+
+	.sfx_redirects .column-enabled {
+		width: 6%;
+	}
+
+	/* The sortable "Treffer" heading needs about 60px at 800px. */
+	.sfx_redirects .column-hits,
+	.sfx_redirects_404s .column-hits {
+		width: 9%;
+	}
+
+	.sfx_redirects .column-origin,
+	.sfx_redirects .column-last_hit,
+	.sfx_redirects .column-created_at {
+		width: 10%;
+	}
+
+	.sfx_redirects_404s .column-last_seen,
+	.sfx_redirects_404s .column-first_seen {
+		width: 12%;
+	}
+}
+
+/* A URL breaks at any character instead of overflowing its cell. */
+.sfx_redirects td code,
+.sfx_redirects_404s td code,
+.sfx_redirects_404s td.column-referrer {
+	overflow-wrap: anywhere;
+}

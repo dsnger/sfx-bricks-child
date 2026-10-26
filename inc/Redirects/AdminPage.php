@@ -89,7 +89,7 @@ final class AdminPage
         );
     }
 
-    /** The rule form's stylesheet and the target picker's script, on the Redirects page only (spec A3). */
+    /** The page's stylesheet (rule form and both list tables) and the target picker's script, on the Redirects page only (spec A3). */
     public static function enqueue_assets($hook_suffix): void
     {
         if (self::$hook_suffix === '' || $hook_suffix !== self::$hook_suffix) {

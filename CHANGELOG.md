@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Redirects: the redirects list and the 404 log no longer give every column the same width. Short columns (code, hits, dates, origin, enabled) are narrower, so source, target, 404 path and referrer get the room, and a long address breaks inside its cell instead of overflowing it.
+
 ## [0.36.0] - 2026-10-22
 
 ### Removed
