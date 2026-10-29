@@ -9,6 +9,13 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Tooling note on the review-gates defects is stale after kit 0.48** (Gate B cycle
+      k48rfr7q2m, spec 1, Minor): § Tooling revalidation still calls the missing-checkout
+      guard open and quotes the old ledger-counting rule; kit 0.48's `CLAUDE.md` §5 has the
+      guard and the new rules replace that rule. Append the resolution, keep the history.
+- [ ] **Ignore `.context/archive/codex-reviews/` in the tracked `.gitignore`** (Gate B cycle
+      k48rfr7q2m, quality 1, Minor): kit 0.48 archives closed cycles there; only this
+      machine's `.git/info/exclude` keeps it out of a commit, a fresh clone does not.
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
       2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
       good). The six `tests/support/*-live-check.php` that boot WordPress were written for
