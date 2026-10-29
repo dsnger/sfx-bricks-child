@@ -11,7 +11,7 @@ repo's own (PRs #25, #28, #30 and #32).
 | Bot | Enabled | Where findings appear | Notes (plan/tier limits, completion signal, quirks) |
 |---|---|---|---|
 | CodeRabbit | yes | **inline + PR-level summary** | Real findings observed on #25 (inline + summary items). **Plan: Pro Plus, 1 included review per hour** (#28) — the quota trap is the defining quirk: **its status check goes green while the comment reads "Review rate limited" and no review ran** (#25 head `b0baea9` merged unreviewed; #28 first head). A green check never proves the head was reviewed — the per-head review-record count is the arbiter. After the hourly reset the next push auto-reviews; `@coderabbitai review` answers "applicable only when automatic reviews are paused", so it is not a reliable re-trigger. Edits its walkthrough comment in place. |
-| Greptile | **no — off** (automatic reviews set to never, 2026-10-29) | as observed before 2026-10-29: **summary always; inline sometimes** | Automatic reviews are off in Greptile's own settings; a review runs only when someone comments `@greptileai` on the PR. Observations from when it was on: PR-level summary comment every time, **edited in place** on re-review (compare the "Last reviewed commit" footer, not comment timestamps). Inline comments carry the findings when there are any (#28: 1 inline; #25: several). Confidence score in the summary (4/5 with findings, 5/5 clean). **Completion signal: none you can block on** — `gh pr checks` showed a "Greptile Review" entry on the first #28 head but the check-runs API returned nothing for later heads. Does not reliably auto-re-review small pushes; re-trigger and poll via the Greptile MCP (`trigger_code_review`, then `list_code_reviews` filtered by PR until `COMPLETED`, `get_code_review` for the body). Reviews take ~2–4 min. |
+| Greptile | **no — off** (automatic reviews set to never, 2026-10-29) | as observed before 2026-10-29: **summary always; inline sometimes** | Automatic reviews are off in Greptile's own settings; a review runs only when requested by hand — an `@greptileai` comment on the PR, or the Greptile MCP's `trigger_code_review`. Observations from when it was on: PR-level summary comment every time, **edited in place** on re-review (compare the "Last reviewed commit" footer, not comment timestamps). Inline comments carry the findings when there are any (#28: 1 inline; #25: several). Confidence score in the summary (4/5 with findings, 5/5 clean). **Completion signal: none you can block on** — `gh pr checks` showed a "Greptile Review" entry on the first #28 head but the check-runs API returned nothing for later heads. Does not reliably auto-re-review small pushes; re-trigger and poll via the Greptile MCP (`trigger_code_review`, then `list_code_reviews` filtered by PR until `COMPLETED`, `get_code_review` for the body). Reviews take ~2–4 min. |
 
 **Routing — these lists are authoritative.**
 
@@ -26,8 +26,8 @@ and `once per PR` (a review of any head of the PR counts). A bot that is off goe
   comments *and* the PR-level summary body) at the start of the pass; a later post is a
   follow-up, not something to wait on up front.
 - **Ignore:** Greptile — off. Its automatic reviews are set to never (Daniel,
-  2026-10-29); a review runs only on an explicit `@greptileai` comment, which nobody
-  posts as part of the review loop.
+  2026-10-29); a review runs only when requested by hand (an `@greptileai` comment or
+  the Greptile MCP's `trigger_code_review`), which the review loop never does.
 
 **Per-head review count** — for bots that create review records. CodeRabbit creates one
 for every head it reviews; Greptile creates one only when it has inline findings. Pass
