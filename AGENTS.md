@@ -59,6 +59,19 @@ Bricks parent theme.
   already does instead of suggesting it again). Anything beyond those is
   new coupling — don't add it.
 
+## Documentation map
+
+- Architecture — `AGENTS.md` § Architecture (above); read before adding or moving a module.
+- Product and admin design — [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md); read before admin-UI work.
+- Install, modules and release notes — [README.md](README.md), [CHANGELOG.md](CHANGELOG.md).
+- Specs, plans and handovers — `docs/superpowers/`; read the one a task cites.
+- Module notes — `docs/custom-dashboard/`, `docs/image-optimizer/`; read when working on that module.
+- Gate rules — [.claude/review-gates.md](.claude/review-gates.md); read per CLAUDE.md §5.
+- Review bots — [docs/pr-review-bots.md](docs/pr-review-bots.md); read by `/dev-workflow:process-pr-review`.
+- Prompt standards — [docs/prompt-standards.md](docs/prompt-standards.md); read before changing a prompt artifact.
+- Hardening — [docs/hardening-log.md](docs/hardening-log.md), [docs/hardening-taxonomy.md](docs/hardening-taxonomy.md); read when hardening a finding.
+- Backlog — [todos.md](todos.md).
+
 ## Key invariants
 
 Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
@@ -175,7 +188,7 @@ by hand on 2026-10-20.
 
 **Prompt artifacts** are also checked against `docs/prompt-standards.md`; name that file
 in the gate prompt when the change touches one. Which files those are is defined once,
-in CLAUDE.md §5 under "What counts as prose" — read it there. It is deliberately not
+in CLAUDE.md §5 under "Docs-only" — read it there. It is deliberately not
 restated here: a second copy drifted narrower than the original within a day of being
 written. `tests/prompt-artifact-paths-test.php` pins the citation and fails if this
 paragraph starts listing the paths again — it does not police every possible way to

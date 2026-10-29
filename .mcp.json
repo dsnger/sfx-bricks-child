@@ -6,6 +6,12 @@
       "args": ["-y", "mcp-codex-dev@1.0.1"],
       "env": {},
       "timeout": 2400000
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@4.4.1"],
+      "env": {}
     }
   }
 }

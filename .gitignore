@@ -87,3 +87,12 @@ Thumbs.db*
 
 # mcp-codex-dev writes per-run session state here; .mcp.json itself stays tracked.
 /.mcp/
+
+# dev-workflow gate hook: per-clone state, never committed. The exceptions are
+# settings a person writes and the hook only reads.
+.context/codex-gate.*
+!.context/codex-gate.on
+!.context/codex-gate.off
+!.context/codex-gate.floor
+!.context/codex-gate.cap
+!.context/codex-gate.tools

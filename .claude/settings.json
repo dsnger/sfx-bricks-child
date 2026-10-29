@@ -4,7 +4,17 @@
       "mcp__codebase-memory-mcp__index_repository",
       "mcp__codebase-memory-mcp__delete_project",
       "mcp__codebase-memory-mcp__ingest_traces",
-      "mcp__codebase-memory-mcp__manage_adr"
+      "mcp__codebase-memory-mcp__manage_adr",
+      "Read(**/.env*)",
+      "Read(!**/.env.example)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/secrets.*)",
+      "Read(./.context/**/secrets*)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ecdsa)",
+      "Read(**/id_ed25519)",
+      "Read(~/.ssh/**)"
     ],
     "allow": [
       "mcp__codebase-memory-mcp__list_projects",
@@ -18,5 +28,13 @@
       "mcp__codebase-memory-mcp__get_architecture",
       "mcp__codebase-memory-mcp__detect_changes"
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "env": {
+    "PONYTAIL_DEFAULT_MODE": "full"
   }
 }
