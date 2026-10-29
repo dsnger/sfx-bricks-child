@@ -64,8 +64,8 @@ $section5 = file_get_contents($root . '/.claude/review-gates.md');
 assert_true(is_string($section5) && $section5 !== '', '.claude/review-gates.md must be readable');
 
 assert_true(
-    str_contains($section5, 'What counts as prose'),
-    '.claude/review-gates.md must still carry the "What counts as prose" definition AGENTS.md cites'
+    str_contains($section5, 'Docs-only:'),
+    '.claude/review-gates.md must still carry the "Docs-only" definition AGENTS.md cites'
 );
 foreach ($classifier as $dir) {
     assert_true(
