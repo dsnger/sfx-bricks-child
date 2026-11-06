@@ -129,6 +129,11 @@ test_reset();
 DataPurge::run();
 
 assert_same([], $GLOBALS['test_meta_deleted'], 'Case 4a: by default the attachment meta survives the purge');
+assert_same(
+    ['sfx_redirects_per_page' => true, 'sfx_redirects_404_per_page' => true],
+    $GLOBALS['test_user_meta_deleted'],
+    'Case 4a2: the Redirects list sizes are deleted for every user'
+);
 
 test_reset();
 DataPurge::run(true);
@@ -326,6 +331,7 @@ $report = DataPurge::run(true);
 assert_same(true, $report['busy'], 'Case 8k: busy is reported');
 assert_same(['sfx_general_options', 'sfx_site_check_settings'], array_keys($GLOBALS['test_options']), 'Case 8l: busy → no option deleted');
 assert_same([], $GLOBALS['test_meta_deleted'], 'Case 8m: busy → no meta deleted');
+assert_same([], $GLOBALS['test_user_meta_deleted'], 'Case 8m2: busy → no user meta deleted');
 assert_same(['wp_sfx_redirects'], $GLOBALS['test_tables'], 'Case 8n: busy → no table dropped');
 assert_same(0, $report['options'] + $report['tables'] + $report['transients'] + $report['meta_keys'], 'Case 8o: busy → nothing counted');
 
