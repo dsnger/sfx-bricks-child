@@ -9,6 +9,10 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Purge confirmation says "this site only", but the Redirects list sizes are network-wide**
+      (Gate B cycle k4rp2x9mta, quality 1, Minor): on multisite `DataPurge::run()` also resets
+      `USER_META_KEYS` for users of the other sites, which `inc/GeneralThemeOptions/AdminPage.php:474`
+      does not say. Either name it there or skip those keys on multisite.
 - [ ] **Tooling note on the review-gates defects is stale after kit 0.48** (Gate B cycle
       k48rfr7q2m, spec 1, Minor): § Tooling revalidation still calls the missing-checkout
       guard open and quotes the old ledger-counting rule; kit 0.48's `CLAUDE.md` §5 has the
