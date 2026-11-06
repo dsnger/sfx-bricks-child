@@ -583,13 +583,14 @@ namespace {
         assert_true(AdminPage::save_per_page(false, AdminPage::PER_PAGE_OPTION_RULES, (string) $input) === $saved, "8: {$input} is saved as the integer {$saved}");
     }
     foreach (['0', '-5', '1000', 'abc', ''] as $input) {
-        assert_true(AdminPage::save_per_page(false, AdminPage::PER_PAGE_OPTION_RULES, $input) === false, "8: '{$input}' is not saved");
+        // 'junk' stands for a value another plugin's generic set-screen-option filter passed along.
+        assert_true(AdminPage::save_per_page('junk', AdminPage::PER_PAGE_OPTION_RULES, $input) === false, "8: '{$input}' is not saved");
     }
     $ran++;
 
     $test_can = false;
     $test_caps_seen = [];
-    assert_true(AdminPage::save_per_page(false, AdminPage::PER_PAGE_OPTION_RULES, '50') === false, '8: without the capability nothing is saved');
+    assert_true(AdminPage::save_per_page('junk', AdminPage::PER_PAGE_OPTION_RULES, '50') === false, '8: without the capability nothing is saved');
     assert_true($test_caps_seen === ['edit_others_posts'], '8: the module capability was checked');
     $test_can = true;
     $ran++;

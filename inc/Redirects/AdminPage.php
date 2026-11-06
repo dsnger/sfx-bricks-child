@@ -109,17 +109,18 @@ final class AdminPage
 
     /**
      * Core has checked the Screen Options nonce by now, but neither the capability
-     * (invariant 2) nor, for an option of ours, the range. False saves nothing.
+     * (invariant 2) nor, for an option of ours, the range. False saves nothing, and
+     * also overrules what another plugin's generic set-screen-option filter let through.
      *
-     * @param mixed $keep What to save instead: false unless another filter set it.
+     * @param mixed $previous Ignored for that reason.
      * @param mixed $value The submitted value.
-     * @return mixed
+     * @return int|false
      */
-    public static function save_per_page($keep, string $option, $value)
+    public static function save_per_page($previous, string $option, $value)
     {
         $value = (int) $value;
 
-        return current_user_can(self::CAPABILITY) && $value >= 1 && $value <= 999 ? $value : $keep;
+        return current_user_can(self::CAPABILITY) && $value >= 1 && $value <= 999 ? $value : false;
     }
 
     /** The page's stylesheet (rule form and both list tables) and the target picker's script, on the Redirects page only (spec A3). */
