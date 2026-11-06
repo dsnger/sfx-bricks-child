@@ -135,6 +135,13 @@ assert_same(
     'Case 4a2: the Redirects list sizes are deleted for every user'
 );
 
+// User meta is shared across a network, and the purge promises "on this site only".
+test_reset();
+$GLOBALS['test_multisite'] = true;
+DataPurge::run();
+$GLOBALS['test_multisite'] = false;
+assert_same([], $GLOBALS['test_user_meta_deleted'], 'Case 4a3: on multisite the list sizes stay');
+
 test_reset();
 DataPurge::run(true);
 

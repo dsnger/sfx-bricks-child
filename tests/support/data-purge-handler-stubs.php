@@ -212,6 +212,11 @@ function delete_post_meta_by_key(string $key): bool
     return true;
 }
 
+function is_multisite(): bool
+{
+    return false;
+}
+
 function delete_metadata(string $type, int $object_id, string $key, mixed $value = '', bool $delete_all = false): bool
 {
     return true;
