@@ -118,6 +118,11 @@ function delete_post_meta_by_key(string $key): bool
     return true;
 }
 
+function is_multisite(): bool
+{
+    return $GLOBALS['test_multisite'] ?? false;
+}
+
 function delete_metadata(string $type, int $object_id, string $key, mixed $value = '', bool $delete_all = false): bool
 {
     global $test_user_meta_deleted;

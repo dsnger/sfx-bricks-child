@@ -194,7 +194,8 @@ class DataPurge
     ];
 
     /**
-     * Per-user preferences: the page sizes of the Redirects lists.
+     * Per-user preferences: the page sizes of the Redirects lists. Kept on
+     * multisite, see run().
      *
      * @var list<string>
      */
@@ -303,9 +304,8 @@ class DataPurge
      * transient rows all belong to the current blog's tables, so on multisite
      * it clears this site and no other. That is the intended meaning, not an
      * oversight — a network-wide purge would need super-admin authorisation
-     * and a site loop of its own. The one row outside those tables: user meta
-     * is shared across a network, so USER_META_KEYS go back to their default
-     * on the other sites as well.
+     * and a site loop of its own. User meta is shared across a network, so
+     * USER_META_KEYS are only deleted on a single-site install.
      *
      * @param bool $include_media_credits Also delete the attachment copyright
      *                                    and AI markings. Off by default:
@@ -357,8 +357,10 @@ class DataPurge
             }
         }
 
-        foreach (self::USER_META_KEYS as $user_meta_key) {
-            delete_metadata('user', 0, $user_meta_key, '', true);
+        if (!is_multisite()) {
+            foreach (self::USER_META_KEYS as $user_meta_key) {
+                delete_metadata('user', 0, $user_meta_key, '', true);
+            }
         }
 
         $meta_keys = 0;
