@@ -21,6 +21,10 @@ final class AdminPage
 {
     public const CAPABILITY = 'edit_others_posts';
 
+    /** User meta keys of the two lists' page sizes; both also in DataPurge::USER_META_KEYS. */
+    public const PER_PAGE_OPTION_RULES = 'sfx_redirects_per_page';
+    public const PER_PAGE_OPTION_404 = 'sfx_redirects_404_per_page';
+
     /** Per-user flash storage for this page's notices; see finish(). */
     public const NOTICE_TRANSIENT = 'sfx_redirects_notices_';
 
@@ -75,6 +79,9 @@ final class AdminPage
         }
         add_action('wp_ajax_sfx_redirects_search', [self::class, 'handle_search']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
+        // Here, not on the page's load hook: core saves screen options before admin_init.
+        add_filter('set_screen_option_' . self::PER_PAGE_OPTION_RULES, [self::class, 'save_per_page'], 10, 3);
+        add_filter('set_screen_option_' . self::PER_PAGE_OPTION_404, [self::class, 'save_per_page'], 10, 3);
     }
 
     public static function add_menu(): void
@@ -87,6 +94,33 @@ final class AdminPage
             self::$menu_slug,
             [self::class, 'render_page']
         );
+        add_action('load-' . self::$hook_suffix, [self::class, 'add_screen_options']);
+    }
+
+    /** Screen Options offers the page size of the list on this tab; the other tabs have none. */
+    public static function add_screen_options(): void
+    {
+        $tab = isset($_GET['tab']) && is_string($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+        if ($tab === 'import' || $tab === 'settings') {
+            return;
+        }
+        add_screen_option('per_page', ['option' => $tab === '404' ? self::PER_PAGE_OPTION_404 : self::PER_PAGE_OPTION_RULES]);
+    }
+
+    /**
+     * Core has checked the Screen Options nonce by now, but neither the capability
+     * (invariant 2) nor, for an option of ours, the range. False saves nothing, and
+     * also overrules what another plugin's generic set-screen-option filter let through.
+     *
+     * @param mixed $previous Ignored for that reason.
+     * @param mixed $value The submitted value.
+     * @return int|false
+     */
+    public static function save_per_page($previous, string $option, $value)
+    {
+        $value = (int) $value;
+
+        return current_user_can(self::CAPABILITY) && $value >= 1 && $value <= 999 ? $value : false;
     }
 
     /** The page's stylesheet (rule form and both list tables) and the target picker's script, on the Redirects page only (spec A3). */

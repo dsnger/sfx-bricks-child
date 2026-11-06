@@ -47,6 +47,9 @@ $test_options = [];
 /** meta keys deleted through delete_post_meta_by_key(), in call order. */
 $test_meta_deleted = [];
 
+/** User meta keys deleted for all users: key => true. */
+$test_user_meta_deleted = [];
+
 /** SQL statements the $wpdb double received. */
 $test_queries = [];
 
@@ -67,11 +70,12 @@ $test_cleared_hooks = [];
 
 function test_reset(): void
 {
-    global $test_options, $test_meta_deleted, $test_queries, $test_tables,
+    global $test_options, $test_meta_deleted, $test_user_meta_deleted, $test_queries, $test_tables,
            $test_lock_free, $test_lock_checks_left, $test_drop_fails, $test_cleared_hooks;
 
     $test_options          = [];
     $test_meta_deleted     = [];
+    $test_user_meta_deleted = [];
     $test_queries          = [];
     $test_tables           = [];
     $test_lock_free        = true;
@@ -110,6 +114,17 @@ function delete_post_meta_by_key(string $key): bool
     global $test_meta_deleted;
 
     $test_meta_deleted[] = $key;
+
+    return true;
+}
+
+function delete_metadata(string $type, int $object_id, string $key, mixed $value = '', bool $delete_all = false): bool
+{
+    global $test_user_meta_deleted;
+
+    if ($type === 'user' && $object_id === 0 && $delete_all) {
+        $test_user_meta_deleted[$key] = true;
+    }
 
     return true;
 }

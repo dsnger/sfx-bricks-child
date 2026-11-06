@@ -15,7 +15,6 @@ if (!class_exists('\WP_List_Table')) {
  */
 final class NotFoundTable extends \WP_List_Table
 {
-    private const PER_PAGE = 20;
     private const SORTABLE = ['path', 'hits', 'last_seen'];
 
     /** True when the repository could not read the page; AdminPage shows an error instead. */
@@ -65,13 +64,15 @@ final class NotFoundTable extends \WP_List_Table
             $this->order = isset($get['order']) && is_string($get['order']) && strtolower($get['order']) === 'asc' ? 'asc' : 'desc';
         }
 
+        $per_page = $this->get_items_per_page(AdminPage::PER_PAGE_OPTION_404);
+
         // Default: most recently seen first. Repository maps orderby through its own allowlist again.
         $result = Repository::list_404(
             $search,
             $this->orderby !== '' ? $this->orderby : 'last_seen',
             $this->order !== '' ? $this->order : 'desc',
             $this->get_pagenum(),
-            self::PER_PAGE
+            $per_page
         );
         if ($result === null) {
             $this->load_failed = true;
@@ -81,7 +82,7 @@ final class NotFoundTable extends \WP_List_Table
 
         // A search submitted from page 2 keeps paged=2 in the GET form; an
         // out-of-range page would show an empty table beside a "1 item" count.
-        $pages = (int) ceil($result['total'] / self::PER_PAGE);
+        $pages = (int) ceil($result['total'] / $per_page);
         if ($result['items'] === [] && $pages > 0 && $this->get_pagenum() > $pages) {
             $_REQUEST['paged'] = $pages;
             $_GET['paged']     = $pages;
@@ -90,7 +91,7 @@ final class NotFoundTable extends \WP_List_Table
                 $this->orderby !== '' ? $this->orderby : 'last_seen',
                 $this->order !== '' ? $this->order : 'desc',
                 $this->get_pagenum(),
-                self::PER_PAGE
+                $per_page
             );
             if ($result === null) {
                 $this->load_failed = true;
@@ -102,7 +103,7 @@ final class NotFoundTable extends \WP_List_Table
         $this->items = $result['items'];
         $this->set_pagination_args([
             'total_items' => $result['total'],
-            'per_page'    => self::PER_PAGE,
+            'per_page'    => $per_page,
         ]);
     }
 

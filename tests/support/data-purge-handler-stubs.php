@@ -212,6 +212,11 @@ function delete_post_meta_by_key(string $key): bool
     return true;
 }
 
+function delete_metadata(string $type, int $object_id, string $key, mixed $value = '', bool $delete_all = false): bool
+{
+    return true;
+}
+
 function add_action(string $hook, mixed $callback, int $priority = 10, int $accepted_args = 1): bool
 {
     return true;

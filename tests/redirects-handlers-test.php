@@ -92,6 +92,25 @@ namespace {
         throw new RuntimeException('redirect');
     }
 
+    function add_filter($hook, $callback, $priority = 10, $args = 1)
+    {
+        global $test_filters;
+        $test_filters[$hook] = [$callback, $args];
+
+        return true;
+    }
+
+    function sanitize_key($key)
+    {
+        return strtolower((string) $key);
+    }
+
+    function add_screen_option($option, $args = [])
+    {
+        global $test_screen_options;
+        $test_screen_options[$option] = $args;
+    }
+
     function add_action($hook, $callback, $priority = 10, $args = 1)
     {
         global $test_actions;
@@ -325,6 +344,7 @@ namespace {
     require_once __DIR__ . '/../inc/Redirects/Settings.php';
     require_once __DIR__ . '/../inc/Redirects/Repository.php';
     require_once __DIR__ . '/../inc/Redirects/AdminPage.php';
+    require_once __DIR__ . '/../inc/DataPurge.php';
 
     use SFX\Redirects\AdminPage;
     use SFX\Redirects\Settings;
@@ -541,8 +561,52 @@ namespace {
         '7: wp_ajax_sfx_redirects_search calls AdminPage::handle_search'
     );
 
-    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's five (nonce, capability, search, list, terms).
-    assert_true($ran === 26, "counter: expected 26 cases, ran {$ran}");
+    // Items per page: core saves the value before admin_init and checks the nonce;
+    // the filter is the capability check and the only range check it gets.
+    AdminPage::register();
+    foreach ([AdminPage::PER_PAGE_OPTION_RULES, AdminPage::PER_PAGE_OPTION_404] as $option) {
+        assert_true(
+            ($test_filters['set_screen_option_' . $option] ?? null) === [[AdminPage::class, 'save_per_page'], 3],
+            "8: {$option} is saved through save_per_page, with all three filter arguments"
+        );
+        assert_true(str_ends_with($option, '_per_page') && str_starts_with($option, 'sfx_redirects'), "8: {$option} carries the module prefix and core's suffix");
+    }
+    $ran++;
+
+    assert_true(
+        \SFX\DataPurge::USER_META_KEYS === [AdminPage::PER_PAGE_OPTION_RULES, AdminPage::PER_PAGE_OPTION_404],
+        '8: the purge names exactly the two page-size keys'
+    );
+
+    $test_can = true;
+    foreach (['50' => 50, '1' => 1, '999' => 999] as $input => $saved) {
+        assert_true(AdminPage::save_per_page(false, AdminPage::PER_PAGE_OPTION_RULES, (string) $input) === $saved, "8: {$input} is saved as the integer {$saved}");
+    }
+    foreach (['0', '-5', '1000', 'abc', ''] as $input) {
+        // 'junk' stands for a value another plugin's generic set-screen-option filter passed along.
+        assert_true(AdminPage::save_per_page('junk', AdminPage::PER_PAGE_OPTION_RULES, $input) === false, "8: '{$input}' is not saved");
+    }
+    $ran++;
+
+    $test_can = false;
+    $test_caps_seen = [];
+    assert_true(AdminPage::save_per_page('junk', AdminPage::PER_PAGE_OPTION_RULES, '50') === false, '8: without the capability nothing is saved');
+    assert_true($test_caps_seen === ['edit_others_posts'], '8: the module capability was checked');
+    $test_can = true;
+    $ran++;
+
+    // Each list has its own value; the tabs without a list offer none.
+    foreach (['' => AdminPage::PER_PAGE_OPTION_RULES, 'redirects' => AdminPage::PER_PAGE_OPTION_RULES, '404' => AdminPage::PER_PAGE_OPTION_404, 'import' => null, 'settings' => null] as $tab => $option) {
+        $test_screen_options = [];
+        $_GET = $tab === '' ? [] : ['tab' => (string) $tab];
+        AdminPage::add_screen_options();
+        assert_true(($test_screen_options['per_page']['option'] ?? null) === $option, "8: tab '{$tab}' offers " . ($option ?? 'no list size'));
+    }
+    $_GET = [];
+    $ran++;
+
+    // Every action × (nonce-fail, cap-fail, baseline) ran, plus the search endpoint's five (nonce, capability, search, list, terms) and the list size's four.
+    assert_true($ran === 30, "counter: expected 30 cases, ran {$ran}");
 
     echo "OK\n";
 }

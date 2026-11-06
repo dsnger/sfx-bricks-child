@@ -194,6 +194,16 @@ class DataPurge
     ];
 
     /**
+     * Per-user preferences: the page sizes of the Redirects lists.
+     *
+     * @var list<string>
+     */
+    public const USER_META_KEYS = [
+        'sfx_redirects_per_page',
+        'sfx_redirects_404_per_page',
+    ];
+
+    /**
      * Tables this theme created, without the site's table prefix.
      *
      * The Redirects module's rules and its 404 log. Unlike everything else
@@ -293,7 +303,9 @@ class DataPurge
      * transient rows all belong to the current blog's tables, so on multisite
      * it clears this site and no other. That is the intended meaning, not an
      * oversight — a network-wide purge would need super-admin authorisation
-     * and a site loop of its own.
+     * and a site loop of its own. The one row outside those tables: user meta
+     * is shared across a network, so USER_META_KEYS go back to their default
+     * on the other sites as well.
      *
      * @param bool $include_media_credits Also delete the attachment copyright
      *                                    and AI markings. Off by default:
@@ -343,6 +355,10 @@ class DataPurge
             if (delete_option($option)) {
                 $options++;
             }
+        }
+
+        foreach (self::USER_META_KEYS as $user_meta_key) {
+            delete_metadata('user', 0, $user_meta_key, '', true);
         }
 
         $meta_keys = 0;
