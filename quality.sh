@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The whole quality battery: syntax lint + test suite. CI runs this; so should you.
+# The whole quality battery: syntax lint + doc links + test suite. CI runs this; so should you.
 # PHP resolution, in this order: $PHP if set, then php on PATH. A candidate is
 # accepted only after it answers a real PHP version probe — `-x` alone accepts any
 # executable, and `PHP=/usr/bin/true` then reported every test as passed. The
@@ -99,6 +99,9 @@ done < <(git ls-files --cached --others --exclude-standard '*.php' 2>/dev/null \
           || find . -name '*.php' -not -path './vendor/*')
 echo "lint: $lint_errors error(s)"
 [ "$lint_errors" -eq 0 ] || status=1
+
+echo "== doc links =="
+sh scripts/check-doc-links.sh || status=1
 
 echo "== php tests =="
 pass=0; fail=0

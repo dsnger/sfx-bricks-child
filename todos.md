@@ -16,6 +16,18 @@ references an entry here must still be able to find it.
 - [ ] **Ignore `.context/archive/codex-reviews/` in the tracked `.gitignore`** (Gate B cycle
       k48rfr7q2m, quality 1, Minor): kit 0.48 archives closed cycles there; only this
       machine's `.git/info/exclude` keeps it out of a commit, a fresh clone does not.
+- [ ] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
+      k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
+      builds its prompt without the prompt-standards citation AGENTS.md asks for when a
+      range touches prompt artifacts. The file is the kit 0.52 template unchanged, so fix
+      it upstream in the dev-workflow kit and take it with the next refresh.
+- [ ] **Kit: harden the 0.52 review scripts upstream** (Gate B cycle k52lvd7n3q, risk 2;
+      all in kit template files taken unchanged, so fix them in the dev-workflow kit):
+      `risk-pass.sh` writes its evidence/canonical files through paths the reviewer can
+      preplant as symlinks (Major, declined here: needs a hostile reviewer), opens the state
+      file before rejecting a FIFO, and promotes a pass without reviewer evidence;
+      `check-doc-links.sh` reports `ok` when its grep/sed/awk extraction crashes;
+      `run-tests.sh` skips the checkout fingerprint on HUP/INT/TERM.
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
       2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
       good). The six `tests/support/*-live-check.php` that boot WordPress were written for

@@ -61,7 +61,9 @@ Bricks parent theme.
 
 ## Documentation map
 
+- Living docs — [.claude/living-docs.md](.claude/living-docs.md); read before work on a project document, before changing behaviour one describes, and before Gate B: every change ends with its build record.
 - Architecture — `AGENTS.md` § Architecture (above); read before adding or moving a module.
+- Tech stack — `docs/TECH-STACK.md`, not yet written. Features — `docs/features/`, not yet written.
 - Product and admin design — [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md); read before admin-UI work.
 - Install, modules and release notes — [README.md](README.md), [CHANGELOG.md](CHANGELOG.md).
 - Specs, plans and handovers — `docs/superpowers/`; read the one a task cites.
@@ -171,6 +173,7 @@ Non-negotiable. Violating one is a bug regardless of what the ticket asked for.
 |---|---|
 | quality (the whole battery — what CI runs) | `./quality.sh` |
 | typecheck | TODO — no static analyser installed (PHPStan/Psalm); see `todos.md` |
+| docs link check | `sh scripts/check-doc-links.sh` (also a stage of `./quality.sh`) |
 | lint | `./quality.sh` (syntax-lint stage), or `php -l <file>` for one file |
 | test | `./quality.sh` — two batteries, `tests/*-test.php` and `tests/*-test.mjs`. A bare `for f in tests/*-test.php` loop returns only the last test's status, and misses the JS ones entirely |
 | release | `bash bin/release.sh patch\|minor\|major`, then `bash bin/release.sh publish` (invariant 6); `publish --no-upload` builds the ZIP only and prints its path |
