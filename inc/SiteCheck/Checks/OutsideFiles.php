@@ -130,16 +130,18 @@ final class OutsideFiles
             if ($t['url'] === null) {
                 continue;
             }
-            $refusal = Fetch::refusal((string) $t['url']);
-            if ($refusal !== '') {
-                $server['targets'][$i]['url'] = null;
-                $server['targets'][$i]['reason'] = Fetch::reason_text($refusal);
-                continue;
-            }
             if (!isset($issued[$t['url']])) {
-                $server['targets'][$i]['reason'] = Observations::limit_text();
+                $refusal = Fetch::refusal((string) $t['url']);
+                if ($refusal !== '') {
+                    $server['targets'][$i]['url'] = null;
+                    $server['targets'][$i]['reason'] = Fetch::reason_text($refusal);
+                } else {
+                    $server['targets'][$i]['reason'] = Observations::limit_text();
+                }
                 continue;
             }
+            // Issued: the guard ran when the plan was made and the browser already fetched it;
+            // re-running it on today's disk would drop what was served (a link left dangling, rotation).
             [$outside, $group] = Observations::outside($seen[$t['url']] ?? [], $comparison, self::exposure_groups($id, (string) $t['path']));
             $server['targets'][$i]['outside'] = $outside;
             if ($outside === Evidence::SIGNATURE && $group !== null) {

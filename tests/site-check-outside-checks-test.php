@@ -544,6 +544,16 @@ assert_same(Status::RED, statuses(Catalogue::grade('backups_public', $facts, ctx
 $facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => [404, 'nf']), $plan['plan']);
 assert_same(Status::UNKNOWN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'no longer listed and not reachable → Nicht prüfbar, never Grün (it may only have left the bounded scan)');
 
+// Gate B scp8seal4k risk 3: a served file that turns into a dangling link before observe stays Rot.
+put(ABSPATH . 'rot.sql', $dump);
+$plan = OutsideChecks::targets('backups_public', ctx());
+assert_true(in_array('https://ex.test/rot.sql', array_column($plan['targets'], 'url'), true), 'rot.sql is issued');
+unlink(ABSPATH . 'rot.sql');
+symlink(ABSPATH . 'nowhere.sql', ABSPATH . 'rot.sql');
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => $u === 'https://ex.test/rot.sql' ? [200, $dump] : [404, 'nf']), $plan['plan']);
+unlink(ABSPATH . 'rot.sql');
+assert_same(Status::RED, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/rot.sql'] ?? null, 'served dump now a dangling link → still Rot');
+
 // Gate B scp8seal4k: an issued file pushed past the bounded scan is still there — never Grün.
 put(ABSPATH . 'zz-keep.sql', 'x');
 $plan = OutsideChecks::targets('backups_public', ctx());
