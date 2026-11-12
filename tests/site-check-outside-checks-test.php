@@ -542,7 +542,20 @@ unlink(ABSPATH . 'gone.sql');
 $facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => $u === 'https://ex.test/gone.sql' ? [200, $dump] : [404, 'nf']), $plan['plan']);
 assert_same(Status::RED, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'served SQL dump removed mid-run → still Rot, not Grün');
 $facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => [404, 'nf']), $plan['plan']);
-assert_same(Status::GREEN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'removed and not reachable → Grün');
+assert_same(Status::UNKNOWN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'no longer listed and not reachable → Nicht prüfbar, never Grün (it may only have left the bounded scan)');
+
+// Gate B scp8seal4k: an issued file pushed past the bounded scan is still there — never Grün.
+put(ABSPATH . 'zz-keep.sql', 'x');
+$plan = OutsideChecks::targets('backups_public', ctx());
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    put(ABSPATH . sprintf('aa-%03d.sql', $i), 'x');
+}
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => [403, 'Forbidden']), $plan['plan']);
+assert_same(Status::UNKNOWN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/zz-keep.sql'] ?? null, 'present but past the scan limit, blocked → Nicht prüfbar, not Grün');
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    unlink(ABSPATH . sprintf('aa-%03d.sql', $i));
+}
+unlink(ABSPATH . 'zz-keep.sql');
 
 // The plan is sealed to its run and check, and is no facts token.
 $threw = static function (callable $fn): bool {

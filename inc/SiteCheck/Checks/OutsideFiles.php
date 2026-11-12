@@ -116,12 +116,14 @@ final class OutsideFiles
     {
         $issued = array_column($plan['issued'], null, 'url');
         $server = ServerChecks::observe($id, $ctx);
-        // An issued file gone from disk since targets() still counts: what was served was served.
-        // Its `path` is the file name from the plan, all exposure_groups() reads.
-        $on_disk = array_flip(array_filter(array_column($server['targets'], 'url'), 'is_string'));
+        // An issued file the server no longer lists (removed, or pushed past the scan limit) still
+        // counts: a served leak stays Rot, anything else Nicht prüfbar — never Grün, its disk state
+        // is unknown. Its `path` is the file name from the plan, all exposure_groups() reads.
+        $listed = array_flip(array_filter(array_column($server['targets'], 'url'), 'is_string'));
         foreach ($issued as $url => $c) {
-            if (!isset($on_disk[$url])) {
-                $server['targets'][] = ['target' => (string) $c['target'], 'path' => (string) $c['kind'], 'url' => (string) $url, 'disk' => 'absent', 'size' => null, 'reason' => ''];
+            if (!isset($listed[$url])) {
+                $server['targets'][] = ['target' => (string) $c['target'], 'path' => (string) $c['kind'], 'url' => (string) $url, 'disk' => 'unknown', 'size' => null,
+                    'reason' => __('The file changed on the server during the check. Run the check again.', 'sfxtheme')];
             }
         }
         foreach ($server['targets'] as $i => $t) {
