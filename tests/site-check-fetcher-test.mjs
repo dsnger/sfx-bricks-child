@@ -304,7 +304,7 @@ for (const [name, bytes] of Object.entries(fixtures)) {
       const fields = Object.fromEntries(init.body.entries());
       posted.push({ fields, init });
       if (fields.action === 'sfx_site_check_targets') {
-        return { ok: true, status: 200, json: async () => ({ success: true, data: { targets: [{ url: 'https://ex.test/.env' }], comparison: 'https://ex.test/sfx-site-check-missing-x', skipped: [] } }) };
+        return { ok: true, status: 200, json: async () => ({ success: true, data: { targets: [{ url: 'https://ex.test/.env' }], comparison: 'https://ex.test/sfx-site-check-missing-x', skipped: [], plan: 'sealed.mac' } }) };
       }
       return { ok: true, status: 200, json: async () => ({ success: true, data: { graded: { status: 'green' }, facts: { targets: [] } } }) };
     }
@@ -326,6 +326,7 @@ for (const [name, bytes] of Object.entries(fixtures)) {
     assert.equal(p.init.method, 'POST');
     assert.equal(p.init.credentials, 'same-origin', 'AJAX posts carry the admin session; outside fetches never do');
   }
+  assert.equal(posted[1].fields.plan, 'sealed.mac', 'observe carries the sealed plan back unchanged');
   const sent = JSON.parse(posted[1].fields.observations);
   assert.equal(sent.length, 3, 'observations of both target fetches and the comparison');
   assert.deepEqual(Object.keys(sent[0]).sort(), ['body', 'error', 'head_hex', 'headers', 'redirect', 'status', 'truncated', 'type', 'url'].sort(), 'observation shape');

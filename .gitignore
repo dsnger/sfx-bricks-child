@@ -82,6 +82,7 @@ Thumbs.db*
 # markers. The .context/codex-gate.on adoption marker is committed and must stay
 # tracked, so it is negated back in explicitly.
 /.context/codex-reviews/
+/.context/archive/codex-reviews/
 /.context/codex-gate.*
 !/.context/codex-gate.on
 

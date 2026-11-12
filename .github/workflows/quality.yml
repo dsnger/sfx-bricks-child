@@ -59,6 +59,9 @@ jobs:
         with:
           node-version: '22'
 
+      # composer.json and composer.lock agree and are well-formed; a stale lock fails here.
+      - run: composer validate --strict
+
       # Frozen lockfile: a resolving install can silently pull new code into CI and
       # makes the run non-reproducible.
       - run: composer install --no-interaction --no-progress --prefer-dist

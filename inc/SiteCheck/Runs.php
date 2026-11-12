@@ -218,7 +218,8 @@ final class Runs
 
     // ------------------------------------------------------------ sealed facts
 
-    public static function seal(string $run, string $check, array $facts): string
+    /** $kind separates what is sealed: a sealed plan never unseals as facts, nor the reverse. */
+    public static function seal(string $run, string $check, array $facts, string $kind = 'facts'): string
     {
         $json = json_encode($facts, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_SLASHES);
         if (!is_string($json)) {
@@ -226,17 +227,17 @@ final class Runs
         }
         $payload = rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
 
-        return $payload . '.' . self::mac($run, $check, $payload);
+        return $payload . '.' . self::mac($run, $check, $payload, $kind);
     }
 
-    /** The facts sealed for exactly this run and check, else null. */
-    public static function unseal(string $run, string $check, $token): ?array
+    /** The facts (or other $kind) sealed for exactly this run and check, else null. */
+    public static function unseal(string $run, string $check, $token, string $kind = 'facts'): ?array
     {
         if (!is_string($token) || substr_count($token, '.') !== 1) {
             return null;
         }
         [$payload, $mac] = explode('.', $token);
-        if ($payload === '' || !hash_equals(self::mac($run, $check, $payload), $mac)) {
+        if ($payload === '' || !hash_equals(self::mac($run, $check, $payload, $kind), $mac)) {
             return null;
         }
         $json = base64_decode(strtr($payload, '-_', '+/'), true);
@@ -524,9 +525,9 @@ final class Runs
         ];
     }
 
-    private static function mac(string $run, string $check, string $payload): string
+    private static function mac(string $run, string $check, string $payload, string $kind): string
     {
-        return hash_hmac('sha256', 'sfx-site-check-facts|' . $run . '|' . $check . '|' . $payload, wp_salt('nonce'));
+        return hash_hmac('sha256', 'sfx-site-check-' . $kind . '|' . $run . '|' . $check . '|' . $payload, wp_salt('nonce'));
     }
 
     private static function manual(): array

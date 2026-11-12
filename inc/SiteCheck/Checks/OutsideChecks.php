@@ -7,6 +7,7 @@ namespace SFX\SiteCheck\Checks;
 use SFX\SiteCheck\Fetch;
 use SFX\SiteCheck\Observations;
 use SFX\SiteCheck\RunContext;
+use SFX\SiteCheck\Runs;
 
 /**
  * Routing of the outside checks (B rows, and the outside half of the S+B
@@ -65,8 +66,10 @@ final class OutsideChecks
     /**
      * What the browser fetches for this check and run. Loopback checks have
      * no browser targets. `skipped` names what is not fetched and why.
+     * `plan` seals this plan for observe(): a file removed from disk between
+     * the two requests must not take the leak it showed with it.
      *
-     * @return array{targets:list<array{url:string}>, comparison:?string, skipped:list<array{target:string, reason:string}>}
+     * @return array{targets:list<array{url:string}>, comparison:?string, skipped:list<array{target:string, reason:string}>, plan:string}
      */
     public static function targets(string $id, RunContext $ctx): array
     {
@@ -76,6 +79,7 @@ final class OutsideChecks
             'targets'    => array_map(static fn(array $c): array => ['url' => $c['url']], $plan['issued']),
             'comparison' => $plan['comparison'],
             'skipped'    => $plan['skipped'],
+            'plan'       => Runs::seal($ctx->run(), $id, $plan, 'plan'),
         ];
     }
 
@@ -104,22 +108,29 @@ final class OutsideChecks
 
     /**
      * Turns the browser's observations (ignored for Loopback checks) into
-     * facts. Observations for URLs this check did not issue in this run are
-     * dropped unread.
+     * facts. A browser check works from the plan targets() sealed ($plan_token),
+     * not from the disk as it is now; observations for URLs that plan did not
+     * issue are dropped unread.
      *
      * @param list<mixed> $observations UNTRUSTED
+     * @param mixed $plan_token UNTRUSTED; the `plan` targets() returned for this run and check
+     * @throws \UnexpectedValueException a browser check whose token does not unseal
      */
-    public static function observe(string $id, RunContext $ctx, array $observations): array
+    public static function observe(string $id, RunContext $ctx, array $observations, $plan_token = null): array
     {
         if (!self::handles($id)) {
             throw new \InvalidArgumentException('Not an outside check: ' . $id);
         }
         Fetch::start_budget();
-        $plan = self::plan($id, $ctx);
         if (in_array($id, self::BROWSER, true)) {
+            $plan = self::sealed_plan(Runs::unseal($ctx->run(), $id, $plan_token, 'plan'));
+            if ($plan === null) {
+                throw new \UnexpectedValueException('No sealed plan for ' . $id);
+            }
             $seen = Observations::index_observations($observations, $plan);
             $comparison = Observations::comparison_response($seen, $plan['comparison']);
         } else {
+            $plan = self::plan($id, $ctx);
             // Rule 2 for a Loopback batch: its own comparison, fetched first.
             $seen = [];
             $comparison = self::loopback_comparison($id, $ctx);
@@ -138,6 +149,17 @@ final class OutsideChecks
         }
 
         return (self::FAMILIES[$id])::grade($id, $facts, $ctx);
+    }
+
+    /** The unsealed plan in plan()'s shape, or null. */
+    private static function sealed_plan(?array $p): ?array
+    {
+        if ($p === null || !is_array($p['issued'] ?? null) || !is_array($p['skipped'] ?? null)
+            || !(is_string($p['comparison'] ?? null) || ($p['comparison'] ?? null) === null)) {
+            return null;
+        }
+
+        return ['issued' => array_values($p['issued']), 'comparison' => $p['comparison'], 'skipped' => array_values($p['skipped'])];
     }
 
     /**

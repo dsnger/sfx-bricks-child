@@ -575,7 +575,7 @@ namespace {
             ];
         }
     }
-    post(['run' => $run, 'check' => 'security_headers', 'observations' => json_encode($observations)]);
+    post(['run' => $run, 'check' => 'security_headers', 'observations' => json_encode($observations), 'plan' => $body['data']['plan']]);
     [$code, $body] = OutsideEndpoints::observe_request();
     assert_same(200, $code, 'observe answers 200');
     $token = $body['data']['token'];
@@ -779,7 +779,7 @@ namespace {
         $observations[] = $seen($t['url'], 403);
     }
     $observations[] = $seen($plan['comparison'], 404);
-    post(['run' => $run, 'check' => 'backups_public', 'observations' => json_encode($observations)]);
+    post(['run' => $run, 'check' => 'backups_public', 'observations' => json_encode($observations), 'plan' => $plan['plan']]);
     [$code, $body] = OutsideEndpoints::observe_request();
     assert_same(200, $code, 'observe: 200');
     assert_same(Status::YELLOW, $body['data']['graded']['status'], 'observe: incoming row keeps its status');

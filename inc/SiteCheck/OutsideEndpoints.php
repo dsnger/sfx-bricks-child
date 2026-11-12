@@ -9,8 +9,8 @@ use SFX\SiteCheck\Checks\OutsideChecks;
 /**
  * AJAX endpoints of the outside checks (spec "Manual run" step 3):
  *
- * - `sfx_site_check_targets` (run, check) → {targets:[{url}], comparison, skipped}
- * - `sfx_site_check_observe` (run, check, observations: JSON list) → {graded, facts, token}
+ * - `sfx_site_check_targets` (run, check) → {targets:[{url}], comparison, skipped, plan}
+ * - `sfx_site_check_observe` (run, check, observations: JSON list, plan) → {graded, facts, token}
  *
  * Both check Access::allowed() and the nonce Access::NONCE before reading
  * any other input, take only a fixed check ID and a run ID, and work only
@@ -65,7 +65,12 @@ final class OutsideEndpoints
         }
         $observations = array_slice(array_values($observations), 0, self::MAX_OBSERVATIONS);
 
-        $facts = OutsideChecks::observe($check, $ctx, $observations);
+        $plan = isset($_POST['plan']) && is_string($_POST['plan']) ? wp_unslash($_POST['plan']) : null;
+        try {
+            $facts = OutsideChecks::observe($check, $ctx, $observations, $plan);
+        } catch (\UnexpectedValueException $e) {
+            return self::error(400, __('This check was not prepared in this run. Start the check again.', 'sfxtheme'));
+        }
 
         return [200, ['success' => true, 'data' => [
             'graded' => Runs::compact($check, Catalogue::grade($check, $facts, $ctx)),

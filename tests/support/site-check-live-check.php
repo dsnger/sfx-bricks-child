@@ -452,7 +452,7 @@ foreach (Catalogue::all() as $id => $row) {
         post(['run' => $run, 'check' => $id]);
         [$code, $body] = OutsideEndpoints::targets_request();
         $targets_ok = $code === 200 && ($body['success'] ?? false) === true;
-        post(['run' => $run, 'check' => $id, 'observations' => '[]']);
+        post(['run' => $run, 'check' => $id, 'observations' => '[]', 'plan' => (string) ($body['data']['plan'] ?? '')]);
         [$code2, $body2] = OutsideEndpoints::observe_request();
         $observe_ok = $code2 === 200 && ($body2['success'] ?? false) === true && isset($body2['data']['token']);
         check($targets_ok && $observe_ok, "outside check {$id}: targets {$code}, observe {$code2}, status " . ($body2['data']['graded']['status'] ?? '-'));

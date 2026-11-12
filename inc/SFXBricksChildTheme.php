@@ -9,7 +9,8 @@ class SFXBricksChildTheme
   private $ASSET_DIR;
 
   /**
-   * Global feature registry for controllers to register themselves.
+   * Global feature registry, filled by auto_register_features() from each
+   * module's Controller::get_feature_config().
    *
    * @var array<string, array>
    */
