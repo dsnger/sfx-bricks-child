@@ -9206,6 +9206,12 @@ msgstr "Dieser Lauf ist nicht mehr aktuell (eine neuere Prüfung oder ein Lösch
 msgid "This run is no longer current. Start the check again."
 msgstr "Dieser Lauf ist nicht mehr aktuell. Starte die Prüfung noch einmal."
 
+msgid "This check was not prepared in this run. Start the check again."
+msgstr "Diese Prüfung wurde in diesem Lauf nicht vorbereitet. Starte die Prüfung noch einmal."
+
+msgid "The file changed on the server during the check. Run the check again."
+msgstr "Die Datei hat sich während der Prüfung auf dem Server geändert. Starte die Prüfung noch einmal."
+
 msgid "This server looks like nginx. An Apache rule does nothing for files nginx serves itself; give the nginx text to the host."
 msgstr "Dieser Server sieht nach nginx aus. Eine Apache-Regel wirkt nicht bei Dateien, die nginx selbst ausliefert; gib den nginx-Text an den Hoster weiter."
 

@@ -236,7 +236,7 @@
     async function runCheck(run, check) {
       var plan = await post('sfx_site_check_targets', { run: run, check: check });
       var observations = await batch(plan);
-      return post('sfx_site_check_observe', { run: run, check: check, observations: JSON.stringify(observations) });
+      return post('sfx_site_check_observe', { run: run, check: check, observations: JSON.stringify(observations), plan: plan.plan || '' });
     }
 
     return { observe: observe, batch: batch, runCheck: runCheck, post: post };

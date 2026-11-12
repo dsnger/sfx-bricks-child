@@ -384,7 +384,7 @@ function browse(array $plan, callable $answer, array $comparison = [404, 'Not fo
 function run_browser(string $id, RunContext $c, callable $answer, array $comparison = [404, 'Not found']): array
 {
     $plan = OutsideChecks::targets($id, $c);
-    $facts = OutsideChecks::observe($id, $c, browse($plan, $answer, $comparison));
+    $facts = OutsideChecks::observe($id, $c, browse($plan, $answer, $comparison), $plan['plan']);
     return [$facts, Catalogue::grade($id, $facts, $c), $plan];
 }
 
@@ -472,7 +472,7 @@ assert_same($plan['comparison'], OutsideChecks::comparison_url('logs_public', ne
 assert_true($plan['comparison'] !== OutsideChecks::comparison_url('logs_public', new RunContext('runB', 'live', [], '', false)), 'another run gets another comparison URL');
 
 $answer404 = static fn(string $url): array => [404, '<html>Not found</html>'];
-post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse($plan, $answer404)))]);
+post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse($plan, $answer404))), 'plan' => $plan['plan']]);
 [$code, $body] = OutsideEndpoints::observe_request();
 chmod(WP_CONTENT_DIR . '/private', 0700);
 assert_same(200, $code, 'observe: 200');
@@ -489,7 +489,7 @@ put(ABSPATH . 'error_log', $log_line);
 post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n']);
 $plan = OutsideEndpoints::targets_request()[1]['data'];
 $answer = static fn(string $url): array => $url === 'https://ex.test/error_log' ? [200, $log_line] : [404, 'nf'];
-post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse($plan, $answer)))]);
+post(['run' => 'runA', 'check' => 'logs_public', '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse($plan, $answer))), 'plan' => $plan['plan']]);
 [$code, $body] = OutsideEndpoints::observe_request();
 assert_same(Status::RED, statuses($body['data']['graded'])['logs_public:/error_log'], 'public log signature → Rot');
 assert_same(Status::RED, $body['data']['graded']['status'], 'the check is Rot');
@@ -532,6 +532,56 @@ for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
     unlink(ABSPATH . sprintf('many-%03d.sql', $i));
     rmdir(ABSPATH . sprintf('a-%03d.zip', $i));
 }
+
+// todos.md (Greptile on PR #59): a backup removed between targets and observe keeps the leak it showed.
+$dump = "-- MySQL dump 10.13\nCREATE TABLE wp_users (ID int);\n";
+put(ABSPATH . 'gone.sql', $dump);
+$plan = OutsideChecks::targets('backups_public', ctx());
+assert_true(in_array('https://ex.test/gone.sql', array_column($plan['targets'], 'url'), true), 'gone.sql is issued while it is on disk');
+unlink(ABSPATH . 'gone.sql');
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => $u === 'https://ex.test/gone.sql' ? [200, $dump] : [404, 'nf']), $plan['plan']);
+assert_same(Status::RED, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'served SQL dump removed mid-run → still Rot, not Grün');
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => [404, 'nf']), $plan['plan']);
+assert_same(Status::UNKNOWN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/gone.sql'] ?? null, 'no longer listed and not reachable → Nicht prüfbar, never Grün (it may only have left the bounded scan)');
+
+// Gate B scp8seal4k risk 3: a served file that turns into a dangling link before observe stays Rot.
+put(ABSPATH . 'rot.sql', $dump);
+$plan = OutsideChecks::targets('backups_public', ctx());
+assert_true(in_array('https://ex.test/rot.sql', array_column($plan['targets'], 'url'), true), 'rot.sql is issued');
+unlink(ABSPATH . 'rot.sql');
+symlink(ABSPATH . 'nowhere.sql', ABSPATH . 'rot.sql');
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => $u === 'https://ex.test/rot.sql' ? [200, $dump] : [404, 'nf']), $plan['plan']);
+unlink(ABSPATH . 'rot.sql');
+assert_same(Status::RED, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/rot.sql'] ?? null, 'served dump now a dangling link → still Rot');
+
+// Gate B scp8seal4k: an issued file pushed past the bounded scan is still there — never Grün.
+put(ABSPATH . 'zz-keep.sql', 'x');
+$plan = OutsideChecks::targets('backups_public', ctx());
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    put(ABSPATH . sprintf('aa-%03d.sql', $i), 'x');
+}
+$facts = OutsideChecks::observe('backups_public', ctx(), browse($plan, static fn(string $u): array => [403, 'Forbidden']), $plan['plan']);
+assert_same(Status::UNKNOWN, statuses(Catalogue::grade('backups_public', $facts, ctx()))['backups_public:/zz-keep.sql'] ?? null, 'present but past the scan limit, blocked → Nicht prüfbar, not Grün');
+for ($i = 0; $i <= FileChecks::MAX_BACKUP_FILES; $i++) {
+    unlink(ABSPATH . sprintf('aa-%03d.sql', $i));
+}
+unlink(ABSPATH . 'zz-keep.sql');
+
+// The plan is sealed to its run and check, and is no facts token.
+$threw = static function (callable $fn): bool {
+    try {
+        $fn();
+    } catch (\UnexpectedValueException $e) {
+        return true;
+    }
+    return false;
+};
+assert_true($threw(static fn() => OutsideChecks::observe('backups_public', ctx(), [], null)), 'no plan → refused');
+assert_true($threw(static fn() => OutsideChecks::observe('backups_public', ctx(), [], $plan['plan'] . 'x')), 'altered plan → refused');
+assert_true($threw(static fn() => OutsideChecks::observe('logs_public', ctx(), [], $plan['plan'])), 'another check\'s plan → refused');
+assert_true($threw(static fn() => OutsideChecks::observe('backups_public', new RunContext('run2', 'live', [], '', false), [], $plan['plan'])), 'another run\'s plan → refused');
+assert_true($threw(static fn() => OutsideChecks::observe('backups_public', ctx(), [], \SFX\SiteCheck\Runs::seal('run1', 'backups_public', ['issued' => [], 'comparison' => null, 'skipped' => []]))), 'a facts token is no plan');
+assert_same(null, \SFX\SiteCheck\Runs::unseal('run1', 'backups_public', $plan['plan']), 'a plan is no facts token');
 
 // Cache-buster vs plain: a cached copy served only without the buster still counts.
 [, $r] = run_browser('logs_public', ctx(), static function (string $url) use ($log_line): array {
@@ -617,7 +667,7 @@ foreach (array_column($plan['targets'], 'url') as $url) {
     assert_true(!php_request($url), "discovered PHP-like file never a target: {$url}");
 }
 assert_true(count($plan['skipped']) >= count($exts), 'URL-encoded PHP names are listed as skipped');
-OutsideChecks::observe('backups_public', ctx(), browse($plan, $answer404));
+OutsideChecks::observe('backups_public', ctx(), browse($plan, $answer404), $plan['plan']);
 assert_same([], requested_urls(), 'the browser checks make no Loopback request');
 foreach (glob(ABSPATH . '{x,X}*', GLOB_BRACE) as $file) {
     unlink($file);
@@ -663,7 +713,7 @@ foreach (['logs_public', 'backups_public', 'vcs_env', 'dir_listing', 'security_h
     foreach ($plan['targets'] as $t) {
         $every[] = $t['url'];
     }
-    OutsideChecks::observe($id, $c, browse($plan, $answer404));
+    OutsideChecks::observe($id, $c, browse($plan, $answer404), $plan['plan']);
 }
 $all_urls = array_merge($every, requested_urls());
 assert_true(strpos(implode(' ', $all_urls), 'wp-config') === false, 'wp-config.php.bak never appears in targets or requests');
@@ -757,9 +807,9 @@ $plan = OutsideChecks::targets('vcs_env', ctx());
 $list = browse($plan, $answer404);
 $list[] = obs('https://ex.test/.env.backup', 200, "SECRET=1\n");
 $list[] = obs('https://evil.test/.env', 200, "SECRET=1\n");
-$facts = OutsideChecks::observe('vcs_env', ctx(), $list);
+$facts = OutsideChecks::observe('vcs_env', ctx(), $list, $plan['plan']);
 assert_same(Status::YELLOW, statuses(Catalogue::grade('vcs_env', $facts, ctx()))['vcs_env:/.env'], 'issued .env answering 404 → Gelb; foreign observations ignored');
-$facts = OutsideChecks::observe('vcs_env', ctx(), array_merge([obs('https://ex.test/.env', 200, "SECRET=1\n")], $list));
+$facts = OutsideChecks::observe('vcs_env', ctx(), array_merge([obs('https://ex.test/.env', 200, "SECRET=1\n")], $list), $plan['plan']);
 assert_same(Status::RED, statuses(Catalogue::grade('vcs_env', $facts, ctx()))['vcs_env:/.env'], '.env with KEY=value → Rot');
 assert_true(strpos(json_encode($facts), 'SECRET') === false, 'no .env content in facts');
 unlink(ABSPATH . '.env');
@@ -915,7 +965,7 @@ function observe_joined(string $id, callable $answer, array $comparison = [404, 
     post(['run' => 'runPF', 'check' => $id, '_ajax_nonce' => 'n']);
     [$code, $body] = OutsideEndpoints::targets_request();
     assert_same(200, $code, "{$id}: targets 200");
-    post(['run' => 'runPF', 'check' => $id, '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse_variants($body['data'], $answer, $comparison)))]);
+    post(['run' => 'runPF', 'check' => $id, '_ajax_nonce' => 'n', 'observations' => addslashes(json_encode(browse_variants($body['data'], $answer, $comparison))), 'plan' => $body['data']['plan']]);
     [$code, $body] = OutsideEndpoints::observe_request();
     assert_same(200, $code, "{$id}: observe 200");
     $c = new RunContext('runPF', 'live', [], '', false);

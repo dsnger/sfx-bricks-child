@@ -116,20 +116,32 @@ final class OutsideFiles
     {
         $issued = array_column($plan['issued'], null, 'url');
         $server = ServerChecks::observe($id, $ctx);
+        // An issued file the server no longer lists (removed, or pushed past the scan limit) still
+        // counts: a served leak stays Rot, anything else Nicht prüfbar — never Grün, its disk state
+        // is unknown. Its `path` is the file name from the plan, all exposure_groups() reads.
+        $listed = array_flip(array_filter(array_column($server['targets'], 'url'), 'is_string'));
+        foreach ($issued as $url => $c) {
+            if (!isset($listed[$url])) {
+                $server['targets'][] = ['target' => (string) $c['target'], 'path' => (string) $c['kind'], 'url' => (string) $url, 'disk' => 'unknown', 'size' => null,
+                    'reason' => __('The file changed on the server during the check. Run the check again.', 'sfxtheme')];
+            }
+        }
         foreach ($server['targets'] as $i => $t) {
             if ($t['url'] === null) {
                 continue;
             }
-            $refusal = Fetch::refusal((string) $t['url']);
-            if ($refusal !== '') {
-                $server['targets'][$i]['url'] = null;
-                $server['targets'][$i]['reason'] = Fetch::reason_text($refusal);
-                continue;
-            }
             if (!isset($issued[$t['url']])) {
-                $server['targets'][$i]['reason'] = Observations::limit_text();
+                $refusal = Fetch::refusal((string) $t['url']);
+                if ($refusal !== '') {
+                    $server['targets'][$i]['url'] = null;
+                    $server['targets'][$i]['reason'] = Fetch::reason_text($refusal);
+                } else {
+                    $server['targets'][$i]['reason'] = Observations::limit_text();
+                }
                 continue;
             }
+            // Issued: the guard ran when the plan was made and the browser already fetched it;
+            // re-running it on today's disk would drop what was served (a link left dangling, rotation).
             [$outside, $group] = Observations::outside($seen[$t['url']] ?? [], $comparison, self::exposure_groups($id, (string) $t['path']));
             $server['targets'][$i]['outside'] = $outside;
             if ($outside === Evidence::SIGNATURE && $group !== null) {

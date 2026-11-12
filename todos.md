@@ -9,13 +9,6 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Tooling note on the review-gates defects is stale after kit 0.48** (Gate B cycle
-      k48rfr7q2m, spec 1, Minor): § Tooling revalidation still calls the missing-checkout
-      guard open and quotes the old ledger-counting rule; kit 0.48's `CLAUDE.md` §5 has the
-      guard and the new rules replace that rule. Append the resolution, keep the history.
-- [ ] **Ignore `.context/archive/codex-reviews/` in the tracked `.gitignore`** (Gate B cycle
-      k48rfr7q2m, quality 1, Minor): kit 0.48 archives closed cycles there; only this
-      machine's `.git/info/exclude` keeps it out of a commit, a fresh clone does not.
 - [ ] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
       k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
       builds its prompt without the prompt-standards citation AGENTS.md asks for when a
@@ -39,11 +32,6 @@ references an entry here must still be able to find it.
       `tests/`); `media-credits-rest-live-check.php` takes `WP_ROOT`. How they run under DDEV
       (`ddev exec`, a mounted checkout, or another route) is undecided — its own design
       pass, keeping the AGENTS.md harness rule (one teardown, fatal location guards).
-- [ ] **Sicherheits-Check: a backup removed between the targets and observe requests loses
-      the leak it showed** (Greptile on PR #59, 2026-10-11). `OutsideChecks::observe()`
-      re-derives the issued URLs from disk and drops observations for URLs it did not issue,
-      so a SQL dump rotated away mid-run grades Grün although its contents were served. Fix
-      needs the issued list sealed into the targets answer and accepted back in observe.
 - [ ] **Social Accounts: `class` lands on the wrapper and on every account; `style`/`size`
       only add classes and the theme ships no CSS for them** (found 2026-10-02). Left as is on
       purpose: sites may already style against those classes, and the help documents it.
@@ -67,17 +55,6 @@ references an entry here must still be able to find it.
       its own design pass.
 
 ## Someday
-- [ ] **Two pre-existing docs disagree with `AGENTS.md`** (Codex Gate B pass 3,
-      2026-08-26): `inc/SFXBricksChildTheme.php:12`'s registry docblock still says
-      controllers register themselves — `auto_register_features()` does it at
-      :335-338 — and `.cursor/rules/feature-registry-structure.mdc:63` lists 10
-      modules where there are 14 (missing SmoothScroll, NavMenuQuery,
-      PasswordProtected, ThemeSettingsOverview). Both were already wrong before this
-      PR; left alone to keep its diff to the workflow scaffolding.
-- [ ] **Add `composer validate --strict` to CI** (from the stale-lock entry, Codex Gate B
-      on the workflow-init PR, 2026-08-26). The lock was regenerated when Parsedown was
-      dropped (2026-10-20) and `composer validate --strict` now passes locally; the CI
-      step is still missing.
 - [ ] No static analyser installed (PHPStan/Psalm). `AGENTS.md` § Commands
       lists the `typecheck` row as TODO and points here.
 - [ ] **Most admin JavaScript is still untested** (follow-up to the Node test leg,
@@ -106,6 +83,9 @@ references an entry here must still be able to find it.
       "`fixed` lines, each `same as` pair counted once", which can count one repair
       twice when a `fixed` finding has several `same as` aliases; every alias should
       collapse into its referenced finding (CodeRabbit on PR #62).
+      Resolved by kit 0.48+ (checked 2026-11-12): CLAUDE.md §5 now runs
+      `git rev-parse --show-toplevel` before concluding the file is missing, and the
+      closing act counts distinct fixed findings, so neither defect is open.
 - [ ] Re-check `docs/prompt-standards.md` against the current model-specific
       prompting pages on every model-generation change (new Claude model in Claude
       Code, new Codex model for the gates).
@@ -119,6 +99,34 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Tooling note on the review-gates defects is stale after kit 0.48** (Gate B cycle
+      k48rfr7q2m, spec 1, Minor): § Tooling revalidation still calls the missing-checkout
+      guard open and quotes the old ledger-counting rule; kit 0.48's `CLAUDE.md` §5 has the
+      guard and the new rules replace that rule. Append the resolution, keep the history.
+      Done 2026-11-12: resolution appended under § Tooling revalidation.
+- [x] **Ignore `.context/archive/codex-reviews/` in the tracked `.gitignore`** (Gate B cycle
+      k48rfr7q2m, quality 1, Minor): kit 0.48 archives closed cycles there; only this
+      machine's `.git/info/exclude` keeps it out of a commit, a fresh clone does not.
+      Done 2026-11-12: added to the tracked `.gitignore`.
+- [x] **Sicherheits-Check: a backup removed between the targets and observe requests loses
+      the leak it showed** (Greptile on PR #59, 2026-10-11). `OutsideChecks::observe()`
+      re-derives the issued URLs from disk and drops observations for URLs it did not issue,
+      so a SQL dump rotated away mid-run grades Grün although its contents were served. Fix
+      needs the issued list sealed into the targets answer and accepted back in observe.
+      Done 2026-11-12: targets() seals its plan (run- and check-bound); observe() works from that plan and keeps an issued file that left the disk. Regression test in `tests/site-check-outside-checks-test.php`.
+- [x] **Two pre-existing docs disagree with `AGENTS.md`** (Codex Gate B pass 3,
+      2026-08-26): `inc/SFXBricksChildTheme.php:12`'s registry docblock still says
+      controllers register themselves — `auto_register_features()` does it at
+      :335-338 — and `.cursor/rules/feature-registry-structure.mdc:63` lists 10
+      modules where there are 14 (missing SmoothScroll, NavMenuQuery,
+      PasswordProtected, ThemeSettingsOverview). Both were already wrong before this
+      PR; left alone to keep its diff to the workflow scaffolding.
+      Done 2026-11-12: docblock corrected; the Cursor rule lists all 18 modules.
+- [x] **Add `composer validate --strict` to CI** (from the stale-lock entry, Codex Gate B
+      on the workflow-init PR, 2026-08-26). The lock was regenerated when Parsedown was
+      dropped (2026-10-20) and `composer validate --strict` now passes locally; the CI
+      step is still missing.
+      Done 2026-11-12: a step before `composer install` in `.github/workflows/quality.yml`.
 - [x] **Purge confirmation says "this site only", but the Redirects list sizes are network-wide**
       (Gate B cycle k4rp2x9mta, quality 1, Minor): on multisite `DataPurge::run()` also resets
       `USER_META_KEYS` for users of the other sites, which `inc/GeneralThemeOptions/AdminPage.php:474`
