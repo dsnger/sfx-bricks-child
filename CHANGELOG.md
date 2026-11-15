@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-11-15
+
 ### Added
 
 - Redirects: the redirects list and the 404 log can show more or fewer entries per page. Set it under *Screen Options* at the top of the page; each user keeps their own number for each list (default 20).
