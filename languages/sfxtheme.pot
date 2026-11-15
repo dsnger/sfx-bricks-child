@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.36.1\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.37.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-26T18:37:04+00:00\n"
+"POT-Creation-Date: 2026-11-15T09:07:20+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -610,7 +610,7 @@ msgid "Status"
 msgstr ""
 
 #: inc/ContactInfos/PostType.php:679
-#: inc/Redirects/AdminPage.php:1066
+#: inc/Redirects/AdminPage.php:1100
 msgid "Address:"
 msgstr ""
 
@@ -624,7 +624,7 @@ msgstr ""
 
 #: inc/ContactInfos/PostType.php:734
 #: inc/CustomScriptsManager/PostType.php:770
-#: inc/Redirects/AdminPage.php:1082
+#: inc/Redirects/AdminPage.php:1116
 #: inc/SocialMediaAccounts/PostType.php:435
 #: inc/ThemeSettingsOverview/OverviewRenderer.php:223
 msgid "Active"
@@ -724,7 +724,7 @@ msgid "Tip Card"
 msgstr ""
 
 #: inc/CustomDashboard/AdminPage.php:198
-#: inc/Redirects/AdminPage.php:1100
+#: inc/Redirects/AdminPage.php:1134
 #: inc/Redirects/Rule.php:1298
 msgid "Note"
 msgstr ""
@@ -779,7 +779,7 @@ msgstr ""
 
 #: inc/CustomDashboard/AssetManager.php:118
 #: inc/CustomDashboard/Settings.php:2332
-#: inc/Redirects/RedirectsTable.php:188
+#: inc/Redirects/RedirectsTable.php:189
 msgid "Edit"
 msgstr ""
 
@@ -947,12 +947,12 @@ msgid "Open link in new tab?"
 msgstr ""
 
 #: inc/CustomDashboard/AssetManager.php:277
-#: inc/Redirects/RedirectsTable.php:253
+#: inc/Redirects/RedirectsTable.php:254
 msgid "Yes"
 msgstr ""
 
 #: inc/CustomDashboard/AssetManager.php:278
-#: inc/Redirects/RedirectsTable.php:253
+#: inc/Redirects/RedirectsTable.php:254
 msgid "No"
 msgstr ""
 
@@ -1184,7 +1184,7 @@ msgid "Edit note"
 msgstr ""
 
 #: inc/CustomDashboard/DashboardRenderer.php:1357
-#: inc/Redirects/AdminPage.php:1110
+#: inc/Redirects/AdminPage.php:1144
 msgid "Cancel"
 msgstr ""
 
@@ -1363,19 +1363,19 @@ msgid "Available Tools"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:572
-#: inc/Redirects/AdminPage.php:1212
-#: inc/Redirects/RedirectsTable.php:244
+#: inc/Redirects/AdminPage.php:1246
+#: inc/Redirects/RedirectsTable.php:245
 msgid "Import"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:573
-#: inc/Redirects/AdminPage.php:1246
+#: inc/Redirects/AdminPage.php:1280
 msgid "Export"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:578
 #: inc/CustomDashboard/Settings.php:804
-#: inc/Redirects/AdminPage.php:933
+#: inc/Redirects/AdminPage.php:967
 #: inc/SiteCheck/AdminPage.php:99
 #: inc/SiteCheck/AdminPage.php:362
 #: inc/ThemeSettingsOverview/OverviewRenderer.php:113
@@ -4799,729 +4799,729 @@ msgstr ""
 msgid "Settings saved, but some fields were rejected."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:84
-#: inc/Redirects/AdminPage.php:85
-#: inc/Redirects/AdminPage.php:928
-#: inc/Redirects/AdminPage.php:941
+#: inc/Redirects/AdminPage.php:91
+#: inc/Redirects/AdminPage.php:92
+#: inc/Redirects/AdminPage.php:962
+#: inc/Redirects/AdminPage.php:975
 #: inc/Redirects/Controller.php:62
 #: inc/ThemeSettingsOverview/OverviewProvider.php:76
 msgid "Redirects"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:120
+#: inc/Redirects/AdminPage.php:154
 msgid "Loading…"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:121
+#: inc/Redirects/AdminPage.php:155
 msgid "Only the first entries are shown — type in the search box to narrow them down."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:122
+#: inc/Redirects/AdminPage.php:156
 msgid "No results."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:123
+#: inc/Redirects/AdminPage.php:157
 msgid "Choose a result"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:124
+#: inc/Redirects/AdminPage.php:158
 msgid "The search failed. Try again."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:146
-#: inc/Redirects/AdminPage.php:555
+#: inc/Redirects/AdminPage.php:180
+#: inc/Redirects/AdminPage.php:589
 #: inc/SiteCheck/AdminPage.php:302
 #: inc/SiteCheck/AdminPage.php:317
-#: inc/SiteCheck/OutsideEndpoints.php:92
-#: inc/SiteCheck/Runs.php:575
+#: inc/SiteCheck/OutsideEndpoints.php:97
+#: inc/SiteCheck/Runs.php:576
 msgid "You are not allowed to do this."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:174
+#: inc/Redirects/AdminPage.php:208
 msgid "The form was submitted with an invalid rule id."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:194
-#: inc/Redirects/AdminPage.php:216
+#: inc/Redirects/AdminPage.php:228
+#: inc/Redirects/AdminPage.php:250
 #: inc/Redirects/Repository.php:1548
 msgid "A database error occurred; the change was not saved."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:207
+#: inc/Redirects/AdminPage.php:241
 msgid "Redirect saved."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:210
+#: inc/Redirects/AdminPage.php:244
 msgid "Redirect updated."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:213
+#: inc/Redirects/AdminPage.php:247
 msgid "Nothing to change — the redirect was already saved like this."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:223
+#: inc/Redirects/AdminPage.php:257
 msgid "The redirect was saved, but its 404 log entry could not be removed."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:239
+#: inc/Redirects/AdminPage.php:273
 msgid "Unknown action."
 msgstr ""
 
 #. translators: %d: rule id
-#: inc/Redirects/AdminPage.php:246
-#: inc/Redirects/AdminPage.php:1378
+#: inc/Redirects/AdminPage.php:280
+#: inc/Redirects/AdminPage.php:1412
 #: inc/Redirects/Repository.php:1554
 msgid "Rule #%d no longer exists."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:262
 #: inc/Redirects/AdminPage.php:296
+#: inc/Redirects/AdminPage.php:330
 msgid "Choose a bulk action."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:266
-#: inc/Redirects/AdminPage.php:303
-#: inc/Redirects/AdminPage.php:322
+#: inc/Redirects/AdminPage.php:300
+#: inc/Redirects/AdminPage.php:337
+#: inc/Redirects/AdminPage.php:356
 msgid "The selection was not valid."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:270
+#: inc/Redirects/AdminPage.php:304
 msgid "Select at least one redirect."
 msgstr ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:278
-#: inc/Redirects/AdminPage.php:805
+#: inc/Redirects/AdminPage.php:312
+#: inc/Redirects/AdminPage.php:839
 msgid "%d selected rule no longer exists."
 msgid_plural "%d selected rules no longer exist."
 msgstr[0] ""
 msgstr[1] ""
 
-#: inc/Redirects/AdminPage.php:307
+#: inc/Redirects/AdminPage.php:341
 msgid "The 404 log was cleared."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:309
+#: inc/Redirects/AdminPage.php:343
 msgid "A database error occurred; the log was not cleared."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:326
+#: inc/Redirects/AdminPage.php:360
 msgid "Select at least one log entry."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:332
+#: inc/Redirects/AdminPage.php:366
 msgid "A database error occurred; nothing was deleted."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:334
+#: inc/Redirects/AdminPage.php:368
 msgid "Nothing was deleted — the entries no longer exist."
 msgstr ""
 
 #. translators: %d: number of log entries
-#: inc/Redirects/AdminPage.php:338
+#: inc/Redirects/AdminPage.php:372
 msgid "%d log entry deleted."
 msgid_plural "%d log entries deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: inc/Redirects/AdminPage.php:362
-#: inc/Redirects/AdminPage.php:836
+#: inc/Redirects/AdminPage.php:396
+#: inc/Redirects/AdminPage.php:870
 msgid "Choose a CSV file to import."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:370
+#: inc/Redirects/AdminPage.php:404
 msgid "The upload could not be verified. Try again."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:374
+#: inc/Redirects/AdminPage.php:408
 msgid "The file is larger than 2 MB. Split it into smaller files."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:379
+#: inc/Redirects/AdminPage.php:413
 msgid "Only .csv files can be imported."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:389
+#: inc/Redirects/AdminPage.php:423
 msgid "The uploaded file could not be read."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:422
+#: inc/Redirects/AdminPage.php:456
 msgid "The file is empty."
 msgstr ""
 
 #. translators: %d: maximum number of records
-#: inc/Redirects/AdminPage.php:427
+#: inc/Redirects/AdminPage.php:461
 msgid "The file has more than %d records. Nothing was imported; split the file."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:435
-#: inc/Redirects/AdminPage.php:445
+#: inc/Redirects/AdminPage.php:469
+#: inc/Redirects/AdminPage.php:479
 msgid "Nothing was imported."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:472
+#: inc/Redirects/AdminPage.php:506
 msgid "File format: Redirection plugin export."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:473
+#: inc/Redirects/AdminPage.php:507
 msgid "File format: this module's CSV."
 msgstr ""
 
 #. translators: 1: created, 2: updated, 3: unchanged, 4: skipped (invalid), 5: not imported (conflict), 6: failed (database error)
-#: inc/Redirects/AdminPage.php:477
+#: inc/Redirects/AdminPage.php:511
 msgid "Import finished: %1$d created, %2$d updated, %3$d unchanged, %4$d skipped as invalid, %5$d not imported because of a conflict, %6$d failed."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:487
+#: inc/Redirects/AdminPage.php:521
 msgid "Skipped records:"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:490
+#: inc/Redirects/AdminPage.php:524
 msgid "Records not imported:"
 msgstr ""
 
 #. translators: %d: number of records
-#: inc/Redirects/AdminPage.php:495
+#: inc/Redirects/AdminPage.php:529
 msgid "%d record failed because of a database error."
 msgid_plural "%d records failed because of a database error."
 msgstr[0] ""
 msgstr[1] ""
 
-#: inc/Redirects/AdminPage.php:515
+#: inc/Redirects/AdminPage.php:549
 msgid "A database error occurred; the export was not created."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:561
+#: inc/Redirects/AdminPage.php:595
 msgid "Unknown content type."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:594
+#: inc/Redirects/AdminPage.php:628
 msgid "The search failed."
 msgstr ""
 
 #. translators: %d: post id
-#: inc/Redirects/AdminPage.php:634
+#: inc/Redirects/AdminPage.php:668
 msgid "(no title) #%d"
 msgstr ""
 
 #. translators: %d: number of further entries not listed
-#: inc/Redirects/AdminPage.php:675
+#: inc/Redirects/AdminPage.php:709
 msgid "… and %d more."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:771
+#: inc/Redirects/AdminPage.php:805
 #: inc/Redirects/Repository.php:1543
 msgid "Another redirect change is in progress, try again."
 msgstr ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:779
+#: inc/Redirects/AdminPage.php:813
 msgid "%d redirect enabled."
 msgid_plural "%d redirects enabled."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:783
+#: inc/Redirects/AdminPage.php:817
 msgid "%d redirect disabled."
 msgid_plural "%d redirects disabled."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:787
+#: inc/Redirects/AdminPage.php:821
 msgid "%d redirect deleted."
 msgid_plural "%d redirects deleted."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:791
+#: inc/Redirects/AdminPage.php:825
 msgid "Hit counter reset for %d redirect."
 msgid_plural "Hit counter reset for %d redirects."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:798
+#: inc/Redirects/AdminPage.php:832
 msgid "%d redirect was already in that state."
 msgid_plural "%d redirects were already in that state."
 msgstr[0] ""
 msgstr[1] ""
 
-#: inc/Redirects/AdminPage.php:810
+#: inc/Redirects/AdminPage.php:844
 msgid "Not enabled:"
 msgstr ""
 
 #. translators: %d: number of rules
-#: inc/Redirects/AdminPage.php:815
+#: inc/Redirects/AdminPage.php:849
 msgid "%d redirect could not be changed because of a database error."
 msgid_plural "%d redirects could not be changed because of a database error."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: 1: CSV record number, 2: reason the record was skipped
-#: inc/Redirects/AdminPage.php:824
+#: inc/Redirects/AdminPage.php:858
 #: inc/Redirects/Repository.php:596
 msgid "Record %1$d: %2$s"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:832
+#: inc/Redirects/AdminPage.php:866
 msgid "The file is larger than the server accepts."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:834
+#: inc/Redirects/AdminPage.php:868
 msgid "The file was only partially uploaded. Try again."
 msgstr ""
 
 #. translators: %d: PHP upload error code
-#: inc/Redirects/AdminPage.php:839
+#: inc/Redirects/AdminPage.php:873
 msgid "The server could not store the upload (error %d)."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:845
+#: inc/Redirects/AdminPage.php:879
 #: inc/Redirects/Repository.php:1538
 msgid "The redirect database tables are not installed."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:924
+#: inc/Redirects/AdminPage.php:958
 msgid "You are not allowed to access this page."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:929
+#: inc/Redirects/AdminPage.php:963
 msgid "404 Log"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:930
+#: inc/Redirects/AdminPage.php:964
 msgid "Import / Export"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:976
+#: inc/Redirects/AdminPage.php:1010
 msgid "The installation is retried on the next admin page load."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:986
+#: inc/Redirects/AdminPage.php:1020
 msgid "301 Moved Permanently"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:987
+#: inc/Redirects/AdminPage.php:1021
 msgid "302 Found (temporary)"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:988
+#: inc/Redirects/AdminPage.php:1022
 msgid "307 Temporary Redirect"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:989
+#: inc/Redirects/AdminPage.php:1023
 msgid "308 Permanent Redirect"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:990
+#: inc/Redirects/AdminPage.php:1024
 msgid "410 Gone"
 msgstr ""
 
 #. translators: %d: rule id
-#: inc/Redirects/AdminPage.php:1000
+#: inc/Redirects/AdminPage.php:1034
 msgid "Edit redirect #%d"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1002
-#: inc/Redirects/AdminPage.php:1108
+#: inc/Redirects/AdminPage.php:1036
+#: inc/Redirects/AdminPage.php:1142
 msgid "Add redirect"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1014
+#: inc/Redirects/AdminPage.php:1048
 msgid "From"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1016
-#: inc/Redirects/RedirectsTable.php:39
+#: inc/Redirects/AdminPage.php:1050
+#: inc/Redirects/RedirectsTable.php:38
 #: inc/Redirects/Rule.php:1290
 msgid "Source"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1020
+#: inc/Redirects/AdminPage.php:1054
 #: inc/Redirects/Rule.php:1294
 msgid "Match type"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1022
+#: inc/Redirects/AdminPage.php:1056
 msgid "Exact path"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1023
+#: inc/Redirects/AdminPage.php:1057
 msgid "Regular expression"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1027
+#: inc/Redirects/AdminPage.php:1061
 msgid "The path only, e.g. /old-page."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1027
-#: inc/Redirects/AdminPage.php:1063
-#: inc/Redirects/AdminPage.php:1092
+#: inc/Redirects/AdminPage.php:1061
+#: inc/Redirects/AdminPage.php:1097
+#: inc/Redirects/AdminPage.php:1126
 msgid "Learn more"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1028
+#: inc/Redirects/AdminPage.php:1062
 msgid "The path only, e.g. /old-page — case and a trailing slash do not matter. For a regular expression, the pattern without delimiters, e.g. ^/blog/(\\d+)/(.*)$ (write ~ as \\~)."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1029
+#: inc/Redirects/AdminPage.php:1063
 msgid "Feeds, sitemaps, robots.txt and favicon.ico are never redirected, so a rule for a feed URL has no effect."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1036
+#: inc/Redirects/AdminPage.php:1070
 msgid "To"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1038
-#: inc/Redirects/RedirectsTable.php:40
+#: inc/Redirects/AdminPage.php:1072
+#: inc/Redirects/RedirectsTable.php:39
 #: inc/Redirects/Rule.php:1292
 #: inc/WPOptimizer/AdminPage.php:204
 msgid "Target"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1043
+#: inc/Redirects/AdminPage.php:1077
 msgid "Target type"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1045
+#: inc/Redirects/AdminPage.php:1079
 msgid "Custom URL"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1049
+#: inc/Redirects/AdminPage.php:1083
 msgid "Term archive"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1054
+#: inc/Redirects/AdminPage.php:1088
 msgid "Entry"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1059
+#: inc/Redirects/AdminPage.php:1093
 msgid "Search"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1060
+#: inc/Redirects/AdminPage.php:1094
 msgid "Search…"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1063
+#: inc/Redirects/AdminPage.php:1097
 msgid "A path like /new-page/ or a full URL."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1064
+#: inc/Redirects/AdminPage.php:1098
 msgid "A path on this site starting with / or a full http(s) URL. Regular expressions can use $1 to $9 in the path. Ignored for 410."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1072
+#: inc/Redirects/AdminPage.php:1106
 msgid "Response"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1074
+#: inc/Redirects/AdminPage.php:1108
 #: inc/Redirects/Rule.php:1296
 msgid "Status code"
 msgstr ""
 
 #. translators: %s: cache time, e.g. "1 hour"
-#: inc/Redirects/AdminPage.php:1088
+#: inc/Redirects/AdminPage.php:1122
 msgid "Browsers may keep a 301 or 308 for up to %s — use 302 while testing."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1090
+#: inc/Redirects/AdminPage.php:1124
 msgid "Browsers may keep a 301 or 308 indefinitely — use 302 while testing."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1093
+#: inc/Redirects/AdminPage.php:1127
 msgid "The cache time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1094
+#: inc/Redirects/AdminPage.php:1128
 msgid "A page cache or CDN in front of WordPress may keep serving the old page until it is purged."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1095
+#: inc/Redirects/AdminPage.php:1129
 msgid "The cache time is set on the Settings tab."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1102
+#: inc/Redirects/AdminPage.php:1136
 msgid "Optional, only visible here"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1108
+#: inc/Redirects/AdminPage.php:1142
 msgid "Update redirect"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1122
+#: inc/Redirects/AdminPage.php:1156
 msgid "Search redirects"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1130
+#: inc/Redirects/AdminPage.php:1164
 msgid "404 logging is switched off. Existing entries are kept, but no new 404s are recorded."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1132
+#: inc/Redirects/AdminPage.php:1166
 msgid "Change this in the settings."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1144
+#: inc/Redirects/AdminPage.php:1178
 msgid "Search paths"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1146
+#: inc/Redirects/AdminPage.php:1180
 msgid "Delete every entry in the 404 log?"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1150
+#: inc/Redirects/AdminPage.php:1184
 msgid "Clear log"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1168
+#: inc/Redirects/AdminPage.php:1202
 msgid "The list could not be loaded because of a database error."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1217
+#: inc/Redirects/AdminPage.php:1251
 msgid "CSV file"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1220
+#: inc/Redirects/AdminPage.php:1254
 msgid "At most 2 MB and 5000 records per file. Larger files — including an export of more than 5000 redirects — have to be split."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1221
+#: inc/Redirects/AdminPage.php:1255
 msgid "Import CSV"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1224
+#: inc/Redirects/AdminPage.php:1258
 msgid "Format"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1225
+#: inc/Redirects/AdminPage.php:1259
 msgid "UTF-8, comma-separated, fields in double quotes where needed. The first line names the columns:"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1228
+#: inc/Redirects/AdminPage.php:1262
 msgid "\"source\" is required; \"target\" is required unless every row is a 410. Unknown columns are ignored."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1229
+#: inc/Redirects/AdminPage.php:1263
 msgid "Empty cells use the defaults: status code 301, match type exact, enabled 1, empty note. Enabled accepts 1/0, yes/no, true/false."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1230
+#: inc/Redirects/AdminPage.php:1264
 msgid "A rule whose source already exists is updated; its hit counter is kept. Invalid rows are skipped and listed."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1231
+#: inc/Redirects/AdminPage.php:1265
 msgid "Cells starting with = + - @ are exported with a leading ' so a spreadsheet does not run them as formulas; the import removes it again. A spreadsheet that re-saves the file may drop these quotes."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1234
+#: inc/Redirects/AdminPage.php:1268
 msgid "Redirection plugin exports"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1235
+#: inc/Redirects/AdminPage.php:1269
 msgid "A CSV exported by the Redirection plugin is recognised by its header and imported as far as it means the same here. A file mixing both formats' column names is rejected."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1238
+#: inc/Redirects/AdminPage.php:1272
 msgid "Imported: redirects with 301, 302, 307 or 308 and 410 rules; the title becomes the note, a disabled rule stays disabled. Hits are not imported — new rules start at 0, an updated rule keeps its counters."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1239
+#: inc/Redirects/AdminPage.php:1273
 msgid "Skipped with a reason: other actions and codes, regular expressions that do not match the whole path (^…$), \\1 or ${1} references, dynamic target tags, and sources outside this site's home path."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1240
+#: inc/Redirects/AdminPage.php:1274
 msgid "Rules here match the canonical path — lowercase, without a trailing slash, percent-encoding normalised. An exact rule without a query string matches any query string and passes it on; an exact rule with a query string matches only that query; a regular expression never sees the query. An imported rule can therefore match more, fewer or differently-cased requests than it did in Redirection, and regex captures are lowercased before they enter the target."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1241
+#: inc/Redirects/AdminPage.php:1275
 msgid "Groups, conditions, per-rule query and case settings and logs are not part of the export and are not imported. Exports from Yoast or Rank Math are not supported."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1247
+#: inc/Redirects/AdminPage.php:1281
 msgid "Downloads every redirect as CSV, including hits, last hit and origin (these extra columns are ignored on import)."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1251
+#: inc/Redirects/AdminPage.php:1285
 msgid "Download CSV"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1270
-#: inc/Redirects/RedirectsTable.php:245
+#: inc/Redirects/AdminPage.php:1304
+#: inc/Redirects/RedirectsTable.php:246
 msgid "404 log"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1272
+#: inc/Redirects/AdminPage.php:1306
 msgid "Record 404 errors"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1273
+#: inc/Redirects/AdminPage.php:1307
 msgid "One entry per path with hit count and last visit. No IP addresses, user agents or query strings are stored."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1277
+#: inc/Redirects/AdminPage.php:1311
 msgid "Referrer"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1279
+#: inc/Redirects/AdminPage.php:1313
 msgid "Store where the visitor came from (without its query string)"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1283
+#: inc/Redirects/AdminPage.php:1317
 #: inc/Redirects/Settings.php:228
 msgid "Log retention (days)"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1286
+#: inc/Redirects/AdminPage.php:1320
 msgid "Entries not seen for longer are deleted (1–365)."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1290
+#: inc/Redirects/AdminPage.php:1324
 #: inc/Redirects/Settings.php:229
 msgid "Maximum log entries"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1293
+#: inc/Redirects/AdminPage.php:1327
 msgid "The oldest entries are deleted beyond this number (100–50000)."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1297
+#: inc/Redirects/AdminPage.php:1331
 msgid "Automatic redirects"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1299
+#: inc/Redirects/AdminPage.php:1333
 msgid "Create a redirect when the address of a published post or page changes"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1303
+#: inc/Redirects/AdminPage.php:1337
 msgid "Browser cache for 301 and 308"
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1310
+#: inc/Redirects/AdminPage.php:1344
 msgid "How long a visitor's browser may keep a permanent redirect. Without a cache header, browsers may keep a 301 or 308 indefinitely, so a mistaken one sticks. Not sent to logged-in users."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1311
+#: inc/Redirects/AdminPage.php:1345
 msgid "The time applies to responses sent from now on: a browser that already cached a 301 or 308 keeps it for the time it was given (without a header, possibly indefinitely). When this module sends the header, it also tells shared caches and CDNs not to store the redirect; a page cache in front of WordPress may still apply its own rules."
 msgstr ""
 
-#: inc/Redirects/AdminPage.php:1379
+#: inc/Redirects/AdminPage.php:1413
 msgid "A database error occurred; the rule could not be loaded."
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:39
+#: inc/Redirects/NotFoundTable.php:38
 msgid "Path"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:40
-#: inc/Redirects/RedirectsTable.php:42
+#: inc/Redirects/NotFoundTable.php:39
+#: inc/Redirects/RedirectsTable.php:41
 msgid "Hits"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:41
+#: inc/Redirects/NotFoundTable.php:40
 msgid "Last seen"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:42
+#: inc/Redirects/NotFoundTable.php:41
 msgid "First seen"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:43
+#: inc/Redirects/NotFoundTable.php:42
 msgid "Last referrer"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:118
-#: inc/Redirects/RedirectsTable.php:134
+#: inc/Redirects/NotFoundTable.php:119
+#: inc/Redirects/RedirectsTable.php:135
 msgid "Select bulk action"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:120
-#: inc/Redirects/RedirectsTable.php:136
+#: inc/Redirects/NotFoundTable.php:121
+#: inc/Redirects/RedirectsTable.php:137
 msgid "Bulk actions"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:121
-#: inc/Redirects/NotFoundTable.php:172
-#: inc/Redirects/RedirectsTable.php:129
-#: inc/Redirects/RedirectsTable.php:200
+#: inc/Redirects/NotFoundTable.php:122
+#: inc/Redirects/NotFoundTable.php:173
+#: inc/Redirects/RedirectsTable.php:130
+#: inc/Redirects/RedirectsTable.php:201
 msgid "Delete"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:123
-#: inc/Redirects/RedirectsTable.php:141
+#: inc/Redirects/NotFoundTable.php:124
+#: inc/Redirects/RedirectsTable.php:142
 msgid "Apply"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:144
+#: inc/Redirects/NotFoundTable.php:145
 msgid "No 404s recorded."
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:152
+#: inc/Redirects/NotFoundTable.php:153
 msgid "Select log entry"
 msgstr ""
 
-#: inc/Redirects/NotFoundTable.php:171
+#: inc/Redirects/NotFoundTable.php:172
 msgid "Create redirect"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:41
+#: inc/Redirects/RedirectsTable.php:40
 msgid "Code"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:43
+#: inc/Redirects/RedirectsTable.php:42
 msgid "Last hit"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:44
+#: inc/Redirects/RedirectsTable.php:43
 msgid "Origin"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:45
+#: inc/Redirects/RedirectsTable.php:44
 msgid "Enabled"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:46
+#: inc/Redirects/RedirectsTable.php:45
 msgid "Created"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:126
-#: inc/Redirects/RedirectsTable.php:193
+#: inc/Redirects/RedirectsTable.php:127
+#: inc/Redirects/RedirectsTable.php:194
 msgid "Enable"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:127
-#: inc/Redirects/RedirectsTable.php:193
+#: inc/Redirects/RedirectsTable.php:128
+#: inc/Redirects/RedirectsTable.php:194
 msgid "Disable"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:128
-#: inc/Redirects/RedirectsTable.php:195
+#: inc/Redirects/RedirectsTable.php:129
+#: inc/Redirects/RedirectsTable.php:196
 msgid "Reset hits"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:162
+#: inc/Redirects/RedirectsTable.php:163
 msgid "No redirects yet."
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:170
+#: inc/Redirects/RedirectsTable.php:171
 msgid "Select redirect"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:181
+#: inc/Redirects/RedirectsTable.php:182
 msgid "(regular expression)"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:199
+#: inc/Redirects/RedirectsTable.php:200
 msgid "Delete this redirect?"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:242
+#: inc/Redirects/RedirectsTable.php:243
 msgid "Manual"
 msgstr ""
 
-#: inc/Redirects/RedirectsTable.php:243
+#: inc/Redirects/RedirectsTable.php:244
 msgid "Automatic (slug change)"
 msgstr ""
 
@@ -6219,7 +6219,7 @@ msgid "Reload page"
 msgstr ""
 
 #: inc/SiteCheck/AdminPage.php:201
-#: inc/SiteCheck/Runs.php:430
+#: inc/SiteCheck/Runs.php:431
 msgid "Request failed."
 msgstr ""
 
@@ -6278,7 +6278,7 @@ msgstr ""
 
 #: inc/SiteCheck/AdminPage.php:326
 #: inc/SiteCheck/Probe.php:455
-#: inc/SiteCheck/Runs.php:582
+#: inc/SiteCheck/Runs.php:583
 msgid "Busy, please try again."
 msgstr ""
 
@@ -7281,8 +7281,8 @@ msgid "This check has not been graded."
 msgstr ""
 
 #: inc/SiteCheck/Catalogue.php:459
-#: inc/SiteCheck/OutsideEndpoints.php:96
-#: inc/SiteCheck/Runs.php:351
+#: inc/SiteCheck/OutsideEndpoints.php:101
+#: inc/SiteCheck/Runs.php:352
 msgid "Unknown check."
 msgstr ""
 
@@ -7860,7 +7860,7 @@ msgstr ""
 #: inc/SiteCheck/Checks/FileChecks.php:500
 #: inc/SiteCheck/Checks/FileChecks.php:552
 #: inc/SiteCheck/Checks/FileChecks.php:563
-#: inc/SiteCheck/Checks/OutsideFiles.php:256
+#: inc/SiteCheck/Checks/OutsideFiles.php:268
 msgid "no reliable answer from outside"
 msgstr ""
 
@@ -8114,16 +8114,20 @@ msgstr ""
 msgid "%1$s reveals a version: %2$s"
 msgstr ""
 
+#: inc/SiteCheck/Checks/OutsideFiles.php:126
+msgid "The file changed on the server during the check. Run the check again."
+msgstr ""
+
 #. translators: %s: file names shown in the listing
-#: inc/SiteCheck/Checks/OutsideFiles.php:252
+#: inc/SiteCheck/Checks/OutsideFiles.php:264
 msgid "directory listing is on; it shows: %s"
 msgstr ""
 
-#: inc/SiteCheck/Checks/OutsideFiles.php:254
+#: inc/SiteCheck/Checks/OutsideFiles.php:266
 msgid "no directory listing"
 msgstr ""
 
-#: inc/SiteCheck/Checks/OutsideFiles.php:263
+#: inc/SiteCheck/Checks/OutsideFiles.php:275
 msgid "Fetched by your browser without login."
 msgstr ""
 
@@ -8201,8 +8205,12 @@ msgstr ""
 msgid "The observations could not be read."
 msgstr ""
 
-#: inc/SiteCheck/OutsideEndpoints.php:101
-#: inc/SiteCheck/Runs.php:585
+#: inc/SiteCheck/OutsideEndpoints.php:72
+msgid "This check was not prepared in this run. Start the check again."
+msgstr ""
+
+#: inc/SiteCheck/OutsideEndpoints.php:106
+#: inc/SiteCheck/Runs.php:586
 msgid "This run is no longer current. Start the check again."
 msgstr ""
 
@@ -8280,36 +8288,36 @@ msgstr ""
 msgid "No reliable answer (HTTP %d)."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:369
+#: inc/SiteCheck/Runs.php:370
 msgid "The results could not be read. The previous results stay."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:389
+#: inc/SiteCheck/Runs.php:390
 msgid "Unknown item."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:407
+#: inc/SiteCheck/Runs.php:408
 msgid "Not fully reset: part of the results may already be deleted. Reload the page and reset again."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:427
+#: inc/SiteCheck/Runs.php:428
 msgid "No result was sent for this check."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:434
+#: inc/SiteCheck/Runs.php:435
 msgid "The result could not be verified and was not used."
 msgstr ""
 
 #. translators: %d: number of findings not listed
-#: inc/SiteCheck/Runs.php:474
+#: inc/SiteCheck/Runs.php:475
 msgid "… and %d more"
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:587
+#: inc/SiteCheck/Runs.php:588
 msgid "The results are too large to be saved. The previous results stay."
 msgstr ""
 
-#: inc/SiteCheck/Runs.php:589
+#: inc/SiteCheck/Runs.php:590
 msgid "Could not be saved. Nothing was changed."
 msgstr ""
 
