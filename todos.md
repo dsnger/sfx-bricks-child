@@ -9,18 +9,13 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
-      k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
-      builds its prompt without the prompt-standards citation AGENTS.md asks for when a
-      range touches prompt artifacts. The file is the kit 0.52 template unchanged, so fix
-      it upstream in the dev-workflow kit and take it with the next refresh.
-- [ ] **Kit: harden the 0.52 review scripts upstream** (Gate B cycle k52lvd7n3q, risk 2;
-      all in kit template files taken unchanged, so fix them in the dev-workflow kit):
-      `risk-pass.sh` writes its evidence/canonical files through paths the reviewer can
-      preplant as symlinks (Major, declined here: needs a hostile reviewer), opens the state
-      file before rejecting a FIFO, and promotes a pass without reviewer evidence;
-      `check-doc-links.sh` reports `ok` when its grep/sed/awk extraction crashes;
-      `run-tests.sh` skips the checkout fingerprint on HUP/INT/TERM.
+- [ ] **Kit: risk-pass.sh read helpers treat a failed read as EOF** (Gate B cycle
+      k53rfr4m8x, risk 3, Minor, accepted, not repaired): in the kit 0.54.0 template
+      `.agents/skills/gate-b-review/scripts/risk-pass.sh` the `create`, `sread` and `place`
+      helpers do not tell a read error from end of file, so an I/O error after validation
+      could publish an empty or truncated canonical findings or evidence file and record
+      its hash as done. The file must stay byte-identical to the template, so fix it in
+      the dev-workflow kit and take it with the next refresh.
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
       2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
       good). The six `tests/support/*-live-check.php` that boot WordPress were written for
@@ -99,6 +94,20 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
+      k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
+      builds its prompt without the prompt-standards citation AGENTS.md asks for when a
+      range touches prompt artifacts. The file is the kit 0.52 template unchanged, so fix
+      it upstream in the dev-workflow kit and take it with the next refresh.
+      Done 2026-11-16: fixed in kit 0.53.0, taken with the 0.53 refresh.
+- [x] **Kit: harden the 0.52 review scripts upstream** (Gate B cycle k52lvd7n3q, risk 2;
+      all in kit template files taken unchanged, so fix them in the dev-workflow kit):
+      `risk-pass.sh` writes its evidence/canonical files through paths the reviewer can
+      preplant as symlinks (Major, declined here: needs a hostile reviewer), opens the state
+      file before rejecting a FIFO, and promotes a pass without reviewer evidence;
+      `check-doc-links.sh` reports `ok` when its grep/sed/awk extraction crashes;
+      `run-tests.sh` skips the checkout fingerprint on HUP/INT/TERM.
+      Done 2026-11-16: all five fixed in kit 0.53.0, taken with the 0.53 refresh.
 - [x] **Tooling note on the review-gates defects is stale after kit 0.48** (Gate B cycle
       k48rfr7q2m, spec 1, Minor): § Tooling revalidation still calls the missing-checkout
       guard open and quotes the old ledger-counting rule; kit 0.48's `CLAUDE.md` §5 has the

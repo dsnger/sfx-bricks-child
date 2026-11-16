@@ -10,7 +10,7 @@ repo's own (PRs #25, #28, #30 and #32).
 
 | Bot | Enabled | Where findings appear | Notes (plan/tier limits, completion signal, quirks) |
 |---|---|---|---|
-| CodeRabbit | yes | **inline + PR-level summary** | Real findings observed on #25 (inline + summary items). **Plan: Pro Plus, 1 included review per hour** (#28) — the quota trap is the defining quirk: **its status check goes green while the comment reads "Review rate limited" and no review ran** (#25 head `b0baea9` merged unreviewed; #28 first head). A green check never proves the head was reviewed — the per-head review-record count is the arbiter. After the hourly reset the next push auto-reviews; `@coderabbitai review` answers "applicable only when automatic reviews are paused", so it is not a reliable re-trigger. Edits its walkthrough comment in place. |
+| CodeRabbit | **no — gone for good** (Daniel, 2026-11-15) | as observed while it ran: **inline + PR-level summary** | No longer reviews this repo; nothing waits on it or reads it. Observations from when it ran: real findings observed on #25 (inline + summary items). **Plan: Pro Plus, 1 included review per hour** (#28) — the quota trap is the defining quirk: **its status check goes green while the comment reads "Review rate limited" and no review ran** (#25 head `b0baea9` merged unreviewed; #28 first head). A green check never proves the head was reviewed — the per-head review-record count is the arbiter. After the hourly reset the next push auto-reviews; `@coderabbitai review` answers "applicable only when automatic reviews are paused", so it is not a reliable re-trigger. Edits its walkthrough comment in place. |
 | Greptile | **no — off** (automatic reviews set to never, 2026-10-29) | as observed before 2026-10-29: **summary always; inline sometimes** | Automatic reviews are off in Greptile's own settings; a review runs only when requested by hand — an `@greptileai` comment on the PR, or the Greptile MCP's `trigger_code_review`. Observations from when it was on: PR-level summary comment every time, **edited in place** on re-review (compare the "Last reviewed commit" footer, not comment timestamps). Inline comments carry the findings when there are any (#28: 1 inline; #25: several). Confidence score in the summary (4/5 with findings, 5/5 clean). **Completion signal: none you can block on** — `gh pr checks` showed a "Greptile Review" entry on the first #28 head but the check-runs API returned nothing for later heads. Does not reliably auto-re-review small pushes; re-trigger and poll via the Greptile MCP (`trigger_code_review`, then `list_code_reviews` filtered by PR until `COMPLETED`, `get_code_review` for the body). Reviews take ~2–4 min. |
 
 **Routing — these lists are authoritative.**
@@ -19,22 +19,18 @@ An entry may carry `only with label <name>` (the bot is off on a PR without that
 and `once per PR` (a review of any head of the PR counts). A bot that is off goes under
 **Ignore**; `/dev-workflow:process-pr-review` neither reads nor reports it.
 
-- **Wait for (block on it):** *none.* CodeRabbit's check is green even when no review
-  ran — the per-head review count below is evidence you read after the fact, not a
-  signal to wait on.
-- **Process opportunistically (never block):** CodeRabbit. Read both channels (inline
-  comments *and* the PR-level summary body) at the start of the pass; a later post is a
-  follow-up, not something to wait on up front.
-- **Ignore:** Greptile — off. Its automatic reviews are set to never (Daniel,
+- **Wait for (block on it):** *none.* No bot reviews this repo automatically.
+- **Process opportunistically (never block):** *none.*
+- **Ignore:** CodeRabbit — gone for good (Daniel, 2026-11-15); a CodeRabbit check or
+  comment that still shows up on a PR is neither waited on nor read. Greptile — off. Its automatic reviews are set to never (Daniel,
   2026-10-29); a review runs only when requested by hand (an `@greptileai` comment or
   the Greptile MCP's `trigger_code_review`), which the review loop never does.
 
-**Per-head review count** — for bots that create review records. CodeRabbit creates one
-for every head it reviews; Greptile creates one only when it has inline findings. Pass
-the bot's login:
+**Per-head review count** — for a Greptile review requested by hand. Greptile creates a
+review record only when it has inline findings. Pass the bot's login:
 
 ```sh
-BOT_LOGIN=coderabbitai[bot]   # or greptile-apps[bot]
+BOT_LOGIN=greptile-apps[bot]
 gh api --paginate --slurp repos/dsnger/sfx-bricks-child/pulls/<PR>/reviews \
   | jq "[.[][] | select(.user.login==\"$BOT_LOGIN\" and .commit_id==\"<HEAD_SHA>\")] | length"
 ```
@@ -44,15 +40,13 @@ match on a later page reads as `0` — the exact false negative this command exi
 rule out. `--slurp` cannot be combined with `gh`'s own `--jq`, hence the pipe to `jq`
 and the `.[][]` that flattens the array-of-pages.
 
-For CodeRabbit, `0` means the head was not reviewed, whatever the check or the comment
-says. **For Greptile a `0` proves nothing.** It creates a review record when it posts
+**For Greptile a `0` proves nothing.** It creates a review record when it posts
 inline findings (#25, #28 and #30 each have one, `COMMENTED`) and none when it finds
 nothing — on #32 the query returned `0` while Greptile's own footer named the head it
 had just reviewed. So a non-zero count is real positive evidence, a zero is
 inconclusive, and the complete signal is that footer: "Last reviewed commit" in its
 summary comment. With no
-bot under **Wait for**, a `0` does not block the merge and needs no record — an absent
-review from an opportunistically-routed bot is a non-event.
+bot under **Wait for**, a `0` does not block the merge and needs no record.
 
 **Revisit when:** a bot's plan/tier changes (a Pro→Free downgrade turns a findings bot
 into a summary-only one, and back), or a bot is enabled/disabled.
