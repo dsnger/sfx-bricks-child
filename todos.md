@@ -9,6 +9,13 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Kit: risk-pass.sh read helpers treat a failed read as EOF** (Gate B cycle
+      k53rfr4m8x, risk 3, Minor, accepted, not repaired): in the kit 0.54.0 template
+      `.agents/skills/gate-b-review/scripts/risk-pass.sh` the `create`, `sread` and `place`
+      helpers do not tell a read error from end of file, so an I/O error after validation
+      could publish an empty or truncated canonical findings or evidence file and record
+      its hash as done. The file must stay byte-identical to the template, so fix it in
+      the dev-workflow kit and take it with the next refresh.
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
       2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
       good). The six `tests/support/*-live-check.php` that boot WordPress were written for
