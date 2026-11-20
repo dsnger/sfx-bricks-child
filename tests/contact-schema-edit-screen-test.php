@@ -177,6 +177,14 @@ $_POST += ['contact_type' => 'branch', 'sfx_schema_area' => 'X', 'sfx_hours' => 
 PostType::save_custom_fields(6);
 assert_same([], $test_meta_writes, 'save_without_nonce_changes_nothing');
 
+// No capability: nothing changes.
+$fresh();
+$test_can_edit = false;
+$_POST += ['contact_type' => 'branch', 'sfx_schema_area' => 'X', 'sfx_hours' => ['Monday' => ['state' => 'closed']]];
+PostType::save_custom_fields(6);
+$test_can_edit = true;
+assert_same([], $test_meta_writes, 'save_without_edit_post_changes_nothing');
+
 // Edit form shows the new type and fields.
 $test_posts[8] = sfx_make_post(8, 'sfx_contact_info', 'publish', 'Press');
 ob_start();

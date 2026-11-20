@@ -22,7 +22,6 @@ final class PageField
         add_action('init', [self::class, 'register_meta']);
         add_action('add_meta_boxes', [self::class, 'add_meta_box'], 10, 2);
         add_action('save_post', [self::class, 'save']);
-        add_action('admin_notices', [self::class, 'admin_notice']);
         add_action('wp_head', [self::class, 'print_for_request']);
     }
 
@@ -68,7 +67,7 @@ final class PageField
     public static function add_meta_box($post_type, $post): void
     {
         if (!$post instanceof \WP_Post || !self::can_edit($post->ID)
-            || !in_array($post_type, get_post_types(['public' => true, 'show_ui' => true]), true)) {
+            || !in_array($post_type, array_diff(get_post_types(['public' => true, 'show_ui' => true]), ['attachment']), true)) {
             return;
         }
         add_meta_box('sfx_page_schema', __('Structured data (JSON-LD)', 'sfxtheme'), [self::class, 'render_meta_box'], $post_type, 'normal', 'low');
@@ -78,6 +77,12 @@ final class PageField
     {
         if (!$post instanceof \WP_Post || !self::can_edit($post->ID)) {
             return;
+        }
+        // Shown here, not in admin_notices: the block editor does not print legacy notices.
+        $error = get_transient(self::notice_key());
+        if (is_string($error) && $error !== '') {
+            delete_transient(self::notice_key());
+            echo '<div class="notice notice-error inline"><p>' . esc_html($error) . '</p></div>';
         }
         wp_nonce_field(self::NONCE_ACTION, self::NONCE_FIELD);
         $value = get_post_meta($post->ID, self::META, true);
@@ -103,16 +108,6 @@ final class PageField
         } else {
             set_transient(self::notice_key(), $result['error'], 5 * MINUTE_IN_SECONDS);
         }
-    }
-
-    public static function admin_notice(): void
-    {
-        $error = get_transient(self::notice_key());
-        if (!is_string($error) || $error === '') {
-            return;
-        }
-        delete_transient(self::notice_key());
-        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error) . '</p></div>';
     }
 
     public static function print_for_request(): void

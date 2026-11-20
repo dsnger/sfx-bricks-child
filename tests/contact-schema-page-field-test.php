@@ -176,7 +176,7 @@ function stored(): ?string
 function notice(): string
 {
     ob_start();
-    PageField::admin_notice();
+    PageField::render_meta_box($GLOBALS['test_posts'][200]);
     return (string) ob_get_clean();
 }
 
@@ -186,15 +186,16 @@ function assert_rejected(string $value, string $label): void
     assert_same(OLD, stored(), "{$label}: old value kept");
     assert_same('reject', PageField::validate($value)['action'], "{$label}: validate rejects");
     $out = notice();
-    assert_contains('notice-error', $out, "{$label}: admin notice shown");
-    assert_same('', notice(), "{$label}: notice shown once");
+    assert_contains('notice-error', $out, "{$label}: message shown in the meta box");
+    assert_contains('<textarea', $out, "{$label}: inside the meta box");
+    assert_true(!str_contains(notice(), 'notice-error'), "{$label}: notice shown once");
 }
 
 function case_admin_can_save(): void
 {
     submit("  " . NEW_VALUE . "\n");
     assert_same(NEW_VALUE, stored(), 'admin: trimmed value stored byte for byte (slashes survive)');
-    assert_same('', notice(), 'admin: no notice');
+    assert_true(!str_contains(notice(), 'notice-error'), 'admin: no notice');
     submit('[{"@type":"Event"},{"@type":"Place"}]');
     assert_same('[{"@type":"Event"},{"@type":"Place"}]', stored(), 'admin: array of objects stored');
     assert_same(['action' => 'store', 'value' => '{}', 'error' => null], PageField::validate(' {} '), 'validate: empty object stored');
@@ -250,7 +251,7 @@ function case_whitespace_deletes(): void
     assert_same(['action' => 'delete', 'value' => '', 'error' => null], PageField::validate(" \n\t "), 'validate: whitespace deletes');
     submit(" \r\n ");
     assert_same(null, stored(), 'whitespace: meta deleted');
-    assert_same('', notice(), 'whitespace: no notice');
+    assert_true(!str_contains(notice(), 'notice-error'), 'whitespace: no notice');
 }
 
 function case_invalid_json_rejected_old_kept(): void
@@ -359,6 +360,10 @@ function case_meta_box_only_for_admins(): void
     PageField::add_meta_box('page', $page);
     assert_same('Structured data (JSON-LD)', $GLOBALS['test_meta_boxes']['sfx_page_schema']['title'] ?? null, 'meta box: added for admin');
     $GLOBALS['test_meta_boxes'] = [];
+    $wp_post_types['attachment'] = new WP_Post_Type('attachment', true);
+    $wp_post_types['attachment']->show_ui = true;
+    PageField::add_meta_box('attachment', $page);
+    assert_same([], $GLOBALS['test_meta_boxes'], 'meta box: not on attachments');
     PageField::add_meta_box('sfx_contact_info', $page);
     assert_same([], $GLOBALS['test_meta_boxes'], 'meta box: not on a non-public post type');
     $GLOBALS['test_role'] = 'editor_unfiltered_html';

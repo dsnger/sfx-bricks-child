@@ -172,9 +172,17 @@ assert_true(!array_key_exists('email', $entity), 'empty: no email key');
 assert_same(['@type' => 'PostalAddress', 'streetAddress' => 'Hauptstr. 1', 'addressLocality' => 'Essen', 'addressCountry' => 'Deutschland'], $entity['address'], 'empty: tag-only zip omitted');
 assert_same(['https://social.example/b'], $entity['sameAs'], 'empty: unusable account URL omitted');
 assert_true(!in_array('', array_merge(...array_map(static fn($d) => array_values(array_filter($d, 'is_string')), $entity['department'])), true), 'empty: no empty strings in departments');
+set_meta(600, '_link_url', 'https://social.example/b');
+assert_same(['https://social.example/b'], graph()['entity']['sameAs'], 'sameAs: duplicate URLs listed once');
 set_meta(600, '_link_url', '');
 set_meta(601, '_link_url', '');
 assert_true(!array_key_exists('sameAs', graph()['entity']), 'empty: no sameAs without accounts');
+
+// malformed_stored_hours_dropped
+fixture();
+set_meta(500, '_sfx_contact_schema_hours', ['Monday' => ['state' => 'open', 'ranges' => [['<b>x', '17:00']]], 'Sunday' => 'junk']);
+$json = json_encode(graph('LocalBusiness')['entity']);
+assert_true(!str_contains($json, '<b>') && !isset(graph('LocalBusiness')['entity']['openingHoursSpecification']), 'hours: malformed stored value never passes through');
 
 // formatted_only_contact_has_no_address
 fixture();

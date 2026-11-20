@@ -130,7 +130,7 @@ final class GraphBuilder
     private static function hours(int $id): array
     {
         $hours = get_post_meta($id, '_sfx_contact_schema_hours', true);
-        return is_array($hours) ? OpeningHours::to_schema($hours) : [];
+        return is_array($hours) ? OpeningHours::to_schema(OpeningHours::sanitize($hours, [])['hours']) : [];
     }
 
     /** @return list<string> URLs of the published social media accounts, in their list order */
@@ -150,7 +150,7 @@ final class GraphBuilder
                 $urls[] = $url;
             }
         }
-        return $urls;
+        return array_values(array_unique($urls));
     }
 
     /** Drops empty strings, nulls and empty lists, so nothing is published empty. */
