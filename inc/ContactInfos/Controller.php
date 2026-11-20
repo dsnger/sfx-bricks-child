@@ -32,6 +32,7 @@ class Controller
     HelpTab::register();
     Schema\Output::register();
     Schema\PageField::register();
+    Schema\SettingsPage::register();
     
     // Initialize shortcode instance and store it
     self::$shortcode_instance = new Shortcode\SC_ContactInfos();
