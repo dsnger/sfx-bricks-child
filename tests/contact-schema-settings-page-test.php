@@ -228,6 +228,14 @@ assert_contains('area label', $out, 'incomplete contact point: missing area name
 assert_contains('telephone or email', $out, 'incomplete contact point: missing contact named');
 assert_contains('<option value="LocalBusiness"', $out, 'type select offers LocalBusiness');
 
+// tsf_guidance_names_the_control; declared last, because a defined constant stays defined.
+fixture();
+$test_options[Settings::OPTION] = ['enabled' => true, 'type' => 'Organization', 'chosen_once' => false];
+define('THE_SEO_FRAMEWORK_VERSION', '5.2.1');
+$out = page();
+assert_contains('&quot;Schema.org Settings&quot; box, untick &quot;Add authorized presence?&quot;', $out, 'TSF: names the box and the checkbox');
+assert_true(!str_contains($out, 'Extension configured'), 'TSF: no extension note');
+
 // register_adds_submenu_and_handler
 $test_added_actions = [];
 SettingsPage::register();

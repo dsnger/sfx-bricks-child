@@ -109,7 +109,8 @@ final class SettingsPage
             'rank_math_company'        => __('Rank Math: the theme adds the Contact Infos data to Rank Math\'s organization entry.', 'sfxtheme'),
             'rank_math_not_company'    => __('Rank Math is set to a person — nothing is added.', 'sfxtheme'),
             'rank_math_schema_off'     => __('Rank Math\'s schema module is off — nothing is added.', 'sfxtheme'),
-            'tsf_knowledge_output_on'  => __('The SEO Framework publishes its own organization entry, so the theme publishes nothing. To let the theme publish the organization, switch off the organization output in The SEO Framework under SEO Settings → Schema.org Settings.', 'sfxtheme'),
+            /* translators: the quoted labels are The SEO Framework's own and stay in its wording */
+            'tsf_knowledge_output_on'  => __('The SEO Framework publishes its own organization entry, so the theme publishes nothing. To let the theme publish the organization: in The SEO Framework settings, in the "Schema.org Settings" box, untick "Add authorized presence?".', 'sfxtheme'),
             'tsf_knowledge_output_off' => __('The SEO Framework\'s organization output is off: the theme publishes its own organization entry on every page.', 'sfxtheme'),
             'no_seo_plugin'            => __('No SEO plugin: the theme publishes its own organization entry on every page.', 'sfxtheme'),
         ];
