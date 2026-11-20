@@ -72,7 +72,9 @@ My calls (CLAUDE.md "Autonomous run"; Daniel can overturn any):
   the settings screen (`manage_options` + nonce), never by the contact edit form. Why on the
   contacts and not as post IDs in an option: the existing export already carries every contact
   meta key with the contact and import re-creates it, so the selection travels without any ID
-  remapping (Gate A pass 1, finding 8).
+  remapping (Gate A pass 1, finding 8). Because a mark can be duplicated (import, overlapping
+  saves) or vanish with its post, the option also records whether an organization was ever
+  chosen on this site; see "Selection of contacts" for how both cases fail closed.
 - **C6 — own output appears on every front-end HTML page**, in one
   `<script type="application/ld+json">` printed in `wp_head`.
 - **C7 — release check as a manual harness** under `tests/support/`, plus a release-checklist
@@ -80,8 +82,8 @@ My calls (CLAUDE.md "Autonomous run"; Daniel can overturn any):
 - **C8 — logo (own output only):** the site's custom logo, else the site icon, else none.
   **URL (own output only):** `home_url('/')` for the current request (Polylang/WPML filter it to
   the language home where they do).
-- **C9 — the option is not exported.** `sfx_contact_infos_schema` holds only the on/off switch
-  and the type — a per-site decision (D10) — so it stays out of the ImportExport catalogue and
+- **C9 — the option is not exported.** `sfx_contact_infos_schema` holds only the on/off switch,
+  the type and the "chosen once" flag — per-site state (D10, C5) — so it stays out of the ImportExport catalogue and
   `inc/ImportExport/` is not changed. Recorded per AGENTS.md Don'ts (export is a decision per
   key). The per-page field is not exported either (page content). The new contact meta keys
   travel with contact export as all contact meta does today.
@@ -144,10 +146,22 @@ check (AC-6) establishes.
 
 ### Selection of contacts
 
-- **Organization:** the published `main` contact marked as organization. When none is marked:
-  the first published `main` contact by menu order, then publish date (fresh install
-  convenience). When the marked one is no longer published or no longer `main`: no automatic
-  output and no extension, and the settings page says so — no silent substitution.
+- **Organization**, decided on every request from the marks and the option's "chosen once"
+  flag (a boolean in `sfx_contact_infos_schema`, set the first time the settings screen saves an
+  organization, never cleared except by purge):
+  - exactly one contact carries the mark, and it is a published `main` contact → it;
+  - exactly one carries the mark, but it is not published or not `main` → no automatic output
+    and no extension, settings page asks for a choice;
+  - more than one carries the mark (an import or two overlapping saves) → no automatic output
+    and no extension, settings page lists them and asks for one choice;
+  - none carries the mark and "chosen once" is set (the chosen contact was permanently
+    deleted, its meta with it) → no automatic output and no extension, settings page asks for a
+    choice — no silent substitution;
+  - none carries the mark and "chosen once" is not set (a site never configured) → the first
+    published `main` contact by menu order, then publish date.
+- **Saving a choice** removes the mark from every other contact, then sets it on the chosen
+  one, then sets "chosen once". Two overlapping saves can still leave two marks for a moment;
+  the "more than one" rule above makes that state visible instead of guessing.
 - The organization cannot be excluded (the settings page shows no exclusion box for it).
 - Other `main` contacts are not published (one organization only); the settings page lists
   them as "not used".
@@ -162,16 +176,19 @@ An entity is published only with its minimum data; otherwise it is left out and 
 page lists it as incomplete with what is missing:
 
 - **Organization:** name (company). Without it: no automatic output and no extension.
-- **Location (`department`):** name (post title) and an address.
+- **Location (`department`, a `LocalBusiness`):** name (post title) and a usable postal address.
 - **Contact point:** area label and at least one of telephone or email.
-- Own-output type `LocalBusiness` without an organization address → published as
+- Own-output type `LocalBusiness` without a usable organization postal address → published as
   `Organization`, with a settings-page notice.
 
-**Address** (all entities): when street, zip, city or country is filled, a `PostalAddress`
-from those parts (`streetAddress`, `postalCode`, `addressLocality`, `addressCountry`, text as
-entered). When all four are empty and the formatted `_address` field is filled, `address` is
-that field as plain text (tags stripped, line breaks to ", "), which schema.org allows. The
-existing shortcode behaviour is unchanged.
+**Address** (all entities): only ever a `PostalAddress` built from the parts (`streetAddress`,
+`postalCode`, `addressLocality`, `addressCountry`, text as entered). It is *usable* when street
+and city are filled; otherwise no `address` is published. The formatted `_address` field is
+never turned into schema (Google requires `PostalAddress` for LocalBusiness): a contact that has
+only the formatted field is listed on the settings page as "fill in street, zip, city and
+country for the schema". In extension mode a missing usable address leaves the plugin's own
+`address` (and Rank Math's place) unchanged (C1). The existing shortcode behaviour is
+unchanged.
 
 ### What is published
 
@@ -268,7 +285,7 @@ the filter simply gets no additions.
   `sfxtheme` strings (invariant 4), layout per `DESIGN.md`. Holds the switch, the type (C4),
   the organization choice and exclusions (C5), the mode with reason, incomplete entities and
   the C1/C2 notes.
-- Option `sfx_contact_infos_schema` (switch, type) added to `DataPurge`'s option list.
+- Option `sfx_contact_infos_schema` (switch, type, "chosen once") added to `DataPurge`'s option list.
 - **Purge (AC-12):** the default purge (`DataPurge::run(false)`) removes the option, the
   per-page meta key and every new contact meta key (area label, opening hours, organization
   mark, exclusion mark) through a new, unconditional schema-meta list, separate from the
@@ -283,9 +300,11 @@ the filter simply gets no additions.
     active and when an "other" plugin is active beside Yoast;
   - published structure for a fixture of one organization, two locations with hours, two
     contact points, social accounts; empty values omitted; incomplete entities left out per
-    "Eligibility"; formatted-address fallback;
-  - selection: marked organization unpublished/retyped → no output; organization not
-    excludable; other `main` contacts not published;
+    "Eligibility"; a formatted-address-only contact gets no address, a formatted-only location is left out, and own LocalBusiness downgrades to Organization;
+  - selection: marked organization unpublished/retyped → no output; two marked (merge import
+    fixture) → no output; marked contact permanently deleted with "chosen once" set and another
+    published `main` present → no output; never configured → first `main`; saving a choice
+    leaves exactly one mark; organization not excludable; other `main` contacts not published;
   - Yoast and Rank Math callbacks: merge per C1 with deliberately conflicting plugin values;
     `@id`/`@type`/`url`/`logo` unchanged; Rank Math place address synced; person mode in
     scalar `Person` and both array orders → unchanged; missing publisher, non-array input and
@@ -345,10 +364,15 @@ the filter simply gets no additions.
     `inc/classes/meta/schema/entities/{organization,website,webpage}.class.php`).
   - SEOPress 10.4, All in One SEO 5.0.5.1, Schema & Structured Data for WP & AMP 1.71 — only
     their version constants, read from plugin source (not in Context7 for this purpose).
-  - WordPress core 7.1.4 (test site) — Context7 `/websites/developer_wordpress_reference_functions`
-    (`wp_json_encode`, `post_password_required`); `register_post_meta`, `current_user_can`,
-    `delete_post_meta_by_key`, `get_queried_object_id` — the builder looks each up there
-    before use.
+  - WordPress core 7.1.4 (test site) — Context7 `/websites/developer_wordpress_reference_functions`,
+    looked up 2026-11-20 for each API this spec commits to: `wp_json_encode` (flags passed to
+    `json_encode`, returns `false` on failure), `post_password_required`, `register_post_meta`
+    / `register_meta` (`show_in_rest` defaults to false; without `auth_callback` a protected
+    key falls back to `__return_false`), `delete_post_meta_by_key` (deletes the key across all
+    posts), `current_user_can` (meta cap `edit_post` with post ID), `get_queried_object_id`,
+    `wp_strip_all_tags` (removes `script`/`style` with their contents, then `strip_tags`).
+    Context7 documents the current reference, not a 7.1.4-pinned one; none of these
+    signatures differs in the test site's `wp-includes` (the builder confirms at use).
   - Bricks 2.4.5 (test site) emits only accordion FAQ schema; not otherwise used.
 - Impact: `inc/ContactInfos/*` (new classes for schema output, settings screen, per-page meta
   box; meta-box, validation and cache changes in `PostType.php` and `SC_ContactInfos.php`),
