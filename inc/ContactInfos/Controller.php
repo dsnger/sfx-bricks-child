@@ -30,6 +30,7 @@ class Controller
     AssetManager::register();
     PostType::init();
     HelpTab::register();
+    Schema\Output::register();
     
     // Initialize shortcode instance and store it
     self::$shortcode_instance = new Shortcode\SC_ContactInfos();
