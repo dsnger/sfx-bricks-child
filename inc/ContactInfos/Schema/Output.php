@@ -46,7 +46,7 @@ final class Output
             if (!is_string($json)) {
                 return;
             }
-            echo '<script type="application/ld+json">' . $json . "</script>\n"; // JSON_HEX_TAG: no "<" survives
+            echo '<script type="application/ld+json" class="sfx-contact-schema">' . $json . "</script>\n"; // JSON_HEX_TAG: no "<" survives
         } catch (\Throwable $e) {
             return;
         }

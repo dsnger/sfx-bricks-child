@@ -320,8 +320,8 @@ function case_output_hex_escapes(): void
     $out = PageField::render_for_request();
     assert_same(1, substr_count($out, '<script'), 'escape: exactly one opening script tag');
     assert_same(1, substr_count($out, '</script>'), 'escape: exactly one closing script tag');
-    assert_same(0, strpos($out, '<script type="application/ld+json">'), 'escape: the one script is the JSON-LD one');
-    $body = substr($out, strlen('<script type="application/ld+json">'), -strlen("</script>\n"));
+    assert_same(0, strpos($out, '<script type="application/ld+json" class="sfx-page-schema">'), 'escape: the one script is the JSON-LD one');
+    $body = substr($out, strlen('<script type="application/ld+json" class="sfx-page-schema">'), -strlen("</script>\n"));
     assert_same(false, str_contains($body, '<'), 'escape: no "<" inside the JSON');
     assert_same(false, str_contains($body, '&'), 'escape: no "&" inside the JSON');
     assert_contains('\\u003C!--', $body, 'escape: "<!--" hex-encoded');
@@ -390,7 +390,7 @@ function case_wp_head_survives_throwing_plugin_helper(): void
         ob_end_clean();
         $out = 'THREW ' . $e->getMessage();
     }
-    assert_same(1, substr_count($out, '<script type="application/ld+json">'), 'wp_head: no exception, the per-page field printed');
+    assert_same(1, substr_count($out, '<script type="application/ld+json" class="sfx-page-schema">'), 'wp_head: no exception, the per-page field printed');
     assert_contains('"name":"Old"', $out, 'wp_head: the printed script is the per-page field');
     assert_same(['mode' => 'unavailable', 'reason' => 'plugin_read_failed', 'plugins' => ['Rank Math']], \SFX\ContactInfos\Schema\Mode::detect(), 'mode: safe diagnostic state');
     $data = ['publisher' => ['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin']];

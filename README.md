@@ -111,7 +111,7 @@ The ZIP is `sfx-bricks-child-<version>.zip` and holds only the `SHIPPED` entries
 `bin/plugin.conf` under `sfx-bricks-child/`. `bash bin/release.sh publish --no-upload` stops
 after the ZIP. Details: `AGENTS.md` invariant 6.
 
-Before `publish`, run the schema release check against the local test site (it activates each installed SEO plugin in turn, fetches the page with the theme's schema switch off and on, and restores the plugins, their options and the switch afterwards): `SFX_TEST_SITE=<site dir> SFX_TEST_URL=<site url> bash tests/support/contact-schema-release-check.sh`.
+Before `publish`, run the schema release check against the local test site (it activates each installed SEO plugin in turn, fetches the page with the theme's schema switch off and on, and restores the plugins, their options and the switch afterwards): `SFX_TEST_SITE=<site dir> SFX_TEST_URL=<site url> bash tests/support/contact-schema-release-check.sh`. It reads only the company script of each setup's producer, never the per-page field; its analyzer's regression cases run inside the site, as the header of `tests/support/contact-schema-jsonld-cases.php` shows.
 
 ## Local test site
 

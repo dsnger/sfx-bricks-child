@@ -133,7 +133,7 @@ final class PageField
             return '';
         }
         $json = wp_json_encode($decoded, Output::JSON_FLAGS);
-        return is_string($json) ? '<script type="application/ld+json">' . $json . "</script>\n" : '';
+        return is_string($json) ? '<script type="application/ld+json" class="sfx-page-schema">' . $json . "</script>\n" : '';
     }
 
     /** A JSON object, or a non-empty array whose items are all objects; null otherwise. Objects stay objects. */

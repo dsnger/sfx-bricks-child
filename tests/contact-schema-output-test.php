@@ -198,8 +198,8 @@ function case_own_output_printed(): void
 {
     assert_mode('own', 'no_seo_plugin', [], 'own: mode');
     $out = own_output();
-    assert_same(1, substr_count($out, '<script type="application/ld+json">'), 'own: exactly one script');
-    $json = json_decode(substr($out, strlen('<script type="application/ld+json">'), -strlen("</script>\n")), true);
+    assert_same(1, substr_count($out, '<script type="application/ld+json" class="sfx-contact-schema">'), 'own: exactly one script');
+    $json = json_decode(substr($out, strlen('<script type="application/ld+json" class="sfx-contact-schema">'), -strlen("</script>\n")), true);
     assert_same([
         '@context'     => 'https://schema.org',
         '@type'        => 'Organization',
@@ -297,7 +297,7 @@ function case_tsf_off_is_own(): void
         $test_options['autodescription-site-settings'] = ['knowledge_output' => $off];
         assert_mode('own', 'tsf_knowledge_output_off', ['The SEO Framework'], 'TSF off: own output (' . var_export($off, true) . ')');
     }
-    assert_same(1, substr_count(own_output(), '<script type="application/ld+json">'), 'TSF off: printed');
+    assert_same(1, substr_count(own_output(), '<script type="application/ld+json" class="sfx-contact-schema">'), 'TSF off: printed');
 }
 
 function case_yoast_mode(): void
@@ -514,8 +514,8 @@ function case_own_output_escapes_script_breakers(): void
     $out = own_output();
     assert_same(1, substr_count($out, '<script'), 'escape: exactly one opening script tag');
     assert_same(1, substr_count($out, '</script>'), 'escape: exactly one closing script tag');
-    assert_same(1, substr_count($out, '<script type="application/ld+json">'), 'escape: the one script is the JSON-LD one');
-    $body = substr($out, strlen('<script type="application/ld+json">'), -strlen("</script>\n"));
+    assert_same(1, substr_count($out, '<script type="application/ld+json" class="sfx-contact-schema">'), 'escape: the one script is the JSON-LD one');
+    $body = substr($out, strlen('<script type="application/ld+json" class="sfx-contact-schema">'), -strlen("</script>\n"));
     assert_same(false, str_contains($body, '<'), 'escape: no "<" inside the JSON');
     assert_same(false, str_contains($body, '&'), 'escape: no "&" inside the JSON');
     assert_contains('1 ' . '\\' . 'u003C 2 ' . '\\' . 'u0026', $body, 'escape: surviving "<" and "&" hex-encoded');
@@ -546,7 +546,7 @@ function case_own_output_on_no_organization_prints_nothing(): void
 
 function case_own_output_logo_fallbacks(): void
 {
-    $logo = static fn(): ?string => json_decode(substr(own_output(), strlen('<script type="application/ld+json">'), -strlen("</script>\n")), true)['logo'] ?? null;
+    $logo = static fn(): ?string => json_decode(substr(own_output(), strlen('<script type="application/ld+json" class="sfx-contact-schema">'), -strlen("</script>\n")), true)['logo'] ?? null;
     $GLOBALS['test_site_icon'] = 'https://acme.test/icon.png';
     assert_same('https://acme.test/icon.png', $logo(), 'logo: site icon without custom logo');
     $GLOBALS['test_theme_mods'] = ['custom_logo' => 42];

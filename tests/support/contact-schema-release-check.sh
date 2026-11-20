@@ -7,10 +7,14 @@
 #   delivered | deliberately suppressed (expected for this setup) | not delivered | inconclusive - <why>
 # The marker is the organization's telephone from Contact Infos (SFX_TEST_MARKER overrides it), looked for
 # only in the primary organization node's own telephone field: the graph node another node names as its
-# publisher, or the Organization/LocalBusiness node whose @id ends in "#organization". The page is read
-# inside the site by WordPress' WP_HTML_Tag_Processor (contact-schema-jsonld.php, via `wp eval-file -`).
-# Provenance: with the switch off the marker must be absent, else the plugin already holds it and the
-# setup is inconclusive. Unreadable HTML or invalid JSON-LD is inconclusive, never a verdict.
+# publisher, or the Organization/LocalBusiness node whose @id ends in "#organization".
+# Provenance by element: only the company script of the setup's producer is read - the theme's own
+# (class sfx-contact-schema) without an SEO plugin or with TSF, Yoast's (yoast-schema-graph), Rank Math's
+# (rank-math-schema). The per-page field (sfx-page-schema) is never read. For TSF with its knowledge output
+# on, TSF's own JSON-LD must be on the page, or the setup is inconclusive.
+# A fetch counts only with HTTP 200 and a body that Observations::html_document() recognises as HTML; the
+# page is read inside the site (contact-schema-jsonld.php, via `wp eval-file -`). With the switch off the
+# marker must be absent, else the plugin already holds it. Anything uncertain is inconclusive, never a verdict.
 # It installs nothing: a plugin that is not installed is skipped.
 # Teardown: one trap, declared before the first change, restores the active SEO plugins, TSF's option and
 # the theme's schema option exactly as they were.
@@ -80,16 +84,18 @@ set_option_key() { # $1 = option, $2 = key, $3 = PHP value
 b64() { printf '%s' "$1" | base64 | tr -d '\n'; }
 
 # Fetches the page and prints the analyzer's one line: present ... | absent ... | inconclusive: <why>
-analyze() {
-  local html out
-  if ! html=$(curl -ksSf --max-time 30 "$URL/?sfx_release_check=$RANDOM" 2>&1); then
-    echo "inconclusive: fetch failed: $html" | head -n1
+analyze() { # $1 = source: own | yoast | rank_math | tsf
+  local out html status
+  if ! out=$(curl -ksS --max-time 30 -w '\n%{http_code}' "$URL/?sfx_release_check=$RANDOM" 2>&1); then
+    echo "inconclusive: fetch failed: $out" | head -n1
     return
   fi
+  status=${out##*$'\n'}
+  html=${out%$'\n'*}
   # the page travels inside the script; stdin here is that script, not the loop's
   if ! out=$({ printf '<?php\n$html = base64_decode("%s");\n$marker = base64_decode("%s");\n' "$(b64 "$html")" "$(b64 "$MARKER")"
                sed 1d "$ANALYZER"
-               printf '\necho sfx_release_check_verdict($html, $marker), "\\n";\n'; } | ddev wp eval-file - 2>/dev/null); then
+               printf '\necho sfx_release_check_verdict($html, (int) "%s", $marker, "%s"), "\\n";\n' "$status" "$1"; } | ddev wp eval-file - 2>/dev/null); then
     echo "inconclusive: wp eval-file failed"
     return
   fi
@@ -100,21 +106,21 @@ analyze() {
   esac
 }
 
-check() { # $1 = label, $2 = "suppressed" when the setup is expected to publish no company data
+check() { # $1 = label, $2 = source (own | yoast | rank_math | tsf); tsf is expected to publish no company data
   local off on mode verdict
   set_option_key "$SCHEMA_OPTION" enabled false
-  off=$(analyze)
+  off=$(analyze "$2")
   set_option_key "$SCHEMA_OPTION" enabled true
   mode=$(wp eval 'echo \SFX\ContactInfos\Schema\Mode::detect()["mode"];')
-  on=$(analyze)
+  on=$(analyze "$2")
   case "$off" in
     inconclusive:*) verdict="inconclusive - control fetch with the switch off: ${off#inconclusive: }" ;;
     present*) verdict="inconclusive - plugin already holds the marker (switch off)" ;;
     *)
       case "$on" in
         inconclusive:*) verdict="inconclusive - ${on#inconclusive: }" ;;
-        present*) verdict=delivered; [ "$2" = suppressed ] && verdict="delivered (UNEXPECTED: this setup should be suppressed)" ;;
-        *) verdict="not delivered"; [ "$2" = suppressed ] && verdict="deliberately suppressed (expected for this setup)" ;;
+        present*) verdict=delivered; [ "$2" = tsf ] && verdict="delivered (UNEXPECTED: this setup should be suppressed)" ;;
+        *) verdict="not delivered"; [ "$2" = tsf ] && verdict="deliberately suppressed (expected for this setup)" ;;
       esac
       ;;
   esac
@@ -123,7 +129,7 @@ check() { # $1 = label, $2 = "suppressed" when the setup is expected to publish 
 }
 
 only_active ""
-check "no SEO plugin" ""
+check "no SEO plugin" own
 for p in $PLUGINS; do
   if ! wp plugin is-installed "$p" >/dev/null 2>&1; then
     printf '%-34s not installed - skipped\n' "$p"
@@ -131,9 +137,11 @@ for p in $PLUGINS; do
   fi
   only_active "$p"
   if [ "$p" = autodescription ]; then
-    set_option_key "$TSF_OPTION" knowledge_output 0; check "$p (knowledge output off)" ""
-    set_option_key "$TSF_OPTION" knowledge_output 1; check "$p (knowledge output on)" suppressed
+    set_option_key "$TSF_OPTION" knowledge_output 0; check "$p (knowledge output off)" own
+    set_option_key "$TSF_OPTION" knowledge_output 1; check "$p (knowledge output on)" tsf
+  elif [ "$p" = wordpress-seo ]; then
+    check "$p" yoast
   else
-    check "$p" ""
+    check "$p" rank_math
   fi
 done
