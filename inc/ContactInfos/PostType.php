@@ -568,19 +568,26 @@ class PostType
             $state  = $hours[$day]['state'] ?? 'unset';
             $ranges = $state === 'open' ? ($hours[$day]['ranges'] ?? []) : [];
             $name   = 'sfx_hours[' . $day . ']';
-            echo '<p><strong style="display:inline-block;min-width:7em">' . esc_html(OpeningHours::day_label($day)) . '</strong> ';
-            echo '<select name="' . esc_attr($name . '[state]') . '">';
+            $day_label = OpeningHours::day_label($day);
+            echo '<fieldset style="border:0;margin:0 0 1em;padding:0;display:flow-root"><legend style="display:inline-block;min-width:7em;font-weight:600;float:left">' . esc_html($day_label) . '</legend> ';
+            /* translators: %s: weekday */
+            echo '<select name="' . esc_attr($name . '[state]') . '" aria-label="' . esc_attr(sprintf(__('%s: opening state', 'sfxtheme'), $day_label)) . '">';
             foreach ($states as $value => $label) {
                 echo '<option value="' . esc_attr($value) . '"' . selected($state, $value, false) . '>' . esc_html($label) . '</option>';
             }
             echo '</select>';
             for ($i = 0; $i < 2; $i++) {
                 foreach ([0, 1] as $j) {
+                    $control = $j === 0
+                        /* translators: 1: weekday, 2: range number (1 or 2) */
+                        ? sprintf(__('%1$s, range %2$d: from', 'sfxtheme'), $day_label, $i + 1)
+                        /* translators: 1: weekday, 2: range number (1 or 2) */
+                        : sprintf(__('%1$s, range %2$d: to', 'sfxtheme'), $day_label, $i + 1);
                     echo ($j === 0 ? ' ' : ' &ndash; ')
-                        . '<input type="time" name="' . esc_attr($name . '[ranges][' . $i . '][' . $j . ']') . '" value="' . esc_attr($ranges[$i][$j] ?? '') . '" />';
+                        . '<input type="time" name="' . esc_attr($name . '[ranges][' . $i . '][' . $j . ']') . '" value="' . esc_attr($ranges[$i][$j] ?? '') . '" aria-label="' . esc_attr($control) . '" />';
                 }
             }
-            echo '</p>';
+            echo '</fieldset>';
         }
     }
 

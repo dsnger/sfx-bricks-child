@@ -51,17 +51,16 @@ final class PageField
     /** @return array{action:'delete'|'store'|'reject', value:string, error:?string} */
     public static function validate(string $raw): array
     {
-        $value = trim($raw);
-        if ($value === '') {
+        if (trim($raw) === '') {
             return ['action' => 'delete', 'value' => '', 'error' => null];
         }
-        if (strlen($value) > self::MAX_BYTES) {
+        if (strlen($raw) > self::MAX_BYTES) { // the submitted bytes, surrounding whitespace included
             return ['action' => 'reject', 'value' => '', 'error' => __('The structured data was not saved: it is larger than 64 KB. The previous value was kept.', 'sfxtheme')];
         }
-        if (self::decode($value) === null) {
+        if (self::decode($raw) === null) {
             return ['action' => 'reject', 'value' => '', 'error' => __('The structured data was not saved: it must be a JSON object or an array of JSON objects. The previous value was kept.', 'sfxtheme')];
         }
-        return ['action' => 'store', 'value' => $value, 'error' => null];
+        return ['action' => 'store', 'value' => $raw, 'error' => null];
     }
 
     public static function add_meta_box($post_type, $post): void
@@ -119,7 +118,8 @@ final class PageField
     /** Every mode except Off; singular, published, not password-protected; '' otherwise. */
     public static function render_for_request(): string
     {
-        if (Mode::detect()['mode'] === 'off' || !is_singular()) {
+        // The switch itself, not Mode::detect(): no plugin read stands between the page and its own field.
+        if (!Settings::get()['enabled'] || !is_singular()) {
             return '';
         }
         $post_id = (int) get_queried_object_id();

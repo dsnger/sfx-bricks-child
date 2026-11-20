@@ -6642,12 +6642,8 @@ msgstr ""
 "zwischengespeicherten Daten des Themes – nur für diese Seite."
 
 #: inc/GeneralThemeOptions/AdminPage.php
-msgid "your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below."
-msgstr ""
-"deine Inhalte. Firmeninformationen, Social-Media-Konten, eigene Skripte, "
-"Beiträge, Seiten und Mediendateien bleiben unverändert – ebenso die "
-"Urheberrechtsangaben an deinen Mediendateien, sofern du unten kein Häkchen "
-"setzt."
+msgid "your content. Contact infos (apart from their structured-data fields named above), social accounts, custom scripts, posts, pages and media files all stay as they are — and so do the copyright notices on your media, unless you tick the box below."
+msgstr "deine Inhalte. Firmeninformationen (bis auf ihre oben genannten Felder für strukturierte Daten), Social-Media-Konten, eigene Skripte, Beiträge, Seiten und Mediendateien bleiben erhalten – ebenso die Urheberrechtsangaben an deinen Mediendateien, sofern du unten kein Häkchen setzt."
 
 #: inc/GeneralThemeOptions/AdminPage.php
 msgid "Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this."
@@ -7445,8 +7441,8 @@ msgid "This includes every redirect rule and the 404 log."
 msgstr "Dazu gehören alle Weiterleitungsregeln und das 404-Protokoll."
 
 #: inc/GeneralThemeOptions/AdminPage.php
-msgid "It also removes the structured-data settings and the per-page structured-data fields."
-msgstr "Außerdem werden die Einstellungen für strukturierte Daten und die Felder für strukturierte Daten je Seite entfernt."
+msgid "It also removes the structured-data settings, the per-page structured-data fields and the structured-data fields of your contact infos: area labels, structured opening hours and the organization and leave-out marks."
+msgstr "Außerdem werden die Einstellungen für strukturierte Daten, die Felder für strukturierte Daten je Seite und die Felder für strukturierte Daten deiner Firmeninformationen entfernt: Bereichsbezeichnungen, strukturierte Öffnungszeiten sowie die Markierungen als Organisation und als ausgelassen."
 
 #: inc/GeneralThemeOptions/Settings.php
 msgid "Enable Redirects"
@@ -10447,36 +10443,36 @@ msgid "Off. Nothing is published, the per-page structured data included."
 msgstr "Aus. Es wird nichts veröffentlicht, auch nicht die strukturierten Daten je Seite."
 
 #: inc/ContactInfos
-msgid "Another SEO or schema plugin is active (%s). The theme stays out: it publishes nothing and adds nothing."
-msgstr "Ein anderes SEO- oder Schema-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht und ergänzt nichts."
+msgid "Another SEO or schema plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugin's."
+msgstr "Ein anderes SEO- oder Schema-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
 
 #: inc/ContactInfos
-msgid "More than one SEO plugin is active (%s). The theme stays out: it publishes nothing and adds nothing."
-msgstr "Mehr als ein SEO-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht und ergänzt nichts."
+msgid "More than one SEO plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugins'."
+msgstr "Mehr als ein SEO-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht keine eigenen Firmendaten und ergänzt keine in den Einträgen der Plugins."
 
 #: inc/ContactInfos
 msgid "Yoast SEO: the theme adds the Contact Infos data to Yoast's organization entry."
 msgstr "Yoast SEO: Das Theme ergänzt den Organisationseintrag von Yoast um die Daten aus den Kontaktinformationen."
 
 #: inc/ContactInfos
-msgid "Yoast SEO is set to a person — nothing is added."
-msgstr "Yoast SEO ist auf eine Person eingestellt – es wird nichts ergänzt."
+msgid "Yoast SEO is set to a person — no company data is added."
+msgstr "Yoast SEO ist auf eine Person eingestellt – es werden keine Firmendaten ergänzt."
 
 #: inc/ContactInfos
 msgid "Rank Math: the theme adds the Contact Infos data to Rank Math's organization entry."
 msgstr "Rank Math: Das Theme ergänzt den Organisationseintrag von Rank Math um die Daten aus den Kontaktinformationen."
 
 #: inc/ContactInfos
-msgid "Rank Math is set to a person — nothing is added."
-msgstr "Rank Math ist auf eine Person eingestellt – es wird nichts ergänzt."
+msgid "Rank Math is set to a person — no company data is added."
+msgstr "Rank Math ist auf eine Person eingestellt – es werden keine Firmendaten ergänzt."
 
 #: inc/ContactInfos
-msgid "Rank Math's schema module is off — nothing is added."
-msgstr "Das Schema-Modul von Rank Math ist ausgeschaltet – es wird nichts ergänzt."
+msgid "Rank Math's schema module is off — no company data is added."
+msgstr "Das Schema-Modul von Rank Math ist ausgeschaltet – es werden keine Firmendaten ergänzt."
 
 #: inc/ContactInfos
-msgid "The SEO Framework publishes its own organization entry, so the theme publishes nothing. To let the theme publish the organization: in The SEO Framework settings, in the \"Schema.org Settings\" box, untick \"Add authorized presence?\"."
-msgstr "The SEO Framework veröffentlicht einen eigenen Organisationseintrag, daher veröffentlicht das Theme nichts. Damit das Theme die Organisation veröffentlicht: In den Einstellungen von The SEO Framework im Feld \"Schema.org Settings\" das Häkchen bei \"Add authorized presence?\" entfernen."
+msgid "The SEO Framework publishes its own organization entry, so the theme publishes no company data. To let the theme publish the organization: in The SEO Framework settings, in the \"Schema.org Settings\" box, untick \"Add authorized presence?\"."
+msgstr "The SEO Framework veröffentlicht einen eigenen Organisationseintrag, daher veröffentlicht das Theme keine Firmendaten. Damit das Theme die Organisation veröffentlicht: In den Einstellungen von The SEO Framework im Feld \"Schema.org Settings\" das Häkchen bei \"Add authorized presence?\" entfernen."
 
 #: inc/ContactInfos
 msgid "The SEO Framework's organization output is off: the theme publishes its own organization entry on every page."
@@ -10511,20 +10507,20 @@ msgid "Type LocalBusiness needs the organization's street and city. Until they a
 msgstr "Der Typ LocalBusiness braucht Straße und Ort der Organisation. Solange sie fehlen, wird als Organization veröffentlicht."
 
 #: inc/ContactInfos
-msgid "The contact chosen as the organization is no longer a published contact of type Main. Nothing is published or added until you choose one below."
-msgstr "Der als Organisation gewählte Kontakt ist kein veröffentlichter Kontakt vom Typ Hauptkontakt mehr. Es wird nichts veröffentlicht oder ergänzt, bis du unten einen wählst."
+msgid "The contact chosen as the organization is no longer a published contact of type Main. No company data is published or added until you choose one below."
+msgstr "Der als Organisation gewählte Kontakt ist kein veröffentlichter Kontakt vom Typ Hauptkontakt mehr. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
 
 #: inc/ContactInfos
-msgid "Several contacts are marked as the organization. Nothing is published or added until you choose one below."
-msgstr "Mehrere Kontakte sind als Organisation markiert. Es wird nichts veröffentlicht oder ergänzt, bis du unten einen wählst."
+msgid "Several contacts are marked as the organization. No company data is published or added until you choose one below."
+msgstr "Mehrere Kontakte sind als Organisation markiert. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
 
 #: inc/ContactInfos
-msgid "The contact chosen as the organization no longer exists. Nothing is published or added until you choose one below."
-msgstr "Der als Organisation gewählte Kontakt existiert nicht mehr. Es wird nichts veröffentlicht oder ergänzt, bis du unten einen wählst."
+msgid "The contact chosen as the organization no longer exists. No company data is published or added until you choose one below."
+msgstr "Der als Organisation gewählte Kontakt existiert nicht mehr. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
 
 #: inc/ContactInfos
-msgid "There is no published contact of type Main. Nothing is published or added until one exists."
-msgstr "Es gibt keinen veröffentlichten Kontakt vom Typ Hauptkontakt. Es wird nichts veröffentlicht oder ergänzt, bis einer existiert."
+msgid "There is no published contact of type Main. No company data is published or added until one exists."
+msgstr "Es gibt keinen veröffentlichten Kontakt vom Typ Hauptkontakt. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis einer existiert."
 
 #: inc/ContactInfos
 msgid "No organization has been chosen yet. Until you save a choice, the first contact of type Main is used: %s."
@@ -10533,6 +10529,30 @@ msgstr "Es wurde noch keine Organisation gewählt. Bis du eine Auswahl speichers
 #: inc/ContactInfos
 msgid "Incomplete, left out"
 msgstr "Unvollständig, ausgelassen"
+
+#: inc/ContactInfos
+msgid "Per-page JSON-LD stays active while the switch is on."
+msgstr "Das JSON-LD je Seite bleibt aktiv, solange der Schalter an ist."
+
+#: inc/ContactInfos
+msgid "The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
+msgstr "Die Einstellungen des aktiven SEO-Plugins (%s) konnten nicht gelesen werden. Bis das wieder geht, veröffentlicht das Theme keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
+
+#: inc/ContactInfos
+msgid "Incomplete, published without the address"
+msgstr "Unvollständig, ohne Adresse veröffentlicht"
+
+#: inc/ContactInfos
+msgid "%s: opening state"
+msgstr "%s: Öffnungsstatus"
+
+#: inc/ContactInfos
+msgid "%1$s, range %2$d: from"
+msgstr "%1$s, Zeitraum %2$d: von"
+
+#: inc/ContactInfos
+msgid "%1$s, range %2$d: to"
+msgstr "%1$s, Zeitraum %2$d: bis"
 
 #: inc/ContactInfos
 msgid "name"

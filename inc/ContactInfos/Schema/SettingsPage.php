@@ -98,21 +98,25 @@ final class SettingsPage
     {
         echo '<h2>' . esc_html__('Current state', 'sfxtheme') . '</h2>';
         $plugins = implode(', ', $mode['plugins']);
+        // The per-page field prints in every mode except Off (spec § "Per-page custom field").
+        $per_page = ' ' . __('Per-page JSON-LD stays active while the switch is on.', 'sfxtheme');
         $reasons = [
             'disabled'                 => __('Off. Nothing is published, the per-page structured data included.', 'sfxtheme'),
             /* translators: %s: plugin names */
-            'other_plugin'             => sprintf(__('Another SEO or schema plugin is active (%s). The theme stays out: it publishes nothing and adds nothing.', 'sfxtheme'), $plugins),
+            'other_plugin'             => sprintf(__('Another SEO or schema plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugin\'s.', 'sfxtheme'), $plugins) . $per_page,
             /* translators: %s: plugin names */
-            'several_seo_plugins'      => sprintf(__('More than one SEO plugin is active (%s). The theme stays out: it publishes nothing and adds nothing.', 'sfxtheme'), $plugins),
+            'several_seo_plugins'      => sprintf(__('More than one SEO plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugins\'.', 'sfxtheme'), $plugins) . $per_page,
             'yoast_company'            => __('Yoast SEO: the theme adds the Contact Infos data to Yoast\'s organization entry.', 'sfxtheme'),
-            'yoast_not_company'        => __('Yoast SEO is set to a person — nothing is added.', 'sfxtheme'),
+            'yoast_not_company'        => __('Yoast SEO is set to a person — no company data is added.', 'sfxtheme') . $per_page,
             'rank_math_company'        => __('Rank Math: the theme adds the Contact Infos data to Rank Math\'s organization entry.', 'sfxtheme'),
-            'rank_math_not_company'    => __('Rank Math is set to a person — nothing is added.', 'sfxtheme'),
-            'rank_math_schema_off'     => __('Rank Math\'s schema module is off — nothing is added.', 'sfxtheme'),
+            'rank_math_not_company'    => __('Rank Math is set to a person — no company data is added.', 'sfxtheme') . $per_page,
+            'rank_math_schema_off'     => __('Rank Math\'s schema module is off — no company data is added.', 'sfxtheme') . $per_page,
             /* translators: the quoted labels are The SEO Framework's own and stay in its wording */
-            'tsf_knowledge_output_on'  => __('The SEO Framework publishes its own organization entry, so the theme publishes nothing. To let the theme publish the organization: in The SEO Framework settings, in the "Schema.org Settings" box, untick "Add authorized presence?".', 'sfxtheme'),
+            'tsf_knowledge_output_on'  => __('The SEO Framework publishes its own organization entry, so the theme publishes no company data. To let the theme publish the organization: in The SEO Framework settings, in the "Schema.org Settings" box, untick "Add authorized presence?".', 'sfxtheme') . $per_page,
             'tsf_knowledge_output_off' => __('The SEO Framework\'s organization output is off: the theme publishes its own organization entry on every page.', 'sfxtheme'),
             'no_seo_plugin'            => __('No SEO plugin: the theme publishes its own organization entry on every page.', 'sfxtheme'),
+            /* translators: %s: plugin names */
+            'plugin_read_failed'       => sprintf(__('The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin\'s.', 'sfxtheme'), $plugins) . $per_page,
         ];
         echo '<p><strong>' . esc_html($reasons[$mode['reason']] ?? $mode['reason']) . '</strong></p>';
 
@@ -134,13 +138,13 @@ final class SettingsPage
         self::render_list($notes);
 
         $problems = [
-            'marked_invalid'       => __('The contact chosen as the organization is no longer a published contact of type Main. Nothing is published or added until you choose one below.', 'sfxtheme'),
-            'multiple_marked'      => __('Several contacts are marked as the organization. Nothing is published or added until you choose one below.', 'sfxtheme'),
-            'deleted_after_choice' => __('The contact chosen as the organization no longer exists. Nothing is published or added until you choose one below.', 'sfxtheme'),
-            'no_main'              => __('There is no published contact of type Main. Nothing is published or added until one exists.', 'sfxtheme'),
+            'marked_invalid'       => __('The contact chosen as the organization is no longer a published contact of type Main. No company data is published or added until you choose one below.', 'sfxtheme'),
+            'multiple_marked'      => __('Several contacts are marked as the organization. No company data is published or added until you choose one below.', 'sfxtheme'),
+            'deleted_after_choice' => __('The contact chosen as the organization no longer exists. No company data is published or added until you choose one below.', 'sfxtheme'),
+            'no_main'              => __('There is no published contact of type Main. No company data is published or added until one exists.', 'sfxtheme'),
         ];
         if (isset($problems[$selection['status']])) {
-            echo '<div class="notice notice-warning inline"><p>' . esc_html($problems[$selection['status']]) . '</p>';
+            echo '<div class="notice notice-warning inline"><p>' . esc_html($problems[$selection['status']] . $per_page) . '</p>';
             self::render_contacts($selection['marked_ids']);
             echo '</div>';
         } elseif ($selection['status'] === 'none_marked_unconfigured') {
@@ -149,7 +153,6 @@ final class SettingsPage
         }
 
         if ($graph['incomplete'] !== []) {
-            echo '<h3>' . esc_html__('Incomplete, left out', 'sfxtheme') . '</h3><ul>';
             $labels = [
                 'name'               => __('name', 'sfxtheme'),
                 'address'            => __('street and city', 'sfxtheme'),
@@ -157,12 +160,24 @@ final class SettingsPage
                 'area'               => __('area label', 'sfxtheme'),
                 'telephone_or_email' => __('telephone or email', 'sfxtheme'),
             ];
-            foreach ($graph['incomplete'] as $entry) {
-                $missing = array_map(static fn(string $m): string => $labels[$m] ?? $m, $entry['missing']);
-                /* translators: %s: list of missing fields */
-                echo '<li>' . self::contact_link($entry['id']) . ' — ' . esc_html(sprintf(__('missing: %s', 'sfxtheme'), implode(', ', $missing))) . '</li>';
+            // A named organization with only the formatted address is still published, without its address.
+            $published = static fn(array $entry): bool => $entry['id'] === (int) $selection['organization_id'] && !in_array('name', $entry['missing'], true);
+            $groups = [
+                __('Incomplete, left out', 'sfxtheme') => array_filter($graph['incomplete'], static fn(array $e): bool => !$published($e)),
+                __('Incomplete, published without the address', 'sfxtheme') => array_filter($graph['incomplete'], $published),
+            ];
+            foreach ($groups as $heading => $entries) {
+                if ($entries === []) {
+                    continue;
+                }
+                echo '<h3>' . esc_html($heading) . '</h3><ul>';
+                foreach ($entries as $entry) {
+                    $missing = array_map(static fn(string $m): string => $labels[$m] ?? $m, $entry['missing']);
+                    /* translators: %s: list of missing fields */
+                    echo '<li>' . self::contact_link($entry['id']) . ' — ' . esc_html(sprintf(__('missing: %s', 'sfxtheme'), implode(', ', $missing))) . '</li>';
+                }
+                echo '</ul>';
             }
-            echo '</ul>';
         }
 
         if ($selection['unused_main_ids'] !== []) {

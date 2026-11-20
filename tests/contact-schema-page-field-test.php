@@ -6,6 +6,7 @@ declare(strict_types=1);
 // Plugin constants cannot be undefined, so every case runs in its own PHP process:
 // `php tests/contact-schema-page-field-test.php <case>` runs one case with that case's constants.
 
+use SFX\ContactInfos\Schema\Output;
 use SFX\ContactInfos\Schema\PageField;
 use SFX\ContactInfos\Schema\Settings;
 
@@ -28,6 +29,7 @@ const CASES = [
     'non_singular_prints_nothing'             => [],
     'feature_off_prints_nothing'              => [],
     'conflict_mode_still_prints'              => ['SEOPRESS_VERSION'],
+    'wp_head_survives_throwing_plugin_helper' => ['RANK_MATH_VERSION'],
     'meta_box_only_for_admins'                => [],
     'meta_registered_without_rest'            => [],
 ];
@@ -63,6 +65,9 @@ require dirname(__DIR__) . '/inc/ContactInfos/Schema/Settings.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/Mode.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/Output.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/PageField.php';
+if ($case === 'wp_head_survives_throwing_plugin_helper') {
+    require __DIR__ . '/support/rank-math-throwing-helper-stub.php';
+}
 
 const ROLES = [
     'administrator'          => ['manage_options', 'unfiltered_html', 'edit_post'],
@@ -115,6 +120,10 @@ function wp_is_post_autosave($id)
 function wp_json_encode($value, $flags = 0, $depth = 512)
 {
     return json_encode($value, $flags, $depth);
+}
+function is_admin(): bool
+{
+    return $GLOBALS['test_is_admin'] ?? false;
 }
 function is_singular(): bool
 {
@@ -195,11 +204,12 @@ function assert_rejected(string $value, string $label): void
 function case_admin_can_save(): void
 {
     submit("  " . NEW_VALUE . "\n");
-    assert_same(NEW_VALUE, stored(), 'admin: trimmed value stored byte for byte (slashes survive)');
+    assert_same("  " . NEW_VALUE . "\n", stored(), 'admin: value stored exactly as submitted (whitespace and slashes survive)');
+    assert_contains('"name":"Say', PageField::render_for_request(), 'admin: surrounding whitespace does not stop the output');
     assert_true(!str_contains(notice(), 'notice-error'), 'admin: no notice');
     submit('[{"@type":"Event"},{"@type":"Place"}]');
     assert_same('[{"@type":"Event"},{"@type":"Place"}]', stored(), 'admin: array of objects stored');
-    assert_same(['action' => 'store', 'value' => '{}', 'error' => null], PageField::validate(' {} '), 'validate: empty object stored');
+    assert_same(['action' => 'store', 'value' => ' {} ', 'error' => null], PageField::validate(' {} '), 'validate: empty object stored as submitted');
 }
 
 function case_editor_with_unfiltered_html_cannot_save(): void
@@ -292,7 +302,11 @@ function case_over_64kb_rejected(): void
     $wrap = '{"a":""}';
     $fits = '{"a":"' . str_repeat('x', 65536 - strlen($wrap)) . '"}';
     assert_same(65536, strlen($fits), 'fixture: exactly 64 KB');
-    assert_same('store', PageField::validate("  {$fits}  ")['action'], '64 KB exactly, surrounding whitespace not counted: stored');
+    assert_same('store', PageField::validate($fits)['action'], '64 KB exactly: stored');
+    assert_rejected("  {$fits}  ", '64 KB of JSON plus surrounding whitespace: the submitted bytes count');
+    $padded = ' {"a":"' . str_repeat('x', 65536 - strlen($wrap) - 2) . '"}' . "\n";
+    assert_same(65536, strlen($padded), 'fixture: exactly 64 KB with whitespace');
+    assert_same(['action' => 'store', 'value' => $padded, 'error' => null], PageField::validate($padded), '64 KB exactly with whitespace: stored as submitted');
     $multibyte = '{"a":"' . str_repeat('ä', (65536 - strlen($wrap)) / 2 + 1) . '"}';
     assert_same(true, mb_strlen($multibyte) < 65536 && strlen($multibyte) > 65536, 'fixture: under 64K characters, over 64 KB');
     assert_rejected($multibyte, 'over 64 KB in bytes');
@@ -355,6 +369,32 @@ function case_feature_off_prints_nothing(): void
     assert_same('', PageField::render_for_request(), 'stored broken JSON: nothing');
     unset($test_meta[200][PageField::META]);
     assert_same('', PageField::render_for_request(), 'no value: nothing');
+}
+
+// The whole wp_head chain (own output, then the per-page field) with a Rank Math whose helpers throw.
+function case_wp_head_survives_throwing_plugin_helper(): void
+{
+    global $test_added_actions;
+    $GLOBALS['test_is_admin'] = false;
+    $test_added_actions = [];
+    Output::register();
+    PageField::register();
+    assert_same([[Output::class, 'print_own'], [PageField::class, 'print_for_request']], $test_added_actions['wp_head'] ?? null, 'wp_head: both callbacks registered');
+    ob_start();
+    try {
+        foreach ($test_added_actions['wp_head'] as $callback) {
+            $callback();
+        }
+        $out = (string) ob_get_clean();
+    } catch (\Throwable $e) {
+        ob_end_clean();
+        $out = 'THREW ' . $e->getMessage();
+    }
+    assert_same(1, substr_count($out, '<script type="application/ld+json">'), 'wp_head: no exception, the per-page field printed');
+    assert_contains('"name":"Old"', $out, 'wp_head: the printed script is the per-page field');
+    assert_same(['mode' => 'unavailable', 'reason' => 'plugin_read_failed', 'plugins' => ['Rank Math']], \SFX\ContactInfos\Schema\Mode::detect(), 'mode: safe diagnostic state');
+    $data = ['publisher' => ['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin']];
+    assert_same($data, Output::rank_math_json_ld($data, null), 'extension: input unchanged');
 }
 
 function case_conflict_mode_still_prints(): void

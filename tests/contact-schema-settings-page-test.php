@@ -137,6 +137,21 @@ function page(): string
 
 const VALID = ['enabled' => '1', 'type' => 'LocalBusiness', 'organization_id' => '500', 'excluded' => ['501']];
 
+// plugin_read_failed runs in its own process (`php <this file> throwing_rank_math`): RANK_MATH_VERSION stays defined.
+if (($argv[1] ?? '') === 'throwing_rank_math') {
+    fixture();
+    $test_options[Settings::OPTION] = ['enabled' => true, 'type' => 'Organization', 'chosen_once' => false];
+    define('RANK_MATH_VERSION', '1.0.282');
+    require __DIR__ . '/support/rank-math-throwing-helper-stub.php';
+    $out = page();
+    assert_contains('The settings of the active SEO plugin (Rank Math) could not be read.', $out, 'throwing helper: page renders the diagnostic');
+    assert_contains('Per-page JSON-LD stays active while the switch is on.', $out, 'throwing helper: per-page output named');
+    exit($failures > 0 ? 1 : 0);
+}
+$child = [];
+exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' throwing_rank_math 2>&1', $child, $child_code);
+assert_same([0, []], [$child_code, $child], 'throwing Rank Math helper: settings page renders, no fatal');
+
 // save_requires_manage_options
 fixture();
 $test_can = false;
@@ -211,6 +226,7 @@ $out = page();
 assert_true(!str_contains($out, '<script>alert(1)</script>'), 'escaped: no raw markup from a title');
 assert_contains(esc_html($hostile), $out, 'escaped: title shown escaped in the marked list');
 assert_contains('Several contacts are marked as the organization', $out, 'fail closed: multiple marks explained');
+assert_contains('No company data is published or added until you choose one below. Per-page JSON-LD stays active while the switch is on.', $out, 'fail closed: only company data stops, the per-page field is named');
 assert_contains('post.php?post=503&amp;action=edit', $out, 'fail closed: edit link per marked contact');
 assert_contains('No SEO plugin', $out, 'mode reason rendered');
 assert_contains('name="_wpnonce" value="nonce-for-sfx_contact_schema_save"', $out, 'form carries the nonce');
@@ -227,6 +243,24 @@ assert_contains('Second main', $out, 'unused main listed');
 assert_contains('area label', $out, 'incomplete contact point: missing area named');
 assert_contains('telephone or email', $out, 'incomplete contact point: missing contact named');
 assert_contains('<option value="LocalBusiness"', $out, 'type select offers LocalBusiness');
+assert_true(!str_contains($out, 'published without the address'), 'complete organization: no published-without list');
+
+// formatted_only_organization_is_published_without_address
+fixture();
+$test_meta[500]['_sfx_contact_schema_org'] = ['1'];
+unset($test_meta[500]['_street']);
+$test_meta[500]['_address'] = ['Hauptstr. 1, 45127 Essen'];
+$test_options[Settings::OPTION] = ['enabled' => true, 'type' => 'Organization', 'chosen_once' => true];
+$out = page();
+$published_at = strpos($out, 'Incomplete, published without the address');
+$left_out_at = strpos($out, 'Incomplete, left out');
+assert_true($published_at !== false && $left_out_at !== false, 'formatted-only organization: both lists shown');
+$published_list = substr($out, (int) $published_at, (int) strpos($out, '</ul>', (int) $published_at) - (int) $published_at);
+$left_out_list = substr($out, (int) $left_out_at, (int) strpos($out, '</ul>', (int) $left_out_at) - (int) $left_out_at);
+assert_contains('post.php?post=500&amp;action=edit', $published_list, 'formatted-only organization: listed as published without the address');
+assert_contains('only the formatted address is filled in', $published_list, 'formatted-only organization: missing parts named');
+assert_true(!str_contains($left_out_list, 'post=500&amp;'), 'formatted-only organization: not listed as left out');
+assert_contains('post.php?post=502&amp;action=edit', $left_out_list, 'incomplete contact point: still left out');
 
 // tsf_guidance_names_the_control; declared last, because a defined constant stays defined.
 fixture();
@@ -235,6 +269,8 @@ define('THE_SEO_FRAMEWORK_VERSION', '5.2.1');
 $out = page();
 assert_contains('&quot;Schema.org Settings&quot; box, untick &quot;Add authorized presence?&quot;', $out, 'TSF: names the box and the checkbox');
 assert_true(!str_contains($out, 'Extension configured'), 'TSF: no extension note');
+assert_contains('so the theme publishes no company data.', $out, 'TSF: only company data is suppressed');
+assert_contains('Per-page JSON-LD stays active while the switch is on.', $out, 'TSF: per-page output named');
 
 // register_adds_submenu_and_handler
 $test_added_actions = [];

@@ -194,6 +194,14 @@ assert_contains('value="contact_point"', $form, 'form: third type');
 assert_contains('Contact point for an area', $form, 'form: type label');
 assert_contains('Area (e.g. Press, Group travel)', $form, 'form: area label field');
 assert_contains('name="sfx_hours[Sunday][ranges][1][1]"', $form, 'form: hours inputs');
+assert_same(7, substr_count($form, '<fieldset'), 'form: one fieldset per weekday');
+assert_same(7, preg_match_all('~<fieldset[^>]*><legend[^>]*>[^<]+</legend>~', $form), 'form: each weekday fieldset has its legend');
+assert_contains('name="sfx_hours[Monday][state]" aria-label="Monday: opening state"', $form, 'form: state select named with the weekday');
+assert_contains('name="sfx_hours[Sunday][ranges][1][0]" value="" aria-label="Sunday, range 2: from"', $form, 'form: time input named with weekday, range and from');
+assert_contains('name="sfx_hours[Sunday][ranges][1][1]" value="" aria-label="Sunday, range 2: to"', $form, 'form: time input named with weekday, range and to');
+preg_match_all('~<(?:select|input type="time")\s[^>]*name="sfx_hours\[[^>]*>~', $form, $controls);
+assert_same(35, count($controls[0]), 'form: 7 selects and 28 time inputs');
+assert_same(35, count(array_filter($controls[0], static fn(string $c): bool => (bool) preg_match('~aria-label="[^"]+"~', $c))), 'form: every hours control has an accessible name');
 
 // Translatable strings: area and title of non-main contacts.
 $test_posts[30] = sfx_make_post(30, 'sfx_contact_info', 'publish', 'Berlin Office');

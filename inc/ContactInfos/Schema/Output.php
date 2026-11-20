@@ -56,7 +56,7 @@ final class Output
     public static function yoast_organization($data, $context = null)
     {
         try {
-            if (!is_array($data) || Mode::detect()['mode'] !== 'yoast') {
+            if (!self::is_entity($data) || Mode::detect()['mode'] !== 'yoast') {
                 return $data;
             }
             $theme = self::theme_entity();
@@ -69,12 +69,11 @@ final class Output
     public static function rank_math_json_ld($data, $jsonld = null)
     {
         try {
-            if (!is_array($data) || !is_array($data['publisher'] ?? null) || !isset($data['publisher']['@type'])
+            if (!is_array($data) || !self::is_entity($data['publisher'] ?? null)
                 || Mode::detect()['mode'] !== 'rank_math' || !Mode::rank_math_is_company()) {
                 return $data;
             }
-            $type = $data['publisher']['@type'];
-            if ((!is_string($type) && !is_array($type)) || in_array('Person', (array) $type, true)) {
+            if (in_array('Person', (array) $data['publisher']['@type'], true)) {
                 return $data; // person mode emits ['Person','Organization'] or ['Organization','Person']
             }
             $theme = self::theme_entity();
@@ -89,6 +88,31 @@ final class Output
         } catch (\Throwable $e) {
             return $data;
         }
+    }
+
+    /**
+     * The shape a plugin's organization entry has (AC-5): a non-empty associative array with a non-empty
+     * string @id and an @type that is a non-empty string or a non-empty list of non-empty strings.
+     */
+    private static function is_entity($data): bool
+    {
+        if (!is_array($data) || $data === [] || array_values($data) === $data
+            || !is_string($data['@id'] ?? null) || $data['@id'] === '') {
+            return false;
+        }
+        $type = $data['@type'] ?? null;
+        if (is_string($type)) {
+            return $type !== '';
+        }
+        if (!is_array($type) || $type === [] || array_values($type) !== $type) {
+            return false;
+        }
+        foreach ($type as $item) {
+            if (!is_string($item) || $item === '') {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** C2: the plugin keeps its @type, so the entity is built as a plain Organization. */

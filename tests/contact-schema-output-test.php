@@ -38,6 +38,9 @@ const CASES = [
     'callbacks_return_input_on_non_array_rank_math' => ['RANK_MATH_VERSION'],
     'callbacks_return_input_when_builder_throws_yoast' => ['WPSEO_VERSION'],
     'callbacks_return_input_when_builder_throws_rank_math' => ['RANK_MATH_VERSION'],
+    'yoast_malformed_entity_untouched'         => ['WPSEO_VERSION'],
+    'rank_math_malformed_publisher_untouched'  => ['RANK_MATH_VERSION'],
+    'mode_survives_throwing_rank_math_helper'  => ['RANK_MATH_VERSION'],
     'own_output_survives_builder_throw'        => [],
     'own_output_escapes_script_breakers'       => [],
     'extension_values_are_tag_stripped'        => ['WPSEO_VERSION'],
@@ -83,7 +86,9 @@ require dirname(__DIR__) . '/inc/ContactInfos/Schema/GraphBuilder.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/Mode.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/PluginMerge.php';
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/Output.php';
-if ($case !== 'rank_math_helper_missing_untouched') {
+if ($case === 'mode_survives_throwing_rank_math_helper') {
+    require __DIR__ . '/support/rank-math-throwing-helper-stub.php';
+} elseif ($case !== 'rank_math_helper_missing_untouched') {
     require __DIR__ . '/support/rank-math-helper-stub.php';
 }
 
@@ -235,7 +240,7 @@ function case_other_plugin_beats_yoast(): void
 {
     assert_mode('conflict', 'other_plugin', ['SEOPress'], 'other plugin: beats Yoast');
     assert_same('', own_output(), 'other plugin: nothing printed');
-    $data = ['@type' => 'Organization', 'name' => 'Plugin Name'];
+    $data = ['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin Name'];
     assert_same($data, Output::yoast_organization($data, null), 'other plugin: Yoast entry untouched');
 }
 
@@ -256,7 +261,7 @@ function case_saswp_is_conflict(): void
 function case_two_of_yoast_rankmath_is_conflict(): void
 {
     assert_mode('conflict', 'several_seo_plugins', ['Yoast SEO', 'Rank Math'], 'Yoast + Rank Math');
-    $data = ['@type' => 'Organization', 'name' => 'Plugin Name'];
+    $data = ['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin Name'];
     assert_same($data, Output::yoast_organization($data, null), 'Yoast + Rank Math: Yoast untouched');
 }
 
@@ -423,6 +428,55 @@ function case_callbacks_return_input_on_non_array_rank_math(): void
     }
 }
 
+/** Arrays that are not an organization entry: returned unchanged, never filled with theme data. */
+function malformed_entities(): array
+{
+    $id = 'https://acme.test/#organization';
+    return [
+        'empty'            => [],
+        'list'             => [['@type' => 'Organization', '@id' => $id]],
+        'list of strings'  => ['Organization', $id],
+        'no @id'           => ['@type' => 'Organization', 'name' => 'Plugin'],
+        'empty @id'        => ['@type' => 'Organization', '@id' => ''],
+        'non-string @id'   => ['@type' => 'Organization', '@id' => 5],
+        'no @type'         => ['@id' => $id, 'name' => 'Plugin'],
+        'empty @type'      => ['@type' => '', '@id' => $id],
+        '@type []'         => ['@type' => [], '@id' => $id],
+        '@type with empty' => ['@type' => ['Organization', ''], '@id' => $id],
+        '@type with int'   => ['@type' => ['Organization', 5], '@id' => $id],
+        '@type assoc'      => ['@type' => ['a' => 'Organization'], '@id' => $id],
+        '@type number'     => ['@type' => 5, '@id' => $id],
+    ];
+}
+
+function case_yoast_malformed_entity_untouched(): void
+{
+    foreach (malformed_entities() as $label => $data) {
+        assert_same($data, Output::yoast_organization($data, null), "Yoast: {$label} unchanged");
+    }
+    $valid = ['@type' => ['Organization', 'Place'], '@id' => 'https://acme.test/#organization'];
+    assert_same('ACME GmbH', Output::yoast_organization($valid, null)['name'] ?? null, 'Yoast: control, a valid entry is merged');
+}
+
+function case_rank_math_malformed_publisher_untouched(): void
+{
+    $GLOBALS['test_rank_math_settings'] = ['titles.knowledgegraph_type' => 'company'];
+    foreach (malformed_entities() as $label => $publisher) {
+        $data = ['publisher' => $publisher, 'place' => ['@type' => 'Place', 'address' => 'Old']];
+        assert_same($data, Output::rank_math_json_ld($data, null), "Rank Math: publisher {$label} unchanged");
+    }
+    assert_same('ACME GmbH', Output::rank_math_json_ld(rank_math_data('Organization'), null)['publisher']['name'], 'Rank Math: control, a valid publisher is merged');
+}
+
+// A Rank Math whose helpers throw: a safe diagnostic state, no automatic output, no extension.
+function case_mode_survives_throwing_rank_math_helper(): void
+{
+    assert_mode('unavailable', 'plugin_read_failed', ['Rank Math'], 'throwing helper: safe state');
+    assert_same('', own_output(), 'throwing helper: no own output');
+    $data = rank_math_data('Organization');
+    assert_same($data, Output::rank_math_json_ld($data, null), 'throwing helper: Rank Math input unchanged');
+}
+
 function throwing_translation(): void
 {
     function pll__($string)
@@ -434,7 +488,7 @@ function throwing_translation(): void
 function case_callbacks_return_input_when_builder_throws_yoast(): void
 {
     throwing_translation();
-    $data = ['@type' => 'Organization', 'name' => 'Plugin Name'];
+    $data = ['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin Name'];
     assert_same($data, Output::yoast_organization($data, null), 'Yoast: input returned on throw');
 }
 
@@ -473,7 +527,7 @@ function case_extension_values_are_tag_stripped(): void
     global $test_meta;
     $test_meta[500]['_company'] = ['ACME <b>GmbH</b><script>alert(1)</script>'];
     $test_meta[503]['_sfx_contact_schema_area'] = ['<i>Press</i>'];
-    $merged = Output::yoast_organization(['@type' => 'Organization', 'name' => 'Plugin'], null);
+    $merged = Output::yoast_organization(['@type' => 'Organization', '@id' => 'https://acme.test/#organization', 'name' => 'Plugin'], null);
     assert_same('ACME GmbH', $merged['name'], 'extension: name stripped');
     assert_same('Press', $merged['contactPoint'][0]['contactType'], 'extension: area stripped');
     assert_same(false, str_contains(json_encode($merged), '<'), 'extension: no tag reaches the plugin');

@@ -26,12 +26,22 @@ final class Mode
 
     /**
      * @return array{mode:string, reason:string, plugins:list<string>}
-     *         mode: off|conflict|yoast|rank_math|tsf_suppressed|own;
+     *         mode: off|conflict|yoast|rank_math|tsf_suppressed|own|unavailable;
      *         reason: disabled | other_plugin | several_seo_plugins | yoast_company | yoast_not_company
      *         | rank_math_company | rank_math_not_company | rank_math_schema_off
-     *         | tsf_knowledge_output_on | tsf_knowledge_output_off | no_seo_plugin
+     *         | tsf_knowledge_output_on | tsf_knowledge_output_off | no_seo_plugin | plugin_read_failed
      */
     public static function detect(): array
+    {
+        try {
+            return self::detect_unguarded();
+        } catch (\Throwable $e) {
+            // A plugin helper or option read failed (AC-5): no automatic output and no extension on this request.
+            return self::result('unavailable', 'plugin_read_failed', self::active(self::SUPPORTED_PLUGINS));
+        }
+    }
+
+    private static function detect_unguarded(): array
     {
         if (!Settings::get()['enabled']) {
             return self::result('off', 'disabled', []);
