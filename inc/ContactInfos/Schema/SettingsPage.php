@@ -209,7 +209,7 @@ final class SettingsPage
         } else {
             echo '<fieldset><legend class="screen-reader-text">' . esc_html__('Leave out', 'sfxtheme') . '</legend>';
             foreach ($contacts['other'] as $post) {
-                $role = self::type($post->ID) === 'branch' ? __('Location', 'sfxtheme') : __('Contact point', 'sfxtheme');
+                $role = Selection::type($post->ID) === 'branch' ? __('Location', 'sfxtheme') : __('Contact point', 'sfxtheme');
                 echo '<label><input type="checkbox" name="excluded[]" value="' . esc_attr((string) $post->ID) . '"'
                     . (get_post_meta($post->ID, Selection::EXCLUDED_META, true) === '1' ? ' checked' : '') . '> '
                     . esc_html($post->post_title) . ' <span class="description">(' . esc_html($role) . ')</span></label><br>';
@@ -230,22 +230,13 @@ final class SettingsPage
             'post_type'   => PostType::$post_type,
             'post_status' => 'publish',
             'numberposts' => -1,
-            'orderby'     => ['menu_order' => 'ASC', 'date' => 'ASC'],
+            'orderby'     => ['menu_order' => 'ASC', 'date' => 'DESC'],
         ]);
         $contacts = ['main' => [], 'other' => []];
         foreach ($posts as $post) {
-            if ($post->post_status === 'publish') {
-                $contacts[self::type($post->ID) === 'main' ? 'main' : 'other'][] = $post;
-            }
+            $contacts[Selection::type($post->ID) === 'main' ? 'main' : 'other'][] = $post;
         }
         return $contacts;
-    }
-
-    /** Same rule as Selection: anything but branch or contact_point counts as main. */
-    private static function type(int $id): string
-    {
-        $type = (string) get_post_meta($id, '_contact_type', true);
-        return in_array($type, ['branch', 'contact_point'], true) ? $type : 'main';
     }
 
     /** @param list<string> $items */

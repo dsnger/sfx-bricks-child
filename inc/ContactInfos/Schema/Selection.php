@@ -115,12 +115,12 @@ final class Selection
             'post_type'   => PostType::$post_type,
             'post_status' => ['publish', 'future', 'draft', 'pending', 'private', 'trash'],
             'numberposts' => -1,
-            'orderby'     => ['menu_order' => 'ASC', 'date' => 'ASC'],
+            'orderby'     => ['menu_order' => 'ASC', 'date' => 'DESC'],
         ]);
     }
 
     /** main, branch or contact_point; anything else counts as main, as in the contact edit form */
-    private static function type(int $id): string
+    public static function type(int $id): string
     {
         $type = (string) get_post_meta($id, '_contact_type', true);
         return in_array($type, ['branch', 'contact_point'], true) ? $type : 'main';

@@ -96,7 +96,8 @@ final class PageField
         $post_id = (int) $post_id;
         $nonce = $_POST[self::NONCE_FIELD] ?? null;
         $raw = $_POST[self::FIELD] ?? null;
-        if (!is_string($nonce) || !is_string($raw) || !wp_verify_nonce(wp_unslash($nonce), self::NONCE_ACTION)
+        // save_post also fires for other posts updated in the same request; only the posted form's post counts.
+        if ((int) ($_POST['post_ID'] ?? 0) !== $post_id || !is_string($nonce) || !is_string($raw) || !wp_verify_nonce(wp_unslash($nonce), self::NONCE_ACTION)
             || wp_is_post_autosave($post_id) || wp_is_post_revision($post_id) || !self::can_edit($post_id)) {
             return;
         }

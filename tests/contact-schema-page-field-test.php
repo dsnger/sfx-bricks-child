@@ -15,6 +15,7 @@ const CASES = [
     'editor_with_unfiltered_html_cannot_save' => [],
     'author_cannot_save'                      => [],
     'save_without_nonce_keeps_value'          => [],
+    'save_for_another_post_ignored'           => [],
     'autosave_and_revision_ignored'           => [],
     'whitespace_deletes'                      => [],
     'invalid_json_rejected_old_kept'          => [],
@@ -160,7 +161,7 @@ function fixture(): void
 /** Simulates the edit form: PHP's request superglobals arrive slashed in WordPress. */
 function submit(string $value, ?string $nonce = 'good'): void
 {
-    $_POST = ['sfx_page_schema' => addslashes($value)];
+    $_POST = ['sfx_page_schema' => addslashes($value), 'post_ID' => '200'];
     if ($nonce !== null) {
         $_POST['sfx_page_schema_nonce'] = $nonce;
     }
@@ -233,6 +234,18 @@ function case_save_without_nonce_keeps_value(): void
     $_POST = ['sfx_page_schema_nonce' => 'good'];
     PageField::save(200);
     assert_same(OLD, stored(), 'nonce without the field: untouched');
+}
+
+function case_save_for_another_post_ignored(): void
+{
+    submit(NEW_VALUE);
+    $_POST['post_ID'] = '999';
+    $_POST['sfx_page_schema'] = addslashes('{"@type":"Event"}');
+    PageField::save(200);
+    assert_same(NEW_VALUE, stored(), 'other post updated in the same request: untouched');
+    unset($_POST['post_ID']);
+    PageField::save(200);
+    assert_same(NEW_VALUE, stored(), 'no post_ID: untouched');
 }
 
 function case_autosave_and_revision_ignored(): void

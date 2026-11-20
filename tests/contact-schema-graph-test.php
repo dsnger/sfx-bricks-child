@@ -152,7 +152,7 @@ assert_same(['entity' => $expected_org, 'incomplete' => [], 'downgraded' => fals
 assert_same(false, graph('LocalBusiness')['downgraded'], 'full: LocalBusiness with address not downgraded');
 $query = $test_get_posts_calls[0] ?? [];
 assert_same(-1, $query['numberposts'] ?? null, 'full: all contacts');
-assert_same(['menu_order' => 'ASC', 'date' => 'ASC'], $query['orderby'] ?? null, 'full: menu order, then date');
+assert_same(['menu_order' => 'ASC', 'date' => 'DESC'], $query['orderby'] ?? null, 'full: menu order, then newest first (as the shortcode)');
 $social_query = end($test_get_posts_calls);
 assert_same('sfx_social_account', $social_query['post_type'] ?? null, 'full: social accounts queried');
 assert_same('publish', $social_query['post_status'] ?? null, 'full: published accounts only');

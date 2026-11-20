@@ -536,6 +536,8 @@ class DataPurge
         'sfx_css_vars_',
         'sfx_redirects_form_',
         'sfx_redirects_notices_',
+        'sfx_page_schema_error_',
+        'sfx_contact_hours_errors_',
     ];
 
     /**

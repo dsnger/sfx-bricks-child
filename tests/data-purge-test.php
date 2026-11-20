@@ -177,7 +177,8 @@ $sql = implode("\n", array_filter(
 
 assert_true(strpos($sql, '_transient_sfx\_dashboard\_sys\_%') !== false, 'Case 5a: a theme prefix is swept, with its LIKE wildcards escaped');
 assert_true(strpos($sql, '_transient_timeout_sfx\_css\_vars\_%') !== false, 'Case 5b: timeout rows go with their transient');
-assert_true(strpos($sql, "'_transient_sfx_%'") === false, 'Case 5c: no blanket sfx_ sweep — plugins share that prefix');
+assert_true(strpos($sql, '_transient_sfx\\_page\\_schema\\_error\\_%') !== false && strpos($sql, '_transient_sfx\\_contact\\_hours\\_errors\\_%') !== false, 'Case 5f: schema error notices are swept')
+;assert_true(strpos($sql, "'_transient_sfx_%'") === false, 'Case 5c: no blanket sfx_ sweep — plugins share that prefix');
 assert_true(strpos($sql, 'gh_block') === false, 'Case 5d: no gh_block_ sweep — nothing in the theme or the plugins produces one');
 assert_true(strpos($sql, 'feedback') === false, 'Case 5e: no prefix reaches the Feedback plugin transients');
 assert_true(
