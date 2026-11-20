@@ -11,7 +11,7 @@ namespace SFX\ContactInfos\Schema;
  */
 final class Output
 {
-    private const JSON_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+    public const JSON_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 
     public static function register(): void
     {
