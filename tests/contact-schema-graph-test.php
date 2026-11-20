@@ -180,7 +180,7 @@ assert_true(!array_key_exists('sameAs', graph()['entity']), 'empty: no sameAs wi
 
 // malformed_stored_hours_dropped
 fixture();
-set_meta(500, '_sfx_contact_schema_hours', ['Monday' => ['state' => 'open', 'ranges' => [['<b>x', '17:00']]], 'Sunday' => 'junk']);
+$test_meta[500]['_sfx_contact_schema_hours'] = (['Monday' => ['state' => 'open', 'ranges' => [['<b>x', '17:00']]], 'Sunday' => 'junk']);
 $json = json_encode(graph('LocalBusiness')['entity']);
 assert_true(!str_contains($json, '<b>') && !isset(graph('LocalBusiness')['entity']['openingHoursSpecification']), 'hours: malformed stored value never passes through');
 
