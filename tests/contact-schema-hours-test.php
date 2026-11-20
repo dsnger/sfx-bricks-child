@@ -55,16 +55,16 @@ check('touching_ranges_allowed', $r['errors'] === []);
 
 foreach (['25:00', '9:00', '', '09:60'] as $bad) {
     $r = OpeningHours::sanitize(['Monday' => $open([$bad, '17:00'])], $prev);
-    check("malformed_time_rejected [$bad]", count($r['errors']) === 1 && $r['hours']['Monday'] === $prev['Monday']);
+    check("malformed_time_rejected [$bad]", count($r['errors']) === 1 && str_contains($r['errors'][0], 'HH:MM') && $r['hours']['Monday'] === $prev['Monday']);
 }
 $r = OpeningHours::sanitize(['Monday' => $open(['', ''])], $prev);
 check('open_without_range_rejected', count($r['errors']) === 1);
 
 $r = OpeningHours::sanitize(['Monday' => $open(['09:00', '09:00'])], $prev);
-check('equal_start_end_rejected', count($r['errors']) === 1);
+check('equal_start_end_rejected', str_contains($r['errors'][0] ?? '', 'must differ'));
 
 $r = OpeningHours::sanitize(['Monday' => $open(['08:00', '09:00'], ['10:00', '11:00'], ['12:00', '13:00'])], $prev);
-check('more_than_two_ranges_rejected', count($r['errors']) === 1 && $r['hours']['Monday'] === $prev['Monday']);
+check('more_than_two_ranges_rejected', count($r['errors']) === 1 && $r['errors'][0] === 'Monday: At most two time ranges per day.' && $r['hours']['Monday'] === $prev['Monday']);
 
 $r = OpeningHours::sanitize(['Monday' => ['state' => 'bogus'], 'Tuesday' => $open(['09:00', '10:00'])], $prev);
 check('invalid_day_does_not_block_others', count($r['errors']) === 1 && $r['hours']['Tuesday']['state'] === 'open');

@@ -32,12 +32,27 @@ final class OpeningHours
             $result = self::sanitize_day($input[$day]);
             if (is_string($result)) {
                 $hours[$day] = $kept;
-                $errors[]    = $day . ': ' . $result;
+                /* translators: 1: weekday name, 2: what is wrong with that day's opening hours */
+                $errors[] = sprintf(__('%1$s: %2$s', 'sfxtheme'), self::day_label($day), $result);
             } else {
                 $hours[$day] = $result;
             }
         }
         return ['hours' => $hours, 'errors' => $errors];
+    }
+
+    public static function day_label(string $day): string
+    {
+        $labels = [
+            'Monday'    => __('Monday', 'sfxtheme'),
+            'Tuesday'   => __('Tuesday', 'sfxtheme'),
+            'Wednesday' => __('Wednesday', 'sfxtheme'),
+            'Thursday'  => __('Thursday', 'sfxtheme'),
+            'Friday'    => __('Friday', 'sfxtheme'),
+            'Saturday'  => __('Saturday', 'sfxtheme'),
+            'Sunday'    => __('Sunday', 'sfxtheme'),
+        ];
+        return $labels[$day] ?? $day;
     }
 
     /** @return list<array<string,string>> */
@@ -73,7 +88,7 @@ final class OpeningHours
             return ['state' => $state, 'ranges' => []];
         }
         if ($state !== 'open') {
-            return __('Unbekannter Status.', 'sfxtheme');
+            return __('Unknown state.', 'sfxtheme');
         }
 
         $ranges = [];
@@ -84,23 +99,23 @@ final class OpeningHours
                 continue; // an untouched second row
             }
             if (!preg_match(self::TIME, $from) || !preg_match(self::TIME, $to)) {
-                return __('Zeit im Format HH:MM angeben.', 'sfxtheme');
+                return __('Enter times as HH:MM.', 'sfxtheme');
             }
             if ($from === $to) {
-                return __('Beginn und Ende dürfen nicht gleich sein.', 'sfxtheme');
+                return __('Start and end must differ.', 'sfxtheme');
             }
             $ranges[] = [$from, $to];
         }
         if ($ranges === []) {
-            return __('Mindestens eine Zeitspanne angeben.', 'sfxtheme');
+            return __('Enter at least one time range.', 'sfxtheme');
         }
         if (count($ranges) > 2) {
-            return __('Höchstens zwei Zeitspannen pro Tag.', 'sfxtheme');
+            return __('At most two time ranges per day.', 'sfxtheme');
         }
         if (count($ranges) === 2) {
             [$a, $b] = array_map([self::class, 'minutes'], $ranges);
             if ($a[0] < $b[1] && $b[0] < $a[1]) {
-                return __('Die Zeitspannen überschneiden sich.', 'sfxtheme');
+                return __('The time ranges overlap.', 'sfxtheme');
             }
         }
         return ['state' => 'open', 'ranges' => $ranges];
