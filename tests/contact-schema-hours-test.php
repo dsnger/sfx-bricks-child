@@ -48,7 +48,7 @@ $r = OpeningHours::sanitize(['Monday' => $open(['22:00', '02:00'], ['23:00', '23
 check('overnight_overlap_rejected', count($r['errors']) === 1);
 
 $r = OpeningHours::sanitize(['Monday' => $open(['09:00', '13:00'], ['12:00', '18:00'])], $prev);
-check('overlapping_ranges_rejected', count($r['errors']) === 1 && $r['hours']['Monday'] === $prev['Monday']);
+check('overlapping_ranges_rejected', count($r['errors']) === 1 && str_contains($r['errors'][0], 'overlap') && $r['hours']['Monday'] === $prev['Monday']);
 
 $r = OpeningHours::sanitize(['Monday' => $open(['09:00', '13:00'], ['13:00', '18:00'])], []);
 check('touching_ranges_allowed', $r['errors'] === []);
