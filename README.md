@@ -14,7 +14,7 @@ Most features are managed under **Global Theme Settings** in wp-admin. WP Optimi
 
 ### Content (custom post types)
 
-- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode and `{contact_info:field}` Bricks tags; phone links use a clean `tel:` number (`+49…`), and `format="tel"` / `{contact_info:phone @format:tel}` outputs just that number for your own `tel:` links (country code for numbers starting with 0: filter `sfx_contact_info_default_country_code`, default 49; the same attribute works on simple Bricks tags, e.g. `tel:{acf_phone @format:tel}`)
+- **Contact Infos** (`sfx_contact_info`) — `[contact_info]` shortcode and `{contact_info:field}` Bricks tags; phone links use a clean `tel:` number (`+49…`), and `format="tel"` / `{contact_info:phone @format:tel}` outputs just that number for your own `tel:` links (country code for numbers starting with 0: filter `sfx_contact_info_default_country_code`, default 49; the same attribute works on simple Bricks tags, e.g. `tel:{acf_phone @format:tel}`). Optional structured data: publishes the company, locations, contact points and social profiles as schema.org JSON-LD, or adds them to the organization entry of Yoast SEO or Rank Math (switch and type under Contact Infos → Structured data; off by default; The SEO Framework needs its organization output switched off)
 - **Social Media Accounts** (`sfx_social_account`) — shortcodes, `{social_account:…}` Bricks tags, and a sortable Bricks query loop
 - **Custom Scripts** (`sfx_custom_script`) — enqueue JS/CSS with location, priority, and category rules
 
@@ -110,6 +110,8 @@ bash bin/release.sh publish    # on main: ZIP, tag v<version>, GitHub release
 The ZIP is `sfx-bricks-child-<version>.zip` and holds only the `SHIPPED` entries of
 `bin/plugin.conf` under `sfx-bricks-child/`. `bash bin/release.sh publish --no-upload` stops
 after the ZIP. Details: `AGENTS.md` invariant 6.
+
+Before `publish`, run the schema release check against the local test site (it activates each installed SEO plugin in turn and restores the plugin state afterwards): `SFX_TEST_SITE=<site dir> SFX_TEST_URL=<site url> bash tests/support/contact-schema-release-check.sh`.
 
 ## Local test site
 

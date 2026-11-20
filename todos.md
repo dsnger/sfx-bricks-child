@@ -9,11 +9,6 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Schema spec: API provenance for `home_url()` and `wp_head`** (Gate A cycle
-      k7schm42, spec pass 2, Minor, accepted, not repaired): the approved spec
-      `docs/superpowers/specs/2026-11-20-schema-from-contact-infos-design.md` names no lookup for
-      these two WordPress APIs. The implementation plan records them; amend the spec's Sources
-      note at its next amendment.
 - [ ] **Kit: risk-pass.sh read helpers treat a failed read as EOF** (Gate B cycle
       k53rfr4m8x, risk 3, Minor, accepted, not repaired): in the kit 0.54.0 template
       `.agents/skills/gate-b-review/scripts/risk-pass.sh` the `create`, `sread` and `place`
@@ -99,6 +94,12 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Schema spec: API provenance for `home_url()` and `wp_head`** (Gate A cycle
+      k7schm42, spec pass 2, Minor, accepted, not repaired): the approved spec
+      `docs/superpowers/specs/2026-11-20-schema-from-contact-infos-design.md` names no lookup for
+      these two WordPress APIs. The implementation plan records them; amend the spec's Sources
+      note at its next amendment.
+      Done 2026-11-20: the implementation plan's Sources note records both lookups.
 - [x] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
       k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
       builds its prompt without the prompt-standards citation AGENTS.md asks for when a

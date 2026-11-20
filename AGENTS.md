@@ -10,7 +10,7 @@ A WordPress child theme of **Bricks** (`Template: bricks`, text domain `sfxtheme
 published from `dsnger/sfx-bricks-child` and installed on client sites. It ships
 theme-level capability as admin modules under `inc/`: image optimization, WordPress
 optimization/cleanup, media credits, password-protected pages, security headers,
-nav-menu queries, social accounts, contact infos, custom scripts, a custom dashboard,
+nav-menu queries, social accounts, contact infos (also publishing the company as schema.org JSON-LD, or adding it to Yoast's or Rank Math's entry), custom scripts, a custom dashboard,
 import/export, general theme options, smooth scroll, redirects with a 404 log, a security check (Sicherheits-Check), editor prose mirroring, `@format:tel` for simple Bricks
 dynamic tags, and a settings overview.
 
@@ -46,8 +46,8 @@ Bricks parent theme.
   uploads probes even while the module is disabled. `CustomDashboard` takes widgets from other
   modules through the filter `sfx/custom_dashboard/widgets` — its extension point; the
   Sicherheits-Check supplies its box that way, so neither module names the other's classes.
-  Beyond those, three groups of feature-module coupling exist and are deliberate — the
-  bootstrap dependency plus eight module-to-module edges: the bootstrap reads
+  Beyond those, four groups of feature-module coupling exist and are deliberate — the
+  bootstrap dependency plus nine module-to-module edges: the bootstrap reads
   `GeneralThemeOptions\Settings::get_all_fields()`, and the aggregator modules reach into
   the modules they aggregate (`GeneralThemeOptions` → ImageOptimizer / SecurityHeader /
   SmoothScroll / WPOptimizer, `ThemeSettingsOverview` → WPOptimizer and SecurityHeader
@@ -56,7 +56,9 @@ Bricks parent theme.
   overview lie — and `CustomDashboard` → ThemeSettingsOverview), and `SiteCheck` → WPOptimizer:
   the Sicherheits-Check reads WP Optimizer's own switches through its public `Settings::get()`
   (`SiteCheck\ThemeSwitches`, owner ruling 2026-10-11 — the check must know what the theme
-  already does instead of suggesting it again). Anything beyond those is
+  already does instead of suggesting it again), and `ContactInfos` → SocialMediaAccounts:
+  the schema output reads the published accounts' URLs for `sameAs` (owner ruling 2026-11-20).
+  Anything beyond those is
   new coupling — don't add it.
 
 ## Documentation map
