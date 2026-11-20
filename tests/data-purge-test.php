@@ -128,7 +128,10 @@ assert_same(
 test_reset();
 DataPurge::run();
 
-assert_same([], $GLOBALS['test_meta_deleted'], 'Case 4a: by default the attachment meta survives the purge');
+// The schema keys go on every run (Case 9); this case is about the media keys.
+$media_meta_deleted = static fn(): array => array_values(array_diff($GLOBALS['test_meta_deleted'], DataPurge::SCHEMA_META_KEYS));
+
+assert_same([], $media_meta_deleted(), 'Case 4a: by default the attachment meta survives the purge');
 assert_same(
     ['sfx_redirects_per_page' => true, 'sfx_redirects_404_per_page' => true],
     $GLOBALS['test_user_meta_deleted'],
@@ -145,11 +148,12 @@ assert_same([], $GLOBALS['test_user_meta_deleted'], 'Case 4a3: on multisite the 
 test_reset();
 DataPurge::run(true);
 
-sort($GLOBALS['test_meta_deleted']);
+$deleted_media = $media_meta_deleted();
+sort($deleted_media);
 
 assert_same(
     ['_sfx_media_ai', '_sfx_media_copyright', '_sfx_media_iptc_prefilled'],
-    $GLOBALS['test_meta_deleted'],
+    $deleted_media,
     'Case 4b: asked explicitly, all three keys go — the IPTC marker with them, or a reinstall skips the prefill'
 );
 
@@ -356,6 +360,29 @@ assert_true(!isset($GLOBALS['test_options']['sfx_general_options']), 'Case 8s: t
 \SFX\SiteCheck\Purge::$report = ['options' => 0, 'probes_failed' => [], 'refused' => [], 'hooks_failed' => ['sfx_site_check_probe_cleanup'], 'busy' => false];
 $report = DataPurge::run();
 assert_same(['sfx_site_check_probe_cleanup'], $report['site_check_hooks_failed'], 'Case 8t: a cron hook that could not be unscheduled is reported');
+
+// ------------- Case 9: Contact Infos structured data goes on every purge
+
+assert_same(
+    ['_sfx_page_schema', '_sfx_contact_schema_area', '_sfx_contact_schema_hours', '_sfx_contact_schema_org', '_sfx_contact_schema_excluded'],
+    DataPurge::SCHEMA_META_KEYS,
+    'Case 9a: the five schema meta keys'
+);
+assert_true(in_array('sfx_contact_infos_schema', DataPurge::option_names(), true), 'Case 9b: the schema option is on the list');
+
+test_reset();
+$GLOBALS['test_options'] = ['sfx_contact_infos_schema' => ['enabled' => true], 'sfx_animation_options' => 'plugin'];
+DataPurge::run();
+$deleted = $GLOBALS['test_meta_deleted'];
+sort($deleted);
+$want = DataPurge::SCHEMA_META_KEYS;
+sort($want);
+assert_same(['sfx_animation_options'], array_keys($GLOBALS['test_options']), 'default_purge_removes_schema_option_and_meta: option gone, foreign stays');
+assert_same($want, $deleted, 'default_purge_removes_schema_option_and_meta: schema meta deleted without the media flag');
+assert_true(
+    array_intersect($deleted, ['_sfx_media_copyright', '_sfx_media_ai', '_sfx_media_iptc_prefilled', '_phone', '_contact_type']) === [],
+    'default_purge_keeps_contact_meta_and_media_credits: media credits and contact meta are not touched'
+);
 
 // ------------------------------------------------------------- epilogue
 

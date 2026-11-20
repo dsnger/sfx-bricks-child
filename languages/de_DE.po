@@ -7444,6 +7444,10 @@ msgstr "Weiterleitungstabellen nicht gelöscht: Eine andere Änderung an den Wei
 msgid "This includes every redirect rule and the 404 log."
 msgstr "Dazu gehören alle Weiterleitungsregeln und das 404-Protokoll."
 
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "It also removes the structured-data settings and the per-page structured-data fields."
+msgstr "Außerdem werden die Einstellungen für strukturierte Daten und die Felder für strukturierte Daten je Seite entfernt."
+
 #: inc/GeneralThemeOptions/Settings.php
 msgid "Enable Redirects"
 msgstr "Weiterleitungen aktivieren"

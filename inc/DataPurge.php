@@ -169,6 +169,9 @@ class DataPurge
 
         // Editor Prose
         'sfx_editor_prose_options',
+
+        // Contact Infos structured data. Literal: DataPurge does not load the module.
+        'sfx_contact_infos_schema',
     ];
 
     /**
@@ -238,6 +241,24 @@ class DataPurge
         '_sfx_media_copyright',
         '_sfx_media_ai',
         '_sfx_media_iptc_prefilled',
+    ];
+
+    /**
+     * Contact Infos structured-data meta: the per-page JSON-LD field and the
+     * contact marks (area, hours, organization, exclusion).
+     *
+     * Deleted on every purge, unlike META_KEYS: these are settings of this
+     * feature, not copyright content. Existing contact meta and contact posts
+     * stay.
+     *
+     * @var list<string>
+     */
+    public const SCHEMA_META_KEYS = [
+        '_sfx_page_schema',
+        '_sfx_contact_schema_area',
+        '_sfx_contact_schema_hours',
+        '_sfx_contact_schema_org',
+        '_sfx_contact_schema_excluded',
     ];
 
     /**
@@ -375,6 +396,11 @@ class DataPurge
                     $meta_keys++;
                 }
             }
+        }
+
+        // Not counted in `meta_keys`: the screen reports that number as Media Credits meta.
+        foreach (self::SCHEMA_META_KEYS as $meta_key) {
+            delete_post_meta_by_key($meta_key);
         }
 
         $tables = self::drop_tables();

@@ -100,14 +100,18 @@ assert_same(0, $result['deleted'], 'Case 7b: and nothing was deleted');
 test_gates_reset();
 $result = run_handler();
 
-assert_same(0, $GLOBALS['test_deleted_meta'], 'Case 8a: without the checkbox the attachment meta is not touched');
+assert_same(
+    count(\SFX\DataPurge::SCHEMA_META_KEYS),
+    $GLOBALS['test_deleted_meta'],
+    'Case 8a: without the checkbox only the schema meta goes, the attachment meta is not touched'
+);
 
 test_gates_reset();
 $_POST['sfx_purge_media_credits'] = '1';
 $result = run_handler();
 
 assert_same('redirect', $result['stopped'], 'Case 8b: the opt-in request still completes');
-assert_true($GLOBALS['test_deleted_meta'] > 0, 'Case 8c: and with the checkbox the meta is deleted');
+assert_true($GLOBALS['test_deleted_meta'] > count(\SFX\DataPurge::SCHEMA_META_KEYS), 'Case 8c: and with the checkbox the meta is deleted');
 
 // ----------- the Redirects table count and the lock reach the screen
 //

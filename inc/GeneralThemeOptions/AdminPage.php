@@ -476,6 +476,7 @@ class AdminPage
         );
         ?>
         <?php esc_html_e('This includes every redirect rule and the 404 log.', 'sfxtheme'); ?>
+        <?php esc_html_e('It also removes the structured-data settings and the per-page structured-data fields.', 'sfxtheme'); ?>
         <br>
         <strong><?php esc_html_e('Will be kept:', 'sfxtheme'); ?></strong>
         <?php esc_html_e('your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>
