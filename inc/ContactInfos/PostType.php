@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SFX\ContactInfos;
 
+use SFX\ContactInfos\Schema\OpeningHours;
+
 /**
  * Registers the 'sfx_contact_info' post type.
  */
@@ -182,7 +184,7 @@ class PostType
             '_mobile' => 'sanitize_text_field',
             '_fax' => 'sanitize_text_field',
             '_contact_type' => function($value) {
-                return in_array($value, ['main', 'branch']) ? $value : 'main';
+                return in_array($value, ['main', 'branch', 'contact_point'], true) ? $value : 'main';
             }
         ];
         
@@ -266,6 +268,9 @@ class PostType
         $dsb = is_array($contact_data['_dsb'] ?? '') ? implode(', ', $contact_data['_dsb']) : ($contact_data['_dsb'] ?? '');
         $opening = is_array($contact_data['_opening'] ?? '') ? implode(', ', $contact_data['_opening']) : ($contact_data['_opening'] ?? '');
         $maplink = is_array($contact_data['_maplink'] ?? '') ? implode(', ', $contact_data['_maplink']) : ($contact_data['_maplink'] ?? '');
+        $schema_area = (string) get_post_meta($post->ID, '_sfx_contact_schema_area', true);
+        $schema_hours = get_post_meta($post->ID, '_sfx_contact_schema_hours', true);
+        $schema_hours = is_array($schema_hours) ? $schema_hours : [];
         ?>
         
         <table class="form-table">
@@ -277,8 +282,9 @@ class PostType
                     <select name="contact_type" id="contact_type">
                         <option value="main" <?php selected($contact_type, 'main'); ?>><?php esc_html_e('Main Contact', 'sfxtheme'); ?></option>
                         <option value="branch" <?php selected($contact_type, 'branch'); ?>><?php esc_html_e('Branch/Location', 'sfxtheme'); ?></option>
+                        <option value="contact_point" <?php selected($contact_type, 'contact_point'); ?>><?php esc_html_e('Contact point for an area', 'sfxtheme'); ?></option>
                     </select>
-                    <p class="description"><?php esc_html_e('Select whether this is the main contact or a branch/location.', 'sfxtheme'); ?></p>
+                    <p class="description"><?php esc_html_e('Select whether this is the main contact, a branch/location or a contact point for an area.', 'sfxtheme'); ?></p>
                 </td>
             </tr>
             
@@ -514,6 +520,25 @@ class PostType
                 </td>
             </tr>
             
+            <tr id="schema-area-fields" class="conditional-field" data-show-for="contact_point">
+                <th scope="row">
+                    <label for="sfx_schema_area"><?php esc_html_e('Area (e.g. Press, Group travel)', 'sfxtheme'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="sfx_schema_area" id="sfx_schema_area" value="<?php echo esc_attr($schema_area); ?>" class="regular-text" />
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Structured Opening Hours', 'sfxtheme'); ?>
+                </th>
+                <td>
+                    <?php self::render_hours_fields($schema_hours); ?>
+                    <p class="description"><?php esc_html_e('Machine-readable opening hours for search engines. Leave a day as "Not specified" to publish nothing for it.', 'sfxtheme'); ?></p>
+                </td>
+            </tr>
+
             <tr>
                 <th scope="row">
                     <label for="maplink"><?php esc_html_e('Google Maps Link', 'sfxtheme'); ?></label>
@@ -525,6 +550,38 @@ class PostType
             </tr>
         </table>
         <?php
+    }
+
+    /**
+     * One row per weekday: state select and up to two from-to time pairs.
+     *
+     * @param array $hours stored value of _sfx_contact_schema_hours
+     */
+    private static function render_hours_fields(array $hours): void
+    {
+        $states = [
+            'unset'  => __('Not specified', 'sfxtheme'),
+            'closed' => __('Closed', 'sfxtheme'),
+            'open'   => __('Open', 'sfxtheme'),
+        ];
+        foreach (OpeningHours::DAYS as $day) {
+            $state  = $hours[$day]['state'] ?? 'unset';
+            $ranges = $state === 'open' ? ($hours[$day]['ranges'] ?? []) : [];
+            $name   = 'sfx_hours[' . $day . ']';
+            echo '<p><strong style="display:inline-block;min-width:7em">' . esc_html(OpeningHours::day_label($day)) . '</strong> ';
+            echo '<select name="' . esc_attr($name . '[state]') . '">';
+            foreach ($states as $value => $label) {
+                echo '<option value="' . esc_attr($value) . '"' . selected($state, $value, false) . '>' . esc_html($label) . '</option>';
+            }
+            echo '</select>';
+            for ($i = 0; $i < 2; $i++) {
+                foreach ([0, 1] as $j) {
+                    echo ($j === 0 ? ' ' : ' &ndash; ')
+                        . '<input type="time" name="' . esc_attr($name . '[ranges][' . $i . '][' . $j . ']') . '" value="' . esc_attr($ranges[$i][$j] ?? '') . '" />';
+                }
+            }
+            echo '</p>';
+        }
     }
 
     /**
@@ -586,6 +643,22 @@ class PostType
             
             
         }
+
+        // Schema data. The schema_org / schema_excluded marks are never written here.
+        update_post_meta($post_id, '_sfx_contact_schema_area', sanitize_text_field($_POST['sfx_schema_area'] ?? ''));
+        if (isset($_POST['sfx_hours']) && is_array($_POST['sfx_hours'])) {
+            $previous = get_post_meta($post_id, '_sfx_contact_schema_hours', true);
+            $result = OpeningHours::sanitize($_POST['sfx_hours'], is_array($previous) ? $previous : []);
+            update_post_meta($post_id, '_sfx_contact_schema_hours', $result['hours']);
+            if ($result['errors'] !== []) {
+                set_transient(self::hours_errors_key(), $result['errors'], 5 * MINUTE_IN_SECONDS);
+            }
+        }
+    }
+
+    private static function hours_errors_key(): string
+    {
+        return 'sfx_contact_hours_errors_' . get_current_user_id();
     }
 
     /**
@@ -644,6 +717,7 @@ class PostType
             $type_labels = [
                 'main' => __('Main Contact', 'sfxtheme'),
                 'branch' => __('Branch/Location', 'sfxtheme'),
+                'contact_point' => __('Contact point for an area', 'sfxtheme'),
             ];
             echo '<span class="contact-type-' . esc_attr($contact_type) . '">' . esc_html($type_labels[$contact_type] ?? $contact_type) . '</span>';
         }
@@ -765,9 +839,18 @@ class PostType
 
         foreach ($contact_ids as $contact_id) {
             $all_meta = get_post_meta((int) $contact_id, '', true);
-            foreach (FieldRegistry::get_fields() as $field => $label) {
+            $fields = FieldRegistry::get_fields();
+            $fields['schema_area'] = __('Area', 'sfxtheme');
+            // Location names and area labels; a main contact is named by its company field.
+            $type = $all_meta['_contact_type'] ?? 'main';
+            $type = is_array($type) ? (string) reset($type) : (string) $type;
+            if ($type === 'branch' || $type === 'contact_point') {
+                $fields['title'] = __('Name', 'sfxtheme');
+            }
+            foreach ($fields as $field => $label) {
                 // Same read as SC_ContactInfos::get_field_value(), so the original matches the printed text.
-                $value = $all_meta['_' . $field] ?? '';
+                $meta_key = $field === 'schema_area' ? '_sfx_contact_schema_area' : '_' . $field;
+                $value = $field === 'title' ? (string) get_post((int) $contact_id)?->post_title : ($all_meta[$meta_key] ?? '');
                 $value = is_array($value) ? implode(', ', $value) : (string) $value;
                 // empty(), like get_translated_field(): "0" is never translated, so never offered.
                 if (empty($value)) {
@@ -853,6 +936,7 @@ class PostType
         // Clear type-based caches
         delete_transient('sfx_contact_info_type_main');
         delete_transient('sfx_contact_info_type_branch');
+        delete_transient('sfx_contact_info_type_contact_point');
 
         // Get all contact info posts
         $args = [
@@ -878,6 +962,7 @@ class PostType
         foreach ($meta_keys as $field) {
             delete_transient('sfx_contact_info_type_main_' . $field);
             delete_transient('sfx_contact_info_type_branch_' . $field);
+            delete_transient('sfx_contact_info_type_contact_point_' . $field);
         }
     }
 
@@ -889,6 +974,21 @@ class PostType
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== self::$post_type) {
             return;
+        }
+
+        $hours_errors = get_transient(self::hours_errors_key());
+        if (is_array($hours_errors) && $hours_errors !== []) {
+            delete_transient(self::hours_errors_key());
+            ?>
+            <div class="notice notice-error is-dismissible">
+                <p><?php esc_html_e('Some opening hours were not saved; the previous values were kept:', 'sfxtheme'); ?></p>
+                <ul>
+                    <?php foreach ($hours_errors as $hours_error) : ?>
+                        <li><?php echo esc_html($hours_error); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php
         }
 
         if (isset($_GET['sfx_cache_cleared'])) {
