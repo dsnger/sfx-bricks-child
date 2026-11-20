@@ -55,31 +55,26 @@ function fixture(): void
     global $test_posts, $test_meta, $test_meta_single_as_array, $test_post_lists, $test_options, $test_get_posts_calls, $hours_mon, $hours_sun;
     $test_posts = $test_meta = $test_meta_single_as_array = $test_options = $test_get_posts_calls = [];
     $test_post_lists = [];
-    $contact = static function (int $id, string $status, string $title, array $meta) use (&$test_posts, &$test_meta, &$test_post_lists): void {
-        $test_posts[$id] = sfx_make_post($id, 'sfx_contact_info', $status, $title);
-        $test_meta[$id] = array_map(static fn($v) => [$v], $meta);
-        $test_post_lists['sfx_contact_info'][] = $test_posts[$id];
-    };
-    $contact(500, 'publish', 'HQ post title', [
+    add_contact(500, 'publish', 'HQ post title', [
         '_contact_type' => 'main', '_company' => 'ACME <b>GmbH</b>', '_street' => 'Hauptstr. 1', '_zip' => '45127',
         '_city' => 'Essen', '_country' => 'Deutschland', '_phone' => '0201 123', '_email' => 'info@acme.test',
         '_sfx_contact_schema_org' => '1',
     ]);
-    $contact(501, 'publish', 'Filiale Essen', [
+    add_contact(501, 'publish', 'Filiale Essen', [
         '_contact_type' => 'branch', '_street' => 'Ruhrallee 5', '_zip' => '45138', '_city' => 'Essen',
         '_phone' => '0201 555',
     ]);
-    $contact(502, 'publish', 'Filiale Bochum', [
+    add_contact(502, 'publish', 'Filiale Bochum', [
         '_contact_type' => 'branch', '_street' => 'Kortumstr. 2', '_city' => 'Bochum', '_email' => 'bochum@acme.test',
     ]);
-    $contact(503, 'publish', 'Touristinfo', [
+    add_contact(503, 'publish', 'Touristinfo', [
         '_contact_type' => 'contact_point', '_sfx_contact_schema_area' => 'Tourist information',
         '_phone' => '0201 777', '_email' => 'tourist@acme.test',
     ]);
-    $contact(504, 'publish', 'Presse', [
+    add_contact(504, 'publish', 'Presse', [
         '_contact_type' => 'contact_point', '_sfx_contact_schema_area' => 'Press', '_email' => 'press@acme.test',
     ]);
-    $contact(505, 'publish', 'Filiale Excluded', [
+    add_contact(505, 'publish', 'Filiale Excluded', [
         '_contact_type' => 'branch', '_street' => 'Weg 1', '_city' => 'Dortmund', '_sfx_contact_schema_excluded' => '1',
     ]);
     // A single read of a serialized array returns the array itself, as get_post_meta() does.
@@ -152,8 +147,9 @@ assert_same('Organization', Settings::get()['type'], 'settings: unknown type fal
 // full_fixture_structure
 fixture();
 $sel = Selection::resolve();
-assert_same(['status' => 'ok', 'organization_id' => 500, 'location_ids' => [501, 502], 'contact_point_ids' => [503, 504], 'unused_main_ids' => []], $sel, 'full: selection');
-assert_same(['entity' => $expected_org, 'incomplete' => []], graph(), 'full: entity');
+assert_same(['status' => 'ok', 'organization_id' => 500, 'location_ids' => [501, 502], 'contact_point_ids' => [503, 504], 'unused_main_ids' => [], 'marked_ids' => [500]], $sel, 'full: selection');
+assert_same(['entity' => $expected_org, 'incomplete' => [], 'downgraded' => false], graph(), 'full: entity');
+assert_same(false, graph('LocalBusiness')['downgraded'], 'full: LocalBusiness with address not downgraded');
 $query = $test_get_posts_calls[0] ?? [];
 assert_same(-1, $query['numberposts'] ?? null, 'full: all contacts');
 assert_same(['menu_order' => 'ASC', 'date' => 'ASC'], $query['orderby'] ?? null, 'full: menu order, then date');
@@ -191,7 +187,9 @@ $result = graph();
 assert_same(null, GraphBuilder::postal_address(500), 'formatted: no PostalAddress');
 assert_true(!array_key_exists('address', $result['entity']), 'formatted: organization without address');
 assert_same(['Filiale Essen'], array_column($result['entity']['department'], 'name'), 'formatted: location left out');
-assert_same([['id' => 502, 'missing' => ['address']]], $result['incomplete'], 'formatted: location listed');
+assert_same([['id' => 500, 'missing' => ['address_parts']], ['id' => 502, 'missing' => ['address_parts']]], $result['incomplete'], 'formatted: organization and location listed once each, asking for the parts');
+set_meta(502, '_address', '<p></p>');
+assert_same([['id' => 502, 'missing' => ['address']]], array_slice(graph()['incomplete'], 1), 'formatted: tag-only formatted address counts as none');
 
 // location_without_address_left_out_and_listed (street without city, and no name)
 fixture();
@@ -215,29 +213,36 @@ set_meta(500, '_city', '');
 $entity = graph('LocalBusiness')['entity'];
 assert_same('Organization', $entity['@type'], 'downgrade: Organization');
 assert_true(!isset($entity['openingHoursSpecification']), 'downgrade: no organization hours');
+assert_same(true, graph('LocalBusiness')['downgraded'], 'downgrade: flagged');
+assert_same(false, graph('Organization')['downgraded'], 'downgrade: not flagged for Organization');
 assert_same(2, count($entity['department']), 'downgrade: locations kept');
 
 // Organization without a company name is not publishable.
 fixture();
 set_meta(500, '_company', '<b></b>');
-assert_same(['entity' => [], 'incomplete' => [['id' => 500, 'missing' => ['name']]]], graph(), 'no name: nothing published, listed');
+assert_same(['entity' => [], 'incomplete' => [['id' => 500, 'missing' => ['name']]], 'downgraded' => false], graph(), 'no name: nothing published, listed');
 
 // marked_unpublished_fails_closed
 fixture();
 $test_posts[500]->post_status = 'draft';
 assert_same('marked_invalid', Selection::resolve()['status'], 'unpublished mark: invalid');
 assert_same(0, Selection::resolve()['organization_id'], 'unpublished mark: no organization');
-assert_same(['entity' => [], 'incomplete' => []], graph(), 'unpublished mark: nothing published');
+assert_same(['entity' => [], 'incomplete' => [], 'downgraded' => false], graph(), 'unpublished mark: nothing published');
+assert_same([500], Selection::resolve()['marked_ids'], 'unpublished mark: marked contact named');
 fixture();
 unset($test_meta[500]['_sfx_contact_schema_org']);
 set_meta(501, '_sfx_contact_schema_org', '1');
 assert_same('marked_invalid', Selection::resolve()['status'], 'branch mark: invalid');
+assert_same([501], Selection::resolve()['marked_ids'], 'branch mark: marked contact named');
 assert_same([], graph()['entity'], 'branch mark: nothing published');
 
 // two_marks_fail_closed (a merge import brings a second mark)
 fixture();
 add_contact(506, 'publish', 'Imported', ['_contact_type' => 'main', '_company' => 'Other AG', '_sfx_contact_schema_org' => '1']);
+$test_post_lists['sfx_contact_info'][] = sfx_make_post(499, 'sfx_contact_info', 'trash', 'Trashed main'); // last in query order
+set_meta(499, '_sfx_contact_schema_org', '1');
 assert_same('multiple_marked', Selection::resolve()['status'], 'two marks: status');
+assert_same([499, 500, 506], Selection::resolve()['marked_ids'], 'two marks: every marked contact named, any status, ascending');
 assert_same([], graph()['entity'], 'two marks: nothing published');
 
 // deleted_after_choice_fails_closed

@@ -16,15 +16,19 @@ final class Selection
     public const EXCLUDED_META = '_sfx_contact_schema_excluded';
 
     /**
-     * @return array{status:string, organization_id:int, location_ids:list<int>, contact_point_ids:list<int>, unused_main_ids:list<int>}
+     * @return array{status:string, organization_id:int, location_ids:list<int>, contact_point_ids:list<int>, unused_main_ids:list<int>, marked_ids:list<int>}
      *         status: ok|none_marked_unconfigured|marked_invalid|multiple_marked|deleted_after_choice|no_main;
-     *         organization_id is 0 unless the status is ok or none_marked_unconfigured.
+     *         organization_id is 0 unless the status is ok or none_marked_unconfigured;
+     *         marked_ids: every contact carrying the mark, any status, ascending.
      */
     public static function resolve(): array
     {
         $contacts = self::contacts();
         $marked = array_values(array_filter($contacts, static fn(\WP_Post $p): bool => self::is_marked($p->ID)));
         $mains = array_values(array_filter($contacts, static fn(\WP_Post $p): bool => self::is_published_main($p)));
+
+        $marked_ids = array_map(static fn(\WP_Post $p): int => $p->ID, $marked);
+        sort($marked_ids);
 
         $organization_id = 0;
         if (count($marked) > 1) {
@@ -58,6 +62,7 @@ final class Selection
             'location_ids'      => $ids_of('branch'),
             'contact_point_ids' => $ids_of('contact_point'),
             'unused_main_ids'   => array_values(array_diff(array_map(static fn(\WP_Post $p): int => $p->ID, $mains), [$organization_id])),
+            'marked_ids'        => $marked_ids,
         ];
     }
 
