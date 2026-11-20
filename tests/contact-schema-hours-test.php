@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+if (!function_exists('__')) {
+    function __(string $text, string $domain = 'default'): string
+    {
+        return $text;
+    }
+}
+
 require dirname(__DIR__) . '/inc/ContactInfos/Schema/OpeningHours.php';
 
 use SFX\ContactInfos\Schema\OpeningHours;

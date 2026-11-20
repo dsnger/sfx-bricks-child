@@ -6,7 +6,7 @@ namespace SFX\ContactInfos\Schema;
 
 /**
  * Structured opening hours of one contact: validation and schema.org output.
- * Pure logic, no WordPress calls; error text is plain German for the admin notice.
+ * Pure logic; only __() is used, for the admin-notice text.
  */
 final class OpeningHours
 {
@@ -73,7 +73,7 @@ final class OpeningHours
             return ['state' => $state, 'ranges' => []];
         }
         if ($state !== 'open') {
-            return 'Unbekannter Status.';
+            return __('Unbekannter Status.', 'sfxtheme');
         }
 
         $ranges = [];
@@ -84,23 +84,23 @@ final class OpeningHours
                 continue; // an untouched second row
             }
             if (!preg_match(self::TIME, $from) || !preg_match(self::TIME, $to)) {
-                return 'Zeit im Format HH:MM angeben.';
+                return __('Zeit im Format HH:MM angeben.', 'sfxtheme');
             }
             if ($from === $to) {
-                return 'Beginn und Ende dürfen nicht gleich sein.';
+                return __('Beginn und Ende dürfen nicht gleich sein.', 'sfxtheme');
             }
             $ranges[] = [$from, $to];
         }
         if ($ranges === []) {
-            return 'Mindestens eine Zeitspanne angeben.';
+            return __('Mindestens eine Zeitspanne angeben.', 'sfxtheme');
         }
         if (count($ranges) > 2) {
-            return 'Höchstens zwei Zeitspannen pro Tag.';
+            return __('Höchstens zwei Zeitspannen pro Tag.', 'sfxtheme');
         }
         if (count($ranges) === 2) {
             [$a, $b] = array_map([self::class, 'minutes'], $ranges);
             if ($a[0] < $b[1] && $b[0] < $a[1]) {
-                return 'Die Zeitspannen überschneiden sich.';
+                return __('Die Zeitspannen überschneiden sich.', 'sfxtheme');
             }
         }
         return ['state' => 'open', 'ranges' => $ranges];
