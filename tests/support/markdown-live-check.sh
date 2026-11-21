@@ -471,19 +471,6 @@ echo
 echo "== AC-5: Bricks maintenance mode, no SEO plugin"
 mm_on; gate_block mm plain; mm_off
 
-echo
-echo "== AC-5: Redirects 410 rule on /llms.txt"
-wpe "\$v = \SFX\Redirects\Rule::validate(['source' => '/llms.txt', 'match_type' => 'exact', 'target' => '', 'status_code' => '410', 'enabled' => true, 'note' => 'sfxmd $RUN']);
-  if (\$v['errors']) { fwrite(STDERR, implode('; ', \$v['errors'])); exit(1); }
-  \$s = \SFX\Redirects\Repository::save(\$v['rule'], 0, 'manual'); if ((\$s['status'] ?? '') !== 'created') { fwrite(STDERR, print_r(\$s, true)); exit(1); } echo \$s['id'];" > "$TMP/rule_id"
-req r410 "$URL/llms.txt"
-eq "410 rule: /llms.txt status" "$(st r410)" 410
-eq "410 rule: no llms marker" "$(hd r410 x-sfx-llms-txt)" ""
-# Deleted here so the Rank Math phase below is not answered by the 410. rule_id is cleared only
-# once a re-read finds the rule gone; otherwise this stops and the teardown retries the delete.
-del=$(del_rule) || del="eval failed"
-[ "$del" = gone ] || fatal "410 rule not deleted: $del"
-: > "$TMP/rule_id"
 
 echo
 echo "== AC-12 / AC-5 with Rank Math 1.0.282 and its llms module on"
@@ -510,4 +497,13 @@ pp_on; gate_block pp rankmath; pp_off
 echo
 echo "== AC-5: Bricks maintenance mode, Rank Math llms on"
 mm_on; gate_block mm rankmath; mm_off
+echo
+echo "== AC-5: Redirects 410 rule on /llms.txt"
+wp plugin deactivate seo-by-rank-math # the 410 scenario ran without Rank Math before; teardown deactivates again
+wpe "\$v = \SFX\Redirects\Rule::validate(['source' => '/llms.txt', 'match_type' => 'exact', 'target' => '', 'status_code' => '410', 'enabled' => true, 'note' => 'sfxmd $RUN']);
+  if (\$v['errors']) { fwrite(STDERR, implode('; ', \$v['errors'])); exit(1); }
+  \$s = \SFX\Redirects\Repository::save(\$v['rule'], 0, 'manual'); if ((\$s['status'] ?? '') !== 'created') { fwrite(STDERR, print_r(\$s, true)); exit(1); } echo \$s['id'];" > "$TMP/rule_id"
+req r410 "$URL/llms.txt"
+eq "410 rule: /llms.txt status" "$(st r410)" 410
+eq "410 rule: no llms marker" "$(hd r410 x-sfx-llms-txt)" ""
 # Teardown (the EXIT trap) restores everything and prints the proof.
