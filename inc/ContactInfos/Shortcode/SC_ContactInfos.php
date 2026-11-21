@@ -83,6 +83,7 @@ class SC_ContactInfos
         // Clear type-based caches
         delete_transient('sfx_contact_info_type_main');
         delete_transient('sfx_contact_info_type_branch');
+        delete_transient('sfx_contact_info_type_contact_point');
         
         // Clear field-specific caches for this post
         $meta_keys = ['company', 'director', 'street', 'zip', 'city', 'country', 'address', 'phone', 'mobile', 'fax', 'email', 'tax_id', 'vat', 'hrb', 'court', 'dsb', 'opening', 'maplink'];
@@ -270,7 +271,8 @@ class SC_ContactInfos
 
         $type_cache_key = 'sfx_contact_info_type_' . $type;
         $cached_id = get_transient($type_cache_key);
-        if ($cached_id !== false) {
+        // A cached ID of a contact that is no longer published falls through to a fresh lookup.
+        if ($cached_id !== false && get_post_status((int) $cached_id) === 'publish') {
             return (int) $cached_id;
         }
 

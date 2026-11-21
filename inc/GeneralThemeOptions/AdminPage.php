@@ -476,9 +476,10 @@ class AdminPage
         );
         ?>
         <?php esc_html_e('This includes every redirect rule and the 404 log.', 'sfxtheme'); ?>
+        <?php esc_html_e('It also removes the structured-data settings, the per-page structured-data fields and the structured-data fields of your contact infos: area labels, structured opening hours and the organization and leave-out marks.', 'sfxtheme'); ?>
         <br>
         <strong><?php esc_html_e('Will be kept:', 'sfxtheme'); ?></strong>
-        <?php esc_html_e('your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>
+        <?php esc_html_e('your content. Contact infos (apart from their structured-data fields named above), social accounts, custom scripts, posts, pages and media files all stay as they are — and so do the copyright notices on your media, unless you tick the box below.', 'sfxtheme'); ?>
       </p>
 
       <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">

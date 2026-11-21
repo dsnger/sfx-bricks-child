@@ -9,6 +9,29 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Schema: optional Google fields image and priceRange** (Rich Results Test, 2026-11-21):
+      Google lists "image" (organization and locations) and "priceRange" (locations) as
+      missing optional fields. Consider a photo and a price-range field in Contact Infos.
+- [ ] **Schema: settings save reports success when a selection write fails** (Gate B cycle
+      sch7b2qx, risk 4, Major, accepted, not repaired): `Selection::save_choice()`
+      (`inc/ContactInfos/Schema/Selection.php`) ignores the results of its metadata writes and
+      `SettingsPage` then says "Settings saved"; a failed exclusion write leaves the location in
+      the public schema. Check each write and report a failure.
+- [ ] **Schema release check: restore fails if an activated plugin breaks WordPress** (Gate B
+      cycle sch7b2qx, risk 4, Major, accepted, not repaired):
+      `tests/support/contact-schema-release-check.sh` restores through `ddev wp`, which loads
+      the plugins it just activated; a plugin that fatals blocks the restore. Restore with
+      `--skip-plugins`/`--skip-themes` (or direct option writes).
+- [ ] **Schema release check: no lock against two parallel runs** (Gate B cycle sch7b2qx,
+      risk 4, Minor, accepted, not repaired): two runs can snapshot each other's temporary
+      state. Add a site-scoped lock.
+- [ ] **Schema: collected Minors from the build reviews** (cycle sch7b2qx, collected, never
+      iterated): the release check exits 0 with "no verdict" when the switch is off; Rank Math
+      entity-encodes `&` as `&amp;` in every value (plugin behaviour, documented only);
+      `PostType::save_custom_fields()` does not bind to the submitted `post_ID` (pre-existing);
+      TSF-on detection relies on TSF's HTML comments; the `unavailable` mode message can show
+      empty "()"; the area label is kept after a contact changes type; per-task review Minors
+      in the branch's SDD ledger (`.superpowers/sdd/2026-11-20-schema-from-contact-infos/progress.md`, local).
 - [ ] **Kit: risk-pass.sh read helpers treat a failed read as EOF** (Gate B cycle
       k53rfr4m8x, risk 3, Minor, accepted, not repaired): in the kit 0.54.0 template
       `.agents/skills/gate-b-review/scripts/risk-pass.sh` the `create`, `sread` and `place`
@@ -94,6 +117,12 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Schema spec: API provenance for `home_url()` and `wp_head`** (Gate A cycle
+      k7schm42, spec pass 2, Minor, accepted, not repaired): the approved spec
+      `docs/superpowers/specs/2026-11-20-schema-from-contact-infos-design.md` names no lookup for
+      these two WordPress APIs. The implementation plan records them; amend the spec's Sources
+      note at its next amendment.
+      Done 2026-11-20: the implementation plan's Sources note records both lookups.
 - [x] **Kit: risk-pass prompt should name `docs/prompt-standards.md`** (Gate B cycle
       k52lvd7n3q, quality 1, Minor): `.agents/skills/gate-b-review/scripts/risk-pass.sh`
       builds its prompt without the prompt-standards citation AGENTS.md asks for when a

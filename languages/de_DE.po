@@ -6642,12 +6642,8 @@ msgstr ""
 "zwischengespeicherten Daten des Themes – nur für diese Seite."
 
 #: inc/GeneralThemeOptions/AdminPage.php
-msgid "your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below."
-msgstr ""
-"deine Inhalte. Firmeninformationen, Social-Media-Konten, eigene Skripte, "
-"Beiträge, Seiten und Mediendateien bleiben unverändert – ebenso die "
-"Urheberrechtsangaben an deinen Mediendateien, sofern du unten kein Häkchen "
-"setzt."
+msgid "your content. Contact infos (apart from their structured-data fields named above), social accounts, custom scripts, posts, pages and media files all stay as they are — and so do the copyright notices on your media, unless you tick the box below."
+msgstr "deine Inhalte. Firmeninformationen (bis auf ihre oben genannten Felder für strukturierte Daten), Social-Media-Konten, eigene Skripte, Beiträge, Seiten und Mediendateien bleiben erhalten – ebenso die Urheberrechtsangaben an deinen Mediendateien, sofern du unten kein Häkchen setzt."
 
 #: inc/GeneralThemeOptions/AdminPage.php
 msgid "Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this."
@@ -7443,6 +7439,10 @@ msgstr "Weiterleitungstabellen nicht gelöscht: Eine andere Änderung an den Wei
 #: inc/GeneralThemeOptions/AdminPage.php
 msgid "This includes every redirect rule and the 404 log."
 msgstr "Dazu gehören alle Weiterleitungsregeln und das 404-Protokoll."
+
+#: inc/GeneralThemeOptions/AdminPage.php
+msgid "It also removes the structured-data settings, the per-page structured-data fields and the structured-data fields of your contact infos: area labels, structured opening hours and the organization and leave-out marks."
+msgstr "Außerdem werden die Einstellungen für strukturierte Daten, die Felder für strukturierte Daten je Seite und die Felder für strukturierte Daten deiner Firmeninformationen entfernt: Bereichsbezeichnungen, strukturierte Öffnungszeiten sowie die Markierungen als Organisation und als ausgelassen."
 
 #: inc/GeneralThemeOptions/Settings.php
 msgid "Enable Redirects"
@@ -10301,3 +10301,327 @@ msgstr "Wird für Galerien nicht ausgelöst."
 
 msgid "Bricks versions before 2.4: while editing, an overlay may only appear after the canvas reloads, because they do not run the output filter when re-rendering a single element."
 msgstr "Bricks-Versionen vor 2.4: Beim Bearbeiten erscheint ein Overlay womöglich erst nach dem Neuladen der Arbeitsfläche, weil sie den Ausgabefilter beim Neuzeichnen eines einzelnen Elements nicht ausführen."
+
+#: inc/ContactInfos
+msgid "Contact type \"Contact point for an area\" is for a department or service (e.g. Press): it takes an area label and, like the business fields of a branch, no company data. Structured opening hours can be set for every type; they are separate from the free-text Opening Hours field."
+msgstr "Der Kontakttyp \"Ansprechpartner für einen Bereich\" steht für eine Abteilung oder einen Service (z. B. Presse): Er hat eine Bereichsbezeichnung und, wie die Geschäftsfelder einer Filiale, keine Unternehmensdaten. Strukturierte Öffnungszeiten lassen sich für jeden Typ angeben; sie sind vom Freitextfeld „Öffnungszeiten“ getrennt."
+
+#: inc/ContactInfos
+msgid "%1$s, %2$s or %3$s: uses the published entry of this type that comes first by Order (on a tie, the newest)."
+msgstr "%1$s, %2$s oder %3$s: Es wird der veröffentlichte Eintrag dieses Typs verwendet, der nach Reihenfolge zuerst kommt (bei Gleichstand der neueste)."
+
+#: inc/ContactInfos
+msgid "Contact point for an area"
+msgstr "Ansprechpartner für einen Bereich"
+
+#: inc/ContactInfos
+msgid "Select whether this is the main contact, a branch/location or a contact point for an area."
+msgstr "Wähle, ob dies der Hauptkontakt, eine Niederlassung/ein Standort oder ein Ansprechpartner für einen Bereich ist."
+
+#: inc/ContactInfos
+msgid "Area (e.g. Press, Group travel)"
+msgstr "Bereich (z. B. Presse, Gruppenreisen)"
+
+#: inc/ContactInfos
+msgid "Structured Opening Hours"
+msgstr "Strukturierte Öffnungszeiten"
+
+#: inc/ContactInfos
+msgid "Machine-readable opening hours for search engines. Leave a day as \"Not specified\" to publish nothing for it."
+msgstr "Maschinenlesbare Öffnungszeiten für Suchmaschinen. Lass einen Tag auf „Nicht angegeben“, um dafür nichts zu veröffentlichen."
+
+#: inc/ContactInfos
+msgid "Not specified"
+msgstr "Nicht angegeben"
+
+#: inc/ContactInfos
+msgid "Area"
+msgstr "Bereich"
+
+#: inc/ContactInfos
+msgid "Name"
+msgstr "Name"
+
+#: inc/ContactInfos
+msgid "Some opening hours were not saved; the previous values were kept:"
+msgstr "Einige Öffnungszeiten wurden nicht gespeichert; die bisherigen Werte blieben erhalten:"
+
+#: inc/ContactInfos
+msgid "%1$s: %2$s"
+msgstr "%1$s: %2$s"
+
+#: inc/ContactInfos
+msgid "Monday"
+msgstr "Montag"
+
+#: inc/ContactInfos
+msgid "Tuesday"
+msgstr "Dienstag"
+
+#: inc/ContactInfos
+msgid "Wednesday"
+msgstr "Mittwoch"
+
+#: inc/ContactInfos
+msgid "Thursday"
+msgstr "Donnerstag"
+
+#: inc/ContactInfos
+msgid "Friday"
+msgstr "Freitag"
+
+#: inc/ContactInfos
+msgid "Saturday"
+msgstr "Samstag"
+
+#: inc/ContactInfos
+msgid "Sunday"
+msgstr "Sonntag"
+
+#: inc/ContactInfos
+msgid "Unknown state."
+msgstr "Unbekannter Zustand."
+
+#: inc/ContactInfos
+msgid "Enter times as HH:MM."
+msgstr "Zeiten im Format HH:MM eingeben."
+
+#: inc/ContactInfos
+msgid "Start and end must differ."
+msgstr "Beginn und Ende müssen sich unterscheiden."
+
+#: inc/ContactInfos
+msgid "Enter at least one time range."
+msgstr "Mindestens einen Zeitraum eingeben."
+
+#: inc/ContactInfos
+msgid "At most two time ranges per day."
+msgstr "Höchstens zwei Zeiträume pro Tag."
+
+#: inc/ContactInfos
+msgid "The time ranges overlap."
+msgstr "Die Zeiträume überschneiden sich."
+
+#: inc/ContactInfos
+msgid "The structured data was not saved: it is larger than 64 KB. The previous value was kept."
+msgstr "Die strukturierten Daten wurden nicht gespeichert: Sie sind größer als 64 KB. Der bisherige Wert blieb erhalten."
+
+#: inc/ContactInfos
+msgid "The structured data was not saved: it must be a JSON object or an array of JSON objects. The previous value was kept."
+msgstr "Die strukturierten Daten wurden nicht gespeichert: Es muss ein JSON-Objekt oder ein Array aus JSON-Objekten sein. Der bisherige Wert blieb erhalten."
+
+#: inc/ContactInfos
+msgid "Structured data (JSON-LD)"
+msgstr "Strukturierte Daten (JSON-LD)"
+
+#: inc/ContactInfos
+msgid "A JSON-LD object, or an array of objects, added to this page while structured data is switched on. Leave empty to remove it."
+msgstr "Ein JSON-LD-Objekt oder ein Array aus Objekten, das dieser Seite hinzugefügt wird, solange strukturierte Daten eingeschaltet sind. Leer lassen, um es zu entfernen."
+
+#: inc/ContactInfos
+msgid "Structured data"
+msgstr "Strukturierte Daten"
+
+#: inc/ContactInfos
+msgid "Publishes the company from Contact Infos as schema.org structured data (JSON-LD), or adds it to the entry of a supported SEO plugin."
+msgstr "Veröffentlicht das Unternehmen aus den Kontaktinformationen als strukturierte Daten nach schema.org (JSON-LD) oder ergänzt damit den Eintrag eines unterstützten SEO-Plugins."
+
+#: inc/ContactInfos
+msgid "Settings saved. No organization was chosen, so the organization and the exclusions were not changed."
+msgstr "Einstellungen gespeichert. Es wurde keine Organisation gewählt, daher blieben Organisation und Ausschlüsse unverändert."
+
+#: inc/ContactInfos
+msgid "The organization was not saved: it must be a published contact of type Main. The organization and the exclusions were not changed; the switch and the type were saved."
+msgstr "Die Organisation wurde nicht gespeichert: Sie muss ein veröffentlichter Kontakt vom Typ Hauptkontakt sein. Organisation und Ausschlüsse blieben unverändert; Schalter und Typ wurden gespeichert."
+
+#: inc/ContactInfos
+msgid "Current state"
+msgstr "Aktueller Zustand"
+
+#: inc/ContactInfos
+msgid "Off. Nothing is published, the per-page structured data included."
+msgstr "Aus. Es wird nichts veröffentlicht, auch nicht die strukturierten Daten je Seite."
+
+#: inc/ContactInfos
+msgid "Another SEO or schema plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugin's."
+msgstr "Ein anderes SEO- oder Schema-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
+
+#: inc/ContactInfos
+msgid "More than one SEO plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugins'."
+msgstr "Mehr als ein SEO-Plugin ist aktiv (%s). Das Theme hält sich heraus: Es veröffentlicht keine eigenen Firmendaten und ergänzt keine in den Einträgen der Plugins."
+
+#: inc/ContactInfos
+msgid "Yoast SEO: the theme adds the Contact Infos data to Yoast's organization entry."
+msgstr "Yoast SEO: Das Theme ergänzt den Organisationseintrag von Yoast um die Daten aus den Kontaktinformationen."
+
+#: inc/ContactInfos
+msgid "Yoast SEO is set to a person — no company data is added."
+msgstr "Yoast SEO ist auf eine Person eingestellt – es werden keine Firmendaten ergänzt."
+
+#: inc/ContactInfos
+msgid "Rank Math: the theme adds the Contact Infos data to Rank Math's organization entry."
+msgstr "Rank Math: Das Theme ergänzt den Organisationseintrag von Rank Math um die Daten aus den Kontaktinformationen."
+
+#: inc/ContactInfos
+msgid "Rank Math is set to a person — no company data is added."
+msgstr "Rank Math ist auf eine Person eingestellt – es werden keine Firmendaten ergänzt."
+
+#: inc/ContactInfos
+msgid "Rank Math's schema module is off — no company data is added."
+msgstr "Das Schema-Modul von Rank Math ist ausgeschaltet – es werden keine Firmendaten ergänzt."
+
+#: inc/ContactInfos
+msgid "The SEO Framework publishes its own organization entry, so the theme publishes no company data. To let the theme publish the organization: in The SEO Framework settings, in the \"Schema.org Settings\" box, untick \"Add authorized presence?\"."
+msgstr "The SEO Framework veröffentlicht einen eigenen Organisationseintrag, daher veröffentlicht das Theme keine Firmendaten. Damit das Theme die Organisation veröffentlicht: In den Einstellungen von The SEO Framework im Feld \"Schema.org Settings\" das Häkchen bei \"Add authorized presence?\" entfernen."
+
+#: inc/ContactInfos
+msgid "The SEO Framework's organization output is off: the theme publishes its own organization entry on every page."
+msgstr "Die Organisationsausgabe von The SEO Framework ist ausgeschaltet: Das Theme veröffentlicht auf jeder Seite einen eigenen Organisationseintrag."
+
+#: inc/ContactInfos
+msgid "No SEO plugin: the theme publishes its own organization entry on every page."
+msgstr "Kein SEO-Plugin: Das Theme veröffentlicht auf jeder Seite einen eigenen Organisationseintrag."
+
+#: inc/ContactInfos
+msgid "Extension configured. Whether the data actually appears in a page is confirmed only by the release check."
+msgstr "Erweiterung eingerichtet. Ob die Daten tatsächlich auf einer Seite erscheinen, bestätigt nur der Release-Check."
+
+#: inc/ContactInfos
+msgid "From Contact Infos: name, address, telephone, email, contact points and locations; social profiles are added to the plugin's. An empty Contact Infos value keeps the plugin's value. The type, URL and logo stay the plugin's."
+msgstr "Aus den Kontaktinformationen: Name, Adresse, Telefon, E-Mail, Ansprechpartner und Standorte; Social-Media-Profile werden zu denen des Plugins hinzugefügt. Ein leerer Wert in den Kontaktinformationen behält den Wert des Plugins. Typ, URL und Logo bleiben die des Plugins."
+
+#: inc/ContactInfos
+msgid "The organization's own opening hours are not added in this mode; locations keep theirs. They are published only when the theme publishes its own entry with the type LocalBusiness."
+msgstr "Die eigenen Öffnungszeiten der Organisation werden in diesem Modus nicht ergänzt; Standorte behalten ihre. Sie werden nur veröffentlicht, wenn das Theme einen eigenen Eintrag vom Typ LocalBusiness veröffentlicht."
+
+#: inc/ContactInfos
+msgid "Yoast emits its organization entry only when it is set to represent a company and has a company name and a logo."
+msgstr "Yoast gibt seinen Organisationseintrag nur aus, wenn es auf ein Unternehmen eingestellt ist und einen Unternehmensnamen und ein Logo hat."
+
+#: inc/ContactInfos
+msgid "The place's coordinates are kept in Rank Math; the theme only updates the address."
+msgstr "Die Koordinaten des Orts bleiben in Rank Math erhalten; das Theme aktualisiert nur die Adresse."
+
+#: inc/ContactInfos
+msgid "Type LocalBusiness needs the organization's street and city. Until they are filled in, it is published as Organization."
+msgstr "Der Typ LocalBusiness braucht Straße und Ort der Organisation. Solange sie fehlen, wird als Organization veröffentlicht."
+
+#: inc/ContactInfos
+msgid "The contact chosen as the organization is no longer a published contact of type Main. No company data is published or added until you choose one below."
+msgstr "Der als Organisation gewählte Kontakt ist kein veröffentlichter Kontakt vom Typ Hauptkontakt mehr. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
+
+#: inc/ContactInfos
+msgid "Several contacts are marked as the organization. No company data is published or added until you choose one below."
+msgstr "Mehrere Kontakte sind als Organisation markiert. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
+
+#: inc/ContactInfos
+msgid "The contact chosen as the organization no longer exists. No company data is published or added until you choose one below."
+msgstr "Der als Organisation gewählte Kontakt existiert nicht mehr. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis du unten einen wählst."
+
+#: inc/ContactInfos
+msgid "There is no published contact of type Main. No company data is published or added until one exists."
+msgstr "Es gibt keinen veröffentlichten Kontakt vom Typ Hauptkontakt. Es werden keine Firmendaten veröffentlicht oder ergänzt, bis einer existiert."
+
+#: inc/ContactInfos
+msgid "No organization has been chosen yet. Until you save a choice, the first contact of type Main is used: %s."
+msgstr "Es wurde noch keine Organisation gewählt. Bis du eine Auswahl speicherst, wird der erste Kontakt vom Typ Hauptkontakt verwendet: %s."
+
+#: inc/ContactInfos
+msgid "Incomplete, left out"
+msgstr "Unvollständig, ausgelassen"
+
+#: inc/ContactInfos
+msgid "Per-page JSON-LD stays active while the switch is on."
+msgstr "Das JSON-LD je Seite bleibt aktiv, solange der Schalter an ist."
+
+#: inc/ContactInfos
+msgid "The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
+msgstr "Die Einstellungen des aktiven SEO-Plugins (%s) konnten nicht gelesen werden. Bis das wieder geht, veröffentlicht das Theme keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
+
+#: inc/ContactInfos
+msgid "Incomplete, published without the address"
+msgstr "Unvollständig, ohne Adresse veröffentlicht"
+
+#: inc/ContactInfos
+msgid "%s: opening state"
+msgstr "%s: Öffnungsstatus"
+
+#: inc/ContactInfos
+msgid "%1$s, range %2$d: from"
+msgstr "%1$s, Zeitraum %2$d: von"
+
+#: inc/ContactInfos
+msgid "%1$s, range %2$d: to"
+msgstr "%1$s, Zeitraum %2$d: bis"
+
+#: inc/ContactInfos
+msgid "name"
+msgstr "Name"
+
+#: inc/ContactInfos
+msgid "street and city"
+msgstr "Straße und Ort"
+
+#: inc/ContactInfos
+msgid "street, zip, city and country (only the formatted address is filled in)"
+msgstr "Straße, PLZ, Ort und Land (nur die formatierte Adresse ist ausgefüllt)"
+
+#: inc/ContactInfos
+msgid "area label"
+msgstr "Bereichsbezeichnung"
+
+#: inc/ContactInfos
+msgid "telephone or email"
+msgstr "Telefon oder E-Mail"
+
+#: inc/ContactInfos
+msgid "missing: %s"
+msgstr "fehlt: %s"
+
+#: inc/ContactInfos
+msgid "Not used (one organization only)"
+msgstr "Nicht verwendet (nur eine Organisation)"
+
+#: inc/ContactInfos
+msgid "Publish the company from Contact Infos"
+msgstr "Unternehmen aus den Kontaktinformationen veröffentlichen"
+
+#: inc/ContactInfos
+msgid "Organization"
+msgstr "Organisation"
+
+#: inc/ContactInfos
+msgid "LocalBusiness"
+msgstr "LocalBusiness"
+
+#: inc/ContactInfos
+msgid "Used only when the theme publishes its own entry. With an SEO plugin, the plugin's type stays."
+msgstr "Wird nur verwendet, wenn das Theme einen eigenen Eintrag veröffentlicht. Mit einem SEO-Plugin bleibt der Typ des Plugins."
+
+#: inc/ContactInfos
+msgid "— Choose a contact —"
+msgstr "— Kontakt wählen —"
+
+#: inc/ContactInfos
+msgid "Published contacts of type Main."
+msgstr "Veröffentlichte Kontakte vom Typ Hauptkontakt."
+
+#: inc/ContactInfos
+msgid "Leave out"
+msgstr "Auslassen"
+
+#: inc/ContactInfos
+msgid "No published locations or contact points."
+msgstr "Keine veröffentlichten Standorte oder Ansprechpartner."
+
+#: inc/ContactInfos
+msgid "Contact point"
+msgstr "Ansprechpartner"
+
+#: inc/ContactInfos
+msgid "Locations and contact points are published unless left out here."
+msgstr "Standorte und Ansprechpartner werden veröffentlicht, sofern sie hier nicht ausgelassen werden."
+
+#: inc/ContactInfos
+msgid "Contact #%d"
+msgstr "Kontakt Nr. %d"

@@ -67,6 +67,7 @@ final class HelpTab
     public static function get_sidebar(): string
     {
         return '<p><strong>' . esc_html__('Contact Information', 'sfxtheme') . '</strong></p>'
+            . '<p>' . esc_html__('Contact type "Contact point for an area" is for a department or service (e.g. Press): it takes an area label and, like the business fields of a branch, no company data. Structured opening hours can be set for every type; they are separate from the free-text Opening Hours field.', 'sfxtheme') . '</p>'
             . '<p>' . esc_html__('Only published entries are shown, also when chosen by ID. Field values are cached for up to 30 minutes; saving an entry or the "Clear Cache" button on the list screen refreshes them at once.', 'sfxtheme') . '</p>';
     }
 
@@ -123,10 +124,11 @@ final class HelpTab
             ),
             'contact_id' => esc_html__('ID of one contact entry. Takes precedence over type.', 'sfxtheme'),
             'type'       => sprintf(
-                /* translators: 1: "main", 2: "branch" */
-                esc_html__('%1$s or %2$s: uses the published entry of this type that comes first by Order (on a tie, the newest).', 'sfxtheme'),
+                /* translators: 1: "main", 2: "branch", 3: "contact_point" */
+                esc_html__('%1$s, %2$s or %3$s: uses the published entry of this type that comes first by Order (on a tie, the newest).', 'sfxtheme'),
                 self::code('main'),
-                self::code('branch')
+                self::code('branch'),
+                self::code('contact_point')
             ),
             'icon'       => sprintf(
                 /* translators: %s: shortcode name "[icon]" */

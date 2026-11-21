@@ -21,4 +21,15 @@ class MetaFieldManager
     public static function register_fields(string $post_type, array $fields, array $html_fields = []): void
     {
     }
+
+    /** Same logic as inc/MetaFieldManager.php, minus the revision/autosave guard. */
+    public static function validate_fields(int $post_id, string $post_type, array $validation_rules): void
+    {
+        foreach ($validation_rules as $meta_key => $validator) {
+            $value = get_post_meta($post_id, $meta_key, true);
+            if (!empty($value)) {
+                update_post_meta($post_id, $meta_key, $validator($value));
+            }
+        }
+    }
 }
