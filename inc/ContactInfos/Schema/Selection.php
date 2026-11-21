@@ -71,8 +71,9 @@ final class Selection
      * Exclusions for the organization itself or for unpublished or unknown IDs are ignored.
      *
      * @param list<int> $excluded_ids
+     * @return string saved | invalid_choice (nothing written) | write_failed (a metadata write did not take)
      */
-    public static function save_choice(int $organization_id, array $excluded_ids): bool
+    public static function save_choice(int $organization_id, array $excluded_ids): string
     {
         $contacts = self::contacts();
         $chosen = null;
@@ -82,15 +83,16 @@ final class Selection
             }
         }
         if ($chosen === null) {
-            return false;
+            return 'invalid_choice';
         }
 
+        $ok = true;
         foreach ($contacts as $post) {
             if ($post->ID !== $organization_id && self::is_marked($post->ID)) {
-                delete_post_meta($post->ID, self::ORG_META);
+                $ok = self::remove($post->ID, self::ORG_META) && $ok;
             }
         }
-        update_post_meta($organization_id, self::ORG_META, '1');
+        $ok = self::write($organization_id, self::ORG_META) && $ok;
 
         $excluded_ids = array_map('intval', $excluded_ids);
         foreach ($contacts as $post) {
@@ -98,14 +100,26 @@ final class Selection
                 continue;
             }
             if ($post->ID !== $organization_id && in_array($post->ID, $excluded_ids, true)) {
-                update_post_meta($post->ID, self::EXCLUDED_META, '1');
+                $ok = self::write($post->ID, self::EXCLUDED_META) && $ok;
             } else {
-                delete_post_meta($post->ID, self::EXCLUDED_META);
+                $ok = self::remove($post->ID, self::EXCLUDED_META) && $ok;
             }
         }
 
         Settings::update(['chosen_once' => true]);
-        return true;
+        return $ok ? 'saved' : 'write_failed';
+    }
+
+    /** Stores '1'; update_post_meta() is false also for an unchanged value, so the stored value decides. */
+    private static function write(int $id, string $key): bool
+    {
+        return update_post_meta($id, $key, '1') !== false || get_post_meta($id, $key, true) === '1';
+    }
+
+    /** delete_post_meta() is false also when there was nothing to delete, so what is left decides. */
+    private static function remove(int $id, string $key): bool
+    {
+        return delete_post_meta($id, $key) || get_post_meta($id, $key) === [];
     }
 
     /** @return list<\WP_Post> every contact in any status, so a mark on an unpublished one is seen */
