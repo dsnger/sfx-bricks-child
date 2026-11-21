@@ -67,7 +67,7 @@ class AdminPage
                                                 <label style="display: block;"><input type="checkbox" name="<?php echo esc_attr($name); ?>[post_types][]" value="<?php echo esc_attr($type); ?>" <?php checked(in_array($type, $o['post_types'], true)); ?> /> <?php echo esc_html($label); ?></label>
                                             <?php endforeach; ?>
                                         </fieldset>
-                                        <p class="description"><?php esc_html_e('Only published pages without a password are served and listed in llms.txt.', 'sfxtheme'); ?></p>
+                                        <p class="description"><?php esc_html_e('Only published pages are served. A page with a password is served only to visitors who have entered it, and is never listed in llms.txt.', 'sfxtheme'); ?></p>
                                     </td>
                                 </tr>
                             </table>

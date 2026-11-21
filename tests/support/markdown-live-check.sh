@@ -10,13 +10,17 @@
 #     bash tests/support/markdown-live-check.sh
 #
 # Order, per the AGENTS.md harness rule: fatal guards (they decide WHERE this runs and
-# write nothing) -> snapshot of everything the run may change -> the ONE teardown (an EXIT
-# trap) -> only then writes. The teardown deletes the fixture posts, the 410 rule and the
-# editor session, deactivates Rank Math if this run activated it, and puts every snapshotted
-# option back byte for byte (deleting the ones that did not exist), then re-reads them.
-# The editor and post-password cookies live only in a mode-700 temp dir and are never printed.
+# write nothing) -> a per-site run lock (a held lock is exit 2, nothing changed) ->
+# snapshot of everything the run may change -> the ONE teardown (an EXIT trap) -> only
+# then writes. The teardown deletes the fixture posts, the 410 rule and the temporary
+# Editor-role user, deactivates Rank Math if this run activated it, and puts every
+# snapshotted option back byte for byte (deleting the ones that did not exist). It re-reads
+# each of them afterwards and drops a cleanup record only once its removal is confirmed;
+# then it releases the lock. The editor and post-password cookies live only in a mode-700
+# temp dir and are never printed.
 #
-# Exit: 0 all passed, 1 a check failed, 2 guard or fixture error, 3 teardown left state behind.
+# Exit: 0 all passed, 1 a check failed or a required check did not run (NOT RUN),
+# 2 guard, lock or fixture error, 3 teardown left state behind.
 set -euo pipefail
 
 fatal() { echo "FATAL: $*" >&2; exit 2; }
@@ -43,11 +47,22 @@ wp plugin is-active wordpress-seo && fatal "Yoast is active; the module-off base
 RM_WAS_ACTIVE=0; wp plugin is-active seo-by-rank-math && RM_WAS_ACTIVE=1
 [ "$RM_WAS_ACTIVE" = 0 ] || fatal "Rank Math is already active; the plain baseline needs it inactive"
 [ "$(wp plugin get seo-by-rank-math --field=version)" = 1.0.282 ] || fatal "Rank Math is not 1.0.282"
+[ -d "$SITE/wp-content/uploads" ] || fatal "$SITE/wp-content/uploads is missing (the run lock lives there)"
 echo "site $SITE ($URL), WP $(wp core version), theme $(wp theme get sfx-bricks-child --field=version), Bricks $(wp theme get bricks --field=version), checkout $(git -C "$CHECKOUT" rev-parse --short HEAD)"
 
+# ---------------------------------------------------------------- per-site run lock
+# Two overlapping runs would snapshot each other's temporary state and restore it as
+# permanent. mkdir is atomic; the lock dir also carries files PHP must read (front.html).
+RUN=r$(date +%s)$$$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')
+LOCK="$SITE/wp-content/uploads/sfx-md-live.lock"
+mkdir "$LOCK" 2> /dev/null || fatal "another run holds $LOCK ($(cat "$LOCK/owner" 2> /dev/null || echo 'owner unknown')); if none is running, remove it by hand"
+TMP=
+release() { rm -rf "$LOCK"; [ ! -e "$LOCK" ] || { echo "  FAILED to release the run lock $LOCK" >&2; return 1; }; [ -z "$TMP" ] || rm -rf "$TMP"; }
+trap 'rc=$?; release || rc=3; exit $rc' EXIT # replaced by the teardown once the snapshot exists
+trap 'exit 130' INT TERM
+echo "$RUN" > "$LOCK/owner"
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/sfx-md-live.XXXXXX") || fatal "mktemp failed"
 chmod 700 "$TMP"
-RUN=r$(date +%s)
 
 # ---------------------------------------------------------------- snapshot
 # Raw option rows (value and autoload), sorted by name, base64 JSON. Every option the run
@@ -66,7 +81,7 @@ SNAPSHOT_PHP="$SNAPSHOT_FN echo base64_encode(json_encode(sfx_md_snapshot()));"
 STATE_PHP='global $wpdb; $c = _get_cron_array(); $h = []; foreach ($c as $t => $hooks) { foreach ($hooks as $k => $e) { $h[$k] = 1; } } ksort($h);
 echo "cron hooks: ", implode(",", array_keys($h)), "\n";
 echo "redirect rules: ", (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sfx_redirects"), ", 404 log rows: ", (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sfx_redirects_404"), "\n";
-echo "sessions of '"$ADMIN"': ", count((array) get_user_meta('"$ADMIN_ID"', "session_tokens", true)), "\n";
+echo "sessions of '"$ADMIN"': ", count((array) get_user_meta('"$ADMIN_ID"', "session_tokens", true)), ", users: ", count_users()["total_users"], "\n";
 echo "rank_math tables: ", implode(",", $wpdb->get_col("SHOW TABLES LIKE \"%rank\\_math%\"")), "\n";'
 wpe "$SNAPSHOT_PHP" > "$TMP/snapshot.b64"
 [ -s "$TMP/snapshot.b64" ] || fatal "snapshot is empty"
@@ -81,19 +96,22 @@ teardown() {
   trap - EXIT
   echo
   echo "== teardown"
+  # Each removal is re-read; the eval exits 1 when anything is still there.
   ids=$(awk '{print $2}' "$TMP/posts" 2>/dev/null | tr '\n' ',')
   wpe "global \$wpdb; \$ids = array_filter(array_map('intval', explode(',', '$ids')));
     \$ids = array_unique(array_merge(\$ids, array_map('intval', \$wpdb->get_col(\"SELECT ID FROM \$wpdb->posts WHERE post_title LIKE '%SFXMD % $RUN'\"))));
-    foreach (\$ids as \$id) { if (get_post(\$id)) echo wp_delete_post(\$id, true) ? \"  deleted post \$id\n\" : \"  FAILED to delete post \$id\n\"; }" || left=1
+    \$bad = 0; foreach (\$ids as \$id) { if (get_post(\$id)) { wp_delete_post(\$id, true); clean_post_cache(\$id); }
+      if (get_post(\$id)) { \$bad++; echo \"  FAILED to delete post \$id\n\"; } else { echo \"  post \$id gone\n\"; } } exit(\$bad ? 1 : 0);" || left=1
   if [ -s "$TMP/rule_id" ]; then
-    wpe "\$r = \SFX\Redirects\Repository::apply_op('delete', [$(cat "$TMP/rule_id")]); echo '  deleted redirect rules: ', \$r['done'], \"\n\";" || left=1
+    if [ "$(del_rule)" = gone ]; then : > "$TMP/rule_id"; echo "  redirect rule gone"; else echo "  FAILED to delete the redirect rule $(cat "$TMP/rule_id")"; left=1; fi
   fi
-  if [ -s "$TMP/verifier" ]; then
-    wpe "\$t = (array) get_user_meta($ADMIN_ID, 'session_tokens', true); unset(\$t['$(cat "$TMP/verifier")']);
-      \$t ? update_user_meta($ADMIN_ID, 'session_tokens', \$t) : delete_user_meta($ADMIN_ID, 'session_tokens'); echo \"  removed the editor session\n\";" || left=1
-  fi
+  wpe "require_once ABSPATH . 'wp-admin/includes/user.php'; \$ids = array_filter(array_map('intval', [$(cat "$TMP/editor_id" 2>/dev/null)]));
+    \$u = get_user_by('login', 'sfxmd-editor-$RUN'); if (\$u) { \$ids[] = \$u->ID; }
+    \$bad = 0; foreach (array_unique(\$ids) as \$id) { if (get_userdata(\$id)) { wp_delete_user(\$id); clean_user_cache(\$id); }
+      if (get_userdata(\$id)) { \$bad++; echo \"  FAILED to delete the editor user \$id\n\"; } else { echo \"  editor user \$id gone (with its session)\n\"; } } exit(\$bad ? 1 : 0);" || left=1
   if [ -f "$TMP/rm_activated" ]; then
     wp plugin deactivate seo-by-rank-math || left=1
+    if wp plugin is-active seo-by-rank-math; then echo "  FAILED to deactivate Rank Math"; left=1; else rm -f "$TMP/rm_activated"; fi
     wp rewrite flush || left=1
   fi
   # Every snapshotted row back byte for byte; a row absent before is deleted; a Rank Math
@@ -133,12 +151,18 @@ teardown() {
   echo "  fixture posts left (any status, any run): $posts_left"
   [ "$posts_left" = 0 ] || left=1
   echo "  Rank Math active: $(wp plugin is-active seo-by-rank-math && echo yes || echo no) (before: $([ "$RM_WAS_ACTIVE" = 1 ] && echo yes || echo no))"
-  rm -rf "$TMP"
+  release || left=1
   echo "== result: $PASSES PASS, $FAILS FAIL, $NOTRUN NOT RUN"
   if [ "$left" != 0 ]; then echo "TEARDOWN LEFT STATE BEHIND" >&2; exit 3; fi
   if [ "$rc" != 0 ]; then exit "$rc"; fi
   [ "$FAILS" = 0 ] || exit 1
+  [ "$NOTRUN" = 0 ] || { echo "A required check did not run" >&2; exit 1; }
   exit 0
+}
+# del_rule: deletes the 410 rule and prints "gone" only when a re-read finds it missing.
+del_rule() {
+  wpe "\$id = (int) '$(cat "$TMP/rule_id")'; \$r = \SFX\Redirects\Repository::apply_op('delete', [\$id]); \$g = \SFX\Redirects\Repository::get(\$id)['status'];
+    echo \$g === 'missing' ? 'gone' : \"left (done {\$r['done']}, failed {\$r['failed']}, locked \" . (int) \$r['locked'] . \", get \$g)\";"
 }
 PASSES=0; FAILS=0; NOTRUN=0
 trap teardown EXIT
@@ -226,18 +250,39 @@ for page in front:$FRONT p1120:$P1120; do
   has "$n llms.txt entry" llms "(<$u?markdown=1>)"
 done
 has "front ?markdown=1 holds a heading" front-md "#"
-has "1120 ?markdown=1 holds its first paragraph" p1120-md "Erster Absatz mit einem [Link]"
+# Positive control for the gate checks below: MARK1120 is in 1120's ordinary Markdown.
+MARK1120="Erster Absatz mit einem"
+has "1120 ?markdown=1 holds its first paragraph" p1120-md "$MARK1120 [Link]"
+has "1120 ?markdown=1 holds the content marker (control)" p1120-md "$MARK1120"
 
 echo
 echo "== AC-12: Bricks lazy-loaded images (front page)"
-lazy=$(grep -o 'data-src="[^"]*"' "$TMP/front-html.b" | head -1 | sed 's/^data-src="//; s/"$//')
-if [ -z "$lazy" ]; then
-  notrun "lazy images: the front page HTML has no data-src"
-else
-  pass "front page HTML has a lazy image: data-src=$lazy"
-  has "lazy image: Markdown uses the data-src address" front-md "](<$lazy>)"
-  hasnt "lazy image: no data: placeholder in Markdown" front-md "](<data:"
-fi
+# Read with WordPress' tag processor (AGENTS.md: no regex on HTML), inside the site: the body
+# goes through the lock dir, whose owner file proves PHP reads this run's copy. The first IMG
+# after the brx-content opener and before the brx-footer opener whose src is empty or a data:
+# placeholder and whose data-src is set; prints the Markdown destination the converter writes.
+cp "$TMP/front-html.b" "$LOCK/front.html"
+dest=$(wpe "\$d = wp_upload_dir()['basedir'] . '/sfx-md-live.lock/';
+  if (trim((string) @file_get_contents(\$d . 'owner')) !== '$RUN') { echo 'UNREADABLE'; return; }
+  \$p = new WP_HTML_Tag_Processor((string) file_get_contents(\$d . 'front.html')); \$in = false;
+  while (\$p->next_tag()) {
+    \$id = \$p->get_attribute('id');
+    if (\$id === 'brx-content') { \$in = true; } elseif (\$id === 'brx-footer') { break; }
+    if (!\$in || \$p->get_tag() !== 'IMG' || \$p->is_tag_closer()) { continue; }
+    \$src = trim((string) \$p->get_attribute('src')); \$lazy = \$p->get_attribute('data-src');
+    if ((\$src === '' || stripos(\$src, 'data:') === 0) && is_string(\$lazy) && trim(\$lazy) !== '') {
+      \$u = \SFX\Markdown\Url::resolve(\$lazy, '$FRONT', 'image'); echo \$u === null ? 'UNSAFE' : \SFX\Markdown\Escape::destination(\$u); return; } }
+  echo 'NONE';")
+rm -f "$LOCK/front.html"
+case "$dest" in
+  UNREADABLE) notrun "lazy images: PHP could not read this run's copy of the front page" ;;
+  NONE) notrun "lazy images: the front page content area has no lazy image (src placeholder + data-src)" ;;
+  UNSAFE) notrun "lazy images: the first lazy image has a URL the converter drops" ;;
+  *)
+    pass "front page content area has a lazy image: $dest"
+    has "lazy image: Markdown uses the data-src address" front-md "]($dest)"
+    hasnt "lazy image: no data: placeholder in Markdown" front-md "](<data:" ;;
+esac
 
 echo
 echo "== AC-12: paginated post, part 2"
@@ -261,12 +306,17 @@ for n in md acc; do
 done
 
 echo
-echo "== AC-12: editor session (logged-in cookie for $ADMIN) on a private post and a draft preview"
-( umask 077; wpe "\$exp = time() + HOUR_IN_SECONDS; \$c = wp_generate_auth_cookie($ADMIN_ID, \$exp, 'logged_in');
-  \$p = explode('|', \$c); echo hash('sha256', \$p[2]), \"\\n\";
-  echo 'header = \"Cookie: ', LOGGED_IN_COOKIE, '=', rawurlencode(\$c), '\"';" > "$TMP/editor.raw"
-  head -1 "$TMP/editor.raw" > "$TMP/verifier"; tail -n +2 "$TMP/editor.raw" > "$TMP/editor.curl"; rm -f "$TMP/editor.raw" )
-[ -s "$TMP/editor.curl" ] && [ "$(wc -c < "$TMP/verifier" | tr -d ' ')" = 65 ] || fatal "editor cookie not built"
+echo "== AC-12: Editor-role session on a private post and a draft preview"
+# A temporary Editor-role user (teardown deletes it, and its session with it; it also finds it by login).
+wpe "\$id = wp_insert_user(['user_login' => 'sfxmd-editor-$RUN', 'user_email' => 'sfxmd-editor-$RUN@example.invalid', 'user_pass' => wp_generate_password(32), 'role' => 'editor']);
+  if (is_wp_error(\$id)) { fwrite(STDERR, \$id->get_error_message()); exit(1); } echo \$id;" > "$TMP/editor_id" || fatal "editor user not created"
+EDITOR_ID=$(cat "$TMP/editor_id")
+pre=$(wpe "\$u = get_userdata((int) '$EDITOR_ID'); echo implode(',', \$u->roles), ' read_private_posts=', (int) user_can(\$u, 'read_private_posts'), ' edit_others_posts=', (int) user_can(\$u, 'edit_others_posts'), ' manage_options=', (int) user_can(\$u, 'manage_options');")
+echo "  editor user $EDITOR_ID: $pre"
+[ "$pre" = "editor read_private_posts=1 edit_others_posts=1 manage_options=0" ] || fatal "the temporary user is not a plain Editor: $pre"
+( umask 077; wpe "\$c = wp_generate_auth_cookie((int) '$EDITOR_ID', time() + HOUR_IN_SECONDS, 'logged_in');
+  echo 'header = \"Cookie: ', LOGGED_IN_COOKIE, '=', rawurlencode(\$c), '\"';" > "$TMP/editor.curl" )
+[ -s "$TMP/editor.curl" ] || fatal "editor cookie not built"
 echo "  (cookie written to the temp dir, not printed)"
 DRAFT_PREVIEW="$URL/?p=$(pid draft)&preview=true"
 req ed-priv-html "$PRIV" -K "$TMP/editor.curl"
@@ -367,7 +417,7 @@ gate_block() {
     eq "$g/$setup $n = module-off status" "$(st $g${setup}1-$n)" "$(st $g${setup}0-$n)"
     lacks "$g/$setup $n not Markdown" "$(hd $g${setup}1-$n content-type)" markdown
     eq "$g/$setup $n no llms marker" "$(hd $g${setup}1-$n x-sfx-llms-txt)" ""
-    hasnt "$g/$setup $n no page content" "$g${setup}1-$n" "Editor Prose Test"
+    hasnt "$g/$setup $n no page content" "$g${setup}1-$n" "$MARK1120"
     hasnt "$g/$setup $n no index lines" "$g${setup}1-$n" "?markdown=1>)"
   done
   for n in robots feed; do
@@ -401,8 +451,11 @@ wpe "\$v = \SFX\Redirects\Rule::validate(['source' => '/llms.txt', 'match_type' 
 req r410 "$URL/llms.txt"
 eq "410 rule: /llms.txt status" "$(st r410)" 410
 eq "410 rule: no llms marker" "$(hd r410 x-sfx-llms-txt)" ""
-# Deleted here so the Rank Math phase below is not answered by the 410; if this fails, teardown still deletes the rule via rule_id.
-wpe "\SFX\Redirects\Repository::apply_op('delete', [$(cat "$TMP/rule_id")]);" && : > "$TMP/rule_id"
+# Deleted here so the Rank Math phase below is not answered by the 410. rule_id is cleared only
+# once a re-read finds the rule gone; otherwise this stops and the teardown retries the delete.
+del=$(del_rule) || del="eval failed"
+[ "$del" = gone ] || fatal "410 rule not deleted: $del"
+: > "$TMP/rule_id"
 
 echo
 echo "== AC-12 / AC-5 with Rank Math 1.0.282 and its llms module on"

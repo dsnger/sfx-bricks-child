@@ -10663,8 +10663,8 @@ msgid "Included post types"
 msgstr "Eingeschlossene Inhaltstypen"
 
 #: inc/Markdown
-msgid "Only published pages without a password are served and listed in llms.txt."
-msgstr "Nur veröffentlichte Seiten ohne Passwort werden ausgeliefert und in der llms.txt aufgeführt."
+msgid "Only published pages are served. A page with a password is served only to visitors who have entered it, and is never listed in llms.txt."
+msgstr "Nur veröffentlichte Seiten werden ausgeliefert. Eine Seite mit Passwort erhalten nur Besucher, die das Passwort eingegeben haben; in der llms.txt wird sie nie aufgeführt."
 
 #: inc/Markdown
 msgid "Addresses for this site"

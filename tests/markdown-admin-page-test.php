@@ -118,6 +118,7 @@ namespace SFX\Markdown {
     has($html, 'Accept: text/markdown', '1: Accept example');
     has($html, 'https://site.test/llms.txt', '1: llms.txt example');
     has($html, 'CDN', '1: CDN limit sentence');
+    has($html, 'A page with a password is served only to visitors who have entered it, and is never listed in llms.txt.', '1: password sentence matches Request::is_eligible');
     has($html, 'The theme serves /llms.txt.', '1: llms outcome theme');
     has($html, 'No page cache problem found', '1: cache clean');
     assert_true($GLOBALS['requests'] === ['https://site.test/llms.txt', 'https://site.test/a-post/?markdown=1', 'https://site.test/a-post/', 'https://site.test/a-post/'], '1: request sequence');

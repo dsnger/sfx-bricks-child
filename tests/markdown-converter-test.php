@@ -159,4 +159,40 @@ assert_same(true, str_contains($prose, "\n### Eine H3\n"), '7: editor page h3');
 assert_same(false, str_contains($prose, 'Anmeldung für Mitglieder'), '7: editor page has no header text');
 assert_same(0, $unescaped_lt($prose), '7: editor page has no <');
 
+// 8. Gate B mdgb4k7r2x pass 1.
+// spec:1 a br inside emphasis stays a hard break; inside a heading or link label it is a space.
+assert_same("First\\\n**Second**\n", md('<p>First<strong><br>Second</strong></p>'), '8: br at the start of emphasis');
+assert_same("**First\\\nSecond**\n", md('<p><strong>First<br>Second</strong></p>'), '8: br inside emphasis');
+assert_same("**First**\\\nSecond\n", md('<p><strong>First<br></strong>Second</p>'), '8: br at the end of emphasis');
+assert_same("**a*b\\\nc***\n", md('<p><strong>a<em>b<br>c</em></strong></p>'), '8: br in nested emphasis');
+assert_same("- **a\\\n  b**\n", md('<ul><li><strong>a<br>b</strong></li></ul>'), '8: br in emphasis in a list item');
+assert_same("**a**\n", md('<p><strong><br>a</strong></p>'), '8: br at the start of a paragraph dropped');
+assert_same("## *a b*\n", md('<h2><em>a<br>b</em></h2>'), '8: br in emphasis in a heading is a space');
+assert_same("[*a b*](<https://ex.test/x>)\n", md('<p><a href="/x"><em>a<br>b</em></a></p>'), '8: br in emphasis in a link is a space');
+// spec:2 / quality:1 neighbouring inline frames.
+assert_same("**FirstSecond**\n", md('<p><strong>First</strong><strong>Second</strong></p>'), '8: strong+strong coalesce');
+assert_same("*FirstSecond*\n", md('<p><em>First</em><em>Second</em></p>'), '8: em+em coalesce');
+assert_same("**abc**\n", md('<p><strong>a</strong><b>b</b><strong>c</strong></p>'), '8: three strong coalesce');
+assert_same("*First***Second**\n", md('<p><em>First</em><strong>Second</strong></p>'), '8: em+strong, letters on both sides');
+assert_same("First.**Second**\n", md('<p><em>First.</em><strong>Second</strong></p>'), '8: em ending in punctuation before a letter loses its markers');
+assert_same("*First*(Second)\n", md('<p><em>First</em><strong>(Second)</strong></p>'), '8: strong starting with punctuation after a letter loses its markers');
+assert_same("x(b)\n", md('<p>x<strong>(b)</strong></p>'), '8: emphasis that cannot open keeps its text');
+assert_same("a.b\n", md('<p><strong>a.</strong>b</p>'), '8: emphasis that cannot close keeps its text');
+assert_same("**a.** b **(c)**\n", md('<p><strong>a.</strong> b <strong>(c)</strong></p>'), '8: spaces around: markers kept');
+assert_same("\u{00A0}x\n", md('<p><strong>&nbsp;x</strong></p>'), '8: emphasis starting with nbsp keeps its text');
+assert_same(null, md('<p><strong><em>a</em></strong><strong>b</strong></p>'), '8: nested runs meeting: HTML is sent');
+assert_same("`FirstSecond`\n", md('<p><code>First</code><code>Second</code></p>'), '8: code+code coalesce');
+assert_same("``a`<img src=x onerror=alert(1)>``\n", md('<p><code>a</code><code>`</code><code>&lt;img src=x onerror=alert(1)&gt;</code></p>'), '8: quality:1 code spans coalesce under one fence');
+assert_same("`a`text`b`\n", md('<p><code>a</code>text<code>b</code></p>'), '8: code+text+code');
+assert_same("| `a\\|b` |\n| --- |\n", md('<table><tr><td><code>a|</code><code>b</code></td></tr></table>'), '8: coalesced code in a cell keeps its pipe escape');
+// spec:3 adjacent lists alternate their delimiter.
+assert_same("10. ten\n\n20) twenty\n", md('<ol start="10"><li>ten</li></ol><ol start="20"><li>twenty</li></ol>'), '8: adjacent ordered lists');
+assert_same("- a\n\n* b\n\n- c\n", md('<ul><li>a</li></ul><ul><li>b</li></ul><ul><li>c</li></ul>'), '8: adjacent bullet lists');
+assert_same("- a\n\n1. b\n", md('<ul><li>a</li></ul><ol><li>b</li></ol>'), '8: lists of different kinds keep their delimiter');
+// spec:4 atomic elements: xmp text kept as code, listing like pre, invisible ones dropped.
+assert_same("```\nVISIBLE <b>EXAMPLE</b>\n```\n\nOther\n", md('<xmp>VISIBLE <b>EXAMPLE</b></xmp><p>Other</p>'), '8: xmp and paragraph');
+assert_same("[`x`](<https://ex.test/l>)\n", md('<a href="/l"><xmp>x</xmp></a>'), '8: xmp inline is a code span');
+assert_same("```\nL1\nL2\n```\n", md("<listing>L1\nL2</listing>"), '8: listing like pre');
+assert_same("x\n", md('<title>T</title><noembed>n</noembed><noframes>f</noframes><p>x</p>'), '8: invisible atomic elements dropped');
+
 echo "PASS: markdown-converter ({$checks} checks)\n";

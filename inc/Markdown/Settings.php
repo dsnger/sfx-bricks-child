@@ -34,10 +34,14 @@ class Settings
         return self::sanitize(get_option(self::OPTION_NAME, self::defaults()));
     }
 
-    /** Total: any input yields the full, typed settings array. */
+    /**
+     * Total: any input yields the full, typed settings array. No post_types key means
+     * an empty selection only when the form's _present field came with it; otherwise
+     * (e.g. the [] an export writes for a never-saved option) the defaults apply.
+     */
     public static function sanitize($raw): array
     {
-        if (!is_array($raw)) {
+        if (!is_array($raw) || (!array_key_exists('post_types', $raw) && !array_key_exists('_present', $raw))) {
             return self::defaults();
         }
 

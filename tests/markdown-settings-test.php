@@ -58,6 +58,9 @@ assert_same(
 );
 assert_same([], Settings::sanitize(['post_types' => 'page'])['post_types'], '4: string post_types -> []');
 assert_same(['post_types' => []], Settings::sanitize(['_present' => '1']), '4b: presence field only -> empty selection, nothing else stored');
+assert_same($d, Settings::sanitize([]), '4c: neither post_types nor _present (an exported never-saved option) -> defaults');
+assert_same($d, Settings::sanitize(['other' => 'x']), '4c: unrelated keys only -> defaults');
+assert_same(['post_types' => []], Settings::sanitize(['post_types' => []]), '4d: saved empty selection stays empty');
 
 $test_options['sfx_markdown_options'] = ['post_types' => ['ghost', 'cpt_public']];
 assert_same(['post_types' => ['cpt_public']], Settings::get(), '5: get() re-sanitizes stored junk');

@@ -67,4 +67,43 @@ ok(render('heading_hash').includes('<h2>Title ##</h2>'), 'trailing # lost: ' + r
 ok(render('entity_amp').includes('&amp;amp;'), 'text &amp; was decoded: ' + render('entity_amp'));
 ok(render('entity_copy').includes('&amp;copy;') && !render('entity_copy').includes('©'), 'text &copy; became a symbol: ' + render('entity_copy'));
 
+// Gate B mdgb4k7r2x pass 1. textOf: what a reader sees, tags removed.
+const textOf = (html) => html.replace(/<br \/>\n?/g, '\n').replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
+const means = (name, fragment, text) => {
+  const html = render(name);
+  ok(html.includes(fragment), `${name} did not render ${fragment}: ${html}`);
+  if (text !== undefined) ok(textOf(html) === text, `${name} text is not ${JSON.stringify(text)}: ${JSON.stringify(textOf(html))}`);
+};
+// A br inside emphasis stays a hard break.
+means('br_emph_start', '<p>First<br />\n<strong>Second</strong></p>', 'First\nSecond');
+means('br_emph_mid', '<p><strong>First<br />\nSecond</strong></p>', 'First\nSecond');
+means('br_emph_end', '<p><strong>First</strong><br />\nSecond</p>', 'First\nSecond');
+means('br_emph_nested', '<p><strong>a<em>b<br />\nc</em></strong></p>', 'ab\nc');
+// Neighbouring inline frames never merge their delimiters: no stray * or `, text intact.
+means('strong_strong', '<p><strong>FirstSecond</strong></p>');
+means('em_em', '<p><em>FirstSecond</em></p>');
+means('em_strong', '<p><em>First</em><strong>Second</strong></p>');
+means('strong_em', '<p><strong>First</strong><em>Second</em></p>');
+means('em_punct_strong', '<strong>Second</strong>', 'First.Second');
+means('em_strong_punct', '<p><em>First</em>', 'First(Second)');
+means('flank_open', '<p>x', 'x(b)');
+means('flank_close', '<p>', 'a.b');
+means('flank_link', '<p>', 'a.b');
+means('code_code', '<p><code>FirstSecond</code></p>');
+means('code_img', '<p><code>a`&lt;img src=x onerror=alert(1)&gt;</code></p>');
+ok(!render('code_img').includes('<img'), 'adjacent code spans let an escaped tag become HTML: ' + render('code_img'));
+means('code_text_code', '<p><code>a</code>text<code>b</code></p>');
+means('link_code', '<p><a href="https://ex.test/x">a</a><code>b</code><a href="https://ex.test/y">c</a></p>');
+means('bang_image', '<p>Hi!<img src="https://ex.test/i.png" alt="i" /><img src="https://ex.test/j.png" alt="j" /></p>');
+means('emph_code', '<p><strong>a</strong><code>b</code><strong>c</strong></p>');
+for (const name of ['strong_strong', 'em_em', 'em_strong', 'strong_em', 'em_punct_strong', 'em_strong_punct', 'flank_open', 'flank_close', 'flank_link', 'code_code', 'code_text_code', 'emph_code']) {
+  ok(!/[*`]/.test(textOf(render(name))), `${name} shows a delimiter as text: ${render(name)}`);
+}
+// A list right after a list of its kind keeps its own identity and start.
+const ols = render('lists_ol');
+ok((ols.match(/<ol/g) || []).length === 2 && ols.includes('<ol start="10">') && ols.includes('<ol start="20">'), 'adjacent ordered lists merged or lost their start: ' + ols);
+ok((render('lists_ul').match(/<ul>/g) || []).length === 3, 'adjacent bullet lists merged: ' + render('lists_ul'));
+// xmp text is kept, as a code block.
+means('xmp', '<pre><code>VISIBLE &lt;b&gt;EXAMPLE&lt;/b&gt;\n</code></pre>\n<p>Other</p>');
+
 console.log(`markdown-commonmark-test: ${checks} checks passed`);
