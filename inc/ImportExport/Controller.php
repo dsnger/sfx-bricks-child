@@ -312,6 +312,13 @@ class Controller
                 'option_key' => 'sfx_editor_prose_options',
                 'type' => 'single',
             ],
+            // Imported like any array option; Markdown\Settings::get() re-sanitizes on every read.
+            'markdown' => [
+                'label' => __('Markdown Settings', 'sfxtheme'),
+                'description' => __('Post types that are served as Markdown', 'sfxtheme'),
+                'option_key' => 'sfx_markdown_options',
+                'type' => 'single',
+            ],
             // Only the sitemap list travels; profile, fallback theme and monitoring stay on the site.
             // The optional `import` callable replaces the generic subset merge: it validates
             // the entries and writes under the module's mutex (SiteCheck\Settings::import_fields()).

@@ -10625,3 +10625,23 @@ msgstr "Standorte und Ansprechpartner werden veröffentlicht, sofern sie hier ni
 #: inc/ContactInfos
 msgid "Contact #%d"
 msgstr "Kontakt Nr. %d"
+
+#: inc/Markdown
+msgid "Enable Markdown for AI agents"
+msgstr "Markdown für KI-Agenten aktivieren"
+
+#: inc/Markdown
+msgid "Markdown for AI agents"
+msgstr "Markdown für KI-Agenten"
+
+#: inc/Markdown
+msgid "Serves a Markdown version of your pages to AI agents that ask for it, and an llms.txt index."
+msgstr "Liefert KI-Agenten, die danach fragen, eine Markdown-Fassung deiner Seiten und ein llms.txt-Verzeichnis."
+
+#: inc/Markdown
+msgid "Markdown Settings"
+msgstr "Markdown-Einstellungen"
+
+#: inc/Markdown
+msgid "Post types that are served as Markdown"
+msgstr "Beitragstypen, die als Markdown ausgeliefert werden"

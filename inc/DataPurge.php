@@ -170,6 +170,9 @@ class DataPurge
         // Editor Prose
         'sfx_editor_prose_options',
 
+        // Markdown
+        'sfx_markdown_options',
+
         // Contact Infos structured data. Literal: DataPurge does not load the module.
         'sfx_contact_infos_schema',
     ];

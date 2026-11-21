@@ -161,6 +161,18 @@ assert_true(
     'Editor Prose toggle declared in the real GeneralThemeOptions schema with default 0'
 );
 
+// Markdown for AI agents: listed, opt-in, switched on
+reset_test_state();
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_markdown', 'inactive', 'Markdown module listed and inactive by default');
+$test_options['sfx_general_options'] = ['enable_markdown' => 1];
+$data = OverviewProvider::get_data();
+assert_status($data, 'enable_markdown', 'active', 'Markdown module active when enabled');
+assert_true(
+    preg_match("/'id'\s*=>\s*'enable_markdown',[^\]]*'default'\s*=>\s*0,/s", $real_schema) === 1,
+    'Markdown toggle declared in the real GeneralThemeOptions schema with default 0'
+);
+
 // Sicherheits-Check: listed, opt-in, switched on, counted
 reset_test_state();
 $data = OverviewProvider::get_data();
