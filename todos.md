@@ -9,6 +9,25 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Markdown: llms.txt heading loses a trailing `#` followed by spaces** (Gate B cycle
+      mdgb4k7r2x, pass 5, Minor, accepted, not repaired): `Escape::heading_tail`
+      (`inc/Markdown/Escape.php`) checks only the last byte, so a site name `Studio # ` or a
+      post-type label `Posts # ` renders as `Studio` / `Posts`. Trim trailing whitespace before the
+      escape; add rendered tests for both headings in `tests/markdown-llms-txt-test.php`.
+- [ ] **Markdown module follow-ups (final review triage, 2026-11-21)** — backlog, none leaks
+      content: Accept parameters other than `q` are dropped (`text/html;level=1`);
+      `Vary: *` becomes `*, Accept`; a throw after `ob_get_clean()` outside the try, or a memory/time
+      limit during conversion, gives a blank 200 to the agent; an enhancement-filter callback that
+      closes buffers is not contained; enhanced sites convert twice per Markdown request; the `Link`
+      header passes bytes ≥ 0x80 unencoded; an untitled post is listed as `[](url)` in llms.txt;
+      no per-post status re-check after `get_posts`; `LlmsTxt::newest_listed_url()` repeats the
+      listing query on every settings load; the settings page runs up to four 5 s loopbacks on every
+      load (cache or a "run check" button); the unreachable "module off" notice in
+      `inc/Markdown/AdminPage.php`; a 3xx without `Location` prints "redirects to ."; the guidance
+      names other plugins' menus in English; `tests/site-check-translations-test.php` does not scan
+      `inc/Markdown`; live harness: Action Scheduler options/tables not snapshotted, post 1121's type
+      unguarded, base64 snapshot (password hash, token) on the ddev command line, theme-copy guard
+      compares only `inc/`; FPM test: SIGINT skips its teardown.
 - [ ] **Rank Math llms.txt answers past the site-wide password gate** (Gate A cycle mdag7k2p,
       pass 3, found while specifying the Markdown module): Rank Math 1.0.282's
       `maybe_serve_llms_txt()` (`includes/modules/llms/class-llms-txt.php`) checks only its
