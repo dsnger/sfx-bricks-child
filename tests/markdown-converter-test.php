@@ -201,6 +201,19 @@ assert_same(null, md('<ol reversed><li>a</li><li>b</li></ol>'), '9: a reversed l
 assert_same(null, md('<ol><li>a</li><li value="7">b</li></ol>'), '9: an item value passes through');
 assert_same("- a\n- b\n", md('<ul><li value="7">a</li><li>b</li></ul>'), '9: value on a bullet item changes nothing');
 assert_same("7. a\n", md('<ol start=" 7 "><li>a</li></ol>'), '9: a start with spaces is read as its number');
+foreach ([
+    'table cell' => '<table><tr><td>%s</td></tr></table>',
+    'link label' => '<p><a href="/x">%s</a></p>',
+    'caption' => '<table><caption>%s</caption><tr><td>c</td></tr></table>',
+    'heading' => '<h2>%s</h2>',
+    'pre' => '<pre>%s</pre>',
+] as $where => $wrap) {
+    foreach (['<ol start="-1"><li>a</li></ol>', '<ol reversed><li>a</li></ol>', '<ol><li value="7">a</li></ol>'] as $list) {
+        assert_same(null, md(sprintf($wrap, $list)), "9: unkeepable numbering in a $where passes through");
+    }
+}
+assert_same(null, Converter::convert('<html><body><ol id="brx-content" reversed><li>a</li><li>b</li></ol></body></html>', BASE), '9: a reversed OL as the content root passes through');
+assert_same(null, md('<ol><li><ul><li>x</li></ul><span>y</span></li><li value="3">b</li></ol>'), '9: li value after a nested UL still belongs to the OL');
 assert_same("1.\n2. second\n", md('<ol><li></li><li>second</li></ol>'), '9: empty first item keeps its number');
 assert_same("3. a\n4.\n5. c\n", md('<ol start="3"><li>a</li><li><script>x</script></li><li>c</li></ol>'), '9: emptied item keeps its number');
 assert_same("- text\n\n  1.\n  2. b\n", md('<ul><li>text<ol><li></li><li>b</li></ol></li></ul>'), '9: list with an empty first item does not follow a line directly');

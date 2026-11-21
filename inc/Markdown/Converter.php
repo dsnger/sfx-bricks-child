@@ -123,6 +123,9 @@ class Converter
             }
             return true;
         }
+        if (($is_root || $this->stack !== []) && self::numbering_unkept($p, $tag)) {
+            $this->overflow = true; // numbering Markdown cannot show as the visitor sees it: serve the HTML
+        }
         if ($is_root) {
             if ($this->found) {
                 return false;
@@ -140,6 +143,31 @@ class Converter
             $this->finish();
         }
         return $this->stack === [] || $this->open($p, $tag, $depth);
+    }
+
+    /**
+     * An ordered list whose numbering CommonMark cannot reproduce: a start that is not 1-9 digits
+     * (no sign), a reversed order, or an item with its own value. Checked for every OL and LI in
+     * the content area, whatever context would later flatten it.
+     */
+    private static function numbering_unkept(\WP_HTML_Processor $p, string $tag): bool
+    {
+        if ($tag === 'OL') {
+            $start = $p->get_attribute('start');
+            return ($start !== null && !(is_string($start) && preg_match('/^\d{1,9}$/', trim($start))))
+                || $p->get_attribute('reversed') !== null;
+        }
+        if ($tag !== 'LI' || $p->get_attribute('value') === null) {
+            return false;
+        }
+        $crumbs = $p->get_breadcrumbs() ?? [];
+        array_pop($crumbs); // the LI itself
+        foreach (array_reverse($crumbs) as $ancestor) {
+            if ($ancestor === 'OL' || $ancestor === 'UL' || $ancestor === 'MENU') {
+                return $ancestor === 'OL';
+            }
+        }
+        return false;
     }
 
     private static function dropped(\WP_HTML_Processor $p, string $tag): bool
@@ -180,9 +208,6 @@ class Converter
         if ($top->kind === 'list') {
             if ($tag !== 'LI') {
                 return false;
-            }
-            if ($top->ordered && $p->get_attribute('value') !== null) {
-                $this->overflow = true; // an explicit item number Markdown cannot keep: serve the HTML
             }
             $this->push('li', $depth);
             return true;
@@ -260,13 +285,8 @@ class Converter
             $list = $this->push('list', $depth);
             $start = $p->get_attribute('start');
             $list->ordered = $tag === 'OL';
-            // CommonMark allows at most nine digits and no sign; a start or a reversed order the
-            // Markdown cannot show as the visitor sees it is served as HTML.
-            $digits = is_string($start) && preg_match('/^\d{1,9}$/', trim($start));
-            if ($list->ordered && (($start !== null && !$digits) || $p->get_attribute('reversed') !== null)) {
-                $this->overflow = true;
-            }
-            $list->n = $list->ordered && $digits ? (int) trim($start) : 1;
+            // Any other start was sent to the HTML by numbering_unkept().
+            $list->n = $list->ordered && is_string($start) && preg_match('/^\d{1,9}$/', trim($start)) ? (int) trim($start) : 1;
             $list->start = $list->n;
             $list->items = [];
         } elseif ($tag === 'BLOCKQUOTE') {
