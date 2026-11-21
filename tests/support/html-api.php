@@ -1,7 +1,7 @@
 <?php
 /**
- * WordPress' HTML tag processor for tests, which run without WordPress core.
- * tests/support/html-api/ holds the files verbatim from WordPress 7.1.3
+ * WordPress' HTML API (tag processor and full parser) for tests, which run without WordPress core.
+ * tests/support/html-api/ holds the files verbatim from WordPress 7.1.5
  * (wp-includes/class-wp-token-map.php and wp-includes/html-api/), GPL like
  * WordPress; loaded in wp-settings.php's order. Refresh them as a set when
  * WordPress changes the reader the site check relies on.
@@ -23,6 +23,13 @@ if (!class_exists('WP_HTML_Tag_Processor', false)) {
         'class-wp-html-text-replacement.php',
         'class-wp-html-decoder.php',
         'class-wp-html-tag-processor.php',
+        'class-wp-html-unsupported-exception.php',
+        'class-wp-html-active-formatting-elements.php',
+        'class-wp-html-open-elements.php',
+        'class-wp-html-token.php',
+        'class-wp-html-stack-event.php',
+        'class-wp-html-processor-state.php',
+        'class-wp-html-processor.php',
     ] as $file) {
         require __DIR__ . '/html-api/' . $file;
     }
