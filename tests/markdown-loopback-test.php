@@ -48,6 +48,12 @@ assert_same('failed', LoopbackCheck::classify_llms(res(200))['outcome'], '1: no 
 assert_same('failed', LoopbackCheck::classify_llms(res(200, ['Content-Type' => 'application/json']))['outcome'], '1: json');
 assert_same('theme', LoopbackCheck::classify_llms(res(200, ['X-SFX-Llms-Txt' => '1']))['outcome'], '1: marker wins over missing type');
 
+// 1b. repeated headers arrive as arrays
+$r = LoopbackCheck::classify_llms(['response' => ['code' => 301], 'headers' => ['location' => ['/a', '/b']]]);
+assert_same('/a', $r['detail'], '1b: repeated Location takes the first');
+assert_same('foreign', LoopbackCheck::classify_llms(['response' => ['code' => 200], 'headers' => ['content-type' => ['text/plain', 'text/plain']]])['outcome'], '1b: repeated Content-Type');
+assert_same('theme', LoopbackCheck::classify_llms(['response' => ['code' => 200], 'headers' => ['x-sfx-llms-txt' => ['1', '1']]])['outcome'], '1b: repeated marker');
+
 // 2. classify_cache
 $md = res(200, ['Content-Type' => 'text/markdown; charset=UTF-8']);
 $html = res(200, ['Content-Type' => 'text/html']);
@@ -60,6 +66,8 @@ assert_same('clean', LoopbackCheck::classify_cache($md, $html, $md), '2: clean')
 assert_same('failed', LoopbackCheck::classify_cache($md, $html, new WP_Error()), '2: third WP_Error');
 assert_same('failed', LoopbackCheck::classify_cache($md, $html, res(302)), '2: third redirect');
 assert_same('failed', LoopbackCheck::classify_cache($md, new WP_Error(), $md), '2: warm WP_Error');
+
+assert_same('clean', LoopbackCheck::classify_cache(['response' => ['code' => 200], 'headers' => ['content-type' => ['text/markdown', 'text/markdown']]], $html, $md), '2: repeated Content-Type');
 
 // 3. guidance (constants cannot be undefined: none first)
 $file_line = 'If a file llms.txt stays in the site root, remove it there.';

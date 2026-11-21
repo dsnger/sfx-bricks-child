@@ -18,7 +18,7 @@ class LoopbackCheck
         }
         $code = (int) wp_remote_retrieve_response_code($response);
         if ($code >= 300 && $code < 400) {
-            return ['outcome' => 'redirected', 'detail' => (string) wp_remote_retrieve_header($response, 'location')];
+            return ['outcome' => 'redirected', 'detail' => self::header($response, 'location')];
         }
         if ($code === 404 || $code === 410) {
             return ['outcome' => 'none', 'detail' => (string) $code];
@@ -26,10 +26,10 @@ class LoopbackCheck
         if ($code !== 200) {
             return ['outcome' => 'failed', 'detail' => (string) $code];
         }
-        if ((string) wp_remote_retrieve_header($response, 'x-sfx-llms-txt') === '1') {
+        if (self::header($response, 'x-sfx-llms-txt') === '1') {
             return ['outcome' => 'theme', 'detail' => ''];
         }
-        $type = strtolower((string) wp_remote_retrieve_header($response, 'content-type'));
+        $type = strtolower(self::header($response, 'content-type'));
         if (str_contains($type, 'text/html') || str_contains($type, 'application/xhtml+xml')) {
             return ['outcome' => 'html', 'detail' => $type];
         }
@@ -102,6 +102,14 @@ class LoopbackCheck
         return self::classify_cache($control, $warm, self::get($page_url, ['Accept' => 'text/markdown']));
     }
 
+    /** wp_remote_retrieve_header() returns an array for a repeated header: take the first value. */
+    private static function header($response, string $name): string
+    {
+        $value = wp_remote_retrieve_header($response, $name);
+
+        return (string) (is_array($value) ? ($value[0] ?? '') : $value);
+    }
+
     private static function unusable($response): bool
     {
         return is_wp_error($response) || (int) wp_remote_retrieve_response_code($response) !== 200;
@@ -109,6 +117,6 @@ class LoopbackCheck
 
     private static function is_markdown($response): bool
     {
-        return str_contains(strtolower((string) wp_remote_retrieve_header($response, 'content-type')), 'text/markdown');
+        return str_contains(strtolower(self::header($response, 'content-type')), 'text/markdown');
     }
 }

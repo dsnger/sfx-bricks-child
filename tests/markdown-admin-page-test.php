@@ -108,6 +108,7 @@ namespace SFX\Markdown {
     assert_true(\SFX\AccessControl::$died === 1, '1: capability gate called');
     has($html, 'action="options.php"', '1: form posts to options.php');
     has($html, '<!--fields:sfx_markdown_options-->', '1: settings_fields');
+    has($html, 'name="sfx_markdown_options[_present]" value="1"', '1: hidden presence field');
     has($html, 'name="sfx_markdown_options[post_types][]" value="page"  checked', '1: page checked');
     has($html, 'name="sfx_markdown_options[post_types][]" value="post"', '1: post offered');
     hasnt($html, 'value="post"  checked', '1: post not checked');

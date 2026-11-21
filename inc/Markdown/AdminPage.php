@@ -56,6 +56,8 @@ class AdminPage
 
                         <form method="post" action="options.php">
                             <?php settings_fields(Settings::OPTION_GROUP); ?>
+                            <?php // Always send a field, so an empty selection saves [] instead of null (which sanitizes to the defaults). ?>
+                            <input type="hidden" name="<?php echo esc_attr($name); ?>[_present]" value="1" />
                             <table class="form-table" role="presentation">
                                 <tr>
                                     <th scope="row"><?php esc_html_e('Included post types', 'sfxtheme'); ?></th>
