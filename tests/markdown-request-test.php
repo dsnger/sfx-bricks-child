@@ -112,7 +112,7 @@ assert_same(true, Request::parser_available(), '1: parser present');
 $hooks = [];
 new Controller();
 assert_same(
-    [['sfx_init_admin_features', 10], ['exit_on_http_head', 10], ['wp_head', 10], ['template_redirect', PHP_INT_MAX]],
+    [['sfx_init_admin_features', 10], ['exit_on_http_head', 10], ['wp_head', 10], ['template_redirect', PHP_INT_MAX], ['template_include', PHP_INT_MAX]],
     $hooks,
     '1: hooks with parser'
 );

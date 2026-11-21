@@ -16,6 +16,7 @@ class Controller
         add_filter('exit_on_http_head', [self::class, 'exit_on_http_head']);
         add_action('wp_head', [self::class, 'print_head_link']);
         add_action('template_redirect', [self::class, 'add_vary'], PHP_INT_MAX);
+        add_filter('template_include', [Response::class, 'maybe_take_over'], PHP_INT_MAX);
     }
 
     /** A HEAD request for Markdown gets the GET response's headers (spec § Markdown response). */
