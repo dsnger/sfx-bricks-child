@@ -22,10 +22,14 @@ class LlmsTxt
         ];
     }
 
-    /** D13: exact path, no query string, status 404 (or Rank Math's own 200), no Bricks maintenance. */
-    public static function matches(string $request_uri, string $home_path, int $status, ?string $matched_rule, bool $maintenance_applied): bool
+    /**
+     * D13: exact path, no query string, status 404 (or Rank Math's own 200), no Bricks maintenance.
+     * GET/HEAD only and no feed/robots request: WordPress also reads query vars from a POST body, and
+     * the password gate exempts feed and robots requests.
+     */
+    public static function matches(string $request_uri, string $home_path, int $status, ?string $matched_rule, bool $maintenance_applied, string $method, bool $is_feed, bool $is_robots): bool
     {
-        if ($maintenance_applied || str_contains($request_uri, '?')) {
+        if ($maintenance_applied || $is_feed || $is_robots || !in_array($method, ['GET', 'HEAD'], true) || str_contains($request_uri, '?')) {
             return false;
         }
         if ($request_uri !== rtrim($home_path, '/') . '/llms.txt') {
@@ -44,7 +48,7 @@ class LlmsTxt
         $maintenance = !class_exists('\Bricks\Maintenance') || !method_exists('\Bricks\Maintenance', 'is_applied')
             || \Bricks\Maintenance::is_applied();
 
-        if (!self::matches($uri, $home_path, (int) http_response_code(), is_string($rule) ? $rule : null, (bool) $maintenance)) {
+        if (!self::matches($uri, $home_path, (int) http_response_code(), is_string($rule) ? $rule : null, (bool) $maintenance, (string) ($_SERVER['REQUEST_METHOD'] ?? ''), is_feed(), is_robots())) {
             return;
         }
 
@@ -73,7 +77,7 @@ class LlmsTxt
                 $out .= '- [' . Escape::label(self::decode((string) get_the_title($post))) . '](' . Escape::destination(self::address($post)) . ")\n";
             }
             if (count($posts) > self::LIMIT) {
-                $out .= "\n" . __('More entries exist than are listed here.', 'sfxtheme') . "\n";
+                $out .= "\n" . Escape::block_start(Escape::text(__('More entries exist than are listed here.', 'sfxtheme'))) . "\n";
             }
         }
 
@@ -126,9 +130,9 @@ class LlmsTxt
         return add_query_arg('markdown', '1', (string) get_permalink($post));
     }
 
-    /** WordPress stores names and titles entity-encoded. */
+    /** WordPress stores names and titles entity-encoded, and get_the_title() adds numeric entities (wptexturize). */
     private static function decode(string $s): string
     {
-        return wp_specialchars_decode($s, ENT_QUOTES);
+        return \WP_HTML_Decoder::decode_text_node($s);
     }
 }

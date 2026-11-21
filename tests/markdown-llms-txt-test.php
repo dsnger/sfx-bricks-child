@@ -31,14 +31,14 @@ function get_post_types($args = [], $output = 'names')
     return $output === 'objects' ? $out : array_keys($out);
 }
 function get_bloginfo($k) { global $S; return $S[$k]; }
-function wp_specialchars_decode($s, $q = 0) { return html_entity_decode((string) $s, ENT_QUOTES | ENT_HTML5, 'UTF-8'); }
 function get_the_title($p) { return $p->post_title; }
 function get_permalink($p) { return 'https://ex.test/p' . $p->ID . '/'; }
 function add_query_arg($key, $value, $url) { return $url . (strpos($url, '?') === false ? '?' : '&') . $key . '=' . $value; }
 function get_posts($args) { global $S; $S['calls'][] = $args; return array_slice($S['posts'][$args['post_type']] ?? [], 0, $args['numberposts']); }
 function wp_parse_url($u, $c = -1) { return parse_url($u, $c); }
-function __($s, $d = 'default') { return $s; }
+function __($s, $d = 'default') { global $S; return $S['translation'] ?? $s; }
 
+require_once __DIR__ . '/support/html-api.php';
 require_once __DIR__ . '/../inc/Markdown/Settings.php';
 require_once __DIR__ . '/../inc/Markdown/Escape.php';
 require_once __DIR__ . '/../inc/Markdown/LlmsTxt.php';
@@ -73,8 +73,12 @@ $cases = [
     ['/llms.txt', '/sub/', 404, null, false, false, 'subdir wrong path'],
 ];
 foreach ($cases as [$uri, $home, $status, $rule, $maint, $want, $label]) {
-    assert_same($want, LlmsTxt::matches($uri, $home, $status, $rule, $maint), "matches: {$label}");
+    assert_same($want, LlmsTxt::matches($uri, $home, $status, $rule, $maint, 'GET', false, false), "matches: {$label}");
 }
+assert_same(true, LlmsTxt::matches('/llms.txt', '/', 404, null, false, 'HEAD', false, false), 'matches: HEAD');
+assert_same(false, LlmsTxt::matches('/llms.txt', '/', 200, '^llms\.txt$', false, 'POST', false, false), 'matches: POST');
+assert_same(false, LlmsTxt::matches('/llms.txt', '/', 200, '^llms\.txt$', false, 'GET', true, false), 'matches: feed');
+assert_same(false, LlmsTxt::matches('/llms.txt', '/', 200, '^llms\.txt$', false, 'GET', false, true), 'matches: robots');
 
 // 2. headers.
 assert_same(
@@ -119,6 +123,21 @@ reset_state();
 $S['description'] = '';
 $S['options']['sfx_markdown_options'] = ['post_types' => []];
 assert_same("# A \\*B\\* \\& Co\n", LlmsTxt::render(), 'no tagline, no types');
+
+// Entities from wptexturize are decoded, not shown literally.
+reset_state();
+$S['posts']['post'] = [new WP_Post(9, 'Don&#8217;t &#8211; &amp;', '2026-01-01 00:00:00')];
+$out = LlmsTxt::render();
+assert_same(true, strpos($out, '&#') === false, 'no numeric entity left');
+assert_same(true, strpos($out, '- [Don’t – \\&](') !== false, 'decoded title');
+
+// Translated notice is escaped.
+reset_state();
+$S['translation'] = '*More* [here]';
+for ($i = 1; $i <= 501; $i++) {
+    $S['posts']['post'][] = new WP_Post($i, "T{$i}", '2026-01-01 00:00:00');
+}
+assert_same(true, in_array('\\*More\\* \\[here\\]', explode("\n", LlmsTxt::render()), true), 'notice escaped');
 
 // 501 found -> 500 lines and one notice.
 reset_state();
