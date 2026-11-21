@@ -41,6 +41,7 @@ if [ -z "$PHP" ]; then
   exit 1
 fi
 
+export PHP # the JS battery runs the Markdown converter through it
 echo "php: $("$PHP" -r 'echo PHP_VERSION;')"
 
 # Node resolution, same shape and same reasoning as PHP above: probe the

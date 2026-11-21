@@ -10633,3 +10633,135 @@ msgstr "Standorte und Ansprechpartner werden veröffentlicht, sofern sie hier ni
 #: inc/ContactInfos
 msgid "Contact #%d"
 msgstr "Kontakt Nr. %d"
+
+#: inc/Markdown
+msgid "Enable Markdown for AI agents"
+msgstr "Markdown für KI-Agenten aktivieren"
+
+#: inc/Markdown
+msgid "Markdown for AI agents"
+msgstr "Markdown für KI-Agenten"
+
+#: inc/Markdown
+msgid "Serves a Markdown version of your pages to AI agents that ask for it, and an llms.txt index."
+msgstr "Liefert KI-Agenten, die danach fragen, eine Markdown-Fassung deiner Seiten und ein llms.txt-Verzeichnis."
+
+#: inc/Markdown
+msgid "Markdown Settings"
+msgstr "Markdown-Einstellungen"
+
+#: inc/Markdown
+msgid "Post types that are served as Markdown"
+msgstr "Beitragstypen, die als Markdown ausgeliefert werden"
+
+#: inc/Markdown
+msgid "More entries exist than are listed here."
+msgstr "Es gibt weitere Einträge, die hier nicht aufgeführt sind."
+
+#: inc/Markdown
+msgid "The Markdown front end needs WordPress 6.7 or newer. It stays off until then."
+msgstr "Die Markdown-Ausgabe benötigt WordPress 6.7 oder neuer. Bis dahin bleibt sie aus."
+
+#: inc/Markdown
+msgid "The module is switched off in the general theme options. The checks run once it is on."
+msgstr "Das Modul ist in den allgemeinen Theme-Optionen ausgeschaltet. Die Prüfungen laufen, sobald es eingeschaltet ist."
+
+#: inc/Markdown
+msgid "Included post types"
+msgstr "Eingeschlossene Inhaltstypen"
+
+#: inc/Markdown
+msgid "Only published pages are served. A page with a password is served only to visitors who have entered it, and is never listed in llms.txt."
+msgstr "Nur veröffentlichte Seiten werden ausgeliefert. Eine Seite mit Passwort erhalten nur Besucher, die das Passwort eingegeben haben; in der llms.txt wird sie nie aufgeführt."
+
+#: inc/Markdown
+msgid "Addresses for this site"
+msgstr "Adressen für diese Website"
+
+#: inc/Markdown
+msgid "Markdown of a page, by address:"
+msgstr "Markdown einer Seite, über die Adresse:"
+
+#: inc/Markdown
+msgid "Markdown of any page, by request header:"
+msgstr "Markdown jeder Seite, über den Anfrage-Header:"
+
+#: inc/Markdown
+msgid "Index of all pages:"
+msgstr "Verzeichnis aller Seiten:"
+
+#: inc/Markdown
+msgid "Check: /llms.txt"
+msgstr "Prüfung: /llms.txt"
+
+#: inc/Markdown
+msgid "Check: page cache"
+msgstr "Prüfung: Seiten-Cache"
+
+#: inc/Markdown
+msgid "No page to check."
+msgstr "Keine Seite zum Prüfen."
+
+#: inc/Markdown
+msgid "A CDN in front of the site often never sees a loopback request, so a clean result proves nothing about the CDN."
+msgstr "Ein CDN vor der Website sieht eine Loopback-Anfrage oft nie. Ein sauberes Ergebnis sagt deshalb nichts über das CDN aus."
+
+#: inc/Markdown
+msgid "The theme serves /llms.txt."
+msgstr "Das Theme liefert /llms.txt aus."
+
+#: inc/Markdown
+msgid "/llms.txt redirects to %s."
+msgstr "/llms.txt leitet weiter auf %s."
+
+#: inc/Markdown
+msgid "No llms.txt is served; check the Redirects rules for /llms.txt."
+msgstr "Es wird keine llms.txt ausgeliefert; prüfen Sie die Weiterleitungsregeln für /llms.txt."
+
+#: inc/Markdown
+msgid "An HTML page answers at /llms.txt."
+msgstr "Unter /llms.txt antwortet eine HTML-Seite."
+
+#: inc/Markdown
+msgid "Another llms.txt answers, not the theme's. Switch it off so the theme's index can be served:"
+msgstr "Es antwortet eine andere llms.txt, nicht die des Themes. Schalten Sie sie aus, damit das Verzeichnis des Themes ausgeliefert werden kann:"
+
+#: inc/Markdown
+msgid "Could not check /llms.txt (%s)."
+msgstr "/llms.txt konnte nicht geprüft werden (%s)."
+
+#: inc/Markdown
+msgid "No page cache problem found."
+msgstr "Kein Problem mit dem Seiten-Cache gefunden."
+
+#: inc/Markdown
+msgid "Your page cache answers Markdown requests by Accept header with HTML; the ?markdown=1 address still works."
+msgstr "Ihr Seiten-Cache beantwortet Markdown-Anfragen per Accept-Header mit HTML; die Adresse mit ?markdown=1 funktioniert weiterhin."
+
+#: inc/Markdown
+msgid "This page does not convert, so the check cannot run."
+msgstr "Diese Seite wird nicht umgewandelt, die Prüfung kann daher nicht laufen."
+
+#: inc/Markdown
+msgid "Could not check."
+msgstr "Konnte nicht geprüft werden."
+
+#: inc/Markdown
+msgid "Yoast SEO → Settings → llms.txt: switch off 'Enable llms.txt file feature'."
+msgstr "Yoast SEO → Einstellungen → llms.txt: „Enable llms.txt file feature“ ausschalten."
+
+#: inc/Markdown
+msgid "All in One SEO → Sitemaps → LLMs.txt: switch off 'Enable llms.txt'."
+msgstr "All in One SEO → Sitemaps → LLMs.txt: „Enable llms.txt“ ausschalten."
+
+#: inc/Markdown
+msgid "SEOPress PRO: switch off llms.txt in SEOPress PRO's settings."
+msgstr "SEOPress PRO: llms.txt in den Einstellungen von SEOPress PRO ausschalten."
+
+#: inc/Markdown
+msgid "If a file llms.txt stays in the site root, remove it there."
+msgstr "Bleibt im Hauptverzeichnis der Website eine Datei llms.txt liegen, entfernen Sie sie dort."
+
+#: inc/Markdown
+msgid "Markdown"
+msgstr "Markdown"

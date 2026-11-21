@@ -95,6 +95,14 @@ class Settings
                 'group'       => 'general',
             ],
             [
+                'id'          => 'enable_markdown',
+                'label'       => __('Enable Markdown for AI agents', 'sfxtheme'),
+                'description' => __('Serves a Markdown version of your pages to AI agents that ask for it, and an llms.txt index.', 'sfxtheme'),
+                'type'        => 'checkbox',
+                'default'     => 0,
+                'group'       => 'general',
+            ],
+            [
                 'id'          => 'enable_site_check',
                 'label'       => __('Enable Sicherheits-Check', 'sfxtheme'),
                 'description' => __('Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes.', 'sfxtheme'),

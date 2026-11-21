@@ -21,6 +21,7 @@ class Settings
             ['id' => 'enable_smooth_scroll', 'default' => 0],
             ['id' => 'enable_nav_menu_query', 'default' => 0],
             ['id' => 'enable_editor_prose', 'default' => 0],
+            ['id' => 'enable_markdown', 'default' => 0],
             ['id' => 'disable_bricks_js', 'default' => 0],
             ['id' => 'disable_bricks_css', 'default' => 0],
         ];

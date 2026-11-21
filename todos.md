@@ -9,6 +9,31 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Markdown: llms.txt heading loses a trailing `#` followed by spaces** (Gate B cycle
+      mdgb4k7r2x, pass 5, Minor, accepted, not repaired): `Escape::heading_tail`
+      (`inc/Markdown/Escape.php`) checks only the last byte, so a site name `Studio # ` or a
+      post-type label `Posts # ` renders as `Studio` / `Posts`. Trim trailing whitespace before the
+      escape; add rendered tests for both headings in `tests/markdown-llms-txt-test.php`.
+- [ ] **Markdown module follow-ups (final review triage, 2026-11-21)** — backlog, none leaks
+      content: Accept parameters other than `q` are dropped (`text/html;level=1`);
+      `Vary: *` becomes `*, Accept`; a throw after `ob_get_clean()` outside the try, or a memory/time
+      limit during conversion, gives a blank 200 to the agent; an enhancement-filter callback that
+      closes buffers is not contained; enhanced sites convert twice per Markdown request; the `Link`
+      header passes bytes ≥ 0x80 unencoded; an untitled post is listed as `[](url)` in llms.txt;
+      no per-post status re-check after `get_posts`; `LlmsTxt::newest_listed_url()` repeats the
+      listing query on every settings load; the settings page runs up to four 5 s loopbacks on every
+      load (cache or a "run check" button); the unreachable "module off" notice in
+      `inc/Markdown/AdminPage.php`; a 3xx without `Location` prints "redirects to ."; the guidance
+      names other plugins' menus in English; `tests/site-check-translations-test.php` does not scan
+      `inc/Markdown`; live harness: Action Scheduler options/tables not snapshotted, post 1121's type
+      unguarded, base64 snapshot (password hash, token) on the ddev command line, theme-copy guard
+      compares only `inc/`; FPM test: SIGINT skips its teardown.
+- [ ] **Rank Math llms.txt answers past the site-wide password gate** (Gate A cycle mdag7k2p,
+      pass 3, found while specifying the Markdown module): Rank Math 1.0.282's
+      `maybe_serve_llms_txt()` (`includes/modules/llms/class-llms-txt.php`) checks only its
+      `llms_txt` query var, so `/llms.txt?robots=1` and `/llms.txt?feed=rss2` (seen live 2026-11-21) —
+      which `PasswordProtected` exempts as robots and feed requests — get Rank Math's index of titles and URLs on a password-protected site. Exists with
+      or without the Markdown module. Decide whether the theme's gate should also cover it.
 - [ ] **Schema: optional Google fields image and priceRange** (Rich Results Test, 2026-11-21):
       Google lists "image" (organization and locations) and "priceRange" (locations) as
       missing optional fields. Consider a photo and a price-range field in Contact Infos.
@@ -112,6 +137,16 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Markdown module: Gate A pass-5 findings to settle in the plan** (cycle mdag7k2p, closed at
+      the cap; spec `docs/superpowers/specs/2026-11-21-markdown-for-agents-design.md` § Markdown
+      response): (1) Major — calling `wp_template_enhancement_output_buffer` from the wrapper runs it
+      twice on pass-through and skips core's finalization action on commit; (2) Minor — a
+      non-removable outer buffer can mix pre-template HTML or a suffix into the Markdown; (3) Minor —
+      equal buffer depth does not prove the capture is intact (`ob_flush()`, close and reopen).
+      Each needs a decision in the plan and a request-level test.
+      Done 2026-11-21: settled as P1–P3 in `docs/superpowers/plans/2026-11-21-markdown-for-agents.md`,
+      pinned by `tests/markdown-fpm-test.php` (enhance-*, close-own-buffer, ob-flush, close-and-reopen,
+      non-removable-outer scenarios).
 - [x] **Schema: settings save reports success when a selection write fails** (Gate B cycle
       sch7b2qx, risk 4, Major, accepted, not repaired): `Selection::save_choice()`
       (`inc/ContactInfos/Schema/Selection.php`) ignores the results of its metadata writes and
