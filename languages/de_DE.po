@@ -10645,3 +10645,7 @@ msgstr "Markdown-Einstellungen"
 #: inc/Markdown
 msgid "Post types that are served as Markdown"
 msgstr "Beitragstypen, die als Markdown ausgeliefert werden"
+
+#: inc/Markdown
+msgid "More entries exist than are listed here."
+msgstr "Es gibt weitere Einträge, die hier nicht aufgeführt sind."
