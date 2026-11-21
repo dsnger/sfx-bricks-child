@@ -15,9 +15,12 @@
 # then writes. The teardown deletes the fixture posts, the 410 rule and the temporary
 # Editor-role user, deactivates Rank Math if this run activated it, and puts every
 # snapshotted option back byte for byte (deleting the ones that did not exist). It re-reads
-# each of them afterwards and drops a cleanup record only once its removal is confirmed;
-# then it releases the lock. The editor and post-password cookies live only in a mode-700
-# temp dir and are never printed.
+# each of them afterwards and drops a cleanup record only once its removal is confirmed.
+# Only when every item is confirmed does it remove the temp dir and release the lock; otherwise
+# it keeps both (the original option snapshot and the cleanup records), prints where they are
+# and exits 3, and a later run that finds the held lock prints the same. The editor and
+# post-password cookies live only in a mode-700 temp dir, are never printed and are removed
+# by the teardown in either case.
 #
 # Exit: 0 all passed, 1 a check failed or a required check did not run (NOT RUN),
 # 2 guard, lock or fixture error, 3 teardown left state behind.
@@ -55,7 +58,7 @@ echo "site $SITE ($URL), WP $(wp core version), theme $(wp theme get sfx-bricks-
 # permanent. mkdir is atomic; the lock dir also carries files PHP must read (front.html).
 RUN=r$(date +%s)$$$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')
 LOCK="$SITE/wp-content/uploads/sfx-md-live.lock"
-mkdir "$LOCK" 2> /dev/null || fatal "another run holds $LOCK ($(cat "$LOCK/owner" 2> /dev/null || echo 'owner unknown')); if none is running, remove it by hand"
+mkdir "$LOCK" 2> /dev/null || fatal "another run holds $LOCK ($(cat "$LOCK/owner" 2> /dev/null || echo 'owner unknown')); $(cat "$LOCK/recovery" 2> /dev/null || echo 'if none is running, remove it by hand')"
 TMP=
 release() { rm -rf "$LOCK"; [ ! -e "$LOCK" ] || { echo "  FAILED to release the run lock $LOCK" >&2; return 1; }; [ -z "$TMP" ] || rm -rf "$TMP"; }
 trap 'rc=$?; release || rc=3; exit $rc' EXIT # replaced by the teardown once the snapshot exists
@@ -63,6 +66,7 @@ trap 'exit 130' INT TERM
 echo "$RUN" > "$LOCK/owner"
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/sfx-md-live.XXXXXX") || fatal "mktemp failed"
 chmod 700 "$TMP"
+echo "if no run is active, its teardown did not finish: check its recovery data in $TMP, then remove $LOCK by hand" > "$LOCK/recovery"
 
 # ---------------------------------------------------------------- snapshot
 # Raw option rows (value and autoload), sorted by name, base64 JSON. Every option the run
@@ -151,9 +155,16 @@ teardown() {
   echo "  fixture posts left (any status, any run): $posts_left"
   [ "$posts_left" = 0 ] || left=1
   echo "  Rank Math active: $(wp plugin is-active seo-by-rank-math && echo yes || echo no) (before: $([ "$RM_WAS_ACTIVE" = 1 ] && echo yes || echo no))"
-  release || left=1
+  rm -f "$TMP/editor.curl" "$TMP/postpass.jar" "$LOCK/front.html" # credentials and a page copy, not recovery data
   echo "== result: $PASSES PASS, $FAILS FAIL, $NOTRUN NOT RUN"
-  if [ "$left" != 0 ]; then echo "TEARDOWN LEFT STATE BEHIND" >&2; exit 3; fi
+  if [ "$left" = 0 ]; then release || left=1; fi
+  if [ "$left" != 0 ]; then
+    # Unverified cleanup: keep the snapshot, the records and the lock, so nothing snapshots the damaged site.
+    echo "its teardown LEFT STATE BEHIND: recovery data in $TMP (snapshot.b64, posts, rule_id, editor_id, rm_activated, proof.txt); restore by hand, then remove $TMP and $LOCK" > "$LOCK/recovery"
+    echo "TEARDOWN LEFT STATE BEHIND. Kept: snapshot $TMP/snapshot.b64, cleanup records in $TMP, lock $LOCK" >&2
+    echo "Recovery: put back the option rows in snapshot.b64 (base64 JSON: name -> base64 value + autoload, null = absent), remove what posts/rule_id/editor_id/rm_activated name, then rm -rf $TMP $LOCK" >&2
+    exit 3
+  fi
   if [ "$rc" != 0 ]; then exit "$rc"; fi
   [ "$FAILS" = 0 ] || exit 1
   [ "$NOTRUN" = 0 ] || { echo "A required check did not run" >&2; exit 1; }
@@ -257,29 +268,46 @@ has "1120 ?markdown=1 holds the content marker (control)" p1120-md "$MARK1120"
 
 echo
 echo "== AC-12: Bricks lazy-loaded images (front page)"
-# Read with WordPress' tag processor (AGENTS.md: no regex on HTML), inside the site: the body
+# Read with WordPress' full HTML parser (AGENTS.md: no regex on HTML), inside the site: the body
 # goes through the lock dir, whose owner file proves PHP reads this run's copy. The first IMG
-# after the brx-content opener and before the brx-footer opener whose src is empty or a data:
-# placeholder and whose data-src is set; prints the Markdown destination the converter writes.
+# inside the brx-content element, outside every subtree the converter drops (the same rules as
+# Converter::dropped), whose src is empty or a data: placeholder and whose data-src is set;
+# prints the Markdown destination the converter writes for it.
 cp "$TMP/front-html.b" "$LOCK/front.html"
 dest=$(wpe "\$d = wp_upload_dir()['basedir'] . '/sfx-md-live.lock/';
   if (trim((string) @file_get_contents(\$d . 'owner')) !== '$RUN') { echo 'UNREADABLE'; return; }
-  \$p = new WP_HTML_Tag_Processor((string) file_get_contents(\$d . 'front.html')); \$in = false;
-  while (\$p->next_tag()) {
-    \$id = \$p->get_attribute('id');
-    if (\$id === 'brx-content') { \$in = true; } elseif (\$id === 'brx-footer') { break; }
-    if (!\$in || \$p->get_tag() !== 'IMG' || \$p->is_tag_closer()) { continue; }
+  \$drop = ['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','SVG','MATH','IFRAME','FORM','SELECT','TEXTAREA','BUTTON','NAV','VIDEO','AUDIO','CANVAS','OBJECT','EMBED','DIALOG'];
+  \$p = WP_HTML_Processor::create_full_parser((string) file_get_contents(\$d . 'front.html')); if (!\$p) { echo 'UNPARSED'; return; }
+  \$root = null; \$skip = null;
+  try { while (\$p->next_token()) {
+    if (\$p->get_token_type() !== '#tag') { continue; }
+    \$depth = \$p->get_current_depth();
+    if (\$p->is_tag_closer()) {
+      if (\$skip !== null && \$depth < \$skip) { \$skip = null; }
+      if (\$skip === null && \$root !== null && \$depth < \$root) { break; }
+      continue; }
+    if (\$skip !== null) { continue; }
+    \$tag = \$p->get_tag(); \$id = \$p->get_attribute('id'); \$aria = \$p->get_attribute('aria-hidden'); \$role = \$p->get_attribute('role');
+    if (in_array(\$tag, \$drop, true) || \$p->get_attribute('hidden') !== null || \$id === 'brx-header' || \$id === 'brx-footer'
+      || (is_string(\$aria) && strtolower(trim(\$aria)) === 'true')
+      || (is_string(\$role) && in_array('navigation', preg_split('/\s+/', strtolower(\$role)), true))
+      || \$p->has_class('bricks-pagination') === true) {
+      if (\$p->expects_closer()) { \$skip = \$depth; } continue; }
+    if (\$root === null) { if (\$id === 'brx-content' && \$p->expects_closer()) { \$root = \$depth; } continue; }
+    if (\$tag !== 'IMG') { continue; }
     \$src = trim((string) \$p->get_attribute('src')); \$lazy = \$p->get_attribute('data-src');
     if ((\$src === '' || stripos(\$src, 'data:') === 0) && is_string(\$lazy) && trim(\$lazy) !== '') {
       \$u = \SFX\Markdown\Url::resolve(\$lazy, '$FRONT', 'image'); echo \$u === null ? 'UNSAFE' : \SFX\Markdown\Escape::destination(\$u); return; } }
-  echo 'NONE';")
+  } catch (WP_HTML_Unsupported_Exception \$e) { echo 'UNPARSED'; return; }
+  echo \$p->get_last_error() !== null ? 'UNPARSED' : 'NONE';")
 rm -f "$LOCK/front.html"
 case "$dest" in
   UNREADABLE) notrun "lazy images: PHP could not read this run's copy of the front page" ;;
-  NONE) notrun "lazy images: the front page content area has no lazy image (src placeholder + data-src)" ;;
+  UNPARSED) notrun "lazy images: WordPress' HTML parser could not read the front page with certainty" ;;
+  NONE) notrun "lazy images: no visible lazy image (src placeholder + data-src) inside brx-content" ;;
   UNSAFE) notrun "lazy images: the first lazy image has a URL the converter drops" ;;
   *)
-    pass "front page content area has a lazy image: $dest"
+    pass "front page has a visible lazy image inside brx-content: $dest"
     has "lazy image: Markdown uses the data-src address" front-md "]($dest)"
     hasnt "lazy image: no data: placeholder in Markdown" front-md "](<data:" ;;
 esac

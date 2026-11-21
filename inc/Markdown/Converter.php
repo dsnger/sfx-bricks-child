@@ -37,9 +37,6 @@ class Converter
     /** Frames that hold blocks; every other frame holds one line of inline Markdown. */
     private const CONTAINERS = ['root' => 1, 'quote' => 1, 'li' => 1];
 
-    /** Marks a `|` inside a code span in a table cell; the parser never yields NUL in text. */
-    private const CELL_PIPE = "\x00";
-
     private string $base;
 
     /** @var list<\stdClass> */
@@ -51,9 +48,6 @@ class Converter
     private ?int $skip = null;
 
     private string $out = '';
-
-    /** Set when output would be ambiguous Markdown; the page is then sent as HTML. */
-    private bool $bad = false;
 
     private function __construct(string $base)
     {
@@ -70,7 +64,7 @@ class Converter
             }
             $c = new self($base_url);
             while ($p->next_token()) {
-                if (!$c->token($p) || $c->bad) {
+                if (!$c->token($p)) {
                     return null;
                 }
             }
@@ -83,7 +77,7 @@ class Converter
         while ($c->stack !== []) {
             $c->finish();
         }
-        return $c->out === '' || $c->bad ? null : $c->out . "\n";
+        return $c->out === '' ? null : $c->out . "\n";
     }
 
     /** Handles one token; false = doubt about the markup. */
@@ -169,7 +163,7 @@ class Converter
     {
         $top = $this->top();
 
-        if ($top->kind === 'code' || $top->kind === 'pre') {
+        if ($top->kind === 'pre') {
             if ($tag === 'BR') {
                 $top->buf .= "\n";
             } elseif (isset(self::BLOCK[$tag]) || $tag === 'XMP') {
@@ -213,14 +207,19 @@ class Converter
             $this->text($p->get_modifiable_text());
             if ($this->top()->depth === $depth) {
                 $this->finish();
+            } else {
+                $this->boundary(); // inside a line: plain text, a block boundary on both sides
             }
             return true;
         }
         $container = isset(self::CONTAINERS[$top->kind]);
         switch ($tag) {
             case 'BR':
-                if ($container || $this->breaks()) {
-                    self::newline($top);
+                if ($container) {
+                    $top->buf = rtrim($top->buf, ' ');
+                    if ($top->buf !== '' && !str_ends_with($top->buf, "\n")) {
+                        $top->buf .= "\n";
+                    }
                 } else {
                     self::space($top);
                 }
@@ -234,22 +233,10 @@ class Converter
                     $this->push('link', $depth)->url = Url::resolve(is_string($href) ? $href : '', $this->base, 'link');
                 }
                 return true;
-            case 'STRONG':
-            case 'B':
-                $this->push('emph', $depth)->mark = '**';
-                return true;
-            case 'EM':
-            case 'I':
-                $this->push('emph', $depth)->mark = '*';
-                return true;
-            case 'CODE':
-                $this->push('code', $depth);
-                return true;
         }
         if (!$container) {
-            if ($tag === 'PRE' || $tag === 'LISTING') {
-                $this->push('code', $depth);
-            } elseif (isset(self::BLOCK[$tag])) {
+            // A line (heading, link label, cell) cannot hold a block: pre's text stays plain text there.
+            if (isset(self::BLOCK[$tag])) {
                 $this->boundary();
             }
             return true;
@@ -304,7 +291,7 @@ class Converter
         if ($top->kind === 'list' || $top->kind === 'table' || $top->kind === 'row') {
             return self::collapse($s) === '' || self::collapse($s) === ' ';
         }
-        if ($top->kind === 'code' || $top->kind === 'pre') {
+        if ($top->kind === 'pre') {
             $top->buf .= $s;
             return true;
         }
@@ -315,9 +302,7 @@ class Converter
             $s = ltrim($s, ' ');
         }
         if ($s !== '') {
-            $s = Escape::text($s);
-            $this->closes($top, $s);
-            $top->buf .= $s;
+            $top->buf .= Escape::text($s);
             $top->text = $top->text || trim($s) !== '';
         }
         return true;
@@ -357,11 +342,7 @@ class Converter
             }
             return;
         }
-        if ($top->kind === 'code') {
-            $top->buf .= ' ';
-        } else {
-            self::space($top);
-        }
+        self::space($top);
         // A link around blocks is written as its own paragraph (P6).
         for ($i = count($this->stack) - 1; $i >= 0 && !isset(self::CONTAINERS[$this->stack[$i]->kind]); $i--) {
             $this->stack[$i]->had_block = true;
@@ -370,7 +351,7 @@ class Converter
 
     private function push(string $kind, int $depth): \stdClass
     {
-        $frame = (object) ['kind' => $kind, 'depth' => $depth, 'buf' => '', 'blocks' => [], 'text' => false, 'img' => false, 'had_block' => false, 'tail' => null];
+        $frame = (object) ['kind' => $kind, 'depth' => $depth, 'buf' => '', 'blocks' => [], 'text' => false, 'img' => false, 'had_block' => false];
         $this->stack[] = $frame;
         return $frame;
     }
@@ -442,20 +423,6 @@ class Converter
                     $parent->blocks[] = ['pre', Escape::fence($code)];
                 }
                 return;
-            case 'code':
-                $code = self::collapse($f->buf);
-                if ($code !== '') {
-                    if ($this->in_cell()) {
-                        $code = str_replace('|', self::CELL_PIPE, $code);
-                    }
-                    $f->text = true;
-                    $this->merge($parent, $f, Escape::code_span($code), $code);
-                }
-                return;
-            case 'emph':
-                $body = trim($f->buf, " \n");
-                $this->merge($parent, $f, $body === '' ? '' : $f->mark . $body . $f->mark, $body);
-                return;
             case 'link':
                 $label = trim($f->buf, ' ');
                 if ($f->url === null || !$f->text) {
@@ -469,7 +436,7 @@ class Converter
                     self::flush($parent);
                     return;
                 }
-                $this->merge($parent, $f, $md);
+                self::merge($parent, $f, $md);
                 return;
             case 'cell':
                 $parent->cells[] = trim($f->buf, ' ');
@@ -501,7 +468,7 @@ class Converter
         if (count($widths) === 1) {
             $lines = [];
             foreach ($rows as $i => $cells) {
-                $lines[] = '| ' . str_replace(self::CELL_PIPE, '\|', implode(' | ', $cells)) . ' |';
+                $lines[] = '| ' . implode(' | ', $cells) . ' |';
                 if ($i === 0) {
                     $lines[] = '| ' . implode(' | ', array_fill(0, count($cells), '---')) . ' |';
                 }
@@ -511,185 +478,26 @@ class Converter
         }
         // Ragged: one paragraph per row, so no two lines can form a GFM table.
         foreach ($rows as $cells) {
-            $line = trim(str_replace(self::CELL_PIPE, '|', implode(' | ', $cells)), ' ');
+            $line = trim(implode(' | ', $cells), ' ');
             if ($line !== '') {
                 $parent->blocks[] = ['p', Escape::block_start($line)];
             }
         }
     }
 
-    private function in_cell(): bool
+    /** Writes an inline child into its parent; spaces at its edges move outside it. */
+    private static function merge(\stdClass $parent, \stdClass $child, string $md): void
     {
-        for ($i = count($this->stack) - 1; $i >= 0 && !isset(self::CONTAINERS[$this->stack[$i]->kind]); $i--) {
-            if ($this->stack[$i]->kind === 'cell') {
-                return true;
-            }
+        if (str_starts_with($child->buf, ' ')) {
+            self::space($parent);
         }
-        return false;
-    }
-
-    /**
-     * Writes an inline child into its parent; spaces (and an emphasis' line breaks) at its
-     * edges move outside it. $raw is a code span's text or an emphasis' body.
-     */
-    private function merge(\stdClass $parent, \stdClass $child, string $md, string $raw = ''): void
-    {
-        $edge = static function (string $c) use ($parent, $child): void {
-            if ($c === ' ') {
-                self::space($parent);
-            } elseif ($c === "\n" && $child->kind === 'emph') {
-                self::newline($parent);
-            }
-        };
-        $edge(substr($child->buf, 0, 1));
-        if ($md !== '') {
-            $tail = $parent->tail !== null && $parent->tail['end'] === strlen($parent->buf) ? $parent->tail : null;
-            $start = strlen($parent->buf);
-            $kind = $child->kind;
-            if ($kind === 'code' && $tail !== null && $tail['kind'] === 'code') {
-                // Neighbouring code spans become one: their backtick runs would join (an escaped tag could turn into HTML).
-                $raw = $tail['raw'] . $raw;
-                $start = $tail['start'];
-                $parent->buf = substr($parent->buf, 0, $start);
-                $md = Escape::code_span($raw);
-            } elseif ($kind === 'emph') {
-                [$md, $raw, $start, $kind] = $this->emphasis($parent, $tail, $child->mark, $raw);
-            } else {
-                $this->closes($parent, $md);
-            }
-            if (!$this->bad) {
-                $parent->buf .= $md;
-                $parent->tail = $kind === 'code' || $kind === 'emph'
-                    ? ['kind' => $kind, 'start' => $start, 'end' => strlen($parent->buf), 'raw' => $raw, 'mark' => $child->mark ?? '']
-                    : null;
-            }
+        $parent->buf .= $md;
+        if (str_ends_with($child->buf, ' ')) {
+            self::space($parent);
         }
-        $edge(substr($child->buf, -1));
         $parent->text = $parent->text || ($child->text && $md !== '');
         $parent->img = $parent->img || $child->img;
         $parent->had_block = $parent->had_block || $child->had_block;
-    }
-
-    /**
-     * Chooses how an emphasis is written so CommonMark's flanking rules read it as written
-     * (`a**(b)**` or two runs meeting as `****` would print the stars). An emphasis that cannot
-     * be delimited safely loses its markers and keeps its text.
-     *
-     * @param array<string,mixed>|null $tail the emphasis or code span the parent buffer ends with
-     * @return array{0: string, 1: string, 2: int, 3: string} markdown, body, start offset (emph only), tail kind
-     */
-    private function emphasis(\stdClass $parent, ?array $tail, string $mark, string $body): array
-    {
-        $plain = [$body, $body, 0, 'plain'];
-        if ($tail !== null && $tail['kind'] === 'emph') {
-            if (self::delimited($tail['raw']) || self::delimited($body)) {
-                $this->bad = true; // nested runs would meet; too many cases to prove safe
-                return $plain;
-            }
-            if ($tail['mark'] === $mark) {
-                // **a** + **b** = **ab**
-                $parent->buf = substr($parent->buf, 0, $tail['end'] - strlen($mark));
-                return [$body . $mark, $tail['raw'] . $body, $tail['start'], 'emph'];
-            }
-            // *a* + **b** = *a***b**: one run of three that must close the first and open the second,
-            // which holds when the characters on both sides are of the same class.
-            $last = self::cls(self::last($tail['raw']));
-            $first = self::cls(self::first($body));
-            if ($last === $first) {
-                return [$mark . $body . $mark, $body, strlen($parent->buf), 'emph'];
-            }
-            if ($first === 1) {
-                return $plain; // *a*(b): the first closes before punctuation
-            }
-            $this->strip($parent, $tail); // a.**b**: the second opens after punctuation
-        }
-        if (self::cls(self::first($body)) === 0 || self::cls(self::last($body)) === 0) {
-            return $this->plain($plain);
-        }
-        $before = self::cls(self::last($parent->buf));
-        if (self::cls(self::first($body)) === 1 && $before === 2) {
-            return $this->plain($plain); // x**(b)** would not open
-        }
-        return [$mark . $body . $mark, $body, strlen($parent->buf), 'emph'];
-    }
-
-    /** @param array{0: string, 1: string, 2: int, 3: string} $plain */
-    private function plain(array $plain): array
-    {
-        if (self::delimited($plain[1])) {
-            $this->bad = true;
-        }
-        return $plain;
-    }
-
-    /** Before $next is written: an emphasis ending in punctuation cannot close before a letter (`*a.*b`). */
-    private function closes(\stdClass $f, string $next): void
-    {
-        $tail = $f->tail;
-        if ($tail !== null && $tail['kind'] === 'emph' && $tail['end'] === strlen($f->buf)
-            && self::cls(self::last($tail['raw'])) === 1 && self::cls(self::first($next)) === 2) {
-            $this->strip($f, $tail);
-        }
-    }
-
-    /** Removes the markers of the emphasis the buffer ends with, keeping its text. */
-    private function strip(\stdClass $f, array $tail): void
-    {
-        if (self::delimited($tail['raw'])) {
-            $this->bad = true;
-            return;
-        }
-        $f->buf = substr($f->buf, 0, $tail['start']) . $tail['raw'];
-        $f->tail = null;
-    }
-
-    /** Whether an edge of $s is a delimiter of a nested span or emphasis (or an escaped one: kept conservative). */
-    private static function delimited(string $s): bool
-    {
-        return strpbrk(substr($s, 0, 1) . substr($s, -1), '*`') !== false;
-    }
-
-    /** CommonMark character class: 0 whitespace or none, 1 punctuation, 2 other. */
-    private static function cls(string $c): int
-    {
-        if ($c === '' || preg_match('/^[\s\p{Z}\x{FEFF}]/u', $c)) {
-            return 0;
-        }
-        return preg_match('/^[!-\/:-@\[-`{-~\p{P}\p{S}]/u', $c) ? 1 : 2;
-    }
-
-    private static function first(string $s): string
-    {
-        return preg_match('/^./su', $s, $m) ? $m[0] : substr($s, 0, 1);
-    }
-
-    private static function last(string $s): string
-    {
-        return preg_match('/.$/su', $s, $m) ? $m[0] : substr($s, -1);
-    }
-
-    /** Whether a br in the top frame can be a hard break: only emphasis between it and its container. */
-    private function breaks(): bool
-    {
-        for ($i = count($this->stack) - 1; $i >= 0; $i--) {
-            $kind = $this->stack[$i]->kind;
-            if (isset(self::CONTAINERS[$kind])) {
-                return true;
-            }
-            if ($kind !== 'emph') {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    /** A hard line break; at the start of a container's paragraph it is dropped. */
-    private static function newline(\stdClass $f): void
-    {
-        $f->buf = rtrim($f->buf, ' ');
-        if (($f->buf !== '' || $f->kind === 'emph') && !str_ends_with($f->buf, "\n")) {
-            $f->buf .= "\n";
-        }
     }
 
     private static function space(\stdClass $f): void
@@ -704,7 +512,6 @@ class Converter
     {
         $text = trim($f->buf, " \n");
         $f->buf = '';
-        $f->tail = null;
         if ($text !== '') {
             $f->blocks[] = ['p', str_replace("\n", "\\\n", Escape::block_start($text))];
         }

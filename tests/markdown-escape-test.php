@@ -55,15 +55,6 @@ assert_same('<https://x.test/%0A%09%7F>', Escape::destination("https://x.test/\n
 assert_same('<tel:+49%201>', Escape::destination('tel:+49 1'), '4: tel space');
 assert_same('<https://x.test/a%7Cb>', Escape::destination('https://x.test/a|b'), '4: pipe encoded');
 
-// 5. code_span().
-assert_same('``a`b``', Escape::code_span('a`b'), '5: inner backtick');
-assert_same('`` `x ``', Escape::code_span('`x'), '5: leading backtick padded');
-assert_same('`   `', Escape::code_span('   '), '5: spaces only as is');
-assert_same('`  a `', Escape::code_span(' a'), '5: leading space padded both sides');
-assert_same('`x`', Escape::code_span('x'), '5: plain');
-assert_same('```a``b```', Escape::code_span('a``b'), '5: longest run 2');
-assert_same('`a # b`', Escape::code_span("a\n# b"), '5: newline cannot start a block');
-
 // 6. fence().
 assert_same("````\nx\n```\ny\n````", Escape::fence("x\n```\ny"), '6: longer fence');
 assert_same("```\n~~~\n```", Escape::fence('~~~'), '6: tilde inside backtick fence');

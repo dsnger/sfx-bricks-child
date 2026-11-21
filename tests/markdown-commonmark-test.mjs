@@ -59,44 +59,59 @@ ok(/href="[^"]*%20[^"]*"/.test(link) && !/href="[^"]*[ <>]/.test(link), 'href no
 const js = render('link_js');
 ok(js.includes('<p>x y</p>') && !js.includes('<a') && !/javascript:/i.test(js), 'javascript: link not reduced to its text: ' + js);
 
-// Code spans and headings.
-ok(render('code_backticks').includes('<code>a`b``c</code>'), 'code span text changed: ' + render('code_backticks'));
+// Inline code is plain text; headings.
+ok(render('code_backticks').includes('<p>a`b``c</p>'), 'code text changed: ' + render('code_backticks'));
 ok(render('heading_hash').includes('<h2>Title ##</h2>'), 'trailing # lost: ' + render('heading_hash'));
 
 // Entities in text are literal.
 ok(render('entity_amp').includes('&amp;amp;'), 'text &amp; was decoded: ' + render('entity_amp'));
 ok(render('entity_copy').includes('&amp;copy;') && !render('entity_copy').includes('©'), 'text &copy; became a symbol: ' + render('entity_copy'));
 
-// Gate B mdgb4k7r2x pass 1. textOf: what a reader sees, tags removed.
+// Gate B mdgb4k7r2x. textOf: what a reader sees, tags removed.
 const textOf = (html) => html.replace(/<br \/>\n?/g, '\n').replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
 const means = (name, fragment, text) => {
   const html = render(name);
   ok(html.includes(fragment), `${name} did not render ${fragment}: ${html}`);
   if (text !== undefined) ok(textOf(html) === text, `${name} text is not ${JSON.stringify(text)}: ${JSON.stringify(textOf(html))}`);
 };
+// Any raw HTML node, inline or block, in the parsed document.
+const rawHtml = (name) => {
+  const w = reader.parse(cases[name]).walker();
+  let e;
+  while ((e = w.next())) if (e.entering && (e.node.type === 'html_inline' || e.node.type === 'html_block')) return true;
+  return false;
+};
 // A br inside emphasis stays a hard break.
-means('br_emph_start', '<p>First<br />\n<strong>Second</strong></p>', 'First\nSecond');
-means('br_emph_mid', '<p><strong>First<br />\nSecond</strong></p>', 'First\nSecond');
-means('br_emph_end', '<p><strong>First</strong><br />\nSecond</p>', 'First\nSecond');
-means('br_emph_nested', '<p><strong>a<em>b<br />\nc</em></strong></p>', 'ab\nc');
-// Neighbouring inline frames never merge their delimiters: no stray * or `, text intact.
-means('strong_strong', '<p><strong>FirstSecond</strong></p>');
-means('em_em', '<p><em>FirstSecond</em></p>');
-means('em_strong', '<p><em>First</em><strong>Second</strong></p>');
-means('strong_em', '<p><strong>First</strong><em>Second</em></p>');
-means('em_punct_strong', '<strong>Second</strong>', 'First.Second');
-means('em_strong_punct', '<p><em>First</em>', 'First(Second)');
-means('flank_open', '<p>x', 'x(b)');
-means('flank_close', '<p>', 'a.b');
-means('flank_link', '<p>', 'a.b');
-means('code_code', '<p><code>FirstSecond</code></p>');
-means('code_img', '<p><code>a`&lt;img src=x onerror=alert(1)&gt;</code></p>');
-ok(!render('code_img').includes('<img'), 'adjacent code spans let an escaped tag become HTML: ' + render('code_img'));
-means('code_text_code', '<p><code>a</code>text<code>b</code></p>');
-means('link_code', '<p><a href="https://ex.test/x">a</a><code>b</code><a href="https://ex.test/y">c</a></p>');
+means('br_emph_start', '<p>First<br />\nSecond</p>', 'First\nSecond');
+means('br_emph_mid', '<p>First<br />\nSecond</p>', 'First\nSecond');
+means('br_emph_end', '<p>First<br />\nSecond</p>', 'First\nSecond');
+means('br_emph_nested', '<p>ab<br />\nc</p>', 'ab\nc');
+// Neighbouring inline elements: plain text, text intact.
+means('strong_strong', '<p>FirstSecond</p>');
+means('em_strong', '<p>FirstSecond</p>');
+means('em_punct_strong', '<p>First.Second</p>');
+means('flank_open', '<p>x(b)</p>');
+means('flank_link', '<p>a.b</p>');
+means('code_code', '<p>FirstSecond</p>');
+// The two review reproductions: an escaped tag stays text.
+means('code_img', '<p>a`&lt;img src=x onerror=alert(1)&gt;</p>');
+means('code_link_img', '<p>a`&lt;img src=x onerror=alert(1)&gt;</p>');
+// Unicode spaces at an emphasis edge: the visible text, no stray *.
+means('nbsp_edge', '<p>', 'FirstSecond\u00A0end');
+means('emsp_edge', '<p>', 'ab\u2003tail');
+// Markdown delimiters inside strong/em/code render literally.
+means('literal_marks', '<p>**a** *b* _c_ `d` ``e``</p>');
+means('link_code', '<p><a href="https://ex.test/x">a</a>b<a href="https://ex.test/y">c</a></p>');
 means('bang_image', '<p>Hi!<img src="https://ex.test/i.png" alt="i" /><img src="https://ex.test/j.png" alt="j" /></p>');
-means('emph_code', '<p><strong>a</strong><code>b</code><strong>c</strong></p>');
-for (const name of ['strong_strong', 'em_em', 'em_strong', 'strong_em', 'em_punct_strong', 'em_strong_punct', 'flank_open', 'flank_close', 'flank_link', 'code_code', 'code_text_code', 'emph_code']) {
+means('emph_code', '<p>abc</p>');
+const inline = ['br_emph_start', 'br_emph_mid', 'br_emph_end', 'br_emph_nested', 'strong_strong', 'em_strong', 'em_punct_strong', 'flank_open', 'flank_link', 'code_code', 'code_img', 'code_link_img', 'nbsp_edge', 'emsp_edge', 'literal_marks', 'emph_code'];
+for (const name of inline) {
+  const html = render(name);
+  ok(!/<(strong|em|code)>/.test(html), `${name} rendered emphasis or code: ${html}`);
+  ok(!html.includes('<img'), `${name} rendered an <img: ${html}`);
+  ok(!rawHtml(name), `${name} holds raw HTML: ${cases[name]}`);
+}
+for (const name of ['strong_strong', 'em_strong', 'em_punct_strong', 'flank_open', 'flank_link', 'code_code', 'nbsp_edge', 'emsp_edge', 'emph_code']) {
   ok(!/[*`]/.test(textOf(render(name))), `${name} shows a delimiter as text: ${render(name)}`);
 }
 // A list right after a list of its kind keeps its own identity and start.

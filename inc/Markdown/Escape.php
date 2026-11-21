@@ -42,16 +42,6 @@ class Escape
         return '<' . preg_replace('/[\\\\<>&]/', '\\\\$0', $url) . '>';
     }
 
-    /** Inline code, delimited by one more backtick than the longest run inside. */
-    public static function code_span(string $s): string
-    {
-        // A newline inside the span could start a block (e.g. "# ") before inlines are parsed; it renders as a space anyway.
-        $s = self::one_line($s);
-        $delim = str_repeat('`', self::longest_backtick_run($s) + 1);
-        $pad = trim($s, ' ') !== '' && ($s[0] === '`' || $s[0] === ' ' || $s[-1] === '`' || $s[-1] === ' ');
-        return $pad ? "{$delim} {$s} {$delim}" : "{$delim}{$s}{$delim}";
-    }
-
     /** Whole fenced code block; the fence is longer than any backtick run inside. */
     public static function fence(string $code): string
     {

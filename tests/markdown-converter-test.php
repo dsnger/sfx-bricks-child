@@ -63,15 +63,15 @@ assert_same("[X](<https://ex.test/x>)\n", md('<p><a href="/x">X</a></p>'), '1: l
 assert_same("plain\n", md('<p><a>plain</a></p>'), '1: a without href unwrapped');
 assert_same("![A](<https://ex.test/a.png>)\n", md('<p><img src="/a.png" alt="A"></p>'), '1: image');
 assert_same("![](<https://ex.test/a.png>)\n", md('<img src="/a.png">'), '1: image without alt');
-assert_same("**s** **b** *e* *i*\n", md('<p><strong>s</strong> <b>b</b> <em>e</em> <i>i</i></p>'), '1: emphasis');
-assert_same("a **b** c\n", md('<p>a<strong> b </strong>c</p>'), '1: spaces moved outside emphasis');
+assert_same("s b e i\n", md('<p><strong>s</strong> <b>b</b> <em>e</em> <i>i</i></p>'), '1: emphasis unwrapped');
+assert_same("a b c\n", md('<p>a<strong> b </strong>c</p>'), '1: spaces inside emphasis kept');
 assert_same("> q1\n>\n> q2\n", md('<blockquote><p>q1</p><p>q2</p></blockquote>'), '1: blockquote');
 assert_same("```\na <b>\n  c\n```\n", md("<pre>\na &lt;b&gt;\n  c\n</pre>"), '1: pre');
 assert_same("```\na\nb\n```\n", md('<pre><code>a<br>b</code></pre>'), '1: code and br inside pre');
-assert_same("use `x*y`\n", md('<p>use <code>x*y</code></p>'), '1: inline code');
+assert_same("use x\\*y\n", md('<p>use <code>x*y</code></p>'), '1: inline code unwrapped, escaped');
 assert_same("a\n\n---\n\nb\n", md('<p>a</p><hr><p>b</p>'), '1: hr');
-assert_same("| A | B |\n| --- | --- |\n| 1 | 2\\|3 |\n| `a\\|b` |  |\n", md('<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2|3</td></tr><tr><td><code>a|b</code></td><td></td></tr></tbody></table>'), '1: GFM table, pipes escaped');
-assert_same("a | b\n\nc\n\n`x|y`\n", md('<table><tr><td>a</td><td>b</td></tr><tr><td>c</td></tr><tr><td><code>x|y</code></td></tr></table>'), '1: ragged table, one line per row');
+assert_same("| A | B |\n| --- | --- |\n| 1 | 2\\|3 |\n| a\\|b |  |\n", md('<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2|3</td></tr><tr><td><code>a|b</code></td><td></td></tr></tbody></table>'), '1: GFM table, pipes escaped');
+assert_same("a | b\n\nc\n\nx\\|y\n", md('<table><tr><td>a</td><td>b</td></tr><tr><td>c</td></tr><tr><td><code>x|y</code></td></tr></table>'), '1: ragged table, one line per row');
 assert_same("Cap\n\n| A |\n| --- |\n| 1 |\n", md('<table><caption>Cap</caption><tr><th>A</th></tr><tr><td>1</td></tr></table>'), '1: caption before the table');
 assert_same("![F](<https://ex.test/f.png>)\n\nCap\n", md('<figure><img src="/f.png" alt="F"><figcaption>Cap</figcaption></figure>'), '1: figure');
 assert_same("![alt](<https://ex.test/a.png>)\n", md('<img src="data:image/svg+xml,%3Csvg%3E" data-src="/a.png" alt="alt">'), '1: Bricks lazy image');
@@ -117,7 +117,7 @@ assert_same("\\& ©\n", md('<p>&amp; &copy;</p>'), '5: entities as text');
 assert_same("[x](<https://ex.test/a?b=1\\&c=2>)\n", md('<a href="/a?b=1&amp;c=2">x</a>'), '5: &amp; in href');
 assert_same("[x](<https://ex.test/%C2%A9>)\n", md('<a href="/&copy;">x</a>'), '5: &copy; in href');
 assert_same("## # a \\#\n", md('<h2># a #</h2>'), '5: heading trailing # escaped');
-assert_same("``` `` ```\n", md('<p><code>``</code></p>'), '5: backtick-only code');
+assert_same("\\`\\`\n", md('<p><code>``</code></p>'), '5: backtick-only code is escaped text');
 assert_same("ab\n", md('<p>a<code></code>b</p>'), '5: empty code skipped');
 assert_same("x\n", md('<p><a href="javascript:alert(1)">x</a></p>'), '5: unsafe link keeps text');
 assert_same("A\n", md('<p><img src="javascript:x" alt="A"></p>'), '5: unsafe image keeps alt');
@@ -159,39 +159,35 @@ assert_same(true, str_contains($prose, "\n### Eine H3\n"), '7: editor page h3');
 assert_same(false, str_contains($prose, 'Anmeldung für Mitglieder'), '7: editor page has no header text');
 assert_same(0, $unescaped_lt($prose), '7: editor page has no <');
 
-// 8. Gate B mdgb4k7r2x pass 1.
-// spec:1 a br inside emphasis stays a hard break; inside a heading or link label it is a space.
-assert_same("First\\\n**Second**\n", md('<p>First<strong><br>Second</strong></p>'), '8: br at the start of emphasis');
-assert_same("**First\\\nSecond**\n", md('<p><strong>First<br>Second</strong></p>'), '8: br inside emphasis');
-assert_same("**First**\\\nSecond\n", md('<p><strong>First<br></strong>Second</p>'), '8: br at the end of emphasis');
-assert_same("**a*b\\\nc***\n", md('<p><strong>a<em>b<br>c</em></strong></p>'), '8: br in nested emphasis');
-assert_same("- **a\\\n  b**\n", md('<ul><li><strong>a<br>b</strong></li></ul>'), '8: br in emphasis in a list item');
-assert_same("**a**\n", md('<p><strong><br>a</strong></p>'), '8: br at the start of a paragraph dropped');
-assert_same("## *a b*\n", md('<h2><em>a<br>b</em></h2>'), '8: br in emphasis in a heading is a space');
-assert_same("[*a b*](<https://ex.test/x>)\n", md('<p><a href="/x"><em>a<br>b</em></a></p>'), '8: br in emphasis in a link is a space');
-// spec:2 / quality:1 neighbouring inline frames.
-assert_same("**FirstSecond**\n", md('<p><strong>First</strong><strong>Second</strong></p>'), '8: strong+strong coalesce');
-assert_same("*FirstSecond*\n", md('<p><em>First</em><em>Second</em></p>'), '8: em+em coalesce');
-assert_same("**abc**\n", md('<p><strong>a</strong><b>b</b><strong>c</strong></p>'), '8: three strong coalesce');
-assert_same("*First***Second**\n", md('<p><em>First</em><strong>Second</strong></p>'), '8: em+strong, letters on both sides');
-assert_same("First.**Second**\n", md('<p><em>First.</em><strong>Second</strong></p>'), '8: em ending in punctuation before a letter loses its markers');
-assert_same("*First*(Second)\n", md('<p><em>First</em><strong>(Second)</strong></p>'), '8: strong starting with punctuation after a letter loses its markers');
-assert_same("x(b)\n", md('<p>x<strong>(b)</strong></p>'), '8: emphasis that cannot open keeps its text');
-assert_same("a.b\n", md('<p><strong>a.</strong>b</p>'), '8: emphasis that cannot close keeps its text');
-assert_same("**a.** b **(c)**\n", md('<p><strong>a.</strong> b <strong>(c)</strong></p>'), '8: spaces around: markers kept');
-assert_same("\u{00A0}x\n", md('<p><strong>&nbsp;x</strong></p>'), '8: emphasis starting with nbsp keeps its text');
-assert_same(null, md('<p><strong><em>a</em></strong><strong>b</strong></p>'), '8: nested runs meeting: HTML is sent');
-assert_same("`FirstSecond`\n", md('<p><code>First</code><code>Second</code></p>'), '8: code+code coalesce');
-assert_same("``a`<img src=x onerror=alert(1)>``\n", md('<p><code>a</code><code>`</code><code>&lt;img src=x onerror=alert(1)&gt;</code></p>'), '8: quality:1 code spans coalesce under one fence');
-assert_same("`a`text`b`\n", md('<p><code>a</code>text<code>b</code></p>'), '8: code+text+code');
-assert_same("| `a\\|b` |\n| --- |\n", md('<table><tr><td><code>a|</code><code>b</code></td></tr></table>'), '8: coalesced code in a cell keeps its pipe escape');
+// 8. Gate B mdgb4k7r2x. strong/b, em/i and code are unwrapped (spec § Changes 2026-11-21).
+// spec:1 a br inside emphasis is a hard break; inside a heading or link label it is a space.
+assert_same("First\\\nSecond\n", md('<p>First<strong><br>Second</strong></p>'), '8: br at the start of emphasis');
+assert_same("First\\\nSecond\n", md('<p><strong>First<br>Second</strong></p>'), '8: br inside emphasis');
+assert_same("First\\\nSecond\n", md('<p><strong>First<br></strong>Second</p>'), '8: br at the end of emphasis');
+assert_same("ab\\\nc\n", md('<p><strong>a<em>b<br>c</em></strong></p>'), '8: br in nested emphasis');
+assert_same("- a\\\n  b\n", md('<ul><li><strong>a<br>b</strong></li></ul>'), '8: br in emphasis in a list item');
+assert_same("a\n", md('<p><strong><br>a</strong></p>'), '8: br at the start of a paragraph dropped');
+assert_same("## a b\n", md('<h2><em>a<br>b</em></h2>'), '8: br in emphasis in a heading is a space');
+assert_same("[a b](<https://ex.test/x>)\n", md('<p><a href="/x"><em>a<br>b</em></a></p>'), '8: br in emphasis in a link is a space');
+// spec:2 / quality:1 neighbouring inline elements: plain text, no delimiters to collide.
+assert_same("FirstSecond\n", md('<p><strong>First</strong><strong>Second</strong></p>'), '8: strong+strong');
+assert_same("FirstSecond\n", md('<p><em>First</em><strong>Second</strong></p>'), '8: em+strong');
+assert_same("x(b)\n", md('<p>x<strong>(b)</strong></p>'), '8: emphasis after a letter');
+assert_same("ab\n", md('<p><strong><em>a</em></strong><strong>b</strong></p>'), '8: nested emphasis next to emphasis');
+assert_same("a\\`\\<img src=x onerror=alert(1)\\>\n", md('<p><code>a</code><code>`</code><code>&lt;img src=x onerror=alert(1)&gt;</code></p>'), '8: quality pass-1 adjacent code spans');
+assert_same("a\\`\\<img src=x onerror=alert(1)\\>\n", md('<p><a href="ftp://files.example/"><code>a</code></a><code>`</code><code>&lt;img src=x onerror=alert(1)&gt;</code></p>'), '8: quality pass-2 code inside a dropped link');
+assert_same("| a\\|b |\n| --- |\n", md('<table><tr><td><code>a|</code><code>b</code></td></tr></table>'), '8: code in a cell keeps its pipe escape');
+assert_same("\u{00A0}x\n", md('<p><strong>&nbsp;x</strong></p>'), '8: emphasis starting with nbsp');
+assert_same("FirstSecond\u{00A0}end\n", md('<p><strong>First</strong><strong>Second&nbsp;</strong>end</p>'), '8: spec pass-2 trailing nbsp');
+assert_same("ab\u{2003}tail\n", md('<p><strong>a</strong><em>b&#x2003;</em>tail</p>'), '8: quality pass-2 trailing em space');
+assert_same("## a b \\`c\\`\n", md('<h2>a<pre>b `c`</pre></h2>'), '8: pre inside a line is plain text');
 // spec:3 adjacent lists alternate their delimiter.
 assert_same("10. ten\n\n20) twenty\n", md('<ol start="10"><li>ten</li></ol><ol start="20"><li>twenty</li></ol>'), '8: adjacent ordered lists');
 assert_same("- a\n\n* b\n\n- c\n", md('<ul><li>a</li></ul><ul><li>b</li></ul><ul><li>c</li></ul>'), '8: adjacent bullet lists');
 assert_same("- a\n\n1. b\n", md('<ul><li>a</li></ul><ol><li>b</li></ol>'), '8: lists of different kinds keep their delimiter');
 // spec:4 atomic elements: xmp text kept as code, listing like pre, invisible ones dropped.
 assert_same("```\nVISIBLE <b>EXAMPLE</b>\n```\n\nOther\n", md('<xmp>VISIBLE <b>EXAMPLE</b></xmp><p>Other</p>'), '8: xmp and paragraph');
-assert_same("[`x`](<https://ex.test/l>)\n", md('<a href="/l"><xmp>x</xmp></a>'), '8: xmp inline is a code span');
+assert_same("[x](<https://ex.test/l>)\n", md('<a href="/l"><xmp>x</xmp></a>'), '8: xmp inline is plain text');
 assert_same("```\nL1\nL2\n```\n", md("<listing>L1\nL2</listing>"), '8: listing like pre');
 assert_same("x\n", md('<title>T</title><noembed>n</noembed><noframes>f</noframes><p>x</p>'), '8: invisible atomic elements dropped');
 

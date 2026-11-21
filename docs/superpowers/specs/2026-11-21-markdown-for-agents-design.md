@@ -230,8 +230,8 @@ the parser's depth, so closing an element always ends exactly what it opened.
 - **Mapped:** `h1`–`h6` → `#`…`######`; `p` → paragraph; `br` → hard line break; `ul`/`ol`/`li` →
   lists, where a nested list and a continuation line are indented by the width of the parent's
   marker plus its space (`- ` = 2, `1. ` = 3, `10. ` = 4); `a[href]` → `[text](url)`; `img` →
-  `![alt](url)` with an empty alt when none is set; `strong`/`b` → `**`, `em`/`i` → `*`;
-  `blockquote` → `> `; `pre` → fenced code block, `code` → inline code; `hr` → `---`; `table` → GFM
+  `![alt](url)` with an empty alt when none is set;
+  `blockquote` → `> `; `pre` → fenced code block; `hr` → `---`; `table` → GFM
   table when every row has the same number of cells, else one line per row, cells separated by
   ` | `; `figure`/`figcaption` → the image followed by the caption as a paragraph.
 - **Images, Bricks lazy loading:** Bricks replaces `src` with a `data:` placeholder and keeps the
@@ -242,7 +242,9 @@ the parser's depth, so closing an element always ends exactly what it opened.
   `object`, `embed`, `dialog`; any element with the `hidden` attribute, `aria-hidden="true"` or
   `role="navigation"`; Bricks pagination (`class` contains `bricks-pagination`,
   `includes/helpers.php:1192-1207`).
-- **Everything else** is unwrapped: its text stays, its tag goes. Slider slides therefore stay as
+- **Everything else** is unwrapped: its text stays, its tag goes. This includes `strong`/`b`,
+  `em`/`i` and inline `code` (changed 2026-11-21, see Changes): their text is written as escaped
+  prose, without `**`, `*` or backticks. Slider slides therefore stay as
   ordinary content, in document order.
 - **URLs** (`href`, `src`, `data-src`): decoded by the parser; control characters and surrounding
   whitespace removed; resolved against the request's canonical URL as a browser would: an empty
@@ -260,10 +262,7 @@ the parser's depth, so closing an element always ends exactly what it opened.
     `)`; a heading's trailing `#` is escaped; newlines in labels, cells and titles become spaces;
   - URL destinations: written inside `<…>`; `\`, `<`, `>` and `&` backslash-escaped; space, control
     characters and any non-ASCII byte percent-encoded;
-  - inline code: delimited by one more backtick than the longest run inside, with one space of
-    padding on both sides when the content starts or ends with a backtick or a space — except
-    content made only of spaces, which is written as it is; fenced blocks
-    by a backtick fence of at least three, and one longer than the longest backtick run inside.
+  - fenced blocks: a backtick fence of at least three, and one longer than the longest backtick run inside.
   No HTML tag can reach the output: tags are never copied, and a literal `<` in text is escaped.
 - Whitespace collapses as a browser renders it outside `pre`; at most one blank line between
   blocks.
@@ -362,8 +361,8 @@ request, so a clean result proves nothing about the CDN. A failed or redirected 
   text, brackets, backticks, line-start markers, newlines in titles; URL resolution for nested
   paths, subdirectory installs, query-only, fragment and protocol-relative references; scheme
   allowlist with mixed case and control characters; fragment-only and empty references on plain
-  permalinks (`?page_id=…`, `?p=…&page=2`); code spans and fences whose content starts, ends or is
-  made of backticks, `~~~` lines, `&amp;`/`&copy;` as text and in URLs, trailing `#` in headings —
+  permalinks (`?page_id=…`, `?p=…&page=2`); fences whose content starts, ends or is
+  made of backticks, inline `code`/`strong`/`em` written as plain escaped text, `~~~` lines, `&amp;`/`&copy;` as text and in URLs, trailing `#` in headings —
   checked for the meaning a CommonMark renderer gives, not only the bytes; Bricks `data-src`
   images); the wrapper's paths (template returns; template throws; template leaves a buffer open or closes
   one; `exit` inside the template — each pass-through sends HTML unchanged with HTML headers; the
@@ -455,3 +454,40 @@ request, so a clean result proves nothing about the CDN. A failed or redirected 
 
 Class split inside `inc/Markdown/`; the converter's internal structure; exact wording of admin
 strings (`sfxtheme` domain); the test file layout; how the loopback check is presented.
+
+## Changes
+
+**Changed 2026-11-21 — gap found.** Decided by Daniel, in conversation (AskUserQuestion during
+Gate B cycle mdgb4k7r2x, after pass 2: "Drop it"). Baseline: 5812030. The serialization of
+inline emphasis and code spans produced delimiter collisions in every Gate B pass so far
+(pass 1: spec 2, quality 1 — adjacent code spans turned an escaped `<img onerror=…>` example into
+raw HTML; pass 2: spec 1 — `&nbsp;` at an emphasis boundary, quality 1 — a code span inside a
+dropped link, again raw HTML). Per `.claude/review-gates.md` ("When a finding class regenerates
+across passes, shrink the mechanism … deletion"), the mechanism is removed: the text stays, the
+inline markers go.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § Conversion, Mapped: "`strong`/`b` → `**`, `em`/`i` → `*`" | dropped — the text is kept as escaped prose (§ Conversion, Everything else), per the decision: "Bold, italic and inline code come out as plain text" | none |
+| § Conversion, Mapped: "`code` → inline code" | dropped — same, per the same passage | none |
+| § Conversion, Escaping: "inline code: delimited by one more backtick than the longest run inside, …" | dropped — no inline code is written any more | none |
+| § Conversion, Mapped: "`pre` → fenced code block" and Escaping "fenced blocks …" | kept | none |
+| § Verification, Battery: "code spans and fences whose content starts, ends or is made of backticks" | kept for fences; moved → "inline `code`/`strong`/`em` written as plain escaped text" | none |
+| Story AC-2, AC-3 (headings, paragraphs, lists, links, images; no raw HTML tags) | kept — emphasis and inline code were never criteria | none |
+
+- **Added without an earlier condition:** none.
+- **Unaccounted:** none.
+- **Intervening changes:** Gate B pass-1 repairs (ba6a3cf: `br` through inline frames, alternating
+  list delimiters, `xmp`/`listing` fenced) → local choices recorded as Deviations in the PR, inside
+  the approved commitments; the inline-frame collision repairs of that commit are superseded by
+  this change.
+- **Scope boundary:** in: `strong`, `b`, `em`, `i`, inline `code`; out: `pre` blocks, links,
+  images, headings, lists, tables.
+- **Open questions:** none.
+- **Dependent artifacts:** `docs/superpowers/plans/2026-11-21-markdown-for-agents.md` (Task 2's
+  `Escape::code_span`, Task 3's emphasis mapping) → open — permitted by CLAUDE.md § Spec, plan and
+  code (the plan is the argument for an executed build; the PR records the deviation);
+  `inc/Markdown/Converter.php`, `inc/Markdown/Escape.php` and their tests → updated in this change.
+- **Reviews already run:** Gate A cycle mdag7k2p (spec) → no rule found (`.claude/review-gates.md`
+  lines 4–5, 49–56) that reopens a closed Gate A for an amendment → human decision: Daniel decided
+  the change; Gate B cycle mdgb4k7r2x reviews its implementation.
