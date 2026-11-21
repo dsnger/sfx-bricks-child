@@ -9,11 +9,9 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Schema: AC-11 Google Rich Results Test outstanding** (Gate B cycle sch7b2qx,
-      spec pass 1 finding 4, accepted, not repaired): the Schema.org Validator passed all four
-      modes; the Rich Results Test runs under the owner's Google account. Daniel tests the
-      anonymised samples in `.context/ac11-samples/` (local) and records the result in PR #93
-      before it merges.
+- [ ] **Schema: optional Google fields image and priceRange** (Rich Results Test, 2026-11-21):
+      Google lists "image" (organization and locations) and "priceRange" (locations) as
+      missing optional fields. Consider a photo and a price-range field in Contact Infos.
 - [ ] **Schema: settings save reports success when a selection write fails** (Gate B cycle
       sch7b2qx, risk 4, Major, accepted, not repaired): `Selection::save_choice()`
       (`inc/ContactInfos/Schema/Selection.php`) ignores the results of its metadata writes and
