@@ -9,6 +9,19 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Markdown module: Gate A pass-5 findings to settle in the plan** (cycle mdag7k2p, closed at
+      the cap; spec `docs/superpowers/specs/2026-11-21-markdown-for-agents-design.md` § Markdown
+      response): (1) Major — calling `wp_template_enhancement_output_buffer` from the wrapper runs it
+      twice on pass-through and skips core's finalization action on commit; (2) Minor — a
+      non-removable outer buffer can mix pre-template HTML or a suffix into the Markdown; (3) Minor —
+      equal buffer depth does not prove the capture is intact (`ob_flush()`, close and reopen).
+      Each needs a decision in the plan and a request-level test.
+- [ ] **Rank Math llms.txt answers past the site-wide password gate** (Gate A cycle mdag7k2p,
+      pass 3, found while specifying the Markdown module): Rank Math 1.0.282's
+      `maybe_serve_llms_txt()` (`includes/modules/llms/class-llms-txt.php`) checks only its
+      `llms_txt` query var, so `/llms.txt?robots=1` — which `PasswordProtected` exempts as a robots
+      request — gets Rank Math's index of titles and URLs on a password-protected site. Exists with
+      or without the Markdown module. Decide whether the theme's gate should also cover it.
 - [ ] **Schema: optional Google fields image and priceRange** (Rich Results Test, 2026-11-21):
       Google lists "image" (organization and locations) and "priceRange" (locations) as
       missing optional fields. Consider a photo and a price-range field in Contact Infos.
