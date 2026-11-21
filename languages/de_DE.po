@@ -10435,6 +10435,10 @@ msgid "The organization was not saved: it must be a published contact of type Ma
 msgstr "Die Organisation wurde nicht gespeichert: Sie muss ein veröffentlichter Kontakt vom Typ Hauptkontakt sein. Organisation und Ausschlüsse blieben unverändert; Schalter und Typ wurden gespeichert."
 
 #: inc/ContactInfos
+msgid "The organization or the exclusions could not be saved completely. Check the state below and save again; the switch and the type were saved."
+msgstr "Organisation oder Ausschlüsse konnten nicht vollständig gespeichert werden. Prüfe den Stand unten und speichere erneut; Schalter und Typ wurden gespeichert."
+
+#: inc/ContactInfos
 msgid "Current state"
 msgstr "Aktueller Zustand"
 
@@ -10537,6 +10541,10 @@ msgstr "Das JSON-LD je Seite bleibt aktiv, solange der Schalter an ist."
 #: inc/ContactInfos
 msgid "The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
 msgstr "Die Einstellungen des aktiven SEO-Plugins (%s) konnten nicht gelesen werden. Bis das wieder geht, veröffentlicht das Theme keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
+
+#: inc/ContactInfos
+msgid "The settings of the active SEO plugin could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
+msgstr "Die Einstellungen des aktiven SEO-Plugins konnten nicht gelesen werden. Bis das wieder geht, veröffentlicht das Theme keine eigenen Firmendaten und ergänzt keine im Eintrag des Plugins."
 
 #: inc/ContactInfos
 msgid "Incomplete, published without the address"
