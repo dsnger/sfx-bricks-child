@@ -31,11 +31,11 @@ class Escape
         return self::text(self::one_line($s));
     }
 
-    /** URL destination in angle brackets. */
+    /** URL destination in angle brackets; `|` is encoded, as a GFM table cell would split on it. */
     public static function destination(string $url): string
     {
         $url = (string) preg_replace_callback(
-            '/[\x00-\x20\x7F-\xFF]/',
+            '/[\x00-\x20|\x7F-\xFF]/',
             static fn(array $m): string => sprintf('%%%02X', ord($m[0])),
             $url
         );

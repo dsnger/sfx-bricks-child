@@ -53,6 +53,7 @@ assert_same('\[x\] \*', Escape::label("[x]\n*"), '3: escaped after join');
 assert_same('<https://x.test/a%20b\<c\>\&d\\\\%C3%A9>', Escape::destination('https://x.test/a b<c>&d\\é'), '4: brief example');
 assert_same('<https://x.test/%0A%09%7F>', Escape::destination("https://x.test/\n\t\x7F"), '4: controls encoded');
 assert_same('<tel:+49%201>', Escape::destination('tel:+49 1'), '4: tel space');
+assert_same('<https://x.test/a%7Cb>', Escape::destination('https://x.test/a|b'), '4: pipe encoded');
 
 // 5. code_span().
 assert_same('``a`b``', Escape::code_span('a`b'), '5: inner backtick');

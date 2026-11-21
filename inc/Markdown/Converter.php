@@ -69,9 +69,7 @@ class Converter
                     return null;
                 }
             }
-            // A lone "<" at the end is text to the parser, not an incomplete token, yet a sign of a cut-off page.
-            $cut = str_ends_with($html, '<');
-            if ($cut || $p->get_last_error() !== null || $p->paused_at_incomplete_token() || !$c->found) {
+            if ($p->get_last_error() !== null || $p->paused_at_incomplete_token() || !$c->found) {
                 return null;
             }
         } catch (\WP_HTML_Unsupported_Exception $e) {

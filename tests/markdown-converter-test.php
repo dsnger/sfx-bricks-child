@@ -103,7 +103,7 @@ assert_same(null, Converter::convert('<nav><div id="brx-content"><p>a</p></div><
 assert_same(null, Converter::convert('<main id="brx-content"><p>a</p></main><nav><div id="brx-content"></div></nav>', BASE), '4: second root inside a dropped element');
 assert_same(null, md(' <div> </div> <script>x</script> '), '4: empty root');
 assert_same(null, Converter::convert('<img id="brx-content" src="/a.png">', BASE), '4: void root');
-assert_same(null, Converter::convert('<main id="brx-content"><p>a<', BASE), '4: truncated input');
+assert_same(null, Converter::convert('<main id="brx-content"><p>a<span cla', BASE), '4: truncated input');
 assert_same(null, Converter::convert('<main id="brx-content"><p>a<b', BASE), '4: incomplete tag');
 assert_same(null, Converter::convert('<main id="brx-content"><p>a<img src="/x', BASE), '4: incomplete attribute');
 assert_same(null, Converter::convert('<main id="brx-content"><table><tr>x<td>1</td></tr></table></main>', BASE), '4: unsupported markup (foster parenting)');
@@ -125,6 +125,9 @@ assert_same("\\- a\n\n1\\. b\n\n\\# c\n", md('<p>- a</p><p>1. b</p><p># c</p>'),
 assert_same("a\\\n\\- b\n", md('<p>a<br>- b</p>'), '5: line start after br escaped');
 assert_same("\\[a\\](b) \\*c\\* \\!\\[d\\]\n", md('<p>[a](b) *c* ![d]</p>'), '5: inline markup escaped');
 assert_same("[\\] x](<https://ex.test/y>)\n", md('<a href="/y">] x</a>'), '5: label bracket escaped');
+
+assert_same("| [l](<https://a.test/x%7C[y](javascript:alert(1))>) | 2 |\n| --- | --- |\n", md('<table><tr><td><a href="https://a.test/x|[y](javascript:alert(1))">l</a></td><td>2</td></tr></table>'), '5: | in a link destination in a GFM cell is encoded');
+assert_same("| ![i](<https://a.test/i.png%7C![y](https://evil/)>) | 2 |\n| --- | --- |\n", md('<table><tr><td><img alt="i" src="https://a.test/i.png|![y](https://evil/)"></td><td>2</td></tr></table>'), '5: | in an image destination in a GFM cell is encoded');
 
 // 6. Review Focus 1, 2, 3, 5.
 assert_same("[Text](<https://ex.test/go>)\n", md('<a class="brxe-button" href="/go"><i class="ti-arrow"></i><span>Text</span></a>'), 'RF1: button with icon font');
