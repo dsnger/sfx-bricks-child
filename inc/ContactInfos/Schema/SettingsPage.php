@@ -14,7 +14,7 @@ final class SettingsPage
 {
     public const SLUG = 'sfx-contact-schema';
     private const ACTION = 'sfx_contact_schema_save';
-    private const NOTICES = ['saved', 'saved_no_choice', 'invalid_choice'];
+    private const NOTICES = ['saved', 'saved_no_choice', 'invalid_choice', 'write_failed'];
 
     public static function register(): void
     {
@@ -52,7 +52,7 @@ final class SettingsPage
         if ($organization_id <= 0) {
             $notice = 'saved_no_choice';
         } else {
-            $notice = Selection::save_choice($organization_id, $excluded) ? 'saved' : 'invalid_choice';
+            $notice = Selection::save_choice($organization_id, $excluded);
         }
 
         wp_safe_redirect(add_query_arg('sfx_schema', $notice, self::url()));
@@ -89,6 +89,7 @@ final class SettingsPage
             'saved'           => [__('Settings saved.', 'sfxtheme'), 'success'],
             'saved_no_choice' => [__('Settings saved. No organization was chosen, so the organization and the exclusions were not changed.', 'sfxtheme'), 'warning'],
             'invalid_choice'  => [__('The organization was not saved: it must be a published contact of type Main. The organization and the exclusions were not changed; the switch and the type were saved.', 'sfxtheme'), 'error'],
+            'write_failed'    => [__('The organization or the exclusions could not be saved completely. Check the state below and save again; the switch and the type were saved.', 'sfxtheme'), 'error'],
         ];
         printf('<div class="notice notice-%s is-dismissible"><p>%s</p></div>', esc_attr($messages[$code][1]), esc_html($messages[$code][0]));
     }
@@ -115,8 +116,11 @@ final class SettingsPage
             'tsf_knowledge_output_on'  => __('The SEO Framework publishes its own organization entry, so the theme publishes no company data. To let the theme publish the organization: in The SEO Framework settings, in the "Schema.org Settings" box, untick "Add authorized presence?".', 'sfxtheme') . $per_page,
             'tsf_knowledge_output_off' => __('The SEO Framework\'s organization output is off: the theme publishes its own organization entry on every page.', 'sfxtheme'),
             'no_seo_plugin'            => __('No SEO plugin: the theme publishes its own organization entry on every page.', 'sfxtheme'),
-            /* translators: %s: plugin names */
-            'plugin_read_failed'       => sprintf(__('The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin\'s.', 'sfxtheme'), $plugins) . $per_page,
+            // No plugin name to show when the read failed before any plugin was detected: no empty "()".
+            'plugin_read_failed'       => ($plugins === ''
+                ? __('The settings of the active SEO plugin could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin\'s.', 'sfxtheme')
+                /* translators: %s: plugin names */
+                : sprintf(__('The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin\'s.', 'sfxtheme'), $plugins)) . $per_page,
         ];
         echo '<p><strong>' . esc_html($reasons[$mode['reason']] ?? $mode['reason']) . '</strong></p>';
 

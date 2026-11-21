@@ -33,15 +33,23 @@ function esc_url_raw($url, $protocols = null): string
     $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
     return $protocols === null || in_array($scheme, $protocols, true) ? $url : '';
 }
+// As core: false for an unchanged value or nothing to delete; "id:key" in $test_meta_fail fails the write.
+$test_meta_fail = [];
 function update_post_meta($post_id, $key, $value)
 {
-    global $test_meta;
+    global $test_meta, $test_meta_fail;
+    if (in_array((int) $post_id . ':' . $key, $test_meta_fail, true) || ($test_meta[(int) $post_id][$key] ?? null) === [$value]) {
+        return false;
+    }
     $test_meta[(int) $post_id][$key] = [$value];
     return true;
 }
 function delete_post_meta($post_id, $key)
 {
-    global $test_meta;
+    global $test_meta, $test_meta_fail;
+    if (in_array((int) $post_id . ':' . $key, $test_meta_fail, true) || !isset($test_meta[(int) $post_id][$key])) {
+        return false;
+    }
     unset($test_meta[(int) $post_id][$key]);
     return true;
 }
@@ -287,7 +295,7 @@ fixture();
 add_contact(506, 'publish', 'Other main', ['_contact_type' => 'main', '_company' => 'Other AG', '_sfx_contact_schema_org' => '1']);
 add_contact(507, 'draft', 'Draft main', ['_contact_type' => 'main', '_sfx_contact_schema_org' => '1']);
 $test_options[Settings::OPTION]['chosen_once'] = false;
-assert_same(true, Selection::save_choice(506, [501, 505, 999]), 'save: accepted');
+assert_same('saved', Selection::save_choice(506, [501, 505, 999]), 'save: accepted');
 $marked = array_keys(array_filter($test_meta, static fn($m) => ($m['_sfx_contact_schema_org'][0] ?? '') === '1'));
 assert_same([506], $marked, 'save: exactly one mark');
 assert_same(true, Settings::get()['chosen_once'], 'save: chosen once set');
@@ -296,18 +304,35 @@ assert_same([501, 505], $excluded, 'save: exclusions written, unknown id ignored
 $sel = Selection::resolve();
 assert_same(['ok', 506, [502], [503, 504], [500]], [$sel['status'], $sel['organization_id'], $sel['location_ids'], $sel['contact_point_ids'], $sel['unused_main_ids']], 'save: resolves to the choice');
 add_contact(509, 'draft', 'Draft branch', ['_contact_type' => 'branch', '_sfx_contact_schema_excluded' => '1']);
-assert_same(true, Selection::save_choice(506, []), 'save: again, no exclusions');
+assert_same('saved', Selection::save_choice(506, []), 'save: again, no exclusions');
 assert_same([509], array_keys(array_filter($test_meta, static fn($m) => isset($m['_sfx_contact_schema_excluded']))), 'save: exclusions cleared, unpublished contact not shown on the page keeps its own');
+
+// save_choice_unchanged_is_saved: core's false for an unchanged value or a missing key is no failure
+fixture();
+assert_same('saved', Selection::save_choice(500, [501]), 'unchanged: first save');
+assert_same('saved', Selection::save_choice(500, [501]), 'unchanged: same choice again is saved');
+
+// save_choice_reports_failed_writes
+foreach (['501:_sfx_contact_schema_excluded' => [500, [501]], '500:_sfx_contact_schema_org' => [500, []],
+          '503:_sfx_contact_schema_org' => [500, []], '502:_sfx_contact_schema_excluded' => [500, []]] as $fail => [$org, $ex]) {
+    fixture();
+    unset($test_meta[500]['_sfx_contact_schema_org']); // so marking 500 is a real write
+    set_meta(503, '_sfx_contact_schema_org', '1');
+    set_meta(502, '_sfx_contact_schema_excluded', '1');
+    $test_meta_fail = [$fail];
+    assert_same('write_failed', Selection::save_choice($org, $ex), "write failed: $fail reported");
+    $test_meta_fail = [];
+}
 
 // save_choice_rejects_non_main
 fixture();
 $before = $test_meta;
 $before_options = $test_options;
-assert_same(false, Selection::save_choice(501, []), 'reject: branch');
+assert_same('invalid_choice', Selection::save_choice(501, []), 'reject: branch');
 add_contact(507, 'draft', 'Draft main', ['_contact_type' => 'main']);
 $before = $test_meta;
-assert_same(false, Selection::save_choice(507, []), 'reject: unpublished main');
-assert_same(false, Selection::save_choice(999, []), 'reject: unknown id');
+assert_same('invalid_choice', Selection::save_choice(507, []), 'reject: unpublished main');
+assert_same('invalid_choice', Selection::save_choice(999, []), 'reject: unknown id');
 assert_same($before, $test_meta, 'reject: no meta changed');
 assert_same($before_options, $test_options, 'reject: option unchanged');
 
@@ -315,7 +340,7 @@ assert_same($before_options, $test_options, 'reject: option unchanged');
 fixture();
 set_meta(500, '_sfx_contact_schema_excluded', '1');
 assert_same(500, Selection::resolve()['organization_id'], 'not excludable: stored exclusion ignored');
-assert_same(true, Selection::save_choice(500, [500, 502]), 'not excludable: save');
+assert_same('saved', Selection::save_choice(500, [500, 502]), 'not excludable: save');
 assert_true(!isset($test_meta[500]['_sfx_contact_schema_excluded']), 'not excludable: organization never marked excluded');
 assert_same(['1'], $test_meta[502]['_sfx_contact_schema_excluded'] ?? null, 'not excludable: other exclusion kept');
 

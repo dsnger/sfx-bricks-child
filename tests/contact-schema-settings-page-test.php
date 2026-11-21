@@ -72,15 +72,23 @@ function get_edit_post_link($id = 0, $context = 'display')
 {
     return 'https://example.test/wp-admin/post.php?post=' . (int) $id . '&amp;action=edit'; // display context, as core
 }
+// As core: false for an unchanged value or nothing to delete; "id:key" in $test_meta_fail fails the write.
+$test_meta_fail = [];
 function update_post_meta($post_id, $key, $value)
 {
-    global $test_meta;
+    global $test_meta, $test_meta_fail;
+    if (in_array((int) $post_id . ':' . $key, $test_meta_fail, true) || ($test_meta[(int) $post_id][$key] ?? null) === [$value]) {
+        return false;
+    }
     $test_meta[(int) $post_id][$key] = [$value];
     return true;
 }
 function delete_post_meta($post_id, $key)
 {
-    global $test_meta;
+    global $test_meta, $test_meta_fail;
+    if (in_array((int) $post_id . ':' . $key, $test_meta_fail, true) || !isset($test_meta[(int) $post_id][$key])) {
+        return false;
+    }
     unset($test_meta[(int) $post_id][$key]);
     return true;
 }
@@ -203,6 +211,23 @@ assert_same(true, Settings::get()['enabled'], 'no choice: switch saved');
 assert_same(['1'], $test_meta[501]['_sfx_contact_schema_excluded'] ?? null, 'no choice: exclusions untouched');
 assert_contains('sfx_schema=saved_no_choice', (string) $test_redirect, 'no choice: notice says so');
 
+// write_failed_notice: a metadata write that does not take is an error, never "Settings saved"
+fixture();
+$test_meta_fail = ['501:_sfx_contact_schema_excluded'];
+assert_same('redirect', submit(VALID), 'write failed: redirects');
+$test_meta_fail = [];
+assert_contains('sfx_schema=write_failed', (string) $test_redirect, 'write failed: failure notice, not saved');
+$_GET = ['sfx_schema' => 'write_failed'];
+$out = page();
+assert_contains('notice-error', $out, 'write failed: error notice rendered');
+assert_contains('could not be saved completely', $out, 'write failed: says so');
+assert_true(!str_contains($out, 'Settings saved'), 'write failed: no saved message');
+// Saving the same choice again: core's false for an unchanged value is no failure.
+fixture();
+submit(VALID);
+submit(VALID);
+assert_contains('sfx_schema=saved', (string) $test_redirect, 'unchanged resave: saved');
+
 // invalid_choice_notice
 fixture();
 submit(['enabled' => '1', 'type' => 'Organization', 'organization_id' => '501', 'excluded' => ['502']]);
@@ -261,6 +286,19 @@ assert_contains('post.php?post=500&amp;action=edit', $published_list, 'formatted
 assert_contains('only the formatted address is filled in', $published_list, 'formatted-only organization: missing parts named');
 assert_true(!str_contains($left_out_list, 'post=500&amp;'), 'formatted-only organization: not listed as left out');
 assert_contains('post.php?post=502&amp;action=edit', $left_out_list, 'incomplete contact point: still left out');
+
+// plugin_read_failed_without_plugin: a read that fails before any plugin is detected shows no empty "()"
+fixture();
+$render_status = new ReflectionMethod(SettingsPage::class, 'render_status');
+if (PHP_VERSION_ID < 80100) {
+    $render_status->setAccessible(true); // needed before 8.1; deprecated (a no-op) from 8.5
+}
+$selection = \SFX\ContactInfos\Schema\Selection::resolve();
+ob_start();
+$render_status->invoke(null, ['mode' => 'unavailable', 'reason' => 'plugin_read_failed', 'plugins' => []], $selection, \SFX\ContactInfos\Schema\GraphBuilder::organization($selection, 'Organization'));
+$out = (string) ob_get_clean();
+assert_contains('The settings of the active SEO plugin could not be read.', $out, 'no plugin: diagnostic without a name');
+assert_true(!str_contains($out, '()'), 'no plugin: no empty parentheses');
 
 // tsf_guidance_names_the_control; declared last, because a defined constant stays defined.
 fixture();

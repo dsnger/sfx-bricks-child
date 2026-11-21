@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Contact Infos: optional structured data (schema.org JSON-LD). The company, locations with opening hours, contact points (new contact type "Contact point for an area") and social profiles are published on every page, or added to the organization entry of Yoast SEO or Rank Math. Off by default; switch it on under Contact Infos -> Structured data. Admins can add a JSON-LD block to a single page. The data purge removes the new settings and fields.
 
+### Fixed
+
+- Contact Infos, structured data: when the organization or an exclusion cannot be stored, the settings page now says so in an error notice instead of "Settings saved". When the settings of an SEO plugin cannot be read before any plugin is detected, the status no longer shows empty brackets.
+
 ## [0.37.0] - 2026-11-15
 
 ### Added
