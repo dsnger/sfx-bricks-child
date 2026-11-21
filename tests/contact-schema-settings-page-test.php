@@ -290,6 +290,9 @@ assert_contains('post.php?post=502&amp;action=edit', $left_out_list, 'incomplete
 // plugin_read_failed_without_plugin: a read that fails before any plugin is detected shows no empty "()"
 fixture();
 $render_status = new ReflectionMethod(SettingsPage::class, 'render_status');
+if (PHP_VERSION_ID < 80100) {
+    $render_status->setAccessible(true); // needed before 8.1; deprecated (a no-op) from 8.5
+}
 $selection = \SFX\ContactInfos\Schema\Selection::resolve();
 ob_start();
 $render_status->invoke(null, ['mode' => 'unavailable', 'reason' => 'plugin_read_failed', 'plugins' => []], $selection, \SFX\ContactInfos\Schema\GraphBuilder::organization($selection, 'Organization'));

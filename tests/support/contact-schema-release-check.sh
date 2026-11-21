@@ -69,15 +69,18 @@ cleanup() {
     echo "  $LOCK (<option>.snapshot: base64 of PHP serialize(); \"__absent__\" = the option did not exist)." >&2
     echo "Restore by hand from $SITE, one command per option, check the site, then remove that directory:" >&2
     for o in $SNAPSHOT_OPTIONS; do
-      printf '  ddev wp --skip-plugins --skip-themes eval '\''$v = unserialize(base64_decode("'\''"$(cat '\''%s'\'')"'\''"), ["allowed_classes" => false]); if ($v === "__absent__") { delete_option("%s"); } else { update_option("%s", $v); }'\''\n' "$LOCK/$o.snapshot" "$o" "$o" >&2
+      # %q-quoted path: the command stays valid for any site path, an apostrophe included
+      printf '  ddev wp --skip-plugins --skip-themes eval '\''$v = unserialize(base64_decode("'\''"$(cat %s)"'\''"), ["allowed_classes" => false]); if ($v === "__absent__") { delete_option("%s"); } else { update_option("%s", $v); }'\''\n' "$(printf %q "$LOCK/$o.snapshot")" "$o" "$o" >&2
     done
     [ "$rc" != 0 ] || rc=1
     exit "$rc"
   fi
   if [ "$HAVE_LOCK" = 1 ]; then
-    for o in $SNAPSHOT_OPTIONS; do rm -f "$LOCK/$o.snapshot"; done
-    rmdir "$LOCK" && echo "restore: lock released"
+    # a lock left behind refuses the next run, so a failed cleanup fails this one (an earlier status wins)
+    for o in $SNAPSHOT_OPTIONS; do rm -f "$LOCK/$o.snapshot" || { [ "$rc" != 0 ] || rc=1; }; done
+    if rmdir "$LOCK"; then echo "restore: lock released"; else echo "restore: COULD NOT REMOVE THE LOCK $LOCK" >&2; [ "$rc" != 0 ] || rc=1; fi
   fi
+  exit "$rc"
 }
 restore() { # returns non-zero if any option could not be restored or reads back different
   local o snap failed=0
