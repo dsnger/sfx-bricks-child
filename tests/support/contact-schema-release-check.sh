@@ -18,15 +18,22 @@
 # It installs nothing: a plugin that is not installed is skipped.
 # It turns the schema switch on itself for each "on" fetch; if the theme still reports mode "off" then,
 # the run fails (exit 1) instead of printing no verdict.
-# Lock: a run takes $SFX_TEST_SITE/.sfx-contact-schema-release-check.lock (mkdir, atomic) before its
-# snapshot; a second run fails at once. A run killed with SIGKILL leaves the lock; remove it by hand.
+# Lock: a run takes <site>/.sfx-contact-schema-release-check.lock (mkdir, atomic; <site> is SFX_TEST_SITE
+# as an absolute physical path) before its snapshot; a second run fails at once. The snapshots are kept
+# in that directory as <option>.snapshot files before the first change. A run killed with SIGKILL leaves
+# the lock; remove it by hand.
 # Teardown: one trap, declared before the first change, restores the active plugins, TSF's option and
-# the theme's schema option exactly as they were, and releases the lock if this run took it. Every
-# restore-side WP-CLI call runs with --skip-plugins --skip-themes, so a plugin this run activated cannot
-# block the restore by breaking WordPress; the restores are plain core option writes.
+# the theme's schema option exactly as they were and re-reads each. Every restore-side WP-CLI call runs
+# with --skip-plugins --skip-themes, so a plugin this run activated cannot block the restore by breaking
+# WordPress; the restores are plain core option writes. Only a fully verified restore removes the
+# snapshots and the lock. If any step fails, the run exits non-zero, keeps the lock and the snapshots,
+# and prints their path and the commands to restore by hand.
 set -euo pipefail
 
 SITE=${SFX_TEST_SITE:?set SFX_TEST_SITE to the test site directory}
+# absolute and physical before anything is derived from it, so a relative path names the same lock
+SITE=$(cd "$SITE" && pwd -P) || { echo "cannot resolve $SFX_TEST_SITE" >&2; exit 1; }
+[ -n "$SITE" ] || { echo "cannot resolve $SFX_TEST_SITE" >&2; exit 1; }
 URL=${SFX_TEST_URL:?set SFX_TEST_URL to the test site URL}
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "cannot find the harness directory" >&2; exit 1; }
 ANALYZER="$HERE/contact-schema-jsonld.php"
@@ -51,30 +58,49 @@ option_restore() { # $1 = option, $2 = snapshot
     if ($v === "__absent__") { delete_option("'"$1"'"); } else { update_option("'"$1"'", $v); }' >/dev/null 2>&1
 }
 
+SNAPSHOT_OPTIONS="active_plugins $TSF_OPTION $SCHEMA_OPTION"
 HAVE_LOCK=0
 SNAPSHOT_TAKEN=0
 cleanup() {
+  local rc=$? o
   set +e
-  [ "$SNAPSHOT_TAKEN" = 1 ] && restore
-  [ "$HAVE_LOCK" = 1 ] && rmdir "$LOCK" && echo "restore: lock released"
+  if [ "$SNAPSHOT_TAKEN" = 1 ] && ! restore; then
+    echo "RESTORE FAILED. The lock stays, so no other run starts, and the original values are kept in" >&2
+    echo "  $LOCK (<option>.snapshot: base64 of PHP serialize(); \"__absent__\" = the option did not exist)." >&2
+    echo "Restore by hand from $SITE, one command per option, check the site, then remove that directory:" >&2
+    for o in $SNAPSHOT_OPTIONS; do
+      printf '  ddev wp --skip-plugins --skip-themes eval '\''$v = unserialize(base64_decode("'\''"$(cat '\''%s'\'')"'\''"), ["allowed_classes" => false]); if ($v === "__absent__") { delete_option("%s"); } else { update_option("%s", $v); }'\''\n' "$LOCK/$o.snapshot" "$o" "$o" >&2
+    done
+    [ "$rc" != 0 ] || rc=1
+    exit "$rc"
+  fi
+  if [ "$HAVE_LOCK" = 1 ]; then
+    for o in $SNAPSHOT_OPTIONS; do rm -f "$LOCK/$o.snapshot"; done
+    rmdir "$LOCK" && echo "restore: lock released"
+  fi
 }
-restore() {
+restore() { # returns non-zero if any option could not be restored or reads back different
+  local o snap failed=0
   # the active plugin list is restored as stored, without loading any plugin (no (de)activation hooks)
-  option_restore active_plugins "$INITIAL_PLUGINS"
-  option_restore "$TSF_OPTION" "$INITIAL_TSF"
-  option_restore "$SCHEMA_OPTION" "$INITIAL_SCHEMA"
-  if [ "$(option_snapshot active_plugins 2>/dev/null)" = "$INITIAL_PLUGINS" ]; then echo "restore: active plugins as before"; else echo "restore: ACTIVE PLUGINS DIFFER from the initial list" >&2; fi
-  if [ "$(option_snapshot "$TSF_OPTION" 2>/dev/null)" = "$INITIAL_TSF" ]; then echo "restore: TSF option as before"; else echo "restore: TSF OPTION DIFFERS from the initial one" >&2; fi
-  if [ "$(option_snapshot "$SCHEMA_OPTION" 2>/dev/null)" = "$INITIAL_SCHEMA" ]; then echo "restore: schema switch as before"; else echo "restore: SCHEMA OPTION DIFFERS from the initial one" >&2; fi
+  for o in $SNAPSHOT_OPTIONS; do
+    if ! snap=$(cat "$LOCK/$o.snapshot") || [ -z "$snap" ]; then
+      echo "restore: SNAPSHOT OF $o MISSING" >&2; failed=1; continue
+    fi
+    if ! option_restore "$o" "$snap"; then echo "restore: WRITING $o FAILED" >&2; failed=1; fi
+    if [ "$(option_snapshot "$o" 2>/dev/null)" = "$snap" ]; then echo "restore: $o as before"; else echo "restore: $o DIFFERS from the initial value" >&2; failed=1; fi
+  done
+  return "$failed"
 }
 trap cleanup EXIT
 
 mkdir "$LOCK" 2>/dev/null || { echo "another release check holds $LOCK; wait for it, or remove the directory if no run is active" >&2; exit 1; }
 HAVE_LOCK=1
 
-INITIAL_PLUGINS=$(option_snapshot active_plugins)
-INITIAL_TSF=$(option_snapshot "$TSF_OPTION")
-INITIAL_SCHEMA=$(option_snapshot "$SCHEMA_OPTION")
+for o in $SNAPSHOT_OPTIONS; do
+  snap=$(option_snapshot "$o")
+  [ -n "$snap" ] || { echo "empty snapshot of $o" >&2; exit 1; }
+  printf '%s' "$snap" > "$LOCK/$o.snapshot"
+done
 SNAPSHOT_TAKEN=1
 
 MARKER=${SFX_TEST_MARKER:-$(wp eval 'echo \SFX\ContactInfos\Schema\GraphBuilder::organization(\SFX\ContactInfos\Schema\Selection::resolve(), "Organization")["entity"]["telephone"] ?? "";' | tail -n1)}
