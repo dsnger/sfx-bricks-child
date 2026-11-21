@@ -82,7 +82,7 @@ function get_post_status($post = null) { return $post->post_status; }
 function post_password_required($post = null) { return false; }
 function get_option($name, $default = false) { return $name === 'page_for_posts' ? '0' : $default; }
 function get_post_types($args = [], $output = 'names') { return ['page' => (object) ['name' => 'page', 'label' => 'Pages']]; }
-function wp_get_canonical_url($post = null) { return 'https://ex.test/sample/'; }
+function wp_get_canonical_url($post = null) { return $post instanceof WP_Post ? 'https://ex.test/sample/' : false; }
 function add_query_arg($key, $value, $url) { return $url . '?' . $key . '=' . $value; }
 function esc_url($url) { return $url; }
 function register_setting($group, $name, $args = []) { return true; }

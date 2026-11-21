@@ -68,7 +68,8 @@ class Response
         }
         self::$ending = true;
         $html = (string) ob_get_clean();
-        $canonical = wp_get_canonical_url();
+        $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
+        $canonical = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
         $link = is_string($canonical) && $canonical !== '' ? self::link_header($canonical) : null;
         $markdown = $link !== null ? self::markdown($html, $canonical) : null;
         if ($markdown === null) {

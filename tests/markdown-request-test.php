@@ -67,7 +67,7 @@ function get_post_types($args = [], $output = 'names')
     }
     return $output === 'objects' ? $out : array_keys($out);
 }
-function wp_get_canonical_url($post = null) { global $S; return $S['canonical']; }
+function wp_get_canonical_url($post = null) { global $S; return $S['canonical'] === false || !$post instanceof WP_Post ? false : $S['canonical'] . '#' . $post->ID; }
 function add_query_arg($key, $value, $url) { return $url . (strpos($url, '?') === false ? '?' : '&') . $key . '=' . $value; }
 function esc_url($url) { return str_replace('&', '&#038;', $url); }
 
@@ -195,14 +195,20 @@ foreach ($ineligible as $name => $setup) {
 
 // 5. Markdown URL and head link.
 reset_state();
-assert_same('https://ex.test/?p=5&markdown=1', Request::markdown_url(), '5: markdown url');
+assert_same('https://ex.test/?p=5#5&markdown=1', Request::markdown_url(), '5: markdown url');
+$GLOBALS['post'] = new WP_Post(99, 'page', 'publish');
+assert_same('https://ex.test/?p=5#5&markdown=1', Request::markdown_url(), '5: a changed global $post does not change the URL');
+unset($GLOBALS['post']);
+$S['post'] = null;
+assert_same(null, Request::markdown_url(), '5: no queried post -> null');
+$S['post'] = new WP_Post(5, 'page', 'publish');
 $S['canonical'] = false;
 assert_same(null, Request::markdown_url(), '5: no canonical -> null');
 
 reset_state();
 ob_start();
 Controller::print_head_link();
-assert_same("<link rel=\"alternate\" type=\"text/markdown\" href=\"https://ex.test/?p=5&#038;markdown=1\" />\n", ob_get_clean(), '5: head link, escaped');
+assert_same("<link rel=\"alternate\" type=\"text/markdown\" href=\"https://ex.test/?p=5#5&#038;markdown=1\" />\n", ob_get_clean(), '5: head link, escaped');
 $S['preview'] = true;
 ob_start();
 Controller::print_head_link();

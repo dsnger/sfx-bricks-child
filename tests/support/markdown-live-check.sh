@@ -401,6 +401,7 @@ wpe "\$v = \SFX\Redirects\Rule::validate(['source' => '/llms.txt', 'match_type' 
 req r410 "$URL/llms.txt"
 eq "410 rule: /llms.txt status" "$(st r410)" 410
 eq "410 rule: no llms marker" "$(hd r410 x-sfx-llms-txt)" ""
+# Deleted here so the Rank Math phase below is not answered by the 410; if this fails, teardown still deletes the rule via rule_id.
 wpe "\SFX\Redirects\Repository::apply_op('delete', [$(cat "$TMP/rule_id")]);" && : > "$TMP/rule_id"
 
 echo

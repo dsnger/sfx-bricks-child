@@ -87,7 +87,8 @@ class Request
     /** D7: the request's canonical URL (keeps the page part) plus markdown=1. */
     public static function markdown_url(): ?string
     {
-        $url = wp_get_canonical_url();
+        $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
+        $url = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
 
         return is_string($url) && $url !== '' ? add_query_arg('markdown', '1', $url) : null;
     }

@@ -31,33 +31,50 @@ function assert_same($expected, $actual, string $message): void
 }
 
 // --- P5: resolve PHP-FPM; none usable fails the test. ---
-function fpm_usable(string $candidate): bool
+function fpm_usable(string $candidate, string &$why): bool
 {
     if ($candidate === '') {
+        $why = 'not set';
         return false;
     }
     if (strpos($candidate, '/') === false) {
         $found = trim((string) shell_exec('command -v ' . escapeshellarg($candidate) . ' 2>/dev/null'));
         if ($found === '') {
+            $why = 'not on PATH';
             return false;
         }
         $candidate = $found;
     }
     if (!is_file($candidate) || !is_executable($candidate)) {
+        $why = 'not an executable file';
         return false;
     }
+    $out = [];
     exec(escapeshellarg($candidate) . ' -v 2>/dev/null', $out, $code);
-    return $code === 0 && strpos(implode("\n", $out), '(fpm-fcgi)') !== false;
+    $text = implode("\n", $out);
+    if ($code !== 0 || strpos($text, '(fpm-fcgi)') === false) {
+        $why = 'not an FPM binary';
+        return false;
+    }
+    // The leg must run on the FPM of the CLI's own major.minor, never another version's.
+    if (!preg_match('/^PHP (\d+\.\d+)\./m', $text, $m) || $m[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
+        $why = 'version ' . ($m[1] ?? 'unknown') . ' differs from CLI ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        return false;
+    }
+    return true;
 }
 $fpm = '';
-foreach ([(string) getenv('PHP_FPM'), 'php-fpm', '/usr/sbin/php-fpm' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, '/usr/local/sbin/php-fpm', '/opt/homebrew/sbin/php-fpm'] as $candidate) {
-    if (fpm_usable($candidate)) {
+$tried = [];
+foreach ([(string) getenv('PHP_FPM'), '/usr/sbin/php-fpm' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, 'php-fpm', '/usr/local/sbin/php-fpm', '/opt/homebrew/sbin/php-fpm'] as $candidate) {
+    $why = '';
+    if (fpm_usable($candidate, $why)) {
         $fpm = $candidate;
         break;
     }
+    $tried[] = ($candidate === '' ? '$PHP_FPM' : $candidate) . ' (' . $why . ')';
 }
 if ($fpm === '') {
-    fail('no usable php-fpm found (tried $PHP_FPM, php-fpm on PATH, /usr/sbin/php-fpm' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . ', /usr/local/sbin/php-fpm, /opt/homebrew/sbin/php-fpm)');
+    fail('no usable php-fpm found; tried: ' . implode('; ', $tried));
 }
 
 // --- Temp dir and the one teardown path, declared before FPM starts. ---

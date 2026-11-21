@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Contact Infos: optional structured data (schema.org JSON-LD). The company, locations with opening hours, contact points (new contact type "Contact point for an area") and social profiles are published on every page, or added to the organization entry of Yoast SEO or Rank Math. Off by default; switch it on under Contact Infos -> Structured data. Admins can add a JSON-LD block to a single page. The data purge removes the new settings and fields.
-- Markdown for AI agents: published pages and posts of the selected post types (not password-protected ones) can be fetched as clean Markdown (add `?markdown=1`, send `Accept: text/markdown`, or follow the link in the page head), and `/llms.txt` lists your pages for AI tools. Choose the post types and run the llms.txt and page-cache checks under Global Theme Settings -> Markdown. Off by default: switch it on in General Theme Options. Needs WordPress 6.7 or later. If Yoast SEO or AIOSEO already provides an llms.txt file, that file is used.
+- Markdown for AI agents: published pages and posts of the selected post types (password-protected posts only for visitors who entered the password; not the posts page) can be fetched as clean Markdown (add `?markdown=1`, send `Accept: text/markdown`, or follow the link in the page head), and `/llms.txt` lists your pages for AI tools. Choose the post types and run the llms.txt and page-cache checks under Global Theme Settings -> Markdown. Off by default: switch it on in General Theme Options. Needs WordPress 6.7 or later. If Yoast SEO or AIOSEO already provides an llms.txt file, that file is used.
 
 ## [0.37.0] - 2026-11-15
 

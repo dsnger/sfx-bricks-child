@@ -313,7 +313,7 @@ foreach ($site_check as $name) {
 }
 assert_same(count(DataPurge::option_names()), count(array_unique(DataPurge::option_names())), 'Case 8d: no option is listed twice');
 
-assert_true(in_array('sfx_markdown_options', DataPurge::option_names(), true), 'Case 8e: the Markdown option is on the list');
+assert_true(in_array('sfx_markdown_options', DataPurge::option_names(), true), 'Case 8u: the Markdown option is on the list');
 
 // SiteCheck's options are SiteCheck\Purge::run()'s to delete (in the spec's
 // order, inside the module's critical section): the generic loop skips them,
