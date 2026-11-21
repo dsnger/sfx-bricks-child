@@ -38,4 +38,12 @@ assert_same(false, Response::passes_through(200, ['Vary: Accept-Encoding'], fals
 ini_set('default_mimetype', 'text/plain');
 assert_same(true, Response::passes_through(200, ['Vary: Accept-Encoding'], false), 'no Content-Type, default_mimetype text/plain');
 
+// R6: the Link header.
+assert_same('Link: <https://ex.test/a/?p=1&b=2>; rel="canonical"', Response::link_header('https://ex.test/a/?p=1&b=2'), 'Link: plain URL unchanged');
+assert_same('Link: <https://ex.test/%3Cx%3E%20%22y%22%2Cz/>; rel="canonical"', Response::link_header('https://ex.test/<x> "y",z/'), 'Link: < > space " , percent-encoded');
+assert_same(null, Response::link_header("https://ex.test/a\r\nX-Evil: 1"), 'Link: CR/LF passes through');
+assert_same(null, Response::link_header("https://ex.test/a\tb"), 'Link: tab passes through');
+assert_same(null, Response::link_header("https://ex.test/a\x7f"), 'Link: DEL passes through');
+assert_same(null, Response::link_header("https://ex.test/a\x00"), 'Link: NUL passes through');
+
 echo "PASS: markdown-response ({$checks} checks)\n";

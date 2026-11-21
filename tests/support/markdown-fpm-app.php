@@ -132,7 +132,12 @@ switch ($scenario) {
         add_action('shutdown', static function () { echo '<!--shutdown-10-->'; }, 10);
         register_shutdown_function(static function () { echo '<!--shutdown-function-->'; });
         ob_start(static function (string $buffer, int $phase): string {
-            return $buffer . (($phase & PHP_OUTPUT_HANDLER_FINAL) ? '<!--outer-->' : '');
+            if ($phase & PHP_OUTPUT_HANDLER_FINAL) {
+                // A page cache decides here (WP Super Cache's wp_cache_ob_callback, say).
+                header('X-Cache-Flag: ' . (defined('DONOTCACHEPAGE') ? 'set' : 'unset'));
+                return $buffer . '<!--outer-->';
+            }
+            return $buffer;
         });
         break;
     case 'close-own-buffer':
@@ -155,6 +160,8 @@ switch ($scenario) {
     case 'enhance-convert':
     case 'enhance-passthrough':
         add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
+            static $calls = 0;
+            header('X-Filter-Calls: ' . ++$calls);
             return str_replace('</body>', '<p>ENHANCED</p></body>', str_replace('</main>', '<p>ENHANCED</p></main>', $html));
         });
         add_action('wp_finalized_template_enhancement_output_buffer', static function (string $output): void {

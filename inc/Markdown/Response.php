@@ -69,12 +69,13 @@ class Response
         self::$ending = true;
         $html = (string) ob_get_clean();
         $canonical = wp_get_canonical_url();
-        $markdown = is_string($canonical) && $canonical !== '' ? self::markdown($html, $canonical) : null;
+        $link = is_string($canonical) && $canonical !== '' ? self::link_header($canonical) : null;
+        $markdown = $link !== null ? self::markdown($html, $canonical) : null;
         if ($markdown === null) {
             echo $html; // Pass-through: unfiltered, so core's own buffer filters it once (P1).
             return;
         }
-        self::commit($markdown, $canonical);
+        self::commit($markdown, $link);
     }
 
     /** Converting steps 1–3 plus P1/P2; null means pass-through. */
@@ -90,11 +91,13 @@ class Response
         }
         ob_start(); // Filter callbacks must not print; core drops their output too.
         try {
-            if (self::enhances()) {
-                $html = (string) apply_filters('wp_template_enhancement_output_buffer', $html, $html);
+            // Unfiltered first: a page that cannot convert leaves the filter to core alone.
+            $markdown = Converter::convert($html, $canonical);
+            if ($markdown === null || !self::enhances()) {
+                return $markdown;
             }
-
-            return Converter::convert($html, $canonical);
+            // Accepted limit: a filter that destroys the content area ran here and runs again in core.
+            return Converter::convert((string) apply_filters('wp_template_enhancement_output_buffer', $html, $html), $canonical);
         } catch (\Throwable $e) {
             return null; // In doubt: the captured HTML goes out unchanged.
         } finally {
@@ -127,9 +130,23 @@ class Response
         return strtolower(trim(explode(';', $type, 2)[0])) !== 'text/html';
     }
 
-    /** Converting step 4, then Commit. */
-    private static function commit(string $markdown, string $canonical): void
+    /** R6: the canonical Link header; null (pass-through) when the URL holds a control character. */
+    public static function link_header(string $canonical): ?string
     {
+        if (preg_match('/[\x00-\x1F\x7F]/', $canonical)) {
+            return null;
+        }
+
+        return 'Link: <' . strtr($canonical, ['<' => '%3C', '>' => '%3E', ' ' => '%20', '"' => '%22', ',' => '%2C']) . '>; rel="canonical"';
+    }
+
+    /** Converting step 4, then Commit. */
+    private static function commit(string $markdown, string $link): void
+    {
+        // First: page caches decide inside their buffer handlers, which the removal below runs.
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
         header_remove('Content-Length');
         header_remove('ETag');
         header_remove('Last-Modified');
@@ -137,7 +154,7 @@ class Response
         Headers::merge_vary('Accept');
         header('Cache-Control: private, no-store, max-age=0');
         header('X-Robots-Tag: noindex');
-        header('Link: <' . $canonical . '>; rel="canonical"');
+        header($link);
 
         // Only output written before the template; P2 made every one removable. Core's buffer
         // sees the CLEAN phase and returns early: no filter, no action.
@@ -154,10 +171,6 @@ class Response
             }
             ob_end_clean();
         }
-        if (!defined('DONOTCACHEPAGE')) {
-            define('DONOTCACHEPAGE', true);
-        }
-
         echo $markdown;
         flush();
         if (function_exists('fastcgi_finish_request')) {
@@ -165,10 +178,19 @@ class Response
         } elseif (function_exists('litespeed_finish_request')) {
             litespeed_finish_request();
         } else {
-            ob_start(static function (): string {
-                return '';
-            });
+            // Accepted limit (spec § Commit): drops later output unless other code drains buffers.
+            self::discard();
+            // R5: core drains at shutdown priority 1 (default-filters.php); re-open right after it.
+            add_action('shutdown', [self::class, 'discard'], 1);
         }
+    }
+
+    /** A buffer that drops whatever is printed into it. */
+    public static function discard(): void
+    {
+        ob_start(static function (): string {
+            return '';
+        });
     }
 
     /** Spec step 3 and P3: the capture buffer is still the top one and the template never touched it. */

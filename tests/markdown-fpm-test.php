@@ -165,13 +165,17 @@ assert_markdown(get('normal', 'scenario=convert&module=on', 'text/markdown'), MA
 assert_same(get('normal', 'scenario=plain'), get('normal', 'scenario=plain&module=on'), 'HTML request: same response with and without the module');
 
 // late-output: shutdown callbacks, a shutdown function and an outer handler all print; the client gets only the Markdown.
-assert_markdown(get('normal', 'scenario=late-output&module=on&markdown=1'), MARKDOWN, 'late-output');
-// Fallback pool (no finish function): the discard buffer drops what is printed before the
-// shutdown drain (priority 0) and the outer buffers' output. Core's own drain,
-// wp_ob_end_flush_all() at shutdown priority 1, then ends the discard buffer too, so what is
-// printed after it follows the Markdown — the spec's accepted limit ("unless other code drains
-// buffers again"), pinned here so that a change is seen.
-assert_markdown(get('fallback', 'scenario=late-output&module=on&markdown=1'), MARKDOWN . '<!--shutdown-1--><!--shutdown-10--><!--shutdown-function-->', 'late-output, fallback pool');
+$r = get('normal', 'scenario=late-output&module=on&markdown=1');
+assert_markdown($r, MARKDOWN, 'late-output');
+assert_same('set', $r['headers']['x-cache-flag'] ?? null, 'late-output: DONOTCACHEPAGE defined before the outer handlers run');
+// Fallback pool (no finish function): the discard buffer drops what is printed before core's
+// drain (wp_ob_end_flush_all() at shutdown priority 1); R5 re-opens it right after that drain,
+// so priority 10 and the later shutdown function are dropped too. What still leaks — the
+// accepted limit, pinned so that a change is seen: a priority-1 callback added after core's
+// drain but before the commit.
+$r = get('fallback', 'scenario=late-output&module=on&markdown=1');
+assert_markdown($r, MARKDOWN . '<!--shutdown-1-->', 'late-output, fallback pool');
+assert_same('set', $r['headers']['x-cache-flag'] ?? null, 'late-output, fallback pool: DONOTCACHEPAGE before the outer handlers');
 
 // unclosed-root: Bricks' footer never reaches the Markdown.
 $r = get('normal', 'scenario=unclosed-root&module=on&markdown=1');
@@ -190,8 +194,10 @@ assert_same('text/html; charset=UTF-8', $on['headers']['content-type'] ?? null, 
 $r = get('normal', 'scenario=enhance-convert&module=on&markdown=1');
 assert_same(MARKDOWN . "\nENHANCED\n", $r['body'], 'enhance-convert: filtered copy converted');
 assert_same(md5($r['body']), $r['headers']['x-finalized'] ?? null, 'enhance-convert: finalized action once, with the Markdown');
+assert_same('1', $r['headers']['x-filter-calls'] ?? null, 'enhance-convert: filter called once');
 $r = get('normal', 'scenario=enhance-passthrough&module=on&markdown=1');
 assert_same(1, substr_count($r['body'], 'ENHANCED'), 'enhance-passthrough: filter applied once');
 assert_same(md5($r['body']), $r['headers']['x-finalized'] ?? null, 'enhance-passthrough: finalized action once, with the HTML');
+assert_same('1', $r['headers']['x-filter-calls'] ?? null, 'enhance-passthrough: filter called once (by core)');
 
 echo "PASS: markdown-fpm ({$checks} checks, {$fpm})\n";
