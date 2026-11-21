@@ -79,6 +79,7 @@ function register_setting($group, $name, $args = []) { return true; }
 require_once __DIR__ . '/../inc/Markdown/Settings.php';
 require_once __DIR__ . '/../inc/Markdown/Request.php';
 require_once __DIR__ . '/../inc/Markdown/Headers.php';
+require_once __DIR__ . '/../inc/Markdown/AdminPage.php';
 require_once __DIR__ . '/../inc/Markdown/Controller.php';
 
 use SFX\Markdown\Controller;
@@ -98,7 +99,7 @@ reset_state();
 assert_same(false, Request::parser_available(), '1: parser missing');
 assert_same(false, Request::is_eligible(), '1: parser missing -> not eligible');
 new Controller();
-assert_same([['sfx_init_admin_features', 10]], $hooks, '1: only Settings::register() without parser');
+assert_same([['sfx_init_admin_features', 10], ['admin_menu', 10]], $hooks, '1: only Settings and AdminPage registration without parser');
 
 // From here on the parser exists (declared at runtime, after the check above).
 if (!class_exists('WP_HTML_Processor')) {
@@ -112,7 +113,7 @@ assert_same(true, Request::parser_available(), '1: parser present');
 $hooks = [];
 new Controller();
 assert_same(
-    [['sfx_init_admin_features', 10], ['exit_on_http_head', 10], ['wp_head', 10], ['template_redirect', 1], ['template_redirect', PHP_INT_MAX], ['template_include', PHP_INT_MAX]],
+    [['sfx_init_admin_features', 10], ['admin_menu', 10], ['exit_on_http_head', 10], ['wp_head', 10], ['template_redirect', 1], ['template_redirect', PHP_INT_MAX], ['template_include', PHP_INT_MAX]],
     $hooks,
     '1: hooks with parser'
 );

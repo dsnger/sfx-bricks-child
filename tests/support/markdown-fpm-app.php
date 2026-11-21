@@ -90,7 +90,7 @@ function register_setting($group, $name, $args = []) { return true; }
 require __DIR__ . '/markdown-http-stubs.php';
 require __DIR__ . '/html-api.php';
 require __DIR__ . '/wp-template-enhancement.php';
-foreach (['Url', 'Escape', 'Converter', 'Headers', 'Settings', 'Request', 'Response', 'Controller'] as $class) {
+foreach (['Url', 'Escape', 'Converter', 'Headers', 'Settings', 'Request', 'Response', 'AdminPage', 'Controller'] as $class) {
     require __DIR__ . '/../../inc/Markdown/' . $class . '.php';
 }
 

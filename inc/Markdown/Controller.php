@@ -9,6 +9,7 @@ class Controller
     public function __construct()
     {
         Settings::register();
+        AdminPage::register(); // Unconditional: the page also shows the WP < 6.7 notice.
 
         if (!Request::parser_available()) {
             return; // D10: inert front end below WP 6.7.
@@ -45,7 +46,7 @@ class Controller
     {
         return [
             'class' => self::class,
-            'menu_slug' => 'sfx-markdown',
+            'menu_slug' => AdminPage::$menu_slug,
             'page_title' => __('Markdown for AI agents', 'sfxtheme'),
             'description' => __('Serves a Markdown version of your pages to AI agents that ask for it, and an llms.txt index.', 'sfxtheme'),
             'activation_option_name' => 'sfx_general_options',
