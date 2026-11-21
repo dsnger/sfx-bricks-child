@@ -77,6 +77,7 @@ so there is no later.
 - `SmoothScroll` (gated by `sfx_general_options.enable_smooth_scroll`)
 - `NavMenuQuery` (gated by `sfx_general_options.enable_nav_menu_query`, no settings UI)
 - `EditorProse` (gated by `sfx_general_options.enable_editor_prose`)
+- `Markdown` (gated by `sfx_general_options.enable_markdown`)
 - `SiteCheck` (Sicherheits-Check, gated by `sfx_general_options.enable_site_check`)
 - `TelFormat` (always on, `@format:tel` on simple Bricks tags, no settings UI)
 - `ThemeSettingsOverview` (shown with the custom dashboard, no settings UI of its own)
