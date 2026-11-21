@@ -11,8 +11,9 @@
 #
 # Order, per the AGENTS.md harness rule: fatal guards (they decide WHERE this runs and
 # write nothing) -> a per-site run lock (a held lock is exit 2, nothing changed) ->
-# snapshot of everything the run may change -> the ONE teardown (an EXIT trap) -> only
-# then writes. The teardown deletes the fixture posts, the 410 rule and the temporary
+# snapshot of everything the run may change (a database error there is exit 2) -> the ONE
+# teardown (an EXIT trap) -> only then writes. The teardown deletes the fixture posts, the 410
+# rule (by its recorded ID and by the run's note) and the temporary
 # Editor-role user, deactivates Rank Math if this run activated it, and puts every
 # snapshotted option back byte for byte (deleting the ones that did not exist). It re-reads
 # each of them afterwards and drops a cleanup record only once its removal is confirmed.
@@ -70,13 +71,18 @@ echo "if no run is active, its teardown did not finish: check its recovery data 
 
 # ---------------------------------------------------------------- snapshot
 # Raw option rows (value and autoload), sorted by name, base64 JSON. Every option the run
-# writes, plus everything Rank Math may create while it is active.
-SNAPSHOT_FN='function sfx_md_snapshot() { global $wpdb;
+# writes, plus everything Rank Math may create while it is active. Any database error exits 1
+# before anything is printed: an unreadable row must never be taken for an absent one.
+SNAPSHOT_FN='function sfx_md_db_ok($what) { global $wpdb; if ($wpdb->last_error !== "") { fwrite(STDERR, "database error ($what): $wpdb->last_error\n"); exit(1); } }
+function sfx_md_snapshot() { global $wpdb;
 $names = ["sfx_general_options","sfx_markdown_options","sfx_password_protected_options","sfx_redirects_options","bricks_global_settings","active_plugins","recently_activated","rewrite_rules",$wpdb->prefix."user_roles"];
-$names = array_merge($names, $wpdb->get_col("SELECT option_name FROM $wpdb->options WHERE option_name LIKE \"rank%\" OR option_name LIKE \"%rank\\_math%\" OR option_name LIKE \"%rank-math%\""));
+$found = $wpdb->get_col("SELECT option_name FROM $wpdb->options WHERE option_name LIKE \"rank%\" OR option_name LIKE \"%rank\\_math%\" OR option_name LIKE \"%rank-math%\"");
+sfx_md_db_ok("option names");
+$names = array_merge($names, $found);
 $out = [];
 foreach (array_unique($names) as $n) {
   $r = $wpdb->get_row($wpdb->prepare("SELECT option_value, autoload FROM $wpdb->options WHERE option_name = %s", $n));
+  sfx_md_db_ok($n);
   $out[$n] = $r ? ["v" => base64_encode($r->option_value), "a" => $r->autoload] : null;
 }
 ksort($out);
@@ -87,7 +93,7 @@ echo "cron hooks: ", implode(",", array_keys($h)), "\n";
 echo "redirect rules: ", (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sfx_redirects"), ", 404 log rows: ", (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sfx_redirects_404"), "\n";
 echo "sessions of '"$ADMIN"': ", count((array) get_user_meta('"$ADMIN_ID"', "session_tokens", true)), ", users: ", count_users()["total_users"], "\n";
 echo "rank_math tables: ", implode(",", $wpdb->get_col("SHOW TABLES LIKE \"%rank\\_math%\"")), "\n";'
-wpe "$SNAPSHOT_PHP" > "$TMP/snapshot.b64"
+wpe "$SNAPSHOT_PHP" > "$TMP/snapshot.b64" || fatal "the snapshot failed (see the database error above); nothing was changed"
 [ -s "$TMP/snapshot.b64" ] || fatal "snapshot is empty"
 wpe "$STATE_PHP" > "$TMP/state-before.txt"
 echo "== snapshot: $(wpe "\$s = json_decode(base64_decode('$(cat "$TMP/snapshot.b64")'), true); foreach (\$s as \$n => \$r) echo \$n, \$r === null ? ' (absent)' : '', '; ';")"
@@ -106,9 +112,13 @@ teardown() {
     \$ids = array_unique(array_merge(\$ids, array_map('intval', \$wpdb->get_col(\"SELECT ID FROM \$wpdb->posts WHERE post_title LIKE '%SFXMD % $RUN'\"))));
     \$bad = 0; foreach (\$ids as \$id) { if (get_post(\$id)) { wp_delete_post(\$id, true); clean_post_cache(\$id); }
       if (get_post(\$id)) { \$bad++; echo \"  FAILED to delete post \$id\n\"; } else { echo \"  post \$id gone\n\"; } } exit(\$bad ? 1 : 0);" || left=1
-  if [ -s "$TMP/rule_id" ]; then
-    if [ "$(del_rule)" = gone ]; then : > "$TMP/rule_id"; echo "  redirect rule gone"; else echo "  FAILED to delete the redirect rule $(cat "$TMP/rule_id")"; left=1; fi
-  fi
+  # By the recorded ID and by this run's note: an interruption after the insert leaves rule_id empty.
+  out=$(del_rule)
+  case "$out" in
+    none) ;;
+    gone*) : > "$TMP/rule_id"; echo "  redirect rule ${out#gone } gone" ;;
+    *) echo "  FAILED to delete the redirect rule ($(cat "$TMP/rule_id" 2>/dev/null), note 'sfxmd $RUN'): $out"; left=1 ;;
+  esac
   wpe "require_once ABSPATH . 'wp-admin/includes/user.php'; \$ids = array_filter(array_map('intval', [$(cat "$TMP/editor_id" 2>/dev/null)]));
     \$u = get_user_by('login', 'sfxmd-editor-$RUN'); if (\$u) { \$ids[] = \$u->ID; }
     \$bad = 0; foreach (array_unique(\$ids) as \$id) { if (get_userdata(\$id)) { wp_delete_user(\$id); clean_user_cache(\$id); }
@@ -120,17 +130,21 @@ teardown() {
   fi
   # Every snapshotted row back byte for byte; a row absent before is deleted; a Rank Math
   # row the snapshot does not hold was created during the run and is deleted.
-  wpe "global \$wpdb; \$s = json_decode(base64_decode('$(cat "$TMP/snapshot.b64")'), true);
+  # Any database error marks the cleanup unverified (exit 1), which keeps the recovery data.
+  wpe "global \$wpdb; \$s = json_decode(base64_decode('$(cat "$TMP/snapshot.b64")'), true); \$bad = 0;
     \$now = \$wpdb->get_col(\"SELECT option_name FROM \$wpdb->options WHERE option_name LIKE 'rank%' OR option_name LIKE '%rank\\\\_math%' OR option_name LIKE '%rank-math%'\");
+    if (\$wpdb->last_error !== '') { \$bad++; echo \"  FAILED to list the Rank Math rows: \$wpdb->last_error\n\"; }
     foreach (\$now as \$n) { if (!array_key_exists(\$n, \$s)) { \$s[\$n] = null; } }
     foreach (\$s as \$n => \$r) {
       \$row = ['option_value' => base64_decode(\$r['v'] ?? ''), 'autoload' => \$r['a'] ?? ''];
       \$here = \$wpdb->get_var(\$wpdb->prepare(\"SELECT COUNT(*) FROM \$wpdb->options WHERE option_name = %s\", \$n));
-      if (\$r === null) { \$wpdb->delete(\$wpdb->options, ['option_name' => \$n]); }
-      elseif (\$here) { \$wpdb->update(\$wpdb->options, \$row, ['option_name' => \$n]); }
-      else { \$wpdb->insert(\$wpdb->options, ['option_name' => \$n] + \$row); }
+      if (\$wpdb->last_error !== '') { \$bad++; echo \"  FAILED to read \$n: \$wpdb->last_error\n\"; continue; }
+      if (\$r === null) { \$done = \$wpdb->delete(\$wpdb->options, ['option_name' => \$n]); }
+      elseif (\$here) { \$done = \$wpdb->update(\$wpdb->options, \$row, ['option_name' => \$n]); }
+      else { \$done = \$wpdb->insert(\$wpdb->options, ['option_name' => \$n] + \$row); }
+      if (\$done === false || \$wpdb->last_error !== '') { \$bad++; echo \"  FAILED to restore \$n: \$wpdb->last_error\n\"; }
     }
-    echo '  restored ', count(\$s), \" option rows\n\";" || left=1
+    echo '  restored ', count(\$s) - \$bad, ' of ', count(\$s), \" option rows\n\"; exit(\$bad ? 1 : 0);" || left=1
   # Rank Math's recurring cron events: a wp-cron runner the run's requests spawned can write
   # one back after it was cleared, so clear until no runner holds the lock and none is left.
   for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
@@ -170,10 +184,20 @@ teardown() {
   [ "$NOTRUN" = 0 ] || { echo "A required check did not run" >&2; exit 1; }
   exit 0
 }
-# del_rule: deletes the 410 rule and prints "gone" only when a re-read finds it missing.
+# del_rule: deletes this run's 410 rules, found by the recorded ID and by the run's note. Prints
+# "none" when there is none, "gone <ids>" only when a re-read finds every one missing and no rule
+# with the note left; anything else (a database error included) is a failure.
 del_rule() {
-  wpe "\$id = (int) '$(cat "$TMP/rule_id")'; \$r = \SFX\Redirects\Repository::apply_op('delete', [\$id]); \$g = \SFX\Redirects\Repository::get(\$id)['status'];
-    echo \$g === 'missing' ? 'gone' : \"left (done {\$r['done']}, failed {\$r['failed']}, locked \" . (int) \$r['locked'] . \", get \$g)\";"
+  wpe "global \$wpdb; \$t = \SFX\Redirects\Repository::table(); \$note = 'sfxmd $RUN';
+    \$ids = \$wpdb->get_col(\$wpdb->prepare(\"SELECT id FROM \$t WHERE note = %s\", \$note));
+    if (\$wpdb->last_error !== '') { echo 'left (lookup by note failed: ', \$wpdb->last_error, ')'; exit(1); }
+    \$ids = array_values(array_unique(array_filter(array_map('intval', array_merge(\$ids, ['$(cat "$TMP/rule_id" 2>/dev/null)'])))));
+    if (!\$ids) { echo 'none'; exit(0); }
+    \$r = \SFX\Redirects\Repository::apply_op('delete', \$ids); \$left = [];
+    foreach (\$ids as \$id) { \$g = \SFX\Redirects\Repository::get(\$id)['status']; if (\$g !== 'missing') { \$left[] = \"\$id (get \$g)\"; } }
+    \$n = (int) \$wpdb->get_var(\$wpdb->prepare(\"SELECT COUNT(*) FROM \$t WHERE note = %s\", \$note));
+    if (\$wpdb->last_error !== '') { \$left[] = 'recount failed: ' . \$wpdb->last_error; } elseif (\$n) { \$left[] = \"\$n with the note\"; }
+    echo \$left ? \"left (done {\$r['done']}, failed {\$r['failed']}, locked \" . (int) \$r['locked'] . ', ' . implode(', ', \$left) . ')' : 'gone ' . implode(',', \$ids);"
 }
 PASSES=0; FAILS=0; NOTRUN=0
 trap teardown EXIT

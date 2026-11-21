@@ -124,6 +124,13 @@ $S['description'] = '';
 $S['options']['sfx_markdown_options'] = ['post_types' => []];
 assert_same("# A \\*B\\* \\& Co\n", LlmsTxt::render(), 'no tagline, no types');
 
+// Gate B pass 4: a trailing # in the site name is heading text, not a closing sequence.
+reset_state();
+$S['name'] = 'Studio #';
+$S['description'] = '';
+$S['options']['sfx_markdown_options'] = ['post_types' => []];
+assert_same("# Studio \\#\n", LlmsTxt::render(), 'site name with trailing #');
+
 // Entities from wptexturize are decoded, not shown literally.
 reset_state();
 $S['posts']['post'] = [new WP_Post(9, 'Don&#8217;t &#8211; &amp;', '2026-01-01 00:00:00')];

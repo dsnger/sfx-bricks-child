@@ -64,6 +64,8 @@ $inputs = [
     'lists_ol'        => '<ol start="10"><li>ten</li></ol><ol start="20"><li>twenty</li></ol>',
     'lists_ul'        => '<ul><li>a</li></ul><ul><li>b</li></ul><ul><li>c</li></ul>',
     'xmp'             => '<xmp>VISIBLE <b>EXAMPLE</b></xmp><p>Other</p>',
+    'ol_empty_first'  => '<ol><li></li><li>second</li></ol>',
+    'ol_empty_nested' => '<ul><li>text<ol><li></li><li>b</li></ol></li></ul>',
 ];
 
 $out = [];
@@ -72,4 +74,6 @@ foreach ($inputs as $name => $content) {
         . $content . '</main></body></html>';
     $out[$name] = Converter::convert($html, 'https://ex.test/page/');
 }
+// The llms.txt site-name heading, built as LlmsTxt::render() builds it.
+$out['llms_heading'] = '# ' . \SFX\Markdown\Escape::heading_tail(\SFX\Markdown\Escape::label('Studio #')) . "\n";
 echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);

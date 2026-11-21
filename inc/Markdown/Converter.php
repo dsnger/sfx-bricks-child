@@ -49,6 +49,9 @@ class Converter
 
     private string $out = '';
 
+    /** An ordered-list number past nine digits, which CommonMark cannot write: pass-through. */
+    private bool $overflow = false;
+
     private function __construct(string $base)
     {
         $this->base = $base;
@@ -77,7 +80,7 @@ class Converter
         while ($c->stack !== []) {
             $c->finish();
         }
-        return $c->out === '' ? null : $c->out . "\n";
+        return $c->out === '' || $c->overflow ? null : $c->out . "\n";
     }
 
     /** Handles one token; false = doubt about the markup. */
@@ -384,10 +387,14 @@ class Converter
             case 'li':
                 self::flush($f);
                 $body = self::join($f->blocks, true);
-                if ($body === '') {
+                if ($body === '' && !$parent->ordered) {
                     return;
                 }
-                $marker = $parent->ordered ? $parent->n++ . '. ' : '- ';
+                if ($parent->ordered && $parent->n > 999999999) {
+                    $this->overflow = true;
+                }
+                // An empty ordered item keeps its number: a bare "3." is a valid empty item.
+                $marker = $parent->ordered ? $parent->n++ . ($body === '' ? '.' : '. ') : '- ';
                 $indent = str_repeat(' ', strlen($marker));
                 $lines = explode("\n", $body);
                 foreach ($lines as $i => $line) {
@@ -404,17 +411,14 @@ class Converter
                     if ($alt) {
                         $items = array_map(static fn(string $i): string => $f->ordered ? (string) preg_replace('/^(\d+)\./', '$1)', $i) : '*' . substr($i, 1), $items);
                     }
-                    // Only a bullet list or one starting at 1 can directly follow a paragraph line.
-                    $parent->blocks[] = ['list', implode("\n", $items), !$f->ordered || $f->start === 1, $f->ordered, $alt];
+                    // Only a bullet list or one starting at 1, with a first item that is not empty, can directly follow a paragraph line.
+                    $parent->blocks[] = ['list', implode("\n", $items), !$f->ordered || ($f->start === 1 && !preg_match('/^\d+[.)]$/', $items[0])), $f->ordered, $alt];
                 }
                 return;
             case 'heading':
                 $body = trim($f->buf, ' ');
                 if ($body !== '') {
-                    if (str_ends_with($body, '#')) {
-                        $body = substr($body, 0, -1) . '\#'; // else it reads as a closing sequence
-                    }
-                    $parent->blocks[] = ['h', str_repeat('#', $f->level) . ' ' . $body];
+                    $parent->blocks[] = ['h', str_repeat('#', $f->level) . ' ' . Escape::heading_tail($body)];
                 }
                 return;
             case 'pre':

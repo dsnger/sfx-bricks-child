@@ -31,6 +31,12 @@ class Escape
         return self::text(self::one_line($s));
     }
 
+    /** An ATX heading's escaped text: a trailing # would read as the closing sequence. */
+    public static function heading_tail(string $s): string
+    {
+        return str_ends_with($s, '#') ? substr($s, 0, -1) . '\\#' : $s;
+    }
+
     /** URL destination in angle brackets; `|` is encoded, as a GFM table cell would split on it. */
     public static function destination(string $url): string
     {

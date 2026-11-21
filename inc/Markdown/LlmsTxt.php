@@ -65,14 +65,14 @@ class LlmsTxt
 
     public static function render(): string
     {
-        $out = '# ' . Escape::label(self::decode((string) get_bloginfo('name'))) . "\n";
+        $out = '# ' . Escape::heading_tail(Escape::label(self::decode((string) get_bloginfo('name')))) . "\n";
         $tagline = self::decode((string) get_bloginfo('description'));
         if ($tagline !== '') {
             $out .= "\n> " . Escape::label($tagline) . "\n";
         }
         $labels = Settings::offered_post_types();
         foreach (self::listed() as $type => $posts) {
-            $out .= "\n## " . Escape::label($labels[$type] ?? $type) . "\n\n";
+            $out .= "\n## " . Escape::heading_tail(Escape::label($labels[$type] ?? $type)) . "\n\n";
             foreach (array_slice($posts, 0, self::LIMIT) as $post) {
                 $out .= '- [' . Escape::label(self::decode((string) get_the_title($post))) . '](' . Escape::destination(self::address($post)) . ")\n";
             }

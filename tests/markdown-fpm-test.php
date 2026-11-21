@@ -194,17 +194,30 @@ $r = get('fallback', 'scenario=late-output&module=on&markdown=1');
 assert_markdown($r, MARKDOWN . '<!--shutdown-1-->', 'late-output, fallback pool');
 assert_same('set', $r['headers']['x-cache-flag'] ?? null, 'late-output, fallback pool: DONOTCACHEPAGE before the outer handlers');
 
+// outer-headers: an outer handler and the finalized action set HTML/cache headers; the Markdown's win.
+$r = get('normal', 'scenario=outer-headers&module=on&markdown=1');
+assert_markdown($r, MARKDOWN, 'outer-headers');
+assert_same(['1', '1'], [$r['headers']['x-outer-ran'] ?? null, $r['headers']['x-action-ran'] ?? null], 'outer-headers: both callbacks ran');
+
+// outer-clean-throw: a handler that throws while the commit removes it; the Markdown still goes out, the throw is logged.
+$r = get('normal', 'scenario=outer-clean-throw&module=on&markdown=1');
+assert_markdown($r, MARKDOWN, 'outer-clean-throw');
+assert_same(1, substr_count((string) @file_get_contents("{$tmp}/php-errors.log"), 'SFX Markdown: an output buffer handler threw while the Markdown response removed it: outer handler refuses CLEAN'), 'outer-clean-throw: logged once');
+
 // unclosed-root: Bricks' footer never reaches the Markdown.
 $r = get('normal', 'scenario=unclosed-root&module=on&markdown=1');
 assert_markdown($r, MARKDOWN, 'unclosed-root');
 
 // Pass-through: exactly the response the same request gets without the module.
-foreach (['throw', 'leave-buffer-open', 'close-own-buffer', 'ob-flush', 'close-and-reopen', 'exit-in-template', 'non-removable-outer', 'status-404', 'location', 'json', 'enhance-passthrough'] as $scenario) {
+foreach (['throw', 'leave-buffer-open', 'close-own-buffer', 'ob-flush', 'close-and-reopen', 'exit-in-template', 'non-removable-outer', 'status-404', 'location', 'json', 'enhance-passthrough', 'enhance-user-error'] as $scenario) {
     $off = get('normal', "scenario={$scenario}&markdown=1");
     $on = get('normal', "scenario={$scenario}&module=on&markdown=1");
     assert_same(true, strpos($off['body'], 'SITE-HEADER') !== false, "{$scenario}: baseline renders the page");
     assert_same($off, $on, "{$scenario}: pass-through equals the module-off response");
 }
+$r = get('normal', 'scenario=enhance-user-error&module=on&markdown=1');
+assert_same(['text/html; charset=UTF-8', false], [$r['headers']['content-type'] ?? null, strpos($r['body'], 'NOT-REACHED')], 'enhance-user-error: the HTML, unfiltered');
+$on = get('normal', 'scenario=enhance-passthrough&module=on&markdown=1');
 assert_same('text/html; charset=UTF-8', $on['headers']['content-type'] ?? null, 'enhance-passthrough: HTML');
 
 // P1: the enhancement filter runs once on either path; the finalized action runs once, with what is sent.

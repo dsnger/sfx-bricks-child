@@ -148,6 +148,36 @@ switch ($scenario) {
     case 'non-removable-outer':
         ob_start(null, 0, PHP_OUTPUT_HANDLER_CLEANABLE | PHP_OUTPUT_HANDLER_FLUSHABLE);
         break;
+    case 'outer-headers':
+        // Finding: an outer handler and the finalized action may still set headers after the commit's own.
+        $clobber = static function (string $who): void {
+            header('Cache-Control: public, max-age=3600');
+            header('Content-Type: text/html');
+            header('Content-Length: 0');
+            header("X-{$who}-Ran: 1");
+        };
+        ob_start(static function (string $buffer, int $phase) use ($clobber): string {
+            $clobber('Outer');
+            return $buffer;
+        });
+        add_action('wp_finalized_template_enhancement_output_buffer', static function () use ($clobber): void {
+            $clobber('Action');
+        });
+        break;
+    case 'outer-clean-throw':
+        ob_start(static function (string $buffer, int $phase): string {
+            if ($phase & PHP_OUTPUT_HANDLER_CLEAN) {
+                throw new RuntimeException('outer handler refuses CLEAN');
+            }
+            return $buffer;
+        });
+        break;
+    case 'enhance-user-error':
+        add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
+            trigger_error('enhancement failed', E_USER_ERROR);
+            return $html . 'NOT-REACHED';
+        });
+        break;
     case 'status-404':
         header('HTTP/1.1 404 Not Found', true, 404);
         break;

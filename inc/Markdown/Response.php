@@ -97,8 +97,20 @@ class Response
             if ($markdown === null || !self::enhances()) {
                 return $markdown;
             }
-            // Accepted limit: a filter that destroys the content area ran here and runs again in core.
-            return Converter::convert((string) apply_filters('wp_template_enhancement_output_buffer', $html, $html), $canonical);
+            // As core's buffer callback: a user error in a filter becomes an exception (template.php).
+            set_error_handler(static function (int $level, string $message): bool {
+                if ($level === E_USER_ERROR) {
+                    throw new \ErrorException($message, 0, $level);
+                }
+                return false;
+            });
+            try {
+                // Accepted limit: a filter that destroys the content area ran here and runs again in core.
+                $filtered = (string) apply_filters('wp_template_enhancement_output_buffer', $html, $html);
+            } finally {
+                restore_error_handler();
+            }
+            return Converter::convert($filtered, $canonical);
         } catch (\Throwable $e) {
             return null; // In doubt: the captured HTML goes out unchanged.
         } finally {
@@ -148,19 +160,18 @@ class Response
         if (!defined('DONOTCACHEPAGE')) {
             define('DONOTCACHEPAGE', true);
         }
-        header_remove('Content-Length');
-        header_remove('ETag');
-        header_remove('Last-Modified');
-        header('Content-Type: text/markdown; charset=UTF-8');
-        Headers::merge_vary('Accept');
-        header('Cache-Control: private, no-store, max-age=0');
-        header('X-Robots-Tag: noindex');
-        header($link);
 
         // Only output written before the template; P2 made every one removable. Core's buffer
         // sees the CLEAN phase and returns early: no filter, no action.
         for ($i = ob_get_level(); $i > 0; $i--) {
-            ob_end_clean();
+            try {
+                ob_end_clean();
+            } catch (\Throwable $e) {
+                // PHP removes a buffer whose handler throws. The buffers above it are gone already,
+                // so the captured HTML could no longer go out as it would without the module: send
+                // the Markdown and log the handler's failure.
+                error_log('SFX Markdown: an output buffer handler threw while the Markdown response removed it: ' . $e->getMessage());
+            }
         }
         if (self::enhances()) {
             // P1: what core does for a response that is not HTML (template.php:1025-1029).
@@ -172,6 +183,15 @@ class Response
             }
             ob_end_clean();
         }
+        // Last, right before the body: the handlers and the action above may have set headers too.
+        header_remove('Content-Length');
+        header_remove('ETag');
+        header_remove('Last-Modified');
+        header('Content-Type: text/markdown; charset=UTF-8');
+        Headers::merge_vary('Accept');
+        header('Cache-Control: private, no-store, max-age=0');
+        header('X-Robots-Tag: noindex');
+        header($link);
         echo $markdown;
         flush();
         if (function_exists('fastcgi_finish_request')) {

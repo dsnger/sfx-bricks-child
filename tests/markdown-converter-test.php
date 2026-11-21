@@ -191,4 +191,12 @@ assert_same("[x](<https://ex.test/l>)\n", md('<a href="/l"><xmp>x</xmp></a>'), '
 assert_same("```\nL1\nL2\n```\n", md("<listing>L1\nL2</listing>"), '8: listing like pre');
 assert_same("x\n", md('<title>T</title><noembed>n</noembed><noframes>f</noframes><p>x</p>'), '8: invisible atomic elements dropped');
 
+// Gate B pass 4: ordered-list numbers stay what the browser shows.
+assert_same("999999999. a\n", md('<ol start="999999999"><li>a</li></ol>'), '9: nine-digit marker');
+assert_same(null, md('<ol start="999999999"><li>a</li><li>b</li></ol>'), '9: a ten-digit marker passes through');
+assert_same("1.\n2. second\n", md('<ol><li></li><li>second</li></ol>'), '9: empty first item keeps its number');
+assert_same("3. a\n4.\n5. c\n", md('<ol start="3"><li>a</li><li><script>x</script></li><li>c</li></ol>'), '9: emptied item keeps its number');
+assert_same("- text\n\n  1.\n  2. b\n", md('<ul><li>text<ol><li></li><li>b</li></ol></li></ul>'), '9: list with an empty first item does not follow a line directly');
+assert_same("## Studio \\#\n", md('<h2>Studio #</h2>'), '9: heading trailing # (Escape::heading_tail)');
+
 echo "PASS: markdown-converter ({$checks} checks)\n";

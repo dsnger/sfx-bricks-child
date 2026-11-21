@@ -120,5 +120,11 @@ ok((ols.match(/<ol/g) || []).length === 2 && ols.includes('<ol start="10">') && 
 ok((render('lists_ul').match(/<ul>/g) || []).length === 3, 'adjacent bullet lists merged: ' + render('lists_ul'));
 // xmp text is kept, as a code block.
 means('xmp', '<pre><code>VISIBLE &lt;b&gt;EXAMPLE&lt;/b&gt;\n</code></pre>\n<p>Other</p>');
+// Gate B pass 4: an empty ordered item keeps its position, so the next one stays number 2.
+means('ol_empty_first', '<ol>\n<li></li>\n<li>second</li>\n</ol>');
+// Inside an item it cannot follow the text line directly (a blank line, so a loose item), but it stays a list.
+means('ol_empty_nested', '<p>text</p>\n<ol>\n<li></li>\n<li>b</li>\n</ol>');
+// llms.txt: a trailing # in the site name stays heading text.
+means('llms_heading', '<h1>Studio #</h1>');
 
 console.log(`markdown-commonmark-test: ${checks} checks passed`);
