@@ -9,6 +9,31 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Schema: AC-11 Google Rich Results Test outstanding** (Gate B cycle sch7b2qx,
+      spec pass 1 finding 4, accepted, not repaired): the Schema.org Validator passed all four
+      modes; the Rich Results Test runs under the owner's Google account. Daniel tests the
+      anonymised samples in `.context/ac11-samples/` (local) and records the result in PR #93
+      before it merges.
+- [ ] **Schema: settings save reports success when a selection write fails** (Gate B cycle
+      sch7b2qx, risk 4, Major, accepted, not repaired): `Selection::save_choice()`
+      (`inc/ContactInfos/Schema/Selection.php`) ignores the results of its metadata writes and
+      `SettingsPage` then says "Settings saved"; a failed exclusion write leaves the location in
+      the public schema. Check each write and report a failure.
+- [ ] **Schema release check: restore fails if an activated plugin breaks WordPress** (Gate B
+      cycle sch7b2qx, risk 4, Major, accepted, not repaired):
+      `tests/support/contact-schema-release-check.sh` restores through `ddev wp`, which loads
+      the plugins it just activated; a plugin that fatals blocks the restore. Restore with
+      `--skip-plugins`/`--skip-themes` (or direct option writes).
+- [ ] **Schema release check: no lock against two parallel runs** (Gate B cycle sch7b2qx,
+      risk 4, Minor, accepted, not repaired): two runs can snapshot each other's temporary
+      state. Add a site-scoped lock.
+- [ ] **Schema: collected Minors from the build reviews** (cycle sch7b2qx, collected, never
+      iterated): the release check exits 0 with "no verdict" when the switch is off; Rank Math
+      entity-encodes `&` as `&amp;` in every value (plugin behaviour, documented only);
+      `PostType::save_custom_fields()` does not bind to the submitted `post_ID` (pre-existing);
+      TSF-on detection relies on TSF's HTML comments; the `unavailable` mode message can show
+      empty "()"; the area label is kept after a contact changes type; per-task review Minors
+      in the branch's SDD ledger (`.superpowers/sdd/2026-11-20-schema-from-contact-infos/progress.md`, local).
 - [ ] **Kit: risk-pass.sh read helpers treat a failed read as EOF** (Gate B cycle
       k53rfr4m8x, risk 3, Minor, accepted, not repaired): in the kit 0.54.0 template
       `.agents/skills/gate-b-review/scripts/risk-pass.sh` the `create`, `sread` and `place`
