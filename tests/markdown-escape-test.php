@@ -20,7 +20,9 @@ function assert_same($expected, $actual, string $message): void
 // 1. text(): every listed char escaped anywhere; no raw `<` survives.
 assert_same('\<img src=x\>', Escape::text('<img src=x>'), '1: tag escaped');
 assert_same(0, preg_match('/(?<!\\\\)</', Escape::text('a<b <<c')), '1: no unescaped <');
-assert_same('a\*b\_c\[d\]e\`f\|g\&h!', Escape::text('a*b_c[d]e`f|g&h!'), '1: listed chars');
+assert_same('a\*b\_c\[d\]e\`f\|g\&h\!', Escape::text('a*b_c[d]e`f|g&h!'), '1: listed chars, trailing ! included');
+assert_same('Hi\![l](<u>)', Escape::text('Hi!') . '[l](<u>)', '1: trailing ! cannot form an image with a following link');
+assert_same("a!\n", Escape::text("a!\n"), '1: ! before a final newline is not at the end');
 assert_same('\\\\ \~ \> \&amp;', Escape::text('\\ ~ > &amp;'), '1: backslash, tilde, gt, entity text');
 assert_same('\!\[x\](y)', Escape::text('![x](y)'), '1: bang before bracket');
 assert_same('Hi! ok', Escape::text('Hi! ok'), '1: lone bang untouched (spec: only before [)');
@@ -38,6 +40,9 @@ assert_same('12x', Escape::block_start('12x'), '2: digits without marker');
 assert_same('a # b', Escape::block_start('a # b'), '2: # mid-line untouched');
 assert_same("a\n\\- b", Escape::block_start("a\n- b"), '2: every line of a multi-line string');
 assert_same('  \- x', Escape::block_start('  - x'), '2: indented marker');
+assert_same("a\n\\# b", Escape::block_start(Escape::text("a\r# b")), '2: lone CR is a line break');
+assert_same("a\n\\- b", Escape::block_start("a\r- b"), '2: lone CR list marker');
+assert_same("a\n\\# b", Escape::block_start("a\r\n# b"), '2: CRLF');
 
 // 3. label(): newlines to spaces, then text().
 assert_same('a b', Escape::label("a\nb"), '3: newline');

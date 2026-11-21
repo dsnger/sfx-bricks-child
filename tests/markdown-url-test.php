@@ -262,6 +262,7 @@ check('tel:+49 1', 'tel:+49 1', $b, 'link', '3: tel link kept');
 check(null, 'tel:+49 1', $b, 'image', '3: tel image dropped');
 check('HTTPS://x.test/a', ' HTTPS://x.test/a ', $b, 'image', '3: uppercase https image kept');
 check(null, 'https://x.test/', $b, 'video', '3: unknown kind dropped');
+check("https://ex.test/sub/a/b/\u{A0}javascript:x", "\u{A0}javascript:x", $b, 'link', '3: leading NBSP stays a harmless relative path');
 
 if ($checks < 25) {
     fwrite(STDERR, "FAIL: only {$checks} checks ran\n");

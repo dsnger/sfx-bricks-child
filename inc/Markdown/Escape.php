@@ -12,12 +12,15 @@ class Escape
     /** Inline text: escapes every char that is structure in any position. */
     public static function text(string $s): string
     {
-        return (string) preg_replace('/[\\\\`*_~\[\]<>|&]|!(?=\[)/', '\\\\$0', $s);
+        // A trailing ! is escaped too: the converter may write a link right after this run.
+        return (string) preg_replace('/[\\\\`*_~\[\]<>|&]|!(?=\[|\z)/', '\\\\$0', $s);
     }
 
     /** Adds line-start escapes to every line of an already text()-escaped string. */
     public static function block_start(string $line): string
     {
+        // CommonMark also ends a line at a lone CR, which PCRE's ^ does not see.
+        $line = str_replace(["\r\n", "\r"], "\n", $line);
         $line = (string) preg_replace('/^([ \t]*)([#+\-=>])/m', '$1\\\\$2', $line);
         return (string) preg_replace('/^([ \t]*\d+)([.)])/m', '$1\\\\$2', $line);
     }
