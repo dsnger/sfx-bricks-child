@@ -181,6 +181,9 @@ class Converter
             if ($tag !== 'LI') {
                 return false;
             }
+            if ($top->ordered && $p->get_attribute('value') !== null) {
+                $this->overflow = true; // an explicit item number Markdown cannot keep: serve the HTML
+            }
             $this->push('li', $depth);
             return true;
         }
@@ -257,8 +260,13 @@ class Converter
             $list = $this->push('list', $depth);
             $start = $p->get_attribute('start');
             $list->ordered = $tag === 'OL';
-            // CommonMark allows at most nine digits.
-            $list->n = $tag === 'OL' && is_string($start) && preg_match('/^\d{1,9}$/', trim($start)) ? (int) trim($start) : 1;
+            // CommonMark allows at most nine digits and no sign; a start or a reversed order the
+            // Markdown cannot show as the visitor sees it is served as HTML.
+            $digits = is_string($start) && preg_match('/^\d{1,9}$/', trim($start));
+            if ($list->ordered && (($start !== null && !$digits) || $p->get_attribute('reversed') !== null)) {
+                $this->overflow = true;
+            }
+            $list->n = $list->ordered && $digits ? (int) trim($start) : 1;
             $list->start = $list->n;
             $list->items = [];
         } elseif ($tag === 'BLOCKQUOTE') {
