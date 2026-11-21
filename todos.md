@@ -39,6 +39,14 @@ references an entry here must still be able to find it.
       could publish an empty or truncated canonical findings or evidence file and record
       its hash as done. The file must stay byte-identical to the template, so fix it in
       the dev-workflow kit and take it with the next refresh.
+- [ ] **PR bots doc: two sentences predate the requested Greptile route** (Gate B cycle
+      k550gr8x2m, quality 1, Minor, accepted, not repaired): `docs/pr-review-bots.md`
+      still names only the **Wait for** list as authoritative (intro) and says a `0`
+      review count "needs no record" (per-head section), while
+      `/dev-workflow:process-pr-review` Step 2 records a `Greptile:` status line in the PR
+      body for every outcome, a timeout included. Point the intro at all routing lists and
+      replace the no-record sentence with a reference to that Step 2 line (a `0` stays
+      inconclusive and does not block).
 - [ ] **Live checks: run the manual harnesses against the DDEV test site** (Daniel,
       2026-10-20 — MAMP crashes at the moment; the local site runs on DDEV, likely for
       good). The six `tests/support/*-live-check.php` that boot WordPress were written for
