@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.37.0\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.38.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-15T09:07:20+00:00\n"
+"POT-Creation-Date: 2026-11-22T12:55:23+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -50,12 +50,12 @@ msgid "You do not have sufficient permissions to access this page. Dashboard set
 msgstr ""
 
 #. translators: %s: field label, e.g. Phone
-#: inc/ContactInfos/Controller.php:127
+#: inc/ContactInfos/Controller.php:130
 msgid "Contact Info: %s (tel: link)"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:15
-#: inc/ContactInfos/PostType.php:293
+#: inc/ContactInfos/PostType.php:299
 #: inc/CustomDashboard/Settings.php:1165
 msgid "Company Name"
 msgstr ""
@@ -69,18 +69,18 @@ msgid "Street"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:18
-#: inc/ContactInfos/PostType.php:329
+#: inc/ContactInfos/PostType.php:335
 msgid "ZIP Code"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:19
-#: inc/ContactInfos/PostType.php:339
+#: inc/ContactInfos/PostType.php:345
 msgid "City"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:20
-#: inc/ContactInfos/PostType.php:349
-#: inc/ContactInfos/PostType.php:353
+#: inc/ContactInfos/PostType.php:355
+#: inc/ContactInfos/PostType.php:359
 msgid "Country"
 msgstr ""
 
@@ -89,27 +89,27 @@ msgid "Full Address"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:22
-#: inc/ContactInfos/PostType.php:391
+#: inc/ContactInfos/PostType.php:397
 msgid "Phone"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:23
-#: inc/ContactInfos/PostType.php:401
+#: inc/ContactInfos/PostType.php:407
 msgid "Mobile"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:24
-#: inc/ContactInfos/PostType.php:411
+#: inc/ContactInfos/PostType.php:417
 msgid "Fax"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:25
-#: inc/ContactInfos/PostType.php:421
+#: inc/ContactInfos/PostType.php:427
 msgid "Email"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:26
-#: inc/ContactInfos/PostType.php:437
+#: inc/ContactInfos/PostType.php:443
 msgid "Tax ID"
 msgstr ""
 
@@ -130,7 +130,7 @@ msgid "DSB"
 msgstr ""
 
 #: inc/ContactInfos/FieldRegistry.php:31
-#: inc/ContactInfos/PostType.php:493
+#: inc/ContactInfos/PostType.php:499
 msgid "Opening Hours"
 msgstr ""
 
@@ -139,7 +139,7 @@ msgid "Map Link"
 msgstr ""
 
 #: inc/ContactInfos/HelpTab.php:46
-#: inc/ContactInfos/HelpTab.php:122
+#: inc/ContactInfos/HelpTab.php:123
 msgid "Shortcode"
 msgstr ""
 
@@ -158,66 +158,70 @@ msgid "Examples"
 msgstr ""
 
 #: inc/ContactInfos/HelpTab.php:69
-#: inc/ContactInfos/HelpTab.php:222
-#: inc/ContactInfos/PostType.php:105
-#: inc/ContactInfos/PostType.php:762
+#: inc/ContactInfos/HelpTab.php:224
+#: inc/ContactInfos/PostType.php:107
+#: inc/ContactInfos/PostType.php:843
 #: inc/CustomDashboard/Settings.php:595
 #: inc/CustomDashboard/Settings.php:1576
-#: inc/ImportExport/Controller.php:350
+#: inc/ImportExport/Controller.php:357
 msgid "Contact Information"
 msgstr ""
 
 #: inc/ContactInfos/HelpTab.php:70
+msgid "Contact type \"Contact point for an area\" is for a department or service (e.g. Press): it takes an area label and, like the business fields of a branch, no company data. Structured opening hours can be set for every type; they are separate from the free-text Opening Hours field."
+msgstr ""
+
+#: inc/ContactInfos/HelpTab.php:71
 msgid "Only published entries are shown, also when chosen by ID. Field values are cached for up to 30 minutes; saving an entry or the \"Clear Cache\" button on the list screen refreshes them at once."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:77
+#: inc/ContactInfos/HelpTab.php:78
 msgid "Email link (mailto:)"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:78
 #: inc/ContactInfos/HelpTab.php:79
+#: inc/ContactInfos/HelpTab.php:80
 msgid "Phone link (tel:) with a cleaned number"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:80
+#: inc/ContactInfos/HelpTab.php:81
 msgid "Full Address as entered (HTML allowed); if empty, built from street, ZIP code, city and country"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:81
+#: inc/ContactInfos/HelpTab.php:82
 msgid "HTML from the editor, never wrapped"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:82
+#: inc/ContactInfos/HelpTab.php:83
 msgid "Link \"View on Map\", opens in a new tab"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:87
+#: inc/ContactInfos/HelpTab.php:88
 msgid "Plain text"
 msgstr ""
 
 #. translators: %s: how the field is output, e.g. "Plain text"
-#: inc/ContactInfos/HelpTab.php:90
+#: inc/ContactInfos/HelpTab.php:91
 msgid "%s; main contact only"
 msgstr ""
 
 #. translators: 1: shortcode example, 2: attribute name, 3: attribute name
-#: inc/ContactInfos/HelpTab.php:97
+#: inc/ContactInfos/HelpTab.php:98
 msgid "%1$s shows one field of a contact entry. Without %2$s or %3$s it uses the main contact."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:102
+#: inc/ContactInfos/HelpTab.php:103
 #: inc/SocialMediaAccounts/HelpTab.php:161
 msgid "Field"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:102
+#: inc/ContactInfos/HelpTab.php:103
 #: inc/SocialMediaAccounts/HelpTab.php:161
 msgid "Label"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:102
-#: inc/ContactInfos/HelpTab.php:205
+#: inc/ContactInfos/HelpTab.php:103
+#: inc/ContactInfos/HelpTab.php:207
 #: inc/MediaCredits/AdminPage.php:283
 #: inc/SocialMediaAccounts/HelpTab.php:161
 #: inc/SocialMediaAccounts/HelpTab.php:185
@@ -225,404 +229,452 @@ msgid "Output"
 msgstr ""
 
 #. translators: 1: "00", 2: "+", 3: "0", 4: "+49", 5: "(0)", 6: ";ext=", 7: filter name
-#: inc/ContactInfos/HelpTab.php:105
+#: inc/ContactInfos/HelpTab.php:106
 msgid "Numbers in tel: links are cleaned: separators and spaces are removed, a leading %1$s becomes %2$s, a leading %3$s becomes %4$s, %5$s after the country code is dropped, and an extension becomes %6$s. Filter for the country code: %7$s."
 msgstr ""
 
 #. translators: %s: name of the Shortcode help tab
-#: inc/ContactInfos/HelpTab.php:121
+#: inc/ContactInfos/HelpTab.php:122
 msgid "Required. A field key from the %s tab; without it nothing is output."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:124
+#: inc/ContactInfos/HelpTab.php:125
 msgid "ID of one contact entry. Takes precedence over type."
 msgstr ""
 
-#. translators: 1: "main", 2: "branch"
-#: inc/ContactInfos/HelpTab.php:127
-msgid "%1$s or %2$s: uses the published entry of this type that comes first by Order (on a tie, the newest)."
+#. translators: 1: "main", 2: "branch", 3: "contact_point"
+#: inc/ContactInfos/HelpTab.php:128
+msgid "%1$s, %2$s or %3$s: uses the published entry of this type that comes first by Order (on a tie, the newest)."
 msgstr ""
 
 #. translators: %s: shortcode name "[icon]"
-#: inc/ContactInfos/HelpTab.php:133
+#: inc/ContactInfos/HelpTab.php:135
 msgid "Icon name, passed to an %s shortcode placed before the value. The theme does not provide that shortcode; without a plugin that does, no icon is shown."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:136
+#: inc/ContactInfos/HelpTab.php:138
 msgid "CSS classes for that icon."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:137
+#: inc/ContactInfos/HelpTab.php:139
 msgid "Email only: link text instead of the address."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:138
+#: inc/ContactInfos/HelpTab.php:140
 msgid "CSS classes for the wrapper; turns the wrapper on."
 msgstr ""
 
 #. translators: 1: "false", 2: "0", 3: "no", 4: "off"
-#: inc/ContactInfos/HelpTab.php:141
+#: inc/ContactInfos/HelpTab.php:143
 msgid "%1$s, %2$s, %3$s or %4$s: email, phone and mobile without a link."
 msgstr ""
 
 #. translators: 1: "true", 2: "1", 3: "yes", 4: "on", 5: example class "contact-info-phone"
-#: inc/ContactInfos/HelpTab.php:149
+#: inc/ContactInfos/HelpTab.php:151
 msgid "%1$s, %2$s, %3$s or %4$s: wraps the output in a tag with a field class such as %5$s. Opening hours and a filled-in Full Address are never wrapped."
 msgstr ""
 
 #. translators: 1: list of allowed tags, 2: default tag "span"
-#: inc/ContactInfos/HelpTab.php:158
+#: inc/ContactInfos/HelpTab.php:160
 msgid "Wrapper tag, one of %1$s (default and fallback for any other name: %2$s); turns the wrapper on."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:162
+#: inc/ContactInfos/HelpTab.php:164
 msgid "Any non-empty value except 0: shows the field value before formatting in a preformatted block instead (ignored when format=tel applies)."
 msgstr ""
 
 #. translators: 1: "tel", 2: example number "+4930123456"
-#: inc/ContactInfos/HelpTab.php:165
+#: inc/ContactInfos/HelpTab.php:167
 msgid "%1$s with phone, mobile or fax: only the cleaned number (e.g. %2$s), without link, icon or wrapper. Meant for tel: links."
 msgstr ""
 
 #. translators: %s: shortcode name
-#: inc/ContactInfos/HelpTab.php:182
+#: inc/ContactInfos/HelpTab.php:184
 msgid "Attributes of %s. The Bricks tags accept the same attributes."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:185
+#: inc/ContactInfos/HelpTab.php:187
 #: inc/SocialMediaAccounts/HelpTab.php:151
 #: inc/SocialMediaAccounts/HelpTab.php:160
 msgid "Attribute"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:185
+#: inc/ContactInfos/HelpTab.php:187
 #: inc/SocialMediaAccounts/HelpTab.php:151
 #: inc/SocialMediaAccounts/HelpTab.php:160
 msgid "Default"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:185
+#: inc/ContactInfos/HelpTab.php:187
 #: inc/SocialMediaAccounts/HelpTab.php:151
 #: inc/SocialMediaAccounts/HelpTab.php:160
 msgid "Effect"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:193
+#: inc/ContactInfos/HelpTab.php:195
 msgid "Field of the main contact; inside a query loop over contact entries, of the current entry."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:197
+#: inc/ContactInfos/HelpTab.php:199
 msgid "Field of the entry with ID 123."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:201
+#: inc/ContactInfos/HelpTab.php:203
 msgid "Cleaned number only, for link fields."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:205
+#: inc/ContactInfos/HelpTab.php:207
 #: inc/SocialMediaAccounts/HelpTab.php:185
 msgid "Tag"
 msgstr ""
 
 #. translators: 1: "@key:value", 2: example tag
-#: inc/ContactInfos/HelpTab.php:208
+#: inc/ContactInfos/HelpTab.php:210
 msgid "Attributes are appended as %1$s, separated by a space, and can be chained, e.g. %2$s. Values must not contain @, |, = or }."
 msgstr ""
 
 #. translators: 1: "@format:tel", 2: example tag
-#: inc/ContactInfos/HelpTab.php:214
+#: inc/ContactInfos/HelpTab.php:216
 msgid "%1$s also works on simple Bricks tags such as %2$s: the tag name and %1$s, nothing else; one phone number per field. Inside quotes or a :raw tag it is resolved as well. The builder canvas may show the raw tag; the page shows the number."
 msgstr ""
 
 #. translators: 1: query type "Posts", 2: post type label "Contact Information"
-#: inc/ContactInfos/HelpTab.php:220
+#: inc/ContactInfos/HelpTab.php:222
 msgid "Query loop: type %1$s, post type %2$s. Inside the loop, tags without an ID show the current entry (published entries only); an ID in the tag always wins, and type has no effect there."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:221
+#: inc/ContactInfos/HelpTab.php:223
 #: inc/SiteCheck/Catalogue.php:334
 #: inc/SocialMediaAccounts/HelpTab.php:195
 msgid "Posts"
 msgstr ""
 
 #. translators: %s: Bricks picker group name
-#: inc/ContactInfos/HelpTab.php:226
+#: inc/ContactInfos/HelpTab.php:228
 msgid "The dynamic data picker lists every field in the group %s."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:234
+#: inc/ContactInfos/HelpTab.php:236
 msgid "Email link with your own link text."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:235
+#: inc/ContactInfos/HelpTab.php:237
 msgid "Branch phone as a link, wrapped in a span with the class footer-phone."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:236
+#: inc/ContactInfos/HelpTab.php:238
 msgid "Opening hours of entry 123."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:237
+#: inc/ContactInfos/HelpTab.php:239
 msgid "Link field of a Bricks button: dials the main phone number."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:238
+#: inc/ContactInfos/HelpTab.php:240
 msgid "Link field of a Bricks button: dials the number from the ACF field phone."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:239
+#: inc/ContactInfos/HelpTab.php:241
 msgid "Link field of a Bricks button: writes to the main email address."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:240
+#: inc/ContactInfos/HelpTab.php:242
 msgid "Inside a query loop over contact entries: the city of each entry."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:241
+#: inc/ContactInfos/HelpTab.php:243
 msgid "Phone number of entry 123 as plain text."
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:245
+#: inc/ContactInfos/HelpTab.php:247
 #: inc/SocialMediaAccounts/HelpTab.php:217
 msgid "Example"
 msgstr ""
 
-#: inc/ContactInfos/HelpTab.php:245
+#: inc/ContactInfos/HelpTab.php:247
 #: inc/SiteCheck/AdminPage.php:97
 #: inc/SocialMediaAccounts/HelpTab.php:217
 #: inc/WPOptimizer/AdminPage.php:207
 msgid "Result"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:106
-#: inc/ContactInfos/PostType.php:117
+#: inc/ContactInfos/PostType.php:108
+#: inc/ContactInfos/PostType.php:119
 #: inc/CustomDashboard/AdminPage.php:162
 #: inc/CustomDashboard/Settings.php:828
 msgid "Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:107
+#: inc/ContactInfos/PostType.php:109
 #: inc/CustomScriptsManager/PostType.php:103
 #: inc/SocialMediaAccounts/PostType.php:92
 msgid "Add New"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:108
+#: inc/ContactInfos/PostType.php:110
 msgid "Add New Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:109
+#: inc/ContactInfos/PostType.php:111
 msgid "Edit Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:110
+#: inc/ContactInfos/PostType.php:112
 msgid "New Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:111
+#: inc/ContactInfos/PostType.php:113
 msgid "View Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:112
+#: inc/ContactInfos/PostType.php:114
 msgid "Search Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:113
+#: inc/ContactInfos/PostType.php:115
 msgid "No contact info found"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:114
+#: inc/ContactInfos/PostType.php:116
 msgid "No contact info found in Trash"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:115
+#: inc/ContactInfos/PostType.php:117
 msgid "All Contact Info"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:116
-#: inc/ContactInfos/PostType.php:287
+#: inc/ContactInfos/PostType.php:118
+#: inc/ContactInfos/PostType.php:293
 msgid "Company Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:222
+#: inc/ContactInfos/PostType.php:224
 msgid "Contact Information Configuration"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:274
+#: inc/ContactInfos/PostType.php:279
 msgid "Contact Type"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:278
-#: inc/ContactInfos/PostType.php:645
+#: inc/ContactInfos/PostType.php:283
+#: inc/ContactInfos/PostType.php:725
 msgid "Main Contact"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:279
-#: inc/ContactInfos/PostType.php:646
+#: inc/ContactInfos/PostType.php:284
+#: inc/ContactInfos/PostType.php:726
 msgid "Branch/Location"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:281
-msgid "Select whether this is the main contact or a branch/location."
+#: inc/ContactInfos/PostType.php:285
+#: inc/ContactInfos/PostType.php:727
+msgid "Contact point for an area"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:297
-msgid "Name of the company"
+#: inc/ContactInfos/PostType.php:287
+msgid "Select whether this is the main contact, a branch/location or a contact point for an area."
 msgstr ""
 
 #: inc/ContactInfos/PostType.php:303
+msgid "Name of the company"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:309
 msgid "Managing Director(s)"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:307
+#: inc/ContactInfos/PostType.php:313
 msgid "Name of the managing director(s)"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:313
+#: inc/ContactInfos/PostType.php:319
 msgid "Address Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:319
+#: inc/ContactInfos/PostType.php:325
 msgid "Street / No."
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:323
+#: inc/ContactInfos/PostType.php:329
 msgid "Street name and number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:333
+#: inc/ContactInfos/PostType.php:339
 msgid "Postal code"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:343
+#: inc/ContactInfos/PostType.php:349
 msgid "City/Town"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:359
+#: inc/ContactInfos/PostType.php:365
 msgid "Formatted Address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:379
+#: inc/ContactInfos/PostType.php:385
 msgid "Formatted address for display"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:385
+#: inc/ContactInfos/PostType.php:391
 msgid "Contact Details"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:395
+#: inc/ContactInfos/PostType.php:401
 msgid "Phone number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:405
+#: inc/ContactInfos/PostType.php:411
 msgid "Mobile number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:415
+#: inc/ContactInfos/PostType.php:421
 msgid "Fax number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:425
+#: inc/ContactInfos/PostType.php:431
 msgid "Email address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:431
+#: inc/ContactInfos/PostType.php:437
 msgid "Business Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:441
+#: inc/ContactInfos/PostType.php:447
 msgid "Tax identification number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:447
+#: inc/ContactInfos/PostType.php:453
 msgid "VAT ID"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:451
+#: inc/ContactInfos/PostType.php:457
 msgid "VAT identification number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:457
+#: inc/ContactInfos/PostType.php:463
 msgid "Company Registration No."
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:461
+#: inc/ContactInfos/PostType.php:467
 msgid "Commercial register number"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:467
+#: inc/ContactInfos/PostType.php:473
 msgid "Registration Court"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:471
+#: inc/ContactInfos/PostType.php:477
 msgid "Responsible registration court"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:477
+#: inc/ContactInfos/PostType.php:483
 msgid "Data Protection Officer"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:481
+#: inc/ContactInfos/PostType.php:487
 msgid "Name of the data protection officer"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:487
+#: inc/ContactInfos/PostType.php:493
 msgid "Additional Information"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:513
+#: inc/ContactInfos/PostType.php:519
 msgid "Business hours of the company"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:519
+#: inc/ContactInfos/PostType.php:525
+msgid "Area (e.g. Press, Group travel)"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:534
+msgid "Structured Opening Hours"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:538
+msgid "Machine-readable opening hours for search engines. Leave a day as \"Not specified\" to publish nothing for it."
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:544
 msgid "Google Maps Link"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:523
+#: inc/ContactInfos/PostType.php:548
 msgid "Link to Google Maps"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:602
+#: inc/ContactInfos/PostType.php:563
+msgid "Not specified"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:564
+#: inc/ThemeSettingsOverview/OverviewProvider.php:165
+#: inc/WPOptimizer/Settings.php:425
+msgid "Closed"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:565
+#: inc/ThemeSettingsOverview/OverviewProvider.php:165
+msgid "Open"
+msgstr ""
+
+#. translators: %s: weekday
+#: inc/ContactInfos/PostType.php:574
+msgid "%s: opening state"
+msgstr ""
+
+#. translators: 1: weekday, 2: range number (1 or 2)
+#: inc/ContactInfos/PostType.php:583
+msgid "%1$s, range %2$d: from"
+msgstr ""
+
+#. translators: 1: weekday, 2: range number (1 or 2)
+#: inc/ContactInfos/PostType.php:585
+msgid "%1$s, range %2$d: to"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:682
 #: inc/NavMenuQuery/MenuItemTags.php:257
 #: inc/SocialMediaAccounts/PostType.php:354
 msgid "ID"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:603
+#: inc/ContactInfos/PostType.php:683
+#: inc/ContactInfos/Schema/SettingsPage.php:208
 #: inc/CustomScriptsManager/PostType.php:679
 msgid "Type"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:604
+#: inc/ContactInfos/PostType.php:684
 msgid "Address"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:605
+#: inc/ContactInfos/PostType.php:685
 #: inc/CustomDashboard/DashboardRenderer.php:868
 #: inc/CustomDashboard/Settings.php:1154
 msgid "Contact"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:606
+#: inc/ContactInfos/PostType.php:686
 #: inc/CustomScriptsManager/PostType.php:706
 #: inc/SocialMediaAccounts/PostType.php:358
 msgid "Status"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:679
+#: inc/ContactInfos/PostType.php:760
 #: inc/Redirects/AdminPage.php:1100
 msgid "Address:"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:683
+#: inc/ContactInfos/PostType.php:764
 msgid "No address data"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:717
+#: inc/ContactInfos/PostType.php:798
 msgid "No contact data"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:734
+#: inc/ContactInfos/PostType.php:815
 #: inc/CustomScriptsManager/PostType.php:770
 #: inc/Redirects/AdminPage.php:1116
 #: inc/SocialMediaAccounts/PostType.php:435
@@ -630,28 +682,368 @@ msgstr ""
 msgid "Active"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:735
+#: inc/ContactInfos/PostType.php:816
 #: inc/CustomScriptsManager/PostType.php:771
 #: inc/SocialMediaAccounts/PostType.php:436
 msgid "Draft"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:736
+#: inc/ContactInfos/PostType.php:817
 #: inc/CustomScriptsManager/PostType.php:772
 #: inc/SiteCheck/AdminPage.php:506
 #: inc/SocialMediaAccounts/PostType.php:437
 msgid "Private"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:897
+#: inc/ContactInfos/PostType.php:850
+msgid "Area"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:855
+msgid "Name"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:991
+msgid "Some opening hours were not saved; the previous values were kept:"
+msgstr ""
+
+#: inc/ContactInfos/PostType.php:1004
 msgid "Contact Info cache cleared successfully!"
 msgstr ""
 
-#: inc/ContactInfos/PostType.php:917
+#: inc/ContactInfos/PostType.php:1024
 msgid "Clear Cache"
 msgstr ""
 
-#: inc/ContactInfos/Shortcode/SC_ContactInfos.php:523
+#. translators: 1: weekday name, 2: what is wrong with that day's opening hours
+#: inc/ContactInfos/Schema/OpeningHours.php:36
+msgid "%1$s: %2$s"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:47
+msgid "Monday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:48
+msgid "Tuesday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:49
+msgid "Wednesday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:50
+msgid "Thursday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:51
+msgid "Friday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:52
+msgid "Saturday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:53
+msgid "Sunday"
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:91
+msgid "Unknown state."
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:102
+msgid "Enter times as HH:MM."
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:105
+msgid "Start and end must differ."
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:110
+msgid "Enter at least one time range."
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:113
+msgid "At most two time ranges per day."
+msgstr ""
+
+#: inc/ContactInfos/Schema/OpeningHours.php:118
+msgid "The time ranges overlap."
+msgstr ""
+
+#: inc/ContactInfos/Schema/PageField.php:58
+msgid "The structured data was not saved: it is larger than 64 KB. The previous value was kept."
+msgstr ""
+
+#: inc/ContactInfos/Schema/PageField.php:61
+msgid "The structured data was not saved: it must be a JSON object or an array of JSON objects. The previous value was kept."
+msgstr ""
+
+#: inc/ContactInfos/Schema/PageField.php:72
+msgid "Structured data (JSON-LD)"
+msgstr ""
+
+#: inc/ContactInfos/Schema/PageField.php:88
+msgid "A JSON-LD object, or an array of objects, added to this page while structured data is switched on. Leave empty to remove it."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:29
+#: inc/ContactInfos/Schema/SettingsPage.php:30
+#: inc/ContactInfos/Schema/SettingsPage.php:73
+#: inc/ContactInfos/Schema/SettingsPage.php:204
+msgid "Structured data"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:41
+#: inc/ContactInfos/Schema/SettingsPage.php:65
+#: inc/Redirects/AdminPage.php:180
+#: inc/Redirects/AdminPage.php:589
+#: inc/SiteCheck/AdminPage.php:302
+#: inc/SiteCheck/AdminPage.php:317
+#: inc/SiteCheck/OutsideEndpoints.php:97
+#: inc/SiteCheck/Runs.php:576
+msgid "You are not allowed to do this."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:75
+msgid "Publishes the company from Contact Infos as schema.org structured data (JSON-LD), or adds it to the entry of a supported SEO plugin."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:89
+#: inc/PasswordProtected/Settings.php:293
+#: inc/Redirects/Settings.php:215
+#: inc/SiteCheck/AdminPage.php:325
+msgid "Settings saved."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:90
+msgid "Settings saved. No organization was chosen, so the organization and the exclusions were not changed."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:91
+msgid "The organization was not saved: it must be a published contact of type Main. The organization and the exclusions were not changed; the switch and the type were saved."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:92
+msgid "The organization or the exclusions could not be saved completely. Check the state below and save again; the switch and the type were saved."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:100
+msgid "Current state"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:103
+msgid "Per-page JSON-LD stays active while the switch is on."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:105
+msgid "Off. Nothing is published, the per-page structured data included."
+msgstr ""
+
+#. translators: %s: plugin names
+#: inc/ContactInfos/Schema/SettingsPage.php:107
+msgid "Another SEO or schema plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugin's."
+msgstr ""
+
+#. translators: %s: plugin names
+#: inc/ContactInfos/Schema/SettingsPage.php:109
+msgid "More than one SEO plugin is active (%s). The theme stays out: it publishes no company data of its own and adds none to the plugins'."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:110
+msgid "Yoast SEO: the theme adds the Contact Infos data to Yoast's organization entry."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:111
+msgid "Yoast SEO is set to a person — no company data is added."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:112
+msgid "Rank Math: the theme adds the Contact Infos data to Rank Math's organization entry."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:113
+msgid "Rank Math is set to a person — no company data is added."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:114
+msgid "Rank Math's schema module is off — no company data is added."
+msgstr ""
+
+#. translators: the quoted labels are The SEO Framework's own and stay in its wording
+#: inc/ContactInfos/Schema/SettingsPage.php:116
+msgid "The SEO Framework publishes its own organization entry, so the theme publishes no company data. To let the theme publish the organization: in The SEO Framework settings, in the \"Schema.org Settings\" box, untick \"Add authorized presence?\"."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:117
+msgid "The SEO Framework's organization output is off: the theme publishes its own organization entry on every page."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:118
+msgid "No SEO plugin: the theme publishes its own organization entry on every page."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:121
+msgid "The settings of the active SEO plugin could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
+msgstr ""
+
+#. translators: %s: plugin names
+#: inc/ContactInfos/Schema/SettingsPage.php:123
+msgid "The settings of the active SEO plugin (%s) could not be read. Until they can, the theme publishes no company data of its own and adds none to the plugin's."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:129
+msgid "Extension configured. Whether the data actually appears in a page is confirmed only by the release check."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:130
+msgid "From Contact Infos: name, address, telephone, email, contact points and locations; social profiles are added to the plugin's. An empty Contact Infos value keeps the plugin's value. The type, URL and logo stay the plugin's."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:131
+msgid "The organization's own opening hours are not added in this mode; locations keep theirs. They are published only when the theme publishes its own entry with the type LocalBusiness."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:134
+msgid "Yoast emits its organization entry only when it is set to represent a company and has a company name and a logo."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:137
+msgid "The place's coordinates are kept in Rank Math; the theme only updates the address."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:140
+msgid "Type LocalBusiness needs the organization's street and city. Until they are filled in, it is published as Organization."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:145
+msgid "The contact chosen as the organization is no longer a published contact of type Main. No company data is published or added until you choose one below."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:146
+msgid "Several contacts are marked as the organization. No company data is published or added until you choose one below."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:147
+msgid "The contact chosen as the organization no longer exists. No company data is published or added until you choose one below."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:148
+msgid "There is no published contact of type Main. No company data is published or added until one exists."
+msgstr ""
+
+#. translators: %s: contact title
+#: inc/ContactInfos/Schema/SettingsPage.php:156
+msgid "No organization has been chosen yet. Until you save a choice, the first contact of type Main is used: %s."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:161
+msgid "name"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:162
+msgid "street and city"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:163
+msgid "street, zip, city and country (only the formatted address is filled in)"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:164
+msgid "area label"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:165
+msgid "telephone or email"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:170
+msgid "Incomplete, left out"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:171
+msgid "Incomplete, published without the address"
+msgstr ""
+
+#. translators: %s: list of missing fields
+#: inc/ContactInfos/Schema/SettingsPage.php:181
+msgid "missing: %s"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:188
+msgid "Not used (one organization only)"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:198
+#: inc/CustomDashboard/Settings.php:578
+#: inc/CustomDashboard/Settings.php:804
+#: inc/Redirects/AdminPage.php:967
+#: inc/SiteCheck/AdminPage.php:99
+#: inc/SiteCheck/AdminPage.php:362
+#: inc/ThemeSettingsOverview/OverviewRenderer.php:113
+msgid "Settings"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:206
+msgid "Publish the company from Contact Infos"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:210
+#: inc/ContactInfos/Schema/SettingsPage.php:215
+msgid "Organization"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:210
+msgid "LocalBusiness"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:213
+msgid "Used only when the theme publishes its own entry. With an SEO plugin, the plugin's type stays."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:218
+msgid "— Choose a contact —"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:223
+msgid "Published contacts of type Main."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:225
+#: inc/ContactInfos/Schema/SettingsPage.php:229
+msgid "Leave out"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:227
+msgid "No published locations or contact points."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:231
+#: inc/CustomScriptsManager/PostType.php:317
+#: inc/CustomScriptsManager/PostType.php:694
+msgid "Location"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:231
+msgid "Contact point"
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:236
+msgid "Locations and contact points are published unless left out here."
+msgstr ""
+
+#: inc/ContactInfos/Schema/SettingsPage.php:241
+#: inc/SiteCheck/AdminPage.php:495
+msgid "Save settings"
+msgstr ""
+
+#. translators: %d: contact ID
+#: inc/ContactInfos/Schema/SettingsPage.php:300
+msgid "Contact #%d"
+msgstr ""
+
+#: inc/ContactInfos/Shortcode/SC_ContactInfos.php:525
 msgid "View on Map"
 msgstr ""
 
@@ -971,9 +1363,9 @@ msgid "Click edit to add your personal note..."
 msgstr ""
 
 #: inc/CustomDashboard/Controller.php:296
-#: inc/ImportExport/Controller.php:362
-#: inc/ImportExport/Controller.php:577
-#: inc/ImportExport/Controller.php:625
+#: inc/ImportExport/Controller.php:369
+#: inc/ImportExport/Controller.php:584
+#: inc/ImportExport/Controller.php:632
 msgid "Security check failed."
 msgstr ""
 
@@ -1373,15 +1765,6 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: inc/CustomDashboard/Settings.php:578
-#: inc/CustomDashboard/Settings.php:804
-#: inc/Redirects/AdminPage.php:967
-#: inc/SiteCheck/AdminPage.php:99
-#: inc/SiteCheck/AdminPage.php:362
-#: inc/ThemeSettingsOverview/OverviewRenderer.php:113
-msgid "Settings"
-msgstr ""
-
 #: inc/CustomDashboard/Settings.php:580
 #: inc/CustomDashboard/Settings.php:1544
 msgid "General Settings"
@@ -1414,7 +1797,7 @@ msgid "Global Theme Settings"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:590
-#: inc/GeneralThemeOptions/Settings.php:285
+#: inc/GeneralThemeOptions/Settings.php:293
 msgid "General Options"
 msgstr ""
 
@@ -1424,7 +1807,7 @@ msgstr ""
 
 #: inc/CustomDashboard/Settings.php:592
 #: inc/ThemeSettingsOverview/OverviewProvider.php:55
-#: inc/ThemeSettingsOverview/OverviewProvider.php:193
+#: inc/ThemeSettingsOverview/OverviewProvider.php:196
 msgid "WP Optimizer"
 msgstr ""
 
@@ -1435,7 +1818,7 @@ msgid "Image Optimizer"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:594
-#: inc/ThemeSettingsOverview/OverviewProvider.php:210
+#: inc/ThemeSettingsOverview/OverviewProvider.php:213
 msgid "Security Headers"
 msgstr ""
 
@@ -1447,7 +1830,7 @@ msgstr ""
 #: inc/CustomDashboard/Settings.php:597
 #: inc/CustomScriptsManager/PostType.php:101
 #: inc/CustomScriptsManager/PostType.php:112
-#: inc/ImportExport/Controller.php:349
+#: inc/ImportExport/Controller.php:356
 msgid "Custom Scripts"
 msgstr ""
 
@@ -2390,11 +2773,6 @@ msgstr ""
 msgid "CSS"
 msgstr ""
 
-#: inc/CustomScriptsManager/PostType.php:317
-#: inc/CustomScriptsManager/PostType.php:694
-msgid "Location"
-msgstr ""
-
 #: inc/CustomScriptsManager/PostType.php:321
 #: inc/CustomScriptsManager/PostType.php:751
 msgid "Header"
@@ -2798,24 +3176,28 @@ msgstr ""
 msgid "This includes every redirect rule and the 404 log."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:480
-msgid "Will be kept:"
+#: inc/GeneralThemeOptions/AdminPage.php:479
+msgid "It also removes the structured-data settings, the per-page structured-data fields and the structured-data fields of your contact infos: area labels, structured opening hours and the organization and leave-out marks."
 msgstr ""
 
 #: inc/GeneralThemeOptions/AdminPage.php:481
-msgid "your content. Contact infos, social accounts, custom scripts, posts, pages and media files all stay exactly as they are — and so do the copyright notices on your media, unless you tick the box below."
+msgid "Will be kept:"
+msgstr ""
+
+#: inc/GeneralThemeOptions/AdminPage.php:482
+msgid "your content. Contact infos (apart from their structured-data fields named above), social accounts, custom scripts, posts, pages and media files all stay as they are — and so do the copyright notices on your media, unless you tick the box below."
 msgstr ""
 
 #. translators: %s: the exact phrase the user must type
-#: inc/GeneralThemeOptions/AdminPage.php:493
+#: inc/GeneralThemeOptions/AdminPage.php:494
 msgid "Type %s to enable the button:"
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:507
+#: inc/GeneralThemeOptions/AdminPage.php:508
 msgid "Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:513
+#: inc/GeneralThemeOptions/AdminPage.php:514
 msgid "Delete all theme data now"
 msgstr ""
 
@@ -2893,134 +3275,143 @@ msgid "Makes the block editor show Gutenberg content like the Bricks frontend (p
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:99
-msgid "Enable Sicherheits-Check"
+msgid "Enable Markdown for AI agents"
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:100
-msgid "Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes."
+#: inc/Markdown/Controller.php:51
+msgid "Serves a Markdown version of your pages to AI agents that ask for it, and an llms.txt index."
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:107
-msgid "Disable Bricks JS"
+msgid "Enable Sicherheits-Check"
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:108
-msgid "Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions."
+msgid "Adds Tools → Sicherheits-Check: checks the site for exposed files, risky settings and launch mistakes."
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:115
-msgid "Disable Bricks Styling"
+msgid "Disable Bricks JS"
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:116
+msgid "Remove the default Bricks JavaScript from the frontend for enhanced performance and custom JS solutions."
+msgstr ""
+
+#: inc/GeneralThemeOptions/Settings.php:123
+msgid "Disable Bricks Styling"
+msgstr ""
+
+#: inc/GeneralThemeOptions/Settings.php:124
 msgid "Remove all default Bricks styling."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:132
+#: inc/GeneralThemeOptions/Settings.php:140
 msgid "Content Grid"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:133
+#: inc/GeneralThemeOptions/Settings.php:141
 msgid "Responsive grid classes (.content-grid, .content--full, .content--feature, .content--split-50-breakout) use scoped --sfx-cg-* wired from --cg-* (which chain to Bricks core --container-*, --grid-gap, --space-m)."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:140
+#: inc/GeneralThemeOptions/Settings.php:148
 msgid "Form Styles"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:141
+#: inc/GeneralThemeOptions/Settings.php:149
 msgid "Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to Bricks core --primary, --text, --danger, --success where applicable)."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:148
+#: inc/GeneralThemeOptions/Settings.php:156
 msgid "Button Styles"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:149
+#: inc/GeneralThemeOptions/Settings.php:157
 msgid "Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.). See Style Modules help for semantic keys."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:156
+#: inc/GeneralThemeOptions/Settings.php:164
 msgid "List Styles"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:157
+#: inc/GeneralThemeOptions/Settings.php:165
 msgid "Icon list styles (.list--icon renders a default check; .is-check tunes spacing) use scoped --sfx-list-* wired from --list-* (chain to Bricks core --space-*, --radius-full, --secondary)."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:164
+#: inc/GeneralThemeOptions/Settings.php:172
 msgid "Animation Styles"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:165
+#: inc/GeneralThemeOptions/Settings.php:173
 msgid "Fade animations, stagger effects, and parallax keyframes."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:304
+#: inc/GeneralThemeOptions/Settings.php:312
 msgid "Style Modules"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:323
+#: inc/GeneralThemeOptions/Settings.php:331
 msgid "Selectively enable or disable theme features."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:328
+#: inc/GeneralThemeOptions/Settings.php:336
 msgid "Enable or disable optional CSS style modules. All modules are enabled by default. Disabling unused modules can reduce page size."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:329
+#: inc/GeneralThemeOptions/Settings.php:337
 msgid "Buttons and Forms load after the main frontend sheet so cascade layers apply in order."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:330
+#: inc/GeneralThemeOptions/Settings.php:338
 msgid "Token model: every module exposes external --<prefix>-* wireup tokens that default-chain through Bricks core tokens (--primary, --primary-fg, --space-s, etc.) with literal fallbacks. Internal --sfx-<prefix>-* tokens are implementation detail and not shown in this panel. Define the externals where you need a module-specific override; otherwise the chain falls through to your Bricks core tokens."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:331
+#: inc/GeneralThemeOptions/Settings.php:339
 msgid "Optional: customize --sfx-* on a component root in Bricks to override the computed value just for that instance."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:332
+#: inc/GeneralThemeOptions/Settings.php:340
 msgid "Use the \"Copy CSS\" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:335
+#: inc/GeneralThemeOptions/Settings.php:343
 msgid "External token mapping (Buttons)"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:342
+#: inc/GeneralThemeOptions/Settings.php:350
 msgid "External token mapping (Forms)"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:351
+#: inc/GeneralThemeOptions/Settings.php:359
 msgid "External token mapping (Lists)"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:358
+#: inc/GeneralThemeOptions/Settings.php:366
 msgid "External token mapping (Content Grid)"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:381
-#: inc/GeneralThemeOptions/Settings.php:384
+#: inc/GeneralThemeOptions/Settings.php:389
+#: inc/GeneralThemeOptions/Settings.php:392
 msgid "Copy CSS"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:382
-#: inc/GeneralThemeOptions/Settings.php:403
+#: inc/GeneralThemeOptions/Settings.php:390
+#: inc/GeneralThemeOptions/Settings.php:411
 #: inc/PasswordProtected/AdminPage.php:159
 msgid "Copied!"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:383
+#: inc/GeneralThemeOptions/Settings.php:391
 msgid "Error"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:396
+#: inc/GeneralThemeOptions/Settings.php:404
 msgid "CSS Variables"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:402
-#: inc/GeneralThemeOptions/Settings.php:404
+#: inc/GeneralThemeOptions/Settings.php:410
+#: inc/GeneralThemeOptions/Settings.php:412
 #: inc/PasswordProtected/AdminPage.php:159
 #: inc/SiteCheck/AdminPage.php:212
 #: inc/SiteCheck/AdminPage.php:441
@@ -3925,7 +4316,7 @@ msgid "Export failed. Please try again."
 msgstr ""
 
 #: inc/ImportExport/AssetManager.php:73
-#: inc/ImportExport/Controller.php:678
+#: inc/ImportExport/Controller.php:685
 msgid "Import completed successfully!"
 msgstr ""
 
@@ -3942,7 +4333,7 @@ msgid "Please select a valid JSON file."
 msgstr ""
 
 #: inc/ImportExport/AssetManager.php:77
-#: inc/ImportExport/Controller.php:693
+#: inc/ImportExport/Controller.php:700
 msgid "File is too large. Maximum size is 2MB."
 msgstr ""
 
@@ -4074,15 +4465,23 @@ msgstr ""
 msgid "Prose classes, wrapper element, post types, baseline and title gap"
 msgstr ""
 
-#: inc/ImportExport/Controller.php:319
+#: inc/ImportExport/Controller.php:317
+msgid "Markdown Settings"
+msgstr ""
+
+#: inc/ImportExport/Controller.php:318
+msgid "Post types that are served as Markdown"
+msgstr ""
+
+#: inc/ImportExport/Controller.php:326
 msgid "Sicherheits-Check Settings"
 msgstr ""
 
-#: inc/ImportExport/Controller.php:320
+#: inc/ImportExport/Controller.php:327
 msgid "The sitemap entries that are intended (not the site profile)"
 msgstr ""
 
-#: inc/ImportExport/Controller.php:351
+#: inc/ImportExport/Controller.php:358
 #: inc/SocialMediaAccounts/HelpTab.php:62
 #: inc/SocialMediaAccounts/HelpTab.php:196
 #: inc/SocialMediaAccounts/PostType.php:90
@@ -4090,98 +4489,231 @@ msgstr ""
 msgid "Social Media Accounts"
 msgstr ""
 
-#: inc/ImportExport/Controller.php:367
+#: inc/ImportExport/Controller.php:374
 msgid "You do not have permission to export settings."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:379
+#: inc/ImportExport/Controller.php:386
 msgid "Please select at least one item to export."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:582
-#: inc/ImportExport/Controller.php:630
+#: inc/ImportExport/Controller.php:589
+#: inc/ImportExport/Controller.php:637
 msgid "You do not have permission to import settings."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:587
+#: inc/ImportExport/Controller.php:594
 msgid "No file uploaded or upload error."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:603
+#: inc/ImportExport/Controller.php:610
 msgid "Invalid JSON file."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:637
+#: inc/ImportExport/Controller.php:644
 msgid "Invalid import data."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:650
+#: inc/ImportExport/Controller.php:657
 msgid "Please select at least one item to import."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:703
+#: inc/ImportExport/Controller.php:710
 msgid "Invalid file type. Please upload a JSON file."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:709
+#: inc/ImportExport/Controller.php:716
 msgid "Invalid file extension. Please upload a .json file."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:725
+#: inc/ImportExport/Controller.php:732
 msgid "Invalid export file: missing version information."
 msgstr ""
 
 #. translators: 1: file version, 2: required version
-#: inc/ImportExport/Controller.php:734
+#: inc/ImportExport/Controller.php:741
 msgid "This export file (v%1$s) is incompatible. Please export again using v%2$s or later."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:742
+#: inc/ImportExport/Controller.php:749
 msgid "Invalid export file: missing data section."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:746
+#: inc/ImportExport/Controller.php:753
 msgid "Invalid export file: no settings or post type data found."
 msgstr ""
 
-#: inc/ImportExport/Controller.php:838
+#: inc/ImportExport/Controller.php:845
 msgid "%s imported successfully."
 msgstr ""
 
 #. translators: 1: group label, 2: number of fields imported
-#: inc/ImportExport/Controller.php:877
+#: inc/ImportExport/Controller.php:884
 msgid "%1$s: %2$d field(s) imported."
 msgstr ""
 
 #. translators: 1: group label, 2: number of options imported
-#: inc/ImportExport/Controller.php:898
+#: inc/ImportExport/Controller.php:905
 msgid "%1$s: %2$d options imported."
 msgstr ""
 
 #. translators: 1: group label, 2: error message
 #. translators: 1: post type label, 2: error message
-#: inc/ImportExport/Controller.php:909
-#: inc/ImportExport/Controller.php:1079
+#: inc/ImportExport/Controller.php:916
+#: inc/ImportExport/Controller.php:1086
 msgid "%1$s: Import failed - %2$s"
 msgstr ""
 
-#: inc/ImportExport/Controller.php:1018
+#: inc/ImportExport/Controller.php:1025
 msgid "Post type %s does not exist."
 msgstr ""
 
 #. translators: %d: number of items imported
-#: inc/ImportExport/Controller.php:1055
+#: inc/ImportExport/Controller.php:1062
 msgid "%d imported"
 msgstr ""
 
 #. translators: %d: number of items skipped
-#: inc/ImportExport/Controller.php:1059
+#: inc/ImportExport/Controller.php:1066
 msgid "%d skipped (already exist)"
 msgstr ""
 
 #. translators: %d: number of errors
-#: inc/ImportExport/Controller.php:1063
+#: inc/ImportExport/Controller.php:1070
 msgid "%d errors"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:24
+#: inc/Markdown/AdminPage.php:52
+#: inc/Markdown/Controller.php:50
+#: inc/ThemeSettingsOverview/OverviewProvider.php:82
+msgid "Markdown for AI agents"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:25
+msgid "Markdown"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:55
+msgid "The Markdown front end needs WordPress 6.7 or newer. It stays off until then."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:58
+msgid "The module is switched off in the general theme options. The checks run once it is on."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:67
+msgid "Included post types"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:74
+msgid "Only published pages are served. A page with a password is served only to visitors who have entered it, and is never listed in llms.txt."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:81
+msgid "Addresses for this site"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:84
+msgid "Markdown of a page, by address:"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:86
+msgid "Markdown of any page, by request header:"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:87
+msgid "Index of all pages:"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:94
+msgid "The checks ask this site for /llms.txt and for its newest listed page, to see whether the theme answers and whether a page cache gets in the way. They can take up to 20 seconds."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:96
+msgid "The checks did not run because the link is no longer valid. Please click \"Run checks\" again."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:102
+msgid "Run checks"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:107
+msgid "Check: /llms.txt"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:110
+msgid "Check: page cache"
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:112
+msgid "No page to check."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:115
+msgid "A CDN in front of the site often never sees a loopback request, so a clean result proves nothing about the CDN."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:128
+msgid "The theme serves /llms.txt."
+msgstr ""
+
+#. translators: %s: redirect target
+#: inc/Markdown/AdminPage.php:132
+msgid "/llms.txt redirects to %s."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:135
+msgid "No llms.txt is served; check the Redirects rules for /llms.txt."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:138
+msgid "An HTML page answers at /llms.txt."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:141
+msgid "Another llms.txt answers, not the theme's. Switch it off so the theme's index can be served:"
+msgstr ""
+
+#. translators: %s: what came back
+#: inc/Markdown/AdminPage.php:149
+msgid "Could not check /llms.txt (%s)."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:156
+msgid "No page cache problem found."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:157
+msgid "Your page cache answers Markdown requests by Accept header with HTML; the ?markdown=1 address still works."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:158
+msgid "This page does not convert, so the check cannot run."
+msgstr ""
+
+#: inc/Markdown/AdminPage.php:159
+msgid "Could not check."
+msgstr ""
+
+#: inc/Markdown/LlmsTxt.php:85
+msgid "More entries exist than are listed here."
+msgstr ""
+
+#: inc/Markdown/LoopbackCheck.php:64
+msgid "Yoast SEO → Settings → llms.txt: switch off 'Enable llms.txt file feature'."
+msgstr ""
+
+#: inc/Markdown/LoopbackCheck.php:67
+msgid "All in One SEO → Sitemaps → LLMs.txt: switch off 'Enable llms.txt'."
+msgstr ""
+
+#: inc/Markdown/LoopbackCheck.php:70
+msgid "SEOPress PRO: switch off llms.txt in SEOPress PRO's settings."
+msgstr ""
+
+#: inc/Markdown/LoopbackCheck.php:72
+msgid "If a file llms.txt stays in the site root, remove it there."
 msgstr ""
 
 #: inc/MediaCredits/AdminPage.php:20
@@ -4740,23 +5272,23 @@ msgid "Incorrect password."
 msgstr ""
 
 #. translators: %s: a link to the website
-#: inc/PasswordProtected/Controller.php:286
+#: inc/PasswordProtected/Controller.php:349
 msgid "Feeds are not available for this site. Please visit the %s."
 msgstr ""
 
-#: inc/PasswordProtected/Controller.php:287
+#: inc/PasswordProtected/Controller.php:350
 msgid "website"
 msgstr ""
 
-#: inc/PasswordProtected/Controller.php:324
+#: inc/PasswordProtected/Controller.php:387
 msgid "Only authenticated users can access the REST API."
 msgstr ""
 
-#: inc/PasswordProtected/Controller.php:337
+#: inc/PasswordProtected/Controller.php:400
 msgid "Password Protection is switched on but has no password."
 msgstr ""
 
-#: inc/PasswordProtected/Controller.php:338
+#: inc/PasswordProtected/Controller.php:401
 msgid "The site is showing the login screen and no password will open it. Set a password on the Password Protection settings page to restore access."
 msgstr ""
 
@@ -4787,12 +5319,6 @@ msgstr ""
 #: inc/PasswordProtected/Settings.php:284
 #: inc/Redirects/Settings.php:206
 msgid "Settings could NOT be saved — the database write failed. Nothing was changed."
-msgstr ""
-
-#: inc/PasswordProtected/Settings.php:293
-#: inc/Redirects/Settings.php:215
-#: inc/SiteCheck/AdminPage.php:325
-msgid "Settings saved."
 msgstr ""
 
 #: inc/PasswordProtected/Settings.php:294
@@ -4826,15 +5352,6 @@ msgstr ""
 
 #: inc/Redirects/AdminPage.php:158
 msgid "The search failed. Try again."
-msgstr ""
-
-#: inc/Redirects/AdminPage.php:180
-#: inc/Redirects/AdminPage.php:589
-#: inc/SiteCheck/AdminPage.php:302
-#: inc/SiteCheck/AdminPage.php:317
-#: inc/SiteCheck/OutsideEndpoints.php:97
-#: inc/SiteCheck/Runs.php:576
-msgid "You are not allowed to do this."
 msgstr ""
 
 #: inc/Redirects/AdminPage.php:208
@@ -6272,7 +6789,7 @@ msgstr ""
 #: inc/SiteCheck/Controller.php:47
 #: inc/SiteCheck/DashboardBox.php:33
 #: inc/SiteCheck/DashboardBox.php:44
-#: inc/ThemeSettingsOverview/OverviewProvider.php:82
+#: inc/ThemeSettingsOverview/OverviewProvider.php:85
 msgid "Sicherheits-Check"
 msgstr ""
 
@@ -6394,10 +6911,6 @@ msgstr ""
 
 #: inc/SiteCheck/AdminPage.php:488
 msgid "None"
-msgstr ""
-
-#: inc/SiteCheck/AdminPage.php:495
-msgid "Save settings"
 msgstr ""
 
 #: inc/SiteCheck/AdminPage.php:504
@@ -8782,58 +9295,49 @@ msgstr ""
 msgid "Menu Items query type"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:105
+#: inc/ThemeSettingsOverview/OverviewProvider.php:108
 msgid "Built-in Modules"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:162
-msgid "Open"
-msgstr ""
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php:162
+#: inc/ThemeSettingsOverview/OverviewProvider.php:165
 #: inc/WPOptimizer/Settings.php:424
 msgid "Allowlist"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:162
-#: inc/WPOptimizer/Settings.php:425
-msgid "Closed"
-msgstr ""
-
-#: inc/ThemeSettingsOverview/OverviewProvider.php:165
+#: inc/ThemeSettingsOverview/OverviewProvider.php:168
 msgid "inactive: WP Optimizer disabled"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:167
+#: inc/ThemeSettingsOverview/OverviewProvider.php:170
 msgid "REST API for guests"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:219
+#: inc/ThemeSettingsOverview/OverviewProvider.php:222
 #: inc/WPOptimizer/AdminPage.php:403
 msgid "Performance"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:220
+#: inc/ThemeSettingsOverview/OverviewProvider.php:223
 #: inc/WPOptimizer/AdminPage.php:404
 msgid "Admin Enhancements"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:221
+#: inc/ThemeSettingsOverview/OverviewProvider.php:224
 #: inc/WPOptimizer/AdminPage.php:405
 msgid "Security & Privacy"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:222
+#: inc/ThemeSettingsOverview/OverviewProvider.php:225
 #: inc/WPOptimizer/AdminPage.php:406
 msgid "Users & Authors"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:223
+#: inc/ThemeSettingsOverview/OverviewProvider.php:226
 #: inc/WPOptimizer/AdminPage.php:407
 msgid "Frontend Cleanup"
 msgstr ""
 
-#: inc/ThemeSettingsOverview/OverviewProvider.php:224
+#: inc/ThemeSettingsOverview/OverviewProvider.php:227
 #: inc/WPOptimizer/AdminPage.php:408
 msgid "Media & Uploads"
 msgstr ""
