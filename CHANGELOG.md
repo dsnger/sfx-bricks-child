@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- WP Optimizer: "Disable jQuery" is now off by default on new installs. Sites that already saved their WP Optimizer settings keep their choice.
+
+### Fixed
+
+- WP Optimizer: with "Disable jQuery" on, WordPress audio and video players (the Bricks Audio element, the `[audio]` and `[video]` shortcodes, the media widgets) no longer try to load their jQuery-based player skin. They show the browser's own player, as before, and debug mode no longer logs a notice. Playlists (`[playlist]`) still need jQuery.
+
 ## [0.38.0] - 2026-11-22
 
 ### Added
