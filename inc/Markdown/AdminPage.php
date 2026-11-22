@@ -37,7 +37,11 @@ class AdminPage
         $name = Settings::OPTION_NAME;
         $parser = Request::parser_available();
         $on = \SFX\SFXBricksChildTheme::is_general_option_enabled('enable_markdown');
-        $run = $on && $parser;
+        // The checks make up to four loopback requests: only on the admin's request (nonce-checked).
+        $asked = isset($_GET['sfx_markdown_check']);
+        $nonce = $_GET['_wpnonce'] ?? ''; // Only a string is a nonce: ?_wpnonce[]= is an array.
+        $valid = $asked && is_string($nonce) && wp_verify_nonce(sanitize_text_field(wp_unslash($nonce)), 'sfx_markdown_check');
+        $run = $on && $parser && $valid;
         $newest = LlmsTxt::newest_listed_url();
         $llms_url = home_url('/llms.txt');
         ?>
@@ -86,11 +90,24 @@ class AdminPage
                 </div>
                 <div class="sfx-col" style="width: 50%;">
                     <div class="sfx-card">
-                        <h2 class="sfx-section-title"><?php esc_html_e('Check: /llms.txt', 'sfxtheme'); ?></h2>
-                        <?php if ($run) : self::print_llms(LoopbackCheck::run_llms($llms_url)); endif; ?>
+                        <?php if ($on && $parser) : ?>
+                            <p><?php esc_html_e('The checks ask this site for /llms.txt and for its newest listed page, to see whether the theme answers and whether a page cache gets in the way. They can take up to 20 seconds.', 'sfxtheme'); ?></p>
+                            <?php if ($asked && !$valid) : ?>
+                                <div class="notice notice-warning inline"><p><?php esc_html_e('The checks did not run because the link is no longer valid. Please click "Run checks" again.', 'sfxtheme'); ?></p></div>
+                            <?php endif; ?>
+                            <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>">
+                                <input type="hidden" name="page" value="<?php echo esc_attr(self::$menu_slug); ?>" />
+                                <input type="hidden" name="sfx_markdown_check" value="1" />
+                                <?php wp_nonce_field('sfx_markdown_check', '_wpnonce', false); ?>
+                                <p><button type="submit" class="button"><?php esc_html_e('Run checks', 'sfxtheme'); ?></button></p>
+                            </form>
+                        <?php endif; ?>
 
-                        <h2 class="sfx-section-title"><?php esc_html_e('Check: page cache', 'sfxtheme'); ?></h2>
                         <?php if ($run) : ?>
+                            <h2 class="sfx-section-title"><?php esc_html_e('Check: /llms.txt', 'sfxtheme'); ?></h2>
+                            <?php self::print_llms(LoopbackCheck::run_llms($llms_url)); ?>
+
+                            <h2 class="sfx-section-title"><?php esc_html_e('Check: page cache', 'sfxtheme'); ?></h2>
                             <?php if ($newest === null) : ?>
                                 <p><?php esc_html_e('No page to check.', 'sfxtheme'); ?></p>
                             <?php else : self::print_cache(LoopbackCheck::run_cache($newest)); endif; ?>

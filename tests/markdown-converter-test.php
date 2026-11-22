@@ -83,7 +83,7 @@ assert_same("ab\n", md('<p><span>a</span><span>b</span></p>'), '1: span unwrappe
 assert_same("keep\n\nend\n", md('<p>keep</p><script>s</script><style>x</style><svg><text>svgtext</text></svg><form><p>formtext</p></form>'
     . '<nav>navtext</nav><div hidden>h</div><div aria-hidden="true">ah</div><div role="navigation">rn</div>'
     . '<div class="x bricks-pagination">pg</div><header id="brx-header">hd</header><noscript>ns</noscript><template>tp</template>'
-    . '<iframe src="/x"></iframe><button>b</button><select><option>o</option></select><textarea>t</textarea>'
+    . '<iframe src="/x"></iframe><form><button>b</button></form><select><option>o</option></select><textarea>t</textarea>'
     . '<video>v</video><audio>au</audio><canvas>c</canvas><object>ob</object><dialog>d</dialog><p>end</p>'), '2: dropped elements');
 assert_same("a\n", md('<p>a<input hidden><embed src="/x"></p>'), '2: dropped void elements');
 
@@ -218,5 +218,83 @@ assert_same("1.\n2. second\n", md('<ol><li></li><li>second</li></ol>'), '9: empt
 assert_same("3. a\n4.\n5. c\n", md('<ol start="3"><li>a</li><li><script>x</script></li><li>c</li></ol>'), '9: emptied item keeps its number');
 assert_same("- text\n\n  1.\n  2. b\n", md('<ul><li>text<ol><li></li><li>b</li></ol></li></ul>'), '9: list with an empty first item does not follow a line directly');
 assert_same("## Studio \\#\n", md('<h2>Studio #</h2>'), '9: heading trailing # (Escape::heading_tail)');
+
+// 10. Buttons are unwrapped (spec Changes 2026-11-22): a Bricks accordion title is a button.
+assert_same("### Title\n\nPanel text\n", md('<div class="brxe-accordion-nested"><div class="brxe-block listening">'
+    . '<button class="brxe-block accordion-title-wrapper" role="button" aria-expanded="false" aria-controls="p1"><h3 class="brxe-heading">Title</h3><span class="brxe-icon"><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></span></button>'
+    . '<div class="brxe-block accordion-content-wrapper" id="p1"><p>Panel text</p></div></div></div>'), '10: accordion title inside a button kept');
+assert_same("a\n", md('<p>a</p><button><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></button>'), '10: icon-only button yields nothing');
+assert_same("a\n", md('<p>a</p><form><button>Send</button></form>'), '10: button inside a form dropped with it');
+// Adjacent Bricks buttons are separate words.
+assert_same("Mehr Infos Mehr Infos\n", md('<div><span class="brxe-button bricks-button">Mehr Infos</span><span class="brxe-button bricks-button">Mehr Infos</span></div>'), '10: adjacent span buttons separated');
+assert_same("[A](<https://ex.test/a>) [B](<https://ex.test/b>)\n", md('<div><a class="brxe-button" href="/a">A</a><a class="brxe-button" href="/b">B</a></div>'), '10: adjacent linked buttons separated');
+assert_same("Read [more](<https://ex.test/m>) now.\n", md('<p>Read <a class="brxe-button" href="/m">more</a> now.</p>'), '10: button in a sentence keeps normal spacing');
+assert_same("x A B y\n", md('<p>x <span class="brxe-button">A</span> <span class="brxe-button"> B </span> y</p>'), '10: no double spaces around buttons');
+
+// 11. Readability (spec § Changes 2026-11-22, Bricks element coverage test). Fixtures trimmed from Bricks 2.4.6 output.
+// Parts of one value in adjacent tags are separate words.
+assert_same("- $39 $ 29 90\n\n  pro Monat\n", md('<div class="brxe-pricing-tables"><ul class="pricing-tables"><li class="pricing-table repeater-item"><div class="pricing-table-pricing"><div class="pricing-table-price-wrapper"><span class="pricing-table-original-price">$39</span><span class="pricing-table-price-prefix">$</span><span class="pricing-table-price">29</span><span class="pricing-table-price-suffix">90</span></div><span class="pricing-table-price-meta">pro Monat</span></div></li></ul></div>'), '11: pricing table price parts separated');
+assert_same("DevAdmin November 22, 2026 0 Kommentare\n", md('<div class="brxe-post-meta post-meta"><span class="item">DevAdmin</span><span class="item">November 22, 2026</span><span class="item">0 Kommentare</span></div>'), '11: post meta items separated');
+assert_same("2026 · 0 Kommentare\n", md('<div class="brxe-post-meta post-meta"><span class="item">2026</span><span class="separator">·</span><span class="item">0 Kommentare</span></div>'), '11: post meta separator from the HTML kept');
+assert_same("Webdesign 80%\n\nSEO 90%\n", md('<div class="brxe-progress-bar"><div class="bar-wrapper"><label><span class="label">Webdesign</span><span class="percentage">80%</span></label><div class="bar"><span data-width="80%"></span></div></div><div class="bar-wrapper"><label><span class="label">SEO</span><span class="percentage">90%</span></label><div class="bar"><span data-width="90%"></span></div></div></div>'), '11: progress bar label and percent separated');
+assert_same("- Item $10.00\n\n  Desc\n- [Linked](<https://example.com/>) $5\n", md('<ul class="brxe-list"><li><div class="content"><span class="title">Item</span><span class="separator"></span><span class="meta">$10.00</span></div><div class="description">Desc</div></li><li data-highlight="H"><div class="content"><a href="https://example.com/"><span class="title">Linked</span></a><span class="separator"></span><span class="meta">$5</span></div></li></ul>'), '11: list item title and meta separated');
+assert_same("[Report](<https://example.com/a.pdf>) [Download](<https://example.com/a.pdf>)\n", md('<div class="brxe-file file-wrapper"><div class="file-content"><a id="f-file-name" class="file-name" href="https://example.com/a.pdf">Report</a><a class="file-download bricks-button bricks-background-primary" href="https://example.com/a.pdf" download aria-describedby="f-file-name">Download</a></div></div>'), '11: adjacent file links separated');
+assert_same("abc [d](<https://ex.test/x>)e fg h.\n", md('<div class="brxe-text"><p>a<strong>b</strong>c <a href="/x">d</a>e <span class="title">f</span>g <span class="item">h</span>.</p></div>'), '11: running text inside a Bricks element keeps its spacing');
+// The counter shows its end value, not the start value JS counts up from.
+$counter = static fn(string $options, string $count = '0'): ?string => md('<div class="brxe-counter" data-bricks-counter-options="' . htmlspecialchars($options, ENT_QUOTES) . '"><span class="prefix">$</span><span class="count">' . $count . '</span><span class="suffix">+</span></div>');
+assert_same("$1000+\n", $counter('{"countFrom":0,"countTo":"1000","duration":1000,"thousands":"","separator":""}'), '11: counter end value with prefix and suffix');
+assert_same("$1.000.000+\n", $counter('{"countFrom":0,"countTo":"1000000","duration":1000,"thousands":true,"separator":"."}'), '11: counter thousands separator from the options');
+assert_same("$1000000+\n", $counter('{"countFrom":0,"countTo":"1000000","duration":1000,"thousands":true,"separator":""}'), '11: counter locale grouping unknown: plain digits');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":'), '11: counter invalid JSON keeps the server text');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1k"}'), '11: counter non-numeric end keeps the server text');
+assert_same("$50+\n", $counter('{"countFrom":50,"countTo":"10"}', '50'), '11: counter end below start keeps the server text');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"5","thousands":true,"separator":"&amp;"}'), '11: counter odd separator keeps the server text');
+assert_same("$0+\n", md('<div class="brxe-counter"><span class="prefix">$</span><span class="count">0</span><span class="suffix">+</span></div>'), '11: counter without options keeps the server text');
+// Tabs: each pane under its own title.
+$tabs = '<div id="brxe-ab3262" class="brxe-tabs horizontal" data-open-tab="0"><ul class="tab-menu" role="tablist"><li class="tab-title repeater-item" role="tab" aria-selected="true" aria-controls="panel-ab3262-0" tabindex="0" id="brx-tab-ab3262-0"><span>Title 1</span></li><li class="tab-title repeater-item" role="tab" aria-selected="false" aria-controls="panel-ab3262-1" tabindex="-1" id="brx-tab-ab3262-1"><span>Title 2</span></li></ul><ul class="tab-content" role="presentation"><li class="tab-pane" role="tabpanel" aria-labelledby="brx-tab-ab3262-0" id="panel-ab3262-0" tabindex="0"><p>Content 1</p>' . "\n" . '</li><li class="tab-pane" role="tabpanel" aria-labelledby="brx-tab-ab3262-1" id="panel-ab3262-1" tabindex="0"><p>Content 2</p>' . "\n" . '</li></ul></div>';
+assert_same("## Leistungen\n\n### Title 1\n\nContent 1\n\n### Title 2\n\nContent 2\n\nafter\n", md('<h2>Leistungen</h2>' . $tabs . '<p>after</p>'), '11: repeater tabs, title above its pane, one level below the heading');
+assert_same("- a\n\n### Title 1\n\nContent 1\n\n### Title 2\n\nContent 2\n", md('<ul><li>a</li></ul>' . $tabs), '11: tabs without a preceding heading: ###');
+$nested = static fn(string $pane1, string $menu_extra = '', string $p2 = 'brxe-f1482f'): string => '<div id="brxe-f378f8" class="brxe-tabs-nested bricks-lazy-hidden" data-open-tab="0"><div id="brxe-fa9f03" class="brxe-block tab-menu bricks-lazy-hidden" role="tablist"><div id="brxe-d2dac1" class="brxe-div tab-title bricks-lazy-hidden" role="tab" aria-selected="true" tabindex="0" aria-controls="brxe-cc086c"><div id="brxe-4c5807" class="brxe-text-basic">T1</div></div><div id="brxe-2e430f" class="brxe-div tab-title bricks-lazy-hidden" role="tab" aria-selected="false" tabindex="-1" aria-controls="brxe-f1482f"><div id="brxe-9304ac" class="brxe-text-basic">T2</div></div>' . $menu_extra . '</div><div id="brxe-d8fbb4" class="brxe-block tab-content bricks-lazy-hidden"><div id="brxe-cc086c" class="brxe-block tab-pane bricks-lazy-hidden" role="tabpanel" aria-labelledby="brxe-d2dac1" tabindex="0">' . $pane1 . '</div><div id="' . $p2 . '" class="brxe-block tab-pane bricks-lazy-hidden" role="tabpanel" aria-labelledby="brxe-2e430f" tabindex="0"><div class="brxe-text"><p>C2</p>' . "\n" . '</div></div></div></div>';
+assert_same("##### Pre\n\n###### T1\n\n#### Own\n\nC1\n\n###### T2\n\nC2\n", md('<h5>Pre</h5>' . $nested('<h4 class="brxe-heading">Own</h4><div class="brxe-text"><p>C1</p></div>')), '11: nested tabs, a pane with its own heading');
+assert_same("###### Pre\n\n###### T1\n\nC1\n\n###### T2\n\nC2\n", md('<h6>Pre</h6>' . $nested('<p>C1</p>')), '11: tab title heading level stops at 6');
+assert_same("T1\n\nT2\n\nT3\n\nC1\n\nC2\n", md($nested('<p>C1</p>', '<div class="brxe-div tab-title" role="tab" aria-controls="brxe-x"><div class="brxe-text-basic">T3</div></div>')), '11: tabs count mismatch falls back to document order');
+assert_same("T1\n\nT2\n\nC1\n\nC2\n", md($nested('<p>C1</p>', '', 'brxe-other')), '11: tabs ids that do not pair fall back to document order');
+assert_same("- a\n\n* T1\n* T2\n\n- C1\n- C2\n", md('<ul><li>a</li></ul><div class="brxe-tabs"><ul class="tab-menu" role="tablist"><li class="tab-title" role="tab" aria-controls="x1"><span>T1</span></li><li class="tab-title" role="tab" aria-controls="x9"><span>T2</span></li></ul><ul class="tab-content"><li class="tab-pane" id="x1"><p>C1</p></li><li class="tab-pane" id="x2"><p>C2</p></li></ul></div>'), '11: repeater tabs that do not pair keep today\'s output');
+
+// Gate B mdrd5v2n8q pass 1: nested tabs, heading level after a splice, text before the tabs.
+$one = static fn(string $title, string $body, string $id): string => '<div class="brxe-tabs-nested"><div class="tab-menu"><div class="tab-title" aria-controls="' . $id . '">' . $title . '</div></div><div class="tab-content"><div class="tab-pane" id="' . $id . '">' . $body . '</div></div></div>';
+$inner = '<div class="brxe-tabs-nested"><div class="tab-menu"><div class="tab-title" aria-controls="ia">Inner A</div><div class="tab-title" aria-controls="ib">Inner B</div></div><div class="tab-content"><div class="tab-pane" id="ia"><p>IA</p></div><div class="tab-pane" id="ib"><p>IB</p></div></div></div>';
+assert_same("### Outer\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n", md($one('Outer', $inner, 'outer')), '11: tabs inside a pane paired on their own');
+assert_same("### Outer1\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n\n### Outer2\n\nO2\n", md('<div class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="o1">Outer1</div><div class="tab-title" aria-controls="o2">Outer2</div></div><div class="tab-content"><div class="tab-pane" id="o1">' . $inner . '</div><div class="tab-pane" id="o2"><p>O2</p></div></div></div>'), '11: outer tabs stay paired around inner tabs');
+assert_same("## Section\n\n### First\n\nC1\n\n#### Second\n\nC2\n", md('<h2>Section</h2>' . $one('<h5>First</h5>', '<p>C1</p>', 'first') . $one('Second', '<p>C2</p>', 'second')), '11: heading level follows the paired output');
+assert_same("BEFORE\n\n### T\n\nC\n\nAFTER\n", md('BEFORE<span class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="x">T</div></div><div class="tab-content"><div class="tab-pane" id="x">C</div></div></span>AFTER'), '11: text before inline tabs is kept');
+assert_same("BEFORE\n\n### T\n\nC\n\nAFTER\n", md('BEFORE<span class="brxe-tabs"><span class="tab-menu"><span class="tab-title" aria-controls="x">T</span></span><span class="tab-content"><span class="tab-pane" id="x">C</span></span></span>AFTER'), '11: text before inline tabs stays out of the title');
+// Gate B mdrd5v2n8q pass 2: inner tabs take their level from headings that are emitted, also when the outer tabs do not pair.
+$bad_id = str_replace('id="outer"', 'id="missing"', $one('Outer', $inner, 'outer'));
+assert_same("## Section\n\nOuter\n\n### Inner A\n\nIA\n\n### Inner B\n\nIB\n\n#### After\n\nA\n", md('<h2>Section</h2>' . $bad_id . $one('After', '<p>A</p>', 'after')), '11: outer ids do not pair, inner tabs below the real heading, next set after them');
+assert_same("## Section\n\n##### Outer\n\n###### Inner A\n\nIA\n\n###### Inner B\n\nIB\n", md('<h2>Section</h2>' . str_replace('id="outer"', 'id="missing"', $one('<h5>Outer</h5>', $inner, 'outer'))), '11: outer title kept as h5, inner tabs below it');
+$extra_title = str_replace('<div class="tab-title" aria-controls="outer">Outer</div>', '<div class="tab-title" aria-controls="outer">Outer</div><div class="tab-title" aria-controls="absent">Missing pane</div>', $one('Outer', $inner, 'outer'));
+assert_same("## Section\n\nOuter\n\nMissing pane\n\n### Inner A\n\nIA\n\n### Inner B\n\nIB\n", md('<h2>Section</h2>' . $extra_title), '11: outer count mismatch, inner tabs below the real heading');
+assert_same("## Section\n\n### Outer\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n", md('<h2>Section</h2>' . $one('Outer', $inner, 'outer')), '11: outer and inner paired');
+$bad_inner = str_replace('id="ib"', 'id="ix"', $inner);
+assert_same("## Section\n\n### Outer\n\nInner A\n\nInner B\n\nIA\n\nIB\n\n#### After\n\nA\n", md('<h2>Section</h2>' . $one('Outer', $bad_inner, 'outer') . $one('After', '<p>A</p>', 'after')), '11: outer paired, inner not, next set below the outer title');
+assert_same("## Section\n\nOuter\n\nInner A\n\nInner B\n\nIA\n\nIB\n\n### After\n\nA\n", md('<h2>Section</h2>' . str_replace('id="outer"', 'id="missing"', $one('Outer', $bad_inner, 'outer')) . $one('After', '<p>A</p>', 'after')), '11: neither pairs, next set below the real heading');
+assert_same("## Section\n\nO1\n\n### Inner A\n\nIA\n\n### Inner B\n\nIB\n\nO2\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n", md('<h2>Section</h2>' . str_replace('id="o1"', 'id="m1"', $one('O1', $inner, 'o1')) . str_replace('id="o2"', 'id="m2"', $one('O2', $inner, 'o2'))), '11: two failed outer sets in a row, the second inner set below the first one\'s headings');
+// Word boundaries around void Bricks elements and at the start of a link.
+assert_same("A ![B](<https://ex.test/x>) C\n", md('<p>A<img class="brxe-image" src="/x" alt="B">C</p>'), '11: Bricks image is a word of its own');
+assert_same("pre [middle](<https://ex.test/x>) post\n", md('<p>pre<a href="/x"><span class="brxe-text">middle</span></a>post</p>'), '11: link starting with a Bricks element separated');
+assert_same("## pre [middle](<https://ex.test/x>) post\n", md('<h2>pre<a href="/x"><span class="brxe-text">middle</span></a>post</h2>'), '11: the same in a heading');
+// Counter values JS would show differently keep the server text.
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":9007199254740993,"thousands":false}'), '11: counter beyond Number.MAX_SAFE_INTEGER keeps the server text');
+assert_same("$9007199254740991+\n", $counter('{"countFrom":0,"countTo":9007199254740991,"thousands":false}'), '11: counter at Number.MAX_SAFE_INTEGER converts');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1000","thousands":true,"separator":"$$"}'), '11: counter separator with $$ keeps the server text');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1000","thousands":true,"separator":"$`"}'), '11: counter separator with $` keeps the server text');
+
+// Risk-pass Minor of cycle mdrd5v2n8q: a void tab menu or tab content, or tabs with no pair, keep today's output.
+assert_same("before\n\n![Visible illustration](<https://ex.test/important.png>)\n\nafter\n", md('<p>before</p><div class="brxe-tabs"><img class="tab-menu" src="/important.png" alt="Visible illustration"><div class="tab-content"></div></div><p>after</p>'), '11: a void tab menu does not pair, the image stays');
+assert_same("T\n\nC\n\n![Pic](<https://ex.test/i.png>)\n", md('<div class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="x">T</div></div><div class="tab-content"><div class="tab-pane" id="x">C</div></div><img class="tab-content" src="/i.png" alt="Pic"></div>'), '11: a void tab content does not pair, the image stays');
+assert_same("a\n\nb\n", md('<p>a</p><div class="brxe-tabs"><div class="tab-menu"></div><div class="tab-content"></div></div><p>b</p>'), '11: tabs with no title and no pane do not pair');
+// Gate B cycle mdrm6k3w9t: with no pair, a menu holding visible content (here a counter) must not be spliced away.
+assert_same("a\n\n12\n\nb\n", md('<p>a</p><div class="brxe-tabs"><div class="tab-menu brxe-counter" data-bricks-counter-options="{&quot;countFrom&quot;:0,&quot;countTo&quot;:12}"><span class="count">0</span></div><div class="tab-content"></div></div><p>b</p>'), '11: tabs with no pair keep a menu\'s visible content');
 
 echo "PASS: markdown-converter ({$checks} checks)\n";

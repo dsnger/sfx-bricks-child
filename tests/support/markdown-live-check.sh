@@ -300,7 +300,7 @@ echo "== AC-12: Bricks lazy-loaded images (front page)"
 cp "$TMP/front-html.b" "$LOCK/front.html"
 dest=$(wpe "\$d = wp_upload_dir()['basedir'] . '/sfx-md-live.lock/';
   if (trim((string) @file_get_contents(\$d . 'owner')) !== '$RUN') { echo 'UNREADABLE'; return; }
-  \$drop = ['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','SVG','MATH','IFRAME','FORM','SELECT','TEXTAREA','BUTTON','NAV','VIDEO','AUDIO','CANVAS','OBJECT','EMBED','DIALOG'];
+  \$drop = ['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','SVG','MATH','IFRAME','FORM','SELECT','TEXTAREA','NAV','VIDEO','AUDIO','CANVAS','OBJECT','EMBED','DIALOG'];
   \$p = WP_HTML_Processor::create_full_parser((string) file_get_contents(\$d . 'front.html')); if (!\$p) { echo 'UNPARSED'; return; }
   \$root = null; \$skip = null;
   try { while (\$p->next_token()) {
@@ -474,6 +474,17 @@ gate_block() {
   done
   for n in robots feed; do
     excerpt "$g${setup}1-$n"
+    if [ "$g" = pp ]; then
+      # The password gate covers /llms.txt whatever its query string (2026-11-22), with
+      # or without an SEO plugin's llms.txt: equal to module off alone would accept a
+      # leak present in both states.
+      for state in 0 1; do
+        eq "$g/$setup llms.txt?$n module $state status (login redirect)" "$(st $g$setup$state-$n)" 302
+        contains "$g/$setup llms.txt?$n module $state Location" "$(hd $g$setup$state-$n location)" "sfx-protected=login"
+        hasnt "$g/$setup llms.txt?$n module $state no page content" "$g$setup$state-$n" "$MARK1120"
+        hasnt "$g/$setup llms.txt?$n module $state no index lines" "$g$setup$state-$n" "?markdown=1>)"
+      done
+    fi
     eq "$g/$setup llms.txt?$n status = module off" "$(st $g${setup}1-$n)" "$(st $g${setup}0-$n)"
     eq "$g/$setup llms.txt?$n content-type = module off" "$(hd $g${setup}1-$n content-type)" "$(hd $g${setup}0-$n content-type)"
     eq "$g/$setup llms.txt?$n Location = module off" "$(hd $g${setup}1-$n location)" "$(hd $g${setup}0-$n location)"

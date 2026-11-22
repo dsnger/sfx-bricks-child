@@ -104,8 +104,9 @@ Calls made in this run (autonomous run approved; Claude's choices, recorded per 
   (`$wp->matched_rule === '^llms\.txt$'`) and the status is 200. In both cases Bricks maintenance
   must not apply to this request (`\Bricks\Maintenance::is_applied()`, a public static; a Bricks
   without that method counts as "applied", so the index is not served). The query-string rule
-  closes `?robots=1` and `?feed=…`, which would exempt the request from the site-wide password
-  gate. Rank Math is not switched off: the theme answers its address first (priority 1 before its
+  closes `?robots=1` and `?feed=…`, which the site-wide password gate exempted until 2026-11-22;
+  since then that gate covers `/llms.txt` with any query string (§ Changes), and the rule stays as
+  a second line against a gate that still exempts such requests. Rank Math is not switched off: the theme answers its address first (priority 1 before its
   10), and nothing of Rank Math's stored state changes (D4).
 - **D14 — post types offered** are public types that can be viewed singly (`publicly_queryable`,
   plus `page`), except `attachment` and Bricks' `bricks_template` (public, but Bricks denies
@@ -238,7 +239,7 @@ the parser's depth, so closing an element always ends exactly what it opened.
   real address in `data-src` (`includes/frontend.php:1187-1226`); when `src` is missing or a
   `data:` URL and `data-src` is set, `data-src` is used.
 - **Dropped with their whole subtree:** elements with `id="brx-header"` or `id="brx-footer"`; `head`, `script`, `style`, `noscript`, `template`, `svg`,
-  `math`, `iframe`, `form`, `select`, `textarea`, `button`, `nav`, `video`, `audio`, `canvas`,
+  `math`, `iframe`, `form`, `select`, `textarea`, `nav`, `video`, `audio`, `canvas`,
   `object`, `embed`, `dialog`; any element with the `hidden` attribute, `aria-hidden="true"` or
   `role="navigation"`; Bricks pagination (`class` contains `bricks-pagination`,
   `includes/helpers.php:1192-1207`).
@@ -246,6 +247,31 @@ the parser's depth, so closing an element always ends exactly what it opened.
   `em`/`i` and inline `code` (changed 2026-11-21, see Changes): their text is written as escaped
   prose, without `**`, `*` or backticks. Slider slides therefore stay as
   ordinary content, in document order.
+- **Word boundaries (Bricks):** an element whose class list holds a class starting with `brxe-` or
+  `bricks-` (a Bricks element, a Bricks button), and inside a pricing table, post meta, progress
+  bar or list element (`brxe-pricing-tables`, `brxe-post-meta`, `brxe-progress-bar`, `brxe-list`)
+  an element with one of its part classes (`pricing-table-original-price`,
+  `pricing-table-price-prefix`, `pricing-table-price`, `pricing-table-price-suffix`; `item`,
+  `separator`; `label`, `percentage`; `title`, `meta`), is a word boundary: a single space
+  separates it from the text next to it, because Bricks prints these parts with no whitespace
+  between them (`20260 Kommentare` before). Nothing is added that the HTML does not hold: a price
+  `$`/`29`/`90` becomes `$ 29 90`, a post-meta separator `·` stays as printed. Outside those
+  elements, part class names change nothing, and running text keeps its spacing.
+- **Bricks counter:** the `span.count` directly inside a `brxe-counter` element holds the start
+  value that Bricks' JavaScript counts up from; its text is replaced by the end value from the
+  element's `data-bricks-counter-options` JSON (`countTo`, `includes/elements/counter.php`,
+  `assets/js/frontend.js` `bricksCounterFn`), grouped with the JSON's `separator` when
+  `thousands` is set (digits alone when the separator is empty, since JavaScript then groups by
+  the visitor's locale). Prefix and suffix stay. In doubt — no or invalid JSON, a start or end that
+  is not a non-negative whole number, an end not above the start, an unexpected `thousands` or a
+  separator holding `&`, `<` or a digit — the server text stays.
+- **Bricks tabs:** in a `brxe-tabs` or `brxe-tabs-nested` element (`.tab-menu` > `.tab-title`,
+  then `.tab-content` > `.tab-pane`), each pane is written after its title, which becomes a
+  heading one level below the last heading written before the tabs (`###` when there is none,
+  at most `######`); the title list is not written separately. A title pairs with the pane whose
+  `id` equals the title's `aria-controls`. When they cannot be paired with certainty — counts or
+  ids that do not match, a title that is not exactly one line, any other child or text between
+  them — titles and panes stay in document order as before.
 - **URLs** (`href`, `src`, `data-src`): decoded by the parser; control characters and surrounding
   whitespace removed; resolved against the request's canonical URL as a browser would: an empty
   reference or a fragment-only reference (`#section`) is the base URL without its fragment plus
@@ -302,8 +328,8 @@ the same for every visitor who gets past the password gate.
 - **Yoast SEO** and **All in One SEO** write a real `llms.txt` into the site root. The web server
   delivers a real file before WordPress runs, so the theme cannot outrank them. The theme never
   deletes or rewrites that file (anti-goal).
-- **Settings-page check:** when the settings page loads with the module on and D10's parser
-  available, it requests `home_url('/llms.txt')` once (loopback, 5 s timeout, no redirects
+- **Settings-page check:** on the admin's request (a "Run checks" button on the settings page,
+  nonce-checked), with the module on and D10's parser available, it requests `home_url('/llms.txt')` once (loopback, 5 s timeout, no redirects
   followed) and reports exactly one outcome:
   - *theme's version* — status 200 with header `X-SFX-Llms-Txt: 1`;
   - *redirected* — a 3xx response: "/llms.txt redirects to <Location>" — for example the site-wide
@@ -334,7 +360,8 @@ A submenu page under the theme's settings (pattern of `EditorProse\AdminPage`), 
 `manage_options`, saved through the Settings API (`options.php`, which checks nonce and capability —
 invariant 2). It shows: the included post types (D14); the three addresses as examples for this
 site; a notice when WordPress is older than 6.7 (D10); the `llms.txt` check above; and the
-**cache check** (D16), only with the module on and D10's parser available. It takes the newest
+**cache check** (D16), only on the admin's request and with the module on and D10's parser
+available. It takes the newest
 post of an included type that `llms.txt` would list (none: "no page to check") and requests by
 loopback, without following redirects: first its `?markdown=1` address as the control — not
 `text/markdown`: "this page does not convert, so the check cannot run" (for example markup the
@@ -397,11 +424,12 @@ request, so a clean result proves nothing about the CDN. A failed or redirected 
   password protection on — `?markdown=1`, `Accept` and `/llms.txt` give the login redirect; Bricks
   maintenance mode on — they give the maintenance answer; in both, `/llms.txt?robots=1` and
   `/llms.txt?feed=rss2` give exactly what the same request gives with the module off, and never
-  the theme's index or its marker header. The module-off response is the baseline per plugin
+  the theme's index or its marker header. With the site-wide password protection on, both also
+  give the login redirect with the module on and off, with and without Rank Math's llms module,
+  and no index content: the gate covers `/llms.txt` whatever its query string (§ Changes,
+  2026-11-22). With Bricks maintenance mode on, the module-off response is the baseline per plugin
   setup: without Rank Math it is WordPress' robots or feed response; with Rank Math's llms module
-  on, Rank Math 1.0.282 itself answers `/llms.txt?robots=1` with its own index past the password
-  gate (its handler checks only its query var) — an existing exposure of that plugin, not added by
-  the theme, recorded in `todos.md`; a Redirects 410 rule on `/llms.txt` — 410 stays.
+  on, whatever Rank Math 1.0.282 answers there; a Redirects 410 rule on `/llms.txt` — 410 stays.
 
 ## Sources and impact boundary
 
@@ -491,3 +519,105 @@ inline markers go.
 - **Reviews already run:** Gate A cycle mdag7k2p (spec) → no rule found (`.claude/review-gates.md`
   lines 4–5, 49–56) that reopens a closed Gate A for an amendment → human decision: Daniel decided
   the change; Gate B cycle mdgb4k7r2x reviews its implementation.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation.
+Baseline: 8987a46. Both settings-page checks made up to four loopback requests (5 s timeout each)
+on every load of the settings page; they now run only when the admin asks for them.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § `/llms.txt`, Settings-page check: "when the settings page loads with the module on and D10's parser available, it requests `home_url('/llms.txt')` once" | moved → on the admin's request: a "Run checks" button (GET to the same page with `sfx_markdown_check=1` and a nonce for the action `sfx_markdown_check`); without a valid nonce the checks do not run and the page says so | none |
+| § Settings screen: "the **cache check** (D16), only with the module on and D10's parser available" (its loopback requests) | moved → on the admin's request, with the same button and nonce | none |
+| § Settings screen: the examples, the WordPress 6.7 notice, the CDN limit sentence, the capability `manage_options` | kept | none |
+
+- **Added without an earlier condition:** one line on the settings page saying what the checks do;
+  the button is shown only while the checks can run (module on, D10's parser available).
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: when the two settings-page checks run; out: what they request and
+  report.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/AdminPage.php` and
+  `tests/markdown-admin-page-test.php` are updated in this change.
+- **Reviews already run:** none for this change.
+
+**Changed 2026-11-22 — gap found.** Decided by Daniel, 2026-11-22, in conversation, after he
+reported the missing accordion title. Baseline: 4908d54. Bricks renders a nestable accordion's
+title as a `button` with the heading inside it, so dropping `button` with its subtree lost every
+accordion title on the DDEV demo front page.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § Conversion, Dropped: `button` | dropped — unwrapped like other elements; its text stays | none |
+| Story AC-2 (headings, paragraphs, lists, links, images) | kept | none |
+
+- **Added without an earlier condition:** an element whose class list contains `brxe-button`
+  (a Bricks button, rendered as `span` without a link or `a` with one) is a word boundary: a single
+  space separates it from the text next to it, because adjacent Bricks buttons have no whitespace
+  between them in the HTML (`Mehr InfosMehr Infos` before).
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: `button` elements and Bricks buttons; out: buttons inside a dropped
+  element (`form`, `nav`, …), which still go with it; `svg` stays dropped, so an icon-only button
+  yields nothing.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/Converter.php`,
+  `tests/markdown-converter-test.php`, `tests/markdown-commonmark-test.mjs`,
+  `tests/support/markdown-convert-cases.php` and the drop-list copy in
+  `tests/support/markdown-live-check.sh` are updated in this change.
+- **Reviews already run:** none for this change.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation.
+Baseline: 8987a46. With Rank Math's llms module on, `/llms.txt?robots=1` and `/llms.txt?feed=rss2`
+reached Rank Math's index past the site-wide password gate, because that gate exempted every
+`is_robots()` request and, with `allow_feeds` on, every feed. The gate now covers `/llms.txt` with
+any query string, and its robots exemption applies only to `/robots.txt` itself
+(`docs/superpowers/specs/2026-07-17-password-protected-design.md`, § Changes). Bricks maintenance
+mode is a separate gate and is not changed.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| D13: "The query-string rule closes `?robots=1` and `?feed=…`, which would exempt the request from the site-wide password gate" | kept, reason moved — the rule stays; the password gate no longer exempts these requests, so it is a second line against a gate that still does | none |
+| § Verification, Abuse path: with the password protection on, `/llms.txt?robots=1` and `/llms.txt?feed=rss2` give "exactly what the same request gives with the module off" | kept, narrowed — with the password protection on they must also give the login redirect, module on and off, with and without Rank Math, with no index content | none |
+| § Verification, Abuse path: "with Rank Math's llms module on, Rank Math 1.0.282 itself answers `/llms.txt?robots=1` with its own index past the password gate … recorded in `todos.md`" | dropped — the exposure is closed (`todos.md`, Done); the module-off baseline stays for Bricks maintenance mode | none |
+| Story AC-5 (gates and access are respected) | kept | none |
+
+- **Added without an earlier condition:** none.
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: the site-wide password gate on `/llms.txt` and on `?robots=1`
+  requests; out: Bricks maintenance mode, the theme's own `/llms.txt` matching (D13), real
+  `/robots.txt` and real feeds.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/PasswordProtected/Controller.php`, its two tests,
+  `inc/Markdown/LlmsTxt.php` (comment) and `tests/support/markdown-live-check.sh` are updated in
+  this change.
+- **Reviews already run:** Gate B cycle mdfu4w8k2r reviews its implementation; pass 1 found
+  this specification still describing the old exemption.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation,
+after the Bricks element coverage test. Baseline: 9097632. The test found Markdown that is
+complete but misleading: parts of one value glued together (`$2990` for a price of 29.90,
+`20260 Kommentare` for "2026" and "0 Kommentare"), a counter showing its start value `0` where a
+visitor sees the end value, and tab titles listed apart from their panes.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § Conversion, Everything else: "its text stays, its tag goes" | kept, narrowed — except the Bricks counter's start value, which is replaced by its end value (§ Conversion, Bricks counter) | none |
+| § Conversion, Everything else: "Slider slides therefore stay as ordinary content, in document order" | kept; for Bricks tabs moved → each pane after its title (§ Conversion, Bricks tabs), document order when they cannot be paired | none |
+| § Changes 2026-11-22 (gap found): "an element whose class list contains `brxe-button` … is a word boundary" | kept, widened → every class starting with `brxe-` or `bricks-`, and the part classes of four Bricks elements inside them (§ Conversion, Word boundaries) | none |
+| Story AC-2 (headings, paragraphs, lists, links, images) | kept | none |
+
+- **Added without an earlier condition:** a tab title is written as a heading one level below
+  the last heading before the tabs.
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: Bricks pricing tables, post meta, progress bars, lists, file links,
+  counters, both tabs elements; out: content Bricks fills only through JavaScript (animated typing,
+  countdown, reading time), filter option counts, the post title prefix and suffix, and the
+  repeater/nested accordions, which already read well.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/Converter.php`,
+  `tests/markdown-converter-test.php`, `tests/markdown-commonmark-test.mjs` and
+  `tests/support/markdown-convert-cases.php` are updated in this change.
+- **Reviews already run:** none for this change.

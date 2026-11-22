@@ -125,8 +125,10 @@ No query state, so REST can use it. `current_user_can()` / `is_user_logged_in()`
 
 `is_protection_enabled() && ! is_visitor_exempt()` and not a query-exempt route:
 
-- `allow_feeds` on and `is_feed()`
-- `is_robots()`
+- `allow_feeds` on and `is_feed()`, unless the request is for `/llms.txt`
+- `is_robots()` on a request that really is `robots.txt` (WordPress' robots rule matched, or the home-relative path `robots.txt`, also `index.php/robots.txt`), unless the request is for `/llms.txt`
+
+`?robots=1` makes `is_robots()` true on any address, and `?robots=1` or `?feed=…` on `/llms.txt` let an SEO plugin's llms.txt (Rank Math) answer past the gate; a request counts as `/llms.txt` by its raw path (also `index.php/llms.txt`), Rank Math's matched rule, the parsed request or its `llms_txt` query var. A gated feed for `/llms.txt` gets the login redirect, not `maybe_disable_feeds()` (§ Changes, 2026-11-22).
 
 Passes through an `sfx_pp_is_active` filter for per-site escape hatches.
 
@@ -554,7 +556,7 @@ These are unit tests over isolated logic. They cover the decisions that are sile
 4. Each exemption (IP, admin, logged-in user) flips `is_visitor_exempt()` only when its own option is on.
 5. Absent / non-string `REMOTE_ADDR` ⇒ no IP exemption, no error.
 6. `is_active()` false for an exempt visitor, true otherwise.
-7. `is_active()` false when `is_robots()`; false when `is_feed()` **and** `allow_feeds` on; true when `is_feed()` and `allow_feeds` off.
+7. `is_active()` false for a real `robots.txt` request; true when `is_robots()` on any other address (`?robots=1`); false when `is_feed()` **and** `allow_feeds` on; true when `is_feed()` and `allow_feeds` off; true for `/llms.txt` with `?robots=1` or `?feed=…`, and for an allowed feed that WordPress parsed as `llms.txt` (matched rule, parsed request, `llms_txt` query var), each signal on its own.
 8. **`is_protection_enabled()` stays true for an exempt visitor** — the invariant that keeps `DONOTCACHEPAGE` on and stops an allowlisted IP warming a public cache with protected content.
 9. Bypass key comparison: correct matches; wrong, empty-submitted, empty-stored, and array-valued all fail.
 
@@ -586,3 +588,31 @@ Also not carried over: the plugin's `$_GET['password-protected']` force-on branc
 - **No revocation.** See [Revocation](#revocation--a-documented-invariant).
 - **No throttling.** Per the threat model. Called out on the admin page.
 - **Concurrent saves.** Last-writer-wins on a single row. Each writer persists a validated snapshot, so no invalid state results — but an admin can silently overwrite another's change made seconds earlier. Accepted; a locking scheme is not justified for a one-page settings screen.
+
+## Changes
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation.
+Baseline: 8987a46. With Rank Math's llms module on, `/llms.txt?robots=1` and `/llms.txt?feed=rss2`
+listed the site's page titles and addresses past the gate, and `?robots=1` passed the gate on any
+address, because `is_active()` exempted every `is_robots()` request and, with `allow_feeds` on,
+every feed.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § `is_active()`: query-exempt route "`is_robots()`" | narrowed — only a request that really is `robots.txt`, and never `/llms.txt` | none |
+| § `is_active()`: query-exempt route "`allow_feeds` on and `is_feed()`" | narrowed — never for `/llms.txt`; a gated `/llms.txt` feed gets the login redirect | none |
+| § Testing, predicates test 7: "`is_active()` false when `is_robots()`" | narrowed — as above, with the `/llms.txt` cases and each parsed signal tested on its own | none |
+| § Testing, manual checklist 9: "Feed reachable with `allow_feeds` on, blocked with it off" | kept | none |
+
+- **Added without an earlier condition:** none.
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: the robots and feed exemptions of `is_active()`; out: the visitor
+  exemptions, REST, cache suppression, Bricks maintenance mode.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/PasswordProtected/Controller.php`,
+  `tests/password-protected-predicates-test.php` and `tests/password-protected-controller-test.php`
+  are updated in this change; `docs/superpowers/specs/2026-11-21-markdown-for-agents-design.md`
+  records the same decision (§ Changes).
+- **Reviews already run:** Gate B cycle mdfu4w8k2r reviews its implementation; pass 1 found
+  this specification still describing the old exemption.

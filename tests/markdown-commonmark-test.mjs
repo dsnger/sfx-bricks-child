@@ -101,6 +101,8 @@ means('nbsp_edge', '<p>', 'FirstSecond\u00A0end');
 means('emsp_edge', '<p>', 'ab\u2003tail');
 // Markdown delimiters inside strong/em/code render literally.
 means('literal_marks', '<p>**a** *b* _c_ `d` ``e``</p>');
+// Two adjacent Bricks button links stay two links with a space between them.
+means('button_links', '<p><a href="https://ex.test/a">A</a> <a href="https://ex.test/b">B</a></p>');
 means('link_code', '<p><a href="https://ex.test/x">a</a>b<a href="https://ex.test/y">c</a></p>');
 means('bang_image', '<p>Hi!<img src="https://ex.test/i.png" alt="i" /><img src="https://ex.test/j.png" alt="j" /></p>');
 means('emph_code', '<p>abc</p>');
@@ -126,5 +128,14 @@ means('ol_empty_first', '<ol>\n<li></li>\n<li>second</li>\n</ol>');
 means('ol_empty_nested', '<p>text</p>\n<ol>\n<li></li>\n<li>b</li>\n</ol>');
 // llms.txt: a trailing # in the site name stays heading text.
 means('llms_heading', '<h1>Studio #</h1>');
+// ... also when spaces or a tab follow it.
+means('llms_heading_space', '<h1>Studio #</h1>');
+
+// Readability (spec § Changes 2026-11-22): parts of one value stay separate words, the counter shows
+// its end value, and each tab pane follows its title as the next heading level.
+means('price_parts', '<p>$ 29 90</p>');
+means('post_meta', '<p>2026 0 Kommentare</p>');
+means('counter_end', '<p>1000+</p>');
+means('tabs_paired', '<h2>S</h2>\n<h3>T1</h3>\n<p>C1</p>\n<h3>T2</h3>\n<p>C2</p>');
 
 console.log(`markdown-commonmark-test: ${checks} checks passed`);

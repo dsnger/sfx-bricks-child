@@ -82,7 +82,7 @@ function get_post_status($post = null) { return $post->post_status; }
 function post_password_required($post = null) { return false; }
 function get_option($name, $default = false) { return $name === 'page_for_posts' ? '0' : $default; }
 function get_post_types($args = [], $output = 'names') { return ['page' => (object) ['name' => 'page', 'label' => 'Pages']]; }
-function wp_get_canonical_url($post = null) { return $post instanceof WP_Post ? 'https://ex.test/sample/' : false; }
+function wp_get_canonical_url($post = null) { return $post instanceof WP_Post ? apply_filters('get_canonical_url', 'https://ex.test/sample/', $post) : false; }
 function add_query_arg($key, $value, $url) { return $url . '?' . $key . '=' . $value; }
 function esc_url($url) { return $url; }
 function register_setting($group, $name, $args = []) { return true; }
@@ -170,6 +170,80 @@ switch ($scenario) {
                 throw new RuntimeException('outer handler refuses CLEAN');
             }
             return $buffer;
+        });
+        break;
+    case 'canonical-throw':
+        // A canonical filter that prints, changes the headers and the status, then throws, after the capture was taken.
+        add_filter('get_canonical_url', static function (string $url): string {
+            echo 'CANONICAL-NOISE';
+            header('X-Canonical-Filter: 1');
+            header('Content-Type: text/plain');
+            http_response_code(503);
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
+    case 'canonical-throw-buffer':
+        // The same, but the filter opens a buffer of its own and leaves it open when it throws.
+        add_filter('get_canonical_url', static function (string $url): string {
+            echo 'CANONICAL-NOISE';
+            ob_start();
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
+    case 'canonical-throw-buffer-clean-throw':
+        // The filter leaves a buffer open whose handler throws when the recovery cleans it.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer, int $phase): string {
+                if ($phase & PHP_OUTPUT_HANDLER_CLEAN) {
+                    throw new RuntimeException('leftover handler refuses CLEAN');
+                }
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
+    case 'canonical-throw-buffer-status':
+        // The filter leaves a buffer open whose handler changes the status when the recovery cleans it.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer): string {
+                http_response_code(503);
+                header('X-Leftover-Handler: 1');
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
+    case 'canonical-buffer-status':
+        // The filter returns normally but leaves a buffer open whose handler changes the status when it is cleaned.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer): string {
+                http_response_code(503);
+                header('X-Leftover-Handler: 1');
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            return $url;
+        });
+        break;
+    case 'canonical-non-removable-notice':
+        // Finding (cycle mdrd5v2n8q): a site handler turns notices into exceptions, and the filter
+        // leaves a buffer the cleanup cannot remove, so each ob_end_clean() attempt throws without progress.
+        // Only ob_end_clean()'s notice, as in the review probe: the shutdown drain's ob_end_flush() notice on
+        // the same leftover buffer would turn into an uncaught exception and a 500 that the site's buffer
+        // causes with or without the module (core's rel_canonical() runs the same filter).
+        set_error_handler(static function (int $level, string $message, string $file = '', int $line = 0): bool {
+            if (($level & E_NOTICE) && strpos($message, 'ob_end_clean') === 0) {
+                throw new ErrorException($message, 0, $level, $file, $line);
+            }
+            return false;
+        });
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(null, 0, PHP_OUTPUT_HANDLER_CLEANABLE | PHP_OUTPUT_HANDLER_FLUSHABLE);
+            return $url;
         });
         break;
     case 'enhance-user-error':

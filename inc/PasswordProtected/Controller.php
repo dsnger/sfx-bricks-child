@@ -117,11 +117,11 @@ class Controller
     {
         $active = self::is_protection_enabled() && !self::is_visitor_exempt();
 
-        if ($active && is_robots()) {
+        if ($active && self::is_robots_txt_request() && !self::is_llms_txt_request()) {
             $active = false;
         }
 
-        if ($active && Settings::get()['allow_feeds'] && is_feed()) {
+        if ($active && Settings::get()['allow_feeds'] && is_feed() && !self::is_llms_txt_request()) {
             $active = false;
         }
 
@@ -243,7 +243,7 @@ class Controller
         // do_feed at `wp`. Without this early return, template_redirect (-10)
         // fires first and 302s the feed reader to an HTML login form — the
         // do_feed callback would never run and its message would be dead code.
-        if (is_feed()) {
+        if (is_feed() && !self::is_llms_txt_request()) {
             return;
         }
 
@@ -265,6 +265,69 @@ class Controller
 
         nocache_headers();
         self::redirect_to(self::login_url(self::current_url()));
+    }
+
+    /**
+     * /llms.txt with any query string: ?robots=1 or ?feed=rss2 make is_robots()/is_feed()
+     * true there, and an SEO plugin's llms.txt (Rank Math, template_redirect 10) would
+     * answer past the gate. Path as WordPress matches it (class-wp.php parse_request):
+     * slashes trimmed, home path stripped case-insensitively, URL-decoded.
+     */
+    private static function is_llms_txt_request(): bool
+    {
+        // Fail closed on what WordPress parsed too: an encoding the raw check misses still
+        // reaches Rank Math through its rule (^llms\.txt$) or its query var (llms_txt).
+        $wp = $GLOBALS['wp'] ?? null;
+        if (is_object($wp)) {
+            if (($wp->matched_rule ?? null) === '^llms\.txt$') {
+                return true;
+            }
+            if (is_string($wp->request ?? null) && trim($wp->request, '/') === 'llms.txt') {
+                return true; // WP::$request is already relative to the home path
+            }
+        }
+        // get_query_var() reads $wp_query, which is unset before the main query.
+        if (isset($GLOBALS['wp_query']) && function_exists('get_query_var') && !empty(get_query_var('llms_txt'))) {
+            return true;
+        }
+        return self::request_path_is('llms.txt');
+    }
+
+    /**
+     * is_robots() follows the robots query var, so ?robots=1 makes it true on any
+     * address; exempt only a request that really is robots.txt.
+     */
+    private static function is_robots_txt_request(): bool
+    {
+        if (!is_robots()) {
+            return false;
+        }
+        $wp = $GLOBALS['wp'] ?? null;
+        if (is_object($wp) && ($wp->matched_rule ?? null) === 'robots\.txt$') {
+            return true; // WordPress' own rule (class-wp-rewrite.php), root installs only
+        }
+        return self::request_path_is('robots.txt');
+    }
+
+    /**
+     * Whether the raw request path, as WordPress matches it (class-wp.php parse_request:
+     * slashes trimmed, home path stripped case-insensitively, URL-decoded), is $file.
+     */
+    private static function request_path_is(string $file): bool
+    {
+        $path = trim(urldecode(explode('?', Settings::request_string($_SERVER, 'REQUEST_URI'), 2)[0]), '/');
+        $home = trim((string) wp_parse_url(home_url('/'), PHP_URL_PATH), '/');
+        if ($home !== '') {
+            if (stripos($path, $home) !== 0) {
+                return false;
+            }
+            $path = trim(substr($path, strlen($home)), '/');
+        }
+
+        // PATH_INFO permalinks: WordPress matches index.php/<file> against the same rule.
+        // index.php in any case, as a case-insensitive file system serves it.
+        return $path === $file
+            || (strcasecmp(substr($path, 0, 10), 'index.php/') === 0 && substr($path, 10) === $file);
     }
 
     public static function maybe_disable_feeds(): void

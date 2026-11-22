@@ -25,7 +25,8 @@ class LlmsTxt
     /**
      * D13: exact path, no query string, status 404 (or Rank Math's own 200), no Bricks maintenance.
      * GET/HEAD only and no feed/robots request: WordPress also reads query vars from a POST body, and
-     * the password gate exempts feed and robots requests.
+     * a gate may exempt feed and robots requests (the theme's password gate covers /llms.txt with any
+     * query string since 2026-11-22; this stays as a second line).
      */
     public static function matches(string $request_uri, string $home_path, int $status, ?string $matched_rule, bool $maintenance_applied, string $method, bool $is_feed, bool $is_robots): bool
     {
@@ -74,7 +75,11 @@ class LlmsTxt
         foreach (self::listed() as $type => $posts) {
             $out .= "\n## " . Escape::heading_tail(Escape::label($labels[$type] ?? $type)) . "\n\n";
             foreach (array_slice($posts, 0, self::LIMIT) as $post) {
-                $out .= '- [' . Escape::label(self::decode((string) get_the_title($post))) . '](' . Escape::destination(self::address($post)) . ")\n";
+                $title = self::decode((string) get_the_title($post));
+                if (preg_match('/[^\s\p{Z}]/u', $title) === 0) {
+                    $title = (string) get_permalink($post); // Untitled: an empty label would leave nothing to read.
+                }
+                $out .= '- [' . Escape::label($title) . '](' . Escape::destination(self::address($post)) . ")\n";
             }
             if (count($posts) > self::LIMIT) {
                 $out .= "\n" . Escape::block_start(Escape::text(__('More entries exist than are listed here.', 'sfxtheme'))) . "\n";

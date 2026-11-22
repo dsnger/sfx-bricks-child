@@ -47,9 +47,15 @@ namespace {
     function wp_remote_retrieve_response_code($r) { return is_array($r) ? ($r['response']['code'] ?? '') : ''; }
     function wp_remote_retrieve_header($r, $h) { return $r['headers'][strtolower($h)] ?? ''; }
     function wp_remote_get($url, $args = []) { global $requests, $queue; $requests[] = $url; return array_shift($queue); }
-    function __($t, $d = null) { return $t; }
-    function esc_html__($t, $d = null) { return htmlspecialchars($t); }
-    function esc_html_e($t, $d = null) { echo htmlspecialchars($t); }
+    $tr = []; // Translations, to show a translated string is escaped.
+    function __($t, $d = null) { return $GLOBALS['tr'][$t] ?? $t; }
+    function esc_html__($t, $d = null) { return htmlspecialchars(__($t)); }
+    function esc_html_e($t, $d = null) { echo htmlspecialchars(__($t)); }
+    function admin_url($p = '') { return 'https://site.test/wp-admin/' . $p; }
+    function wp_nonce_field($action = -1, $name = '_wpnonce', $referer = true, $display = true) { echo '<input type="hidden" name="' . $name . '" value="nonce-for:' . $action . '" />'; }
+    function wp_verify_nonce($nonce, $action = -1) { return $nonce === 'good' && $action === 'sfx_markdown_check' ? 1 : false; }
+    function wp_unslash($v) { return $v; }
+    function sanitize_text_field($v) { return trim((string) $v); }
     function esc_html($t) { return htmlspecialchars((string) $t); }
     function esc_attr($t) { return htmlspecialchars((string) $t, ENT_QUOTES); }
     function esc_url($t) { return htmlspecialchars((string) $t, ENT_QUOTES); }
@@ -98,8 +104,42 @@ namespace SFX\Markdown {
     AdminPage::add_submenu_page();
     assert_true(($GLOBALS['submenu'][0] ?? '') === 'sfx-theme-settings' && ($GLOBALS['submenu'][4] ?? '') === 'sfx-markdown' && ($GLOBALS['submenu'][3] ?? '') === 'manage_options', '0: submenu registered under theme settings');
 
-    // 1. Module on, everything available: form, checkboxes, examples, checks.
+    // 0b. Without the request parameter: button and explanation, no loopback request.
     $GLOBALS['test_options'] = ['sfx_markdown_options' => ['post_types' => ['page']]];
+    $_GET = [];
+    $GLOBALS['tr'] = ['Run checks' => 'Run <checks>'];
+    $html = render();
+    assert_true($GLOBALS['requests'] === [], '0b: no request without the parameter');
+    has($html, 'method="get" action="https://site.test/wp-admin/admin.php"', '0b: check form is a GET to admin.php');
+    has($html, 'name="page" value="sfx-markdown"', '0b: form stays on the page');
+    has($html, 'name="sfx_markdown_check" value="1"', '0b: form sends the parameter');
+    has($html, 'value="nonce-for:sfx_markdown_check"', '0b: form carries the nonce');
+    has($html, 'Run &lt;checks&gt;', '0b: button label escaped');
+    hasnt($html, 'Run <checks>', '0b: button label not raw');
+    has($html, 'The checks ask this site for', '0b: one line explaining the checks');
+    has($html, 'https://site.test/llms.txt', '0b: examples kept');
+    has($html, 'CDN', '0b: CDN limit sentence kept');
+    hasnt($html, 'did not run', '0b: no bad-nonce notice');
+    $GLOBALS['tr'] = [];
+
+    // 0c. Parameter with a bad, missing or array-valued nonce: no request, a short notice, no warning.
+    set_error_handler(static function (int $no, string $msg): bool {
+        throw new \ErrorException($msg, 0, $no); // e.g. "Array to string conversion" fails the test
+    });
+    foreach ([['sfx_markdown_check' => '1', '_wpnonce' => 'bad'], ['sfx_markdown_check' => '1'], ['sfx_markdown_check' => '1', '_wpnonce' => ['good']]] as $get) {
+        $_GET = $get;
+        $html = render();
+        assert_true($GLOBALS['requests'] === [], '0c: no request with a bad nonce');
+        has($html, 'The checks did not run', '0c: bad-nonce notice');
+    }
+    restore_error_handler();
+    assert_true(\SFX\AccessControl::$died === 4, '0c: capability gate called on every load');
+    \SFX\AccessControl::$died = 0;
+
+    // From here on the admin clicked the button: valid nonce.
+    $_GET = ['sfx_markdown_check' => '1', '_wpnonce' => 'good'];
+
+    // 1. Module on, everything available: form, checkboxes, examples, checks.
     $GLOBALS['queue'] = [
         res(200, ['X-SFX-Llms-Txt' => '1', 'Content-Type' => 'text/plain']),
         res(200, ['Content-Type' => 'text/markdown']), res(200, ['Content-Type' => 'text/html']), res(200, ['Content-Type' => 'text/markdown']),
@@ -140,11 +180,13 @@ namespace SFX\Markdown {
     \SFX\SFXBricksChildTheme::$on = false;
     $html = render();
     assert_true($GLOBALS['requests'] === [], '3: module off, no requests');
+    hasnt($html, 'name="sfx_markdown_check"', '3: module off, no check button');
     has($html, 'action="options.php"', '3: form still shown');
     \SFX\SFXBricksChildTheme::$on = true;
     Request::$parser = false;
     $html = render();
     assert_true($GLOBALS['requests'] === [], '3: parser missing, no requests');
+    hasnt($html, 'name="sfx_markdown_check"', '3: parser missing, no check button');
     has($html, 'WordPress 6.7', '3: WP 6.7 notice');
     Request::$parser = true;
 
