@@ -10699,6 +10699,18 @@ msgid "Check: page cache"
 msgstr "Prüfung: Seiten-Cache"
 
 #: inc/Markdown
+msgid "The checks ask this site for /llms.txt and for its newest listed page, to see whether the theme answers and whether a page cache gets in the way. They can take up to 20 seconds."
+msgstr "Die Prüfungen fragen bei dieser Website /llms.txt und die neueste aufgeführte Seite ab, um zu sehen, ob das Theme antwortet und ob ein Seiten-Cache dazwischenkommt. Das kann bis zu 20 Sekunden dauern."
+
+#: inc/Markdown
+msgid "The checks did not run because the link is no longer valid. Please click \"Run checks\" again."
+msgstr "Die Prüfungen wurden nicht ausgeführt, weil der Link nicht mehr gültig ist. Bitte klicken Sie erneut auf „Prüfungen starten“."
+
+#: inc/Markdown
+msgid "Run checks"
+msgstr "Prüfungen starten"
+
+#: inc/Markdown
 msgid "No page to check."
 msgstr "Keine Seite zum Prüfen."
 

@@ -126,5 +126,7 @@ means('ol_empty_first', '<ol>\n<li></li>\n<li>second</li>\n</ol>');
 means('ol_empty_nested', '<p>text</p>\n<ol>\n<li></li>\n<li>b</li>\n</ol>');
 // llms.txt: a trailing # in the site name stays heading text.
 means('llms_heading', '<h1>Studio #</h1>');
+// ... also when spaces or a tab follow it.
+means('llms_heading_space', '<h1>Studio #</h1>');
 
 console.log(`markdown-commonmark-test: ${checks} checks passed`);

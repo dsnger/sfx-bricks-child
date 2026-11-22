@@ -76,4 +76,5 @@ foreach ($inputs as $name => $content) {
 }
 // The llms.txt site-name heading, built as LlmsTxt::render() builds it.
 $out['llms_heading'] = '# ' . \SFX\Markdown\Escape::heading_tail(\SFX\Markdown\Escape::label('Studio #')) . "\n";
+$out['llms_heading_space'] = '# ' . \SFX\Markdown\Escape::heading_tail(\SFX\Markdown\Escape::label("Studio # \t")) . "\n";
 echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);

@@ -31,9 +31,10 @@ class Escape
         return self::text(self::one_line($s));
     }
 
-    /** An ATX heading's escaped text: a trailing # would read as the closing sequence. */
+    /** An ATX heading's escaped text: a trailing # (also before spaces or tabs) would read as the closing sequence. */
     public static function heading_tail(string $s): string
     {
+        $s = rtrim($s, " \t"); // CommonMark trims them from heading text anyway.
         return str_ends_with($s, '#') ? substr($s, 0, -1) . '\\#' : $s;
     }
 

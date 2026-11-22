@@ -43,6 +43,20 @@ function is_robots()
     return $test_is_robots;
 }
 
+$test_home = 'https://ex.test/';
+
+function home_url($path = '')
+{
+    global $test_home;
+
+    return rtrim($test_home, '/') . '/' . ltrim((string) $path, '/');
+}
+
+function wp_parse_url($url, $component = -1)
+{
+    return parse_url($url, $component);
+}
+
 function apply_filters($tag, $value, ...$args)
 {
     return $value;
@@ -81,12 +95,14 @@ function configure(array $values): void
 
 function reset_request(): void
 {
-    global $test_caps, $test_logged_in, $test_is_feed, $test_is_robots;
+    global $test_caps, $test_logged_in, $test_is_feed, $test_is_robots, $test_home;
 
     $test_caps = [];
     $test_logged_in = false;
     $test_is_feed = false;
     $test_is_robots = false;
+    $test_home = 'https://ex.test/';
+    $_SERVER['REQUEST_URI'] = '/';
     unset($_SERVER['REMOTE_ADDR']);
 }
 
@@ -173,6 +189,43 @@ reset_request();
 configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => false]);
 $test_is_feed = true;
 assert_true(Controller::is_active(), '7: a feed IS gated when allow_feeds is off');
+
+// 7b. /llms.txt is never exempted as robots or feed: ?robots=1 and ?feed=rss2 make
+// is_robots()/is_feed() true there, and Rank Math's llms.txt would answer past the gate.
+foreach (['/llms.txt?robots=1', '/llms.txt/?robots=1', '/llms.txt?feed=rss2&robots=1'] as $uri) {
+    reset_request();
+    configure(['status' => true, 'password' => 'hashed:x']);
+    $_SERVER['REQUEST_URI'] = $uri;
+    $test_is_robots = true;
+    assert_true(Controller::is_active(), "7b: {$uri} is gated, not exempt as robots");
+}
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => true]);
+$_SERVER['REQUEST_URI'] = '/llms.txt?feed=rss2';
+$test_is_feed = true;
+assert_true(Controller::is_active(), '7b: /llms.txt?feed=rss2 is gated, even with allow_feeds on');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/robots.txt';
+$test_is_robots = true;
+assert_true(!Controller::is_active(), '7b: the real /robots.txt stays exempt');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => true]);
+$_SERVER['REQUEST_URI'] = '/feed/';
+$test_is_feed = true;
+assert_true(!Controller::is_active(), '7b: a real feed stays exempt with allow_feeds on');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$test_home = 'https://ex.test/sub/';
+$_SERVER['REQUEST_URI'] = '/sub/llms.txt?robots=1';
+$test_is_robots = true;
+assert_true(Controller::is_active(), '7b: subdirectory install, /sub/llms.txt?robots=1 is gated');
+$_SERVER['REQUEST_URI'] = '/sub/robots.txt';
+assert_true(!Controller::is_active(), '7b: subdirectory install, /sub/robots.txt stays exempt');
 
 // 8. THE CACHE INVARIANT: an exemption must never switch protection off globally.
 reset_request();

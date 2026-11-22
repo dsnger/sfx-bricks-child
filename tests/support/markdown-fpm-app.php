@@ -82,7 +82,7 @@ function get_post_status($post = null) { return $post->post_status; }
 function post_password_required($post = null) { return false; }
 function get_option($name, $default = false) { return $name === 'page_for_posts' ? '0' : $default; }
 function get_post_types($args = [], $output = 'names') { return ['page' => (object) ['name' => 'page', 'label' => 'Pages']]; }
-function wp_get_canonical_url($post = null) { return $post instanceof WP_Post ? 'https://ex.test/sample/' : false; }
+function wp_get_canonical_url($post = null) { return $post instanceof WP_Post ? apply_filters('get_canonical_url', 'https://ex.test/sample/', $post) : false; }
 function add_query_arg($key, $value, $url) { return $url . '?' . $key . '=' . $value; }
 function esc_url($url) { return $url; }
 function register_setting($group, $name, $args = []) { return true; }
@@ -170,6 +170,15 @@ switch ($scenario) {
                 throw new RuntimeException('outer handler refuses CLEAN');
             }
             return $buffer;
+        });
+        break;
+    case 'canonical-throw':
+        // A canonical filter that changes the headers and the status, then throws, after the capture was taken.
+        add_filter('get_canonical_url', static function (string $url): string {
+            header('X-Canonical-Filter: 1');
+            header('Content-Type: text/plain');
+            http_response_code(503);
+            throw new RuntimeException('canonical filter failed');
         });
         break;
     case 'enhance-user-error':

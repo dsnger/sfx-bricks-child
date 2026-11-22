@@ -26,6 +26,7 @@ function get_post_types($args = [], $output = 'names')
 {
     $out = [];
     foreach (['page' => 'Pages', 'post' => 'Posts'] as $n => $l) {
+        $l = $GLOBALS['labels'][$n] ?? $l;
         $out[$n] = (object) ['name' => $n, 'label' => $l, 'labels' => (object) ['name' => $l]];
     }
     return $output === 'objects' ? $out : array_keys($out);
@@ -130,6 +131,24 @@ $S['name'] = 'Studio #';
 $S['description'] = '';
 $S['options']['sfx_markdown_options'] = ['post_types' => []];
 assert_same("# Studio \\#\n", LlmsTxt::render(), 'site name with trailing #');
+
+// A trailing # followed by spaces or a tab is still heading text, in the site name and in a type label.
+reset_state();
+$S['name'] = "Studio # \t";
+$S['description'] = '';
+assert_same("# Studio \\#\n", LlmsTxt::render(), 'site name with trailing # and whitespace');
+$S['posts']['post'] = [new WP_Post(2, 'Hi', '2026-03-01 00:00:00')];
+$S['options']['sfx_markdown_options'] = ['post_types' => ['post']];
+$GLOBALS['labels'] = ['post' => 'Posts # '];
+assert_same(true, strpos(LlmsTxt::render(), "\n## Posts \\#\n") !== false, 'type label with trailing # and space');
+unset($GLOBALS['labels']);
+
+// An untitled post is labelled with its plain permalink, not listed as [](url).
+reset_state();
+$S['posts']['post'] = [new WP_Post(4, '', '2026-01-01 00:00:00'), new WP_Post(5, " &nbsp; ", '2026-01-02 00:00:00')];
+$out = LlmsTxt::render();
+assert_same(true, strpos($out, "- [https://ex.test/p4/](<https://ex.test/p4/?markdown=1>)\n") !== false, 'empty title -> permalink label');
+assert_same(true, strpos($out, "- [https://ex.test/p5/](<https://ex.test/p5/?markdown=1>)\n") !== false, 'whitespace-only title -> permalink label');
 
 // Entities from wptexturize are decoded, not shown literally.
 reset_state();

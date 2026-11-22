@@ -12,10 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Contact Infos: optional structured data (schema.org JSON-LD). The company, locations with opening hours, contact points (new contact type "Contact point for an area") and social profiles are published on every page, or added to the organization entry of Yoast SEO or Rank Math. Off by default; switch it on under Contact Infos -> Structured data. Admins can add a JSON-LD block to a single page. The data purge removes the new settings and fields.
-- Markdown for AI agents: published pages and posts of the selected post types (password-protected posts only for visitors who entered the password; not the posts page) can be fetched as clean Markdown (add `?markdown=1`, send `Accept: text/markdown`, or follow the link in the page head), and `/llms.txt` lists your pages for AI tools. Choose the post types and run the llms.txt and page-cache checks under Global Theme Settings -> Markdown. Off by default: switch it on in General Theme Options. Needs WordPress 6.7 or later. If Yoast SEO or AIOSEO already provides an llms.txt file, that file is used.
+- Markdown for AI agents: published pages and posts of the selected post types (password-protected posts only for visitors who entered the password; not the posts page) can be fetched as clean Markdown (add `?markdown=1`, send `Accept: text/markdown`, or follow the link in the page head), and `/llms.txt` lists your pages for AI tools. Choose the post types under Global Theme Settings -> Markdown, where the "Run checks" button checks llms.txt and the page cache. Off by default: switch it on in General Theme Options. Needs WordPress 6.7 or later. If Yoast SEO or AIOSEO already provides an llms.txt file, that file is used.
 
 ### Fixed
 
+- Password Protection: with the site-wide password on, `/llms.txt` now always goes to the login, also with a query string such as `?robots=1` or `?feed=rss2`. Before, an SEO plugin's llms.txt (Rank Math) could answer such a request and list the site's page titles and addresses.
 - Contact Infos, structured data: when the organization or an exclusion cannot be stored, the settings page now says so in an error notice instead of "Settings saved". When the settings of an SEO plugin cannot be read before any plugin is detected, the status no longer shows empty brackets.
 
 ## [0.37.0] - 2026-11-15

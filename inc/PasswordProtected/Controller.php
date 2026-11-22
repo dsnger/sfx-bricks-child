@@ -117,11 +117,11 @@ class Controller
     {
         $active = self::is_protection_enabled() && !self::is_visitor_exempt();
 
-        if ($active && is_robots()) {
+        if ($active && is_robots() && !self::is_llms_txt_request()) {
             $active = false;
         }
 
-        if ($active && Settings::get()['allow_feeds'] && is_feed()) {
+        if ($active && Settings::get()['allow_feeds'] && is_feed() && !self::is_llms_txt_request()) {
             $active = false;
         }
 
@@ -243,7 +243,7 @@ class Controller
         // do_feed at `wp`. Without this early return, template_redirect (-10)
         // fires first and 302s the feed reader to an HTML login form — the
         // do_feed callback would never run and its message would be dead code.
-        if (is_feed()) {
+        if (is_feed() && !self::is_llms_txt_request()) {
             return;
         }
 
@@ -265,6 +265,26 @@ class Controller
 
         nocache_headers();
         self::redirect_to(self::login_url(self::current_url()));
+    }
+
+    /**
+     * /llms.txt with any query string: ?robots=1 or ?feed=rss2 make is_robots()/is_feed()
+     * true there, and an SEO plugin's llms.txt (Rank Math, template_redirect 10) would
+     * answer past the gate. Path as WordPress matches it (class-wp.php parse_request):
+     * slashes trimmed, home path stripped case-insensitively, URL-decoded.
+     */
+    private static function is_llms_txt_request(): bool
+    {
+        $path = trim(urldecode(explode('?', Settings::request_string($_SERVER, 'REQUEST_URI'), 2)[0]), '/');
+        $home = trim((string) wp_parse_url(home_url('/'), PHP_URL_PATH), '/');
+        if ($home !== '') {
+            if (stripos($path, $home) !== 0) {
+                return false;
+            }
+            $path = trim(substr($path, strlen($home)), '/');
+        }
+
+        return $path === 'llms.txt';
     }
 
     public static function maybe_disable_feeds(): void

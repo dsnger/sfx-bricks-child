@@ -68,10 +68,19 @@ class Response
         }
         self::$ending = true;
         $html = (string) ob_get_clean();
-        $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
-        $canonical = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
-        $link = is_string($canonical) && $canonical !== '' ? self::link_header($canonical) : null;
-        $markdown = $link !== null ? self::markdown($html, $canonical) : null;
+        $status = http_response_code();
+        $headers = headers_list();
+        // Fail closed: any Throwable before commit() passes the captured HTML through. A PHP fatal
+        // error (memory, time limit) cannot be caught here; it ends the request without the page.
+        try {
+            $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
+            $canonical = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
+            $link = is_string($canonical) && $canonical !== '' ? self::link_header($canonical) : null;
+            $markdown = $link !== null ? self::markdown($html, $canonical) : null;
+        } catch (\Throwable $e) {
+            self::restore_headers($status, $headers);
+            $markdown = null;
+        }
         if ($markdown === null) {
             echo $html; // Pass-through: unfiltered, so core's own buffer filters it once (P1).
             return;
@@ -111,10 +120,50 @@ class Response
                 restore_error_handler();
             }
             return Converter::convert($filtered, $canonical);
-        } catch (\Throwable $e) {
-            return null; // In doubt: the captured HTML goes out unchanged.
-        } finally {
+        } finally { // A throw reaches finish(): in doubt, the captured HTML goes out unchanged.
             ob_end_clean();
+        }
+    }
+
+    /** Puts back the status and headers a throwing callback changed; once headers are sent, nothing can be taken back. */
+    private static function restore_headers($status, array $headers): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+        $by_name = static function (array $list): array {
+            $out = [];
+            foreach ($list as $line) {
+                $out[strtolower(trim(explode(':', $line, 2)[0]))][] = $line;
+            }
+            return $out;
+        };
+        $before = $by_name($headers);
+        $now = $by_name(headers_list());
+        // Per name: a bare header_remove() also drops PHP's default Content-Type.
+        foreach (array_keys($before + $now) as $name) {
+            if (($before[$name] ?? []) !== ($now[$name] ?? [])) {
+                header_remove($name);
+                foreach ($before[$name] ?? [] as $line) {
+                    header($line, false);
+                }
+                if ($name === 'content-type' && !isset($before[$name])) {
+                    self::default_content_type(); // Removing it would otherwise send none.
+                }
+            }
+        }
+        if (is_int($status) && http_response_code() !== $status) {
+            http_response_code($status);
+        }
+    }
+
+    /** The Content-Type PHP sends when none was set (main/SAPI.c, sapi_get_default_content_type). */
+    private static function default_content_type(): void
+    {
+        $type = (string) ini_get('default_mimetype');
+        $charset = (string) ini_get('default_charset');
+        if ($type !== '') {
+            header('Content-Type: ' . $type . ($charset !== '' && stripos($type, 'text/') === 0 ? '; charset=' . $charset : ''));
         }
     }
 

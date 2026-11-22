@@ -53,9 +53,27 @@ function apply_filters(string $tag, $value, ...$args)
     return $value;
 }
 
-function is_feed(): bool
+// Test E (maybe_show_login) reaches is_visitor_exempt() and the /llms.txt path check.
+function current_user_can($cap): bool
 {
     return false;
+}
+
+function is_user_logged_in(): bool
+{
+    return false;
+}
+
+function wp_parse_url($url, $component = -1)
+{
+    return parse_url($url, $component);
+}
+
+$test_is_feed = false;
+
+function is_feed(): bool
+{
+    return $GLOBALS['test_is_feed'];
 }
 
 function is_robots(): bool
@@ -371,5 +389,29 @@ assert_true(
     !in_array('incorrect_password', Controller::$errors->get_error_codes(), true),
     'maybe_process_login(): the correct password must NOT record incorrect_password'
 );
+
+// --- Test E: maybe_show_login() sends /llms.txt?feed=... to the login --------
+//
+// A gated feed returns early (disable_feed() answers it at do_feed), but on
+// /llms.txt?feed=rss2 Rank Math's llms.txt answers at template_redirect 10,
+// before do_feed: that request must get the login redirect like any page.
+$_COOKIE = [];
+$_SERVER['HTTP_HOST'] = 'example.test';
+$test_is_feed = true;
+configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => false]);
+foreach (['/llms.txt?feed=rss2' => true, '/feed/' => false] as $uri => $want_redirect) {
+    $_SERVER['REQUEST_URI'] = $uri;
+    $redirected = false;
+    try {
+        Controller::maybe_show_login();
+    } catch (WpSafeRedirectCalled $e) {
+        $redirected = true;
+    }
+    assert_true(
+        $redirected === $want_redirect,
+        "maybe_show_login(): {$uri} " . ($want_redirect ? 'must redirect to the login' : 'must stay with disable_feed()')
+    );
+}
+$test_is_feed = false;
 
 echo "OK\n";

@@ -302,8 +302,8 @@ the same for every visitor who gets past the password gate.
 - **Yoast SEO** and **All in One SEO** write a real `llms.txt` into the site root. The web server
   delivers a real file before WordPress runs, so the theme cannot outrank them. The theme never
   deletes or rewrites that file (anti-goal).
-- **Settings-page check:** when the settings page loads with the module on and D10's parser
-  available, it requests `home_url('/llms.txt')` once (loopback, 5 s timeout, no redirects
+- **Settings-page check:** on the admin's request (a "Run checks" button on the settings page,
+  nonce-checked), with the module on and D10's parser available, it requests `home_url('/llms.txt')` once (loopback, 5 s timeout, no redirects
   followed) and reports exactly one outcome:
   - *theme's version* — status 200 with header `X-SFX-Llms-Txt: 1`;
   - *redirected* — a 3xx response: "/llms.txt redirects to <Location>" — for example the site-wide
@@ -334,7 +334,8 @@ A submenu page under the theme's settings (pattern of `EditorProse\AdminPage`), 
 `manage_options`, saved through the Settings API (`options.php`, which checks nonce and capability —
 invariant 2). It shows: the included post types (D14); the three addresses as examples for this
 site; a notice when WordPress is older than 6.7 (D10); the `llms.txt` check above; and the
-**cache check** (D16), only with the module on and D10's parser available. It takes the newest
+**cache check** (D16), only on the admin's request and with the module on and D10's parser
+available. It takes the newest
 post of an included type that `llms.txt` would list (none: "no page to check") and requests by
 loopback, without following redirects: first its `?markdown=1` address as the control — not
 `text/markdown`: "this page does not convert, so the check cannot run" (for example markup the
@@ -491,3 +492,24 @@ inline markers go.
 - **Reviews already run:** Gate A cycle mdag7k2p (spec) → no rule found (`.claude/review-gates.md`
   lines 4–5, 49–56) that reopens a closed Gate A for an amendment → human decision: Daniel decided
   the change; Gate B cycle mdgb4k7r2x reviews its implementation.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation.
+Baseline: 8987a46. Both settings-page checks made up to four loopback requests (5 s timeout each)
+on every load of the settings page; they now run only when the admin asks for them.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § `/llms.txt`, Settings-page check: "when the settings page loads with the module on and D10's parser available, it requests `home_url('/llms.txt')` once" | moved → on the admin's request: a "Run checks" button (GET to the same page with `sfx_markdown_check=1` and a nonce for the action `sfx_markdown_check`); without a valid nonce the checks do not run and the page says so | none |
+| § Settings screen: "the **cache check** (D16), only with the module on and D10's parser available" (its loopback requests) | moved → on the admin's request, with the same button and nonce | none |
+| § Settings screen: the examples, the WordPress 6.7 notice, the CDN limit sentence, the capability `manage_options` | kept | none |
+
+- **Added without an earlier condition:** one line on the settings page saying what the checks do;
+  the button is shown only while the checks can run (module on, D10's parser available).
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: when the two settings-page checks run; out: what they request and
+  report.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/AdminPage.php` and
+  `tests/markdown-admin-page-test.php` are updated in this change.
+- **Reviews already run:** none for this change.
