@@ -217,6 +217,18 @@ switch ($scenario) {
             throw new RuntimeException('canonical filter failed');
         });
         break;
+    case 'canonical-buffer-status':
+        // The filter returns normally but leaves a buffer open whose handler changes the status when it is cleaned.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer): string {
+                http_response_code(503);
+                header('X-Leftover-Handler: 1');
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            return $url;
+        });
+        break;
     case 'enhance-user-error':
         add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
             trigger_error('enhancement failed', E_USER_ERROR);

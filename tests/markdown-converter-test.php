@@ -261,4 +261,22 @@ assert_same("T1\n\nT2\n\nT3\n\nC1\n\nC2\n", md($nested('<p>C1</p>', '<div class=
 assert_same("T1\n\nT2\n\nC1\n\nC2\n", md($nested('<p>C1</p>', '', 'brxe-other')), '11: tabs ids that do not pair fall back to document order');
 assert_same("- a\n\n* T1\n* T2\n\n- C1\n- C2\n", md('<ul><li>a</li></ul><div class="brxe-tabs"><ul class="tab-menu" role="tablist"><li class="tab-title" role="tab" aria-controls="x1"><span>T1</span></li><li class="tab-title" role="tab" aria-controls="x9"><span>T2</span></li></ul><ul class="tab-content"><li class="tab-pane" id="x1"><p>C1</p></li><li class="tab-pane" id="x2"><p>C2</p></li></ul></div>'), '11: repeater tabs that do not pair keep today\'s output');
 
+// Gate B mdrd5v2n8q pass 1: nested tabs, heading level after a splice, text before the tabs.
+$one = static fn(string $title, string $body, string $id): string => '<div class="brxe-tabs-nested"><div class="tab-menu"><div class="tab-title" aria-controls="' . $id . '">' . $title . '</div></div><div class="tab-content"><div class="tab-pane" id="' . $id . '">' . $body . '</div></div></div>';
+$inner = '<div class="brxe-tabs-nested"><div class="tab-menu"><div class="tab-title" aria-controls="ia">Inner A</div><div class="tab-title" aria-controls="ib">Inner B</div></div><div class="tab-content"><div class="tab-pane" id="ia"><p>IA</p></div><div class="tab-pane" id="ib"><p>IB</p></div></div></div>';
+assert_same("### Outer\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n", md($one('Outer', $inner, 'outer')), '11: tabs inside a pane paired on their own');
+assert_same("### Outer1\n\n#### Inner A\n\nIA\n\n#### Inner B\n\nIB\n\n### Outer2\n\nO2\n", md('<div class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="o1">Outer1</div><div class="tab-title" aria-controls="o2">Outer2</div></div><div class="tab-content"><div class="tab-pane" id="o1">' . $inner . '</div><div class="tab-pane" id="o2"><p>O2</p></div></div></div>'), '11: outer tabs stay paired around inner tabs');
+assert_same("## Section\n\n### First\n\nC1\n\n#### Second\n\nC2\n", md('<h2>Section</h2>' . $one('<h5>First</h5>', '<p>C1</p>', 'first') . $one('Second', '<p>C2</p>', 'second')), '11: heading level follows the paired output');
+assert_same("BEFORE\n\n### T\n\nC\n\nAFTER\n", md('BEFORE<span class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="x">T</div></div><div class="tab-content"><div class="tab-pane" id="x">C</div></div></span>AFTER'), '11: text before inline tabs is kept');
+assert_same("BEFORE\n\n### T\n\nC\n\nAFTER\n", md('BEFORE<span class="brxe-tabs"><span class="tab-menu"><span class="tab-title" aria-controls="x">T</span></span><span class="tab-content"><span class="tab-pane" id="x">C</span></span></span>AFTER'), '11: text before inline tabs stays out of the title');
+// Word boundaries around void Bricks elements and at the start of a link.
+assert_same("A ![B](<https://ex.test/x>) C\n", md('<p>A<img class="brxe-image" src="/x" alt="B">C</p>'), '11: Bricks image is a word of its own');
+assert_same("pre [middle](<https://ex.test/x>) post\n", md('<p>pre<a href="/x"><span class="brxe-text">middle</span></a>post</p>'), '11: link starting with a Bricks element separated');
+assert_same("## pre [middle](<https://ex.test/x>) post\n", md('<h2>pre<a href="/x"><span class="brxe-text">middle</span></a>post</h2>'), '11: the same in a heading');
+// Counter values JS would show differently keep the server text.
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":9007199254740993,"thousands":false}'), '11: counter beyond Number.MAX_SAFE_INTEGER keeps the server text');
+assert_same("$9007199254740991+\n", $counter('{"countFrom":0,"countTo":9007199254740991,"thousands":false}'), '11: counter at Number.MAX_SAFE_INTEGER converts');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1000","thousands":true,"separator":"$$"}'), '11: counter separator with $$ keeps the server text');
+assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1000","thousands":true,"separator":"$`"}'), '11: counter separator with $` keeps the server text');
+
 echo "PASS: markdown-converter ({$checks} checks)\n";

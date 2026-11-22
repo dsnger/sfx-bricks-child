@@ -209,7 +209,7 @@ $r = get('normal', 'scenario=unclosed-root&module=on&markdown=1');
 assert_markdown($r, MARKDOWN, 'unclosed-root');
 
 // Pass-through: exactly the response the same request gets without the module.
-foreach (['throw', 'leave-buffer-open', 'close-own-buffer', 'ob-flush', 'close-and-reopen', 'exit-in-template', 'non-removable-outer', 'status-404', 'location', 'json', 'enhance-passthrough', 'enhance-user-error', 'canonical-throw', 'canonical-throw-buffer', 'canonical-throw-buffer-clean-throw', 'canonical-throw-buffer-status'] as $scenario) {
+foreach (['throw', 'leave-buffer-open', 'close-own-buffer', 'ob-flush', 'close-and-reopen', 'exit-in-template', 'non-removable-outer', 'status-404', 'location', 'json', 'enhance-passthrough', 'enhance-user-error', 'canonical-throw', 'canonical-throw-buffer', 'canonical-throw-buffer-clean-throw', 'canonical-throw-buffer-status', 'canonical-buffer-status'] as $scenario) {
     $off = get('normal', "scenario={$scenario}&markdown=1");
     $on = get('normal', "scenario={$scenario}&module=on&markdown=1");
     assert_same(true, strpos($off['body'], 'SITE-HEADER') !== false, "{$scenario}: baseline renders the page");

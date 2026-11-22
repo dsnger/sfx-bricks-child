@@ -96,7 +96,8 @@ class Response
                 $failed = true; // PHP removed the buffer whose handler threw.
             }
         }
-        if ($failed) {
+        // A leftover handler that changed the status without throwing is in doubt too.
+        if ($failed || http_response_code() !== $status) {
             self::restore_headers($status, $headers);
             $markdown = null;
         }
