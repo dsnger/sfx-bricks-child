@@ -294,5 +294,7 @@ assert_same("$0+\n", $counter('{"countFrom":0,"countTo":"1000","thousands":true,
 assert_same("before\n\n![Visible illustration](<https://ex.test/important.png>)\n\nafter\n", md('<p>before</p><div class="brxe-tabs"><img class="tab-menu" src="/important.png" alt="Visible illustration"><div class="tab-content"></div></div><p>after</p>'), '11: a void tab menu does not pair, the image stays');
 assert_same("T\n\nC\n\n![Pic](<https://ex.test/i.png>)\n", md('<div class="brxe-tabs"><div class="tab-menu"><div class="tab-title" aria-controls="x">T</div></div><div class="tab-content"><div class="tab-pane" id="x">C</div></div><img class="tab-content" src="/i.png" alt="Pic"></div>'), '11: a void tab content does not pair, the image stays');
 assert_same("a\n\nb\n", md('<p>a</p><div class="brxe-tabs"><div class="tab-menu"></div><div class="tab-content"></div></div><p>b</p>'), '11: tabs with no title and no pane do not pair');
+// Gate B cycle mdrm6k3w9t: with no pair, a menu holding visible content (here a counter) must not be spliced away.
+assert_same("a\n\n12\n\nb\n", md('<p>a</p><div class="brxe-tabs"><div class="tab-menu brxe-counter" data-bricks-counter-options="{&quot;countFrom&quot;:0,&quot;countTo&quot;:12}"><span class="count">0</span></div><div class="tab-content"></div></div><p>b</p>'), '11: tabs with no pair keep a menu\'s visible content');
 
 echo "PASS: markdown-converter ({$checks} checks)\n";
