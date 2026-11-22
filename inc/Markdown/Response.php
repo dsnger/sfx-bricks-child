@@ -75,6 +75,7 @@ class Response
         // Callbacks below must not print: dropped on both paths, and held back so an echo cannot
         // send the headers before restore_headers() puts them back.
         ob_start();
+        $discard = ob_get_level();
         try {
             $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
             $canonical = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
@@ -84,7 +85,9 @@ class Response
             self::restore_headers($status, $headers);
             $markdown = null;
         } finally {
-            ob_end_clean();
+            // Also close what a callback opened and left behind, down to our own discard buffer.
+            while (ob_get_level() >= $discard && ob_end_clean()) {
+            }
         }
         if ($markdown === null) {
             echo $html; // Pass-through: unfiltered, so core's own buffer filters it once (P1).

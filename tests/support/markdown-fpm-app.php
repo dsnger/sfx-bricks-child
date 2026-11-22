@@ -183,6 +183,15 @@ switch ($scenario) {
             throw new RuntimeException('canonical filter failed');
         });
         break;
+    case 'canonical-throw-buffer':
+        // The same, but the filter opens a buffer of its own and leaves it open when it throws.
+        add_filter('get_canonical_url', static function (string $url): string {
+            echo 'CANONICAL-NOISE';
+            ob_start();
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
     case 'enhance-user-error':
         add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
             trigger_error('enhancement failed', E_USER_ERROR);
