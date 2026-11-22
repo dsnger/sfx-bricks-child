@@ -72,6 +72,12 @@ class Converter
     /** @var list<\stdClass> The open Bricks tabs elements being paired, innermost last. */
     private array $tabs = [];
 
+    /** Tabs elements opened so far; numbers them in document order. */
+    private int $tab_count = 0;
+
+    /** @var array<int, true> Tabs that hold tabs and failed to pair; their panes keep the heading state. */
+    private array $unpaired = [];
+
     /** Level of the last heading written, 0 before the first. */
     private int $heading = 0;
 
@@ -86,12 +92,19 @@ class Converter
     /** Markdown ending in one "\n", or null to send the HTML unchanged. */
     public static function convert(string $html, string $base_url): ?string
     {
+        return self::run($html, $base_url, []);
+    }
+
+    /** @param array<int, true> $unpaired Tabs known not to pair (see fail()). */
+    private static function run(string $html, string $base_url, array $unpaired): ?string
+    {
         try {
             $p = \WP_HTML_Processor::create_full_parser($html);
             if ($p === null) {
                 return null;
             }
             $c = new self($base_url);
+            $c->unpaired = $unpaired;
             while ($p->next_token()) {
                 if (!$c->token($p)) {
                     return null;
@@ -105,6 +118,10 @@ class Converter
         }
         while ($c->stack !== []) {
             $c->finish();
+        }
+        if ($c->unpaired !== $unpaired) {
+            // Pairing never depends on heading levels, so the second run fails the same tabs and stops.
+            return self::run($html, $base_url, $c->unpaired);
         }
         return $c->out === '' || $c->overflow ? null : $c->out . "\n";
     }
@@ -298,14 +315,18 @@ class Converter
                 }
                 self::flush($top);
                 $t->open = ['kind' => $t->child, 'id' => $id, 'depth' => $depth, 'frame' => $top, 'start' => count($top->blocks)];
-                if ($t->child === 'pane') {
+                if ($t->child === 'pane' && !isset($this->unpaired[$t->n])) {
                     $this->heading = $t->level; // once paired, the pane follows its title
                 }
             }
         }
         if (($t === null || $t->open !== null) && ($p->has_class('brxe-tabs') === true || $p->has_class('brxe-tabs-nested') === true) && $p->expects_closer() && isset(self::CONTAINERS[$top->kind])) {
             self::flush($top); // text before the tabs stays outside their range
+            if ($t !== null) {
+                $t->nested = true; // these tabs take their level from $t's pane
+            }
             $this->tabs[] = (object) [
+                'n' => $this->tab_count++, 'nested' => false,
                 'depth' => $depth, 'frame' => $top, 'start' => count($top->blocks),
                 'level' => $this->heading === 0 ? 3 : min(6, $this->heading + 1),
                 'seen' => $this->heading, // the last heading in document order, if pairing fails
@@ -348,12 +369,14 @@ class Converter
         array_pop($this->tabs);
         $this->heading = $t->seen;
         if (!$t->ok || $this->top() !== $t->frame || count($t->titles) !== count($t->panes)) {
+            $this->fail($t);
             return; // in doubt: titles and panes stay in document order
         }
         $paired = [];
         $heading = $t->seen;
         foreach ($t->panes as [$id, $blocks, $heading]) {
             if (!isset($t->titles[$id])) {
+                $this->fail($t);
                 return;
             }
             $paired[] = ['h', str_repeat('#', $t->level) . ' ' . $t->titles[$id]];
@@ -365,6 +388,14 @@ class Converter
         $this->heading = $heading; // the last pane's last heading, or its title
         foreach ($this->tabs as $outer) {
             $outer->seen = $heading;
+        }
+    }
+
+    /** Tabs that did not pair: tabs inside them were levelled as if they had, so convert() runs again. */
+    private function fail(\stdClass $t): void
+    {
+        if ($t->nested) {
+            $this->unpaired[$t->n] = true;
         }
     }
 
