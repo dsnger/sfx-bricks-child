@@ -87,13 +87,21 @@ class Response
         }
         // Close what a callback opened and left behind, down to our own discard buffer, before the
         // headers are restored: a leftover handler may throw or change the status as it is closed.
-        while (ob_get_level() >= $discard) {
+        // Bounded: a buffer that cannot be removed, or an attempt that leaves the level where it
+        // was (a site handler that turns the notice into an exception), ends the cleanup in doubt.
+        for ($level = ob_get_level(); $level >= $discard; $level = ob_get_level()) {
+            if (!(ob_get_status()['flags'] & PHP_OUTPUT_HANDLER_REMOVABLE)) {
+                $failed = true;
+                break;
+            }
             try {
-                if (!ob_end_clean()) {
-                    break;
-                }
+                ob_end_clean();
             } catch (\Throwable $e) {
                 $failed = true; // PHP removed the buffer whose handler threw.
+            }
+            if (ob_get_level() >= $level) {
+                $failed = true;
+                break;
             }
         }
         // A leftover handler that changed the status without throwing is in doubt too.

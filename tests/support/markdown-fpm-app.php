@@ -229,6 +229,23 @@ switch ($scenario) {
             return $url;
         });
         break;
+    case 'canonical-non-removable-notice':
+        // Finding (cycle mdrd5v2n8q): a site handler turns notices into exceptions, and the filter
+        // leaves a buffer the cleanup cannot remove, so each ob_end_clean() attempt throws without progress.
+        // Only ob_end_clean()'s notice, as in the review probe: the shutdown drain's ob_end_flush() notice on
+        // the same leftover buffer would turn into an uncaught exception and a 500 that the site's buffer
+        // causes with or without the module (core's rel_canonical() runs the same filter).
+        set_error_handler(static function (int $level, string $message, string $file = '', int $line = 0): bool {
+            if (($level & E_NOTICE) && strpos($message, 'ob_end_clean') === 0) {
+                throw new ErrorException($message, 0, $level, $file, $line);
+            }
+            return false;
+        });
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(null, 0, PHP_OUTPUT_HANDLER_CLEANABLE | PHP_OUTPUT_HANDLER_FLUSHABLE);
+            return $url;
+        });
+        break;
     case 'enhance-user-error':
         add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
             trigger_error('enhancement failed', E_USER_ERROR);

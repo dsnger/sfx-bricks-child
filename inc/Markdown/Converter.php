@@ -306,7 +306,7 @@ class Converter
         if ($t !== null && $t->ok) {
             if ($depth === $t->depth + 1) {
                 $t->child = $p->has_class('tab-menu') === true ? 'title' : ($p->has_class('tab-content') === true ? 'pane' : null);
-                $t->ok = $t->child !== null;
+                $t->ok = $t->child !== null && $p->expects_closer(); // a void or atomic wrapper holds no titles or panes
             } elseif ($depth === $t->depth + 2) {
                 $id = $p->get_attribute($t->child === 'title' ? 'aria-controls' : 'id');
                 if ($p->has_class('tab-' . $t->child) !== true || !is_string($id) || $id === '' || !isset(self::CONTAINERS[$top->kind]) || !$p->expects_closer()) {
@@ -368,7 +368,7 @@ class Converter
         }
         array_pop($this->tabs);
         $this->heading = $t->seen;
-        if (!$t->ok || $this->top() !== $t->frame || count($t->titles) !== count($t->panes)) {
+        if (!$t->ok || $this->top() !== $t->frame || $t->panes === [] || count($t->titles) !== count($t->panes)) {
             $this->fail($t);
             return; // in doubt: titles and panes stay in document order
         }
