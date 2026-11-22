@@ -9,6 +9,11 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Markdown: two risk-pass Minors of cycle mdrd5v2n8q** (accepted, not repaired at the cap):
+      (1) `inc/Markdown/Response.php` cleanup loop retries a non-removable buffer forever when an
+      error handler turns ob_end_clean()'s notice into an exception; (2) `inc/Markdown/Converter.php`
+      accepts a void element (e.g. `img.tab-menu`) as a tab menu, so pairing can splice out visible
+      output. Planned right after this cycle, before the release.
 - [ ] **Markdown module follow-ups (final review triage, 2026-11-21)** — backlog, none leaks
       content: Accept parameters other than `q` are dropped (`text/html;level=1`);
       `Vary: *` becomes `*, Accept`; a memory/time limit during conversion (a PHP fatal error, which
