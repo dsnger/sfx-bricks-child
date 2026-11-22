@@ -18,7 +18,7 @@ class Converter
     /** Dropped with their whole subtree. */
     private const DROPPED = [
         'HEAD' => 1, 'SCRIPT' => 1, 'STYLE' => 1, 'NOSCRIPT' => 1, 'TEMPLATE' => 1, 'SVG' => 1,
-        'MATH' => 1, 'IFRAME' => 1, 'FORM' => 1, 'SELECT' => 1, 'TEXTAREA' => 1, 'BUTTON' => 1,
+        'MATH' => 1, 'IFRAME' => 1, 'FORM' => 1, 'SELECT' => 1, 'TEXTAREA' => 1,
         'NAV' => 1, 'VIDEO' => 1, 'AUDIO' => 1, 'CANVAS' => 1, 'OBJECT' => 1, 'EMBED' => 1, 'DIALOG' => 1,
         // Atomic like XMP (text on the tag token), but display:none in every browser.
         'TITLE' => 1, 'NOEMBED' => 1, 'NOFRAMES' => 1,
@@ -48,6 +48,9 @@ class Converter
     private ?int $skip = null;
 
     private string $out = '';
+
+    /** @var array<int, true> Depths of open Bricks buttons (class brxe-button). */
+    private array $buttons = [];
 
     /** An ordered-list number past nine digits, which CommonMark cannot write: pass-through. */
     private bool $overflow = false;
@@ -108,6 +111,10 @@ class Converter
         }
         if ($closer) {
             $this->close((string) $p->get_tag(), $depth + 1);
+            if (isset($this->buttons[$depth + 1])) {
+                unset($this->buttons[$depth + 1]);
+                $this->word_boundary();
+            }
             return true;
         }
 
@@ -142,7 +149,20 @@ class Converter
         while ($this->stack !== [] && $this->top()->depth >= $depth) {
             $this->finish();
         }
+        if ($this->stack !== [] && !$void && $p->has_class('brxe-button') === true) {
+            // Adjacent Bricks buttons have no whitespace between them in the HTML.
+            $this->buttons[$depth] = true;
+            $this->word_boundary();
+        }
         return $this->stack === [] || $this->open($p, $tag, $depth);
+    }
+
+    /** One space in the current line, unless it is at a start or already ends in whitespace. */
+    private function word_boundary(): void
+    {
+        if ($this->stack !== [] && $this->top()->kind !== 'pre') {
+            self::space($this->top());
+        }
     }
 
     /**

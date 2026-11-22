@@ -238,7 +238,7 @@ the parser's depth, so closing an element always ends exactly what it opened.
   real address in `data-src` (`includes/frontend.php:1187-1226`); when `src` is missing or a
   `data:` URL and `data-src` is set, `data-src` is used.
 - **Dropped with their whole subtree:** elements with `id="brx-header"` or `id="brx-footer"`; `head`, `script`, `style`, `noscript`, `template`, `svg`,
-  `math`, `iframe`, `form`, `select`, `textarea`, `button`, `nav`, `video`, `audio`, `canvas`,
+  `math`, `iframe`, `form`, `select`, `textarea`, `nav`, `video`, `audio`, `canvas`,
   `object`, `embed`, `dialog`; any element with the `hidden` attribute, `aria-hidden="true"` or
   `role="navigation"`; Bricks pagination (`class` contains `bricks-pagination`,
   `includes/helpers.php:1192-1207`).
@@ -512,4 +512,30 @@ on every load of the settings page; they now run only when the admin asks for th
 - **Open questions:** none.
 - **Dependent artifacts:** none open — `inc/Markdown/AdminPage.php` and
   `tests/markdown-admin-page-test.php` are updated in this change.
+- **Reviews already run:** none for this change.
+
+**Changed 2026-11-22 — gap found.** Decided by Daniel, 2026-11-22, in conversation, after he
+reported the missing accordion title. Baseline: 4908d54. Bricks renders a nestable accordion's
+title as a `button` with the heading inside it, so dropping `button` with its subtree lost every
+accordion title on the DDEV demo front page.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § Conversion, Dropped: `button` | dropped — unwrapped like other elements; its text stays | none |
+| Story AC-2 (headings, paragraphs, lists, links, images) | kept | none |
+
+- **Added without an earlier condition:** an element whose class list contains `brxe-button`
+  (a Bricks button, rendered as `span` without a link or `a` with one) is a word boundary: a single
+  space separates it from the text next to it, because adjacent Bricks buttons have no whitespace
+  between them in the HTML (`Mehr InfosMehr Infos` before).
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: `button` elements and Bricks buttons; out: buttons inside a dropped
+  element (`form`, `nav`, …), which still go with it; `svg` stays dropped, so an icon-only button
+  yields nothing.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/Converter.php`,
+  `tests/markdown-converter-test.php`, `tests/markdown-commonmark-test.mjs`,
+  `tests/support/markdown-convert-cases.php` and the drop-list copy in
+  `tests/support/markdown-live-check.sh` are updated in this change.
 - **Reviews already run:** none for this change.

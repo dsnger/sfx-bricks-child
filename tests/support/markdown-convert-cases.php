@@ -57,6 +57,7 @@ $inputs = [
     'code_link_img'   => '<p><a href="ftp://files.example/"><code>a</code></a><code>`</code><code>&lt;img src=x onerror=alert(1)&gt;</code></p>',
     'nbsp_edge'       => '<p><strong>First</strong><strong>Second&nbsp;</strong>end</p>',
     'emsp_edge'       => '<p><strong>a</strong><em>b&#x2003;</em>tail</p>',
+    'button_links'    => '<div><a class="brxe-button" href="/a">A</a><a class="brxe-button" href="/b">B</a></div>',
     'literal_marks'   => '<p><strong>**a**</strong> <em>*b* _c_</em> <code>`d` ``e``</code></p>',
     'link_code'       => '<p><a href="/x">a</a><code>b</code><a href="/y">c</a></p>',
     'bang_image'      => '<p>Hi!<img src="/i.png" alt="i"><img src="/j.png" alt="j"></p>',

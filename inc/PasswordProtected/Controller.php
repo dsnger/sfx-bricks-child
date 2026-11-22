@@ -275,6 +275,21 @@ class Controller
      */
     private static function is_llms_txt_request(): bool
     {
+        // Fail closed on what WordPress parsed too: an encoding the raw check misses still
+        // reaches Rank Math through its rule (^llms\.txt$) or its query var (llms_txt).
+        $wp = $GLOBALS['wp'] ?? null;
+        if (is_object($wp)) {
+            if (($wp->matched_rule ?? null) === '^llms\.txt$') {
+                return true;
+            }
+            if (is_string($wp->request ?? null) && trim($wp->request, '/') === 'llms.txt') {
+                return true; // WP::$request is already relative to the home path
+            }
+        }
+        // get_query_var() reads $wp_query, which is unset before the main query.
+        if (isset($GLOBALS['wp_query']) && function_exists('get_query_var') && !empty(get_query_var('llms_txt'))) {
+            return true;
+        }
         $path = trim(urldecode(explode('?', Settings::request_string($_SERVER, 'REQUEST_URI'), 2)[0]), '/');
         $home = trim((string) wp_parse_url(home_url('/'), PHP_URL_PATH), '/');
         if ($home !== '') {
@@ -284,7 +299,10 @@ class Controller
             $path = trim(substr($path, strlen($home)), '/');
         }
 
-        return $path === 'llms.txt';
+        // PATH_INFO permalinks: WordPress matches index.php/llms.txt against the same rule.
+        // index.php in any case, as a case-insensitive file system serves it.
+        return $path === 'llms.txt'
+            || (strcasecmp(substr($path, 0, 10), 'index.php/') === 0 && substr($path, 10) === 'llms.txt');
     }
 
     public static function maybe_disable_feeds(): void

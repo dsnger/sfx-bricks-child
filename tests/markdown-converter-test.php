@@ -83,7 +83,7 @@ assert_same("ab\n", md('<p><span>a</span><span>b</span></p>'), '1: span unwrappe
 assert_same("keep\n\nend\n", md('<p>keep</p><script>s</script><style>x</style><svg><text>svgtext</text></svg><form><p>formtext</p></form>'
     . '<nav>navtext</nav><div hidden>h</div><div aria-hidden="true">ah</div><div role="navigation">rn</div>'
     . '<div class="x bricks-pagination">pg</div><header id="brx-header">hd</header><noscript>ns</noscript><template>tp</template>'
-    . '<iframe src="/x"></iframe><button>b</button><select><option>o</option></select><textarea>t</textarea>'
+    . '<iframe src="/x"></iframe><form><button>b</button></form><select><option>o</option></select><textarea>t</textarea>'
     . '<video>v</video><audio>au</audio><canvas>c</canvas><object>ob</object><dialog>d</dialog><p>end</p>'), '2: dropped elements');
 assert_same("a\n", md('<p>a<input hidden><embed src="/x"></p>'), '2: dropped void elements');
 
@@ -218,5 +218,17 @@ assert_same("1.\n2. second\n", md('<ol><li></li><li>second</li></ol>'), '9: empt
 assert_same("3. a\n4.\n5. c\n", md('<ol start="3"><li>a</li><li><script>x</script></li><li>c</li></ol>'), '9: emptied item keeps its number');
 assert_same("- text\n\n  1.\n  2. b\n", md('<ul><li>text<ol><li></li><li>b</li></ol></li></ul>'), '9: list with an empty first item does not follow a line directly');
 assert_same("## Studio \\#\n", md('<h2>Studio #</h2>'), '9: heading trailing # (Escape::heading_tail)');
+
+// 10. Buttons are unwrapped (spec Changes 2026-11-22): a Bricks accordion title is a button.
+assert_same("### Title\n\nPanel text\n", md('<div class="brxe-accordion-nested"><div class="brxe-block listening">'
+    . '<button class="brxe-block accordion-title-wrapper" role="button" aria-expanded="false" aria-controls="p1"><h3 class="brxe-heading">Title</h3><span class="brxe-icon"><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></span></button>'
+    . '<div class="brxe-block accordion-content-wrapper" id="p1"><p>Panel text</p></div></div></div>'), '10: accordion title inside a button kept');
+assert_same("a\n", md('<p>a</p><button><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></button>'), '10: icon-only button yields nothing');
+assert_same("a\n", md('<p>a</p><form><button>Send</button></form>'), '10: button inside a form dropped with it');
+// Adjacent Bricks buttons are separate words.
+assert_same("Mehr Infos Mehr Infos\n", md('<div><span class="brxe-button bricks-button">Mehr Infos</span><span class="brxe-button bricks-button">Mehr Infos</span></div>'), '10: adjacent span buttons separated');
+assert_same("[A](<https://ex.test/a>) [B](<https://ex.test/b>)\n", md('<div><a class="brxe-button" href="/a">A</a><a class="brxe-button" href="/b">B</a></div>'), '10: adjacent linked buttons separated');
+assert_same("Read [more](<https://ex.test/m>) now.\n", md('<p>Read <a class="brxe-button" href="/m">more</a> now.</p>'), '10: button in a sentence keeps normal spacing');
+assert_same("x A B y\n", md('<p>x <span class="brxe-button">A</span> <span class="brxe-button"> B </span> y</p>'), '10: no double spaces around buttons');
 
 echo "PASS: markdown-converter ({$checks} checks)\n";

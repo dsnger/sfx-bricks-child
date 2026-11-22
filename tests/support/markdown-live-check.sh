@@ -300,7 +300,7 @@ echo "== AC-12: Bricks lazy-loaded images (front page)"
 cp "$TMP/front-html.b" "$LOCK/front.html"
 dest=$(wpe "\$d = wp_upload_dir()['basedir'] . '/sfx-md-live.lock/';
   if (trim((string) @file_get_contents(\$d . 'owner')) !== '$RUN') { echo 'UNREADABLE'; return; }
-  \$drop = ['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','SVG','MATH','IFRAME','FORM','SELECT','TEXTAREA','BUTTON','NAV','VIDEO','AUDIO','CANVAS','OBJECT','EMBED','DIALOG'];
+  \$drop = ['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','SVG','MATH','IFRAME','FORM','SELECT','TEXTAREA','NAV','VIDEO','AUDIO','CANVAS','OBJECT','EMBED','DIALOG'];
   \$p = WP_HTML_Processor::create_full_parser((string) file_get_contents(\$d . 'front.html')); if (!\$p) { echo 'UNPARSED'; return; }
   \$root = null; \$skip = null;
   try { while (\$p->next_token()) {

@@ -101,6 +101,8 @@ means('nbsp_edge', '<p>', 'FirstSecond\u00A0end');
 means('emsp_edge', '<p>', 'ab\u2003tail');
 // Markdown delimiters inside strong/em/code render literally.
 means('literal_marks', '<p>**a** *b* _c_ `d` ``e``</p>');
+// Two adjacent Bricks button links stay two links with a space between them.
+means('button_links', '<p><a href="https://ex.test/a">A</a> <a href="https://ex.test/b">B</a></p>');
 means('link_code', '<p><a href="https://ex.test/x">a</a>b<a href="https://ex.test/y">c</a></p>');
 means('bang_image', '<p>Hi!<img src="https://ex.test/i.png" alt="i" /><img src="https://ex.test/j.png" alt="j" /></p>');
 means('emph_code', '<p>abc</p>');

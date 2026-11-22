@@ -52,6 +52,15 @@ function home_url($path = '')
     return rtrim($test_home, '/') . '/' . ltrim((string) $path, '/');
 }
 
+$test_query_vars = [];
+
+function get_query_var($name, $default = '')
+{
+    global $test_query_vars;
+
+    return $test_query_vars[$name] ?? $default;
+}
+
 function wp_parse_url($url, $component = -1)
 {
     return parse_url($url, $component);
@@ -101,6 +110,9 @@ function reset_request(): void
     $test_logged_in = false;
     $test_is_feed = false;
     $test_is_robots = false;
+    global $test_query_vars;
+    $test_query_vars = [];
+    unset($GLOBALS['wp'], $GLOBALS['wp_query']);
     $test_home = 'https://ex.test/';
     $_SERVER['REQUEST_URI'] = '/';
     unset($_SERVER['REMOTE_ADDR']);
@@ -226,6 +238,62 @@ $test_is_robots = true;
 assert_true(Controller::is_active(), '7b: subdirectory install, /sub/llms.txt?robots=1 is gated');
 $_SERVER['REQUEST_URI'] = '/sub/robots.txt';
 assert_true(!Controller::is_active(), '7b: subdirectory install, /sub/robots.txt stays exempt');
+
+// 7c. PATH_INFO permalinks: /index.php/llms.txt still matches Rank Math's ^llms\.txt$ rule.
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/index.php/llms.txt?robots=1';
+$test_is_robots = true;
+assert_true(Controller::is_active(), '7c: /index.php/llms.txt?robots=1 is gated');
+$_SERVER['REQUEST_URI'] = '/index.php/robots.txt';
+assert_true(!Controller::is_active(), '7c: /index.php/robots.txt keeps its exemption');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => true]);
+$test_home = 'https://ex.test/sub/';
+$_SERVER['REQUEST_URI'] = '/sub/index.php/llms.txt?feed=rss2';
+$test_is_feed = true;
+assert_true(Controller::is_active(), '7c: subdirectory install, /sub/index.php/llms.txt?feed=rss2 is gated');
+
+// 7d. Fail closed on what WordPress parsed, not only on the raw path: an encoding the raw
+// check misses still reaches Rank Math through its rule, the parsed request or its query var.
+set_error_handler(static function (int $no, string $msg): bool {
+    throw new ErrorException($msg, 0, $no); // a warning from a missing $wp property fails the test
+});
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/llms%2Etxt?robots=1';
+$test_is_robots = true;
+$GLOBALS['wp'] = (object) ['matched_rule' => '^llms\.txt$', 'request' => ''];
+assert_true(Controller::is_active(), '7d: /llms%2Etxt?robots=1 with Rank Math\'s rule matched is gated');
+$_SERVER['REQUEST_URI'] = '/x?robots=1';
+assert_true(Controller::is_active(), '7d: Rank Math\'s matched rule is gated whatever the raw path');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$test_is_robots = true;
+$GLOBALS['wp'] = (object) ['matched_rule' => null, 'request' => 'llms.txt'];
+$_SERVER['REQUEST_URI'] = '/x?robots=1';
+assert_true(Controller::is_active(), '7d: a parsed request of llms.txt is gated');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/x?robots=1';
+$test_is_robots = true;
+$GLOBALS['wp_query'] = new stdClass();
+$test_query_vars = ['llms_txt' => '1'];
+assert_true(Controller::is_active(), '7d: Rank Math\'s llms_txt query var is gated');
+
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/robots.txt';
+$test_is_robots = true;
+$GLOBALS['wp'] = new stdClass(); // no matched_rule, no request: no warning
+$GLOBALS['wp_query'] = new stdClass();
+assert_true(!Controller::is_active(), '7d: /robots.txt stays exempt with $wp lacking the properties');
+$GLOBALS['wp'] = (object) ['matched_rule' => 'robots\.txt$', 'request' => 'robots.txt'];
+assert_true(!Controller::is_active(), '7d: /robots.txt stays exempt with its own rule matched');
+restore_error_handler();
 
 // 8. THE CACHE INVARIANT: an exemption must never switch protection off globally.
 reset_request();
