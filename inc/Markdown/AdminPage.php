@@ -39,7 +39,8 @@ class AdminPage
         $on = \SFX\SFXBricksChildTheme::is_general_option_enabled('enable_markdown');
         // The checks make up to four loopback requests: only on the admin's request (nonce-checked).
         $asked = isset($_GET['sfx_markdown_check']);
-        $valid = $asked && wp_verify_nonce(sanitize_text_field(wp_unslash((string) ($_GET['_wpnonce'] ?? ''))), 'sfx_markdown_check');
+        $nonce = $_GET['_wpnonce'] ?? ''; // Only a string is a nonce: ?_wpnonce[]= is an array.
+        $valid = $asked && is_string($nonce) && wp_verify_nonce(sanitize_text_field(wp_unslash($nonce)), 'sfx_markdown_check');
         $run = $on && $parser && $valid;
         $newest = LlmsTxt::newest_listed_url();
         $llms_url = home_url('/llms.txt');

@@ -122,14 +122,18 @@ namespace SFX\Markdown {
     hasnt($html, 'did not run', '0b: no bad-nonce notice');
     $GLOBALS['tr'] = [];
 
-    // 0c. Parameter with a bad or missing nonce: no request, a short notice.
-    foreach ([['sfx_markdown_check' => '1', '_wpnonce' => 'bad'], ['sfx_markdown_check' => '1']] as $get) {
+    // 0c. Parameter with a bad, missing or array-valued nonce: no request, a short notice, no warning.
+    set_error_handler(static function (int $no, string $msg): bool {
+        throw new \ErrorException($msg, 0, $no); // e.g. "Array to string conversion" fails the test
+    });
+    foreach ([['sfx_markdown_check' => '1', '_wpnonce' => 'bad'], ['sfx_markdown_check' => '1'], ['sfx_markdown_check' => '1', '_wpnonce' => ['good']]] as $get) {
         $_GET = $get;
         $html = render();
         assert_true($GLOBALS['requests'] === [], '0c: no request with a bad nonce');
         has($html, 'The checks did not run', '0c: bad-nonce notice');
     }
-    assert_true(\SFX\AccessControl::$died === 3, '0c: capability gate called on every load');
+    restore_error_handler();
+    assert_true(\SFX\AccessControl::$died === 4, '0c: capability gate called on every load');
     \SFX\AccessControl::$died = 0;
 
     // From here on the admin clicked the button: valid nonce.

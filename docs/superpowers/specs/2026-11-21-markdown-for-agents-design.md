@@ -104,8 +104,9 @@ Calls made in this run (autonomous run approved; Claude's choices, recorded per 
   (`$wp->matched_rule === '^llms\.txt$'`) and the status is 200. In both cases Bricks maintenance
   must not apply to this request (`\Bricks\Maintenance::is_applied()`, a public static; a Bricks
   without that method counts as "applied", so the index is not served). The query-string rule
-  closes `?robots=1` and `?feed=…`, which would exempt the request from the site-wide password
-  gate. Rank Math is not switched off: the theme answers its address first (priority 1 before its
+  closes `?robots=1` and `?feed=…`, which the site-wide password gate exempted until 2026-11-22;
+  since then that gate covers `/llms.txt` with any query string (§ Changes), and the rule stays as
+  a second line against a gate that still exempts such requests. Rank Math is not switched off: the theme answers its address first (priority 1 before its
   10), and nothing of Rank Math's stored state changes (D4).
 - **D14 — post types offered** are public types that can be viewed singly (`publicly_queryable`,
   plus `page`), except `attachment` and Bricks' `bricks_template` (public, but Bricks denies
@@ -398,11 +399,12 @@ request, so a clean result proves nothing about the CDN. A failed or redirected 
   password protection on — `?markdown=1`, `Accept` and `/llms.txt` give the login redirect; Bricks
   maintenance mode on — they give the maintenance answer; in both, `/llms.txt?robots=1` and
   `/llms.txt?feed=rss2` give exactly what the same request gives with the module off, and never
-  the theme's index or its marker header. The module-off response is the baseline per plugin
+  the theme's index or its marker header. With the site-wide password protection on, both also
+  give the login redirect with the module on and off, with and without Rank Math's llms module,
+  and no index content: the gate covers `/llms.txt` whatever its query string (§ Changes,
+  2026-11-22). With Bricks maintenance mode on, the module-off response is the baseline per plugin
   setup: without Rank Math it is WordPress' robots or feed response; with Rank Math's llms module
-  on, Rank Math 1.0.282 itself answers `/llms.txt?robots=1` with its own index past the password
-  gate (its handler checks only its query var) — an existing exposure of that plugin, not added by
-  the theme, recorded in `todos.md`; a Redirects 410 rule on `/llms.txt` — 410 stays.
+  on, whatever Rank Math 1.0.282 answers there; a Redirects 410 rule on `/llms.txt` — 410 stays.
 
 ## Sources and impact boundary
 
@@ -539,3 +541,31 @@ accordion title on the DDEV demo front page.
   `tests/support/markdown-convert-cases.php` and the drop-list copy in
   `tests/support/markdown-live-check.sh` are updated in this change.
 - **Reviews already run:** none for this change.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation.
+Baseline: 8987a46. With Rank Math's llms module on, `/llms.txt?robots=1` and `/llms.txt?feed=rss2`
+reached Rank Math's index past the site-wide password gate, because that gate exempted every
+`is_robots()` request and, with `allow_feeds` on, every feed. The gate now covers `/llms.txt` with
+any query string, and its robots exemption applies only to `/robots.txt` itself
+(`docs/superpowers/specs/2026-07-17-password-protected-design.md`, § Changes). Bricks maintenance
+mode is a separate gate and is not changed.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| D13: "The query-string rule closes `?robots=1` and `?feed=…`, which would exempt the request from the site-wide password gate" | kept, reason moved — the rule stays; the password gate no longer exempts these requests, so it is a second line against a gate that still does | none |
+| § Verification, Abuse path: with the password protection on, `/llms.txt?robots=1` and `/llms.txt?feed=rss2` give "exactly what the same request gives with the module off" | kept, narrowed — with the password protection on they must also give the login redirect, module on and off, with and without Rank Math, with no index content | none |
+| § Verification, Abuse path: "with Rank Math's llms module on, Rank Math 1.0.282 itself answers `/llms.txt?robots=1` with its own index past the password gate … recorded in `todos.md`" | dropped — the exposure is closed (`todos.md`, Done); the module-off baseline stays for Bricks maintenance mode | none |
+| Story AC-5 (gates and access are respected) | kept | none |
+
+- **Added without an earlier condition:** none.
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: the site-wide password gate on `/llms.txt` and on `?robots=1`
+  requests; out: Bricks maintenance mode, the theme's own `/llms.txt` matching (D13), real
+  `/robots.txt` and real feeds.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/PasswordProtected/Controller.php`, its two tests,
+  `inc/Markdown/LlmsTxt.php` (comment) and `tests/support/markdown-live-check.sh` are updated in
+  this change.
+- **Reviews already run:** Gate B cycle mdfu4w8k2r reviews its implementation; pass 1 found
+  this specification still describing the old exemption.

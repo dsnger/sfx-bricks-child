@@ -72,6 +72,9 @@ class Response
         $headers = headers_list();
         // Fail closed: any Throwable before commit() passes the captured HTML through. A PHP fatal
         // error (memory, time limit) cannot be caught here; it ends the request without the page.
+        // Callbacks below must not print: dropped on both paths, and held back so an echo cannot
+        // send the headers before restore_headers() puts them back.
+        ob_start();
         try {
             $queried = get_queried_object(); // Explicit: a bare call reads the global $post, which a loop may have left changed.
             $canonical = $queried instanceof \WP_Post ? wp_get_canonical_url($queried) : null;
@@ -80,6 +83,8 @@ class Response
         } catch (\Throwable $e) {
             self::restore_headers($status, $headers);
             $markdown = null;
+        } finally {
+            ob_end_clean();
         }
         if ($markdown === null) {
             echo $html; // Pass-through: unfiltered, so core's own buffer filters it once (P1).

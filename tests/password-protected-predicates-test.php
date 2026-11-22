@@ -258,32 +258,37 @@ assert_true(Controller::is_active(), '7c: subdirectory install, /sub/index.php/l
 
 // 7d. Fail closed on what WordPress parsed, not only on the raw path: an encoding the raw
 // check misses still reaches Rank Math through its rule, the parsed request or its query var.
+// Each case is an allowed feed on a raw path other than llms.txt, so only the one parsed
+// signal under test decides; on a ?robots=1 request the robots-path check would decide first.
 set_error_handler(static function (int $no, string $msg): bool {
     throw new ErrorException($msg, 0, $no); // a warning from a missing $wp property fails the test
 });
-reset_request();
-configure(['status' => true, 'password' => 'hashed:x']);
-$_SERVER['REQUEST_URI'] = '/llms%2Etxt?robots=1';
-$test_is_robots = true;
-$GLOBALS['wp'] = (object) ['matched_rule' => '^llms\.txt$', 'request' => ''];
-assert_true(Controller::is_active(), '7d: /llms%2Etxt?robots=1 with Rank Math\'s rule matched is gated');
-$_SERVER['REQUEST_URI'] = '/x?robots=1';
-assert_true(Controller::is_active(), '7d: Rank Math\'s matched rule is gated whatever the raw path');
+foreach ([
+    'Rank Math\'s matched rule' => static function (): void {
+        $GLOBALS['wp'] = (object) ['matched_rule' => '^llms\.txt$', 'request' => ''];
+    },
+    'a parsed request of llms.txt' => static function (): void {
+        $GLOBALS['wp'] = (object) ['matched_rule' => null, 'request' => 'llms.txt'];
+    },
+    'Rank Math\'s llms_txt query var' => static function (): void {
+        $GLOBALS['wp_query'] = new stdClass();
+        $GLOBALS['test_query_vars'] = ['llms_txt' => '1'];
+    },
+] as $signal => $set_signal) {
+    reset_request();
+    configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => true]);
+    $_SERVER['REQUEST_URI'] = '/x?feed=rss2';
+    $test_is_feed = true;
+    assert_true(!Controller::is_active(), "7d control: /x?feed=rss2 without {$signal} is an allowed feed");
+    $set_signal();
+    assert_true(Controller::is_active(), "7d: /x?feed=rss2 with {$signal} is gated, even with allow_feeds on");
+}
 
 reset_request();
-configure(['status' => true, 'password' => 'hashed:x']);
-$test_is_robots = true;
-$GLOBALS['wp'] = (object) ['matched_rule' => null, 'request' => 'llms.txt'];
-$_SERVER['REQUEST_URI'] = '/x?robots=1';
-assert_true(Controller::is_active(), '7d: a parsed request of llms.txt is gated');
-
-reset_request();
-configure(['status' => true, 'password' => 'hashed:x']);
-$_SERVER['REQUEST_URI'] = '/x?robots=1';
-$test_is_robots = true;
-$GLOBALS['wp_query'] = new stdClass();
-$test_query_vars = ['llms_txt' => '1'];
-assert_true(Controller::is_active(), '7d: Rank Math\'s llms_txt query var is gated');
+configure(['status' => true, 'password' => 'hashed:x', 'allow_feeds' => true]);
+$_SERVER['REQUEST_URI'] = '/llms%2Etxt?feed=rss2';
+$test_is_feed = true;
+assert_true(Controller::is_active(), '7d: /llms%2Etxt?feed=rss2 is gated by the decoded raw path alone');
 
 reset_request();
 configure(['status' => true, 'password' => 'hashed:x']);

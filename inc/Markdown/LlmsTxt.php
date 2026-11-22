@@ -25,7 +25,8 @@ class LlmsTxt
     /**
      * D13: exact path, no query string, status 404 (or Rank Math's own 200), no Bricks maintenance.
      * GET/HEAD only and no feed/robots request: WordPress also reads query vars from a POST body, and
-     * the password gate exempts feed and robots requests.
+     * a gate may exempt feed and robots requests (the theme's password gate covers /llms.txt with any
+     * query string since 2026-11-22; this stays as a second line).
      */
     public static function matches(string $request_uri, string $home_path, int $status, ?string $matched_rule, bool $maintenance_applied, string $method, bool $is_feed, bool $is_robots): bool
     {

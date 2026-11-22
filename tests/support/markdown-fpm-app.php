@@ -173,11 +173,13 @@ switch ($scenario) {
         });
         break;
     case 'canonical-throw':
-        // A canonical filter that changes the headers and the status, then throws, after the capture was taken.
+        // A canonical filter that prints, changes the headers and the status, then throws, after the capture was taken.
         add_filter('get_canonical_url', static function (string $url): string {
+            echo 'CANONICAL-NOISE';
             header('X-Canonical-Filter: 1');
             header('Content-Type: text/plain');
             http_response_code(503);
+            echo 'CANONICAL-NOISE';
             throw new RuntimeException('canonical filter failed');
         });
         break;
