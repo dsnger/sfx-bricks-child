@@ -9,7 +9,7 @@ class Settings
     public static function get_fields(): array
     {
         return [
-            ['id' => 'disable_jquery', 'label' => 'Disable jQuery', 'type' => 'checkbox', 'default' => 1, 'group' => 'performance'],
+            ['id' => 'disable_jquery', 'label' => 'Disable jQuery', 'type' => 'checkbox', 'default' => 0, 'group' => 'performance'],
             ['id' => 'jquery_to_footer', 'label' => 'jQuery to footer', 'type' => 'checkbox', 'default' => 0, 'group' => 'performance'],
             ['id' => 'disable_search', 'label' => 'Disable search', 'type' => 'checkbox', 'default' => 0, 'group' => 'frontend'],
         ];

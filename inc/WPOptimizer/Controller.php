@@ -651,6 +651,9 @@ class Controller
                 wp_deregister_script('jquery');
                 wp_deregister_script('jquery-core');
             }, 100);
+            // WordPress' player skin (MediaElement) needs jQuery: without it, players keep the browser's own controls.
+            add_filter('wp_audio_shortcode_library', '__return_empty_string');
+            add_filter('wp_video_shortcode_library', '__return_empty_string');
         }
     }
 

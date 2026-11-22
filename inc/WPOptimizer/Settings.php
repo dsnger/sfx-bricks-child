@@ -53,9 +53,9 @@ class Settings
             [
                 'id'          => 'disable_jquery',
                 'label'       => __('Disable jQuery', 'sfxtheme'),
-                'description' => __('Removes jQuery from the frontend to improve performance. Only enable if your theme and plugins do not require jQuery. Not recommended unless you are certain no scripts depend on jQuery.', 'sfxtheme'),
+                'description' => __('Removes jQuery from the frontend to improve performance. Only enable if your theme and plugins do not require jQuery. Not recommended unless you are certain no scripts depend on jQuery. WordPress audio and video players then use the browser\'s own controls.', 'sfxtheme'),
                 'type'        => 'checkbox',
-                'default'     => 1,
+                'default'     => 0,
                 'group'       => 'performance',
             ],
             [
