@@ -9,6 +9,11 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
+- [ ] **Markdown: header restore before draining callback buffers** (Gate B cycle mdfu4w8k2r, risk
+      pass 3, Minor, accepted, not repaired): in `inc/Markdown/Response.php` the fail-closed path restores
+      headers before closing buffers a canonical filter left open, and that cleanup sits outside the
+      Throwable guard. A leftover buffer whose handler throws or changes the status can still give an
+      empty body or a wrong status. Drain first, inside the guard, then restore. Planned for the next round.
 - [ ] **Markdown module follow-ups (final review triage, 2026-11-21)** — backlog, none leaks
       content: Accept parameters other than `q` are dropped (`text/html;level=1`);
       `Vary: *` becomes `*, Accept`; a memory/time limit during conversion (a PHP fatal error, which
