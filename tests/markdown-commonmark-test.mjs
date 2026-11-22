@@ -131,4 +131,11 @@ means('llms_heading', '<h1>Studio #</h1>');
 // ... also when spaces or a tab follow it.
 means('llms_heading_space', '<h1>Studio #</h1>');
 
+// Readability (spec § Changes 2026-11-22): parts of one value stay separate words, the counter shows
+// its end value, and each tab pane follows its title as the next heading level.
+means('price_parts', '<p>$ 29 90</p>');
+means('post_meta', '<p>2026 0 Kommentare</p>');
+means('counter_end', '<p>1000+</p>');
+means('tabs_paired', '<h2>S</h2>\n<h3>T1</h3>\n<p>C1</p>\n<h3>T2</h3>\n<p>C2</p>');
+
 console.log(`markdown-commonmark-test: ${checks} checks passed`);

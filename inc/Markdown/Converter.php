@@ -49,8 +49,31 @@ class Converter
 
     private string $out = '';
 
-    /** @var array<int, true> Depths of open Bricks buttons (class brxe-button). */
-    private array $buttons = [];
+    /** @var array<int, true> Depths of open elements whose edges are word boundaries (word_part()). */
+    private array $bounded = [];
+
+    /**
+     * Part classes that hold one part of a value each; Bricks prints them side by side with no
+     * whitespace (Bricks 2.4.6 includes/elements/*.php). Only inside their own element.
+     */
+    private const PARTS = [
+        'brxe-pricing-tables' => ['pricing-table-original-price' => 1, 'pricing-table-price-prefix' => 1, 'pricing-table-price' => 1, 'pricing-table-price-suffix' => 1],
+        'brxe-post-meta' => ['item' => 1, 'separator' => 1],
+        'brxe-progress-bar' => ['label' => 1, 'percentage' => 1],
+        'brxe-list' => ['title' => 1, 'meta' => 1],
+    ];
+
+    /** @var list<array{0: int, 1: array<string, int>}> Open PARTS elements: depth, part classes. */
+    private array $scopes = [];
+
+    /** @var array{depth: int, value: ?string}|null The open Bricks counter and its end value. */
+    private ?array $counter = null;
+
+    /** The open Bricks tabs element being paired, or null. */
+    private ?\stdClass $tabs = null;
+
+    /** Level of the last heading written, 0 before the first. */
+    private int $heading = 0;
 
     /** An ordered-list number past nine digits, which CommonMark cannot write: pass-through. */
     private bool $overflow = false;
@@ -104,6 +127,9 @@ class Converter
         }
 
         if ($type === '#text') {
+            if ($this->tabs !== null && $this->tabs->open === null && trim(self::collapse($p->get_modifiable_text())) !== '') {
+                $this->tabs->ok = false; // text outside every title and pane
+            }
             return $this->stack === [] || $this->text($p->get_modifiable_text());
         }
         if (!$is_tag) {
@@ -111,9 +137,15 @@ class Converter
         }
         if ($closer) {
             $this->close((string) $p->get_tag(), $depth + 1);
-            if (isset($this->buttons[$depth + 1])) {
-                unset($this->buttons[$depth + 1]);
+            if (isset($this->bounded[$depth + 1])) {
+                unset($this->bounded[$depth + 1]);
                 $this->word_boundary();
+            }
+            while ($this->scopes !== [] && end($this->scopes)[0] > $depth) {
+                array_pop($this->scopes);
+            }
+            if ($this->counter !== null && $this->counter['depth'] > $depth) {
+                $this->counter = null;
             }
             return true;
         }
@@ -149,12 +181,186 @@ class Converter
         while ($this->stack !== [] && $this->top()->depth >= $depth) {
             $this->finish();
         }
-        if ($this->stack !== [] && !$void && $p->has_class('brxe-button') === true) {
-            // Adjacent Bricks buttons have no whitespace between them in the HTML.
-            $this->buttons[$depth] = true;
+        if ($this->stack === []) {
+            return true;
+        }
+        if (!$void && $this->word_part($p, $depth)) {
+            // Bricks prints the parts of one value (and adjacent buttons) with no whitespace between them.
+            $this->bounded[$depth] = true;
             $this->word_boundary();
         }
-        return $this->stack === [] || $this->open($p, $tag, $depth);
+        if ($this->counter !== null && $depth === $this->counter['depth'] + 1 && $p->has_class('count') === true) {
+            $value = $this->counter['value'];
+            $this->counter = null;
+            if ($value !== null && !$void) {
+                // The end value JS counts up to replaces the start value in the HTML.
+                $this->skip = $depth;
+                return $this->text($value);
+            }
+        }
+        if (!$this->open($p, $tag, $depth)) {
+            return false;
+        }
+        if (!$void && $p->has_class('brxe-counter') === true) {
+            $this->counter = ['depth' => $depth, 'value' => self::counter_end($p)];
+        }
+        $this->tabs_open($p, $depth);
+        return true;
+    }
+
+    /**
+     * Whether the element is a word of its own: a Bricks element (class brxe-* or bricks-*) or a
+     * part class of the PARTS element around it. Opens that element's scope as a side effect.
+     */
+    private function word_part(\WP_HTML_Processor $p, int $depth): bool
+    {
+        $parts = $this->scopes === [] ? [] : end($this->scopes)[1];
+        $word = false;
+        foreach ($p->class_list() ?? [] as $class) {
+            if (str_starts_with($class, 'brxe-') || str_starts_with($class, 'bricks-') || isset($parts[$class])) {
+                $word = true;
+            }
+            if (isset(self::PARTS[$class])) {
+                $this->scopes[] = [$depth, self::PARTS[$class]];
+            }
+        }
+        return $word;
+    }
+
+    /**
+     * The value Bricks' counter shows once its count-up ends (frontend.js bricksCounterFn), from
+     * data-bricks-counter-options; null keeps the server text.
+     */
+    private static function counter_end(\WP_HTML_Processor $p): ?string
+    {
+        $json = $p->get_attribute('data-bricks-counter-options');
+        $options = is_string($json) ? json_decode($json, true) : null;
+        if (!is_array($options) || !array_key_exists('countFrom', $options) || !array_key_exists('countTo', $options)) {
+            return null;
+        }
+        $from = self::whole($options['countFrom']);
+        $to = self::whole($options['countTo']);
+        if ($from === null || $to === null || $to <= $from) {
+            return null; // JS stops at once and leaves the start value
+        }
+        $thousands = $options['thousands'] ?? '';
+        if ($thousands === '' || $thousands === false) {
+            return (string) $to;
+        }
+        $separator = $options['separator'] ?? '';
+        if ($thousands !== true || !is_string($separator)) {
+            return null;
+        }
+        if ($separator === '') {
+            return (string) $to; // JS groups by the visitor's locale, unknown here: the digits alone
+        }
+        // esc_html()'d text, or digits that JS would read back as the count: in doubt.
+        if (strpbrk($separator, '&<0123456789') !== false) {
+            return null;
+        }
+        return number_format($to, 0, '.', $separator);
+    }
+
+    /** A non-negative whole number as JSON or a digit string, else null. */
+    private static function whole($v): ?int
+    {
+        if (is_int($v)) {
+            return $v >= 0 ? $v : null;
+        }
+        return is_string($v) && $v !== '' && strlen($v) <= 15 && ctype_digit($v) ? (int) $v : null;
+    }
+
+    /**
+     * Bricks tabs (brxe-tabs, brxe-tabs-nested): .tab-menu > .tab-title, then .tab-content > .tab-pane.
+     * Records where each title and pane starts; tabs_end() pairs them.
+     */
+    private function tabs_open(\WP_HTML_Processor $p, int $depth): void
+    {
+        $t = $this->tabs;
+        $top = $this->top();
+        if ($t === null) {
+            if (($p->has_class('brxe-tabs') === true || $p->has_class('brxe-tabs-nested') === true) && $p->expects_closer() && isset(self::CONTAINERS[$top->kind])) {
+                $this->tabs = (object) [
+                    'depth' => $depth, 'frame' => $top, 'start' => count($top->blocks),
+                    'level' => $this->heading === 0 ? 3 : min(6, $this->heading + 1),
+                    'child' => null, 'open' => null, 'titles' => [], 'panes' => [], 'ok' => true,
+                ];
+            }
+            return;
+        }
+        if (!$t->ok) {
+            return;
+        }
+        if ($depth === $t->depth + 1) {
+            $t->child = $p->has_class('tab-menu') === true ? 'title' : ($p->has_class('tab-content') === true ? 'pane' : null);
+            $t->ok = $t->child !== null;
+        } elseif ($depth === $t->depth + 2) {
+            $id = $p->get_attribute($t->child === 'title' ? 'aria-controls' : 'id');
+            if ($p->has_class('tab-' . $t->child) !== true || !is_string($id) || $id === '' || !isset(self::CONTAINERS[$top->kind]) || !$p->expects_closer()) {
+                $t->ok = false;
+                return;
+            }
+            $t->open = ['kind' => $t->child, 'id' => $id, 'depth' => $depth, 'frame' => $top, 'start' => count($top->blocks)];
+        }
+    }
+
+    /** At a closer, after the frames inside it finished: ends a title, a pane or the tabs. */
+    private function tabs_close(int $element_depth): void
+    {
+        $t = $this->tabs;
+        if ($t === null) {
+            return;
+        }
+        if ($t->open !== null && $t->open['depth'] === $element_depth) {
+            $o = $t->open;
+            $t->open = null;
+            if ($this->top() !== $o['frame']) {
+                $t->ok = false;
+                return;
+            }
+            self::flush($o['frame']);
+            $blocks = array_slice($o['frame']->blocks, $o['start']);
+            if ($o['kind'] === 'pane') {
+                $t->panes[] = [$o['id'], $blocks];
+                return;
+            }
+            $line = self::title_line($blocks);
+            if ($line === null || isset($t->titles[$o['id']])) {
+                $t->ok = false;
+                return;
+            }
+            $t->titles[$o['id']] = $line;
+            return;
+        }
+        if ($t->depth !== $element_depth) {
+            return;
+        }
+        $this->tabs = null;
+        if (!$t->ok || $this->top() !== $t->frame || count($t->titles) !== count($t->panes)) {
+            return; // in doubt: titles and panes stay in document order
+        }
+        $paired = [];
+        foreach ($t->panes as [$id, $blocks]) {
+            if (!isset($t->titles[$id])) {
+                return;
+            }
+            $paired[] = ['h', str_repeat('#', $t->level) . ' ' . $t->titles[$id]];
+            array_push($paired, ...$blocks);
+            unset($t->titles[$id]); // a second pane with the same id finds none
+        }
+        self::flush($t->frame);
+        array_splice($t->frame->blocks, $t->start, count($t->frame->blocks) - $t->start, $paired);
+    }
+
+    /** A tab title as heading text: exactly one paragraph or heading of one line, else null. */
+    private static function title_line(array $blocks): ?string
+    {
+        if (count($blocks) !== 1 || !in_array($blocks[0][0], ['p', 'h'], true)) {
+            return null;
+        }
+        $line = $blocks[0][1];
+        $line = $blocks[0][0] === 'h' ? ltrim(substr($line, strspn($line, '#')), ' ') : Escape::heading_tail($line);
+        return $line === '' || str_contains($line, "\n") ? null : $line;
     }
 
     /** One space in the current line, unless it is at a start or already ends in whitespace. */
@@ -329,6 +535,7 @@ class Converter
         if ($this->stack === []) {
             return;
         }
+        $this->tabs_close($element_depth);
         if ($this->top()->depth === $element_depth) {
             $this->finish();
         } elseif (isset(self::BLOCK[$tag])) {
@@ -467,6 +674,7 @@ class Converter
                 $body = trim($f->buf, ' ');
                 if ($body !== '') {
                     $parent->blocks[] = ['h', str_repeat('#', $f->level) . ' ' . Escape::heading_tail($body)];
+                    $this->heading = $f->level;
                 }
                 return;
             case 'pre':

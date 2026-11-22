@@ -67,6 +67,11 @@ $inputs = [
     'xmp'             => '<xmp>VISIBLE <b>EXAMPLE</b></xmp><p>Other</p>',
     'ol_empty_first'  => '<ol><li></li><li>second</li></ol>',
     'ol_empty_nested' => '<ul><li>text<ol><li></li><li>b</li></ol></li></ul>',
+    // Readability, spec § Changes 2026-11-22.
+    'price_parts'     => '<div class="brxe-pricing-tables"><div class="pricing-table-price-wrapper"><span class="pricing-table-price-prefix">$</span><span class="pricing-table-price">29</span><span class="pricing-table-price-suffix">90</span></div></div>',
+    'post_meta'       => '<div class="brxe-post-meta"><span class="item">2026</span><span class="item">0 Kommentare</span></div>',
+    'counter_end'     => '<div class="brxe-counter" data-bricks-counter-options="{&quot;countFrom&quot;:0,&quot;countTo&quot;:&quot;1000&quot;}"><span class="count">0</span><span class="suffix">+</span></div>',
+    'tabs_paired'     => '<h2>S</h2><div class="brxe-tabs"><ul class="tab-menu"><li class="tab-title" aria-controls="p0"><span>T1</span></li><li class="tab-title" aria-controls="p1"><span>T2</span></li></ul><ul class="tab-content"><li class="tab-pane" id="p0"><p>C1</p></li><li class="tab-pane" id="p1"><p>C2</p></li></ul></div>',
 ];
 
 $out = [];

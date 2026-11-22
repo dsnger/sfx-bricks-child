@@ -192,6 +192,31 @@ switch ($scenario) {
             throw new RuntimeException('canonical filter failed');
         });
         break;
+    case 'canonical-throw-buffer-clean-throw':
+        // The filter leaves a buffer open whose handler throws when the recovery cleans it.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer, int $phase): string {
+                if ($phase & PHP_OUTPUT_HANDLER_CLEAN) {
+                    throw new RuntimeException('leftover handler refuses CLEAN');
+                }
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
+    case 'canonical-throw-buffer-status':
+        // The filter leaves a buffer open whose handler changes the status when the recovery cleans it.
+        add_filter('get_canonical_url', static function (string $url): string {
+            ob_start(static function (string $buffer): string {
+                http_response_code(503);
+                header('X-Leftover-Handler: 1');
+                return $buffer;
+            });
+            echo 'CANONICAL-NOISE';
+            throw new RuntimeException('canonical filter failed');
+        });
+        break;
     case 'enhance-user-error':
         add_filter('wp_template_enhancement_output_buffer', static function (string $html): string {
             trigger_error('enhancement failed', E_USER_ERROR);

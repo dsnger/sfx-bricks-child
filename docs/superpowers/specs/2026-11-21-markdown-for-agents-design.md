@@ -247,6 +247,31 @@ the parser's depth, so closing an element always ends exactly what it opened.
   `em`/`i` and inline `code` (changed 2026-11-21, see Changes): their text is written as escaped
   prose, without `**`, `*` or backticks. Slider slides therefore stay as
   ordinary content, in document order.
+- **Word boundaries (Bricks):** an element whose class list holds a class starting with `brxe-` or
+  `bricks-` (a Bricks element, a Bricks button), and inside a pricing table, post meta, progress
+  bar or list element (`brxe-pricing-tables`, `brxe-post-meta`, `brxe-progress-bar`, `brxe-list`)
+  an element with one of its part classes (`pricing-table-original-price`,
+  `pricing-table-price-prefix`, `pricing-table-price`, `pricing-table-price-suffix`; `item`,
+  `separator`; `label`, `percentage`; `title`, `meta`), is a word boundary: a single space
+  separates it from the text next to it, because Bricks prints these parts with no whitespace
+  between them (`20260 Kommentare` before). Nothing is added that the HTML does not hold: a price
+  `$`/`29`/`90` becomes `$ 29 90`, a post-meta separator `·` stays as printed. Outside those
+  elements, part class names change nothing, and running text keeps its spacing.
+- **Bricks counter:** the `span.count` directly inside a `brxe-counter` element holds the start
+  value that Bricks' JavaScript counts up from; its text is replaced by the end value from the
+  element's `data-bricks-counter-options` JSON (`countTo`, `includes/elements/counter.php`,
+  `assets/js/frontend.js` `bricksCounterFn`), grouped with the JSON's `separator` when
+  `thousands` is set (digits alone when the separator is empty, since JavaScript then groups by
+  the visitor's locale). Prefix and suffix stay. In doubt — no or invalid JSON, a start or end that
+  is not a non-negative whole number, an end not above the start, an unexpected `thousands` or a
+  separator holding `&`, `<` or a digit — the server text stays.
+- **Bricks tabs:** in a `brxe-tabs` or `brxe-tabs-nested` element (`.tab-menu` > `.tab-title`,
+  then `.tab-content` > `.tab-pane`), each pane is written after its title, which becomes a
+  heading one level below the last heading written before the tabs (`###` when there is none,
+  at most `######`); the title list is not written separately. A title pairs with the pane whose
+  `id` equals the title's `aria-controls`. When they cannot be paired with certainty — counts or
+  ids that do not match, a title that is not exactly one line, any other child or text between
+  them — titles and panes stay in document order as before.
 - **URLs** (`href`, `src`, `data-src`): decoded by the parser; control characters and surrounding
   whitespace removed; resolved against the request's canonical URL as a browser would: an empty
   reference or a fragment-only reference (`#section`) is the base URL without its fragment plus
@@ -569,3 +594,30 @@ mode is a separate gate and is not changed.
   this change.
 - **Reviews already run:** Gate B cycle mdfu4w8k2r reviews its implementation; pass 1 found
   this specification still describing the old exemption.
+
+**Changed 2026-11-22 — changed requirement.** Decided by Daniel, 2026-11-22, in conversation,
+after the Bricks element coverage test. Baseline: 9097632. The test found Markdown that is
+complete but misleading: parts of one value glued together (`$2990` for a price of 29.90,
+`20260 Kommentare` for "2026" and "0 Kommentare"), a counter showing its start value `0` where a
+visitor sees the end value, and tab titles listed apart from their panes.
+
+| Earlier condition | Fate | AC operation |
+|---|---|---|
+| § Conversion, Everything else: "its text stays, its tag goes" | kept, narrowed — except the Bricks counter's start value, which is replaced by its end value (§ Conversion, Bricks counter) | none |
+| § Conversion, Everything else: "Slider slides therefore stay as ordinary content, in document order" | kept; for Bricks tabs moved → each pane after its title (§ Conversion, Bricks tabs), document order when they cannot be paired | none |
+| § Changes 2026-11-22 (gap found): "an element whose class list contains `brxe-button` … is a word boundary" | kept, widened → every class starting with `brxe-` or `bricks-`, and the part classes of four Bricks elements inside them (§ Conversion, Word boundaries) | none |
+| Story AC-2 (headings, paragraphs, lists, links, images) | kept | none |
+
+- **Added without an earlier condition:** a tab title is written as a heading one level below
+  the last heading before the tabs.
+- **Unaccounted:** none.
+- **Intervening changes:** none.
+- **Scope boundary:** in: Bricks pricing tables, post meta, progress bars, lists, file links,
+  counters, both tabs elements; out: content Bricks fills only through JavaScript (animated typing,
+  countdown, reading time), filter option counts, the post title prefix and suffix, and the
+  repeater/nested accordions, which already read well.
+- **Open questions:** none.
+- **Dependent artifacts:** none open — `inc/Markdown/Converter.php`,
+  `tests/markdown-converter-test.php`, `tests/markdown-commonmark-test.mjs` and
+  `tests/support/markdown-convert-cases.php` are updated in this change.
+- **Reviews already run:** none for this change.

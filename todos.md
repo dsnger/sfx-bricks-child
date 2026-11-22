@@ -9,11 +9,6 @@ references an entry here must still be able to find it.
 ## Now
 
 ## Next
-- [ ] **Markdown: header restore before draining callback buffers** (Gate B cycle mdfu4w8k2r, risk
-      pass 3, Minor, accepted, not repaired): in `inc/Markdown/Response.php` the fail-closed path restores
-      headers before closing buffers a canonical filter left open, and that cleanup sits outside the
-      Throwable guard. A leftover buffer whose handler throws or changes the status can still give an
-      empty body or a wrong status. Drain first, inside the guard, then restore. Planned for the next round.
 - [ ] **Markdown module follow-ups (final review triage, 2026-11-21)** — backlog, none leaks
       content: Accept parameters other than `q` are dropped (`text/html;level=1`);
       `Vary: *` becomes `*, Accept`; a memory/time limit during conversion (a PHP fatal error, which
@@ -130,6 +125,15 @@ references an entry here must still be able to find it.
       A `worker crashed` answer from `index_repository` can be a refusal or a technical failure; it is no evidence that any boundary works.
 
 ## Done
+- [x] **Markdown: header restore before draining callback buffers** (Gate B cycle mdfu4w8k2r, risk
+      pass 3, Minor, accepted, not repaired): in `inc/Markdown/Response.php` the fail-closed path restores
+      headers before closing buffers a canonical filter left open, and that cleanup sits outside the
+      Throwable guard. A leftover buffer whose handler throws or changes the status can still give an
+      empty body or a wrong status. Drain first, inside the guard, then restore. Planned for the next round.
+      Done 2026-11-22: `Response::finish()` drains the leftover buffers first, each close inside a
+      Throwable guard, then restores the headers and status; FPM scenarios
+      `canonical-throw-buffer-clean-throw` and `canonical-throw-buffer-status` in
+      `tests/markdown-fpm-test.php` give the module-off response.
 - [x] **Markdown: llms.txt heading loses a trailing `#` followed by spaces** (Gate B cycle
       mdgb4k7r2x, pass 5, Minor, accepted, not repaired): `Escape::heading_tail`
       (`inc/Markdown/Escape.php`) checks only the last byte, so a site name `Studio # ` or a
