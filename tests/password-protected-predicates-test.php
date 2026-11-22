@@ -189,6 +189,7 @@ assert_true(Controller::is_active(), '6: an ordinary visitor is gated');
 // 7. Query-dependent exemptions.
 reset_request();
 configure(['status' => true, 'password' => 'hashed:x']);
+$_SERVER['REQUEST_URI'] = '/robots.txt';
 $test_is_robots = true;
 assert_true(!Controller::is_active(), '7: robots.txt is never gated');
 
@@ -293,6 +294,34 @@ $GLOBALS['wp_query'] = new stdClass();
 assert_true(!Controller::is_active(), '7d: /robots.txt stays exempt with $wp lacking the properties');
 $GLOBALS['wp'] = (object) ['matched_rule' => 'robots\.txt$', 'request' => 'robots.txt'];
 assert_true(!Controller::is_active(), '7d: /robots.txt stays exempt with its own rule matched');
+
+// 7e. The robots exemption needs the request to really be robots.txt: is_robots() follows
+// the robots query var, so ?robots=1 on any address would otherwise pass the gate.
+reset_request();
+configure(['status' => true, 'password' => 'hashed:x']);
+$test_is_robots = true;
+$_SERVER['REQUEST_URI'] = '/robots.txt';
+$GLOBALS['wp'] = (object) ['matched_rule' => 'robots\.txt$'];
+assert_true(!Controller::is_active(), '7e: /robots.txt with its rule matched is exempt');
+unset($GLOBALS['wp']);
+assert_true(!Controller::is_active(), '7e: /robots.txt by raw path is exempt');
+$test_home = 'https://ex.test/sub/';
+$_SERVER['REQUEST_URI'] = '/sub/robots.txt';
+assert_true(!Controller::is_active(), '7e: /sub/robots.txt under home /sub/ is exempt');
+
+$test_home = 'https://ex.test/';
+foreach ([
+    ['/some-endpoint/?robots=1', 'some-endpoint/?$'],
+    ['/?robots=1', null],
+    ['/sitemap.xml?robots=1', '^wp-sitemap\.xml$'],
+    ['/sitemap.xml?robots=1', null],
+] as [$uri, $rule]) {
+    $_SERVER['REQUEST_URI'] = $uri;
+    $GLOBALS['wp'] = (object) ['matched_rule' => $rule];
+    assert_true(Controller::is_active(), "7e: {$uri} (rule " . var_export($rule, true) . ') is gated');
+    unset($GLOBALS['wp']);
+    assert_true(Controller::is_active(), "7e: {$uri} without \$wp is gated");
+}
 restore_error_handler();
 
 // 8. THE CACHE INVARIANT: an exemption must never switch protection off globally.

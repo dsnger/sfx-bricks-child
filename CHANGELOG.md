@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Markdown for AI agents: accordion titles are kept (Bricks puts them inside a button, which was left out with its content), and buttons next to each other are separated by a space instead of running together ("Mehr InfosMehr Infos").
 - Password Protection: with the site-wide password on, `/llms.txt` now always goes to the login, also when the address is written differently (such as `/index.php/llms.txt`) or carries a query string such as `?robots=1` or `?feed=rss2`. Before, an SEO plugin's llms.txt (Rank Math) could answer such a request and list the site's page titles and addresses.
+- Password protection: the robots.txt exception now applies only to /robots.txt itself, not to any address with ?robots=1.
 - Contact Infos, structured data: when the organization or an exclusion cannot be stored, the settings page now says so in an error notice instead of "Settings saved". When the settings of an SEO plugin cannot be read before any plugin is detected, the status no longer shows empty brackets.
 
 ## [0.37.0] - 2026-11-15
