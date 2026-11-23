@@ -118,17 +118,45 @@ class AdminPage
         padding: 1px 20px 20px;
         margin-bottom: 20px;
       }
-      .sfx-settings-section h2 {
-        margin: 20px -20px 15px;
+      .sfx-settings-section:not([open]) {
+        padding-bottom: 0;
+      }
+      .sfx-settings-section > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: -1px -20px 15px;
         padding: 12px 20px;
         background: #f6f7f7;
         border-bottom: 1px solid #c3c4c7;
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        list-style: none;
+      }
+      .sfx-settings-section:not([open]) > summary {
+        margin-bottom: 0;
+        border-bottom: 0;
+        border-radius: 4px;
+      }
+      .sfx-settings-section > summary::-webkit-details-marker {
+        display: none;
+      }
+      .sfx-settings-section > summary::after {
+        content: "\f347";
+        font: normal 20px/1 dashicons;
+        color: #646970;
+      }
+      .sfx-settings-section[open] > summary::after {
+        content: "\f343";
+      }
+      .sfx-settings-section > summary:focus-visible {
+        outline: 2px solid transparent;
+        box-shadow: inset 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
+      }
+      .sfx-settings-section > summary h2 {
+        margin: 0;
         font-size: 14px;
         font-weight: 600;
-      }
-      .sfx-settings-section h2:first-child {
-        margin-top: -1px;
-        border-radius: 4px 4px 0 0;
       }
       .sfx-settings-section .form-table th {
         padding-left: 0;
@@ -349,11 +377,12 @@ class AdminPage
       <form method="post" action="options.php">
         <?php
         settings_fields(\SFX\GeneralThemeOptions\Settings::$OPTION_GROUP);
-        
+
+        // The page is long: a save button above, and one after each section.
+        submit_button(null, 'primary', 'submit', true, ['id' => 'submit-top']);
+
         // Render sections with custom wrapper
         self::render_sections();
-        
-        submit_button();
         ?>
       </form>
 
@@ -552,12 +581,11 @@ class AdminPage
       return;
     }
 
+    $index = 0;
     foreach ((array) $wp_settings_sections[$page] as $section) {
-      echo '<div class="sfx-settings-section">';
-      
-      if ($section['title']) {
-        echo '<h2>' . esc_html($section['title']) . '</h2>';
-      }
+      // Collapsed sections still submit their fields; only the first starts open.
+      echo '<details class="sfx-settings-section"' . (0 === $index ? ' open' : '') . '>';
+      echo '<summary><h2>' . esc_html($section['title']) . '</h2></summary>';
 
       if ($section['callback']) {
         echo '<p class="description">';
@@ -565,15 +593,16 @@ class AdminPage
         echo '</p>';
       }
 
-      if (!isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section['id']])) {
-        echo '</div>';
-        continue;
+      if (isset($wp_settings_fields[$page][$section['id']])) {
+        echo '<table class="form-table" role="presentation">';
+        do_settings_fields($page, $section['id']);
+        echo '</table>';
       }
-
-      echo '<table class="form-table" role="presentation">';
-      do_settings_fields($page, $section['id']);
-      echo '</table>';
-      echo '</div>';
+      echo '</details>';
+      $index++;
+      // The last button keeps core's id "submit"; the others get their own.
+      $is_last = $index === count($wp_settings_sections[$page]);
+      submit_button(null, 'primary', 'submit', true, ['id' => $is_last ? 'submit' : 'submit-' . $index]);
     }
   }
 }

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- General Theme Options: the two sections (General Options, Style Modules) now fold open and closed; General Options starts open. "Save Changes" appears at the top, between the sections and at the bottom, and saves both sections, open or closed.
+
 ## [0.38.1] - 2026-11-22
 
 ### Changed
