@@ -111,65 +111,30 @@ class AdminPage
     }
     ?>
     <style>
-      .sfx-settings-section {
-        background: #fff;
-        border: 1px solid #c3c4c7;
+      .sfx-theme-options .sfx-tabs-nav {
+        margin-top: 20px;
+      }
+      .sfx-theme-options .sfx-tab-content {
+        display: block;
+        margin-bottom: 20px;
+      }
+      .sfx-theme-options .sfx-tab-content[hidden] {
+        display: none;
+      }
+      /* Without JavaScript the tab bar stays hidden and both panels show, each with its heading. */
+      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-tabs-nav {
+        display: none;
+      }
+      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-tab-content {
+        border-top: 1px solid #c3c4c7;
         border-radius: 4px;
-        padding: 1px 20px 20px;
-        margin-bottom: 20px;
       }
-      .sfx-settings-section h2 {
-        margin: -1px -20px 15px;
-        padding: 12px 20px;
-        background: #f6f7f7;
-        border-bottom: 1px solid #c3c4c7;
-        border-radius: 4px 4px 0 0;
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .sfx-theme-options-tabs {
-        margin-bottom: 20px;
-      }
-      /* Without JavaScript the tab bar stays hidden and both sections show. */
-      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-theme-options-tabs {
+      .sfx-theme-options.sfx-tabs-ready .sfx-tab-content > h2 {
         display: none;
       }
-      /* With tabs, the tab names the panel; the heading would repeat it. */
-      .sfx-theme-options.sfx-tabs-ready .sfx-settings-section > h2 {
-        display: none;
-      }
-      .sfx-theme-options.sfx-tabs-ready .sfx-settings-section {
-        padding-top: 15px;
-      }
-      .sfx-settings-section .form-table th {
-        padding-left: 0;
-        width: 200px;
-      }
-      /* Two columns of options on wide screens, so a tab stays short. */
-      @media (min-width: 1280px) {
-        .sfx-settings-section .form-table {
-          display: block;
-        }
-        .sfx-settings-section .form-table > tbody {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          column-gap: 32px;
-        }
-        .sfx-settings-section .form-table > tbody > tr {
-          display: flex;
-        }
-        .sfx-settings-section .form-table > tbody > tr > th {
-          flex: 0 0 180px;
-        }
-        .sfx-settings-section .form-table > tbody > tr > td {
-          flex: 1 1 auto;
-          min-width: 0;
-        }
-      }
-      .sfx-settings-section p.description {
+      .sfx-theme-options .sfx-tab-content > p.description {
         color: #646970;
-        font-style: italic;
-        margin: 0 0 15px;
+        margin: 0 0 20px;
       }
       /* Copy CSS button styles */
       .sfx-copy-css-btn {
@@ -576,6 +541,7 @@ class AdminPage
 
   /**
    * Render the settings sections as tab panels of one form, so saving keeps both.
+   * Tabs and option cards reuse WP Optimizer's look (.sfx-tab-btn, .sfx-option-card).
    */
   private static function render_sections(): void
   {
@@ -587,21 +553,21 @@ class AdminPage
       return;
     }
 
-    echo '<nav class="nav-tab-wrapper sfx-theme-options-tabs" role="tablist">';
+    echo '<div class="sfx-tabs-nav" role="tablist">';
     foreach ((array) $wp_settings_sections[$page] as $section) {
       $panel = 'sfx-panel-' . $section['id'];
       printf(
-        '<a href="#%1$s" id="%1$s-tab" class="nav-tab" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</a>',
+        '<button type="button" id="%1$s-tab" class="sfx-tab-btn" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</button>',
         esc_attr($panel),
         esc_html($section['title'])
       );
     }
-    echo '</nav>';
+    echo '</div>';
 
     foreach ((array) $wp_settings_sections[$page] as $section) {
       $panel = 'sfx-panel-' . $section['id'];
       printf(
-        '<div class="sfx-settings-section" id="%1$s" role="tabpanel" aria-labelledby="%1$s-tab">',
+        '<div class="sfx-tab-content" id="%1$s" role="tabpanel" aria-labelledby="%1$s-tab">',
         esc_attr($panel)
       );
       echo '<h2>' . esc_html($section['title']) . '</h2>';
@@ -612,12 +578,21 @@ class AdminPage
         echo '</p>';
       }
 
-      if (isset($wp_settings_fields[$page][$section['id']])) {
-        echo '<table class="form-table" role="presentation">';
-        do_settings_fields($page, $section['id']);
-        echo '</table>';
+      echo '<div class="sfx-option-cards">';
+      foreach ((array) ($wp_settings_fields[$page][$section['id']] ?? []) as $field) {
+        $id = $field['args']['id'];
+        echo '<div class="sfx-option-card">';
+        printf('<h2><label for="%s">%s</label></h2>', esc_attr($id), esc_html($field['title']));
+        printf(
+          '<p class="sfx-option-card__desc" id="%s-desc">%s</p>',
+          esc_attr($id),
+          esc_html($field['args']['description'] ?? '')
+        );
+        echo '<div class="sfx-option-card__control">';
+        call_user_func($field['callback'], $field['args']);
+        echo '</div></div>';
       }
-      echo '</div>';
+      echo '</div></div>';
     }
   }
 
@@ -632,14 +607,14 @@ class AdminPage
     (function () {
       var wrap = document.querySelector('.sfx-theme-options');
       if (!wrap) { return; }
-      var tabs = Array.prototype.slice.call(wrap.querySelectorAll('.sfx-theme-options-tabs [role="tab"]'));
+      var tabs = Array.prototype.slice.call(wrap.querySelectorAll('.sfx-tabs-nav [role="tab"]'));
       if (!tabs.length) { return; }
       var key = 'sfx-theme-options-tab';
 
       function select(tab, focus) {
         tabs.forEach(function (t) {
           var on = t === tab;
-          t.classList.toggle('nav-tab-active', on);
+          t.classList.toggle('active', on);
           t.setAttribute('aria-selected', on ? 'true' : 'false');
           t.tabIndex = on ? 0 : -1;
           document.getElementById(t.getAttribute('aria-controls')).hidden = !on;

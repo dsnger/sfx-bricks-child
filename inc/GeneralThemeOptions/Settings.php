@@ -376,8 +376,7 @@ class Settings
         $id = esc_attr($args['id']);
         $value = isset($options[$id]) ? (int) $options[$id] : (int) $args['default'];
         ?>
-        <input type="checkbox" id="<?php echo $id; ?>" name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" value="1" <?php checked($value, 1); ?> />
-        <label for="<?php echo $id; ?>"><?php echo esc_html($args['description']); ?></label>
+        <input type="checkbox" id="<?php echo $id; ?>" name="<?php echo esc_attr(self::$OPTION_NAME); ?>[<?php echo $id; ?>]" value="1" aria-describedby="<?php echo $id; ?>-desc" <?php checked($value, 1); ?> />
         <?php
         // Add "Copy CSS" button for style module fields
         if (!empty($args['file'])) {
