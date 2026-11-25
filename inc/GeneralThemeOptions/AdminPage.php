@@ -118,49 +118,53 @@ class AdminPage
         padding: 1px 20px 20px;
         margin-bottom: 20px;
       }
-      .sfx-settings-section:not([open]) {
-        padding-bottom: 0;
-      }
-      .sfx-settings-section > summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+      .sfx-settings-section h2 {
         margin: -1px -20px 15px;
         padding: 12px 20px;
         background: #f6f7f7;
         border-bottom: 1px solid #c3c4c7;
         border-radius: 4px 4px 0 0;
-        cursor: pointer;
-        list-style: none;
-      }
-      .sfx-settings-section:not([open]) > summary {
-        margin-bottom: 0;
-        border-bottom: 0;
-        border-radius: 4px;
-      }
-      .sfx-settings-section > summary::-webkit-details-marker {
-        display: none;
-      }
-      .sfx-settings-section > summary::after {
-        content: "\f347";
-        font: normal 20px/1 dashicons;
-        color: #646970;
-      }
-      .sfx-settings-section[open] > summary::after {
-        content: "\f343";
-      }
-      .sfx-settings-section > summary:focus-visible {
-        outline: 2px solid transparent;
-        box-shadow: inset 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
-      }
-      .sfx-settings-section > summary h2 {
-        margin: 0;
         font-size: 14px;
         font-weight: 600;
+      }
+      .sfx-theme-options-tabs {
+        margin-bottom: 20px;
+      }
+      /* Without JavaScript the tab bar stays hidden and both sections show. */
+      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-theme-options-tabs {
+        display: none;
+      }
+      /* With tabs, the tab names the panel; the heading would repeat it. */
+      .sfx-theme-options.sfx-tabs-ready .sfx-settings-section > h2 {
+        display: none;
+      }
+      .sfx-theme-options.sfx-tabs-ready .sfx-settings-section {
+        padding-top: 15px;
       }
       .sfx-settings-section .form-table th {
         padding-left: 0;
         width: 200px;
+      }
+      /* Two columns of options on wide screens, so a tab stays short. */
+      @media (min-width: 1280px) {
+        .sfx-settings-section .form-table {
+          display: block;
+        }
+        .sfx-settings-section .form-table > tbody {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          column-gap: 32px;
+        }
+        .sfx-settings-section .form-table > tbody > tr {
+          display: flex;
+        }
+        .sfx-settings-section .form-table > tbody > tr > th {
+          flex: 0 0 180px;
+        }
+        .sfx-settings-section .form-table > tbody > tr > td {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
       }
       .sfx-settings-section p.description {
         color: #646970;
@@ -372,19 +376,21 @@ class AdminPage
     // Block direct URL access for unauthorized users
     \SFX\AccessControl::die_if_unauthorized_theme();
     ?>
-    <div class="wrap">
+    <div class="wrap sfx-theme-options">
       <h1><?php esc_html_e('General Theme Options', 'sfxtheme'); ?></h1>
       <form method="post" action="options.php">
         <?php
         settings_fields(\SFX\GeneralThemeOptions\Settings::$OPTION_GROUP);
 
-        // The page is long: a save button above, and one after each section.
+        // The page is long: a save button above the tabs and one below.
         submit_button(null, 'primary', 'submit', true, ['id' => 'submit-top']);
 
-        // Render sections with custom wrapper
         self::render_sections();
+
+        submit_button();
         ?>
       </form>
+      <?php self::render_tabs_script(); ?>
 
       <?php self::render_danger_zone(); ?>
     </div>
@@ -569,23 +575,36 @@ class AdminPage
   }
 
   /**
-   * Render settings sections with visual grouping.
+   * Render the settings sections as tab panels of one form, so saving keeps both.
    */
   private static function render_sections(): void
   {
     global $wp_settings_sections, $wp_settings_fields;
-    
+
     $page = Settings::$OPTION_GROUP;
-    
+
     if (!isset($wp_settings_sections[$page])) {
       return;
     }
 
-    $index = 0;
+    echo '<nav class="nav-tab-wrapper sfx-theme-options-tabs" role="tablist">';
     foreach ((array) $wp_settings_sections[$page] as $section) {
-      // Collapsed sections still submit their fields; only the first starts open.
-      echo '<details class="sfx-settings-section"' . (0 === $index ? ' open' : '') . '>';
-      echo '<summary><h2>' . esc_html($section['title']) . '</h2></summary>';
+      $panel = 'sfx-panel-' . $section['id'];
+      printf(
+        '<a href="#%1$s" id="%1$s-tab" class="nav-tab" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</a>',
+        esc_attr($panel),
+        esc_html($section['title'])
+      );
+    }
+    echo '</nav>';
+
+    foreach ((array) $wp_settings_sections[$page] as $section) {
+      $panel = 'sfx-panel-' . $section['id'];
+      printf(
+        '<div class="sfx-settings-section" id="%1$s" role="tabpanel" aria-labelledby="%1$s-tab">',
+        esc_attr($panel)
+      );
+      echo '<h2>' . esc_html($section['title']) . '</h2>';
 
       if ($section['callback']) {
         echo '<p class="description">';
@@ -598,11 +617,53 @@ class AdminPage
         do_settings_fields($page, $section['id']);
         echo '</table>';
       }
-      echo '</details>';
-      $index++;
-      // The last button keeps core's id "submit"; the others get their own.
-      $is_last = $index === count($wp_settings_sections[$page]);
-      submit_button(null, 'primary', 'submit', true, ['id' => $is_last ? 'submit' : 'submit-' . $index]);
+      echo '</div>';
     }
+  }
+
+  /**
+   * Switch tabs on the client; hidden panels stay in the form and are saved.
+   * The open tab survives the save redirect through sessionStorage.
+   */
+  private static function render_tabs_script(): void
+  {
+    ?>
+    <script>
+    (function () {
+      var wrap = document.querySelector('.sfx-theme-options');
+      if (!wrap) { return; }
+      var tabs = Array.prototype.slice.call(wrap.querySelectorAll('.sfx-theme-options-tabs [role="tab"]'));
+      if (!tabs.length) { return; }
+      var key = 'sfx-theme-options-tab';
+
+      function select(tab, focus) {
+        tabs.forEach(function (t) {
+          var on = t === tab;
+          t.classList.toggle('nav-tab-active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        });
+        try { sessionStorage.setItem(key, tab.id); } catch (e) {}
+        if (focus) { tab.focus(); }
+      }
+
+      tabs.forEach(function (tab, i) {
+        tab.addEventListener('click', function (e) { e.preventDefault(); select(tab, false); });
+        tab.addEventListener('keydown', function (e) {
+          var next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
+          if (next === null) { return; }
+          e.preventDefault();
+          select(tabs[(next + tabs.length) % tabs.length], true);
+        });
+      });
+
+      var saved = null;
+      try { saved = document.getElementById(sessionStorage.getItem(key)); } catch (e) {}
+      select(tabs.indexOf(saved) >= 0 ? saved : tabs[0], false);
+      wrap.classList.add('sfx-tabs-ready');
+    }());
+    </script>
+    <?php
   }
 }

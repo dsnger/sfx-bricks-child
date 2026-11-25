@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Form Styles: a checkbox or radio button now sits on the first line of its label instead of in the middle, which matters for long labels such as a privacy consent; single-line labels look the same. A site can set the new token `--form-option-align` (for example `center`) to change it. Before, the theme forced the middle and a site could not override it.
 
-- General Theme Options: the two sections (General Options, Style Modules) now fold open and closed; General Options starts open. "Save Changes" appears at the top, between the sections and at the bottom, and saves both sections, open or closed.
+- General Theme Options: General Options and Style Modules are now two tabs, and on wide screens the options sit in two columns, so the page stays short. "Save Changes" sits above and below the tabs and saves both tabs at once; after saving, the page opens the tab you were on. Without JavaScript both sections show one below the other.
 
 ## [0.38.1] - 2026-11-22
 
