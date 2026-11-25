@@ -45,6 +45,8 @@
   --sfx-form-placeholder-color: var(--form-placeholder-color, #6b7280);
   --sfx-form-options-gap: var(--form-options-gap, 0.75rem);
   --sfx-form-option-row-gap: var(--form-option-row-gap, 0.25rem);
+  /* Checkbox/radio against its label: flex-start keeps it on the first line of a long label. */
+  --sfx-form-option-align: var(--form-option-align, flex-start);
   --sfx-form-radius-small: var(--form-radius-small, 0.35rem);
   --sfx-form-focus-width: var(--form-focus-width, 2px);
   --sfx-form-focus-color: var(--form-focus-color, var(--primary, #2563eb));
@@ -176,11 +178,14 @@
 
       &>li:has([type=radio], [type=checkbox]) {
         display: flex;
-        align-items: center !important;
+        /* !important beats Bricks' unlayered defaults; sites change the token, not this line. */
+        align-items: var(--sfx-form-option-align) !important;
         gap: var(--sfx-form-option-row-gap);
 
         & label {
           margin: 0 !important;
+          /* A first line shorter than the box: pad it so the text centres on the box. */
+          padding-block-start: max(0px, (var(--sfx-form-input-height) * .4 - 1lh) / 2);
         }
       }
     }
