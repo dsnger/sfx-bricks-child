@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-11-26
+
 ### Changed
 
 - Style modules: colour fallbacks also follow the newer token names. Where a site does not set `--danger`, `--danger-fg` or `--text`, the danger button, form error and remove colours, text buttons and form labels and fields now use `--error`, `--error-fg`, `--text-body` or `--text-title` when the site defines them, instead of a fixed colour. Sites that set the older names look exactly as before.
