@@ -123,7 +123,7 @@
   --sfx-list-indent:         var(--list-check-icon-indent, var(--list-indent, .5em));
   --sfx-list-gap:            var(--list-check-icon-gap, var(--list-gap, var(--space-2xs, 0.5rem)));
   --sfx-list-icon-bg-offset: var(--list-check-icon-bg-offset, var(--list-icon-bg-offset, -.4ex 0));
-  --sfx-list-icon-bg-color:  var(--list-check-icon-bg-color, var(--list-icon-bg-color, var(--tertiary-l-4)));
+  --sfx-list-icon-bg-color:  var(--list-check-icon-bg-color, var(--list-icon-bg-color, var(--tertiary-l-4, transparent)));
 }
 
 .card[class*="bg-secondary"] :is(ul.list--icon, .has-list-icons).is-check {

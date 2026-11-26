@@ -146,7 +146,7 @@ class Settings
             [
                 'id'          => 'enable_style_forms',
                 'label'       => __('Form Styles', 'sfxtheme'),
-                'description' => __('Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to Bricks core --primary, --text, --danger, --success where applicable).', 'sfxtheme'),
+                'description' => __('Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to --primary, --text or --text-title, --danger or --error, --success where applicable).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'forms.css',
@@ -179,6 +179,13 @@ class Settings
     }
 
     /**
+     * Public tokens a module sets itself (a default per class) but a site may still set.
+     */
+    private const LISTED_ALTHOUGH_SET = [
+        'animations.css' => ['--animate-delay-step'],
+    ];
+
+    /**
      * Extract CSS variables from a CSS file.
      * Results are cached using transients for performance.
      *
@@ -187,7 +194,7 @@ class Settings
      */
     public static function get_css_variables(string $filename): array {
         $sanitized = sanitize_key($filename);
-        $transient_key = 'sfx_css_vars_v8_' . $sanitized;
+        $transient_key = 'sfx_css_vars_v9_' . $sanitized;
         $cached = get_transient($transient_key);
 
         if ($cached !== false) {
@@ -196,7 +203,7 @@ class Settings
 
         // Drop superseded cache keys on recompute (TTL is one week; theme
         // switch/update also wipes all _transient_sfx_% via clear_all_theme_caches).
-        foreach (['', 'v2_', 'v3_', 'v4_', 'v5_', 'v6_', 'v7_'] as $legacy_suffix) {
+        foreach (['', 'v2_', 'v3_', 'v4_', 'v5_', 'v6_', 'v7_', 'v8_'] as $legacy_suffix) {
             delete_transient('sfx_css_vars_' . $legacy_suffix . $sanitized);
         }
 
@@ -230,6 +237,8 @@ class Settings
             $defined = array_unique($matches[1]);
         }
 
+        // A public knob the module also sets itself as a default stays listed.
+        $defined = array_diff($defined, self::LISTED_ALTHOUGH_SET[$filename] ?? []);
         $variables = array_values(array_diff($referenced, $defined));
 
         // Allowlist by module prefix: every module references Bricks core
