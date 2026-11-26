@@ -111,61 +111,30 @@ class AdminPage
     }
     ?>
     <style>
-      .sfx-settings-section {
-        background: #fff;
-        border: 1px solid #c3c4c7;
-        border-radius: 4px;
-        padding: 1px 20px 20px;
+      .sfx-theme-options .sfx-tabs-nav {
+        margin-top: 20px;
+      }
+      .sfx-theme-options .sfx-tab-content {
+        display: block;
         margin-bottom: 20px;
       }
-      .sfx-settings-section:not([open]) {
-        padding-bottom: 0;
-      }
-      .sfx-settings-section > summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: -1px -20px 15px;
-        padding: 12px 20px;
-        background: #f6f7f7;
-        border-bottom: 1px solid #c3c4c7;
-        border-radius: 4px 4px 0 0;
-        cursor: pointer;
-        list-style: none;
-      }
-      .sfx-settings-section:not([open]) > summary {
-        margin-bottom: 0;
-        border-bottom: 0;
-        border-radius: 4px;
-      }
-      .sfx-settings-section > summary::-webkit-details-marker {
+      .sfx-theme-options .sfx-tab-content[hidden] {
         display: none;
       }
-      .sfx-settings-section > summary::after {
-        content: "\f347";
-        font: normal 20px/1 dashicons;
+      /* Without JavaScript the tab bar stays hidden and both panels show, each with its heading. */
+      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-tabs-nav {
+        display: none;
+      }
+      .sfx-theme-options:not(.sfx-tabs-ready) .sfx-tab-content {
+        border-top: 1px solid #c3c4c7;
+        border-radius: 4px;
+      }
+      .sfx-theme-options.sfx-tabs-ready .sfx-tab-content > h2 {
+        display: none;
+      }
+      .sfx-theme-options .sfx-tab-content > p.description {
         color: #646970;
-      }
-      .sfx-settings-section[open] > summary::after {
-        content: "\f343";
-      }
-      .sfx-settings-section > summary:focus-visible {
-        outline: 2px solid transparent;
-        box-shadow: inset 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
-      }
-      .sfx-settings-section > summary h2 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .sfx-settings-section .form-table th {
-        padding-left: 0;
-        width: 200px;
-      }
-      .sfx-settings-section p.description {
-        color: #646970;
-        font-style: italic;
-        margin: 0 0 15px;
+        margin: 0 0 20px;
       }
       /* Copy CSS button styles */
       .sfx-copy-css-btn {
@@ -236,6 +205,9 @@ class AdminPage
         border-radius: 4px;
         background: #fcf0f1;
         max-width: 48rem;
+      }
+      .sfx-theme-options.sfx-tabs-ready .sfx-danger-zone {
+        margin-top: 0;
       }
 
       .sfx-danger-zone h2 {
@@ -372,21 +344,25 @@ class AdminPage
     // Block direct URL access for unauthorized users
     \SFX\AccessControl::die_if_unauthorized_theme();
     ?>
-    <div class="wrap">
+    <div class="wrap sfx-theme-options">
       <h1><?php esc_html_e('General Theme Options', 'sfxtheme'); ?></h1>
-      <form method="post" action="options.php">
+      <?php self::render_tab_nav(); ?>
+      <form method="post" action="options.php" id="sfx-theme-options-form">
         <?php
         settings_fields(\SFX\GeneralThemeOptions\Settings::$OPTION_GROUP);
 
-        // The page is long: a save button above, and one after each section.
+        // The page is long: a save button above the tabs and one below.
         submit_button(null, 'primary', 'submit', true, ['id' => 'submit-top']);
 
-        // Render sections with custom wrapper
         self::render_sections();
+
+        submit_button();
         ?>
       </form>
-
-      <?php self::render_danger_zone(); ?>
+      <div class="sfx-tab-content" id="sfx-panel-danger-zone" role="tabpanel" aria-labelledby="sfx-panel-danger-zone-tab">
+        <?php self::render_danger_zone(); ?>
+      </div>
+      <?php self::render_tabs_script(); ?>
     </div>
     <?php
   }
@@ -569,23 +545,50 @@ class AdminPage
   }
 
   /**
-   * Render settings sections with visual grouping.
+   * One tab per settings section, plus the Danger Zone, which has its own form.
+   */
+  private static function render_tab_nav(): void
+  {
+    global $wp_settings_sections;
+
+    $tabs = [];
+    foreach ((array) ($wp_settings_sections[Settings::$OPTION_GROUP] ?? []) as $section) {
+      $tabs['sfx-panel-' . $section['id']] = $section['title'];
+    }
+    $tabs['sfx-panel-danger-zone'] = __('Danger Zone', 'sfxtheme');
+
+    echo '<div class="sfx-tabs-nav" role="tablist">';
+    foreach ($tabs as $panel => $title) {
+      printf(
+        '<button type="button" id="%1$s-tab" class="sfx-tab-btn" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</button>',
+        esc_attr($panel),
+        esc_html($title)
+      );
+    }
+    echo '</div>';
+  }
+
+  /**
+   * Render the settings sections as tab panels of one form, so saving keeps both.
+   * Tabs and option cards reuse WP Optimizer's look (.sfx-tab-btn, .sfx-option-card).
    */
   private static function render_sections(): void
   {
     global $wp_settings_sections, $wp_settings_fields;
-    
+
     $page = Settings::$OPTION_GROUP;
-    
+
     if (!isset($wp_settings_sections[$page])) {
       return;
     }
 
-    $index = 0;
     foreach ((array) $wp_settings_sections[$page] as $section) {
-      // Collapsed sections still submit their fields; only the first starts open.
-      echo '<details class="sfx-settings-section"' . (0 === $index ? ' open' : '') . '>';
-      echo '<summary><h2>' . esc_html($section['title']) . '</h2></summary>';
+      $panel = 'sfx-panel-' . $section['id'];
+      printf(
+        '<div class="sfx-tab-content" id="%1$s" role="tabpanel" aria-labelledby="%1$s-tab">',
+        esc_attr($panel)
+      );
+      echo '<h2>' . esc_html($section['title']) . '</h2>';
 
       if ($section['callback']) {
         echo '<p class="description">';
@@ -593,16 +596,87 @@ class AdminPage
         echo '</p>';
       }
 
-      if (isset($wp_settings_fields[$page][$section['id']])) {
-        echo '<table class="form-table" role="presentation">';
-        do_settings_fields($page, $section['id']);
-        echo '</table>';
+      echo '<div class="sfx-option-cards">';
+      foreach ((array) ($wp_settings_fields[$page][$section['id']] ?? []) as $field) {
+        $id = $field['args']['id'];
+        echo '<div class="sfx-option-card">';
+        printf('<h2><label for="%s">%s</label></h2>', esc_attr($id), esc_html($field['title']));
+        printf(
+          '<p class="sfx-option-card__desc" id="%s-desc">%s</p>',
+          esc_attr($id),
+          esc_html($field['args']['description'] ?? '')
+        );
+        echo '<div class="sfx-option-card__control">';
+        call_user_func($field['callback'], $field['args']);
+        echo '</div></div>';
       }
-      echo '</details>';
-      $index++;
-      // The last button keeps core's id "submit"; the others get their own.
-      $is_last = $index === count($wp_settings_sections[$page]);
-      submit_button(null, 'primary', 'submit', true, ['id' => $is_last ? 'submit' : 'submit-' . $index]);
+      echo '</div></div>';
     }
+  }
+
+  /**
+   * Switch tabs on the client; hidden panels stay in the form and are saved.
+   * The open tab survives the save redirect through sessionStorage.
+   */
+  private static function render_tabs_script(): void
+  {
+    ?>
+    <script>
+    (function () {
+      var wrap = document.querySelector('.sfx-theme-options');
+      if (!wrap) { return; }
+      var tabs = Array.prototype.slice.call(wrap.querySelectorAll('.sfx-tabs-nav [role="tab"]'));
+      if (!tabs.length) { return; }
+      var key = 'sfx-theme-options-tab';
+
+      var form = document.getElementById('sfx-theme-options-form');
+
+      function select(tab, focus) {
+        var panel = document.getElementById(tab.getAttribute('aria-controls'));
+        // The Danger Zone sits outside the settings form; hide that form and its save buttons there.
+        if (form) { form.hidden = !form.contains(panel); }
+        tabs.forEach(function (t) {
+          var on = t === tab;
+          t.classList.toggle('active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        });
+        try { sessionStorage.setItem(key, tab.id); } catch (e) {}
+        if (focus) { tab.focus(); }
+      }
+
+      tabs.forEach(function (tab, i) {
+        tab.addEventListener('click', function (e) { e.preventDefault(); select(tab, false); });
+        tab.addEventListener('keydown', function (e) {
+          var next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
+          if (next === null) { return; }
+          e.preventDefault();
+          select(tabs[(next + tabs.length) % tabs.length], true);
+        });
+      });
+
+      var saved = null;
+      try { saved = document.getElementById(sessionStorage.getItem(key)); } catch (e) {}
+      // After a purge, open the Danger Zone so its result notice is visible, then drop the
+      // purge parameters from the address and the save referer, or saving later reopens it.
+      if (/[?&]sfx-purged=/.test(window.location.search)) {
+        saved = document.getElementById('sfx-panel-danger-zone-tab');
+        var strip = function (u) {
+          var url = new URL(u, window.location.href);
+          Array.from(url.searchParams.keys()).forEach(function (k) {
+            if (k.indexOf('sfx-') === 0) { url.searchParams.delete(k); }
+          });
+          return url.pathname + url.search + url.hash;
+        };
+        history.replaceState(null, '', strip(window.location.href));
+        var referer = form && form.querySelector('input[name="_wp_http_referer"]');
+        if (referer) { referer.value = strip(referer.value); }
+      }
+      select(tabs.indexOf(saved) >= 0 ? saved : tabs[0], false);
+      wrap.classList.add('sfx-tabs-ready');
+    }());
+    </script>
+    <?php
   }
 }
