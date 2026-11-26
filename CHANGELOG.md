@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-11-26
+
 ### Changed
 
 - Form Styles: a checkbox or radio button now sits on the first line of its label instead of in the middle, which matters for long labels such as a privacy consent; single-line labels look the same. A site can set the new token `--form-option-align` (for example `center`) to change it. Before, the theme forced the middle and a site could not override it.
