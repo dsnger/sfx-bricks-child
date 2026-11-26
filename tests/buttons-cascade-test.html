@@ -61,6 +61,31 @@
   <a id="t5" class="brxe-button bricks-button bricks-background-primary" style="--btn-primary-bg: red" href="#">Token-Vertrag</a>
   <a id="brxe-test" class="brxe-button bricks-button bricks-background-primary" href="#">Element-Setting</a>
 
+  <!-- t9-t11: token fallbacks stay backward compatible (2026-11-26). Each wrapper
+       sets one token setup; custom properties inherit into the buttons. -->
+  <div id="w-none" style="color: rgb(1, 2, 3)">
+    <a id="d-none" class="brxe-button bricks-button bricks-background-danger" href="#">Danger</a>
+    <a id="x-none" class="brxe-button bricks-button btn--text" href="#">Text</a>
+    <a id="m-none" class="brxe-button bricks-button" href="#">M</a>
+    <a id="xl-none" class="brxe-button bricks-button xl" href="#">XL</a>
+  </div>
+  <div id="w-legacy" style="--danger: #aa0000; --danger-fg: #ffff00; --text: #123456">
+    <a id="d-legacy" class="brxe-button bricks-button bricks-background-danger" href="#">Danger</a>
+    <a id="x-legacy" class="brxe-button bricks-button btn--text" href="#">Text</a>
+  </div>
+  <div id="w-basic" style="--error: #bb0000; --error-fg: #eeeeee; --text-body: #222222">
+    <a id="d-basic" class="brxe-button bricks-button bricks-background-danger" href="#">Danger</a>
+    <a id="x-basic" class="brxe-button bricks-button btn--text" href="#">Text</a>
+  </div>
+  <div id="w-both" style="--danger: #aa0000; --danger-fg: #ffff00; --text: #123456; --error: #bb0000; --error-fg: #eeeeee; --text-body: #222222">
+    <a id="d-both" class="brxe-button bricks-button bricks-background-danger" href="#">Danger</a>
+    <a id="x-both" class="brxe-button bricks-button btn--text" href="#">Text</a>
+  </div>
+  <div style="--btn-xl-radius: 20px">
+    <a id="xl-token" class="brxe-button bricks-button xl" href="#">XL token</a>
+    <a id="xl-pill" class="brxe-button bricks-button xl rounded-full" href="#">XL pill</a>
+  </div>
+
   <pre id="out" style="font: 13px/1.5 monospace"></pre>
 
   <script>
@@ -139,6 +164,29 @@
     check('t8 hover border is 85% color-mix', hov.border, MIX(85));
     check('t8 active bg is 75% color-mix', act.bg, MIX(75));
     check('t8 active border is 75% color-mix', act.border, MIX(75));
+
+    /* t9 — danger/text colours: old names win, new (Basic) names fill in, none = fixed default. */
+    check('t9 no tokens: danger bg = #ef4444', cs('d-none').backgroundColor, 'rgb(239, 68, 68)');
+    check('t9 no tokens: danger fg = #fff', cs('d-none').color, 'rgb(255, 255, 255)');
+    check('t9 no tokens: text button inherits', cs('x-none').color, 'rgb(1, 2, 3)');
+    check('t9 old names: danger bg = --danger', cs('d-legacy').backgroundColor, 'rgb(170, 0, 0)');
+    check('t9 old names: danger fg = --danger-fg', cs('d-legacy').color, 'rgb(255, 255, 0)');
+    check('t9 old names: text = --text', cs('x-legacy').color, 'rgb(18, 52, 86)');
+    check('t9 Basic names: danger bg = --error', cs('d-basic').backgroundColor, 'rgb(187, 0, 0)');
+    check('t9 Basic names: danger fg = --error-fg', cs('d-basic').color, 'rgb(238, 238, 238)');
+    check('t9 Basic names: text = --text-body', cs('x-basic').color, 'rgb(34, 34, 34)');
+    check('t9 both: danger bg keeps --danger', cs('d-both').backgroundColor, 'rgb(170, 0, 0)');
+    check('t9 both: danger fg keeps --danger-fg', cs('d-both').color, 'rgb(255, 255, 0)');
+    check('t9 both: text keeps --text', cs('x-both').color, 'rgb(18, 52, 86)');
+
+    /* t10 — xl radius: normal radius without its token, the token when set, shape classes still win. */
+    check('t10 xl without token = normal radius', cs('xl-none').borderTopLeftRadius, cs('m-none').borderTopLeftRadius);
+    check('t10 xl with --btn-xl-radius', cs('xl-token').borderTopLeftRadius, '20px');
+    check('t10 xl + rounded-full stays pill', cs('xl-pill').borderTopLeftRadius, '9999px');
+
+    /* t11 — text buttons keep zero padding although they no longer zero the public tokens. */
+    check('t11 text button padding-block 0', cs('x-none').paddingTop, '0px');
+    check('t11 text button padding-inline 0', cs('x-none').paddingLeft, '0px');
 
     const failed = results.filter(r => !r.ok);
     document.title = failed.length ? `FAIL:${failed.length}` : 'PASS';
