@@ -154,7 +154,7 @@ class Settings
             [
                 'id'          => 'enable_style_buttons',
                 'label'       => __('Button Styles', 'sfxtheme'),
-                'description' => __('Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.). See Style Modules help for semantic keys.', 'sfxtheme'),
+                'description' => __('Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.).', 'sfxtheme'),
                 'type'        => 'checkbox',
                 'default'     => 1,
                 'file'        => 'buttons.css',
@@ -333,8 +333,8 @@ class Settings
 
     public static function render_styles_section(): void
     {
-      echo '<p>' . esc_html__('Switch the optional CSS style modules on or off. Switching off modules you do not use makes pages smaller.', 'sfxtheme') . '</p>';
-      echo '<p>' . esc_html__('To change how a module looks, set one of its variables (listed under "CSS Variables" in its card) in Core Framework or in your own CSS, for example --btn-radius: 999px for round buttons. Without a value of your own, a module uses the Bricks colours and spacing.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('Switch off the style modules you do not use to keep pages smaller.', 'sfxtheme') . '</p>';
+      echo '<p>' . esc_html__('To change how a module looks, set one of its variables (listed under "CSS Variables" in its card) in Core Framework or in your own CSS, for example --btn-radius: 999px for round buttons.', 'sfxtheme') . '</p>';
       echo '<p>' . esc_html__('Use the "Copy CSS" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet.', 'sfxtheme') . '</p>';
     }
 
