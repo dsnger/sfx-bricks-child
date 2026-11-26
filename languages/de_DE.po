@@ -2658,9 +2658,8 @@ msgid ""
 "Use the \"Copy CSS\" button to copy the module source code before disabling "
 "it, allowing you to customize it in your own stylesheet."
 msgstr ""
-"Verwende den \"CSS kopieren\"-Button, um den Modul-Quellcode zu kopieren, "
-"bevor du ihn deaktivierst. So kannst du ihn in deinem eigenen Stylesheet "
-"anpassen."
+"Mit \"CSS kopieren\" kopierst du den Quellcode eines Moduls, bevor du es "
+"abschaltest, und kannst ihn dann in deinem eigenen Stylesheet anpassen."
 
 #: inc/GeneralThemeOptions/Settings.php:303
 msgid "Switch off the style modules you do not use to keep pages smaller."
