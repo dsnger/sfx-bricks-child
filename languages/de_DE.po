@@ -2658,11 +2658,19 @@ msgid ""
 "Use the \"Copy CSS\" button to copy the module source code before disabling "
 "it, allowing you to customize it in your own stylesheet."
 msgstr ""
-"Verwende den \"CSS kopieren\"-Button, um den Modul-Quellcode zu kopieren, "
-"bevor du ihn deaktivierst. So kannst du ihn in deinem eigenen Stylesheet "
-"anpassen."
+"Mit \"CSS kopieren\" kopierst du den Quellcode eines Moduls, bevor du es "
+"abschaltest, und kannst ihn dann in deinem eigenen Stylesheet anpassen."
 
 #: inc/GeneralThemeOptions/Settings.php:303
+msgid "Switch off the style modules you do not use to keep pages smaller."
+msgstr "Schalte die Style-Module ab, die du nicht nutzt, damit die Seiten kleiner bleiben."
+
+msgid "To change how a module looks, set one of its variables (listed under \"CSS Variables\" in its card) in Core Framework or in your own CSS, for example --btn-radius: 999px for round buttons."
+msgstr "Um das Aussehen eines Moduls zu ändern, setze eine seiner Variablen (aufgelistet unter „CSS-Variablen“ in seiner Karte) im Core Framework oder in deinem eigenen CSS, zum Beispiel --btn-radius: 999px für runde Buttons."
+
+msgid "Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.)."
+msgstr "Buttons verwenden gescopte --sfx-btn-*, die von --btn-* verdrahtet werden (koppelt über die Bricks-Core-Paare --primary/--primary-fg, --accent/--accent-fg usw.)."
+
 msgid "External token mapping (Buttons)"
 msgstr "Externes Token-Mapping (Buttons)"
 

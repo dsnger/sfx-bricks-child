@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- General Theme Options, Style Modules tab: the developer reference ("External token mapping" fold-outs, token model and cascade-layer notes) is gone. A short text with an example now says how to change a module's look; each module's variables stay listed under "CSS Variables" in its card. The Button Styles card no longer points to a help section that does not exist.
+
 ## [0.39.0] - 2026-11-26
 
 ### Changed
