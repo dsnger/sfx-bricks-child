@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.38.1\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.39.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-22T15:38:03+00:00\n"
+"POT-Creation-Date: 2026-11-26T14:09:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -3105,99 +3105,100 @@ msgstr ""
 msgid "General Theme Options"
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:399
+#: inc/GeneralThemeOptions/AdminPage.php:404
 msgid "Nothing was deleted: the Sicherheits-Check was busy at that moment. Run the purge again."
 msgstr ""
 
 #. translators: 1: settings removed, 2: cached rows removed
-#: inc/GeneralThemeOptions/AdminPage.php:406
+#: inc/GeneralThemeOptions/AdminPage.php:411
 msgid "Theme data deleted: %1$d settings and %2$d cached rows."
 msgstr ""
 
 #. translators: %d: number of redirect tables (rules, 404 log) removed
-#: inc/GeneralThemeOptions/AdminPage.php:411
+#: inc/GeneralThemeOptions/AdminPage.php:416
 msgid "Redirect tables deleted: %d."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:414
+#: inc/GeneralThemeOptions/AdminPage.php:419
 msgid "The copyright and AI markings on your media were deleted as well."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:415
+#: inc/GeneralThemeOptions/AdminPage.php:420
 msgid "Your posts, pages and media, including the copyright and AI markings, were not touched."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:417
+#: inc/GeneralThemeOptions/AdminPage.php:422
 msgid "Redirect tables not deleted: another redirect change was in progress. Run the purge again to delete them."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:420
+#: inc/GeneralThemeOptions/AdminPage.php:425
 msgid "Some redirect tables could not be deleted because of a database error. Run the purge again."
 msgstr ""
 
 #. translators: %d: number of test files left in the uploads folder
-#: inc/GeneralThemeOptions/AdminPage.php:425
+#: inc/GeneralThemeOptions/AdminPage.php:430
 msgid "%d Sicherheits-Check test file(s) in the uploads folder could not be deleted; their record was kept so the purge can be run again once they are deletable."
 msgstr ""
 
 #. translators: %d: number of files
-#: inc/GeneralThemeOptions/AdminPage.php:432
+#: inc/GeneralThemeOptions/AdminPage.php:437
 msgid "%d file(s) in the Sicherheits-Check test folder were not created by a recorded test run; they were kept. Check them and delete them by hand."
 msgstr ""
 
 #. translators: %d: number of settings
-#: inc/GeneralThemeOptions/AdminPage.php:439
+#: inc/GeneralThemeOptions/AdminPage.php:444
 msgid "%d Sicherheits-Check setting(s) could not be deleted (the check was in use or the database refused). Run the purge again."
 msgstr ""
 
 #. translators: %d: number of scheduled tasks
-#: inc/GeneralThemeOptions/AdminPage.php:446
+#: inc/GeneralThemeOptions/AdminPage.php:451
 msgid "%d scheduled task(s) of the Sicherheits-Check could not be removed. Run the purge again."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:463
+#: inc/GeneralThemeOptions/AdminPage.php:468
+#: inc/GeneralThemeOptions/AdminPage.php:558
 msgid "Danger Zone"
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:466
+#: inc/GeneralThemeOptions/AdminPage.php:471
 msgid "Deletes every setting this theme stored, right now. There is no undo."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:470
+#: inc/GeneralThemeOptions/AdminPage.php:475
 msgid "Will be deleted:"
 msgstr ""
 
 #. translators: %d: number of stored settings found on this site
-#: inc/GeneralThemeOptions/AdminPage.php:474
+#: inc/GeneralThemeOptions/AdminPage.php:479
 msgid "all theme settings (%d found on this site) and the theme's cached data, on this site only."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:478
+#: inc/GeneralThemeOptions/AdminPage.php:483
 msgid "This includes every redirect rule and the 404 log."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:479
+#: inc/GeneralThemeOptions/AdminPage.php:484
 msgid "It also removes the structured-data settings, the per-page structured-data fields and the structured-data fields of your contact infos: area labels, structured opening hours and the organization and leave-out marks."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:481
+#: inc/GeneralThemeOptions/AdminPage.php:486
 msgid "Will be kept:"
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:482
+#: inc/GeneralThemeOptions/AdminPage.php:487
 msgid "your content. Contact infos (apart from their structured-data fields named above), social accounts, custom scripts, posts, pages and media files all stay as they are — and so do the copyright notices on your media, unless you tick the box below."
 msgstr ""
 
 #. translators: %s: the exact phrase the user must type
-#: inc/GeneralThemeOptions/AdminPage.php:494
+#: inc/GeneralThemeOptions/AdminPage.php:499
 msgid "Type %s to enable the button:"
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:508
+#: inc/GeneralThemeOptions/AdminPage.php:513
 msgid "Also delete the copyright and AI markings stored on my media files. These were typed by an editor and may matter legally — they are kept unless you tick this."
 msgstr ""
 
-#: inc/GeneralThemeOptions/AdminPage.php:514
+#: inc/GeneralThemeOptions/AdminPage.php:519
 msgid "Delete all theme data now"
 msgstr ""
 
@@ -3391,27 +3392,27 @@ msgstr ""
 msgid "External token mapping (Content Grid)"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:389
-#: inc/GeneralThemeOptions/Settings.php:392
+#: inc/GeneralThemeOptions/Settings.php:388
+#: inc/GeneralThemeOptions/Settings.php:391
 msgid "Copy CSS"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:390
-#: inc/GeneralThemeOptions/Settings.php:411
+#: inc/GeneralThemeOptions/Settings.php:389
+#: inc/GeneralThemeOptions/Settings.php:410
 #: inc/PasswordProtected/AdminPage.php:159
 msgid "Copied!"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:391
+#: inc/GeneralThemeOptions/Settings.php:390
 msgid "Error"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:404
+#: inc/GeneralThemeOptions/Settings.php:403
 msgid "CSS Variables"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:410
-#: inc/GeneralThemeOptions/Settings.php:412
+#: inc/GeneralThemeOptions/Settings.php:409
+#: inc/GeneralThemeOptions/Settings.php:411
 #: inc/PasswordProtected/AdminPage.php:159
 #: inc/SiteCheck/AdminPage.php:212
 #: inc/SiteCheck/AdminPage.php:441
