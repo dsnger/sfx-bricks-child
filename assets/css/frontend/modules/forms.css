@@ -17,7 +17,7 @@
   --sfx-form-label-font-size: var(--form-label-font-size, 0.875rem);
   --sfx-form-label-line-height: var(--form-label-line-height, 1.4);
   --sfx-form-label-font-weight: var(--form-label-font-weight, 500);
-  --sfx-form-label-color: var(--form-label-color, var(--text, #111827));
+  --sfx-form-label-color: var(--form-label-color, var(--text, var(--text-title, #111827)));
   --sfx-form-padding-block: var(--form-padding-block, 0.5rem);
   --sfx-form-padding-inline: var(--form-padding-inline, 0.75rem);
   --sfx-form-border-width: var(--form-border-width, 1px);
@@ -29,7 +29,7 @@
   --sfx-form-font-weight: var(--form-font-weight, 400);
   --sfx-form-letter-spacing: var(--form-letter-spacing, normal);
   --sfx-form-input-bg: var(--form-input-bg, #ffffff);
-  --sfx-form-color: var(--form-color, var(--text, #111111));
+  --sfx-form-color: var(--form-color, var(--text, var(--text-title, #111111)));
   /* Placeholders inherit field typography unless --form-placeholder-* overrides. */
   --sfx-form-placeholder-font-family: var(--form-placeholder-font-family, var(--form-font-family, inherit));
   --sfx-form-placeholder-font-weight: var(--form-placeholder-font-weight, var(--form-font-weight, 400));
@@ -58,7 +58,7 @@
   --sfx-form-checkbox-icon: var(--form-checkbox-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='m14.914 4l-9.47 9.47L1.09 8.393L2.608 7.09l2.948 3.44L13.5 2.585z'/%3E%3C/svg%3E"));
   --sfx-form-group-spacing: var(--form-group-spacing, 1.25rem);
   --sfx-form-error-bg: var(--form-error-bg, var(--danger-bg, #fee2e2));
-  --sfx-form-error-color: var(--form-error-color, var(--danger-fg, #991b1b));
+  --sfx-form-error-color: var(--form-error-color, var(--danger-fg, var(--error, #991b1b)));
   --sfx-form-error-font-size: var(--form-error-font-size, 0.75rem);
   --sfx-form-error-margin-block-start: var(--form-error-margin-block-start, 0.5rem);
   --sfx-form-error-padding-block: var(--form-error-padding-block, 0.5rem);
@@ -69,8 +69,8 @@
   --sfx-form-error-triangle-color: var(--form-error-triangle-color, var(--form-error-bg, #fee2e2));
   --sfx-form-file-remove-bg: var(--form-file-remove-bg, #fecaca);
   --sfx-form-file-remove-border: var(--form-file-remove-border, #fecaca);
-  --sfx-form-file-remove-color: var(--form-file-remove-color, var(--danger, #dc2626));
-  --sfx-form-file-remove-hover-bg: var(--form-file-remove-hover-bg, var(--danger, #dc2626));
+  --sfx-form-file-remove-color: var(--form-file-remove-color, var(--danger, var(--error, #dc2626)));
+  --sfx-form-file-remove-hover-bg: var(--form-file-remove-hover-bg, var(--danger, var(--error, #dc2626)));
   --sfx-form-file-remove-hover-color: var(--form-file-remove-hover-color, #ffffff);
   --sfx-form-submit-padding-block: var(--form-submit-padding-block, 0.375rem);
   --sfx-form-submit-padding-inline: var(--form-submit-padding-inline, 1rem);
@@ -86,7 +86,7 @@
   /* State surfaces (file-result success/error) */
   --sfx-form-success-surface-fg: var(--form-success-surface-fg, var(--success, #16a34a));
   --sfx-form-success-surface: var(--form-success-surface, color-mix(in srgb, var(--sfx-form-success-surface-fg) 5%, var(--sfx-form-input-bg)));
-  --sfx-form-error-surface-fg: var(--form-error-surface-fg, var(--danger, #dc2626));
+  --sfx-form-error-surface-fg: var(--form-error-surface-fg, var(--danger, var(--error, #dc2626)));
   --sfx-form-error-surface: var(--form-error-surface, color-mix(in srgb, var(--sfx-form-error-surface-fg) 5%, var(--sfx-form-input-bg)));
   /* File-result spacing */
   --sfx-form-file-result-gap: var(--form-file-result-gap, 0.75rem);

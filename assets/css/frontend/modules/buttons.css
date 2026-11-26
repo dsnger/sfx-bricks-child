@@ -33,7 +33,7 @@
      --btn-<v>-mix.
 
    Text variant (link-style, no padding):
-     --btn-text-color chains to Bricks --text; --btn-text-hover-color
+     --btn-text-color chains to --text, then --text-body; --btn-text-hover-color
      chains to --primary. Applies to .bricks-background-text,
      .bricks-color-text, and .btn--text.
    ======================================== */
@@ -66,6 +66,8 @@
   --sfx-btn-xl-padding-block: var(--btn-xl-padding-block, 0.75rem);
   --sfx-btn-xl-padding-inline: var(--btn-xl-padding-inline, 2rem);
   --sfx-btn-xl-font-size: var(--btn-xl-font-size, 1.25rem);
+  /* xl used the normal radius before it had its own token; keep that as the default. */
+  --sfx-btn-xl-radius: var(--btn-xl-radius, var(--sfx-btn-radius));
   --sfx-btn-color: var(--btn-color, transparent);
   --sfx-btn-color-fg: currentColor;
 
@@ -177,8 +179,8 @@
 
   &.bricks-background-danger,
   &.bricks-color-danger {
-    --sfx-btn-color: var(--btn-danger-bg, var(--danger, #ef4444));
-    --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, #fff));
+    --sfx-btn-color: var(--btn-danger-bg, var(--danger, var(--error, #ef4444)));
+    --sfx-btn-color-fg: var(--btn-danger-fg, var(--danger-fg, var(--error-fg, #fff)));
   }
 
   &.bricks-background-warning,
@@ -190,7 +192,7 @@
   &.bricks-background-text,
   &.bricks-color-text,
   &.btn--text {
-    --sfx-btn-text-color: var(--btn-text-color, var(--text, inherit));
+    --sfx-btn-text-color: var(--btn-text-color, var(--text, var(--text-body, inherit)));
     --sfx-btn-text-hover-color: var(--btn-text-hover-color, var(--primary, #2563eb));
   }
 
@@ -248,6 +250,7 @@
     padding-block: var(--sfx-btn-xl-padding-block);
     padding-inline: var(--sfx-btn-xl-padding-inline);
     font-size: var(--sfx-btn-xl-font-size);
+    border-radius: var(--sfx-btn-xl-radius);
   }
 
   &.full-width {
@@ -294,15 +297,16 @@
 button.bricks-button.btn--text,
 :is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).bricks-background-text,
 :is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button).bricks-color-text {
-  --btn-padding-block: 0;
-  --btn-padding-inline: 0;
-  --btn-s-padding-block: 0;
-  --btn-s-padding-inline: 0;
-  --btn-l-padding-block: 0;
-  --btn-l-padding-inline: 0;
+  /* Internal tokens, so the public --btn-* ones stay site-settable and listed. */
+  --sfx-btn-padding-block: 0;
+  --sfx-btn-padding-inline: 0;
+  --sfx-btn-s-padding-block: 0;
+  --sfx-btn-s-padding-inline: 0;
+  --sfx-btn-l-padding-block: 0;
+  --sfx-btn-l-padding-inline: 0;
   padding-block: 0;
   padding-inline: 0;
-  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, inherit)));
+  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, var(--text-body, inherit))));
 
   &:hover {
     color: var(--sfx-btn-text-hover-color, var(--btn-text-hover-color, var(--primary, #2563eb)));
@@ -416,7 +420,7 @@ button.bricks-button,
    otherwise beat the layered declarations in the btn--text block.
    ======================================== */
 :is(.brxe-button.bricks-button, .brxe-button.btn, button.bricks-button):is(.bricks-background-text, .bricks-color-text, .btn--text) {
-  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, inherit)));
+  color: var(--sfx-btn-text-color, var(--btn-text-color, var(--text, var(--text-body, inherit))));
 
   &:hover {
     color: var(--sfx-btn-text-hover-color, var(--btn-text-hover-color, var(--primary, #2563eb)));

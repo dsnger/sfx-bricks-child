@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Style modules: colour fallbacks also follow the newer token names. Where a site does not set `--danger`, `--danger-fg` or `--text`, the danger button, form error and remove colours, text buttons and form labels and fields now use `--error`, `--error-fg`, `--text-body` or `--text-title` when the site defines them, instead of a fixed colour. Sites that set the older names look exactly as before.
+- Button Styles: `xl` buttons get their own radius token `--btn-xl-radius`; without it they keep the normal button radius as before. Text buttons no longer overwrite the public `--btn-*-padding-*` tokens, so those now appear in the "CSS Variables" list. The Animations list now shows `--animate-delay-step`.
 - General Theme Options, Style Modules tab: the developer reference ("External token mapping" fold-outs, token model and cascade-layer notes) is gone. A short text with an example now says how to change a module's look; each module's variables stay listed under "CSS Variables" in its card. The Button Styles card no longer points to a help section that does not exist.
 
 ## [0.39.0] - 2026-11-26

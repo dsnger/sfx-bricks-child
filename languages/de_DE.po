@@ -2671,6 +2671,9 @@ msgstr "Um das Aussehen eines Moduls zu ändern, setze eine seiner Variablen (au
 msgid "Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.)."
 msgstr "Buttons verwenden gescopte --sfx-btn-*, die von --btn-* verdrahtet werden (koppelt über die Bricks-Core-Paare --primary/--primary-fg, --accent/--accent-fg usw.)."
 
+msgid "Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to --primary, --text or --text-title, --danger or --error, --success where applicable)."
+msgstr "Formular-Eingaben/-Submit/-Datei-Ergebnis/-Statusmeldung verwenden gescopte --sfx-form-*, die von --form-* verdrahtet werden (welche an --primary, --text oder --text-title, --danger oder --error, --success koppeln, wo zutreffend)."
+
 msgid "External token mapping (Buttons)"
 msgstr "Externes Token-Mapping (Buttons)"
 
