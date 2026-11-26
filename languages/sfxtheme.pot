@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Smilefx Bricks Child Theme theme.
 msgid ""
 msgstr ""
-"Project-Id-Version: Smilefx Bricks Child Theme 0.39.0\n"
+"Project-Id-Version: Smilefx Bricks Child Theme 0.40.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/theme/sfx-bricks-child\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T14:09:48+00:00\n"
+"POT-Creation-Date: 2026-11-26T19:14:58+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: sfxtheme\n"
@@ -1797,7 +1797,7 @@ msgid "Global Theme Settings"
 msgstr ""
 
 #: inc/CustomDashboard/Settings.php:590
-#: inc/GeneralThemeOptions/Settings.php:293
+#: inc/GeneralThemeOptions/Settings.php:302
 msgid "General Options"
 msgstr ""
 
@@ -3321,7 +3321,7 @@ msgid "Form Styles"
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:149
-msgid "Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to Bricks core --primary, --text, --danger, --success where applicable)."
+msgid "Form inputs/submit/file-result/state-feedback use scoped --sfx-form-* wired from --form-* (which chain to --primary, --text or --text-title, --danger or --error, --success where applicable)."
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:156
@@ -3329,7 +3329,7 @@ msgid "Button Styles"
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:157
-msgid "Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.). See Style Modules help for semantic keys."
+msgid "Buttons use scoped --sfx-btn-* wired from --btn-* (chains through Bricks core pairs --primary/--primary-fg, --accent/--accent-fg, etc.)."
 msgstr ""
 
 #: inc/GeneralThemeOptions/Settings.php:164
@@ -3348,71 +3348,47 @@ msgstr ""
 msgid "Fade animations, stagger effects, and parallax keyframes."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:312
+#: inc/GeneralThemeOptions/Settings.php:321
 msgid "Style Modules"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:331
+#: inc/GeneralThemeOptions/Settings.php:340
 msgid "Selectively enable or disable theme features."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:336
-msgid "Enable or disable optional CSS style modules. All modules are enabled by default. Disabling unused modules can reduce page size."
+#: inc/GeneralThemeOptions/Settings.php:345
+msgid "Switch off the style modules you do not use to keep pages smaller."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:337
-msgid "Buttons and Forms load after the main frontend sheet so cascade layers apply in order."
+#: inc/GeneralThemeOptions/Settings.php:346
+msgid "To change how a module looks, set one of its variables (listed under \"CSS Variables\" in its card) in Core Framework or in your own CSS, for example --btn-radius: 999px for round buttons."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:338
-msgid "Token model: every module exposes external --<prefix>-* wireup tokens that default-chain through Bricks core tokens (--primary, --primary-fg, --space-s, etc.) with literal fallbacks. Internal --sfx-<prefix>-* tokens are implementation detail and not shown in this panel. Define the externals where you need a module-specific override; otherwise the chain falls through to your Bricks core tokens."
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:339
-msgid "Optional: customize --sfx-* on a component root in Bricks to override the computed value just for that instance."
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:340
+#: inc/GeneralThemeOptions/Settings.php:347
 msgid "Use the \"Copy CSS\" button to copy the module source code before disabling it, allowing you to customize it in your own stylesheet."
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:343
-msgid "External token mapping (Buttons)"
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:350
-msgid "External token mapping (Forms)"
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:359
-msgid "External token mapping (Lists)"
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:366
-msgid "External token mapping (Content Grid)"
-msgstr ""
-
-#: inc/GeneralThemeOptions/Settings.php:388
-#: inc/GeneralThemeOptions/Settings.php:391
+#: inc/GeneralThemeOptions/Settings.php:365
+#: inc/GeneralThemeOptions/Settings.php:368
 msgid "Copy CSS"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:389
-#: inc/GeneralThemeOptions/Settings.php:410
+#: inc/GeneralThemeOptions/Settings.php:366
+#: inc/GeneralThemeOptions/Settings.php:387
 #: inc/PasswordProtected/AdminPage.php:159
 msgid "Copied!"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:390
+#: inc/GeneralThemeOptions/Settings.php:367
 msgid "Error"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:403
+#: inc/GeneralThemeOptions/Settings.php:380
 msgid "CSS Variables"
 msgstr ""
 
-#: inc/GeneralThemeOptions/Settings.php:409
-#: inc/GeneralThemeOptions/Settings.php:411
+#: inc/GeneralThemeOptions/Settings.php:386
+#: inc/GeneralThemeOptions/Settings.php:388
 #: inc/PasswordProtected/AdminPage.php:159
 #: inc/SiteCheck/AdminPage.php:212
 #: inc/SiteCheck/AdminPage.php:441
