@@ -179,19 +179,19 @@ class Settings
     }
 
     /**
-     * Extract CSS variables from a CSS file.
-     * Results are cached using transients for performance.
-     *
-     * @param string $filename The CSS filename (e.g., 'buttons.css')
-     * @return array List of unique CSS variable names
-     */
-    /**
      * Public tokens a module sets itself (a default per class) but a site may still set.
      */
     private const LISTED_ALTHOUGH_SET = [
         'animations.css' => ['--animate-delay-step'],
     ];
 
+    /**
+     * Extract CSS variables from a CSS file.
+     * Results are cached using transients for performance.
+     *
+     * @param string $filename The CSS filename (e.g., 'buttons.css')
+     * @return array List of unique CSS variable names
+     */
     public static function get_css_variables(string $filename): array {
         $sanitized = sanitize_key($filename);
         $transient_key = 'sfx_css_vars_v9_' . $sanitized;
