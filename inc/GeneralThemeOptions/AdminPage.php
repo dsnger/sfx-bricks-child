@@ -658,9 +658,20 @@ class AdminPage
 
       var saved = null;
       try { saved = document.getElementById(sessionStorage.getItem(key)); } catch (e) {}
-      // After a purge, open the Danger Zone so its result notice is visible.
+      // After a purge, open the Danger Zone so its result notice is visible, then drop the
+      // purge parameters from the address and the save referer, or saving later reopens it.
       if (/[?&]sfx-purged=/.test(window.location.search)) {
         saved = document.getElementById('sfx-panel-danger-zone-tab');
+        var strip = function (u) {
+          var url = new URL(u, window.location.href);
+          Array.from(url.searchParams.keys()).forEach(function (k) {
+            if (k.indexOf('sfx-') === 0) { url.searchParams.delete(k); }
+          });
+          return url.pathname + url.search + url.hash;
+        };
+        history.replaceState(null, '', strip(window.location.href));
+        var referer = form && form.querySelector('input[name="_wp_http_referer"]');
+        if (referer) { referer.value = strip(referer.value); }
       }
       select(tabs.indexOf(saved) >= 0 ? saved : tabs[0], false);
       wrap.classList.add('sfx-tabs-ready');
