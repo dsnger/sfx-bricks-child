@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Form Styles: a checkbox or radio button now sits on the first line of its label instead of in the middle, which matters for long labels such as a privacy consent; single-line labels look the same. A site can set the new token `--form-option-align` (for example `center`) to change it. Before, the theme forced the middle and a site could not override it.
 
-- General Theme Options: General Options and Style Modules are now two tabs, and each option is a card with its title, its description and then the switch, laid out like the WP Optimizer page, so the page stays short. "Save Changes" sits above and below the tabs and saves both tabs at once; after saving, the page opens the tab you were on. Without JavaScript both sections show one below the other.
+- General Theme Options: General Options, Style Modules and the Danger Zone are now three tabs, and each option is a card with its title, its description and then the switch, laid out like the WP Optimizer page, so the page stays short. "Save Changes" sits above and below the options and saves both option tabs at once (the Danger Zone keeps its own delete button); after saving, the page opens the tab you were on. Without JavaScript both sections show one below the other.
 
 ## [0.38.1] - 2026-11-22
 

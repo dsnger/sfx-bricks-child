@@ -206,6 +206,9 @@ class AdminPage
         background: #fcf0f1;
         max-width: 48rem;
       }
+      .sfx-theme-options.sfx-tabs-ready .sfx-danger-zone {
+        margin-top: 0;
+      }
 
       .sfx-danger-zone h2 {
         margin-top: 0;
@@ -343,7 +346,8 @@ class AdminPage
     ?>
     <div class="wrap sfx-theme-options">
       <h1><?php esc_html_e('General Theme Options', 'sfxtheme'); ?></h1>
-      <form method="post" action="options.php">
+      <?php self::render_tab_nav(); ?>
+      <form method="post" action="options.php" id="sfx-theme-options-form">
         <?php
         settings_fields(\SFX\GeneralThemeOptions\Settings::$OPTION_GROUP);
 
@@ -355,9 +359,10 @@ class AdminPage
         submit_button();
         ?>
       </form>
+      <div class="sfx-tab-content" id="sfx-panel-danger-zone" role="tabpanel" aria-labelledby="sfx-panel-danger-zone-tab">
+        <?php self::render_danger_zone(); ?>
+      </div>
       <?php self::render_tabs_script(); ?>
-
-      <?php self::render_danger_zone(); ?>
     </div>
     <?php
   }
@@ -540,6 +545,30 @@ class AdminPage
   }
 
   /**
+   * One tab per settings section, plus the Danger Zone, which has its own form.
+   */
+  private static function render_tab_nav(): void
+  {
+    global $wp_settings_sections;
+
+    $tabs = [];
+    foreach ((array) ($wp_settings_sections[Settings::$OPTION_GROUP] ?? []) as $section) {
+      $tabs['sfx-panel-' . $section['id']] = $section['title'];
+    }
+    $tabs['sfx-panel-danger-zone'] = __('Danger Zone', 'sfxtheme');
+
+    echo '<div class="sfx-tabs-nav" role="tablist">';
+    foreach ($tabs as $panel => $title) {
+      printf(
+        '<button type="button" id="%1$s-tab" class="sfx-tab-btn" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</button>',
+        esc_attr($panel),
+        esc_html($title)
+      );
+    }
+    echo '</div>';
+  }
+
+  /**
    * Render the settings sections as tab panels of one form, so saving keeps both.
    * Tabs and option cards reuse WP Optimizer's look (.sfx-tab-btn, .sfx-option-card).
    */
@@ -552,17 +581,6 @@ class AdminPage
     if (!isset($wp_settings_sections[$page])) {
       return;
     }
-
-    echo '<div class="sfx-tabs-nav" role="tablist">';
-    foreach ((array) $wp_settings_sections[$page] as $section) {
-      $panel = 'sfx-panel-' . $section['id'];
-      printf(
-        '<button type="button" id="%1$s-tab" class="sfx-tab-btn" role="tab" aria-controls="%1$s" aria-selected="false">%2$s</button>',
-        esc_attr($panel),
-        esc_html($section['title'])
-      );
-    }
-    echo '</div>';
 
     foreach ((array) $wp_settings_sections[$page] as $section) {
       $panel = 'sfx-panel-' . $section['id'];
@@ -611,7 +629,12 @@ class AdminPage
       if (!tabs.length) { return; }
       var key = 'sfx-theme-options-tab';
 
+      var form = document.getElementById('sfx-theme-options-form');
+
       function select(tab, focus) {
+        var panel = document.getElementById(tab.getAttribute('aria-controls'));
+        // The Danger Zone sits outside the settings form; hide that form and its save buttons there.
+        if (form) { form.hidden = !form.contains(panel); }
         tabs.forEach(function (t) {
           var on = t === tab;
           t.classList.toggle('active', on);
@@ -635,6 +658,10 @@ class AdminPage
 
       var saved = null;
       try { saved = document.getElementById(sessionStorage.getItem(key)); } catch (e) {}
+      // After a purge, open the Danger Zone so its result notice is visible.
+      if (/[?&]sfx-purged=/.test(window.location.search)) {
+        saved = document.getElementById('sfx-panel-danger-zone-tab');
+      }
       select(tabs.indexOf(saved) >= 0 ? saved : tabs[0], false);
       wrap.classList.add('sfx-tabs-ready');
     }());
