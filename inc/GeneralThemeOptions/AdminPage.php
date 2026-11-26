@@ -132,7 +132,7 @@ class AdminPage
       .sfx-theme-options.sfx-tabs-ready .sfx-tab-content > h2 {
         display: none;
       }
-      .sfx-theme-options .sfx-tab-content > p.description {
+      .sfx-theme-options .sfx-tab-content > div.description {
         color: #646970;
         margin: 0 0 20px;
       }
@@ -591,9 +591,9 @@ class AdminPage
       echo '<h2>' . esc_html($section['title']) . '</h2>';
 
       if ($section['callback']) {
-        echo '<p class="description">';
+        echo '<div class="description">';
         call_user_func($section['callback'], $section);
-        echo '</p>';
+        echo '</div>';
       }
 
       echo '<div class="sfx-option-cards">';

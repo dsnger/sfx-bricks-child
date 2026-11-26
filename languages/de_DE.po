@@ -2663,6 +2663,12 @@ msgstr ""
 "anpassen."
 
 #: inc/GeneralThemeOptions/Settings.php:303
+msgid "Switch the optional CSS style modules on or off. Switching off modules you do not use makes pages smaller."
+msgstr "Schalte die optionalen CSS-Style-Module ein oder aus. Module, die du nicht nutzt, abzuschalten macht die Seiten kleiner."
+
+msgid "To change how a module looks, set one of its variables (listed under \"CSS Variables\" in its card) in Core Framework or in your own CSS, for example --btn-radius: 999px for round buttons. Without a value of your own, a module uses the Bricks colours and spacing."
+msgstr "Um das Aussehen eines Moduls zu ändern, setze eine seiner Variablen (aufgelistet unter „CSS-Variablen“ in seiner Karte) im Core Framework oder in deinem eigenen CSS, zum Beispiel --btn-radius: 999px für runde Buttons. Ohne eigenen Wert nimmt das Modul die Farben und Abstände von Bricks."
+
 msgid "External token mapping (Buttons)"
 msgstr "Externes Token-Mapping (Buttons)"
 
